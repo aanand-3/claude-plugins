@@ -1,0 +1,48 @@
+#!/bin/sh
+# project-kit: protect main. On main/master only planning changes under .project/ may be committed.
+# Everything else goes through a plan branch: plan/P-###-<slug>.
+branch=$(git symbolic-ref --short HEAD 2>/dev/null)
+case "$branch" in
+  main|master)
+    # first commit of the repository (scaffold) is allowed
+    git rev-parse --verify -q HEAD >/dev/null || exit 0
+    [ "$PROJECT_KIT_ALLOW_MAIN" = "1" ] && exit 0
+    offending=$(git diff --cached --name-only | grep -v '^\.project/' || true)
+    if [ -n "$offending" ]; then
+      echo "✋ project-kit: on '$branch' you may only commit tracker/planning files under .project/." >&2
+      echo "   Offending files:" >&2
+      echo "$offending" | sed 's/^/     /' >&2
+      echo "   Start a plan branch instead: python3 .project/bin/tracker.py start P-###" >&2
+      echo "   (Deliberate exception, e.g. scaffold refresh: PROJECT_KIT_ALLOW_MAIN=1 git commit ...)" >&2
+      exit 1
+    fi
+    ;;
+  plan/P-[0-9]*|epic/EP-[0-9]*|hotfix/*|"") ;;
+  *)
+    echo "⚠️  project-kit: branch '$branch' doesn't follow plan/P-###-<slug> (allowed, but untracked work)." >&2
+    ;;
+esac
+# secrets in staged changes (blocks on high-confidence matches)
+if [ -f .project/bin/check_secrets.py ]; then
+  python3 .project/bin/check_secrets.py --staged || exit 1
+fi
+# high-level layout guard (declared in .project/config.yaml → structure:); warns or blocks per structure_check
+if [ -f .project/bin/check_structure.py ]; then
+  python3 .project/bin/check_structure.py --staged || exit 1
+fi
+# design-system drift (tokens from docs/design/DESIGN.md); warns or blocks per design_check
+if [ -f .project/bin/check_design.py ]; then
+  python3 .project/bin/check_design.py --staged || exit 1
+fi
+# lint/format/type hooks from the pre-commit framework, once P-001 adds .pre-commit-config.yaml.
+# Run directly (no `pre-commit install`) so core.hooksPath stays on .githooks.
+if [ -f .pre-commit-config.yaml ]; then
+  if command -v pre-commit >/dev/null 2>&1; then
+    pre-commit run || exit 1
+  elif command -v uvx >/dev/null 2>&1; then
+    uvx pre-commit run || exit 1
+  else
+    echo "⚠️  project-kit: .pre-commit-config.yaml present but pre-commit is not installed (uv tool install pre-commit); lint hooks skipped." >&2
+  fi
+fi
+exit 0

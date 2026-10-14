@@ -1,0 +1,25 @@
+{
+  "name": "project-kit",
+  "version": "0.6.0",
+  "description": "Kick off projects consistently: idea research (competitors, prior art, go/pivot/kill), requirements discovery, a persisted visual design system, stack-aware CLAUDE.md and engineering rules, a repo-local project tracker, and branch-per-plan git conventions.",
+  "author": {
+    "name": "Arpit Anand",
+    "email": "aanand.wrk@gmail.com"
+  },
+  "keywords": [
+    "kickoff",
+    "scaffold",
+    "guidelines",
+    "claude-md",
+    "tracker",
+    "sprints",
+    "backlog",
+    "git",
+    "fastapi",
+    "react",
+    "design-system",
+    "design-md",
+    "research",
+    "competitors"
+  ]
+}

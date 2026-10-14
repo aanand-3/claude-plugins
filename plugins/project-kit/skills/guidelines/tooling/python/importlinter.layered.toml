@@ -1,0 +1,22 @@
+# project-kit reference: import-linter contracts for arch-layered. Merge into pyproject.toml.
+# Run with `uv run lint-imports`. Replace <package>.
+
+[tool.importlinter]
+root_package = "<package>"
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "Layers: api → services → repositories → models"
+type = "layers"
+layers = [
+  "<package>.api",
+  "<package>.services",
+  "<package>.repositories",
+  "<package>.models",
+]
+
+[[tool.importlinter.contracts]]
+name = "Services are framework-free"
+type = "forbidden"
+source_modules = ["<package>.services"]
+forbidden_modules = ["fastapi", "starlette"]

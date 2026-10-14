@@ -1,0 +1,12 @@
+# --- node ---
+node_modules/
+dist/
+build/
+.vite/
+.next/
+*.tsbuildinfo
+npm-debug.log*
+pnpm-debug.log*
+.pnpm-store/
+playwright-report/
+test-results/

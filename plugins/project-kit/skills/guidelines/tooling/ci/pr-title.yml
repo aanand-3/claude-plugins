@@ -1,0 +1,23 @@
+# project-kit reference — copy to .github/workflows/pr-title.yml.
+# Squash merges use the PR title as the commit message, so it must follow the convention.
+name: pr-title
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Title is "P-###: <title>" or a Conventional Commit'
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          if printf '%s' "$TITLE" | grep -Eq '^P-[0-9]+: .+'; then exit 0; fi
+          if printf '%s' "$TITLE" | grep -Eq '^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([A-Za-z0-9._/-]+\))?!?: .+'; then exit 0; fi
+          echo "::error::PR title must be 'P-012: <plan title>' or a Conventional Commit (e.g. 'chore(deps): bump ruff'). Got: $TITLE"
+          exit 1

@@ -1,0 +1,88 @@
+# Project decisions — the single source of truth read by project-kit skills.
+# Change via `/project-kit:discover` (revise) so ADRs and guidelines stay in sync.
+version: 1
+project:
+  name: <name>
+  slug: <kebab-case>
+  summary: <one line>
+  type: <fullstack | backend | frontend | cli>
+  created: <YYYY-MM-DD>
+
+stack:
+  backend:
+    language: <python | node | none>
+    version: <e.g. "3.13" | "24">
+    framework: <fastapi | fastify | express | nestjs | typer | none>
+    orm: <sqlmodel | sqlalchemy | drizzle | prisma | none>
+    async: <true | false>
+    api_style: <rest | graphql | none>
+    jobs: <none | arq | celery | bullmq | temporal>
+  frontend:
+    framework: <react | none>
+    build: <vite | nextjs | react-router | none>
+    styling: <tailwind | css-modules | none>
+    components: <none | shadcn | mui>
+  database:
+    engine: <postgres | sqlite | none>
+    version: <e.g. "17">
+    primary_key: <uuidv7 | bigint>
+  cache:
+    engine: <redis | none>
+    uses: []            # cache, rate-limit, sessions, queue, locks, pubsub
+  containers: <docker | none>
+
+architecture:
+  backend_style: <layered | hexagonal | none>
+  frontend_style: <feature-modules | none>
+  contexts: []          # bounded contexts / feature modules shared by backend and frontend, e.g. [identity, catalog]
+  repo_layout: <monorepo | single>
+  backend_dir: <backend/ | "" for single-app repos>    # scopes backend rules files
+  frontend_dir: <frontend/ | "">                       # scopes frontend rules files
+  auth: <none | session | jwt | oidc>
+  dev_idp: <none | keycloak | hosted-dev-tenant>
+  deployment: <undecided | container-platform | kubernetes | vm | serverless>
+  environments: [local, test]   # add staging/production when a deployment target is chosen
+
+# High-level layout guard: allowed immediate children per governed directory.
+# Checked by .githooks/pre-commit (.project/bin/check_structure.py). Folders are created
+# only when real code needs them; changing this list is a deliberate, reviewed decision.
+# warn = report drift on commit but never block (default while the layout is young);
+# block = reject the commit. Tests live under allowed entries (backend/tests, co-located
+# *.test.tsx, frontend/src/test, frontend/e2e) and are never flagged.
+structure_check: warn
+# "No god modules": source files over this many non-blank lines are reported (same warn/block mode).
+# Generated code (migrations, *.gen.*, *.d.ts) is skipped. 0 disables.
+module_max_lines: 300
+# One line per directory, inline list. `*` globs allowed. Dotfiles are always allowed.
+structure:
+  .: [<backend_dir>, <frontend_dir>, docs, deploy, compose.yaml, README.md, CLAUDE.md, Makefile]
+  <backend_dir>: [src, tests, alembic, alembic.ini, pyproject.toml, uv.lock, Dockerfile, README.md]
+  <backend_dir>src/<package>: [<from the arch pack, e.g. domain, application, adapters, entrypoints, bootstrap.py, __init__.py, py.typed>]
+  <frontend_dir>: [src, public, e2e, index.html, package.json, pnpm-lock.yaml, tsconfig*.json, vite.config.ts, eslint.config.js, Dockerfile, README.md]
+  <frontend_dir>src: [app, shared, <one entry per module>, main.tsx, index.css, vite-env.d.ts, test]
+  # CLI projects instead:  .: [src, tests, docs, pyproject.toml, uv.lock, README.md, CLAUDE.md, CHANGELOG.md, LICENSE]
+  #                       src/<package>: [cli, core, adapters, config.py, __init__.py, __main__.py, py.typed]
+
+# Visual design (frontend/fullstack): written by /project-kit:design init; DESIGN.md is the one home of tokens.
+# design_check: warn = report off-token UI code on commit, never block (default); block = reject the commit.
+design:
+  file: docs/design/DESIGN.md   # or none when there is no UI
+  direction: <name | none>
+  source: <"Wada #<id>" | brand | none>
+  surface: <app | marketing | both | none>
+  dark_mode: <true | false>
+design_check: warn
+
+# Idea research (/project-kit:research), if it was run before kickoff.
+research:
+  report: <docs/research/idea-research.md | none>
+  verdict: <go | pivot | kill | none>
+  date: <YYYY-MM-DD | none>
+
+packs: [base]           # guideline packs applied to .claude/rules/ (incl. exactly one arch-* pack for a backend)
+
+git:
+  default_branch: main
+  remote: <none | github>
+  merge: squash
+  branch_pattern: "plan/P-###-<slug>"

@@ -1,0 +1,15 @@
+{
+  "name": "aanand-plugins",
+  "owner": {
+    "name": "Arpit Anand",
+    "email": "aanand.wrk@gmail.com"
+  },
+  "description": "Reusable Claude Code skills for starting and running projects.",
+  "plugins": [
+    {
+      "name": "project-kit",
+      "source": "./plugins/project-kit",
+      "description": "Project kickoff: research, discover, design, guidelines, tracker, git-setup, global-setup."
+    }
+  ]
+}

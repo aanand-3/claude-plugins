@@ -1,0 +1,111 @@
+<!doctype html>
+<!-- project-kit design directions. Copy to docs/design/directions.html and fill one
+     <section class="direction"> per direction. Every colour, font and radius comes from the
+     section's CSS variables, so a direction's tokens are set in one place. Static: no build, no deps.
+     Open the file in a browser to compare; toggle dark mode with the button. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{Project}} — design directions</title>
+<!-- <link href="https://fonts.googleapis.com/css2?family={{Display}}&family={{Body}}&display=swap" rel="stylesheet"> -->
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  body { font: 15px/1.5 system-ui, sans-serif; background: #f4f4f2; color: #1d1d1b; padding: 24px; }
+  header.page { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 24px; gap: 16px; flex-wrap: wrap; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 24px; }
+
+  /* One block per direction: light tokens, then dark tokens. Paste from `wada.py roles <id>`. */
+  .direction {
+    --background: #fffaef; --foreground: #292316; --card: #fffff8; --muted: #f6f0e5; --muted-foreground: #716a5d;
+    --border: #e2dcd1; --primary: #4f4086; --primary-foreground: #fff; --secondary: #ffe1d0; --secondary-foreground: #111;
+    --chart-1: #ebd3a2; --chart-2: #a36752; --chart-3: #4f4086;
+    --font-display: Georgia, serif; --font-body: system-ui, sans-serif; --radius: 8px;
+    background: var(--background); color: var(--foreground); font-family: var(--font-body);
+    border: 1px solid var(--border); border-radius: calc(var(--radius) + 4px); overflow: hidden;
+  }
+  body.dark .direction {
+    --background: #1d1911; --foreground: #f7eddb; --card: #24211d; --muted: #343028; --muted-foreground: #ada597;
+    --border: #3d3930; --primary: #6b5aa3; --primary-foreground: #fff; --secondary: #583529; --secondary-foreground: #fff;
+  }
+  .direction > * { padding: 20px 24px; border-bottom: 1px solid var(--border); }
+  .direction h2 { font: 600 28px/1.15 var(--font-display); letter-spacing: -0.02em; }
+  .meta { color: var(--muted-foreground); font-size: 13px; margin-top: 4px; }
+  .swatches { display: flex; gap: 6px; flex-wrap: wrap; }
+  .swatch { width: 56px; font-size: 11px; color: var(--muted-foreground); }
+  .swatch i { display: block; height: 40px; border-radius: calc(var(--radius) - 2px); border: 1px solid var(--border); margin-bottom: 4px; }
+  .type p + p { margin-top: 6px; }
+  .t-display { font: 600 36px/1.1 var(--font-display); letter-spacing: -0.02em; }
+  .t-title { font: 600 20px/1.25 var(--font-display); }
+  .t-caption { font-size: 12px; color: var(--muted-foreground); }
+  .controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .btn { font: 500 14px var(--font-body); height: 40px; padding: 0 16px; border-radius: var(--radius); border: 1px solid transparent; cursor: pointer; }
+  .btn-primary { background: var(--primary); color: var(--primary-foreground); }
+  .btn-secondary { background: var(--secondary); color: var(--secondary-foreground); }
+  .btn-ghost { background: transparent; color: var(--foreground); border-color: var(--border); }
+  .input { height: 40px; padding: 0 12px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--background); color: var(--foreground); font: inherit; min-width: 0; flex: 1; }
+  .btn:focus-visible, .input:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: calc(var(--radius) + 4px); padding: 16px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+  th { text-align: left; font-weight: 500; color: var(--muted-foreground); font-size: 12px; }
+  th, td { padding: 8px 4px; border-bottom: 1px solid var(--border); }
+  td.num, th.num { text-align: right; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; background: var(--secondary); color: var(--secondary-foreground); font-size: 12px; }
+  .screen { background: var(--muted); }
+  .why { font-size: 14px; color: var(--muted-foreground); }
+</style>
+</head>
+<body>
+<header class="page">
+  <div>
+    <h1 style="font-size:22px">{{Project}} — design directions</h1>
+    <p style="color:#666">Pick one, or mix (e.g. “palette of A, type of B”). Palettes from Sanzo Wada, <em>A Dictionary of Color Combinations</em>.</p>
+  </div>
+  <button class="btn btn-ghost" style="border-color:#ccc" onclick="document.body.classList.toggle('dark')">Toggle dark</button>
+</header>
+
+<div class="grid">
+  <!-- ===== Direction A (duplicate this section for B and C; give each its own variables via style="" or an id rule) ===== -->
+  <section class="direction" id="a">
+    <div>
+      <h2>{{Direction name}}</h2>
+      <p class="meta">Wada #{{id}} · {{Display face}} / {{Body face}} · radius {{8px}}</p>
+      <p class="why">{{One sentence: why this fits the product and its users.}}</p>
+    </div>
+    <div class="swatches">
+      <div class="swatch"><i style="background:var(--background)"></i>bg</div>
+      <div class="swatch"><i style="background:var(--foreground)"></i>fg</div>
+      <div class="swatch"><i style="background:var(--primary)"></i>primary</div>
+      <div class="swatch"><i style="background:var(--secondary)"></i>secondary</div>
+      <div class="swatch"><i style="background:var(--muted)"></i>muted</div>
+      <div class="swatch"><i style="background:var(--chart-1)"></i>chart</div>
+    </div>
+    <div class="type">
+      <p class="t-display">{{Real headline for this product}}</p>
+      <p class="t-title">{{Section title}}</p>
+      <p>{{Body sentence with real domain language, long enough to judge the reading measure and rhythm.}}</p>
+      <p class="t-caption">{{Caption · metadata · 12 px}}</p>
+    </div>
+    <div class="controls">
+      <button class="btn btn-primary">{{Primary action}}</button>
+      <button class="btn btn-secondary">Secondary</button>
+      <button class="btn btn-ghost">Cancel</button>
+    </div>
+    <div class="controls"><input class="input" placeholder="{{Realistic placeholder}}"><span class="badge">{{Status}}</span></div>
+    <div class="screen">
+      <!-- Sample screen of the real product: app → the main list/detail view; marketing → hero + one section -->
+      <div class="card">
+        <p class="t-title" style="margin-bottom:8px">{{Screen title}}</p>
+        <table>
+          <thead><tr><th>{{Column}}</th><th>{{Column}}</th><th class="num">{{Amount}}</th></tr></thead>
+          <tbody>
+            <tr><td>{{Real row}}</td><td><span class="badge">{{State}}</span></td><td class="num">1,240.00</td></tr>
+            <tr><td>{{Real row}}</td><td><span class="badge">{{State}}</span></td><td class="num">86.50</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</div>
+</body>
+</html>

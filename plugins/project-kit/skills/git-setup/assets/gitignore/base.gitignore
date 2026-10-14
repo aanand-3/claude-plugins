@@ -1,0 +1,17 @@
+# --- base ---
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+coverage/
+.coverage
+htmlcov/
+# Claude Code: personal files stay local
+CLAUDE.local.md
+.claude/settings.local.json
