@@ -3,7 +3,7 @@ pack: testing-js
 description: TypeScript testing for React frontends and Node backends — Vitest, Testing Library, MSW, Playwright.
 scope: any
 requires: [base]
-paths: ["**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts", "e2e/**", "tests/**/*.ts", "vitest.config.*", "playwright.config.*"]
+paths: ["**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts", "**/e2e/**", "**/tests/**/*.ts", "**/vitest.config.*", "**/playwright.config.*"]
 ---
 
 # Testing — TypeScript

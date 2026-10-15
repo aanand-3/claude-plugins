@@ -45,9 +45,15 @@ def new_item(store: Store, typ: str, title: str, draft_path: str | None, why: st
     probe = store.build(f"item-{ITEM_TYPES[prefix]}.md", body, {"id": "X", "title": title, **fields})
     if not any(probe.has_content(h) for h, _ in split_sections(probe.text)[1]):
         sys.exit("The item has no content. Nothing was created.")
-    create_item(store, prefix, title, body, **fields)
+    it = create_item(store, prefix, title, body, **fields)
     if draft_file:
         store.consume(draft_file, keep)
+    if priority or points is not None:  # a triage decision given at intake: apply it if the gate passes
+        if problems := triage_problems(store, it):
+            print(f"note: {it.id} stays new until triaged — {'; '.join(problems)}")
+        else:
+            move(store, it.id, "triaged", ", ".join(f"{k} {it.get(k)}" for k in ("priority", "points", "severity")
+                                                     if it.get(k)))
 
 
 def triage(store: Store, item_id: str, *, priority: str | None = None, points: int | None = None,

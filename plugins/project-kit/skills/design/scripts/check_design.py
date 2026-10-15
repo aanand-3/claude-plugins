@@ -188,6 +188,16 @@ def git(root: Path, *args: str) -> str:
     return subprocess.run(["git", *args], cwd=root, capture_output=True, text=True).stdout
 
 
+def tracked_files(root: Path) -> str:
+    """`git ls-files`, or every file under root when it is not a repository yet (design runs before git setup)."""
+    r = subprocess.run(["git", "ls-files"], cwd=root, capture_output=True, text=True)
+    if r.returncode == 0:
+        return r.stdout
+    skip = {"node_modules", "dist", "build", "coverage"}
+    return "\n".join(p.relative_to(root).as_posix() for p in sorted(root.rglob("*")) if p.is_file()
+                     and not any(part in skip or part.startswith(".") for part in p.relative_to(root).parts))
+
+
 def config(root: Path) -> str:
     cfg = root / ".project" / "config.yaml"
     return cfg.read_text() if cfg.is_file() else ""
@@ -220,7 +230,7 @@ def main() -> None:
         print(export_tailwind(tokens))
         return
     frontend = setting(cfg, r"^\s*frontend_dir:\s*\"?([^\s\"#]*)", "").strip("./")
-    listing = git(root, "diff", "--cached", "--name-only", "--diff-filter=ACMR") if args.staged else git(root, "ls-files")
+    listing = git(root, "diff", "--cached", "--name-only", "--diff-filter=ACMR") if args.staged else tracked_files(root)
     files = [f for f in listing.splitlines() if f and Path(f).suffix in SCANNED
              and (not frontend or f.startswith(frontend + "/")) and not f.startswith(("docs/", ".project/"))
              and "/test" not in f and ".test." not in f and ".stories." not in f]

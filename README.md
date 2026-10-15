@@ -57,7 +57,7 @@ docs/
 .gitignore .gitattributes .editorconfig .env.example README.md
 ```
 
-### Stack packs (v0.6.0)
+### Stack packs (v0.7.0)
 
 | Scope | Packs |
 |---|---|

@@ -51,19 +51,30 @@ def scope(mid: str, epics: Docs, items: Docs, plans: Docs) -> Scope:
     return Scope(units)
 
 
-def forecast(store: Store, m: Doc, sc: Scope, sprints: Docs) -> tuple[str, str]:
-    """(projected date text, health) — remaining points ÷ velocity vs the target date."""
+def forecast(store: Store, m: Doc, sc: Scope, sprints: Docs, queued: int = 0) -> tuple[str, str]:
+    """(projected date text, health) — the points of earlier milestones (queued) plus this one's remaining,
+    ÷ velocity, counted from the first open sprint's start (else today), vs the target date."""
     if m.get("status") == "released":
         return f"released {m.get('released') or ''}".strip(), "✅ released"
+    if m.get("status") == "dropped":
+        return "—", "dropped"
+    note = f" ({len(sc.unestimated)} unestimated)" if sc.unestimated else ""
+    if not sc.total:
+        return "—", "⚪ no scope" + note
     s = store.settings()
     vel = q.velocity(sprints) or s["capacity_points"]
-    remaining = sc.total - sc.done
-    n = math.ceil(remaining / vel) if remaining > 0 and vel else 0
-    projected = as_date(today()) + dt.timedelta(days=n * s["sprint_length_days"])
-    health = _health(projected, as_date(m.get("target")), s["sprint_length_days"])
-    if sc.unestimated:
-        health += f" ({len(sc.unestimated)} unestimated)"
+    remaining = queued + sc.total - sc.done
+    if remaining <= 0:
+        return "scope done", "🟢 on track" + note
+    n = math.ceil(remaining / vel)
+    projected = _first_sprint_start(sprints) + dt.timedelta(days=n * s["sprint_length_days"] - 1)
+    health = _health(projected, as_date(m.get("target")), s["sprint_length_days"]) + note
     return f"{projected.isoformat()} ({n} sprint{'s' if n != 1 else ''} @ {vel:.0f} pts)", health
+
+
+def _first_sprint_start(sprints: Docs) -> dt.date:
+    starts = [d for x in sprints.values() if x.get("status") != "closed" and (d := as_date(x.get("start")))]
+    return min(starts, default=as_date(today()))
 
 
 def _health(projected: dt.date, target: dt.date | None, sprint_days: int) -> str:
@@ -82,11 +93,14 @@ def milestone_rows(store: Store, epics: Docs, items: Docs, plans: Docs, sprints:
         return ["_No milestones._"]
     order = q.milestone_order(ms)
     rows = ["| Milestone | Target | Status | Progress | Forecast | Health |", "|---|---|---|---|---|---|"]
+    queued = 0  # milestones are delivered in target order: each one's forecast starts after the earlier ones
     for mid in sorted(ms, key=order.__getitem__):
         m = ms[mid]
         sc = scope(mid, epics, items, plans)
         pct = f"{100 * sc.done // sc.total}%" if sc.total else "–"
-        fc, health = forecast(store, m, sc, sprints)
+        fc, health = forecast(store, m, sc, sprints, queued)
+        if m.get("status") not in ("released", "dropped"):
+            queued += sc.total - sc.done
         rows.append(f"| {mid}: {m.get('title')} | {m.get('target') or '—'} | {m.get('status')} | "
                     f"{sc.done}/{sc.total} pts ({pct}) | {fc} | {health} |")
     return rows

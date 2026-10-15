@@ -110,6 +110,10 @@ def sprint_start(store: Store, sid: str) -> None:
     plans = store.plans(include_branches=True)
     if not_ready := [p for p in committed if plans.get(p) and plans[p].get("status") == "draft"]:
         print(f"note: not ready yet: {', '.join(not_ready)}")
+    begin, now = as_date(sprint.get("start")), as_date(today())
+    if begin and begin > now:
+        print(f"WARNING  {sid} starts {begin}, in {(begin - now).days} day(s) — the burndown counts from then. "
+              f"If work starts today, set start:/end: in {store.rel(sprint.path)}.")
     sprint.set("committed_points", str(queries.committed_points(sprint, plans)))
     sprint.set("status", "active")
     sprint.append_log(f"sprint started — {sprint.get('committed_points')} pts committed", "Daily log")

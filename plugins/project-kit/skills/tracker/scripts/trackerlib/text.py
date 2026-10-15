@@ -49,7 +49,7 @@ def slugify(title: str) -> str:
         if len("-".join([*out, w])) > 40:
             break
         out.append(w)
-    while out and out[-1] in SLUG_STOPWORDS:
+    while len(out) < len(words) and out and out[-1] in SLUG_STOPWORDS:  # cut mid-phrase: drop a dangling "and"
         out.pop()
     return "-".join(out) or "untitled"
 

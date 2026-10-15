@@ -8,7 +8,7 @@ from pathlib import Path
 from trackerlib import gitio
 from trackerlib.doc import Doc, Fmt, assemble
 from trackerlib.model import CLOSED, DEFAULT_SETTINGS, DIRS, PRIORITIES
-from trackerlib.text import kind_of, md_table, today
+from trackerlib.text import kind_of, md_table, strip_comments, today
 
 LIB_DIR = Path(__file__).resolve().parent
 SCRIPTS_DIR = LIB_DIR.parent
@@ -142,7 +142,7 @@ class Store:
             draft_file.unlink()
 
     def build(self, template: str, draft: str, fields: dict) -> Doc:
-        tmpl = self.template(template).format_map(Fmt(fields, date=today()))
+        tmpl = strip_comments(self.template(template)).format_map(Fmt(fields, date=today()))  # guidance stays in templates/
         tmpl = re.sub(r"^(\w+): $", r"\1:", tmpl, flags=re.M)
         return Doc.parse(assemble(tmpl, draft))
 

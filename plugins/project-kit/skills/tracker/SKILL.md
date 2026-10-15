@@ -40,7 +40,7 @@ All state changes go through the script. Never hand-edit `status`, dates, IDs, `
 | `next` · `current` · `check` | single best next step · where am I · consistency (CI runs `check`) |
 | `roadmap [--write]` · `status [--write]` · `release-notes M-01 [--write]` | reports |
 
-**Nothing is created empty.** Write the content as a draft in `.project/drafts/<slug>.md`, using the template's `## ` headings, then create the document from it. The draft is consumed. The only lightweight intake is `new-item … --why "<one line>"`; such an item stays `new` until it passes triage.
+**Nothing is created empty.** Write the content as a draft in `.project/drafts/<slug>.md`, using the template's `## ` headings, then create the document from it. The draft is consumed. The only lightweight intake is `new-item … --why "<one line>"`; such an item stays `new` until it passes triage. Giving `--priority`/`--points` at intake triages it right away when the gate passes.
 
 ## Workflows
 Start every workflow by checking where you are: `git branch --show-current`, `tracker.py current`, `tracker.py next`. All planning (project plan, RAID, milestones, epics, items, sprints, plan drafts) happens **on `main`**. On a plan branch, edit only that plan's file.

@@ -48,6 +48,9 @@ def test_rules_scoped_to_app_dirs(repo: Repo):
     assert '"backend/**/*.py"' in paths_of(repo, "fastapi")
     assert '"frontend/**/*.tsx"' in paths_of(repo, "react")
     assert '"**/Dockerfile*"' in paths_of(repo, "docker")  # scope any → unprefixed
+    testing_js = paths_of(repo, "testing-js")  # React frontend or Node backend: globs match at any depth
+    for glob in ("**/e2e/**", "**/vitest.config.*", "**/playwright.config.*"):
+        assert f'"{glob}"' in testing_js, glob
     assert not (repo.path / ".claude/rules/base.md").read_text().startswith("---")  # always loaded
 
 
@@ -79,6 +82,7 @@ def test_vendors_scripts_and_relevant_tooling(repo: Repo):
     for rel in ("python/pyproject.tooling.toml", "react/eslint.config.js", "common/Makefile", "ci/ci.yml", "README.md"):
         assert (tooling / rel).is_file(), rel
     assert not (tooling / "node").exists()  # no node pack selected
+    assert sorted(f.name for f in (tooling / "python").glob("importlinter.*")) == ["importlinter.hexagonal.toml"]
 
 
 def test_structure_warns_by_default_and_ignores_tests(repo: Repo):
