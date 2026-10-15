@@ -2,16 +2,14 @@
 
 A Claude Code plugin marketplace. It currently contains one plugin, **project-kit**, which takes the repeated manual setup out of starting a project.
 
-## Install (local)
+## Install
 
 ```bash
-claude plugin marketplace add /Users/aanand/Documents/Projects/Personal/claude-plugins
+claude plugin marketplace add aanand-3/claude-plugins
 claude plugin install project-kit@aanand-plugins
 ```
 
-After editing skills here, start a new Claude Code session to pick up the changes. Run `claude plugin marketplace update aanand-plugins` if a session still shows the old version.
-
-Once this is on GitHub: `claude plugin marketplace add aanand-3/claude-plugins`.
+Start a new Claude Code session to load it. To pick up later releases, run `claude plugin marketplace update aanand-plugins`.
 
 ## project-kit
 
@@ -96,6 +94,15 @@ python3 <plugin>/skills/tracker/scripts/tracker.py init                         
 Or ask Claude to run `/project-kit:guidelines --refresh`.
 
 ### Developing the plugin
+
+To try your edits before pushing, install from your clone instead of GitHub (remove the GitHub marketplace first, since both use the name `aanand-plugins`):
+
+```bash
+claude plugin marketplace add ./
+claude plugin install project-kit@aanand-plugins
+```
+
+Start a new Claude Code session after editing skills to pick up the changes.
 
 Before changing the bundled scripts, run the local test suite:
 
