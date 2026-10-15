@@ -82,7 +82,7 @@ Start every workflow by checking where you are: `git branch --show-current`, `tr
    - **Test plan** (bugs: the regression test)
    - **Rollout & rollback**
    - Risks & open questions
-4. **From plan mode:** take the latest file in `.project/drafts/` or `~/.claude/plans/` and rewrite it into these sections.
+4. **From plan mode:** take the latest file in `.project/drafts/` or `~/.claude/plans/` and rewrite it into these sections. In a project set up by kickoff, a hook reminds you of this as soon as plan mode exits.
 5. `new-plan "<title>" --from … --items <IDs> [--epic] [--depends] [--sprint]`.
 6. Review it with the user, then `move P-### ready`. If the script lists problems, fix them; don't `--force` past the Definition of Ready.
 7. Commit on main: `chore(tracker): plan P-### <title>`.

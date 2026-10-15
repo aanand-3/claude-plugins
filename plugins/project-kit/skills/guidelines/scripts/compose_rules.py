@@ -20,7 +20,7 @@ from pathlib import Path
 
 STACKS = Path(__file__).resolve().parent.parent / "stacks"
 TOOLING = Path(__file__).resolve().parent.parent / "tooling"
-VENDORED = ("check_structure.py", "format_on_edit.py")  # copied to .project/bin/
+VENDORED = ("check_structure.py", "format_on_edit.py", "track_plan_draft.py")  # copied to .project/bin/
 VENDORED_FOR = {"design": Path(__file__).resolve().parents[2] / "design" / "scripts" / "check_design.py"}  # pack → helper
 TOOLING_FOR = {  # pack → tooling subfolders copied to .project/templates/tooling/
     "python": ["python"], "node": ["node"], "react": ["react"],

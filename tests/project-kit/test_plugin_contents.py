@@ -52,6 +52,9 @@ def test_settings_template_hooks():
     assert s["plansDirectory"] == ".project/drafts"
     assert "core.hooksPath .githooks" in s["hooks"]["SessionStart"][0]["hooks"][0]["command"]
     assert "format_on_edit.py" in s["hooks"]["PostToolUse"][0]["hooks"][0]["command"]
+    plan_hook = next(h for h in s["hooks"]["PostToolUse"] if h["matcher"] == "ExitPlanMode")
+    assert "track_plan_draft.py" in plan_hook["hooks"][0]["command"]
+    assert "track_plan_draft.py --session" in s["hooks"]["SessionStart"][0]["hooks"][0]["command"]
 
 
 def test_global_install_is_idempotent_and_preserves_user_content(repo: Repo):
