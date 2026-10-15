@@ -16,12 +16,9 @@ def frontmatter(text: str) -> dict[str, str]:
     return dict(line.split(":", 1) for line in m.group(1).splitlines() if ":" in line)
 
 
-def test_manifests_are_valid_json_and_versions_match_readme():
-    market = json.loads((ROOT / ".claude-plugin/marketplace.json").read_text())
+def test_manifest_names_project_kit():
     plugin = json.loads((PLUGIN / ".claude-plugin/plugin.json").read_text())
-    assert market["plugins"][0]["name"] == plugin["name"] == "project-kit"
-    assert re.fullmatch(r"\d+\.\d+\.\d+", plugin["version"])
-    assert f"(v{plugin['version']})" in (ROOT / "README.md").read_text()
+    assert plugin["name"] == "project-kit"
 
 
 def test_every_skill_has_name_and_description():

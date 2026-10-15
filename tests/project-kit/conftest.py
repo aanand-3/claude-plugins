@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[2]
 PLUGIN = ROOT / "plugins" / "project-kit"
 SKILLS = PLUGIN / "skills"
 TRACKER = SKILLS / "tracker" / "scripts" / "tracker.py"

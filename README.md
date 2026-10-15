@@ -104,10 +104,10 @@ claude plugin install project-kit@aanand-plugins
 
 Start a new Claude Code session after editing skills to pick up the changes.
 
-Before changing the bundled scripts, run the local test suite:
+Before changing the bundled scripts, run the test suites. Tests live in `tests/<plugin>/` (plus `tests/marketplace/`), outside the plugin folders so they don't ship on install. Each folder is its own suite, so run them one at a time:
 
 ```bash
-uvx --with pyyaml pytest tests
+for suite in tests/*/; do uvx --with pyyaml pytest "$suite" || exit 1; done
 ```
 The plugin follows the rules it ships: every script stays under 300 lines (tested), and the tracker is a package (`tracker/scripts/trackerlib/`) whose modules import only from earlier layers (order in `trackerlib/__init__.py`, enforced by `test_trackerlib_layers_are_acyclic`). Add a new module where it fits that order rather than growing an existing one.
 ### Extending
