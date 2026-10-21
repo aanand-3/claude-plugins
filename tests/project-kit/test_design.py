@@ -91,6 +91,16 @@ def test_no_design_file_is_silent(repo: Repo):
     assert r.returncode == 0 and r.stderr == ""
 
 
+def test_all_scans_files_before_git_init(tmp_path):
+    repo = Repo(tmp_path)  # the design step runs before git setup
+    repo.write("docs/design/DESIGN.md", DESIGN)
+    repo.write(".project/config.yaml", CONFIG.format(mode="warn"))
+    repo.write("frontend/src/App.tsx", 'export const A = () => <div className="bg-[#123456]" />\n')
+    repo.write("frontend/node_modules/lib/x.js", 'const c = "#abcdef"\n')
+    r = repo.py(CHECK_DESIGN, "--all", "--root", ".")
+    assert "frontend/src/App.tsx" in r.stderr and "node_modules" not in r.stderr
+
+
 def test_compose_vendors_check_design_only_with_design_pack(repo: Repo):
     repo.write(".project/config.yaml", "packs: [base, react]\n")
     repo.py(COMPOSE, "--root", str(repo.path))

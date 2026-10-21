@@ -306,6 +306,19 @@ def test_ids_do_not_collide_across_branches(repo: Repo):
     assert "P-002" in new_plan(repo, "On main").stdout
 
 
+def test_created_docs_drop_template_guidance_comments(repo: Repo):
+    setup_sprint(repo)  # project plan + plans
+    repo.write(".project/drafts/raid.md", RAID_DRAFT)
+    assert tr(repo, "new-doc", "raid", "--from", ".project/drafts/raid.md").returncode == 0
+    new_epic(repo)
+    for rel in ("project-plan.md", "raid.md"):
+        assert "<!--" not in (repo.path / ".project" / rel).read_text(), rel
+    for doc in (plan_file(repo, "P-001"), next((repo.path / ".project/epics").glob("EP-001-*.md"))):
+        assert "<!--" not in doc.read_text(), doc.name
+    assert "<!--" not in item(repo, "FEAT-001")
+    assert "<!--" in (repo.path / ".project/templates/plan.md").read_text()  # guidance stays in the templates
+
+
 # ------------------------------------------------------------------ backlog items
 def test_item_intake_and_triage_gate(repo: Repo):
     init(repo)
@@ -329,6 +342,16 @@ def test_item_intake_and_triage_gate(repo: Repo):
     assert r.returncode != 0 and "--note" in r.stderr
     assert tr(repo, "triage", "BUG-001", "--reject", "duplicate", "--note", "same as BUG-002").returncode == 0
     assert "status: duplicate" in item(repo, "BUG-001") and "same as BUG-002" in item(repo, "BUG-001")
+
+
+def test_new_item_with_priority_and_points_is_triaged(repo: Repo):
+    init(repo)
+    r = tr(repo, "new-item", "chore", "Project tooling", "--why", "dev env", "--priority", "P0", "--points", "5")
+    assert r.returncode == 0, r.stderr
+    assert "status: triaged" in item(repo, "CHORE-001")
+    r = tr(repo, "new-item", "feat", "Dark mode", "--why", "asked", "--points", "5")
+    assert "status: new" in item(repo, "FEAT-001") and "points: 5" in item(repo, "FEAT-001")
+    assert "stays new" in r.stdout and "no priority" in r.stdout
 
 
 def test_epic_breakdown_becomes_items(repo: Repo):
@@ -419,13 +442,23 @@ def test_sprint_capacity_and_single_active(repo: Repo):
     assert "start: 2026-10-12" in s1 and "end: 2026-10-18" in s1
     r = tr(repo, "sprint", "add", "S-01", "P-001", "P-002")
     assert "over capacity: 10 > 8" in r.stdout
-    assert tr(repo, "sprint", "start", "S-01").returncode == 0
+    r = tr(repo, "sprint", "start", "S-01")
+    assert r.returncode == 0 and "starts" not in r.stdout  # starts today: no warning
     tr(repo, "sprint", "new", "--goal", "Next")
     assert "start: 2026-10-19" in (repo.path / ".project/sprints/S-02.md").read_text()
     r = tr(repo, "sprint", "add", "S-02", "P-001")
     assert r.returncode != 0 and "already committed to S-01" in r.stderr
     r = tr(repo, "sprint", "start", "S-02")
     assert r.returncode != 0 and "S-01 is still active" in r.stderr
+
+
+def test_sprint_start_warns_when_start_date_is_ahead(repo: Repo):
+    repo.env["TRACKER_TODAY"] = "2026-10-15"
+    setup_sprint(repo)
+    tr(repo, "sprint", "new", "--goal", "Signup live", "--start", "2026-10-19")
+    tr(repo, "sprint", "add", "S-01", "P-001")
+    r = tr(repo, "sprint", "start", "S-01")
+    assert r.returncode == 0 and "S-01 starts 2026-10-19, in 4 day(s)" in r.stdout
 
 
 def test_sprint_close_velocity_carry_over_and_retro_actions(repo: Repo):
@@ -483,6 +516,43 @@ def test_milestone_forecast(repo: Repo):
     assert "M-01: target 2026-10-13 has passed" not in tr(repo, "check").stdout  # not yet passed
     repo.env["TRACKER_TODAY"] = "2026-10-20"
     assert "M-01: target 2026-10-13 has passed" in tr(repo, "check").stdout
+
+
+def milestone_row(out: str, mid: str) -> str:
+    return next(ln for ln in out.splitlines() if ln.startswith(f"| {mid}:"))
+
+
+def test_milestone_forecasts_queue_behind_earlier_milestones(repo: Repo):
+    repo.env["TRACKER_TODAY"] = "2026-10-15"
+    init(repo, commit=True)
+    for title, target in (("MVP", "2026-12-15"), ("Later", "2027-02-26"), ("Someday", "2027-06-30")):
+        repo.write(".project/drafts/m.md", MILESTONE_DRAFT)
+        assert tr(repo, "new-milestone", title, "--from", ".project/drafts/m.md", "--target", target).returncode == 0
+    for n, (mid, pts) in enumerate((("M-01", 13), ("M-01", 13), ("M-01", 8), ("M-02", 8), ("M-02", 5))):
+        tr(repo, "new-item", "feat", f"Slice {n}", "--why", "x", "--milestone", mid, "--points", str(pts))
+    out = tr(repo, "status").stdout
+    assert "2026-10-28 (2 sprints @ 20 pts)" in milestone_row(out, "M-01")  # 34 pts from today
+    assert "2026-11-04 (3 sprints @ 20 pts)" in milestone_row(out, "M-02")  # 13 more pts after M-01's 34
+    empty = milestone_row(out, "M-03")
+    assert "on track" not in empty and "2026-10-15" not in empty and "no scope" in empty
+
+    tr(repo, "sprint", "new", "--goal", "Start", "--start", "2026-10-19")  # Sprint 1 starts Monday
+    out = tr(repo, "status").stdout
+    assert "2026-11-01 (2 sprints @ 20 pts)" in milestone_row(out, "M-01")
+    assert "2026-11-08 (3 sprints @ 20 pts)" in milestone_row(out, "M-02")
+
+
+def test_breakdown_items_follow_the_epic_milestone(repo: Repo):
+    setup_milestone(repo, "2026-12-31")
+    repo.write(".project/drafts/m.md", MILESTONE_DRAFT)
+    tr(repo, "new-milestone", "Later", "--from", ".project/drafts/m.md", "--target", "2027-06-30")
+    assert "milestone:\n" in item(repo, "FEAT-001")  # derived from the epic, not copied
+    tr(repo, "roadmap", "--write")
+    assert re.search(r"\| FEAT-001 \|.*\| M-01 \| EP-001 \|", (repo.path / ".project/BACKLOG.md").read_text())
+    epic = next((repo.path / ".project/epics").glob("EP-001-*.md"))
+    epic.write_text(epic.read_text().replace("milestone: M-01", "milestone: M-02"))  # retarget the epic
+    out = tr(repo, "status").stdout
+    assert "0/13 pts" in milestone_row(out, "M-02") and "no scope" in milestone_row(out, "M-01")
 
 
 def test_milestone_release_gate_and_release_notes(repo: Repo):

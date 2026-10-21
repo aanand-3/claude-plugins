@@ -66,7 +66,8 @@ export function slugify(title: string): string {
     if ([...out, w].join("-").length > 40) break;
     out.push(w);
   }
-  while (out.length && SLUG_STOPWORDS.has(out[out.length - 1])) out.pop();
+  // cut mid-phrase: drop a dangling "and"; an untruncated title keeps its last word
+  while (out.length < words.length && out.length && SLUG_STOPWORDS.has(out[out.length - 1])) out.pop();
   return out.join("-") || "untitled";
 }
 

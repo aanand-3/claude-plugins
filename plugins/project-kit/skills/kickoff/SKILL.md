@@ -63,11 +63,11 @@ On start, if it exists, show what's done and continue from the first `pending` s
      - **No empty placeholder folders.**
      - **Acceptance criteria** include `make check` green from a clean checkout, with every configured tool run at least once.
      - Every task ends with `→ verify:`. The Test plan says how each tool is exercised; Rollout & rollback is "n/a — local tooling only".
-     - Capture it first as `new-item chore "Project tooling & dev environment" --why … --priority P0 --points 5`, then triage it. Create the plan with `new-plan "Project tooling & dev environment" --from … --items CHORE-001`, then `move P-001 ready` once the user agrees.
+     - Capture it first as `new-item chore "Project tooling & dev environment" --why … --priority P0 --points 5` (that triages it). Create the plan with `new-plan "Project tooling & dev environment" --from … --items CHORE-001`, then `move P-001 ready` once the user agrees.
    - **Sprint 1:**
-     - `sprint new --goal "<e.g. dev environment up and the first slice of EP-001 working>"`;
+     - ask the user which day Sprint 1 begins (default: today), then `sprint new --goal "<e.g. dev environment up and the first slice of EP-001 working>" --start <YYYY-MM-DD>`;
      - write the plan for the top-ranked FEAT item only if it fits the remaining capacity;
-     - commit with `sprint add S-01 P-001 [P-002]`, then `sprint start S-01` once every committed plan is `ready`.
+     - commit with `sprint add S-01 P-001 [P-002]`, then `sprint start S-01` once every committed plan is `ready`. If Sprint 1 begins on a later day, leave S-01 `planned` and tell the user to run `sprint start S-01` that day.
    - Capture deferred ideas as items with `new-item … --why`; no backlog bullets.
    - Run `tracker.mjs check` (it must report no errors), `roadmap --write` and `status`. Show the user the status output: milestones with forecast, Sprint 1 and top risks. Commit `chore(tracker): project plan, M-01 and sprint S-01`.
 

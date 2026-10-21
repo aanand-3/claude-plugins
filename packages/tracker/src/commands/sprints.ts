@@ -98,6 +98,11 @@ export function sprintStart(store: Store, sid: string): void {
   const plans = store.plans(true);
   const notReady = committed.filter((p) => plans.get(p)?.get("status") === "draft");
   if (notReady.length) store.say(`note: not ready yet: ${notReady.join(", ")}`);
+  const begin = asDate(sprint.get("start")), now = today();
+  if (begin && begin > now) {
+    store.say(`WARNING  ${sid} starts ${begin}, in ${daysBetween(now, begin)} day(s) — the burndown counts from then. ` +
+      `If work starts today, set start:/end: in ${store.rel(sprint.path ?? "")}.`);
+  }
   sprint.set("committed_points", String(q.committedPoints(sprint, plans)));
   sprint.set("status", "active");
   sprint.appendLog(`sprint started — ${sprint.get("committed_points")} pts committed`, "Daily log");

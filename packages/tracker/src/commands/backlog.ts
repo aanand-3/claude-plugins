@@ -41,8 +41,13 @@ export function newItem(store: Store, typ: string, title: string, draftPath: str
   };
   const probe = store.build(`item-${ITEM_TYPES[prefix]}.md`, body, { id: "X", title, ...fields });
   if (!splitSections(probe.text)[1].some(([h]) => probe.hasContent(h))) fail("The item has no content. Nothing was created.");
-  createItem(store, prefix, title, body, fields);
+  const it = createItem(store, prefix, title, body, fields);
   if (draftFile) store.consume(draftFile, o.keep);
+  if (o.priority || o.points !== undefined) { // a triage decision given at intake: apply it if the gate passes
+    const problems = triageProblems(store, it);
+    if (problems.length) store.say(`note: ${it.id} stays new until triaged — ${problems.join("; ")}`);
+    else move(store, it.id, "triaged", ["priority", "points", "severity"].filter((k) => it.get(k)).map((k) => `${k} ${it.get(k)}`).join(", "));
+  }
 }
 
 export interface TriageOptions {

@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import * as git from "./git.js";
 import { assemble, Doc, fill } from "./doc.js";
 import { CLOSED, DEFAULT_SETTINGS, DIRS, type Kind, PRIORITIES } from "./model.js";
-import { fail, kindOf, mdTable, today } from "./text.js";
+import { fail, kindOf, mdTable, stripComments, today } from "./text.js";
 import { Workspace } from "./workspace.js";
 
 /** dist/ in the plugin, or .project/bin/ when running the vendored copy. */
@@ -168,7 +168,8 @@ export class Store {
   }
 
   build(template: string, draft: string, fields: Record<string, string>): Doc {
-    const tmpl = fill(this.template(template), { date: today(), ...fields }).replace(/^(\w+): $/gm, "$1:");
+    // guidance comments stay in templates/, not in the documents created from them
+    const tmpl = fill(stripComments(this.template(template)), { date: today(), ...fields }).replace(/^(\w+): $/gm, "$1:");
     return Doc.parse(assemble(tmpl, draft));
   }
 

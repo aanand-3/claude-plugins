@@ -171,7 +171,7 @@ function slugify(title) {
     if ([...out, w].join("-").length > 40) break;
     out.push(w);
   }
-  while (out.length && SLUG_STOPWORDS.has(out[out.length - 1])) out.pop();
+  while (out.length < words2.length && out.length && SLUG_STOPWORDS.has(out[out.length - 1])) out.pop();
   return out.join("-") || "untitled";
 }
 function stripComments(text) {
@@ -610,7 +610,7 @@ var Store = class _Store {
     if (!keep && draftFile.startsWith(drafts + "/")) this.ws.remove(draftFile);
   }
   build(template, draft, fields) {
-    const tmpl = fill(this.template(template), { date: today(), ...fields }).replace(/^(\w+): $/gm, "$1:");
+    const tmpl = fill(stripComments(this.template(template)), { date: today(), ...fields }).replace(/^(\w+): $/gm, "$1:");
     return Doc.parse(assemble(tmpl, draft));
   }
   writeNew(doc, path) {
@@ -1017,8 +1017,13 @@ ${why}
   };
   const probe = store.build(`item-${ITEM_TYPES[prefix]}.md`, body, { id: "X", title, ...fields });
   if (!splitSections(probe.text)[1].some(([h]) => probe.hasContent(h))) fail("The item has no content. Nothing was created.");
-  createItem(store, prefix, title, body, fields);
+  const it = createItem(store, prefix, title, body, fields);
   if (draftFile) store.consume(draftFile, o.keep);
+  if (o.priority || o.points !== void 0) {
+    const problems = triageProblems(store, it);
+    if (problems.length) store.say(`note: ${it.id} stays new until triaged \u2014 ${problems.join("; ")}`);
+    else move(store, it.id, "triaged", ["priority", "points", "severity"].filter((k) => it.get(k)).map((k) => `${k} ${it.get(k)}`).join(", "));
+  }
 }
 function triage(store, itemId, o = {}) {
   store.require();
@@ -1312,27 +1317,39 @@ function scope(mid, epics2, items2, plans2) {
 }
 var HEALTH_LABEL = {
   released: "\u2705 released",
+  dropped: "dropped",
+  "no-scope": "\u26AA no scope",
   "on-track": "\u{1F7E2} on track",
   "at-risk": "\u{1F7E1} at risk",
   late: "\u{1F534} late",
   "no-target": "no target"
 };
-function forecast(store, m, sc, sprints2) {
+function forecast(store, m, sc, sprints2, queued = 0) {
   const s = store.settings();
   const vel = velocity(sprints2) || s.capacity_points;
-  if (m.get("status") === "released") {
-    return { projected: m.get("released"), sprints: 0, velocity: vel, health: "released", unestimated: 0 };
-  }
-  const remaining = sc.total - sc.done;
-  const n = remaining > 0 && vel ? Math.ceil(remaining / vel) : 0;
-  const projected = addDays(asDate(today()), n * s.sprint_length_days);
+  const base = { velocity: vel, sprints: 0, unestimated: sc.unestimated.length };
+  const status2 = m.get("status");
+  if (status2 === "released") return { ...base, projected: m.get("released"), health: "released", unestimated: 0 };
+  if (status2 === "dropped") return { ...base, projected: null, health: "dropped", unestimated: 0 };
+  if (!sc.total) return { ...base, projected: null, health: "no-scope" };
+  const remaining = queued + sc.total - sc.done;
+  if (remaining <= 0) return { ...base, projected: null, health: "on-track" };
+  const n = vel ? Math.ceil(remaining / vel) : 0;
+  const projected = addDays(firstSprintStart(sprints2), n * s.sprint_length_days - 1);
   const target = asDate(m.get("target"));
   const health = !target ? "no-target" : projected <= target ? "on-track" : projected <= addDays(target, s.sprint_length_days) ? "at-risk" : "late";
-  return { projected, sprints: n, velocity: vel, health, unestimated: sc.unestimated.length };
+  return { ...base, projected, sprints: n, health };
+}
+function firstSprintStart(sprints2) {
+  const starts = [...sprints2.values()].filter((x) => x.get("status") !== "closed").map((x) => asDate(x.get("start"))).filter((d) => d !== null);
+  return starts.length ? starts.sort()[0] : asDate(today());
 }
 function forecastText(m, f) {
   if (f.health === "released") return [`released ${m.get("released") ?? ""}`.trim(), HEALTH_LABEL.released];
+  if (f.health === "dropped") return ["\u2014", HEALTH_LABEL.dropped];
   const health = HEALTH_LABEL[f.health] + (f.unestimated ? ` (${f.unestimated} unestimated)` : "");
+  if (f.health === "no-scope") return ["\u2014", health];
+  if (f.projected === null) return ["scope done", health];
   return [`${f.projected} (${f.sprints} sprint${f.sprints !== 1 ? "s" : ""} @ ${fixed(f.velocity)} pts)`, health];
 }
 function milestoneRows(store, epics2, items2, plans2, sprints2) {
@@ -1340,11 +1357,13 @@ function milestoneRows(store, epics2, items2, plans2, sprints2) {
   if (!ms.size) return ["_No milestones._"];
   const order = milestoneOrder(ms);
   const rows = ["| Milestone | Target | Status | Progress | Forecast | Health |", "|---|---|---|---|---|---|"];
+  let queued = 0;
   for (const mid of [...ms.keys()].sort(byKey((k) => [order.get(k)]))) {
     const m = ms.get(mid);
     const sc = scope(mid, epics2, items2, plans2);
     const pct = sc.total ? `${Math.floor(100 * sc.done / sc.total)}%` : "\u2013";
-    const [fc, health] = forecastText(m, forecast(store, m, sc, sprints2));
+    const [fc, health] = forecastText(m, forecast(store, m, sc, sprints2, queued));
+    if (!["released", "dropped"].includes(m.get("status") ?? "")) queued += sc.total - sc.done;
     rows.push(`| ${mid}: ${m.get("title")} | ${m.get("target") || "\u2014"} | ${m.get("status")} | ${sc.done}/${sc.total} pts (${pct}) | ${fc} | ${health} |`);
   }
   return rows;
@@ -1473,6 +1492,10 @@ function sprintStart(store, sid) {
   const plans2 = store.plans(true);
   const notReady = committed.filter((p) => plans2.get(p)?.get("status") === "draft");
   if (notReady.length) store.say(`note: not ready yet: ${notReady.join(", ")}`);
+  const begin = asDate(sprint.get("start")), now = today();
+  if (begin && begin > now) {
+    store.say(`WARNING  ${sid} starts ${begin}, in ${daysBetween(now, begin)} day(s) \u2014 the burndown counts from then. If work starts today, set start:/end: in ${store.rel(sprint.path ?? "")}.`);
+  }
   sprint.set("committed_points", String(committedPoints(sprint, plans2)));
   sprint.set("status", "active");
   sprint.appendLog(`sprint started \u2014 ${sprint.get("committed_points")} pts committed`, "Daily log");

@@ -21,7 +21,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd \"$CLAUDE_PROJECT_DIR\" || exit 0; [ -d .githooks ] && [ \"$(git config core.hooksPath)\" != \".githooks\" ] && git config core.hooksPath .githooks && echo \"project-kit: activated .githooks\"; [ -f .project/bin/tracker.mjs ] && node .project/bin/tracker.mjs current; true"
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" || exit 0; [ -d .githooks ] && [ \"$(git config core.hooksPath)\" != \".githooks\" ] && git config core.hooksPath .githooks && echo \"project-kit: activated .githooks\"; [ -f .project/bin/tracker.mjs ] && node .project/bin/tracker.mjs current; [ -f .project/bin/track_plan_draft.py ] && python3 .project/bin/track_plan_draft.py --session; true"
           }
         ]
       }
@@ -33,6 +33,15 @@
           {
             "type": "command",
             "command": "[ -f \"$CLAUDE_PROJECT_DIR/.project/bin/format_on_edit.py\" ] && python3 \"$CLAUDE_PROJECT_DIR/.project/bin/format_on_edit.py\"; true"
+          }
+        ]
+      },
+      {
+        "matcher": "ExitPlanMode",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -f \"$CLAUDE_PROJECT_DIR/.project/bin/track_plan_draft.py\" ] && python3 \"$CLAUDE_PROJECT_DIR/.project/bin/track_plan_draft.py\"; true"
           }
         ]
       }

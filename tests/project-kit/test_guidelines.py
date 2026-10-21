@@ -1,6 +1,6 @@
 import json
 
-from conftest import COMPOSE, FORMAT, SKILLS, STRUCTURE, Repo
+from conftest import COMPOSE, FORMAT, PLAN_DRAFT_HOOK, SKILLS, STRUCTURE, Repo
 
 CONFIG = """architecture:
   backend_dir: backend/
@@ -48,6 +48,9 @@ def test_rules_scoped_to_app_dirs(repo: Repo):
     assert '"backend/**/*.py"' in paths_of(repo, "fastapi")
     assert '"frontend/**/*.tsx"' in paths_of(repo, "react")
     assert '"**/Dockerfile*"' in paths_of(repo, "docker")  # scope any → unprefixed
+    testing_js = paths_of(repo, "testing-js")  # React frontend or Node backend: globs match at any depth
+    for glob in ("**/e2e/**", "**/vitest.config.*", "**/playwright.config.*"):
+        assert f'"{glob}"' in testing_js, glob
     assert not (repo.path / ".claude/rules/base.md").read_text().startswith("---")  # always loaded
 
 
@@ -75,10 +78,12 @@ def test_vendors_scripts_and_relevant_tooling(repo: Repo):
     repo.py(COMPOSE, "--root", ".")
     p = repo.path / ".project"
     assert (p / "bin/check_structure.py").is_file() and (p / "bin/format_on_edit.py").is_file()
+    assert (p / "bin/track_plan_draft.py").is_file()
     tooling = p / "templates/tooling"
     for rel in ("python/pyproject.tooling.toml", "react/eslint.config.js", "common/Makefile", "ci/ci.yml", "README.md"):
         assert (tooling / rel).is_file(), rel
     assert not (tooling / "node").exists()  # no node pack selected
+    assert sorted(f.name for f in (tooling / "python").glob("importlinter.*")) == ["importlinter.hexagonal.toml"]
 
 
 def test_structure_warns_by_default_and_ignores_tests(repo: Repo):
@@ -130,6 +135,38 @@ def test_format_on_edit_is_a_safe_noop_without_tools(repo: Repo):
     payload = json.dumps({"tool_input": {"file_path": str(f)}, "cwd": str(repo.path)})
     assert repo.py(FORMAT, input=payload).returncode == 0
     assert repo.py(FORMAT, input="not json").returncode == 0
+
+
+def exit_plan_mode(repo: Repo, draft: str, tool: str = "ExitPlanMode") -> str:
+    payload = json.dumps({"tool_name": tool, "cwd": str(repo.path),
+                          "tool_input": {"plan": "# Plan", "planFilePath": str(repo.path / draft)}})
+    r = repo.py(PLAN_DRAFT_HOOK, input=payload)
+    assert r.returncode == 0
+    return json.loads(r.stdout)["hookSpecificOutput"]["additionalContext"] if r.stdout.strip() else ""
+
+
+def test_plan_mode_draft_nudges_toward_a_tracked_plan(repo: Repo):
+    draft = ".project/drafts/quiet-otter.md"
+    repo.write(draft, "# Plan\n")
+    assert exit_plan_mode(repo, draft) == ""  # no tracker in this project: stay silent
+    repo.write(".project/bin/tracker.mjs")
+    msg = exit_plan_mode(repo, draft)
+    assert "not tracked yet" in msg and f"new-plan \"<title>\" --from {draft}" in msg
+    assert exit_plan_mode(repo, draft, tool="Write") == ""
+    assert repo.py(PLAN_DRAFT_HOOK, input="not json").returncode == 0
+
+    repo.write(".project/plans/P-004-signup.md", "---\nid: P-004\n---\n")
+    repo.git("switch", "-q", "-c", "plan/P-004-signup")
+    msg = exit_plan_mode(repo, draft)  # inside a tracked plan: refine it, don't create another
+    assert ".project/plans/P-004-signup.md" in msg and "new-plan" not in msg
+
+
+def test_session_start_lists_unconverted_drafts(repo: Repo):
+    repo.write(".project/bin/tracker.mjs")
+    assert repo.py(PLAN_DRAFT_HOOK, "--session").stdout == ""
+    repo.write(".project/drafts/quiet-otter.md", "# Plan\n")
+    out = repo.py(PLAN_DRAFT_HOOK, "--session").stdout
+    assert "unconverted drafts" in out and "quiet-otter.md" in out
 
 
 def test_layout_doc_check(repo: Repo):

@@ -29,32 +29,47 @@ export function scope(mid: string, epics: Docs, items: Docs, plans: Docs): Scope
   return new Scope(units);
 }
 
-export type Health = "released" | "on-track" | "at-risk" | "late" | "no-target";
+export type Health = "released" | "dropped" | "no-scope" | "on-track" | "at-risk" | "late" | "no-target";
 const HEALTH_LABEL: Record<Health, string> = {
-  released: "✅ released", "on-track": "🟢 on track", "at-risk": "🟡 at risk", late: "🔴 late", "no-target": "no target",
+  released: "✅ released", dropped: "dropped", "no-scope": "⚪ no scope", "on-track": "🟢 on track", "at-risk": "🟡 at risk",
+  late: "🔴 late", "no-target": "no target",
 };
 
+/** projected is null when nothing is left to deliver (or there is no scope). */
 export interface Forecast { projected: string | null; sprints: number; velocity: number; health: Health; unestimated: number }
 
-/** Remaining points ÷ velocity vs the target date. */
-export function forecast(store: Store, m: Doc, sc: Scope, sprints: Docs): Forecast {
+/** The points of earlier milestones (queued) plus this one's remaining, ÷ velocity, counted from the first open
+ *  sprint's start (else today), vs the target date. */
+export function forecast(store: Store, m: Doc, sc: Scope, sprints: Docs, queued = 0): Forecast {
   const s = store.settings();
   const vel = q.velocity(sprints) || s.capacity_points;
-  if (m.get("status") === "released") {
-    return { projected: m.get("released"), sprints: 0, velocity: vel, health: "released", unestimated: 0 };
-  }
-  const remaining = sc.total - sc.done;
-  const n = remaining > 0 && vel ? Math.ceil(remaining / vel) : 0;
-  const projected = addDays(asDate(today())!, n * s.sprint_length_days);
+  const base = { velocity: vel, sprints: 0, unestimated: sc.unestimated.length };
+  const status = m.get("status");
+  if (status === "released") return { ...base, projected: m.get("released"), health: "released", unestimated: 0 };
+  if (status === "dropped") return { ...base, projected: null, health: "dropped", unestimated: 0 };
+  if (!sc.total) return { ...base, projected: null, health: "no-scope" };
+  const remaining = queued + sc.total - sc.done;
+  if (remaining <= 0) return { ...base, projected: null, health: "on-track" };
+  const n = vel ? Math.ceil(remaining / vel) : 0;
+  const projected = addDays(firstSprintStart(sprints), n * s.sprint_length_days - 1);
   const target = asDate(m.get("target"));
   const health: Health = !target ? "no-target" : projected <= target ? "on-track"
     : projected <= addDays(target, s.sprint_length_days) ? "at-risk" : "late";
-  return { projected, sprints: n, velocity: vel, health, unestimated: sc.unestimated.length };
+  return { ...base, projected, sprints: n, health };
+}
+
+function firstSprintStart(sprints: Docs): string {
+  const starts = [...sprints.values()].filter((x) => x.get("status") !== "closed")
+    .map((x) => asDate(x.get("start"))).filter((d): d is string => d !== null);
+  return starts.length ? starts.sort()[0] : asDate(today())!;
 }
 
 function forecastText(m: Doc, f: Forecast): [string, string] {
   if (f.health === "released") return [`released ${m.get("released") ?? ""}`.trim(), HEALTH_LABEL.released];
+  if (f.health === "dropped") return ["—", HEALTH_LABEL.dropped];
   const health = HEALTH_LABEL[f.health] + (f.unestimated ? ` (${f.unestimated} unestimated)` : "");
+  if (f.health === "no-scope") return ["—", health];
+  if (f.projected === null) return ["scope done", health];
   return [`${f.projected} (${f.sprints} sprint${f.sprints !== 1 ? "s" : ""} @ ${fixed(f.velocity)} pts)`, health];
 }
 
@@ -63,11 +78,13 @@ export function milestoneRows(store: Store, epics: Docs, items: Docs, plans: Doc
   if (!ms.size) return ["_No milestones._"];
   const order = q.milestoneOrder(ms);
   const rows = ["| Milestone | Target | Status | Progress | Forecast | Health |", "|---|---|---|---|---|---|"];
+  let queued = 0; // milestones are delivered in target order: each one's forecast starts after the earlier ones
   for (const mid of [...ms.keys()].sort(byKey((k) => [order.get(k)!]))) {
     const m = ms.get(mid)!;
     const sc = scope(mid, epics, items, plans);
     const pct = sc.total ? `${Math.floor(100 * sc.done / sc.total)}%` : "–";
-    const [fc, health] = forecastText(m, forecast(store, m, sc, sprints));
+    const [fc, health] = forecastText(m, forecast(store, m, sc, sprints, queued));
+    if (!["released", "dropped"].includes(m.get("status") ?? "")) queued += sc.total - sc.done;
     rows.push(`| ${mid}: ${m.get("title")} | ${m.get("target") || "—"} | ${m.get("status")} | `
       + `${sc.done}/${sc.total} pts (${pct}) | ${fc} | ${health} |`);
   }

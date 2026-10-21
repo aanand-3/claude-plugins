@@ -34,6 +34,7 @@ Generated, never hand-edited: `ROADMAP.md`, `BACKLOG.md`, `STATUS.md`, `releases
 
 **Priority:** P0 drop everything · P1 needed for the current milestone, soon · P2 in the milestone · P3 someday.
 **Severity (bugs):** S1 outage, data loss or security · S2 major, no workaround · S3 has a workaround · S4 cosmetic. The default priority follows severity (S1→P0, S2→P1, S3→P2, S4→P3).
+**Milestone:** an item without its own `milestone:` belongs to its epic's milestone, so retargeting the epic moves its items. Set `milestone:` on an item only to override that.
 **Ranking** (`BACKLOG.md`, `next`): P0 first, then milestone (by target date) → priority → epic → ID.
 
 ## Lifecycles
@@ -86,7 +87,9 @@ draft ──► ready ──► in-progress ──► in-review ──► done
 - **Velocity** is the average done points of the last 3 closed sprints. Until there is history, `capacity_points` is used.
 - `sprint add` warns when committed points exceed min(capacity, velocity).
 - **Milestone forecast:**
-  - remaining points ÷ velocity = sprints needed;
+  - milestones are delivered in target-date order, so each one's remaining points queue behind the earlier ones';
+  - queued points ÷ velocity = sprints needed, counted from the first open sprint's start (else today);
+  - a milestone with no estimated scope shows ⚪ no scope instead of a date;
   - projected date vs target → 🟢 on track / 🟡 at risk (within one sprint) / 🔴 late;
   - unestimated items are flagged, because they make the forecast optimistic.
 - Burndown: `sprint show` charts remaining committed points per day against the ideal line.

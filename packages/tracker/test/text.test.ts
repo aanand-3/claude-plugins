@@ -9,6 +9,10 @@ describe("slugify", () => {
     expect(slugify("Ünïcode & symbols!!")).toMatch(/^[a-z0-9-]+$/);
     expect(slugify("!!!")).toBe("untitled");
   });
+  it("keeps a trailing stopword unless the title was truncated", () => {
+    expect(slugify("Sign up and sign in")).toBe("sign-up-and-sign-in");
+    expect(slugify("Daily check-in")).toBe("daily-check-in");
+  });
 });
 
 describe("ids and dates", () => {
