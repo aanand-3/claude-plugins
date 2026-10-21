@@ -22,10 +22,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
       - name: Structure report (add --strict once the layout settles)
         run: python3 .project/bin/check_structure.py --all
       - name: Tracker consistency
-        run: python3 .project/bin/tracker.py check
+        run: node .project/bin/tracker.mjs check
       - name: Secret scan (gitleaks)
         env:
           GITLEAKS_VERSION: 8.28.0

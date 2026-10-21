@@ -22,8 +22,8 @@ Sprint (S-01: a time-box that commits plans against capacity)
 
 ## Script
 All state changes go through the script. Never hand-edit `status`, dates, IDs, `plans:`, `velocity` or the generated `ROADMAP.md`, `BACKLOG.md` and `STATUS.md`.
-- In a project: `python3 .project/bin/tracker.py <cmd>` (vendored copy of the script and its `trackerlib/` package — prefer this).
-- Not yet initialized: `python3 "${CLAUDE_SKILL_DIR}/scripts/tracker.py" init` at the repo root.
+- In a project: `node .project/bin/tracker.mjs <cmd>` (vendored single-file copy — prefer this). Needs Node.js ≥ 20; nothing to install.
+- Not yet initialized: `node "${CLAUDE_SKILL_DIR}/dist/tracker.mjs" init` at the repo root. This also replaces a legacy Python copy (`.project/bin/tracker.py`); then update any `python3 .project/bin/tracker.py` references in the project's CLAUDE.md, `.claude/settings.json` and CI (`/project-kit:guidelines` refreshes them).
 
 | Command | Purpose |
 |---|---|
@@ -43,14 +43,14 @@ All state changes go through the script. Never hand-edit `status`, dates, IDs, `
 **Nothing is created empty.** Write the content as a draft in `.project/drafts/<slug>.md`, using the template's `## ` headings, then create the document from it. The draft is consumed. The only lightweight intake is `new-item … --why "<one line>"`; such an item stays `new` until it passes triage. Giving `--priority`/`--points` at intake triages it right away when the gate passes.
 
 ## Workflows
-Start every workflow by checking where you are: `git branch --show-current`, `tracker.py current`, `tracker.py next`. All planning (project plan, RAID, milestones, epics, items, sprints, plan drafts) happens **on `main`**. On a plan branch, edit only that plan's file.
+Start every workflow by checking where you are: `git branch --show-current`, `tracker.mjs current`, `tracker.mjs next`. All planning (project plan, RAID, milestones, epics, items, sprints, plan drafts) happens **on `main`**. On a plan branch, edit only that plan's file.
 
 ### 1. Release planning (kickoff, then at each milestone)
 1. **Project plan.** Draft `project-plan.md` from the brief: objectives, success measures, milestones table, cadence & capacity, working agreements, stakeholders. Ask the user for sprint length and starting capacity (default: 1 week, 20 pts). Create it with `new-doc project-plan --from … --capacity N --sprint-length N`.
 2. **RAID.** Seed risks, assumptions and issues from the brief's constraints and open questions and from the ADRs' consequences. Every risk needs a probability (H/M/L), an impact (H/M/L), an owner and a mitigation. Create it with `new-doc raid --from …`.
 3. **Milestones.** Create M-01 (usually the MVP) from the brief's MVP capabilities, with a target date the user agrees to. Exit criteria must cover function, quality (no open S1/S2 bugs), operations (deployed, monitored, rollback tested) and docs. Later phases become M-02 and onwards. Each one: `new-milestone … --target`.
 4. **Epics.** Draft one epic per outcome, assigned to a milestone. In the Breakdown, write vertical slices with rough estimates: `Title — what it delivers (5 pts) (after X)`. Create each with `new-epic … --milestone M-01`. Estimated slices become triaged FEAT items; unestimated ones need triage.
-5. **Sanity-check the release.** Run `tracker.py status`. If the forecast says 🟡 or 🔴, cut scope (move items to a later milestone), add capacity or move the date. Agree the choice with the user and record it in RAID → Decisions.
+5. **Sanity-check the release.** Run `tracker.mjs status`. If the forecast says 🟡 or 🔴, cut scope (move items to a later milestone), add capacity or move the date. Agree the choice with the user and record it in RAID → Decisions.
 6. Commit on main: `chore(tracker): release plan M-01`.
 
 ### 2. Capture & triage
@@ -95,7 +95,7 @@ Start every workflow by checking where you are: `git branch --show-current`, `tr
   - small and inside the plan's goal: update Scope and AC, and log why;
   - otherwise capture a new item and keep the plan on its goal. Never quietly expand a plan.
 - **Bugs found mid-plan:** capture them as BUG items on main later; record them in the plan's Outcome as follow-ups for now.
-- Short daily check: `tracker.py current`, `tracker.py sprint show` (burndown). Note impediments with `log S-NN "…"` on main.
+- Short daily check: `tracker.mjs current`, `tracker.mjs sprint show` (burndown). Note impediments with `log S-NN "…"` on main.
 
 ### 6. Finish a plan
 1. **Verify every acceptance criterion** with the checks the tasks and test plan name. Run `python3 .project/bin/check_structure.py --all`.
@@ -130,7 +130,7 @@ Start every workflow by checking where you are: `git branch --show-current`, `tr
 4. Revisit the project plan and RAID for the next milestone.
 
 ### What's next / status
-- `tracker.py next` gives the single best next step:
+- `tracker.mjs next` gives the single best next step:
   1. in-progress work;
   2. a P0 bug;
   3. a ready plan in the current sprint;

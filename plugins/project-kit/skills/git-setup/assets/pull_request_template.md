@@ -21,4 +21,4 @@
 - [ ] No secrets, no debug leftovers, no unrelated changes
 
 ### Follow-ups
-<!-- Anything deferred — also listed in the plan's Outcome and captured as items (`tracker.py new-item … --why`) on main. -->
+<!-- Anything deferred — also listed in the plan's Outcome and captured as items (`tracker.mjs new-item … --why`) on main. -->

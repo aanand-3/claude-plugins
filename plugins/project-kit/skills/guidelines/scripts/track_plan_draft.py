@@ -3,12 +3,12 @@
 
 PostToolUse on ExitPlanMode: plan mode writes the approved plan to `.project/drafts/`
 (`plansDirectory`), where it is still untracked. Tell Claude to turn it into a `P-###`
-with `tracker.py new-plan` before writing code — or, on a plan branch, to fold it into
+with `tracker.mjs new-plan` before writing code — or, on a plan branch, to fold it into
 that plan's file instead of creating a second plan.
 
 `--session` (SessionStart): list drafts left in `.project/drafts/` from earlier sessions.
 
-Silent when the project has no tracker (`.project/bin/tracker.py`). Never fails the hook.
+Silent when the project has no tracker (`.project/bin/tracker.mjs`). Never fails the hook.
 """
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-TRACKER = "python3 .project/bin/tracker.py"
+TRACKER = "node .project/bin/tracker.mjs"
 
 
 def branch(root: Path) -> str:
@@ -61,7 +61,7 @@ def main() -> None:
         if payload.get("tool_name") != "ExitPlanMode":
             return
     root = Path(os.environ.get("CLAUDE_PROJECT_DIR") or payload.get("cwd") or ".").resolve()
-    if not (root / ".project" / "bin" / "tracker.py").is_file():
+    if not (root / ".project" / "bin" / "tracker.mjs").is_file():
         return
     if session:
         drafts = sorted(p.name for p in (root / ".project" / "drafts").glob("*.md"))

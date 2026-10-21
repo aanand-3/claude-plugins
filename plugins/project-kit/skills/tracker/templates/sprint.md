@@ -21,7 +21,7 @@ closed:
 <!-- Filled by `sprint add`. Frontmatter `plans:` is the source of truth. -->
 
 ## Daily log
-<!-- `tracker.py log {id} "…"`: progress, impediments, scope changes. -->
+<!-- `tracker.mjs log {id} "…"`: progress, impediments, scope changes. -->
 
 ## Review
 <!-- Written before `sprint close`: what shipped (demo-able), what didn't and why, unplanned work,

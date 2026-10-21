@@ -11,7 +11,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[2]
 PLUGIN = ROOT / "plugins" / "project-kit"
 SKILLS = PLUGIN / "skills"
-TRACKER = SKILLS / "tracker" / "scripts" / "tracker.py"
+TRACKER = SKILLS / "tracker" / "dist" / "tracker.mjs"
 COMPOSE = SKILLS / "guidelines" / "scripts" / "compose_rules.py"
 STRUCTURE = SKILLS / "guidelines" / "scripts" / "check_structure.py"
 FORMAT = SKILLS / "guidelines" / "scripts" / "format_on_edit.py"
@@ -40,7 +40,8 @@ class Repo:
         return self.run("git", *args, check=check)
 
     def py(self, script: Path, *args: str, input: str | None = None) -> subprocess.CompletedProcess[str]:
-        return self.run(sys.executable, script, *args, input=input)
+        interpreter = "node" if script.suffix == ".mjs" else sys.executable  # the tracker is a Node bundle
+        return self.run(interpreter, script, *args, input=input)
 
     def write(self, rel: str, text: str = "") -> Path:
         p = self.path / rel

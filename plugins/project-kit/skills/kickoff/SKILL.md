@@ -20,7 +20,7 @@ On start, if it exists, show what's done and continue from the first `pending` s
 
 0. **Preflight**
    - Confirm the target directory (default: current). If it contains files other than dotfiles, list them and ask how to proceed (existing code → this is an adoption, not greenfield; still OK).
-   - Check tools: `git --version`, `python3 --version` (tracker/scripts need Python ≥ 3.9). `gh` only if the user wants GitHub now.
+   - Check tools: `git --version`, `node --version` (the tracker needs Node.js ≥ 20), `python3 --version` (the other scripts need Python ≥ 3.9). `gh` only if the user wants GitHub now.
    - Check `~/.claude/CLAUDE.md` for `<!-- project-kit:global:start -->`. If missing, mention once that `/project-kit:global-setup` installs the global working principles (one-time per machine) — don't run it from here.
    - If there's no `docs/research/idea-research.md`, mention once that `/project-kit:research` can check competitors and prior art before committing to the idea. It's optional and standalone; don't run it from here.
    - Tell the user the plan in 6 lines: discover → design (UI projects) → guidelines → tracker → git → project plan & Sprint 1.
@@ -33,7 +33,7 @@ On start, if it exists, show what's done and continue from the first `pending` s
 
 4. **Tracker** — initialize:
    ```bash
-   python3 "${CLAUDE_PLUGIN_ROOT}/skills/tracker/scripts/tracker.py" init
+   node "${CLAUDE_PLUGIN_ROOT}/skills/tracker/dist/tracker.mjs" init
    ```
    (Vendors the tracker into `.project/bin/` and templates into `.project/templates/`.)
 
@@ -41,7 +41,7 @@ On start, if it exists, show what's done and continue from the first `pending` s
 
 6. **Project plan & Sprint 1.** Follow the tracker skill's workflows 1 and 3, and its writing guide (`${CLAUDE_PLUGIN_ROOT}/skills/tracker/references/writing-guide.md`). The result is a concrete, reviewable plan, not just a list of epics.
    - **Ask once** (one message): sprint length (default 1 week), starting capacity in points (default 20; explain the 1/3/5/8 reference scale), and the target date for the MVP. Offer sensible defaults from the brief's constraints.
-   - **Project plan:** draft the objectives, success measures, milestones table, cadence & capacity, working agreements and stakeholders from the brief. Create it with `tracker.py new-doc project-plan --from .project/drafts/project-plan.md --capacity N --sprint-length N`.
+   - **Project plan:** draft the objectives, success measures, milestones table, cadence & capacity, working agreements and stakeholders from the brief. Create it with `tracker.mjs new-doc project-plan --from .project/drafts/project-plan.md --capacity N --sprint-length N`.
    - **RAID:** seed risks from the brief's constraints and open questions and from the ADRs' consequences, each with P/I, an owner and a mitigation. Add assumptions and decisions. Create it with `new-doc raid --from …`.
    - **Milestones:**
      - M-01 MVP from the brief's MVP capabilities, with exit criteria covering function, quality, operations and docs;
@@ -69,7 +69,7 @@ On start, if it exists, show what's done and continue from the first `pending` s
      - write the plan for the top-ranked FEAT item only if it fits the remaining capacity;
      - commit with `sprint add S-01 P-001 [P-002]`, then `sprint start S-01` once every committed plan is `ready`. If Sprint 1 begins on a later day, leave S-01 `planned` and tell the user to run `sprint start S-01` that day.
    - Capture deferred ideas as items with `new-item … --why`; no backlog bullets.
-   - Run `tracker.py check` (it must report no errors), `roadmap --write` and `status`. Show the user the status output: milestones with forecast, Sprint 1 and top risks. Commit `chore(tracker): project plan, M-01 and sprint S-01`.
+   - Run `tracker.mjs check` (it must report no errors), `roadmap --write` and `status`. Show the user the status output: milestones with forecast, Sprint 1 and top risks. Commit `chore(tracker): project plan, M-01 and sprint S-01`.
 
 7. **Wrap-up** — mark all steps done in `kickoff.yaml`, then show:
    - a tree of generated files (`git ls-files | head -50`),

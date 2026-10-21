@@ -115,6 +115,7 @@ def test_module_size_check_flags_god_modules(repo: Repo):
     repo.write("backend/src/app/domain/small.py", "x = 1\n" * 300)
     repo.write("backend/src/app/domain/big.py", "x = 1\n\n" * 301)          # blank lines don't count
     repo.write("backend/src/app/adapters/migrations/0001.py", "x = 1\n" * 900)  # generated: skipped
+    repo.write(".project/bin/tracker.mjs", "x = 1\n" * 900)                   # vendored bundle: skipped
     repo.write("docs/notes.md", "line\n" * 900)                               # not source
     repo.git("add", "-A")
     r = repo.py(STRUCTURE, "--staged")
@@ -148,7 +149,7 @@ def test_plan_mode_draft_nudges_toward_a_tracked_plan(repo: Repo):
     draft = ".project/drafts/quiet-otter.md"
     repo.write(draft, "# Plan\n")
     assert exit_plan_mode(repo, draft) == ""  # no tracker in this project: stay silent
-    repo.write(".project/bin/tracker.py")
+    repo.write(".project/bin/tracker.mjs")
     msg = exit_plan_mode(repo, draft)
     assert "not tracked yet" in msg and f"new-plan \"<title>\" --from {draft}" in msg
     assert exit_plan_mode(repo, draft, tool="Write") == ""
@@ -161,7 +162,7 @@ def test_plan_mode_draft_nudges_toward_a_tracked_plan(repo: Repo):
 
 
 def test_session_start_lists_unconverted_drafts(repo: Repo):
-    repo.write(".project/bin/tracker.py")
+    repo.write(".project/bin/tracker.mjs")
     assert repo.py(PLAN_DRAFT_HOOK, "--session").stdout == ""
     repo.write(".project/drafts/quiet-otter.md", "# Plan\n")
     out = repo.py(PLAN_DRAFT_HOOK, "--session").stdout

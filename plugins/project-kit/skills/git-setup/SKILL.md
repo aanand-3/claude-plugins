@@ -10,7 +10,7 @@ argument-hint: "[--github]"
 | Item | Rule |
 |---|---|
 | Default branch | `main` — always releasable |
-| Work branch | `plan/P-###-<slug>` (one per plan, created by `tracker.py start`); rare opt-in `epic/EP-###-<slug>` integration branch |
+| Work branch | `plan/P-###-<slug>` (one per plan, created by `tracker.mjs start`); rare opt-in `epic/EP-###-<slug>` integration branch |
 | Commits | Conventional Commits; plan ID as scope on plan branches: `feat(P-012): add signup endpoint`; planning on main: `chore(tracker): …` |
 | On `main` | only `.project/` planning commits (hook-enforced); everything else via a plan branch |
 | PR | title `P-###: <plan title>`; body from `.github/pull_request_template.md` |
