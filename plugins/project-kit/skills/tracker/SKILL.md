@@ -39,6 +39,7 @@ All state changes go through the script. Never hand-edit `status`, dates, IDs, `
 | `log ID TEXT` | plan progress log / sprint daily log / item notes |
 | `next` · `current` · `check` | single best next step · where am I · consistency (CI runs `check`) |
 | `roadmap [--write]` · `status [--write]` · `release-notes M-01 [--write]` | reports |
+| `export [--json] [--out FILE]` · `ui [--port 8765] [--no-open]` | the interactive view: a self-contained page (`.project/view/index.html`, gitignored) or a live local server; `--json` is the graph for scripts |
 
 **Nothing is created empty.** Write the content as a draft in `.project/drafts/<slug>.md`, using the template's `## ` headings, then create the document from it. The draft is consumed. The only lightweight intake is `new-item … --why "<one line>"`; such an item stays `new` until it passes triage. Giving `--priority`/`--points` at intake triages it right away when the gate passes.
 
@@ -138,6 +139,9 @@ Start every workflow by checking where you are: `git branch --show-current`, `tr
   5. untriaged items;
   6. the top ranked item to plan.
 - For "where are we", run `status`: sprint burndown, milestone forecast, blocked work, open bugs and top risks. Summarize it in five lines.
+- **To let the user see it:** after planning, a status question or a sprint change, offer the view instead of pasting long tables:
+  - `export` writes `.project/view/index.html`, one offline page with an overview dashboard, board, hierarchy, roadmap, dependency graph and a page per document with its relations. Tell the user the path; re-run `export` to refresh it.
+  - `ui` serves the same page on 127.0.0.1 and updates it live as files change. It can move statuses, triage, add plans to a sprint and log notes, through the same gates. Run it in the background and give the user the URL. Starting a plan (branch) and creating documents stay in the CLI.
 - Only write the generated files on main.
 
 ## Rules

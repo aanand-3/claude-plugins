@@ -314,9 +314,9 @@ ${line}`;
   }
   /** True if a section has real content beyond template comments, labels and empty bullets. */
   hasContent(name) {
-    const body = stripComments(this.section(name));
-    if (mdTable(body).length) return true;
-    return body.split("\n").map((l) => l.trim()).some((line) => line && !EMPTY_LINES.has(line) && !line.startsWith("|") && !/^\*\*[^*]+:\*\*$/.test(line));
+    const body2 = stripComments(this.section(name));
+    if (mdTable(body2).length) return true;
+    return body2.split("\n").map((l) => l.trim()).some((line) => line && !EMPTY_LINES.has(line) && !line.startsWith("|") && !/^\*\*[^*]+:\*\*$/.test(line));
   }
   missing(names) {
     return names.filter((n) => !this.hasContent(n));
@@ -367,9 +367,9 @@ function fill(template, fields) {
 }
 function splitSections(text) {
   const parts = text.split(/^## (.+?)\s*$/m);
-  const sections = [];
-  for (let i = 1; i < parts.length; i += 2) sections.push([parts[i].trim(), parts[i + 1] ?? ""]);
-  return [parts[0], sections];
+  const sections2 = [];
+  for (let i = 1; i < parts.length; i += 2) sections2.push([parts[i].trim(), parts[i + 1] ?? ""]);
+  return [parts[0], sections2];
 }
 function assemble(template, draft) {
   const [pre, tmplSections] = splitSections(template);
@@ -377,8 +377,8 @@ function assemble(template, draft) {
   const take = (name) => {
     const i = remaining.findIndex(([h]) => norm(name).startsWith(norm(h)) || norm(h).startsWith(norm(name)));
     if (i < 0) return null;
-    const [[, body]] = remaining.splice(i, 1);
-    return body.trim() ? body : null;
+    const [[, body2]] = remaining.splice(i, 1);
+    return body2.trim() ? body2 : null;
   };
   const out = [`${rstrip(pre)}
 `];
@@ -387,14 +387,14 @@ function assemble(template, draft) {
 ## ${eh}
 ${eb.trim()}
 `);
-  for (const [h, body] of filled) {
+  for (const [h, body2] of filled) {
     if (["Progress log", "Notes & decisions", "Notes", "Daily log"].includes(h) && remaining.length) {
       out.push(...extra());
       remaining = [];
     }
-    out.push(body.trim() ? `
+    out.push(body2.trim() ? `
 ## ${h}
-${body.trim()}
+${body2.trim()}
 ` : `
 ## ${h}
 `);
@@ -748,16 +748,16 @@ function sprintLine(sprint) {
 }
 function nextStep(store) {
   store.require();
+  for (const line of nextLines(store)) store.say(line);
+}
+function nextLines(store) {
   const ctx = new Context(store);
-  for (const p of ctx.active) store.say(`IN PROGRESS  ${p.id}: ${p.get("title")} [${p.get("status")}]`);
+  for (const p of ctx.active) ctx.lines.push(`IN PROGRESS  ${p.id}: ${p.get("title")} [${p.get("status")}]`);
   for (const rule of [ctx.expedite, ctx.wipFull, ctx.startReady, ctx.refineDraft, ctx.triage, ctx.planItem, ctx.epic]) {
     const line = rule.call(ctx);
-    if (line) {
-      store.say(`NEXT         ${line}`);
-      return;
-    }
+    if (line) return [...ctx.lines, `NEXT         ${line}`];
   }
-  store.say("NEXT         nothing planned \u2014 create an epic or capture items for the next outcome");
+  return [...ctx.lines, "NEXT         nothing planned \u2014 create an epic or capture items for the next outcome"];
 }
 var Context = class {
   constructor(store) {
@@ -778,6 +778,7 @@ var Context = class {
   sprint;
   inSprint;
   active;
+  lines = [];
   key(p) {
     const eorder = epicOrder(this.epics);
     return [
@@ -809,7 +810,7 @@ var Context = class {
     let startable = ready.filter((p2) => !unmetDeps(p2, this.plans).length);
     for (const p2 of ready) {
       if (!startable.includes(p2)) {
-        this.store.say(`WAITING      ${p2.id}: ${p2.get("title")} \u2014 needs ${unmetDeps(p2, this.plans).join(", ")}`);
+        this.lines.push(`WAITING      ${p2.id}: ${p2.get("title")} \u2014 needs ${unmetDeps(p2, this.plans).join(", ")}`);
       }
     }
     if (this.sprint) {
@@ -988,9 +989,9 @@ function log(store, docId, text) {
 // src/commands/backlog.ts
 var POINTS_ALL = new RegExp(POINTS_RE.source, "gi");
 var AFTER_ALL = new RegExp(AFTER_RE.source, "gi");
-function createItem(store, prefix, title, body, fields) {
+function createItem(store, prefix, title, body2, fields) {
   const iid = store.nextId(prefix, "item");
-  const doc = store.build(`item-${ITEM_TYPES[prefix]}.md`, body, { id: iid, title, type: ITEM_TYPES[prefix], ...fields });
+  const doc = store.build(`item-${ITEM_TYPES[prefix]}.md`, body2, { id: iid, title, type: ITEM_TYPES[prefix], ...fields });
   return store.writeNew(doc, `${store.dirs.item}/${iid}-${slugify(title)}.md`);
 }
 function checkSeverity(severity) {
@@ -1003,7 +1004,7 @@ function newItem(store, typ, title, draftPath, why, o = {}) {
   const prefix = typ.toUpperCase();
   if (!Object.hasOwn(ITEM_TYPES, prefix)) fail(`Unknown item type '${typ}'. Use feat, bug, chore or spike.`);
   if (Boolean(draftPath) === Boolean(why)) fail("Give exactly one of --from DRAFT or --why TEXT.");
-  const [draftFile, body] = draftPath ? store.readDraft(draftPath, "item") : [null, `## Summary
+  const [draftFile, body2] = draftPath ? store.readDraft(draftPath, "item") : [null, `## Summary
 ${why}
 `];
   const severity = checkSeverity(o.severity);
@@ -1015,9 +1016,9 @@ ${why}
     points: store.checkPoints(o.points),
     severity
   };
-  const probe = store.build(`item-${ITEM_TYPES[prefix]}.md`, body, { id: "X", title, ...fields });
+  const probe = store.build(`item-${ITEM_TYPES[prefix]}.md`, body2, { id: "X", title, ...fields });
   if (!splitSections(probe.text)[1].some(([h]) => probe.hasContent(h))) fail("The item has no content. Nothing was created.");
-  const it = createItem(store, prefix, title, body, fields);
+  const it = createItem(store, prefix, title, body2, fields);
   if (draftFile) store.consume(draftFile, o.keep);
   if (o.priority || o.points !== void 0) {
     const problems = triageProblems(store, it);
@@ -1092,7 +1093,7 @@ function itemFromCandidate(store, epic, cand) {
   const scale = store.settings().points_scale;
   const points = pm && scale.includes(parseInt(pm[1], 10)) ? parseInt(pm[1], 10) : null;
   if (pm && points === null) store.say(`note: '${name}' estimate ${pm[1]} is not on the points scale \u2014 left untriaged`);
-  const body = `## Summary
+  const body2 = `## Summary
 ${desc || name}
 
 Slice of ${epic.id} (${epic.get("title")}): ${cand}
@@ -1101,7 +1102,7 @@ Slice of ${epic.id} (${epic.get("title")}): ${cand}
     store,
     "FEAT",
     name,
-    body,
+    body2,
     { epic: epic.id, priority: epic.get("priority") || "P2", points: points ? String(points) : "" }
   );
   if (points) {
@@ -1278,6 +1279,15 @@ function hygiene(s, f) {
   }
 }
 
+// src/commands/export.ts
+import { join as join5, resolve as resolve2 } from "node:path";
+
+// src/commands/graph.ts
+import { basename, join as join4 } from "node:path";
+
+// src/graph-types.ts
+var SCHEMA_VERSION = 1;
+
 // src/commands/milestones.ts
 var Scope = class {
   constructor(units) {
@@ -1400,10 +1410,6 @@ function noteLine(item, plans2) {
   const ref = p ? ` (${p.id}` + (p.get("pr") ? `, ${p.get("pr")}` : "") + ")" : "";
   return `- ${item.id}: ${item.get("title")}${ref}`;
 }
-
-// src/commands/planning.ts
-import { readFileSync as readFileSync2 } from "node:fs";
-import { join as join4, resolve as resolve2 } from "node:path";
 
 // src/commands/sprints.ts
 function sprintNew(store, goal, start2, length) {
@@ -1615,6 +1621,366 @@ function sprintShow(store, sid) {
   for (const line of sprintSummary(sprint, store.plans(true))) store.say(line);
 }
 
+// src/commands/graph.ts
+var ID_RE = /\b(?:EP|P|M|S|FEAT|BUG|CHORE|SPIKE)-\d+\b/g;
+var DATE_KEYS = ["created", "started", "completed", "target", "start", "end", "released", "closed"];
+var up3 = (s) => s ? s.toUpperCase() : null;
+function buildGraph(store) {
+  store.require();
+  const all = {
+    epics: store.epics(),
+    items: store.items(),
+    plans: store.plans(true),
+    milestones: store.milestones(),
+    sprints: store.sprints()
+  };
+  const docs = [];
+  const kinds = [
+    ["milestone", all.milestones],
+    ["epic", all.epics],
+    ["item", all.items],
+    ["plan", all.plans],
+    ["sprint", all.sprints]
+  ];
+  for (const [kind, set] of kinds) for (const d of set.values()) docs.push(toDoc(store, d, kind, all));
+  for (const [id, title] of [["project-plan", "Project plan"], ["raid", "RAID log"]]) {
+    const text = store.ws.read(join4(store.dir, `${id}.md`));
+    if (text !== null) docs.push(singleton(store, id, title, text));
+  }
+  return {
+    schemaVersion: SCHEMA_VERSION,
+    generatedAt: (/* @__PURE__ */ new Date()).toISOString(),
+    project: { name: basename(store.ws.root), branch: currentBranch(), today: today() },
+    settings: store.settings(),
+    docs,
+    edges: edges(docs),
+    milestones: milestoneMetrics(store, all),
+    sprints: [...all.sprints.values()].sort(byKey((s) => [s.id])).map((s) => sprintMetrics(s, all.plans)),
+    velocity: velocity(all.sprints),
+    risks: store.openRisks().map((r) => ({
+      id: r.id ?? "",
+      risk: r.risk ?? "",
+      probability: r.probability ?? "",
+      impact: r.impact ?? "",
+      owner: r.owner ?? "",
+      mitigation: r.mitigation ?? "",
+      score: riskScore(r)
+    })).sort(byKey((r) => [-r.score])),
+    next: nextLines(store),
+    check: findings(store)
+  };
+}
+function toDoc(store, d, kind, all) {
+  const status2 = kind === "item" ? itemStatus(d, all.plans) : d.get("status") ?? "";
+  const tasks = kind === "plan" ? d.tasks() : [];
+  const milestone = kind === "item" ? itemMilestone(d, all.epics) : kind === "plan" ? planMilestone(d, all.epics, all.items) : kind === "epic" ? up3(d.get("milestone")) ?? "" : "";
+  return {
+    id: d.id,
+    kind,
+    type: kind === "item" ? d.id.split("-")[0] : null,
+    title: d.get("title") ?? (kind === "sprint" ? d.id : ""),
+    status: status2,
+    priority: d.get("priority"),
+    severity: d.get("severity"),
+    points: d.points(),
+    milestone: milestone || null,
+    epic: up3(d.get("epic")),
+    sprint: kind === "plan" ? sprintOf(d.id, all.sprints)?.id ?? null : null,
+    plan: kind === "item" ? up3(d.get("plan")) : null,
+    items: kind === "plan" ? planItems(d, all.items).map((i) => i.id) : kind === "sprint" ? idList(d.get("plans")) : [],
+    dependsOn: d.dependsOn(),
+    waitsFor: kind === "plan" && !CLOSED.has(status2) ? unmetDeps(d, all.plans) : [],
+    branch: d.get("branch"),
+    pr: d.get("pr"),
+    dates: Object.fromEntries(DATE_KEYS.filter((k) => d.get(k)).map((k) => [k, d.get(k)])),
+    tasks: kind === "plan" ? { done: tasks.filter(([x]) => x).length, total: tasks.length } : null,
+    gate: gate(store, d, kind, status2),
+    source: d.source,
+    path: d.path ? store.rel(d.path) : null,
+    sections: sections(d.text)
+  };
+}
+function gate(store, d, kind, status2) {
+  if (kind === "plan" && (status2 === "draft" || status2 === "ready")) return readinessProblems(store, d);
+  if (kind === "item" && status2 === "new") return triageProblems(store, d);
+  return null;
+}
+function singleton(store, id, title, text) {
+  return {
+    id,
+    kind: id,
+    type: null,
+    title,
+    status: "",
+    priority: null,
+    severity: null,
+    points: null,
+    milestone: null,
+    epic: null,
+    sprint: null,
+    plan: null,
+    items: [],
+    dependsOn: [],
+    waitsFor: [],
+    branch: null,
+    pr: null,
+    dates: {},
+    tasks: null,
+    gate: null,
+    source: "worktree",
+    path: store.rel(join4(store.dir, `${id}.md`)),
+    sections: sections(text)
+  };
+}
+function body(text) {
+  return text.replace(/^---\n[\s\S]*?\n---\n/, "");
+}
+var PLACEHOLDER = /^\s*(?:-|- \[ \]|1\.)\s*$/;
+function sections(text) {
+  return splitSections(body(text))[1].map(([heading, md]) => ({
+    heading,
+    markdown: stripComments(md).split("\n").filter((l) => !PLACEHOLDER.test(l)).join("\n").trim()
+  }));
+}
+function edges(docs) {
+  const known = new Set(docs.map((d) => d.id));
+  const out = [];
+  const add = (from, to, type) => {
+    if (to && known.has(to) && from !== to) out.push({ from, to, type });
+  };
+  for (const d of docs) {
+    if (d.kind === "epic") add(d.id, d.milestone, "in-milestone");
+    if (d.kind === "item") add(d.id, d.epic, "in-epic");
+    if (d.kind === "item" && !d.epic) add(d.id, d.milestone, "in-milestone");
+    if (d.kind === "plan") {
+      add(d.id, d.epic, "in-epic");
+      for (const i of d.items) add(d.id, i, "delivers");
+      for (const p of d.dependsOn) add(d.id, p, "depends-on");
+    }
+    if (d.kind === "sprint") for (const p of d.items) add(p, d.id, "committed-to");
+  }
+  const linked = new Set(out.flatMap((e) => [`${e.from}>${e.to}`, `${e.to}>${e.from}`]));
+  for (const d of docs) {
+    const text = d.sections.map((s) => s.markdown).join("\n");
+    for (const id of new Set(text.match(ID_RE) ?? [])) {
+      if (!linked.has(`${d.id}>${id}`)) add(d.id, id, "mentions");
+    }
+  }
+  return out;
+}
+function milestoneMetrics(store, all) {
+  const order = milestoneOrder(all.milestones);
+  let queued = 0;
+  return [...all.milestones.keys()].sort(byKey((k) => [order.get(k)])).map((mid) => {
+    const m = all.milestones.get(mid);
+    const sc = scope(mid, all.epics, all.items, all.plans);
+    const f = forecast(store, m, sc, all.sprints, queued);
+    if (!["released", "dropped"].includes(m.get("status") ?? "")) queued += sc.total - sc.done;
+    return {
+      id: mid,
+      total: sc.total,
+      done: sc.done,
+      unestimated: sc.unestimated,
+      projected: f.projected,
+      sprints: f.sprints,
+      velocity: f.velocity,
+      health: f.health
+    };
+  });
+}
+function sprintMetrics(s, plans2) {
+  const committed = idList(s.get("plans"));
+  const done = committed.filter((p) => plans2.get(p)?.get("status") === "done");
+  const pts = (ids) => ids.reduce((n, p) => n + (plans2.get(p)?.points() ?? 0), 0);
+  const v = s.get("velocity");
+  return {
+    id: s.id,
+    goal: stripComments(s.section("Goal")).trim(),
+    committed: pts(committed),
+    done: pts(done),
+    velocity: v && /^\d+$/.test(v) ? Number(v) : null,
+    burndown: burndownSeries(s, plans2)
+  };
+}
+
+// src/commands/export.ts
+var DATA_SLOT = '<script id="graph" type="application/json">null</script>';
+var UI_FILE = "ui.html";
+function embed(graph) {
+  return JSON.stringify(graph).replace(/</g, "\\u003c");
+}
+function renderHtmlShell(store) {
+  const shell = store.ws.read(join5(SCRIPT_DIR, UI_FILE));
+  if (shell === null || !shell.includes(DATA_SLOT)) {
+    fail(`The UI bundle (${UI_FILE}) is missing next to tracker.mjs. Re-run \`tracker.mjs init\` from the plugin.`);
+  }
+  return shell;
+}
+function renderHtml(store, graph) {
+  return renderHtmlShell(store).replace(DATA_SLOT, () => `<script id="graph" type="application/json">${embed(graph)}</script>`);
+}
+function exportGraph(store, format, out) {
+  const graph = buildGraph(store);
+  if (format === "json") {
+    const text = `${JSON.stringify(graph, null, 2)}
+`;
+    if (!out) return store.say(text.trimEnd());
+    store.ws.write(resolve2(out), text);
+    return store.say(`Wrote ${store.rel(resolve2(out))}`);
+  }
+  const path = out ? resolve2(out) : join5(store.dir, "view", "index.html");
+  if (!out) store.ws.write(join5(store.dir, "view", ".gitignore"), "# generated by `tracker.mjs export`\n*\n");
+  store.ws.write(path, renderHtml(store, graph));
+  store.say(`Wrote ${store.rel(path)} \u2014 open it in a browser (it works offline; re-run export to refresh)`);
+}
+
+// src/server.ts
+import { spawn } from "node:child_process";
+import { randomBytes } from "node:crypto";
+import { existsSync as existsSync2, watch } from "node:fs";
+import { createServer } from "node:http";
+import { join as join6 } from "node:path";
+var str = (b, k) => typeof b[k] === "string" && b[k] ? b[k] : void 0;
+var num = (b, k) => typeof b[k] === "number" ? b[k] : void 0;
+var ACTIONS = {
+  move: (s, b) => {
+    move(s, str(b, "id") ?? fail("id is required"), str(b, "status") ?? fail("status is required"), str(b, "note"));
+  },
+  log: (s, b) => log(s, (str(b, "id") ?? fail("id is required")).toUpperCase(), str(b, "text") ?? fail("text is required")),
+  triage: (s, b) => triage(s, (str(b, "id") ?? fail("id is required")).toUpperCase(), {
+    priority: str(b, "priority"),
+    points: num(b, "points"),
+    severity: str(b, "severity"),
+    milestone: str(b, "milestone"),
+    epic: str(b, "epic")
+  }),
+  "sprint-add": (s, b) => sprintAdd(
+    s,
+    (str(b, "sprint") ?? fail("sprint is required")).toUpperCase(),
+    Array.isArray(b.plans) ? b.plans.map(String) : fail("plans is required")
+  )
+};
+function runAction(open, name, body2) {
+  const action = ACTIONS[name];
+  if (!action) return { status: 404, output: [], error: `Unknown action '${name}'.` };
+  const store = open();
+  try {
+    action(store, body2);
+    store.ws.flush();
+    return { status: 200, output: store.ws.output };
+  } catch (e) {
+    if (!(e instanceof TrackerError)) throw e;
+    return { status: 400, output: store.ws.output, error: e.message };
+  }
+}
+function serve(store, o) {
+  store.require();
+  const token = randomBytes(18).toString("base64url");
+  const open = () => Store.open(store.ws.root);
+  const clients = /* @__PURE__ */ new Set();
+  let hosts = /* @__PURE__ */ new Set();
+  const server = createServer((req, res) => {
+    try {
+      handle(req, res);
+    } catch (e) {
+      send(res, 500, { error: e.message });
+    }
+  });
+  function handle(req, res) {
+    if (!hosts.has(req.headers.host ?? "")) return send(res, 403, { error: "Unexpected Host header." });
+    const path = (req.url ?? "/").split("?")[0];
+    if (req.method === "GET" && (path === "/" || path === "/index.html")) {
+      const page = renderHtmlShell(store).replace(
+        DATA_SLOT,
+        () => `${DATA_SLOT}<meta name="tracker-token" content="${token}">`
+      );
+      res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" });
+      return res.end(page);
+    }
+    if (req.method === "GET" && path === "/api/graph") return send(res, 200, buildGraph(open()));
+    if (req.method === "GET" && path === "/api/events") {
+      res.writeHead(200, { "content-type": "text/event-stream", "cache-control": "no-store", connection: "keep-alive" });
+      res.write("retry: 1000\n\n");
+      clients.add(res);
+      req.on("close", () => clients.delete(res));
+      return;
+    }
+    const m = /^\/api\/commands\/([\w-]+)$/.exec(path);
+    if (req.method === "POST" && m) {
+      const origin = req.headers.origin;
+      if (req.headers["x-tracker-token"] !== token || origin && !hosts.has(origin.replace(/^http:\/\//, ""))) {
+        return send(res, 403, { error: "This page is not allowed to change the tracker (token or origin mismatch)." });
+      }
+      return readJson(req).then((body2) => {
+        const r = runAction(open, m[1], body2);
+        send(res, r.status, r);
+        if (r.status === 200) notify();
+      }, (e) => send(res, 400, { error: e.message }));
+    }
+    send(res, 404, { error: "Not found." });
+  }
+  let timer = null;
+  function notify() {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => {
+      for (const c of clients) c.write("event: change\ndata: {}\n\n");
+    }, 150);
+  }
+  const watchers = [store.dir, join6(store.ws.root, ".git", "refs"), join6(store.ws.root, ".git", "HEAD")].filter((p) => existsSync2(p)).map((p) => watch(p, { recursive: !p.endsWith("HEAD") }, (_, file) => {
+    if (!String(file ?? "").startsWith("view")) notify();
+  }));
+  return new Promise((resolve4, reject) => {
+    const listen = (port, tries) => {
+      server.once("error", (e) => {
+        if (e.code === "EADDRINUSE" && tries > 0) listen(port + 1, tries - 1);
+        else reject(e);
+      });
+      server.listen(port, "127.0.0.1", () => {
+        const actual = server.address().port;
+        hosts = /* @__PURE__ */ new Set([`127.0.0.1:${actual}`, `localhost:${actual}`]);
+        const url = `http://127.0.0.1:${actual}/`;
+        if (o.open) openBrowser(url);
+        resolve4({ url, close: () => {
+          watchers.forEach((w) => w.close());
+          for (const c of clients) c.end();
+          server.close();
+        } });
+      });
+    };
+    listen(o.port, o.port === 0 ? 0 : 10);
+  });
+}
+function send(res, status2, body2) {
+  res.writeHead(status2, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" });
+  res.end(JSON.stringify(body2));
+}
+function readJson(req) {
+  return new Promise((resolve4, reject) => {
+    let raw = "";
+    req.on("data", (c) => {
+      raw += c;
+      if (raw.length > 64e3) reject(new Error("Request too large."));
+    });
+    req.on("end", () => {
+      try {
+        const v = JSON.parse(raw || "{}");
+        resolve4(v && typeof v === "object" && !Array.isArray(v) ? v : {});
+      } catch {
+        reject(new Error("Body must be JSON."));
+      }
+    });
+  });
+}
+function openBrowser(url) {
+  const cmd = process.platform === "darwin" ? "open" : process.platform === "win32" ? "explorer" : "xdg-open";
+  spawn(cmd, [url], { stdio: "ignore", detached: true }).on("error", () => {
+  }).unref();
+}
+
+// src/commands/planning.ts
+import { readFileSync as readFileSync2 } from "node:fs";
+import { join as join7, resolve as resolve3 } from "node:path";
+
 // src/commands/reports.ts
 var PLAN_HEADER = ["| Plan | Title | Epic | Sprint | Pts | Status | Tasks |", "|---|---|---|---|---|---|---|"];
 var sum = (docs) => docs.reduce((n, d) => n + (d.points() ?? 0), 0);
@@ -1804,31 +2170,33 @@ function topRisks(store) {
 
 // src/commands/planning.ts
 function init(store) {
-  for (const d of [...Object.values(store.dirs), join4(store.dir, "drafts")]) {
-    const keep = join4(d, ".gitkeep");
+  for (const d of [...Object.values(store.dirs), join7(store.dir, "drafts")]) {
+    const keep = join7(d, ".gitkeep");
     if (!store.ws.isFile(keep)) store.ws.write(keep, "");
   }
   vendor(store);
-  const readme = join4(store.dir, "README.md");
-  const model = store.ws.read(join4(SKILL_DIR, "references", "model.md"));
+  const readme = join7(store.dir, "README.md");
+  const model = store.ws.read(join7(SKILL_DIR, "references", "model.md"));
   if (!store.ws.isFile(readme) && model !== null) store.ws.write(readme, model);
   roadmap(store, true);
   store.say(`Initialized ${store.rel(store.dir)}/`);
 }
 function vendor(store) {
-  const bin = join4(store.dir, "bin");
-  if (resolve2(SCRIPT_DIR) === resolve2(bin)) return;
-  store.ws.write(join4(bin, "tracker.mjs"), readFileSync2(SCRIPT_FILE, "utf8"), 493);
+  const bin = join7(store.dir, "bin");
+  if (resolve3(SCRIPT_DIR) === resolve3(bin)) return;
+  store.ws.write(join7(bin, "tracker.mjs"), readFileSync2(SCRIPT_FILE, "utf8"), 493);
+  const ui = store.ws.read(join7(SCRIPT_DIR, UI_FILE));
+  if (ui !== null) store.ws.write(join7(bin, UI_FILE), ui);
   for (const legacy of ["tracker.py", "trackerlib"]) {
-    if (store.ws.isFile(join4(bin, legacy)) || store.ws.isDir(join4(bin, legacy))) {
-      store.ws.remove(join4(bin, legacy));
+    if (store.ws.isFile(join7(bin, legacy)) || store.ws.isDir(join7(bin, legacy))) {
+      store.ws.remove(join7(bin, legacy));
       store.say(`removed legacy .project/bin/${legacy} \u2014 use \`node .project/bin/tracker.mjs\` from now on`);
     }
   }
-  const templates = join4(store.dir, "templates");
-  for (const name of [...TEMPLATE_NAMES]) store.ws.write(join4(templates, name), store.ws.read(join4(SKILL_DIR, "templates", name)));
-  const guide = store.ws.read(join4(SKILL_DIR, "references", "writing-guide.md"));
-  if (guide !== null) store.ws.write(join4(templates, "writing-guide.md"), guide);
+  const templates = join7(store.dir, "templates");
+  for (const name of [...TEMPLATE_NAMES]) store.ws.write(join7(templates, name), store.ws.read(join7(SKILL_DIR, "templates", name)));
+  const guide = store.ws.read(join7(SKILL_DIR, "references", "writing-guide.md"));
+  if (guide !== null) store.ws.write(join7(templates, "writing-guide.md"), guide);
 }
 function requireSections(doc, kind) {
   let missing = doc.missing(REQUIRED_ON_CREATE[kind]);
@@ -1842,7 +2210,7 @@ function requireSections(doc, kind) {
 function newDoc(store, kind, draftPath, capacity, length, keep = false) {
   store.require();
   if (kind !== "project-plan" && kind !== "raid") fail("new-doc KIND must be project-plan or raid.");
-  const path = join4(store.dir, `${kind}.md`);
+  const path = join7(store.dir, `${kind}.md`);
   if (store.ws.isFile(path)) fail(`${store.rel(path)} already exists \u2014 edit it directly.`);
   const [draftFile, draft] = store.readDraft(draftPath, kind);
   const fields = { ...DEFAULT_SETTINGS };
@@ -1860,7 +2228,7 @@ function newMilestone(store, title, draftPath, target, keep = false) {
   const mid = store.nextId("M", "milestone");
   const doc = store.build("milestone.md", draft, { id: mid, title, target });
   requireSections(doc, "milestone");
-  store.writeNew(doc, join4(store.dirs.milestone, `${mid}-${slugify(title)}.md`));
+  store.writeNew(doc, join7(store.dirs.milestone, `${mid}-${slugify(title)}.md`));
   store.consume(draftFile, keep);
 }
 function newEpic(store, title, draftPath, milestone, priority, keep = false) {
@@ -1870,7 +2238,7 @@ function newEpic(store, title, draftPath, milestone, priority, keep = false) {
   const eid = store.nextId("EP", "epic");
   const doc = store.build("epic.md", draft, { id: eid, title, ...fields });
   requireSections(doc, "epic");
-  store.writeNew(doc, join4(store.dirs.epic, `${eid}-${slugify(title)}.md`));
+  store.writeNew(doc, join7(store.dirs.epic, `${eid}-${slugify(title)}.md`));
   breakdownToItems(store, doc);
   store.consume(draftFile, keep);
 }
@@ -1898,7 +2266,7 @@ function newPlan(store, title, draftPath, o = {}) {
     points: points ? String(points) : ""
   });
   requireSections(doc, "plan");
-  store.writeNew(doc, join4(store.dirs.plan, `${pid}-${slug}.md`));
+  store.writeNew(doc, join7(store.dirs.plan, `${pid}-${slug}.md`));
   for (const i of linked) {
     items2.get(i).set("plan", pid);
     items2.get(i).save();
@@ -1950,6 +2318,8 @@ Commands:
   sprint new --goal TEXT [--start DATE] [--length N] | add S-01 P-003 \u2026 | start S-01 | close S-01 | show [S-01]
   start PLAN_ID \xB7 move ID STATUS [--note] \xB7 log ID TEXT
   next \xB7 current \xB7 check \xB7 roadmap [--write] \xB7 status [--write] \xB7 release-notes M-01 [--write]
+  export [--json] [--out FILE]                  interactive HTML view (.project/view/index.html) or the graph as JSON
+  ui [--port 8765] [--no-open]                  serve the view live on 127.0.0.1 (updates as files change)
 `;
 var DRAFTED = { str: ["from"], flag: ["keep-draft"], required: ["from"] };
 var COMMANDS = {
@@ -1958,32 +2328,32 @@ var COMMANDS = {
     pos: ["kind"],
     ...DRAFTED,
     int: ["capacity", "sprint-length"],
-    run: (s, a) => newDoc(s, a.pos[0], str(a, "from"), a.num.capacity, a.num["sprint-length"], !!a.opt["keep-draft"])
+    run: (s, a) => newDoc(s, a.pos[0], str2(a, "from"), a.num.capacity, a.num["sprint-length"], !!a.opt["keep-draft"])
   },
   "new-milestone": {
     pos: ["title"],
     ...DRAFTED,
     str: ["from", "target"],
     required: ["from", "target"],
-    run: (s, a) => newMilestone(s, a.pos[0], str(a, "from"), str(a, "target"), !!a.opt["keep-draft"])
+    run: (s, a) => newMilestone(s, a.pos[0], str2(a, "from"), str2(a, "target"), !!a.opt["keep-draft"])
   },
   "new-epic": {
     pos: ["title"],
     ...DRAFTED,
     str: ["from", "milestone", "priority"],
-    run: (s, a) => newEpic(s, a.pos[0], str(a, "from"), str(a, "milestone"), str(a, "priority"), !!a.opt["keep-draft"])
+    run: (s, a) => newEpic(s, a.pos[0], str2(a, "from"), str2(a, "milestone"), str2(a, "priority"), !!a.opt["keep-draft"])
   },
   "new-item": {
     pos: ["type", "title"],
     str: ["from", "why", "epic", "milestone", "priority", "severity"],
     int: ["points"],
     flag: ["keep-draft"],
-    run: (s, a) => newItem(s, a.pos[0], a.pos[1], str(a, "from"), str(a, "why"), {
-      epic: str(a, "epic"),
-      milestone: str(a, "milestone"),
-      priority: str(a, "priority"),
+    run: (s, a) => newItem(s, a.pos[0], a.pos[1], str2(a, "from"), str2(a, "why"), {
+      epic: str2(a, "epic"),
+      milestone: str2(a, "milestone"),
+      priority: str2(a, "priority"),
       points: a.num.points,
-      severity: str(a, "severity"),
+      severity: str2(a, "severity"),
       keep: !!a.opt["keep-draft"]
     })
   },
@@ -1993,13 +2363,13 @@ var COMMANDS = {
     int: ["points"],
     choices: { reject: ["duplicate", "wontfix"] },
     run: (s, a) => triage(s, a.pos[0].toUpperCase(), {
-      priority: str(a, "priority"),
+      priority: str2(a, "priority"),
       points: a.num.points,
-      severity: str(a, "severity"),
-      milestone: str(a, "milestone"),
-      epic: str(a, "epic"),
-      reject: str(a, "reject"),
-      note: str(a, "note")
+      severity: str2(a, "severity"),
+      milestone: str2(a, "milestone"),
+      epic: str2(a, "epic"),
+      reject: str2(a, "reject"),
+      note: str2(a, "note")
     })
   },
   "new-plan": {
@@ -2007,12 +2377,12 @@ var COMMANDS = {
     ...DRAFTED,
     str: ["from", "epic", "depends", "items", "sprint"],
     int: ["points"],
-    run: (s, a) => newPlan(s, a.pos[0], str(a, "from"), {
-      epic: str(a, "epic"),
-      depends: str(a, "depends"),
-      items: str(a, "items"),
+    run: (s, a) => newPlan(s, a.pos[0], str2(a, "from"), {
+      epic: str2(a, "epic"),
+      depends: str2(a, "depends"),
+      items: str2(a, "items"),
       points: a.num.points,
-      sprint: str(a, "sprint"),
+      sprint: str2(a, "sprint"),
       keep: !!a.opt["keep-draft"]
     })
   },
@@ -2031,7 +2401,7 @@ var COMMANDS = {
     str: ["note"],
     flag: ["force"],
     run: (s, a) => {
-      move(s, a.pos[0], a.pos[1], str(a, "note"), !!a.opt.force);
+      move(s, a.pos[0], a.pos[1], str2(a, "note"), !!a.opt.force);
     }
   },
   log: { pos: ["id", "text"], run: (s, a) => log(s, a.pos[0].toUpperCase(), a.pos[1]) },
@@ -2043,9 +2413,26 @@ var COMMANDS = {
     roadmap(s, !!a.opt.write);
   } },
   status: { pos: [], flag: ["write"], run: (s, a) => status(s, !!a.opt.write) },
+  export: {
+    pos: [],
+    str: ["out"],
+    flag: ["json"],
+    run: (s, a) => exportGraph(s, a.opt.json ? "json" : "html", str2(a, "out"))
+  },
+  ui: { pos: [], int: ["port"], flag: ["no-open"], run: (s, a) => {
+    serve(s, { port: a.num.port ?? 8765, open: !a.opt["no-open"] }).then(
+      ({ url }) => process.stdout.write(`Tracker UI at ${url} \u2014 live while this runs (Ctrl-C to stop)
+`),
+      (e) => {
+        process.stderr.write(`${e.message}
+`);
+        process.exit(1);
+      }
+    );
+  } },
   "release-notes": { pos: ["id"], flag: ["write"], run: (s, a) => releaseNotes(s, a.pos[0].toUpperCase(), !!a.opt.write) }
 };
-function str(a, key) {
+function str2(a, key) {
   const v = a.opt[key];
   return typeof v === "string" ? v : void 0;
 }
@@ -2054,7 +2441,7 @@ function runSprint(s, a) {
   const need = { add: 2, start: 1, close: 1 };
   if (rest.length < (need[action] ?? 0)) fail(`usage: sprint ${action} S-## ` + (action === "add" ? "P-### [P-### \u2026]" : ""));
   const ids = rest.map((x) => x.toUpperCase());
-  if (action === "new") sprintNew(s, str(a, "goal") ?? "", str(a, "start"), a.num.length);
+  if (action === "new") sprintNew(s, str2(a, "goal") ?? "", str2(a, "start"), a.num.length);
   else if (action === "add") sprintAdd(s, ids[0], ids.slice(1));
   else if (action === "start") sprintStart(s, ids[0]);
   else if (action === "close") sprintClose(s, ids[0], !!a.opt.force);
@@ -2080,12 +2467,12 @@ function parse(argv) {
   if (pos.length > spec.pos.length && !spec.rest) throw new UsageError(`unexpected argument '${pos[spec.pos.length]}'`);
   const opt = parsed.values;
   for (const r of spec.required ?? []) if (opt[r] === void 0) throw new UsageError(`--${r} is required`);
-  const num = {};
+  const num2 = {};
   for (const o of spec.int ?? []) {
     const v = opt[o];
     if (typeof v !== "string") continue;
     if (!/^[+-]?\d+$/.test(v.trim())) throw new UsageError(`--${o}: invalid int value '${v}'`);
-    num[o] = parseInt(v, 10);
+    num2[o] = parseInt(v, 10);
   }
   for (const [name, allowed] of Object.entries(spec.choices ?? {})) {
     const i = spec.pos.indexOf(name);
@@ -2094,7 +2481,7 @@ function parse(argv) {
       throw new UsageError(`${i >= 0 ? name : `--${name}`}: invalid choice '${v}' (choose from ${allowed.join(", ")})`);
     }
   }
-  return { cmd, spec, args: { pos, opt, num } };
+  return { cmd, spec, args: { pos, opt, num: num2 } };
 }
 function main(argv, open = () => Store.open()) {
   if (!argv.length || argv[0] === "--help" || argv[0] === "-h" || argv[0] === "help") {

@@ -6,6 +6,7 @@ import { DEFAULT_SETTINGS, ITEM_CLOSED, REQUIRED_ON_CREATE, TEMPLATE_NAMES } fro
 import { SCRIPT_DIR, SCRIPT_FILE, SKILL_DIR, Store } from "../core/store.js";
 import { asDate, fail, idList, mdTable, slugify } from "../core/text.js";
 import { breakdownToItems } from "./backlog.js";
+import { UI_FILE } from "./export.js";
 import { roadmap } from "./reports.js";
 import { sprintAdd } from "./sprints.js";
 
@@ -27,6 +28,8 @@ function vendor(store: Store): void {
   const bin = join(store.dir, "bin");
   if (resolve(SCRIPT_DIR) === resolve(bin)) return; // running the vendored copy
   store.ws.write(join(bin, "tracker.mjs"), readFileSync(SCRIPT_FILE, "utf8"), 0o755);
+  const ui = store.ws.read(join(SCRIPT_DIR, UI_FILE));
+  if (ui !== null) store.ws.write(join(bin, UI_FILE), ui); // the HTML view `export` fills in
   for (const legacy of ["tracker.py", "trackerlib"]) { // the Python tracker (project-kit ≤ 0.6)
     if (store.ws.isFile(join(bin, legacy)) || store.ws.isDir(join(bin, legacy))) {
       store.ws.remove(join(bin, legacy));

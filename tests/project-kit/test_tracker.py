@@ -154,7 +154,7 @@ def finish(repo: Repo, plan_id: str) -> None:
 # ------------------------------------------------------------------ basics
 def test_init_vendors_script_and_templates(repo: Repo):
     init(repo)
-    for rel in ("bin/tracker.mjs", "templates/plan.md", "templates/epic.md", "templates/sprint.md",
+    for rel in ("bin/tracker.mjs", "bin/ui.html", "templates/plan.md", "templates/epic.md", "templates/sprint.md",
                 "templates/item-bug.md", "templates/project-plan.md", "templates/writing-guide.md",
                 "README.md", "ROADMAP.md", "BACKLOG.md", "items/.gitkeep", "sprints/.gitkeep", "milestones/.gitkeep"):
         assert (repo.path / ".project" / rel).is_file(), rel

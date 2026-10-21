@@ -13,7 +13,7 @@ Every piece of work has an ID, a document, a status, a priority and an estimate.
 | **Task** | `T1..Tn` | A step inside a plan, each with `→ verify:` | checklist in the plan |
 | **Sprint** | `S-01` | A time-box committing plans against capacity | `.project/sprints/` |
 
-Generated, never hand-edited: `ROADMAP.md`, `BACKLOG.md`, `STATUS.md`, `releases/M-NN.md`.
+Generated, never hand-edited: `ROADMAP.md`, `BACKLOG.md`, `STATUS.md`, `releases/M-NN.md`, and `view/` (the HTML view from `export`; gitignored).
 
 ## Settings (`project-plan.md` frontmatter)
 | Key | Default | Meaning |

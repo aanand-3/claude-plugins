@@ -1,6 +1,6 @@
 {
   "name": "project-kit",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "description": "Kick off or adopt projects consistently: idea research (competitors, prior art, go/pivot/kill), requirements discovery, a persisted visual design system, stack-aware CLAUDE.md and engineering rules, branch-per-change git conventions, and optional modules: a repo-local project tracker and a graphify code graph.",
   "author": {
     "name": "Arpit Anand",

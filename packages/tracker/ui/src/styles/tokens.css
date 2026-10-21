@@ -1,0 +1,92 @@
+/* Design tokens — the values come from docs/design/DESIGN.md (Sienna Workshop, Wada combination 182).
+   This file is the only place raw colours live; components use var(--…). */
+
+@font-face {
+  font-family: "Bricolage Grotesque";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 800;
+  src: url("../../../node_modules/@fontsource-variable/bricolage-grotesque/files/bricolage-grotesque-latin-wght-normal.woff2") format("woff2-variations");
+}
+@font-face {
+  font-family: "Nunito Sans";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 1000;
+  src: url("../../../node_modules/@fontsource-variable/nunito-sans/files/nunito-sans-latin-wght-normal.woff2") format("woff2-variations");
+}
+
+:root {
+  --background: #f9faff;
+  --foreground: #212331;
+  --card: #feffff;
+  --card-foreground: #212331;
+  --muted: #eff0fc;
+  --muted-foreground: #686a77;
+  --border: #dbdce7;
+  --primary: #bb7125;
+  --primary-foreground: #111111;
+  --secondary: #ffe6c7;
+  --secondary-foreground: #111111;
+  --accent: #fff0df;
+  --accent-foreground: #212331;
+  --destructive: #be3c3c;
+  --destructive-foreground: #ffffff;
+  --success: #2f7a4f;
+  --warning: #9a6200;
+  --ring: var(--primary);
+  --chart-1: #bb7125;
+  --chart-2: #3f5aa6;
+  --chart-3: #4b3317;
+  --overlay-shadow: 0 8px 24px rgb(33 35 49 / 0.12);
+
+  --font-display: "Bricolage Grotesque", system-ui, sans-serif;
+  --font-body: "Nunito Sans", system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-md: 16px;
+  --text-lg: 20px;
+  --text-xl: 24px;
+  --text-2xl: 28px;
+  --text-3xl: 34px;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --sidebar: 232px;
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --background: #181921;
+  --foreground: #ebedff;
+  --card: #212126;
+  --card-foreground: #ebedff;
+  --muted: #2f3039;
+  --muted-foreground: #a4a5b3;
+  --border: #383942;
+  --primary: #bb7125;
+  --primary-foreground: #111111;
+  --secondary: #4f3921;
+  --secondary-foreground: #ffffff;
+  --accent: #38291d;
+  --accent-foreground: #ebedff;
+  --destructive: #f36b64;
+  --destructive-foreground: #111111;
+  --success: #6cc08f;
+  --warning: #e0a94a;
+  --chart-1: #c97d30;
+  --chart-2: #7d8fd6;
+  --chart-3: #a4a5b3;
+  --overlay-shadow: 0 8px 24px rgb(0 0 0 / 0.4);
+  color-scheme: dark;
+}

@@ -3,9 +3,16 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, it } from "vitest";
 // @ts-expect-error build.mjs is plain JS
-import { bundle, DIST } from "../build.mjs";
+import { bundleCli, bundleUi, DIST } from "../build.mjs";
+
+const tmp = () => mkdtempSync(join(tmpdir(), "tracker-"));
 
 it("the committed dist/tracker.mjs is built from the current source (run `npm run build`)", async () => {
-  const fresh = await bundle(join(mkdtempSync(join(tmpdir(), "tracker-")), "tracker.mjs"));
-  expect(readFileSync(fresh, "utf8") === readFileSync(DIST, "utf8")).toBe(true);
+  const fresh = await bundleCli(join(tmp(), "tracker.mjs"));
+  expect(readFileSync(fresh, "utf8") === readFileSync(join(DIST, "tracker.mjs"), "utf8")).toBe(true);
 }, 30_000);
+
+it("the committed dist/ui.html is built from the current source (run `npm run build`)", async () => {
+  const fresh = await bundleUi(join(tmp(), "ui.html"));
+  expect(readFileSync(fresh, "utf8") === readFileSync(join(DIST, "ui.html"), "utf8")).toBe(true);
+}, 60_000);
