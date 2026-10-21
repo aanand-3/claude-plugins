@@ -110,6 +110,7 @@ def test_module_size_check_flags_god_modules(repo: Repo):
     repo.write("backend/src/app/domain/small.py", "x = 1\n" * 300)
     repo.write("backend/src/app/domain/big.py", "x = 1\n\n" * 301)          # blank lines don't count
     repo.write("backend/src/app/adapters/migrations/0001.py", "x = 1\n" * 900)  # generated: skipped
+    repo.write(".project/bin/tracker.mjs", "x = 1\n" * 900)                   # vendored bundle: skipped
     repo.write("docs/notes.md", "line\n" * 900)                               # not source
     repo.git("add", "-A")
     r = repo.py(STRUCTURE, "--staged")

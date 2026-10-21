@@ -15,7 +15,7 @@ always allowed in every governed directory.
 `*` in a name works as a glob (e.g. `*.md`).
 
 It also flags source modules longer than `module_max_lines:` (default 300 non-blank lines,
-0 disables) — the "no god modules" rule from the base pack. Generated migrations are skipped.
+0 disables) — the "no god modules" rule from the base pack. Generated code (migrations, the vendored .project/bin/ tools) is skipped.
 
 It also keeps the layout documentation honest: every directory declared under `.` and
 under the source roots (keys containing `src`, e.g. backend/src/<pkg>, frontend/src) must be
@@ -39,7 +39,7 @@ import sys
 from pathlib import Path, PurePosixPath
 
 SOURCE_SUFFIXES = {".py", ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".go", ".rs", ".java", ".kt", ".rb", ".cs"}
-GENERATED = ("/migrations/", "alembic/versions/", "/generated/", ".gen.", ".d.ts")
+GENERATED = ("/migrations/", "alembic/versions/", "/generated/", ".gen.", ".d.ts", "/.project/bin/")
 DEFAULT_MAX_LINES = 300
 EXTENSIONLESS_FILES = {"Makefile", "Dockerfile", "Justfile", "Procfile", "LICENSE", "Gemfile", "Caddyfile"}
 

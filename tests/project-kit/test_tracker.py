@@ -1,6 +1,4 @@
 import re
-import sys
-from types import SimpleNamespace
 
 from conftest import TRACKER, Repo
 
@@ -110,17 +108,6 @@ One line.
 """
 
 
-def load_tracker() -> SimpleNamespace:
-    """The tracker's public vocabulary (trackerlib.model, .text, .doc) as one namespace."""
-    if str(TRACKER.parent) not in sys.path:
-        sys.path.insert(0, str(TRACKER.parent))
-    from trackerlib import doc, model, text
-    names: dict = {}
-    for mod in (model, text, doc):
-        names.update({k: v for k, v in vars(mod).items() if not k.startswith("_")})
-    return SimpleNamespace(**names)
-
-
 def init(repo: Repo, commit: bool = False) -> None:
     if commit:
         repo.git("commit", "-q", "--allow-empty", "-m", "init")
@@ -167,7 +154,7 @@ def finish(repo: Repo, plan_id: str) -> None:
 # ------------------------------------------------------------------ basics
 def test_init_vendors_script_and_templates(repo: Repo):
     init(repo)
-    for rel in ("bin/tracker.py", "templates/plan.md", "templates/epic.md", "templates/sprint.md",
+    for rel in ("bin/tracker.mjs", "templates/plan.md", "templates/epic.md", "templates/sprint.md",
                 "templates/item-bug.md", "templates/project-plan.md", "templates/writing-guide.md",
                 "README.md", "ROADMAP.md", "BACKLOG.md", "items/.gitkeep", "sprints/.gitkeep", "milestones/.gitkeep"):
         assert (repo.path / ".project" / rel).is_file(), rel
@@ -176,12 +163,37 @@ def test_init_vendors_script_and_templates(repo: Repo):
 
 def test_vendored_copy_runs_without_the_plugin(repo: Repo):
     init(repo)
-    vendored = repo.path / ".project/bin/tracker.py"
-    assert (repo.path / ".project/bin/trackerlib/cli.py").is_file()
+    vendored = repo.path / ".project/bin/tracker.mjs"
+    assert vendored.read_text() == TRACKER.read_text()
     assert repo.py(vendored, "check").returncode == 0
     assert repo.py(vendored, "init").returncode == 0  # re-init from the vendored copy is a no-op vendor
-    assert not list(repo.path.rglob("__pycache__"))
-    assert not list(TRACKER.parent.rglob("__pycache__"))
+
+
+def test_init_replaces_the_legacy_python_tracker(repo: Repo):
+    repo.write(".project/bin/tracker.py", "print('old')\n")
+    repo.write(".project/bin/trackerlib/cli.py", "")
+    r = tr(repo, "init")
+    assert r.returncode == 0 and "removed legacy .project/bin/tracker.py" in r.stdout
+    assert not (repo.path / ".project/bin/tracker.py").exists()
+    assert not (repo.path / ".project/bin/trackerlib").exists()
+
+
+def test_refused_command_writes_nothing(repo: Repo):
+    init(repo)
+    tr(repo, "new-item", "feat", "Dark mode", "--why", "asked")
+    before = item(repo, "FEAT-001")
+    r = tr(repo, "triage", "FEAT-001", "--priority", "P1")  # no estimate → refused after setting priority
+    assert r.returncode == 1 and "no estimate" in r.stderr
+    assert item(repo, "FEAT-001") == before
+
+
+def test_usage_errors(repo: Repo):
+    init(repo)
+    assert tr(repo, "bogus").returncode == 2
+    assert tr(repo, "move", "P-001").returncode == 2  # missing STATUS
+    r = tr(repo, "triage", "FEAT-001", "--points", "x")
+    assert r.returncode == 2 and "invalid int" in r.stderr
+    assert "new-plan TITLE --from DRAFT" in tr(repo, "--help").stdout
 
 
 def test_no_skeletons_draft_required_and_validated(repo: Repo):
@@ -292,14 +304,6 @@ def test_ids_do_not_collide_across_branches(repo: Repo):
     repo.commit("chore: plan on branch")
     repo.git("switch", "-q", "main")
     assert "P-002" in new_plan(repo, "On main").stdout
-
-
-def test_slugify():
-    t = load_tracker()
-    assert t.slugify("Run planner & MigrationWorkflow with checkpoints and IdXref") == "run-planner-migrationworkflow"
-    assert t.slugify("Fix README typo") == "fix-readme-typo"
-    assert len(t.slugify("a " * 50 + "end")) <= 40
-    assert re.fullmatch(r"[a-z0-9-]+", t.slugify("Ünïcode & symbols!!"))
 
 
 # ------------------------------------------------------------------ backlog items

@@ -33,13 +33,13 @@ created: {date}
 
 ## Cadence & capacity
 <!-- Sprint length and start day, initial capacity in points and why, who works on it (people + Claude),
-     ceremonies: planning at sprint start, daily `tracker.py current`, review + retro at sprint close. -->
+     ceremonies: planning at sprint start, daily `tracker.mjs current`, review + retro at sprint close. -->
 
 ## Working agreements
 <!-- Branch per plan, PR review rules, Definition of Ready / Done (see .project/README.md), how bugs are
      triaged (severity → priority), expedite lane for P0/S1, how scope changes are approved. -->
 
 ## Stakeholders & communication
-<!-- Who needs status, how often (`tracker.py status --write` at sprint close), where decisions are recorded (ADRs). -->
+<!-- Who needs status, how often (`tracker.mjs status --write` at sprint close), where decisions are recorded (ADRs). -->
 
 ## Notes

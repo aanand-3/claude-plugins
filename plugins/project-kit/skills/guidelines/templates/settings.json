@@ -2,7 +2,7 @@
   "plansDirectory": ".project/drafts",
   "permissions": {
     "allow": [
-      "Bash(python3 .project/bin/tracker.py:*)",
+      "Bash(node .project/bin/tracker.mjs:*)",
       "Bash(git status:*)",
       "Bash(git diff:*)",
       "Bash(git log:*)",
@@ -21,7 +21,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd \"$CLAUDE_PROJECT_DIR\" || exit 0; [ -d .githooks ] && [ \"$(git config core.hooksPath)\" != \".githooks\" ] && git config core.hooksPath .githooks && echo \"project-kit: activated .githooks\"; [ -f .project/bin/tracker.py ] && python3 .project/bin/tracker.py current; true"
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" || exit 0; [ -d .githooks ] && [ \"$(git config core.hooksPath)\" != \".githooks\" ] && git config core.hooksPath .githooks && echo \"project-kit: activated .githooks\"; [ -f .project/bin/tracker.mjs ] && node .project/bin/tracker.mjs current; true"
           }
         ]
       }

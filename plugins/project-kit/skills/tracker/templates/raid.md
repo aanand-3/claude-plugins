@@ -4,7 +4,7 @@ updated: {date}
 
 # RAID log
 
-<!-- Living register. Edit on main. `tracker.py status` shows the top open risks (probability × impact);
+<!-- Living register. Edit on main. `tracker.mjs status` shows the top open risks (probability × impact);
      `check` flags risks without an owner or mitigation. Levels: H / M / L. Status: open / watching / closed. -->
 
 ## Risks

@@ -72,40 +72,11 @@ def test_yaml_and_toml_templates_parse():
         tomllib.loads(f.read_text())
 
 
-def test_tracker_templates_exist_and_format():
-    from test_tracker import load_tracker
-    t = load_tracker()
-    tdir = SKILLS / "tracker/templates"
-    assert sorted(t.TEMPLATE_NAMES) == sorted(p.name for p in tdir.glob("*.md"))
-    for name in t.TEMPLATE_NAMES:
-        text = (tdir / name).read_text().format_map(t.Fmt(id="X-1", title="T", date="2026-01-01"))
-        assert text.startswith("---\n"), name
-        assert t.Doc.parse(text).meta, name
-    for item_type, sections in t.TRIAGE_SECTIONS.items():  # gate sections exist in the item template
-        text = (tdir / f"item-{t.ITEM_TYPES[item_type]}.md").read_text()
-        for s in sections:
-            assert f"## {s}\n" in text, (item_type, s)
-
-
 MAX_MODULE_LINES = 300  # the plugin follows the module-size rule it ships (base pack: Modules & size)
 
 
 def test_plugin_scripts_stay_small():
+    """Python scripts here; the tracker's TypeScript modules are checked by its vitest suite."""
     for f in PLUGIN.rglob("*.py"):
         n = len(f.read_text().splitlines())
         assert n <= MAX_MODULE_LINES, f"{f.relative_to(PLUGIN)} has {n} lines — split it by responsibility"
-
-
-def test_trackerlib_layers_are_acyclic():
-    """Each module imports only modules listed before it (the layering in trackerlib/__init__.py)."""
-    order = ["model", "text", "gitio", "doc", "store", "queries", "gates", "workflow", "backlog", "sprints",
-             "milestones", "reports", "planning", "advisor", "checks", "cli"]
-    lib = SKILLS / "tracker/scripts/trackerlib"
-    assert set(order) == {p.stem for p in lib.glob("*.py")} - {"__init__"}
-    for f in lib.glob("*.py"):
-        if f.stem == "__init__":
-            continue
-        for sub, names in re.findall(r"^from trackerlib(?:\.(\w+))? import \(?([\w ,]+)", f.read_text(), re.M):
-            targets = [sub] if sub else [n.split(" as ")[0].strip() for n in names.split(",") if n.strip()]
-            for target in targets:
-                assert order.index(target) < order.index(f.stem), f"{f.stem} must not import {target}"

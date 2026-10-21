@@ -2,6 +2,8 @@
 
 A Claude Code plugin marketplace. It currently contains one plugin, **project-kit**, which takes the repeated manual setup out of starting a project.
 
+![project-kit demo: kickoff, generated rules and ADRs, the sprint plan, and commit guardrails](docs/assets/project-kit-demo.gif)
+
 ## Install
 
 ```bash
@@ -20,7 +22,7 @@ Start a new Claude Code session to load it. To pick up later releases, run `clau
 | discover | `/project-kit:discover` | Interview → `.project/config.yaml`, brief, architecture, ADRs |
 | design | `/project-kit:design [init\|page\|review\|refresh]` | A gallery page of all of Sanzo Wada's *Dictionary of Color Combinations*, each previewed as UI with WCAG-checked roles for light and dark. You shortlist 2–4, and each becomes a full style tile to compare. The pick becomes `docs/design/DESIGN.md` (tokens, layout shell, component inventory, do's and don'ts). Pages are composed from it, and `check_design.py` flags drift |
 | guidelines | `/project-kit:guidelines` | `CLAUDE.md`, path-scoped `.claude/rules/` from stack packs, settings, hygiene files |
-| tracker | `/project-kit:tracker …` | Repo-local project management in `.project/`: project plan + RAID, milestones with forecasts, sprints (capacity, burndown, velocity, review/retro), a ranked backlog of FEAT/BUG/CHORE/SPIKE items with priority and story points, and plans with tasks (one branch and one PR per plan). Enforced gates: no skeletons, triage, Definition of Ready, WIP limit, exit criteria. Generated roadmap, backlog, status report and release notes |
+| tracker | `/project-kit:tracker …` | Repo-local project management in `.project/` (Node ≥ 20 CLI, no install): project plan + RAID, milestones with forecasts, sprints (capacity, burndown, velocity, review/retro), a ranked backlog of FEAT/BUG/CHORE/SPIKE items with priority and story points, and plans with tasks (one branch and one PR per plan). Enforced gates: no skeletons, triage, Definition of Ready, WIP limit, exit criteria. Generated roadmap, backlog, status report and release notes |
 | git-setup | `/project-kit:git-setup` | git init, `.gitignore`, PR template, hooks that protect `main` and enforce Conventional Commits |
 | global-setup | `/project-kit:global-setup` | One-time install of the Karpathy-style working principles into `~/.claude/CLAUDE.md` |
 
@@ -42,7 +44,7 @@ CLAUDE.md                      # project facts + "how we work"
   sprints/S-01.md              # goal, committed plans, daily log, review, retro, velocity
   ROADMAP.md BACKLOG.md STATUS.md releases/   # generated
   drafts/                      # plan-mode output before it becomes a tracked plan
-  bin/tracker.py + trackerlib/ # vendored copy, so the repo works without the plugin
+  bin/tracker.mjs              # vendored single-file tracker (Node ≥ 20), so the repo works without the plugin
   bin/check_structure.py       # layout guard run by the pre-commit hook
   bin/check_design.py          # design-token drift check (design pack)
   templates/
@@ -57,7 +59,7 @@ docs/
 .gitignore .gitattributes .editorconfig .env.example README.md
 ```
 
-### Stack packs (v0.6.0)
+### Stack packs (v0.7.0)
 
 | Scope | Packs |
 |---|---|
@@ -89,7 +91,7 @@ In a monorepo, backend and frontend packs only apply under `architecture.backend
 
 ```bash
 python3 <plugin>/skills/guidelines/scripts/compose_rules.py --root . --dry-run   # shows OK / WRITE / SKIP / STALE per file
-python3 <plugin>/skills/tracker/scripts/tracker.py init                          # re-copies tracker.py and templates into .project/
+node <plugin>/skills/tracker/dist/tracker.mjs init                                # re-copies tracker.mjs and templates into .project/
 ```
 Or ask Claude to run `/project-kit:guidelines --refresh`.
 
@@ -109,7 +111,13 @@ Before changing the bundled scripts, run the test suites. Tests live in `tests/<
 ```bash
 for suite in tests/*/; do uvx --with pyyaml pytest "$suite" || exit 1; done
 ```
-The plugin follows the rules it ships: every script stays under 300 lines (tested), and the tracker is a package (`tracker/scripts/trackerlib/`) whose modules import only from earlier layers (order in `trackerlib/__init__.py`, enforced by `test_trackerlib_layers_are_acyclic`). Add a new module where it fits that order rather than growing an existing one.
+The plugin follows the rules it ships: every script and source module stays under 300 lines (tested).
+
+The tracker is TypeScript in `packages/tracker/` (not shipped). `npm run build` bundles it into the one file the plugin ships, `plugins/project-kit/skills/tracker/dist/tracker.mjs`; commit the rebuilt bundle with the source (a test fails when they differ). `src/core/` (documents, rules, queries) never imports `src/commands/` or the CLI (tested). Commands stage their writes and only flush them if they succeed, so a refused command changes nothing.
+
+```bash
+cd packages/tracker && npm ci && npm run typecheck && npm test && npm run build
+```
 ### Extending
 
 - **New stack** (e.g. Vue, Go): add `plugins/project-kit/skills/guidelines/stacks/<name>.md` with frontmatter `pack / description / scope / requires / paths`, then add it to the presets and pack mapping in `skills/discover/references/questions.md`.

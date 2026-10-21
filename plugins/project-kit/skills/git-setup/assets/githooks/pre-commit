@@ -12,7 +12,7 @@ case "$branch" in
       echo "✋ project-kit: on '$branch' you may only commit tracker/planning files under .project/." >&2
       echo "   Offending files:" >&2
       echo "$offending" | sed 's/^/     /' >&2
-      echo "   Start a plan branch instead: python3 .project/bin/tracker.py start P-###" >&2
+      echo "   Start a plan branch instead: node .project/bin/tracker.mjs start P-###" >&2
       echo "   (Deliberate exception, e.g. scaffold refresh: PROJECT_KIT_ALLOW_MAIN=1 git commit ...)" >&2
       exit 1
     fi
