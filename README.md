@@ -23,7 +23,7 @@ Start a new Claude Code session to load it. To pick up later releases, run `clau
 | discover | `/project-kit:discover` | Interview → `.project/config.yaml`, brief, architecture, ADRs |
 | design | `/project-kit:design [init\|page\|review\|refresh]` | A gallery page of all of Sanzo Wada's *Dictionary of Color Combinations*, each previewed as UI with WCAG-checked roles for light and dark. You shortlist 2–4, and each becomes a full style tile to compare. The pick becomes `docs/design/DESIGN.md` (tokens, layout shell, component inventory, do's and don'ts). Pages are composed from it, and `check_design.py` flags drift |
 | guidelines | `/project-kit:guidelines` | `CLAUDE.md`, path-scoped `.claude/rules/` from stack packs, settings, hygiene files |
-| tracker | `/project-kit:tracker …` | Repo-local project management in `.project/` (Node ≥ 20 CLI, no install): project plan + RAID, milestones with forecasts, sprints (capacity, burndown, velocity, review/retro), a ranked backlog of FEAT/BUG/CHORE/SPIKE items with priority and story points, and plans with tasks (one branch and one PR per plan). Enforced gates: no skeletons, triage, Definition of Ready, WIP limit, exit criteria. Generated roadmap, backlog, status report and release notes, plus an interactive view (`export` for an offline page, `ui` for a live local server): dashboard, board, hierarchy, roadmap, dependency graph and linked document pages |
+| tracker | `/project-kit:tracker …` | Repo-local project management in `.project/` (Node ≥ 20 CLI, no install): project plan + RAID, milestones with forecasts, sprints (capacity, burndown, velocity, review/retro), a ranked backlog of FEAT/BUG/CHORE/SPIKE items with priority and story points, and plans with tasks (one branch and one PR per plan). Enforced gates: no skeletons, triage, Definition of Ready, WIP limit, exit criteria. Generated roadmap, backlog, status report and release notes, plus an interactive view (`export` for an offline page, `ui` for a live local server): dashboard, board, hierarchy, roadmap, dependency graph and linked document pages. The plugin also registers the tracker as MCP tools (`next`, `status`, `graph`, `new_item`, `triage`, `move`, `log`, `sprint_add`, …), so Claude calls typed tools behind the same gates instead of shelling out |
 | graph | `/project-kit:graph [enable\|build\|remove]` | Optional code knowledge graph via [graphify](https://pypi.org/project/graphifyy/): installs the CLI with your yes, wires its rebuild-on-commit hook and CLAUDE.md section, gitignores `graphify-out/`, and builds the graph so Claude queries it instead of reading files broadly |
 | git-setup | `/project-kit:git-setup` | git init, `.gitignore`, PR template, hooks that protect `main` and enforce Conventional Commits |
 | global-setup | `/project-kit:global-setup` | One-time install of the Karpathy-style working principles into `~/.claude/CLAUDE.md` |
@@ -73,7 +73,7 @@ docs/
 .gitignore .gitattributes .editorconfig .env.example README.md
 ```
 
-### Stack packs (v0.10.0)
+### Stack packs (v0.11.0)
 
 | Scope | Packs |
 |---|---|
@@ -127,7 +127,7 @@ for suite in tests/*/; do uvx --with pyyaml pytest "$suite" || exit 1; done
 ```
 The plugin follows the rules it ships: every script and source module stays under 300 lines (tested).
 
-The tracker is TypeScript in `packages/tracker/` (not shipped). `npm run build` bundles it into the two files the plugin ships, `plugins/project-kit/skills/tracker/dist/tracker.mjs` (the CLI) and `dist/ui.html` (the React view, everything inlined); commit the rebuilt bundles with the source (a test fails when they differ). The view's design lives in `packages/tracker/docs/design/DESIGN.md`; `ui/` reads only the graph contract (`src/graph-types.ts`) and the status vocabulary (tested). `scripts/preview.sh` rebuilds and exports a generated sample project (`scripts/sample-project.mjs`) to `preview/habitly.html` for visual checks. `src/core/` (documents, rules, queries) never imports `src/commands/` or the CLI (tested). Commands stage their writes and only flush them if they succeed, so a refused command changes nothing.
+The tracker is TypeScript in `packages/tracker/` (not shipped). `npm run build` bundles it into the files the plugin ships, `plugins/project-kit/skills/tracker/dist/tracker.mjs` (the CLI), `dist/mcp.mjs` (the same commands as stdio MCP tools, registered in `plugins/project-kit/.mcp.json`) and `dist/ui.html` (the React view, everything inlined); commit the rebuilt bundles with the source (a test fails when they differ). The view's design lives in `packages/tracker/docs/design/DESIGN.md`; `ui/` reads only the graph contract (`src/graph-types.ts`) and the status vocabulary (tested). `scripts/preview.sh` rebuilds and exports a generated sample project (`scripts/sample-project.mjs`) to `preview/habitly.html` for visual checks. `src/core/` (documents, rules, queries) never imports `src/commands/` or the CLI (tested). Commands stage their writes and only flush them if they succeed, so a refused command changes nothing.
 
 ```bash
 cd packages/tracker && npm ci && npm run typecheck && npm test && npm run build
