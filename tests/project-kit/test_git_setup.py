@@ -52,3 +52,53 @@ def test_env_file_is_blocked_even_if_forced(repo: Repo):
     repo.git("add", "-f", ".env")
     r = repo.py(SECRETS, "--staged")
     assert r.returncode == 1 and ".env files must never be committed" in r.stderr
+
+
+NO_TRACKER = "packs: [base, python]\nmodules:\n  tracker: false\n  graphify: false\n"
+
+
+def test_no_tracker_generates_nothing_tracker_related(repo: Repo):
+    repo.write(".project/config.yaml", NO_TRACKER)
+    assert repo.py(SETUP_GIT, "--root", ".").returncode == 0
+    for f in [*(repo.path / ".githooks").iterdir(), repo.path / ".github/pull_request_template.md"]:
+        text = f.read_text()
+        for word in ("tracker", "P-0", "P-###", ".project/plans", "{{"):
+            assert word not in text, f"{f.name} mentions {word!r}"
+    assert repo.commit("chore: project scaffold (project-kit)").returncode == 0  # first commit allowed
+
+
+def test_no_tracker_protects_main_but_allows_any_branch(repo: Repo):
+    repo.write(".project/config.yaml", NO_TRACKER)
+    repo.py(SETUP_GIT, "--root", ".")
+    repo.commit("chore: project scaffold (project-kit)")
+    repo.write(".project/notes.md", "x\n")
+    r = repo.commit("chore: notes on main", ".project/notes.md")
+    assert r.returncode != 0 and "git switch -c" in r.stderr  # no .project/ exception without the tracker
+    repo.git("reset", "-q")
+    repo.git("switch", "-q", "-c", "feat/login")
+    repo.write("app.py", "print(1)\n")
+    r = repo.commit("feat(auth): add login", "app.py")
+    assert r.returncode == 0 and "doesn't follow" not in r.stderr
+
+
+def test_tracker_default_renders_markers(repo: Repo):
+    scaffold(repo)
+    for f in [*(repo.path / ".githooks").iterdir(), repo.path / ".github/pull_request_template.md"]:
+        assert "{{" not in f.read_text(), f.name
+    assert "tracker.mjs start" in (repo.path / ".githooks/pre-commit").read_text()
+
+
+def test_existing_hooks_path_is_respected(repo: Repo):
+    repo.write(".project/config.yaml", "packs: [base]\n")
+    repo.git("config", "core.hooksPath", ".husky")
+    r = repo.py(SETUP_GIT, "--root", ".")
+    assert r.returncode == 0 and "--take-over-hooks" in r.stdout
+    assert repo.git("config", "core.hooksPath").stdout.strip() == ".husky"
+    repo.py(SETUP_GIT, "--root", ".", "--take-over-hooks")
+    assert repo.git("config", "core.hooksPath").stdout.strip() == ".githooks"
+
+
+def test_graphify_module_ignores_graph_output(repo: Repo):
+    repo.write(".project/config.yaml", "packs: [base]\nmodules:\n  tracker: true\n  graphify: true\n")
+    repo.py(SETUP_GIT, "--root", ".")
+    assert "graphify-out/" in (repo.path / ".gitignore").read_text()

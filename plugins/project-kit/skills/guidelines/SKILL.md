@@ -24,6 +24,9 @@ Packs are versioned in `${CLAUDE_SKILL_DIR}/stacks/` and copied verbatim; **only
 ## Prerequisite
 `.project/config.yaml` exists with `packs:` and (for monorepos) `architecture.backend_dir` / `frontend_dir`. If not, run `discover` first.
 
+## Modules
+Read `modules:` in config. A missing key means tracker on, graphify off. The CLAUDE.md and README templates contain `{{#tracker}}…{{/tracker}}` (keep when on), `{{^tracker}}…{{/tracker}}` (keep when off) and `{{#graphify}}…{{/graphify}}` blocks. Resolve them and leave no marker behind. `compose_rules.py` does the same for the tooling it copies. **With the tracker off, nothing you write may mention the tracker, plans, `P-###` or `.project/plans`.**
+
 ## Steps
 
 1. **Read** `.project/config.yaml`, `docs/project-brief.md`, `docs/architecture.md`.
@@ -40,8 +43,8 @@ Packs are versioned in `${CLAUDE_SKILL_DIR}/stacks/` and copied verbatim; **only
    - **Frontend modules**: the module list (mirroring backend contexts/features), allowed module→module imports, and project-specific shared components/patterns once they exist.
    - **Domain vocabulary**: one line per core term.
    - **Project-only rules** (data handling, compliance, integration-specific constraints).
-4. **Project `CLAUDE.md`** from `${CLAUDE_SKILL_DIR}/templates/CLAUDE.project.md`. Fill every `<placeholder>`; keep *How we work* verbatim. Same no-duplication rule: point to the home of each fact (config, `project.md`, architecture, `make help`) rather than restating the stack, layout or commands. Link docs instead of `@`-importing them (keeps every session's context small). Target < 60 lines. If a `CLAUDE.md` exists, merge and show the diff.
-5. **`.claude/settings.json`** from `templates/settings.json`: plan-mode drafts → `.project/drafts`; SessionStart hook activates `.githooks` in every clone, shows the active plan and lists unconverted drafts; PostToolUse hooks format each file Claude edits (no-op until formatters are installed) and, when plan mode exits, tell Claude to turn the draft into a tracked plan (`new-plan`), or fold it into the current plan's file on a plan branch; denies reading `.env`, force-push and `--no-verify`. Merge with an existing file.
+4. **Project `CLAUDE.md`** from `${CLAUDE_SKILL_DIR}/templates/CLAUDE.project.md`. Fill every `<placeholder>` and resolve the module blocks; keep *How we work* verbatim (the variant for the chosen modules). Same no-duplication rule: point to the home of each fact (config, `project.md`, architecture, `make help`) rather than restating the stack, layout or commands. Link docs instead of `@`-importing them (keeps every session's context small). Target < 60 lines. If a `CLAUDE.md` exists, merge and show the diff.
+5. **`.claude/settings.json`** from `templates/settings.json`: plan-mode drafts → `.project/drafts`; SessionStart hook activates `.githooks` in every clone, shows the active plan and lists unconverted drafts; PostToolUse hooks format each file Claude edits (no-op until formatters are installed) and, when plan mode exits, tell Claude to turn the draft into a tracked plan (`new-plan`), or fold it into the current plan's file on a plan branch; denies reading `.env`, force-push and `--no-verify`. **Tracker off:** drop `plansDirectory`, the `tracker.mjs` allow rule, the `[ -f .project/bin/tracker.mjs ] && … current;` and `track_plan_draft.py --session` parts of the SessionStart command, and the `ExitPlanMode` PostToolUse hook. Merge with an existing file.
 6. **`README.md`** from `${CLAUDE_SKILL_DIR}/templates/README.project.md`. **No duplication:** the README owns only the tagline, the status line and *Getting started* (prerequisites, clone, hooks, `.env`, first run). Everything else is a link in the *Where to find things* map: brief, architecture (layout), ADRs, config, rules, roadmap, workflow, `make help`. Never copy the layout, stack, scope or commands into it. If a README exists, merge: keep the user's content, replace copied sections with links, and show the diff.
 7. **Repo hygiene files** (skip any that exist):
    - `.editorconfig`, from the template;

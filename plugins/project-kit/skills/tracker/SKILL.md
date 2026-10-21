@@ -23,7 +23,7 @@ Sprint (S-01: a time-box that commits plans against capacity)
 ## Script
 All state changes go through the script. Never hand-edit `status`, dates, IDs, `plans:`, `velocity` or the generated `ROADMAP.md`, `BACKLOG.md` and `STATUS.md`.
 - In a project: `node .project/bin/tracker.mjs <cmd>` (vendored single-file copy — prefer this). Needs Node.js ≥ 20; nothing to install.
-- Not yet initialized: `node "${CLAUDE_SKILL_DIR}/dist/tracker.mjs" init` at the repo root. This also replaces a legacy Python copy (`.project/bin/tracker.py`); then update any `python3 .project/bin/tracker.py` references in the project's CLAUDE.md, `.claude/settings.json` and CI (`/project-kit:guidelines` refreshes them).
+- Not yet initialized: `node "${CLAUDE_SKILL_DIR}/dist/tracker.mjs" init` at the repo root. If config has `modules.tracker: false` (the project started without the tracker), set it to `true` first. Then refresh what was rendered without it: `/project-kit:guidelines --refresh` (CLAUDE.md, settings, tooling), and for `.githooks/pre-commit`, `commit-msg` and the PR template, show the user the diff against a fresh render (`setup_git.py` in a temp copy) and replace them only with a yes. This also replaces a legacy Python copy (`.project/bin/tracker.py`); then update any `python3 .project/bin/tracker.py` references in the project's CLAUDE.md, `.claude/settings.json` and CI (`/project-kit:guidelines` refreshes them).
 
 | Command | Purpose |
 |---|---|

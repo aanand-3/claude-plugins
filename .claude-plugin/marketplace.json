@@ -9,7 +9,7 @@
     {
       "name": "project-kit",
       "source": "./plugins/project-kit",
-      "description": "Project kickoff: research, discover, design, guidelines, tracker, git-setup, global-setup."
+      "description": "Project kickoff and adoption: research, discover, design, guidelines, tracker, graph, git-setup, global-setup."
     }
   ]
 }
