@@ -1,0 +1,209 @@
+<!doctype html>
+<!-- project-kit tracker UI — design directions (from skills/design/templates/directions.html).
+     One <section class="direction"> per direction; every colour, font and radius comes from its CSS variables. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tracker UI — design directions</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Figtree:wght@400;500;600&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Nunito+Sans:opsz,wght@6..12,400;6..12,500;6..12,600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  body { font: 15px/1.5 system-ui, sans-serif; background: #f4f4f2; color: #1d1d1b; padding: 24px; }
+  body.dark { background: #111; color: #eee; }
+  header.page { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 24px; gap: 16px; flex-wrap: wrap; }
+  header.page p { color: #777; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 24px; align-items: start; }
+
+  /* ---------- A · Harbor Paper — Wada #167 ---------- */
+  #a {
+    --background: #fffaef; --foreground: #2b2216; --card: #fffef8; --muted: #f8f0e5; --muted-foreground: #72695d;
+    --border: #e4dcd2; --primary: #064f6e; --primary-foreground: #fff; --secondary: #c5f2ff; --secondary-foreground: #111;
+    --accent: #e0f7ff; --destructive: #be3c3c; --success: #2f7a4f; --warning: #9a6200;
+    --chart-1: #064f6e; --chart-2: #c2ae93; --chart-3: #a7d4e4;
+    --font-display: "Fraunces", Georgia, serif; --font-body: "Figtree", system-ui, sans-serif; --font-mono: ui-monospace, monospace;
+    --radius: 10px;
+  }
+  body.dark #a {
+    --background: #1e1911; --foreground: #f9ecdb; --card: #24211d; --muted: #352f28; --muted-foreground: #aea498;
+    --border: #3e3830; --primary: #336c8d; --primary-foreground: #fff; --secondary: #134350; --secondary-foreground: #fff;
+    --accent: #192e3c; --destructive: #f36b64; --success: #6cc08f; --warning: #e0a94a;
+    --chart-1: #a7d4e4; --chart-2: #c2ae93; --chart-3: #336c8d;
+  }
+  /* ---------- B · Indigo Draft — Wada #139 ---------- */
+  #b {
+    --background: #f3fcff; --foreground: #1e2526; --card: #faffff; --muted: #e9f2f4; --muted-foreground: #646c6e;
+    --border: #d5dee1; --primary: #051230; --primary-foreground: #fff; --secondary: #d7edff; --secondary-foreground: #111;
+    --accent: #f0f2ff; --destructive: #be3c3c; --success: #2c7650; --warning: #95600a;
+    --chart-1: #051230; --chart-2: #97acc8; --chart-3: #b6bfc1;
+    --font-display: "Manrope", system-ui, sans-serif; --font-body: "Manrope", system-ui, sans-serif; --font-mono: "JetBrains Mono", ui-monospace, monospace;
+    --radius: 6px;
+  }
+  body.dark #b {
+    --background: #141b1c; --foreground: #e6f0f2; --card: #1e2223; --muted: #2a3233; --muted-foreground: #9fa7a9;
+    --border: #333a3c; --primary: #8296c4; --primary-foreground: #0b1220; --secondary: #2a3f57; --secondary-foreground: #fff;
+    --accent: #282b3c; --destructive: #f36b64; --success: #6cc08f; --warning: #e0a94a;
+    --chart-1: #97acc8; --chart-2: #5d6489; --chart-3: #b6bfc1;
+  }
+  /* ---------- C · Sienna Workshop — Wada #182 ---------- */
+  #c {
+    --background: #f9faff; --foreground: #212331; --card: #feffff; --muted: #eff0fc; --muted-foreground: #686a77;
+    --border: #dbdce7; --primary: #bb7125; --primary-foreground: #111; --secondary: #ffe6c7; --secondary-foreground: #111;
+    --accent: #fff0df; --destructive: #be3c3c; --success: #2f7a4f; --warning: #9a6200;
+    --chart-1: #bb7125; --chart-2: #4b3317; --chart-3: #051230;
+    --font-display: "Bricolage Grotesque", system-ui, sans-serif; --font-body: "Nunito Sans", system-ui, sans-serif; --font-mono: ui-monospace, monospace;
+    --radius: 12px;
+  }
+  body.dark #c {
+    --background: #181921; --foreground: #ebedff; --card: #212126; --muted: #2f3039; --muted-foreground: #a4a5b3;
+    --border: #383942; --primary: #bb7125; --primary-foreground: #111; --secondary: #4f3921; --secondary-foreground: #fff;
+    --accent: #38291d; --destructive: #f36b64; --success: #6cc08f; --warning: #e0a94a;
+    --chart-1: #d68a3c; --chart-2: #a4a5b3; --chart-3: #6b7299;
+  }
+
+  .direction { background: var(--background); color: var(--foreground); font-family: var(--font-body);
+    border: 1px solid var(--border); border-radius: calc(var(--radius) + 4px); overflow: hidden; }
+  .direction > * { padding: 20px 24px; border-bottom: 1px solid var(--border); }
+  .direction > *:last-child { border-bottom: 0; }
+  .direction h2 { font: 600 28px/1.15 var(--font-display); letter-spacing: -0.02em; }
+  .meta { color: var(--muted-foreground); font-size: 13px; margin-top: 4px; }
+  .why { font-size: 14px; color: var(--muted-foreground); margin-top: 8px; }
+  .swatches { display: flex; gap: 6px; flex-wrap: wrap; }
+  .swatch { width: 52px; font-size: 11px; color: var(--muted-foreground); }
+  .swatch i { display: block; height: 36px; border-radius: calc(var(--radius) - 4px); border: 1px solid var(--border); margin-bottom: 4px; }
+  .type p + p { margin-top: 6px; }
+  .t-display { font: 600 32px/1.1 var(--font-display); letter-spacing: -0.02em; }
+  .t-title { font: 600 18px/1.25 var(--font-display); }
+  .t-caption { font-size: 12px; color: var(--muted-foreground); }
+  .controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .btn { font: 500 14px var(--font-body); height: 36px; padding: 0 14px; border-radius: var(--radius); border: 1px solid transparent; cursor: pointer; }
+  .btn-primary { background: var(--primary); color: var(--primary-foreground); }
+  .btn-secondary { background: var(--secondary); color: var(--secondary-foreground); }
+  .btn-ghost { background: transparent; color: var(--foreground); border-color: var(--border); }
+  .input { height: 36px; padding: 0 12px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--card); color: var(--foreground); font: inherit; min-width: 0; flex: 1; }
+  .btn:focus-visible, .input:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; }
+  .id { font: 500 12px var(--font-mono); color: var(--muted-foreground); }
+  .chip { display: inline-flex; align-items: center; gap: 4px; padding: 1px 8px; border-radius: 999px; font-size: 12px; background: var(--muted); color: var(--foreground); white-space: nowrap; }
+  .chip.accent { background: var(--secondary); color: var(--secondary-foreground); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .ok { color: var(--success); } .warn { color: var(--warning); } .bad { color: var(--destructive); }
+  .screen { background: var(--muted); display: grid; gap: 12px; }
+  .kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .kpi b { display: block; font: 600 22px/1.2 var(--font-display); font-variant-numeric: tabular-nums; }
+  .kpi span { font-size: 12px; color: var(--muted-foreground); }
+  .board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .col h4 { font: 600 12px var(--font-body); color: var(--muted-foreground); margin-bottom: 6px; display: flex; justify-content: space-between; }
+  .tcard { background: var(--card); border: 1px solid var(--border); border-radius: calc(var(--radius) - 2px); padding: 8px 10px; margin-bottom: 6px; font-size: 13px; line-height: 1.35; }
+  .tcard .row { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; gap: 4px; }
+  .bar { height: 4px; border-radius: 2px; background: var(--muted); overflow: hidden; margin-top: 6px; }
+  .bar i { display: block; height: 100%; background: var(--primary); }
+  .tcard.active { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
+  svg text { fill: var(--muted-foreground); font: 10px var(--font-body); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+  th { text-align: left; font-weight: 500; color: var(--muted-foreground); font-size: 12px; }
+  th, td { padding: 6px 4px; border-bottom: 1px solid var(--border); }
+  td.num, th.num { text-align: right; }
+</style>
+</head>
+<body>
+<header class="page">
+  <div>
+    <h1 style="font-size:22px">Tracker UI — design directions</h1>
+    <p>Pick one, or mix (e.g. “palette of A, type of C”). Palettes from Sanzo Wada, <em>A Dictionary of Color Combinations</em>.</p>
+  </div>
+  <button class="btn btn-ghost" style="border-color:#bbb;color:inherit" onclick="document.body.classList.toggle('dark')">Toggle dark</button>
+</header>
+
+<div class="grid" id="grid"></div>
+
+<template id="direction">
+  <section class="direction">
+    <div>
+      <h2 data-name></h2>
+      <p class="meta" data-meta></p>
+      <p class="why" data-why></p>
+    </div>
+    <div class="swatches">
+      <div class="swatch"><i style="background:var(--background)"></i>bg</div>
+      <div class="swatch"><i style="background:var(--foreground)"></i>ink</div>
+      <div class="swatch"><i style="background:var(--primary)"></i>primary</div>
+      <div class="swatch"><i style="background:var(--secondary)"></i>second.</div>
+      <div class="swatch"><i style="background:var(--muted)"></i>muted</div>
+      <div class="swatch"><i style="background:var(--chart-2)"></i>chart 2</div>
+      <div class="swatch"><i style="background:var(--chart-3)"></i>chart 3</div>
+    </div>
+    <div class="type">
+      <p class="t-display">M-01 MVP ships Nov 15</p>
+      <p class="t-title">Sprint S-03 · Password reset live</p>
+      <p>Pilot users can sign up, verify their email and reset a forgotten password. Two plans are in review; P-014 waits for the email provider decision in the RAID log.</p>
+      <p class="t-caption">Updated from main + 2 plan branches · 21 Oct 2026, 14:05</p>
+    </div>
+    <div class="controls">
+      <button class="btn btn-primary">Move to ready</button>
+      <button class="btn btn-secondary">Add to sprint</button>
+      <button class="btn btn-ghost">Log note</button>
+    </div>
+    <div class="controls"><input class="input" placeholder="Search plans, items, epics…  (/)"><span class="chip accent">in review</span><span class="chip"><span class="dot" style="background:var(--warning)"></span>P1</span></div>
+    <div class="screen">
+      <div class="kpis">
+        <div class="card kpi"><b>13 / 21</b><span>pts done · S-03 day 4/7</span></div>
+        <div class="card kpi"><b class="ok">On track</b><span>M-01 projected Nov 12</span></div>
+        <div class="card kpi"><b class="bad">2</b><span>open S1/S2 bugs</span></div>
+      </div>
+      <div class="card">
+        <p class="t-title" style="font-size:15px">Burndown — ahead of the ideal line since Tuesday</p>
+        <svg viewBox="0 0 300 90" width="100%" height="90" aria-label="burndown">
+          <line x1="20" y1="10" x2="290" y2="75" stroke="var(--border)" stroke-width="1.5" stroke-dasharray="4 4"/>
+          <polyline points="20,10 65,10 110,28 155,40 200,52" fill="none" stroke="var(--chart-1)" stroke-width="2.5" stroke-linejoin="round"/>
+          <circle cx="200" cy="52" r="3.5" fill="var(--chart-1)"/>
+          <text x="20" y="88">Oct 18</text><text x="250" y="88">Oct 24</text><text x="206" y="50">8 left</text>
+        </svg>
+      </div>
+      <div class="board">
+        <div class="col"><h4>Ready <span>2</span></h4>
+          <div class="tcard"><span class="id">P-015</span><br>Profile page: edit name<div class="row"><span class="chip">FEAT-016</span><span class="id">3 pts</span></div></div>
+          <div class="tcard"><span class="id">P-014</span><br>Email provider switch<div class="row"><span class="chip warn">waits P-012</span><span class="id">5 pts</span></div></div>
+        </div>
+        <div class="col"><h4>In progress <span>1</span></h4>
+          <div class="tcard active"><span class="id">P-013</span><br>Password reset token<div class="bar"><i style="width:60%"></i></div><div class="row"><span class="chip accent">EP-002</span><span class="id">3/5 tasks</span></div></div>
+        </div>
+        <div class="col"><h4>In review <span>2</span></h4>
+          <div class="tcard"><span class="id">P-012</span><br>Signup endpoint<div class="row"><span class="chip">PR #41</span><span class="id">5 pts</span></div></div>
+          <div class="tcard"><span class="id">P-011</span><br>Fix login 500<div class="row"><span class="chip"><span class="dot" style="background:var(--destructive)"></span>BUG-003</span><span class="id">2 pts</span></div></div>
+        </div>
+      </div>
+      <div class="card">
+        <table>
+          <thead><tr><th>Milestone</th><th>Target</th><th class="num">Progress</th><th>Health</th></tr></thead>
+          <tbody>
+            <tr><td>M-01 MVP</td><td>Nov 15</td><td class="num">34 / 55 pts</td><td class="ok">● on track</td></tr>
+            <tr><td>M-02 Teams</td><td>Jan 10</td><td class="num">0 / 41 pts</td><td class="warn">● at risk · 3 unestimated</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</template>
+
+<script>
+  const DIRECTIONS = [
+    { id: "a", name: "Harbor Paper", meta: "Wada #167 · Fraunces / Figtree · radius 10px",
+      why: "Warm cream paper with deep harbour-blue ink: friendly and calm, closest to your “warm” brief, while the single blue accent keeps status and actions unmistakable." },
+    { id: "b", name: "Indigo Draft", meta: "Wada #139 · Manrope / JetBrains Mono IDs · radius 6px",
+      why: "The Linear-like option: cool, crisp and dense, near-black indigo accent, monospace IDs. Most “tool”, least warm — friendly comes only from the soft salvia blue." },
+    { id: "c", name: "Sienna Workshop", meta: "Wada #182 · Bricolage Grotesque / Nunito Sans · radius 12px",
+      why: "Raw-sienna accent on cool paper with indigo ink: the warmest and most characterful, rounder shapes, a confident display face; boldness spent on the one primary action." },
+  ];
+  const grid = document.getElementById("grid"), tpl = document.getElementById("direction");
+  for (const d of DIRECTIONS) {
+    const s = tpl.content.firstElementChild.cloneNode(true);
+    s.id = d.id;
+    s.querySelector("[data-name]").textContent = `${d.id.toUpperCase()} · ${d.name}`;
+    s.querySelector("[data-meta]").textContent = d.meta;
+    s.querySelector("[data-why]").textContent = d.why;
+    grid.append(s);
+  }
+</script>
+</body>
+</html>

@@ -43,16 +43,18 @@ function sprintLine(sprint: Doc): string {
 /** In-progress work, then exactly one NEXT line, in priority order. */
 export function nextStep(store: Store): void {
   store.require();
+  for (const line of nextLines(store)) store.say(line);
+}
+
+/** The lines `next` prints (also shown on the UI's overview). */
+export function nextLines(store: Store): string[] {
   const ctx = new Context(store);
-  for (const p of ctx.active) store.say(`IN PROGRESS  ${p.id}: ${p.get("title")} [${p.get("status")}]`);
+  for (const p of ctx.active) ctx.lines.push(`IN PROGRESS  ${p.id}: ${p.get("title")} [${p.get("status")}]`);
   for (const rule of [ctx.expedite, ctx.wipFull, ctx.startReady, ctx.refineDraft, ctx.triage, ctx.planItem, ctx.epic]) {
     const line = rule.call(ctx);
-    if (line) {
-      store.say(`NEXT         ${line}`);
-      return;
-    }
+    if (line) return [...ctx.lines, `NEXT         ${line}`];
   }
-  store.say("NEXT         nothing planned — create an epic or capture items for the next outcome");
+  return [...ctx.lines, "NEXT         nothing planned — create an epic or capture items for the next outcome"];
 }
 
 /** Everything `next` needs, loaded once; each rule returns a NEXT line or null. */
@@ -62,6 +64,7 @@ class Context {
   sprint: Doc | null;
   inSprint: Set<string>;
   active: Doc[];
+  lines: string[] = [];
 
   constructor(readonly store: Store) {
     this.epics = store.epics();
@@ -107,7 +110,7 @@ class Context {
     let startable = ready.filter((p) => !q.unmetDeps(p, this.plans).length);
     for (const p of ready) {
       if (!startable.includes(p)) {
-        this.store.say(`WAITING      ${p.id}: ${p.get("title")} — needs ${q.unmetDeps(p, this.plans).join(", ")}`);
+        this.lines.push(`WAITING      ${p.id}: ${p.get("title")} — needs ${q.unmetDeps(p, this.plans).join(", ")}`);
       }
     }
     if (this.sprint) {

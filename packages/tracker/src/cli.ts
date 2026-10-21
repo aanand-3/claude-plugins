@@ -5,6 +5,8 @@ import { fail, TrackerError } from "./core/text.js";
 import { current, nextStep } from "./commands/advisor.js";
 import { newItem, triage } from "./commands/backlog.js";
 import { check } from "./commands/checks.js";
+import { exportGraph } from "./commands/export.js";
+import { serve } from "./server.js";
 import { releaseNotes } from "./commands/milestones.js";
 import { init, newDoc, newEpic, newMilestone, newPlan } from "./commands/planning.js";
 import { roadmap, status } from "./commands/reports.js";
@@ -29,6 +31,8 @@ Commands:
   sprint new --goal TEXT [--start DATE] [--length N] | add S-01 P-003 … | start S-01 | close S-01 | show [S-01]
   start PLAN_ID · move ID STATUS [--note] · log ID TEXT
   next · current · check · roadmap [--write] · status [--write] · release-notes M-01 [--write]
+  export [--json] [--out FILE]                  interactive HTML view (.project/view/index.html) or the graph as JSON
+  ui [--port 8765] [--no-open]                  serve the view live on 127.0.0.1 (updates as files change)
 `;
 
 type Args = { pos: string[]; opt: Record<string, string | boolean | undefined>; num: Record<string, number | undefined> };
@@ -79,6 +83,13 @@ const COMMANDS: Record<string, Spec> = {
   check: { pos: [], run: (s) => check(s) },
   roadmap: { pos: [], flag: ["write"], run: (s, a) => { s.require(); roadmap(s, !!a.opt.write); } },
   status: { pos: [], flag: ["write"], run: (s, a) => status(s, !!a.opt.write) },
+  export: { pos: [], str: ["out"], flag: ["json"],
+    run: (s, a) => exportGraph(s, a.opt.json ? "json" : "html", str(a, "out")) },
+  ui: { pos: [], int: ["port"], flag: ["no-open"], run: (s, a) => {
+    serve(s, { port: a.num.port ?? 8765, open: !a.opt["no-open"] }).then(
+      ({ url }) => process.stdout.write(`Tracker UI at ${url} — live while this runs (Ctrl-C to stop)\n`),
+      (e: Error) => { process.stderr.write(`${e.message}\n`); process.exit(1); });
+  } },
   "release-notes": { pos: ["id"], flag: ["write"], run: (s, a) => releaseNotes(s, a.pos[0].toUpperCase(), !!a.opt.write) },
 };
 
