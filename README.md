@@ -18,13 +18,26 @@ Start a new Claude Code session to load it. To pick up later releases, run `clau
 | Skill | Invoke | Purpose |
 |---|---|---|
 | research | `/project-kit:research <idea>` | Standalone, before or after kickoff. Finds competitors, open-source prior art and user complaints, lists features worth adopting, gives a rough bottom-up market estimate, and recommends **go / pivot / kill**. Every claim cites evidence that a script has fetched and checked. Writes `docs/research/` |
-| kickoff | `/project-kit:kickoff <idea>` | Runs discover, design, guidelines, tracker, git and the project plan in order, and can resume after an interruption |
+| kickoff | `/project-kit:kickoff <idea>` | New projects. Asks which optional modules you want (tracker, code graph), then runs discover, design, guidelines, tracker, git, graph and the project plan in order, and can resume after an interruption |
+| adopt | `/project-kit:adopt` | Existing projects. Maps the repo (with graphify if chosen), infers the stack and layout and confirms them with you, then merges config, docs, CLAUDE.md, rules and git guards into what's there, on a `chore/project-kit-adopt` branch. Leaves existing hooks and CI alone unless you say otherwise |
 | discover | `/project-kit:discover` | Interview → `.project/config.yaml`, brief, architecture, ADRs |
 | design | `/project-kit:design [init\|page\|review\|refresh]` | A gallery page of all of Sanzo Wada's *Dictionary of Color Combinations*, each previewed as UI with WCAG-checked roles for light and dark. You shortlist 2–4, and each becomes a full style tile to compare. The pick becomes `docs/design/DESIGN.md` (tokens, layout shell, component inventory, do's and don'ts). Pages are composed from it, and `check_design.py` flags drift |
 | guidelines | `/project-kit:guidelines` | `CLAUDE.md`, path-scoped `.claude/rules/` from stack packs, settings, hygiene files |
 | tracker | `/project-kit:tracker …` | Repo-local project management in `.project/` (Node ≥ 20 CLI, no install): project plan + RAID, milestones with forecasts, sprints (capacity, burndown, velocity, review/retro), a ranked backlog of FEAT/BUG/CHORE/SPIKE items with priority and story points, and plans with tasks (one branch and one PR per plan). Enforced gates: no skeletons, triage, Definition of Ready, WIP limit, exit criteria. Generated roadmap, backlog, status report and release notes |
+| graph | `/project-kit:graph [enable\|build\|remove]` | Optional code knowledge graph via [graphify](https://pypi.org/project/graphifyy/): installs the CLI with your yes, wires its rebuild-on-commit hook and CLAUDE.md section, gitignores `graphify-out/`, and builds the graph so Claude queries it instead of reading files broadly |
 | git-setup | `/project-kit:git-setup` | git init, `.gitignore`, PR template, hooks that protect `main` and enforce Conventional Commits |
 | global-setup | `/project-kit:global-setup` | One-time install of the Karpathy-style working principles into `~/.claude/CLAUDE.md` |
+
+### Optional modules
+Kickoff and adopt ask which of these to include. The choice is recorded in `.project/config.yaml → modules:`.
+
+| Module | Default | When off |
+|---|---|---|
+| `tracker` | on | Nothing tracker-related is generated: no `.project/bin/tracker.mjs`, plans or sprints, and no tracker lines in CLAUDE.md, settings, hooks, the PR template or CI. `main` is still protected, and any branch name works (`feat/<slug>`, `fix/<slug>`, …) |
+| `graphify` | off | No graph. When on, `graphify-out/` is local and gitignored, and on machines without graphify, commits still succeed |
+
+### Existing projects
+Run `/project-kit:adopt` in the repo (clean working tree). It works on a `chore/project-kit-adopt` branch, so `main` is never touched, and opens a PR at the end. Kickoff points you there when it finds existing code.
 
 ### What a kicked-off project looks like
 
@@ -59,7 +72,7 @@ docs/
 .gitignore .gitattributes .editorconfig .env.example README.md
 ```
 
-### Stack packs (v0.8.0)
+### Stack packs (v0.9.0)
 
 | Scope | Packs |
 |---|---|

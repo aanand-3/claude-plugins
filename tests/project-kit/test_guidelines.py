@@ -1,4 +1,5 @@
 import json
+import re
 
 from conftest import COMPOSE, FORMAT, PLAN_DRAFT_HOOK, SKILLS, STRUCTURE, Repo
 
@@ -203,3 +204,20 @@ def test_docs_templates_do_not_duplicate_owned_facts():
         assert "docs/architecture.md" in doc              # ...linked instead
     assert "## Stack" not in claude and "## Tech summary" not in brief
     assert "### Where new code goes" in arch and "├──" in arch  # the one home of the layout
+
+
+def test_tooling_drops_tracker_steps_when_tracker_off(repo: Repo):
+    repo.write(".project/config.yaml", "packs: [base]\nmodules:\n  tracker: false\n")
+    repo.py(COMPOSE, "--root", ".")
+    tooling = repo.path / ".project/templates/tooling"
+    ci = (tooling / "ci/ci.yml").read_text()
+    assert "tracker" not in ci.lower() and not re.search(r"\{\{[#^/]", ci)
+    assert not (repo.path / ".project/bin/track_plan_draft.py").exists()  # plan-draft hook is tracker-only
+    assert "P-" not in (tooling / "ci/pr-title.yml").read_text()
+
+
+def test_tooling_keeps_tracker_steps_by_default(repo: Repo):
+    repo.write(".project/config.yaml", "packs: [base]\n")
+    repo.py(COMPOSE, "--root", ".")
+    ci = (repo.path / ".project/templates/tooling/ci/ci.yml").read_text()
+    assert "tracker.mjs check" in ci and not re.search(r"\{\{[#^/]", ci)

@@ -16,7 +16,12 @@ permissions:
 
 jobs:
   guards:
+{{#tracker}}
     name: guards (structure, tracker, secrets)
+{{/tracker}}
+{{^tracker}}
+    name: guards (structure, secrets)
+{{/tracker}}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -27,8 +32,10 @@ jobs:
           node-version: 22
       - name: Structure report (add --strict once the layout settles)
         run: python3 .project/bin/check_structure.py --all
+{{#tracker}}
       - name: Tracker consistency
         run: node .project/bin/tracker.mjs check
+{{/tracker}}
       - name: Secret scan (gitleaks)
         env:
           GITLEAKS_VERSION: 8.28.0

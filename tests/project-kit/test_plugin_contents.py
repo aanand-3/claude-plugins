@@ -5,7 +5,7 @@ import tomllib
 
 import yaml
 
-from conftest import INSTALL_GLOBAL, PLUGIN, ROOT, SKILLS, Repo
+from conftest import COMPOSE, INSTALL_GLOBAL, PLUGIN, ROOT, SETUP_GIT, SKILLS, Repo, load_script
 
 PACKS = SKILLS / "guidelines" / "stacks"
 
@@ -66,11 +66,16 @@ def test_global_install_is_idempotent_and_preserves_user_content(repo: Repo):
     assert "up to date" in repo.py(INSTALL_GLOBAL, "--apply", "--target", str(target)).stdout
 
 
+MODULE_VARIANTS = [{"tracker": True, "graphify": True}, {"tracker": False, "graphify": False}]
+
+
 def test_yaml_and_toml_templates_parse():
+    render = load_script(SETUP_GIT).render_blocks
     for f in [*SKILLS.rglob("*.yml"), *SKILLS.rglob("*.yaml"), *ROOT.glob(".github/workflows/*.yml")]:
         if f.name == "config.yaml":  # discover template contains <placeholders>
             continue
-        assert yaml.safe_load(f.read_text()) is not None, f
+        for flags in MODULE_VARIANTS:
+            assert yaml.safe_load(render(f.read_text(), flags)) is not None, (f, flags)
     for f in SKILLS.rglob("*.toml"):
         tomllib.loads(f.read_text())
 
@@ -83,3 +88,18 @@ def test_plugin_scripts_stay_small():
     for f in PLUGIN.rglob("*.py"):
         n = len(f.read_text().splitlines())
         assert n <= MAX_MODULE_LINES, f"{f.relative_to(PLUGIN)} has {n} lines — split it by responsibility"
+
+
+def test_module_blocks_render_cleanly_and_both_renderers_agree():
+    """Every {{#m}}/{{^m}} block is closed, leaves no marker behind, and the two script copies match."""
+    git_render, compose_render = load_script(SETUP_GIT).render_blocks, load_script(COMPOSE).render_blocks
+    templated = [f for f in SKILLS.rglob("*") if f.is_file() and f.suffix not in {".py", ".json", ".gif", ".png"}
+                 and re.search(r"\{\{[#^]\w+\}\}", f.read_text(errors="ignore"))]
+    assert len(templated) >= 7  # hooks, PR template, CI, CLAUDE.md, README
+    for f in templated:
+        for flags in MODULE_VARIANTS:
+            out = git_render(f.read_text(), flags)
+            assert out == compose_render(f.read_text(), flags)
+            assert not re.search(r"\{\{[#^/]\w+\}\}", out), (f, flags)
+            if not flags["tracker"] and f.name != "SKILL.md":
+                assert "tracker" not in out.lower(), (f, flags)

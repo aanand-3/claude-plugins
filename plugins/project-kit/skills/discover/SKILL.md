@@ -21,11 +21,20 @@ Question bank, presets and defaults: [references/questions.md](references/questi
 6. **Write outputs** (create directories as needed; never overwrite without asking):
    - `.project/config.yaml` — from `templates/config.yaml`; every key filled (`none` where not applicable). `packs:` lists the guideline packs to apply (see mapping in the question bank).
    - `docs/project-brief.md` — from `templates/project-brief.md`. Fill *Landscape & differentiation* only when a research report exists; otherwise delete that section.
+   - `modules:` in config: the tracker/graphify choice passed in by kickoff or adopt. Run standalone, ask it as one question (tracker recommended). Set `git.branch_pattern` to match: `plan/P-###-<slug>` with the tracker, `feat|fix|chore/<slug>` without.
    - `design:` and `research:` in config: fill `research:` from the report, or set `none`. Leave `design:` as `none`. The design step (`/project-kit:design init`) fills it for frontend and fullstack projects.
    - `docs/architecture.md` — from `templates/architecture.md`: context + container diagram (Mermaid), **Repository layout** (the designed tree with every directory declared in `structure:`, plus the *Where new code goes* table — this is the only place the layout is described), request/data flow, cross-cutting concerns. Concrete to *this* project, not generic.
    - `docs/adr/0001-record-architecture-decisions.md` plus one ADR per significant decision (stack, database, architecture style, Redis/job system if used, **environments & configuration strategy**) — from `templates/adr.md`. Short: context, decision, consequences, alternatives considered.
    - The `structure:` block in config: derive it from the chosen arch pack, backend package name, frontend modules and root files (see the template). Keep it to the high-level layout only (≤ ~6 governed dirs); it's what the pre-commit guard enforces.
 7. Report the files written and hand back (the `kickoff` skill continues with guidelines; standalone, suggest `/project-kit:guidelines`).
+
+## Inferred mode (called by `adopt`)
+The project already exists, so the code is the main source of truth and the interview fills gaps:
+- Fill config from the evidence adopt gathered (manifests, lockfiles, Docker/compose, migrations, CI, the graph report). Show the decision table with a *Source* column (`detected: pyproject.toml`, `assumed`) and ask only about `assumed` rows, in one round plus confirmation.
+- `docs/architecture.md` describes the **as-is** system and layout. Note intended changes as *Direction* with an ADR, not as if they already exist.
+- `structure:` mirrors the real top-level directories and `structure_check: warn`. The guard only checks new and changed files, so existing code never blocks a commit.
+- The brief comes from the README and docs. Mark what you couldn't find as `TODO(owner)` rather than inventing it.
+- ADRs: `0001-record-architecture-decisions` plus `0002-adopt-project-kit`, which records the detected stack and the chosen modules. Don't backfill ADRs for past decisions unless the user asks.
 
 ## Rules
 - Ask few, sharp questions; prefer recommending over enumerating. Never ask more than three rounds plus confirmation.

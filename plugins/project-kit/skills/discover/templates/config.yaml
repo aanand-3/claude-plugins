@@ -81,8 +81,12 @@ research:
 
 packs: [base]           # guideline packs applied to .claude/rules/ (incl. exactly one arch-* pack for a backend)
 
+modules:                # optional parts of project-kit, chosen at kickoff/adopt
+  tracker: <true | false>    # repo-local planning in .project/ (plans, sprints, backlog); false = no tracker files at all
+  graphify: <true | false>   # code knowledge graph via graphify (graphify-out/, gitignored; /project-kit:graph)
+
 git:
   default_branch: main
   remote: <none | github>
   merge: squash
-  branch_pattern: "plan/P-###-<slug>"
+  branch_pattern: <"plan/P-###-<slug>" with the tracker | "feat|fix|chore/<slug>" without>
