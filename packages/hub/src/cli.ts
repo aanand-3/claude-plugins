@@ -13,7 +13,8 @@ import { status } from "./commands/reports.js";
 import { context } from "./commands/context.js";
 import { guard } from "./commands/guard.js";
 import { agents } from "./commands/agents.js";
-import { assign, staff } from "./commands/team.js";
+import { assign, reassign, staff } from "./commands/team.js";
+import { pauseTeam, resumeTeam } from "./commands/liveness.js";
 import { checkpoint, handoff, resume } from "./commands/execution.js";
 import { answer, ask, escalate, listQuestions } from "./commands/questions.js";
 import { learn, recallCmd } from "./commands/knowledge.js";
@@ -54,6 +55,8 @@ Commands:
   guard                                         PreToolUse hook: reads the hook JSON on stdin, prints the decision
   assign PLAN_ID --to ROLE [--team T] [--note TXT]   open a ready plan for a role (start then needs it)
   staff [--json]                                what can run in parallel now, within budgets.max_agents
+  reassign PLAN_ID [--to ROLE] [--note TXT] [--force]   release a stale claim and assign the plan again
+  pause [--reason TXT] · resume --team [--note TXT]     stop / restart staffing and starts (executive or director)
   agents [--check]                              render the role agents (.claude/agents/crew-<role>.md) from the policy
   ask [ID] --to ROLE TEXT [--fyi] · escalate [ID] TEXT · answer Q-… TEXT [--decision [--scope GLOBS]] [--approved-by NAME]
   questions [--to ROLE] [--ref ID] [--all] [--json]       questions between roles; an open one blocks only its document
@@ -112,7 +115,11 @@ const COMMANDS: Record<string, Spec> = {
     choices: { result: ["pass", "fail"] },
     run: (s, a) => checkpoint(s, a.pos[0], { step: str(a, "step"), run: str(a, "run"), verify: str(a, "verify"), result: str(a, "result"),
       ac: str(a, "ac"), output: str(a, "output"), attempt: str(a, "attempt"), why: str(a, "why"), note: str(a, "note"), auto: !!a.opt.auto }) },
-  resume: { pos: [], rest: true, flag: ["json"], run: (s, a) => resume(s, a.pos[0], !!a.opt.json) },
+  resume: { pos: [], rest: true, str: ["note"], flag: ["json", "team"],
+    run: (s, a) => (a.opt.team ? resumeTeam(s, str(a, "note")) : resume(s, a.pos[0], !!a.opt.json)) },
+  pause: { pos: [], str: ["reason"], run: (s, a) => pauseTeam(s, str(a, "reason")) },
+  reassign: { pos: ["id"], str: ["to", "note", "approved-by"], flag: ["force"],
+    run: (s, a) => reassign(s, a.pos[0], str(a, "to"), str(a, "note"), !!a.opt.force, str(a, "approved-by")) },
   handoff: { pos: [], rest: true, run: (s, a) => handoff(s, a.pos[0]) },
   guard: { pos: [], run: (s) => guard(s) },
   assign: { pos: ["id"], str: ["to", "team", "note", "approved-by"], required: ["to"],

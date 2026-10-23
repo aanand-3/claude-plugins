@@ -15,7 +15,8 @@ import { answer, ask, escalate, listQuestions } from "./commands/questions.js";
 import { learn, recallCmd } from "./commands/knowledge.js";
 import { EVENT_TYPES, showLedger } from "./commands/ledger.js";
 import { setFocus } from "./commands/planning.js";
-import { assign, staff } from "./commands/team.js";
+import { assign, reassign, staff } from "./commands/team.js";
+import { pauseTeam, resumeTeam } from "./commands/liveness.js";
 import { log, move, usage } from "./commands/workflow.js";
 import { Store } from "./core/store.js";
 import { HubError } from "./core/text.js";
@@ -95,6 +96,14 @@ export const TOOLS: Record<string, Tool> = {
   staff: { description: "What can run in parallel now (`crew.mjs staff`): ready plans whose dependencies are done, that overlap "
     + "nothing in progress or each other, within budgets.max_agents, each routed to a team; and why the others wait.",
     input: obj({ json: { type: "boolean" } }), run: (st, a) => staff(st, a.json === true) },
+  reassign: { description: "Move stuck work to another run (`crew.mjs reassign`): releases a stale claim (limits.stale_claim_hours) "
+    + "and assigns the plan again; the next agent takes it over with start, which resumes its branch. Under the lifecycle preset, the Director's.",
+    input: obj({ id: text("e.g. P-004"), to: text("role, default: the current assignment"), note: text("why") }, ["id"]),
+    run: (st, a) => { reassign(st, s(a, "id")!, s(a, "to"), s(a, "note")); } },
+  pause: { description: "Pause the team (`crew.mjs pause`), or resume it with resume: true: while paused, staff and start refuse. "
+    + "The executive's or the Director's call.",
+    input: obj({ reason: text("why (pause) or a note (resume)"), resume: { type: "boolean" } }),
+    run: (st, a) => (a.resume === true ? resumeTeam(st, s(a, "reason")) : pauseTeam(st, s(a, "reason"))) },
   log: { description: "Append a dated line to a document's log (`crew.mjs log`).",
     input: obj({ id: text("e.g. P-004"), text: text("the log entry") }, ["id", "text"]), run: (st, a) => log(st, up(a, "id"), s(a, "text")!) },
   focus: { description: "Set the focus goal the team works toward now (`crew.mjs focus`).",

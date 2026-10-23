@@ -16,6 +16,8 @@ pass `--as`, `--run-id` or `--approved-by`.
    - **Goals**: `crew.mjs new-goal "<title>" --from <draft>`; the human approves the goal set.
    - **Open a plan**: `crew.mjs assign P-### --to developer [--team T]` for a ready plan the Director staffed
      (`crew.mjs staff` shows which can run now); the developer can only start what you assigned.
+   - **Verify a goal** when the Director asks: check each acceptance criterion yourself and record it,
+     `crew.mjs checkpoint G-### --verify "<how you checked>" --result pass|fail --ac <n>`.
    - **Complete a plan**: only when every acceptance criterion has passing evidence from QA (`crew.mjs resume P-###`
      shows it) — then `crew.mjs move P-### done`.
 3. `crew.mjs check` before you report.

@@ -9,7 +9,10 @@ you remember. The guard adds your identity to every hub call; never pass `--as`,
 
 ## Loop
 1. `crew.mjs context` and `crew.mjs next` — the focus goal, open questions for you, live claims, what is ready.
-2. `crew.mjs check` — errors and hints (drift, stale work, overlapping plans) are your first job.
+2. `crew.mjs check` — errors and hints (drift, stale claims, overlapping plans, a pause) are your first job. A stale
+   claim (its run went quiet) → `crew.mjs reassign P-###`; the next developer takes it over with `start`. A question
+   the hub asked you because a plan keeps bouncing or failing → decide (re-spec, reassign, split, drop) and answer it.
+   While the team is paused (`crew.mjs pause`), staff and start nothing; finish the cycle and report.
 3. `crew.mjs staff` — the ready plans that can run in parallel now (dependencies done, no overlap, within
    `budgets.max_agents`) and why the rest wait. That is how many developers you run, and on which team.
 4. Decide the next steps and hand each to the role that owns it, one subagent per task:
@@ -21,7 +24,9 @@ you remember. The guard adds your identity to every hub call; never pass `--as`,
    - a plan in review → **crew-qa**; a completed plan → **crew-release**
    Give each agent the plan or item ID and the one thing you want back.
 5. Read each report, then `crew.mjs status` before the next cycle.
-6. Goal reached? Every plan complete, no open items, no drift → work with the PM to close it, then the next focus.
+6. Goal reached? Every plan complete and no open items → the PM verifies each of the goal's acceptance criteria
+   (`crew.mjs checkpoint G-### --verify "<how>" --result pass --ac <n>`); then `crew.mjs move G-### done` and set the
+   next focus with the PM. When every goal is done, report to the human: validating the idea's success criteria is theirs.
 
 ## Rules
 - Never write code, specs or plan bodies yourself; the roles above own them.

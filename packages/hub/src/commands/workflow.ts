@@ -6,6 +6,8 @@ import { overlapping } from "../core/footprint.js";
 import { approvalReason } from "../core/policy.js";
 import { evidenceProblems, writeHandoff } from "./execution.js";
 import { FORWARD, openQuestions } from "./questions.js";
+import { goalProblems } from "./goals.js";
+import { bounces, escalateLimit, refuseWhilePaused } from "./liveness.js";
 import { CLOSED, FLOWS, ITEM_CLOSED, type Kind } from "../core/model.js";
 import * as q from "../core/queries.js";
 import type { Store } from "../core/store.js";
@@ -37,6 +39,9 @@ export function move(store: Store, docId: string, status: string, note?: string,
   stamp(kind!, doc, status);
   doc.set("status", status);
   if (kind === "plan" && status === "in-review" && doc.source === "worktree") writeHandoff(store, doc);
+  if (kind === "plan" && old === "in-review" && status === "in-progress") { // counted with this move: escalated once over the limit
+    escalateLimit(store, doc.id, bounces(store.ledger.events(), doc.id) + 1, store.policy.policy.limits.max_bounces, "came back from review");
+  }
   const approval = approvedBy ? ` (approved by ${approvedBy})` : "";
   doc.appendLog(`status ${old} → ${status}` + (note ? ` — ${note}` : "") + approval, LOG_SECTION[kind!] ?? "Progress log");
   doc.save();
@@ -107,6 +112,9 @@ function guard(store: Store, kind: Kind, doc: Doc, status: string, approvedBy?: 
     problems = [...doc.tasks().filter(([done]) => !done).map(([, t]) => `unchecked task: ${t}`),
       ...evidenceProblems(store, doc, approvedBy)];
     label = "can't be done";
+  } else if (kind === "goal" && status === "done") {
+    problems = goalProblems(store, doc);
+    label = "isn't reached";
   } else if (kind === "goal" && status === "active") {
     problems = doc.missing(["Outcome", "Acceptance criteria"]).map((n) => `empty section: ${n}`);
     label = "can't be active";
@@ -129,8 +137,13 @@ function stamp(kind: Kind, doc: Doc, status: string): void {
 
 export function start(store: Store, planId: string, force = false, approvedBy?: string): void {
   store.require();
+  refuseWhilePaused(store, "new starts");
   let doc = store.find(planId);
-  if (!force) checkStartable(store, doc);
+  const branch = doc.get("branch") || `plan/${doc.id}-${slugify(doc.get("title") ?? "")}`;
+  // its branch exists and nobody holds it (released or reassigned): this run takes the work over where it stopped
+  const takeover = git.planBranches().includes(branch) && !store.ledger.claims().has(doc.id)
+    && ["in-progress", "blocked"].includes(store.ledger.lastStatus().get(doc.id) ?? doc.get("status") ?? "");
+  if (!force && !takeover) checkStartable(store, doc);
   const over = budgetProblems(store);
   if (over.length && !approvedBy) {
     fail(`Over budget — no new work without a human's approval (\`start ${doc.id} --approved-by <name>\`):\n  - ${over.join("\n  - ")}`);
@@ -153,20 +166,21 @@ export function start(store: Store, planId: string, force = false, approvedBy?: 
   for (const o of overlapping(doc, store.plans(true)).filter((x) => store.plans(true).get(x.id)?.get("status") !== "ready")) {
     store.say(`warning: ${planId} overlaps ${o.id} (in progress) on ${o.globs.join(", ")} — expect conflicts; coordinate or add depends_on`);
   }
-  const branch = doc.get("branch") || `plan/${doc.id}-${slugify(doc.get("title") ?? "")}`;
   const from = git.currentBranch(), sha = git.git(["rev-parse", "HEAD"])?.trim();
-  git.git(["switch", "-c", branch], true);
+  // a takeover may find the branch still checked out in the gone run's worktree
+  git.git(takeover ? ["switch", "--ignore-other-worktrees", branch] : ["switch", "-c", branch], true);
   store.ws.onAbort(() => { // refused later (a gate on the branch, or a claim race at flush): leave no branch behind
     git.git(from ? ["switch", "-q", from] : ["switch", "-q", "--detach", sha ?? "HEAD"]);
-    git.git(["branch", "-D", branch]);
+    if (!takeover) git.git(["branch", "-D", branch]);
   });
   doc = store.find(planId); // re-read on the new branch
   if (doc.get("status") === "draft" && force) {
     doc.set("status", "ready");
     doc.save();
   }
-  store.ledger.record("claim", doc.id, { branch, ...(force ? { force: true } : {}) });
-  move(store, planId, "in-progress", `branch ${branch}`, force, approvedBy);
+  store.ledger.record("claim", doc.id, { branch, ...(force ? { force: true } : {}), ...(takeover ? { takeover: true } : {}) });
+  if (doc.get("status") !== "in-progress") move(store, planId, "in-progress", `branch ${branch}`, force, approvedBy);
+  else store.say(`${doc.id}: taken over where it stopped — \`resume ${doc.id}\``);
   store.say(`Switched to ${branch} — claimed by ${store.ledger.who.actor} (${store.ledger.who.run})`);
 }
 

@@ -9,6 +9,7 @@ import { secretsIn } from "../core/knowledge.js";
 import type { LedgerEvent } from "../core/ledger.js";
 import type { Store } from "../core/store.js";
 import { fail, stripComments, today } from "../core/text.js";
+import { attempts, escalateLimit } from "./liveness.js";
 
 const OUTPUT_LINES = 15, OUTPUT_CHARS = 2000, RUN_TIMEOUT_MS = 10 * 60_000;
 
@@ -78,6 +79,7 @@ function snapshot(): { sha: string | null; dirty: string[]; fingerprint: string 
 
 function planFromBranch(store: Store, id?: string): Doc | null {
   const pid = id?.toUpperCase() ?? /^plan\/(P-\d+)/.exec(git.currentBranch() ?? "")?.[1];
+  if (pid?.startsWith("G-")) return store.find(store.checkRef(pid, "goal")); // goal evidence (checkpoint only)
   return pid ? store.plans(true).get(pid) ?? fail(`No plan ${pid}.`) : null;
 }
 
@@ -113,10 +115,13 @@ export function checkpoint(store: Store, id: string | undefined, o: CheckpointOp
     verify.push({ cmd: o.verify, ok: o.result === "pass", ac: acs, ac_text: prints, ...(o.output ? { output: tail(o.output, store.policy.policy.secrets.patterns) } : {}), observed: false });
   }
   if (o.attempt && !o.why) fail("--attempt needs --why: what made it fail, so the next run doesn't retry it.");
-  const step = o.step ?? plan.tasks().find(([done]) => !done)?.[1].split(":")[0] ?? "done";
+  const goal = plan.id.startsWith("G-");
+  if (goal && !verify.length) fail(`A goal's checkpoint records evidence: \`checkpoint ${plan.id} --verify "<how>" --result pass|fail --ac n\`.`);
+  const step = goal ? "goal" : o.step ?? plan.tasks().find(([done]) => !done)?.[1].split(":")[0] ?? "done";
   store.ledger.record("checkpoint", plan.id, { step, sha: snap.sha, dirty: snap.dirty.slice(0, 50), fingerprint: snap.fingerprint,
     ...(verify.length ? { verify } : {}), ...(o.attempt ? { attempt: { what: o.attempt, why: o.why } } : {}),
     ...(o.note ? { note: o.note } : {}), ...(o.auto ? { auto: true } : {}) });
+  if (o.attempt) escalateLimit(store, plan.id, attempts(store.ledger.events(), plan.id), store.policy.policy.limits.max_attempts, "has failed attempts recorded");
   if (!o.auto) {
     store.say(`${plan.id}: checkpoint at ${step}${snap.sha ? ` (${snap.sha.slice(0, 7)})` : ""}`
       + verify.map((v) => ` — ${v.ok ? "✓" : "✗"} ${v.cmd}`).join(""));

@@ -10,6 +10,7 @@ import { evidence, implementers } from "./execution.js";
 import { budgetProblems } from "./workflow.js";
 import { openQuestions } from "./questions.js";
 import { staffing } from "./team.js";
+import { paused, staleClaims } from "./liveness.js";
 
 type Rule = (s: View) => string[];
 
@@ -52,8 +53,11 @@ const RULES: Record<string, Rule[]> = {
   director: [
     (v) => openQuestions(v.events).filter((x) => x.escalation).map((x) => `waiting on the executive: ${x.id} — ${x.text}`),
     (v) => budgetProblems(v.store).map((b) => `over budget: ${b}`),
+    (v) => (paused(v.events) ? ["the team is paused: no staffing or starts until the executive or you `resume`"] : []),
+    (v) => staleClaims(v.store, v.events).map((s) => `stale: ${s.ref} held by ${s.actor} with no activity for ${s.hours}h → reassign ${s.ref}`),
     (v) => v.status("blocked").map((p) => `unblock ${p.id}: ${p.get("title")}`),
     (v) => {
+      if (paused(v.events)) return [];
       const n = staffing(v.store).start.length;
       return n ? [`staff ${n} ready plan${n > 1 ? "s" : ""}: \`staff\` → the PM assigns, developers start`] : [];
     },

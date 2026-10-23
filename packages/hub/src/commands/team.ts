@@ -5,6 +5,7 @@ import { globsOverlap } from "../core/knowledge.js";
 import * as q from "../core/queries.js";
 import type { Store } from "../core/store.js";
 import { byKey, fail } from "../core/text.js";
+import { refuseWhilePaused, staleClaims } from "./liveness.js";
 import { openQuestions } from "./questions.js";
 import { authorize } from "./workflow.js";
 
@@ -24,6 +25,26 @@ export function assign(store: Store, planId: string, to: string, team?: string, 
   store.ledger.record("assign", doc.id, { to, ...(team ? { team } : {}), ...(note ? { note } : {}),
     ...(approvedBy ? { approved_by: approvedBy } : {}) });
   store.say(`${doc.id}: assigned to the ${to} role${team ? `, team ${team}` : ""}`);
+}
+
+/** Move stuck work to another run: release the claim (only a stale one, unless --force) and assign the plan again. The new
+ * agent takes it over with `start`, which resumes the plan's branch where it stopped. */
+export function reassign(store: Store, planId: string, to?: string, note?: string, force = false, approvedBy?: string): void {
+  store.require();
+  const id = store.checkRef(planId, "plan");
+  store.find(id);
+  const events = store.ledger.events(), claim = store.ledger.claims(events).get(id), was = store.ledger.assignments(events).get(id);
+  const target = to ?? (was?.to as string | undefined) ?? "developer";
+  if (!store.policy.roles.includes(target)) fail(`'${target}' is not a role (${store.policy.roles.join(", ")}).`);
+  if (!claim && !was) fail(`${id} is neither claimed nor assigned: \`assign\` it instead.`);
+  authorize(store, id, "plan.reassigned", approvedBy, undefined, `reassign ${id}`);
+  if (claim && !force && !staleClaims(store, events).some((s) => s.ref === id)) {
+    fail(`${id} is held by ${claim.actor} (${claim.run}) and not stale (limits.stale_claim_hours). Reassign stale work, or --force.`);
+  }
+  if (claim) store.ledger.record("release", id, { reason: "reassigned", from_run: claim.run });
+  store.ledger.record("assign", id, { to: target, reassigned: true, ...(note ? { note } : {}), ...(approvedBy ? { approved_by: approvedBy } : {}) });
+  store.say(`${id}: reassigned to the ${target} role${claim ? ` (released ${claim.actor}, ${claim.run})` : ""} — `
+    + `the next ${target} takes it over with \`start ${id}\`, which resumes its branch`);
 }
 
 export interface Staffing {
@@ -69,6 +90,7 @@ export function staffing(store: Store): Staffing {
 
 export function staff(store: Store, json = false): void {
   store.require();
+  refuseWhilePaused(store, "new staffing");
   const s = staffing(store);
   if (json) {
     store.say(JSON.stringify(s, null, 2));
