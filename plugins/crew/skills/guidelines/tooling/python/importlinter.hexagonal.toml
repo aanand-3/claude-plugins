@@ -1,0 +1,43 @@
+# crew reference: import-linter contracts for arch-hexagonal. Merge into pyproject.toml.
+# Run with `uv run lint-imports`. Replace <package>.
+
+[tool.importlinter]
+root_package = "<package>"
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "Hexagonal layers: entrypoints → application → domain"
+type = "layers"
+layers = [
+  "<package>.entrypoints",
+  "<package>.application",
+  "<package>.domain",
+]
+
+[[tool.importlinter.contracts]]
+name = "Domain is pure (no frameworks, no adapters)"
+type = "forbidden"
+source_modules = ["<package>.domain"]
+forbidden_modules = [
+  "<package>.adapters",
+  "<package>.entrypoints",
+  "fastapi",
+  "starlette",
+  "sqlalchemy",
+  "httpx",
+  "redis",
+  "temporalio",
+  "pydantic_settings",
+]
+
+[[tool.importlinter.contracts]]
+name = "Application depends on ports, not adapters or frameworks"
+type = "forbidden"
+source_modules = ["<package>.application"]
+forbidden_modules = ["<package>.adapters", "<package>.entrypoints", "fastapi", "sqlalchemy"]
+
+# With bounded contexts (<package>.<context>.domain, ...), add per context:
+# [[tool.importlinter.contracts]]
+# name = "Contexts only talk through public contracts"
+# type = "independence"
+# modules = ["<package>.identity.domain", "<package>.catalog.domain"]

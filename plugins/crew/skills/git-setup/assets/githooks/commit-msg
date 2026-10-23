@@ -1,0 +1,30 @@
+#!/bin/sh
+{{#hub}}
+# crew: Conventional Commits. Scope is the plan ID on plan branches: feat(P-012): add login
+{{/hub}}
+{{^hub}}
+# crew: Conventional Commits, e.g. feat(auth): add login
+{{/hub}}
+msg=$(head -n1 "$1")
+case "$msg" in
+{{#hub}}
+  Merge*|Revert*|fixup!*|squash!*|P-[0-9]*:*) exit 0 ;;
+{{/hub}}
+{{^hub}}
+  Merge*|Revert*|fixup!*|squash!*) exit 0 ;;
+{{/hub}}
+esac
+if ! printf '%s' "$msg" | grep -Eq '^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([A-Za-z0-9._/-]+\))?!?: .+'; then
+  echo "✋ crew: commit message must follow Conventional Commits, e.g.:" >&2
+{{#hub}}
+  echo "     feat(P-012): add signup endpoint" >&2
+  echo "     chore(hub): plan P-013 password reset" >&2
+{{/hub}}
+{{^hub}}
+  echo "     feat(auth): add signup endpoint" >&2
+  echo "     fix(api): return 404 for unknown ids" >&2
+{{/hub}}
+  echo "   Got: $msg" >&2
+  exit 1
+fi
+exit 0

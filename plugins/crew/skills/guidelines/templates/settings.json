@@ -1,0 +1,50 @@
+{
+  "plansDirectory": ".crew/drafts",
+  "permissions": {
+    "allow": [
+      "Bash(node .crew/bin/crew.mjs:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git branch:*)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./**/.env)",
+      "Bash(git push --force:*)",
+      "Bash(git commit --no-verify:*)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" || exit 0; [ -d .githooks ] && [ \"$(git config core.hooksPath)\" != \".githooks\" ] && git config core.hooksPath .githooks && echo \"crew: activated .githooks\"; [ -f .crew/bin/crew.mjs ] && node .crew/bin/crew.mjs current; [ -f .crew/bin/track_plan_draft.py ] && python3 .crew/bin/track_plan_draft.py --session; true"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -f \"$CLAUDE_PROJECT_DIR/.crew/bin/format_on_edit.py\" ] && python3 \"$CLAUDE_PROJECT_DIR/.crew/bin/format_on_edit.py\"; true"
+          }
+        ]
+      },
+      {
+        "matcher": "ExitPlanMode",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -f \"$CLAUDE_PROJECT_DIR/.crew/bin/track_plan_draft.py\" ] && python3 \"$CLAUDE_PROJECT_DIR/.crew/bin/track_plan_draft.py\"; true"
+          }
+        ]
+      }
+    ]
+  }
+}

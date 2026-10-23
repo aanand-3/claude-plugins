@@ -1,0 +1,61 @@
+#!/bin/sh
+{{#hub}}
+# crew: protect main. On main/master only planning changes under .crew/ may be committed.
+# Everything else goes through a plan branch: plan/P-###-<slug>.
+{{/hub}}
+{{^hub}}
+# crew: protect main. After the first commit, every change goes through a branch and a PR.
+{{/hub}}
+branch=$(git symbolic-ref --short HEAD 2>/dev/null)
+case "$branch" in
+  main|master)
+    # first commit of the repository (scaffold) is allowed
+    git rev-parse --verify -q HEAD >/dev/null || exit 0
+    [ "$CREW_ALLOW_MAIN" = "1" ] && exit 0
+{{#hub}}
+    offending=$(git diff --cached --name-only | grep -v '^\.crew/' || true)
+    if [ -n "$offending" ]; then
+      echo "✋ crew: on '$branch' you may only commit hub/planning files under .crew/." >&2
+      echo "   Offending files:" >&2
+      echo "$offending" | sed 's/^/     /' >&2
+      echo "   Start a plan branch instead: node .crew/bin/crew.mjs start P-###" >&2
+      echo "   (Deliberate exception, e.g. scaffold refresh: CREW_ALLOW_MAIN=1 git commit ...)" >&2
+      exit 1
+    fi
+    ;;
+  plan/P-[0-9]*|goal/G-[0-9]*|hotfix/*|"") ;;
+  *)
+    echo "⚠️  crew: branch '$branch' doesn't follow plan/P-###-<slug> (allowed, but untracked work)." >&2
+{{/hub}}
+{{^hub}}
+    echo "✋ crew: don't commit directly to '$branch'. Create a branch and open a PR:" >&2
+    echo "     git switch -c feat/<slug>     (or fix/<slug>, chore/<slug>)" >&2
+    echo "   (Deliberate exception: CREW_ALLOW_MAIN=1 git commit ...)" >&2
+    exit 1
+{{/hub}}
+    ;;
+esac
+# secrets in staged changes (blocks on high-confidence matches)
+if [ -f .crew/bin/check_secrets.py ]; then
+  python3 .crew/bin/check_secrets.py --staged || exit 1
+fi
+# high-level layout guard (declared in .crew/config.yaml → structure:); warns or blocks per structure_check
+if [ -f .crew/bin/check_structure.py ]; then
+  python3 .crew/bin/check_structure.py --staged || exit 1
+fi
+# design-system drift (tokens from docs/design/DESIGN.md); warns or blocks per design_check
+if [ -f .crew/bin/check_design.py ]; then
+  python3 .crew/bin/check_design.py --staged || exit 1
+fi
+# lint/format/type hooks from the pre-commit framework, once the project tooling adds .pre-commit-config.yaml.
+# Run directly (no `pre-commit install`) so core.hooksPath stays on .githooks.
+if [ -f .pre-commit-config.yaml ]; then
+  if command -v pre-commit >/dev/null 2>&1; then
+    pre-commit run || exit 1
+  elif command -v uvx >/dev/null 2>&1; then
+    uvx pre-commit run || exit 1
+  else
+    echo "⚠️  crew: .pre-commit-config.yaml present but pre-commit is not installed (uv tool install pre-commit); lint hooks skipped." >&2
+  fi
+fi
+exit 0

@@ -1,0 +1,66 @@
+# crew reference — copy to the repo root as .pre-commit-config.yaml in P-001.
+# Executed by .githooks/pre-commit via `pre-commit run` (staged files). Do NOT run
+# `pre-commit install`: core.hooksPath stays .githooks so the crew guards keep running.
+# After copying, run `pre-commit autoupdate` to pin the latest revs. Delete blocks for stacks you don't use.
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-yaml
+      - id: check-toml
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: [--maxkb=1024]
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.28.0
+    hooks:
+      - id: gitleaks
+
+  # --- Python (backend_dir: backend/) ---
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.14.0
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+        files: ^backend/
+      - id: ruff-format
+        files: ^backend/
+
+  - repo: local
+    hooks:
+      - id: pyright
+        name: pyright (strict)
+        entry: bash -c 'cd backend && uv run pyright'
+        language: system
+        files: ^backend/.*\.py$
+        pass_filenames: false
+      - id: import-linter
+        name: import-linter (architecture contracts)
+        entry: bash -c 'cd backend && uv run lint-imports'
+        language: system
+        files: ^backend/.*\.py$
+        pass_filenames: false
+
+  # --- Frontend (frontend_dir: frontend/) ---
+      - id: frontend-typecheck
+        name: tsc
+        entry: pnpm --dir frontend typecheck
+        language: system
+        files: ^frontend/.*\.(ts|tsx)$
+        pass_filenames: false
+      - id: frontend-lint
+        name: eslint (incl. boundaries)
+        entry: pnpm --dir frontend lint
+        language: system
+        files: ^frontend/.*\.(ts|tsx|js)$
+        pass_filenames: false
+      - id: frontend-format
+        name: prettier --check
+        entry: pnpm --dir frontend format:check
+        language: system
+        files: ^frontend/
+        pass_filenames: false
