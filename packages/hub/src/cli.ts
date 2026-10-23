@@ -200,6 +200,7 @@ export function main(argv: string[], open: () => Store = () => Store.open()): nu
     code = parsed.spec.run(store, parsed.args) ?? 0;
     store.ws.flush();
   } catch (e) {
+    store.ws.abort();
     if (!(e instanceof HubError)) throw e;
     print(store.ws.output);
     process.stderr.write(`${e.message}\n`);

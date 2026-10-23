@@ -36,6 +36,7 @@ export function runAction(open: () => Store, name: string, body: Body): { status
     store.ws.flush();
     return { status: 200, output: store.ws.output };
   } catch (e) {
+    store.ws.abort();
     if (!(e instanceof HubError)) throw e;
     return { status: 400, output: store.ws.output, error: e.message };
   }

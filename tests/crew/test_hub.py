@@ -1175,8 +1175,10 @@ def test_an_ask_blocks_only_its_plan(repo: Repo):
     repo.commit("chore(P-002): start")
     repo.git("switch", "-q", "main")
     assert f"QUESTION     {qid}" in tr(repo, "next", "--role", "architect").stdout
+    repo.env["CREW_RUN"], repo.env["CREW_ROLE"] = "architect-run", "architect"  # the addressed role answers
     res = mcp_call(repo, "answer", {"id": qid, "text": "Postgres: one database to run", "decision": True, "scope": "src/**"})
     assert not res["isError"], res
+    del repo.env["CREW_ROLE"]
     assert any("title: Postgres: one database to run" in t and "source: P-001" in t for t in knowledge(repo).values())
     repo.commit("chore(hub): decision")  # the answer became a knowledge entry
     repo.env["CREW_RUN"] = "dev-1"
@@ -1241,3 +1243,164 @@ def test_session_start_hook_runs_context():
     assert "crew.mjs context" in start and "crew.mjs current" not in start
     for event in ("Stop", "PreCompact"):
         assert "checkpoint --auto" in settings["hooks"][event][0]["hooks"][0]["command"]
+
+
+# ------------------------------------------------------------------ review fixes (fix/hub-review)
+def test_moving_a_plan_in_progress_claims_it_so_it_cannot_approve_itself(repo: Repo):
+    init(repo, commit=True)
+    ready_plan(repo)
+    repo.env["CREW_RUN"] = "dev1"
+    assert tr(repo, "move", "P-001", "in-progress").returncode == 0  # not via start
+    assert events(repo, "--type", "claim")[-1]["run"] == "dev1"
+    p = plan_file(repo, "P-001")
+    p.write_text(p.read_text().replace("- [ ] T", "- [x] T").rstrip() + "\nShipped.\nLearnings: none\n")
+    tr(repo, "checkpoint", "P-001", "--verify", "trust me", "--result", "pass", "--ac", "all")
+    tr(repo, "move", "P-001", "in-review")
+    r = tr(repo, "move", "P-001", "done")
+    assert r.returncode != 0 and "this run (dev1) implemented P-001" in r.stderr and "only verified by the implementer" in r.stderr
+    repo.env["CREW_RUN"] = "dev2"  # a second run can't pick it up while dev1 holds it
+    r = tr(repo, "move", "P-001", "in-progress")
+    assert r.returncode != 0 and "claimed by" in r.stderr
+
+
+def test_a_takeover_keeps_the_first_implementer_dependent(repo: Repo):
+    started(repo)  # dev-run claimed it
+    tr(repo, "checkpoint", "--run", "true", "--ac", "all")  # dev-run's own check
+    repo.env["CREW_RUN"] = "dev-2"
+    assert tr(repo, "release", "P-001", "--force", "--note", "dev-run gone").returncode == 0
+    p = plan_file(repo, "P-001")
+    p.write_text(p.read_text().replace("- [ ] T", "- [x] T").rstrip() + "\nShipped.\nLearnings: none\n")
+    assert tr(repo, "move", "P-001", "in-review").returncode == 0
+    repo.env["CREW_RUN"] = "qa-run"
+    assert "AC1: only verified by the implementer (dev-run)" in tr(repo, "move", "P-001", "done").stderr
+
+
+def test_usage_rejects_negative_or_fractional_tokens(repo: Repo):
+    init(repo, commit=True)
+    repo.write(".crew/policy.yaml", "mode: ai-native\nbudgets:\n  run: { max_tokens: 1000 }\n")
+    tr(repo, "usage", "--tokens-in", "2000")
+    for bad in ("--tokens-in=-100000", "--tokens-out=-1"):
+        r = tr(repo, "usage", bad)
+        assert r.returncode != 0 and "must be a whole number ≥ 0" in r.stderr, bad
+    res = mcp_call(repo, "usage", {"tokens_in": -100000})
+    assert res["isError"] and "whole number" in res["content"][0]["text"]
+    assert mcp_call(repo, "usage", {"tokens_out": 1.5})["isError"]
+    assert mcp_call(repo, "usage", {"cost": -1})["isError"]
+    assert [e["tokens_in"] for e in events(repo, "--type", "usage")] == [2000]
+
+
+def test_a_refused_start_leaves_no_branch_and_can_be_retried(repo: Repo):
+    init(repo, commit=True, mode="")
+    repo.write(".crew/policy.yaml", "mode: ai-native\nrole_gates:\n  plan.in-progress: developer\n")
+    ready_plan(repo)
+    repo.commit("chore(hub): plan")
+    repo.env["CREW_ROLE"] = "qa"
+    r = tr(repo, "start", "P-001")
+    assert r.returncode != 0 and "for the developer role" in r.stderr
+    assert repo.git("branch", "--show-current").stdout.strip() == "main"
+    assert "plan/P-001" not in repo.git("branch").stdout
+    repo.env["CREW_ROLE"] = "developer"
+    assert tr(repo, "start", "P-001").returncode == 0
+
+
+def test_a_refusal_after_branching_rolls_the_branch_back(repo: Repo):
+    """Refused at flush, after the branch exists (here: another writer holds the ledger lock): no branch is left behind."""
+    init(repo, commit=True)
+    ready_plan(repo)
+    repo.commit("chore(hub): plan")
+    tr(repo, "log", "P-001", "creates the ledger")
+    repo.commit("chore(hub): log")
+    (repo.path / ".git/crew/ledger.jsonl.lock").write_text("")  # held by a live writer (fresh, so not stale)
+    r = tr(repo, "start", "P-001")
+    assert r.returncode != 0 and "The ledger is locked" in r.stderr
+    assert repo.git("branch", "--show-current").stdout.strip() == "main"
+    assert "plan/P-001" not in repo.git("branch").stdout
+    assert "status: ready" in plan_file(repo, "P-001").read_text()
+
+
+def test_a_torn_ledger_line_does_not_swallow_the_next_event(repo: Repo):
+    init(repo)
+    tr(repo, "usage", "--cost", "1")
+    with (repo.path / ".git/crew/ledger.jsonl").open("a") as f:
+        f.write('{"ts":"x","type":"us')  # a crash mid-write
+    tr(repo, "usage", "--cost", "2")
+    tr(repo, "usage", "--cost", "3")
+    assert [e["cost"] for e in events(repo, "--type", "usage")] == [1, 2, 3]
+
+
+def test_an_org_human_gates_floor_adds_to_the_mode_gates(repo: Repo):
+    init(repo, mode="human-led")
+    org_playbook(repo, "human_gates: [plan.blocked]\n")
+    out = json.loads(tr(repo, "policy", "show", "--json").stdout)
+    gates = set(out["policy"]["human_gates"])
+    assert {"plan.ready", "plan.done", "goal.done", "item.triaged", "plan.blocked"} <= gates
+    assert out["sources"]["human_gates"] == "built-in: mode human-led + org floor"
+
+
+def test_only_the_addressed_role_answers(repo: Repo):
+    init(repo, commit=True)
+    ready_plan(repo)
+    repo.env["CREW_RUN"], repo.env["CREW_ROLE"] = "dev", "developer"
+    qid = re.search(r"Q-[0-9a-f]{6}", tr(repo, "ask", "P-001", "--to", "architect", "Which DB?").stdout).group(0)
+    r = tr(repo, "answer", qid, "Postgres, I decided")
+    assert r.returncode != 0 and "asked by this run" in r.stderr
+    repo.env["CREW_RUN"] = "dev-2"
+    r = tr(repo, "answer", qid, "Postgres")
+    assert r.returncode != 0 and "is for the architect role; this run is the developer role" in r.stderr
+    repo.env["CREW_ROLE"] = "architect"
+    assert tr(repo, "answer", qid, "Postgres").returncode == 0
+    qid2 = re.search(r"Q-[0-9a-f]{6}", tr(repo, "ask", "P-001", "--to", "qa", "Coverage?").stdout).group(0)
+    assert tr(repo, "answer", qid2, "80%", "--approved-by", "Amit").returncode == 0  # a human can answer for a role
+
+
+def test_ids_are_not_reused_from_a_subdirectory(repo: Repo):
+    init(repo, commit=True)
+    repo.git("switch", "-q", "-c", "other")
+    tr(repo, "new-item", "chore", "A", "--why", "y")
+    repo.commit("a")
+    repo.git("switch", "-q", "main")
+    (repo.path / "sub").mkdir()
+    sub = Repo(repo.path / "sub")
+    sub.env = repo.env
+    out = sub.py(HUB, "new-item", "chore", "B", "--why", "y").stdout
+    assert "CHORE-002" in out, out
+
+
+def test_an_invalid_secret_pattern_fails_policy_check(repo: Repo):
+    init(repo, mode="")
+    repo.write(".crew/policy.yaml", "mode: ai-native\nsecrets:\n  patterns: [\"(?i)internal_token\"]\n")
+    r = tr(repo, "policy", "check")
+    assert r.returncode == 1 and "not a valid JavaScript regular expression" in r.stdout
+
+
+def test_migrate_keeps_subfolders_and_binary_files(repo: Repo):
+    import hashlib
+    old_project(repo)
+    repo.write(".project/items/archive/FEAT-001-signup.md", "---\nid: FEAT-009\ntitle: archived\n---\n# kept as is\n")
+    png = bytes(range(256)) * 4
+    (repo.path / ".project/plans/img").mkdir(parents=True)
+    (repo.path / ".project/plans/img/flow.png").write_bytes(png)
+    repo.commit("more old files")
+    r = tr(repo, "migrate")
+    assert r.returncode == 0, r.stderr
+    crew = repo.path / ".crew"
+    assert "id: FEAT-001" in (crew / "items/FEAT-001-signup.md").read_text()  # the top-level item is not overwritten
+    assert "# kept as is" in (crew / "items/archive/FEAT-001-signup.md").read_text()
+    assert hashlib.sha1((crew / "plans/img/flow.png").read_bytes()).digest() == hashlib.sha1(png).digest()
+
+
+def test_migrate_refuses_two_files_with_one_target(repo: Repo):
+    old_project(repo)
+    repo.write(".project/epics/G-001-accounts.md", "x\n")  # EP-001-accounts.md also becomes goals/G-001-accounts.md
+    repo.commit("clash")
+    r = tr(repo, "migrate")
+    assert r.returncode != 0 and "would both become .crew/goals/G-001-accounts.md" in r.stderr
+    assert (repo.path / ".project/raid.md").is_file() and not (repo.path / ".crew").exists()
+
+
+def test_context_puts_open_questions_first(repo: Repo):
+    started(repo)
+    tr(repo, "ask", "P-001", "--to", "architect", "Index on email?", "--fyi")
+    out = tr(repo, "context").stdout
+    assert section_order(out)[:2] == ["Where the work stands", "Open questions"] and "Index on email?" in out
+    assert section_order(tr(repo, "context", "P-001", "--role", "qa").stdout)[0] == "Open questions"

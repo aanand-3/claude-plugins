@@ -53,7 +53,7 @@ All state changes go through the script. Never hand-edit `status`, dates, IDs, `
 | `migrate` | convert a project-kit `.project/` folder into `.crew/` |
 | `export [--json] [--out FILE]` · `ui [--port 8765] [--no-open]` | the interactive view: a self-contained page (`.crew/view/index.html`, gitignored) or a live local server; `--json` is the graph for scripts |
 
-**Roles and questions.** Set `CREW_ROLE` to your role (`director`, `pm`, `architect`, `developer`, `qa`, `release`; the human is the `executive`). `next --role` is your queue and `context --role` your brief. Don't guess across roles: `ask P-### --to architect "…"` records the question and blocks only that plan until it's answered; `answer Q-… "…" --decision` turns a durable answer into a decision entry. Reserved decisions, a goal at risk, or anything only a human can settle: `escalate`. Only a human answers an escalation.
+**Roles and questions.** Set `CREW_ROLE` to your role (`director`, `pm`, `architect`, `developer`, `qa`, `release`; the human is the `executive`). `next --role` is your queue and `context --role` your brief. Don't guess across roles: `ask P-### --to architect "…"` records the question and blocks only that plan until it's answered; Only the role a question was sent to answers it (`CREW_ROLE`), never the run that asked; a human can answer for a role with `--approved-by`. `answer Q-… "…" --decision` turns a durable answer into a decision entry. Reserved decisions, a goal at risk, or anything only a human can settle: `escalate`. Only a human answers an escalation.
 
 **Footprints.** `start` warns when another active plan's `touches:` overlaps yours; `check` flags overlapping active plans and changes on a plan branch outside its `touches:` (widen them and log why, or move the work).
 
@@ -113,7 +113,7 @@ Start every workflow by checking where you are: `crew.mjs context` (or `context 
 - **Picking work up (a new session, after compaction, or someone else's plan):** `resume` first. It shows the last checkpoint against git now, the checks that failed, the approaches not to retry and the next task. Don't repeat an attempt it lists.
 - Be on an up-to-date `main` with a clean tree, then `start P-###` and commit `chore(P-###): start`. Starting claims the plan for your run; `done` or `dropped` releases it.
 - **Checkpoint as you go:** after each task or check, `checkpoint --run "<the task's verify command>" --ac <criteria it covers>`; when an approach fails, `checkpoint --attempt "<what>" --why "<why it failed>"`. The Stop and PreCompact hooks checkpoint automatically, so a crash loses at most one step. Before ending a session, `handoff`.
-- Record what the work costs as you go: `usage --tokens-in … --tokens-out … --cost … --ref P-###` (the hooks will do this automatically later).
+- Record what the work costs as you go: `usage --tokens-in … --tokens-out … --cost … --ref P-###`. Nothing records it automatically yet, so budgets only see what runs record.
 - After each task, tick it and commit it with the code: `feat(P-###): …`.
 - Use `log P-### "<decision / deviation / blocker>"` as you go. If blocked: `move P-### blocked --note "<why>"`.
 - **Scope changes:**

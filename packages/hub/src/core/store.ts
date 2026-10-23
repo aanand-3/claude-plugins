@@ -46,6 +46,7 @@ export class Store {
   private policyCache: Resolved | null = null;
 
   constructor(readonly ws: Workspace) {
+    git.useRoot(ws.root);
     this.dir = join(ws.root, ".crew");
     this.dirs = Object.fromEntries(Object.entries(DIRS).map(([k, v]) => [k, join(this.dir, v)])) as Record<DirKind, string>;
     this.ideaPath = join(this.dir, "idea.md");

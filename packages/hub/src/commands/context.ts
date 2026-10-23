@@ -38,9 +38,12 @@ function planSections(store: Store, plan: Doc, role: string): Section[] {
     lines: plan.tasks().filter(([d]) => !d).map(([, t]) => t) };
   const waits = q.unmetDeps(plan, plans), asks = openQuestions(store.ledger.events(), plan.id);
   const over = overlapping(plan, plans), outside = drift(plan) ?? [];
+  const questions: Section = { title: "Open questions", more: "crew.mjs questions", lines: [
+    ...asks.map((x) => `${x.blocking ? "blocking: " : ""}${x.id} ${x.by} → ${x.to}: ${x.text}`),
+    ...openQuestions(store.ledger.events()).filter((x) => x.to === role && x.ref !== plan.id)
+      .map((x) => `for you: ${x.id} from ${x.by}${x.ref ? ` about ${x.ref}` : ""}: ${x.text}`)] };
   const blockers: Section = { title: "Blockers & coordination", more: "crew.mjs questions", lines: [
     ...waits.map((d) => `waits for ${d} (${plans.get(d)?.get("status")})`),
-    ...asks.map((x) => `${x.blocking ? "blocking " : ""}question ${x.id} → ${x.to}: ${x.text}`),
     ...over.map((o) => `overlaps ${o.id} (${plans.get(o.id)?.get("status")}) on ${o.globs.join(", ")}`),
     ...(outside.length ? [`changes outside touches: ${outside.slice(0, 6).join(", ")}${outside.length > 6 ? " …" : ""}`] : [])] };
   const order = TYPES[role] ?? TYPES.developer;
@@ -54,10 +57,10 @@ function planSections(store: Store, plan: Doc, role: string): Section[] {
     .filter((i) => i.id.startsWith("BUG-") && goal && i.get("goal")?.toUpperCase() === goal.id && !["done", "wontfix", "duplicate"].includes(q.itemStatus(i, plans)))
     .map((i) => `${i.id} ${i.get("severity") ?? ""} ${i.get("title")} [${q.itemStatus(i, plans)}]`) };
   switch (role) {
-    case "qa": return [why, ac, sect("Test plan", "Test plan"), recover, bugs, memory, blockers];
-    case "architect": return [why, sect("Approach", "Approach"), sect("Risks & open questions", "Risks & open questions"), blockers, memory, ac];
-    case "release": return [why, sect("Rollout & rollback", "Rollout & rollback"), blockers, ac, memory];
-    default: return [recover, why, ac, tasks, blockers, memory, handoff];
+    case "qa": return [questions, why, ac, sect("Test plan", "Test plan"), recover, bugs, memory, blockers];
+    case "architect": return [questions, why, sect("Approach", "Approach"), sect("Risks & open questions", "Risks & open questions"), blockers, memory, ac];
+    case "release": return [questions, why, sect("Rollout & rollback", "Rollout & rollback"), blockers, ac, memory];
+    default: return [recover, questions, why, ac, tasks, blockers, memory, handoff];
   }
 }
 

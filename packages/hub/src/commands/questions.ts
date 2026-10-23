@@ -62,6 +62,12 @@ export function answer(store: Store, qid: string, text: string, o: AnswerOptions
   if ((q.escalation || q.to === "executive") && !o.approvedBy) {
     fail(`${q.id} is an escalation to the ${q.to}: a human answers it with \`crew.mjs answer ${q.id} "…" --approved-by <name>\` (agents can't).`);
   }
+  const who = store.ledger.who;
+  if (!o.approvedBy && who.run === q.run) fail(`${q.id} was asked by this run; the ${q.to} answers it, not the asker.`);
+  if (!o.approvedBy && who.role !== q.to) {
+    fail(`${q.id} is for the ${q.to} role; this run is ${who.role ? `the ${who.role} role` : "in no role"} (CREW_ROLE). `
+      + "A human can answer for the role with --approved-by <name>.");
+  }
   store.ledger.record("answer", q.ref, { qid: q.id, text, ...(o.approvedBy ? { approved_by: o.approvedBy } : {}) });
   store.say(`${q.id} answered${q.ref ? ` — ${q.ref} is unblocked` : ""}`);
   if (o.decision) {

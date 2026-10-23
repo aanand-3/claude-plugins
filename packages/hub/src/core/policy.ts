@@ -184,9 +184,10 @@ export function resolveLayers(layers: Layer[]): { policy: Effective; sources: Ma
         values.set(path, v);
         sources.set(path, layer.name);
       } else if (path === "human_gates") {
-        values.set(path, v);
-        sources.set(path, layer.name);
-        if (layer.org) values.set("human_gates.org", [...new Set([...((values.get("human_gates.org") as string[]) ?? []), ...(v as string[])])]);
+        // the org's gates are a floor added on top; only a project layer replaces the mode's default gates
+        const key = layer.org ? "human_gates.org" : path;
+        values.set(key, layer.org ? [...new Set([...((values.get(key) as string[]) ?? []), ...(v as string[])])] : v);
+        sources.set(key, layer.name);
       } else {
         values.set(path, v);
         sources.set(path, layer.name);
@@ -196,11 +197,19 @@ export function resolveLayers(layers: Layer[]): { policy: Effective; sources: Ma
   const get = <T>(p: string, d: T) => (values.has(p) ? values.get(p) as T : d);
   const mode = get("mode", "ai-assisted");
   if (!(MODES as readonly string[]).includes(mode)) errors.push(`mode: '${mode}' is not one of ${MODES.join(", ")}`);
-  if (!values.has("human_gates")) sources.set("human_gates", `built-in: mode ${mode}`);
+  const floor = sources.get("human_gates.org");
+  sources.set("human_gates", `${values.has("human_gates") ? sources.get("human_gates") : `built-in: mode ${mode}`}${floor ? ` + ${floor} floor` : ""}`);
   const gates = [...new Set([...get<string[]>("human_gates", MODE_GATES[mode] ?? []), ...get<string[]>("human_gates.org", [])])];
   const role_gates = Object.fromEntries([...values].filter(([p]) => p.startsWith("role_gates[")).map(([p, v]) => [p.slice(11, -1), String(v)]));
   for (const t of [...gates, ...Object.keys(role_gates), ...get<string[]>("reserved", [])]) errors.push(...transitionProblem(t));
   for (const [t, r] of Object.entries(role_gates)) if (!(ROLES as readonly string[]).includes(r)) errors.push(`role_gates ${t}: '${r}' is not a role (${ROLES.join(", ")})`);
+  for (const p of get<string[]>("secrets.patterns", [])) {
+    try {
+      new RegExp(p);
+    } catch {
+      errors.push(`secrets.patterns: '${p}' is not a valid JavaScript regular expression (no inline flags like (?i))`);
+    }
+  }
   const to = get<string>("escalation.to", "executive");
   if (!(ROLES as readonly string[]).includes(to)) errors.push(`escalation.to: '${to}' is not a role (${ROLES.join(", ")})`);
   const deny = get<string[]>("tools.deny", []);

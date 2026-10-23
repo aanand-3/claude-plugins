@@ -36,7 +36,8 @@ hint when a plan file disagrees with the ledger's last move or a closed plan is 
 ## Roles, questions and context
 Roles: `executive` (the human), `director`, `pm`, `architect`, `developer`, `qa`, `release` (`CREW_ROLE`). Questions are
 ledger events (`ask` → `answer`): an open, blocking question on a document refuses its forward moves and its `start`, and
-nothing else. Escalations go to the policy's `escalation.to` and are answered only with `--approved-by`.
+nothing else. Only the addressed role answers (or a human with `--approved-by`), never the asking run. Escalations go to the
+policy's `escalation.to` and are answered only with `--approved-by`.
 `next --role` gives each role its queue (questions to it first). `context` assembles, in priority order and within a budget
 (default 6,000 characters): for a plan — where the work stands, the goal, criteria with evidence, tasks, blockers and
 questions, knowledge in scope, handoff and log (QA, architect and release get their own slices); without one — the idea and
@@ -50,7 +51,8 @@ Stop/PreCompact hooks call `checkpoint --auto`, which records nothing off a plan
 `in-review`), so another machine resumes from git alone.
 
 **Evidence (plan → `done`):** every acceptance criterion's latest check passed and was recorded by a run other than the
-implementer (the run holding the claim), and the implementer can't make the move itself. With `--approved-by`, an
+implementers (every run that claimed the plan or moved it to in-progress — moving a plan to in-progress claims it), and
+an implementer can't make the move itself. With `--approved-by`, an
 `evidence: …` note on a criterion's line also counts.
 
 ## Knowledge (project memory)

@@ -20,22 +20,24 @@ export function criteria(plan: Doc): string[] {
   return list.length ? list : plan.bullets("Acceptance criteria");
 }
 
-/** The run that implemented a plan: the last one to claim it. */
-export function implementer(events: LedgerEvent[], planId: string): string | null {
-  return [...events].reverse().find((e) => e.type === "claim" && e.ref === planId)?.run ?? null;
+/** Every run that implemented a plan: each one that claimed it or moved it to in-progress. After a takeover the earlier
+ * implementer stays one, so its own checks never become "independent" evidence. */
+export function implementers(events: LedgerEvent[], planId: string): Set<string> {
+  return new Set(events.filter((e) => e.ref === planId && (e.type === "claim" || (e.type === "move" && e.to === "in-progress")))
+    .map((e) => e.run));
 }
 
 const checkpoints = (events: LedgerEvent[], planId: string) => events.filter((e) => e.type === "checkpoint" && e.ref === planId);
 
 /** Per criterion: the latest verify covering it, and whether it counts as independent evidence. */
 export function evidence(store: Store, plan: Doc): { ac: string; verify: Verify | null; by: string | null; independent: boolean }[] {
-  const events = store.ledger.events(), impl = implementer(events, plan.id);
+  const events = store.ledger.events(), impl = implementers(events, plan.id);
   return criteria(plan).map((ac, i) => {
     let found: { verify: Verify; by: string } | null = null;
     for (const e of checkpoints(events, plan.id)) {
       for (const v of (e.verify as Verify[] | undefined) ?? []) if (v.ac.includes(i + 1)) found = { verify: v, by: e.run };
     }
-    return { ac, verify: found?.verify ?? null, by: found?.by ?? null, independent: !!found && (!impl || found.by !== impl) };
+    return { ac, verify: found?.verify ?? null, by: found?.by ?? null, independent: !!found && !impl.has(found.by) };
   });
 }
 
@@ -43,9 +45,9 @@ export function evidence(store: Store, plan: Doc): { ac: string; verify: Verify 
  * (or, with a human's --approved-by, an `evidence:` note on the criterion); the implementer can't mark its own plan done. */
 export function evidenceProblems(store: Store, plan: Doc, approvedBy?: string): string[] {
   const problems: string[] = [];
-  const impl = implementer(store.ledger.events(), plan.id);
-  if (impl && impl === store.ledger.who.run && !approvedBy) {
-    problems.push(`this run (${impl}) implemented ${plan.id}; another run — QA — verifies it and moves it to done`);
+  const me = store.ledger.who.run;
+  if (implementers(store.ledger.events(), plan.id).has(me) && !approvedBy) {
+    problems.push(`this run (${me}) implemented ${plan.id}; another run — QA — verifies it and moves it to done`);
   }
   evidence(store, plan).forEach((e, i) => {
     if (approvedBy && /\bevidence:/i.test(e.ac)) return;

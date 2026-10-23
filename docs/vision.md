@@ -100,6 +100,20 @@ Order: **C** → **A ∥ T** (role by role: Director + PM → Architect → Deve
 
 ---
 
+## Status (Workstream C built)
+Phases 0–7 and the dogfood step are built on stacked branches (`refactor/rename-crew` → `feat/hub-lean-model` →
+`feat/hub-ledger` → `feat/hub-policy` → `feat/hub-knowledge` → `feat/hub-execution` → `feat/hub-context` →
+`chore/dogfood-crew` → `fix/hub-review`), with `docs/vision` merged into the dogfood branch. What changed from the plan:
+- **Recovery view:** `resume` (Phase 6) shows where work stopped; `context` (Phase 7) includes it.
+- **Evidence:** a check covers acceptance criteria by number; every run that claimed a plan or moved it to in-progress is
+  an implementer, and their checks never count as independent evidence.
+- **Questions:** an `ask` records who must answer; only that role (or a human with `--approved-by`) answers, never the asker.
+- **Default mode** is `ai-assisted` (a breaking change): without `.crew/policy.yaml`, plan ready/done and goal done need a human.
+- **Secrets in knowledge** are an error in `check`, not a hint: knowledge is committed.
+- **Deferred:** `ideate`/`architecture` skills (A, T); kickoff/onboard as ledger runs (T); the Claude Code policy adapter that
+  applies models, tools, paths and secrets per role (T); automatic `usage` capture (budgets bite only when runs record usage);
+  cross-machine ledger sync (SPIKE-001 in this repo's hub). The rest is tracked in `.crew/` on `chore/dogfood-crew`.
+
 # Workstream C: the hub
 
 ## The model
@@ -112,7 +126,7 @@ Order: **C** → **A ∥ T** (role by role: Director + PM → Architect → Deve
 | **Context** | what I need right now | computed by `crew context [--role R] [ID]`, never stored | one turn |
 
 **Ledger.**
-- **Events:** `claim`, `release`, `move`, `checkpoint` (step, sha, verify results, attempts), `ask`, `answer`, `escalate`, `learn`, `usage` (tokens/cost per run and role).
+- **Events:** `claim`, `release`, `move`, `log`, `checkpoint` (step, sha, verify results, attempts), `ask` (an escalation is an `ask` to the executive), `answer`, `learn`, `usage` (tokens/cost per run and role, recorded by `crew.mjs usage`; nothing records it automatically yet).
 - Live status, claims, WIP, recovery, handoffs, metrics, budget checks and the audit trail are all derived from it.
 - One writer path with a lock and atomic append. JSONL merges by union.
 - Later, for cross-machine and cloud agents: sync the ledger to `refs/crew/ledger` without changing the format.
@@ -139,7 +153,7 @@ Order: **C** → **A ∥ T** (role by role: Director + PM → Architect → Deve
     - issues → items.
 - **Replace:**
   - `log` becomes a ledger event (the Progress log is rendered from it);
-  - `current` merges into `context`;
+  - `context` replaces `current` in the SessionStart hook (`current` stays as a one-line status for hooks rendered before 1.0);
   - `roadmap`+`status` become one `status`;
   - the UI's Overview becomes the executive view;
   - the Roadmap and Timeline views and the charts are removed.
@@ -149,7 +163,7 @@ Order: **C** → **A ∥ T** (role by role: Director + PM → Architect → Deve
 - Recovery compares the checkpoint with git (HEAD, dirty tree), plus the last verify and the attempts to avoid.
 - `## Handoff` is generated from the ledger at session end and on `in-review`.
 - `done` requires evidence for every AC (a passing verify event or an `evidence:` note), recorded by a different run from the implementer.
-- `kickoff`/`onboard` progress becomes ledger runs (`kind: workflow`).
+- `kickoff`/`onboard` progress becomes ledger runs (`kind: workflow`) — deferred to Workstream T: both run before (or without) the hub, so they keep their yaml progress files until kickoff becomes the team's first job.
 
 ### Memory (project tier)
 - An entry has:
@@ -160,7 +174,7 @@ Order: **C** → **A ∥ T** (role by role: Director + PM → Architect → Deve
   - `tier: project|playbook-candidate`.
 - It is written when a costly failed attempt happens, when a decision is made, and at `in-review` (learnings captured, or "none").
 - `recall` by path or topic; `context` pulls in entries whose scope matches `touches`. `check` reports dead globs, superseded entries still referenced, and secret patterns.
-- `playbook: {repo, ref}` in config pins the shared repo version, for both org policy and lessons.
+- `playbook: {path, ref}` in config (a local clone of the shared repo; `CREW_PLAYBOOK` overrides the path) pins the version read with `git show`, for both org policy and lessons.
 
 ### Team primitives
 - `next --role R` and `context --role R [ID]`: a per-role queue and slice, under a budget. Recovery and open questions come first.
@@ -171,7 +185,7 @@ Order: **C** → **A ∥ T** (role by role: Director + PM → Architect → Deve
 ## Phases (each one a plan / PR; Phases 1–2 ship together as crew 1.0)
 0. **Roadmap**: this document.
 1. **Rename**: `project-kit` → `crew`, `packages/tracker` → `packages/hub`, MCP server → `hub`, `.project/` → `.crew/`, `tracker.mjs` → `crew.mjs`,
-   epic → goal, the skill renames (`ideate`, `onboard`, `architecture`, `codemap`, `hub`), the marketplace entry, README, and all references (~108 files).
+   epic → goal, the skill renames (`onboard`, `codemap`, `hub`; merging research + discover into `ideate` and splitting out `architecture` rewrites skill content, so it moved to Workstreams A and T), the marketplace entry, README, and all references (~108 files).
    No behaviour change; tests are updated for the names only.
 2. **Lean model**:
    - remove sprints/milestones/points/charter/RAID (`model.ts`, `queries.ts`, `gates.ts`, `reports.ts`, `planning.ts`, `backlog.ts`, `advisor.ts`,

@@ -142,6 +142,7 @@ export function callTool(open: () => Store, name: string, args: Args = {}): Tool
     store.ws.flush();
     return result(store.ws.output, code !== 0);
   } catch (e) {
+    store.ws.abort();
     if (!(e instanceof HubError)) throw e;
     return result([...store.ws.output, e.message], true);
   }

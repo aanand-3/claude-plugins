@@ -14,6 +14,7 @@ import { init } from "./planning.js";
 const DROPPED = /^(bin|templates|view)\/|^(ROADMAP|BACKLOG|STATUS|README)\.md$/;
 const ARCHIVED = /^(milestones|sprints|releases)\/|^(project-plan|raid)\.md$/;
 const DOCS: Record<string, string> = { epics: "goals", items: "items", plans: "plans" };
+const TEXT = /\.(md|ya?ml|txt|json|csv|html?|py|mjs|js|ts|sh|toml)$|(^|\/)[^./]+$/i;
 const RAID_TYPES: [string, string][] = [["Decisions", "decision"], ["Assumptions", "decision"], ["Risks", "risk"]];
 /** Root files that usually mention the old paths; `/crew:guidelines --refresh` and git-setup re-render them. */
 const OLD_REFS = ["CLAUDE.md", ".claude/settings.json", ".gitignore", ".gitattributes", ".githooks/pre-commit",
@@ -46,13 +47,25 @@ export function migrate(store: Store): void {
   const exitCriteria = milestoneCriteria(files.filter((f) => f.startsWith("milestones/")).map(read));
   let counts = { docs: 0, archived: 0, knowledge: 0, issues: 0, drafted: 0 };
 
+  const targets = new Map<string, string>();
+  const put = (rel: string, target: string) => {
+    const other = targets.get(target);
+    if (other) fail(`.project/${other} and .project/${rel} would both become ${store.rel(target)} — rename one; nothing was changed.`);
+    targets.set(target, rel);
+  };
   for (const rel of files) {
     if (DROPPED.test(rel) || rel.endsWith(".gitkeep")) continue;
     const [dir, name] = [rel.split("/")[0], rel.split("/").pop()!];
-    if (ARCHIVED.test(rel)) {
+    const topLevelDoc = DOCS[dir] && name.endsWith(".md") && rel.split("/").length === 2; // the hub only loads these
+    if (!TEXT.test(rel)) { // images and other binaries: byte for byte, never through a string
+      const to = join(store.dir, ARCHIVED.test(rel) ? "archive" : "", rel);
+      put(rel, to);
+      store.ws.copy(join(old, rel), to);
+    } else if (ARCHIVED.test(rel)) {
+      put(rel, join(store.dir, "archive", rel));
       store.ws.write(join(store.dir, "archive", rel), renamed(read(rel)));
       counts.archived++;
-    } else if (DOCS[dir] && name.endsWith(".md")) {
+    } else if (topLevelDoc) {
       const doc = Doc.parse(leanDoc(read(rel), dir));
       if (dir === "epics") addExitCriteria(doc, Doc.parse(read(rel)).get("milestone"), exitCriteria);
       if (dir === "plans" && doc.get("status") === "ready" && !doc.touches().length) {
@@ -60,12 +73,16 @@ export function migrate(store: Store): void {
         doc.appendLog("status ready → draft — migrated to crew: declare `touches:` before moving it back to ready");
         counts.drafted++;
       }
+      put(rel, join(store.dir, DOCS[dir], name.replace(/^EP-/, "G-")));
       store.ws.write(join(store.dir, DOCS[dir], name.replace(/^EP-/, "G-")), `${doc.text.trimEnd()}\n`);
       counts.docs++;
     } else if (rel === "config.yaml") {
+      put(rel, join(store.dir, rel));
       store.ws.write(join(store.dir, rel), renamed(read(rel)).replace(/^(\s+)tracker:/m, "$1hub:"));
-    } else {
-      store.ws.write(join(store.dir, rel), renamed(read(rel)));
+    } else { // anything else keeps its path below .crew/, epics/ becoming goals/
+      const to = join(store.dir, rel.replace(/^epics\//, "goals/"));
+      put(rel, to);
+      store.ws.write(to, renamed(read(rel)));
     }
   }
   if (files.includes("project-plan.md")) {

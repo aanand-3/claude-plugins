@@ -119,7 +119,9 @@ export class Ledger {
         const held = live.get(ev.ref!);
         if (held && held.run !== ev.run) fail(`${ev.ref} was just claimed by ${held.actor} (${held.run}). Nothing was changed.`);
       }
-      appendFileSync(this.path, this.staged.map((e) => `${JSON.stringify(e)}\n`).join(""));
+      // a crash can leave a torn last line; start on a fresh line so this batch isn't glued to it and lost
+      const torn = existsSync(this.path) && statSync(this.path).size > 0 && !readFileSync(this.path, "utf8").endsWith("\n");
+      appendFileSync(this.path, (torn ? "\n" : "") + this.staged.map((e) => `${JSON.stringify(e)}\n`).join(""));
       this.staged = [];
     } finally {
       unlinkSync(lock);

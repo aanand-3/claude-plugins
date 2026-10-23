@@ -7,7 +7,7 @@ import { approvalReason } from "../core/policy.js";
 import * as q from "../core/queries.js";
 import type { Store } from "../core/store.js";
 import { byKey, fail, stripComments } from "../core/text.js";
-import { evidence, implementer } from "./execution.js";
+import { evidence, implementers } from "./execution.js";
 import { budgetProblems } from "./workflow.js";
 import { openQuestions } from "./questions.js";
 
@@ -76,7 +76,7 @@ const RULES: Record<string, Rule[]> = {
       && !openQuestions(v.events, p.id).some((x) => x.blocking)).slice(0, 1).map((p) => `start ${p.id}: ${p.get("title")} → start ${p.id}`),
   ],
   qa: [
-    (v) => v.status("in-review").filter((p) => implementer(v.events, p.id) !== v.store.ledger.who.run).map((p) => {
+    (v) => v.status("in-review").filter((p) => !implementers(v.events, p.id).has(v.store.ledger.who.run)).map((p) => {
       const missing = evidence(v.store, p).flatMap((e, i) => (e.verify?.ok && e.independent ? [] : [`AC${i + 1}`]));
       return missing.length ? `verify ${p.id}: ${missing.join(", ")} → checkpoint ${p.id} --run "<check>" --ac …`
         : `${p.id}: evidence complete → move ${p.id} done`;

@@ -32,6 +32,7 @@ export function move(store: Store, docId: string, status: string, note?: string,
       + "(`crew.mjs questions`; --force to move anyway)");
   }
   authorize(store, doc.id, `${kind}.${status}`, approvedBy);
+  if (kind === "plan" && status === "in-progress") claimFor(store, doc, force);
   stamp(kind!, doc, status);
   doc.set("status", status);
   if (kind === "plan" && status === "in-review" && doc.source === "worktree") writeHandoff(store, doc);
@@ -60,6 +61,17 @@ function authorize(store: Store, id: string, transition: string, approvedBy?: st
   const role = policy.role_gates[transition];
   const mine = store.ledger.who.role;
   if (role && mine !== role) fail(`${id} → ${status} is for the ${role} role; this run is ${mine ? `the ${mine} role` : "in no role"} (CREW_ROLE).`);
+}
+
+/** Whoever moves a plan into in-progress holds it: record the claim (another run's live claim refuses, unless forced). */
+function claimFor(store: Store, doc: Doc, force: boolean): void {
+  const held = store.ledger.claims().get(doc.id);
+  if (held?.run === store.ledger.who.run) return;
+  if (held && !force) {
+    fail(`${doc.id} is claimed by ${held.actor} (${held.run}, ${held.worktree}) since ${held.ts.slice(0, 10)}. `
+      + `Coordinate with them, or \`release ${doc.id} --force\` if that run is gone.`);
+  }
+  store.ledger.record("claim", doc.id, { branch: doc.get("branch") ?? "", ...(force ? { force: true } : {}) });
 }
 
 /** Why this run may not take on new work (budgets in the policy), or none. */
@@ -129,6 +141,7 @@ export function start(store: Store, planId: string, force = false, approvedBy?: 
     fail(`${doc.id} waits for an answer before it starts:\n  - ${asked.map((x) => `${x.id} → ${x.to}: ${x.text}`).join("\n  - ")}\n`
       + "(`crew.mjs questions`; --force to start anyway)");
   }
+  authorize(store, doc.id, "plan.in-progress", approvedBy); // every refusal that can happen now happens before the branch
   if (!git.treeIsClean()) fail("Working tree not clean. Commit or stash first.");
   const focus = store.focus();
   if (!q.onFocus(doc, store.items(), focus)) store.say(`note: ${planId} does not serve the focus goal ${focus}`);
@@ -136,7 +149,12 @@ export function start(store: Store, planId: string, force = false, approvedBy?: 
     store.say(`warning: ${planId} overlaps ${o.id} (in progress) on ${o.globs.join(", ")} — expect conflicts; coordinate or add depends_on`);
   }
   const branch = doc.get("branch") || `plan/${doc.id}-${slugify(doc.get("title") ?? "")}`;
+  const from = git.currentBranch(), sha = git.git(["rev-parse", "HEAD"])?.trim();
   git.git(["switch", "-c", branch], true);
+  store.ws.onAbort(() => { // refused later (a gate on the branch, or a claim race at flush): leave no branch behind
+    git.git(from ? ["switch", "-q", from] : ["switch", "-q", "--detach", sha ?? "HEAD"]);
+    git.git(["branch", "-D", branch]);
+  });
   doc = store.find(planId); // re-read on the new branch
   if (doc.get("status") === "draft" && force) {
     doc.set("status", "ready");
@@ -185,7 +203,10 @@ export function release(store: Store, planId: string, note?: string, force = fal
 export function usage(store: Store, u: { tokensIn?: number; tokensOut?: number; cost?: number; model?: string; ref?: string }): void {
   store.require();
   if (u.tokensIn === undefined && u.tokensOut === undefined && u.cost === undefined) fail("Give --tokens-in, --tokens-out or --cost.");
-  if (u.cost !== undefined && !(u.cost >= 0)) fail("--cost must be a number ≥ 0.");
+  if (u.cost !== undefined && !(Number.isFinite(u.cost) && u.cost >= 0)) fail("--cost must be a number ≥ 0.");
+  for (const [flag, n] of [["--tokens-in", u.tokensIn], ["--tokens-out", u.tokensOut]] as const) {
+    if (n !== undefined && !(Number.isInteger(n) && n >= 0)) fail(`${flag} must be a whole number ≥ 0.`);
+  }
   store.ledger.record("usage", u.ref ? u.ref.toUpperCase() : null, {
     tokens_in: u.tokensIn ?? 0, tokens_out: u.tokensOut ?? 0, cost: u.cost ?? 0, ...(u.model ? { model: u.model } : {}) });
   store.say(`usage recorded for ${store.ledger.who.actor} (${store.ledger.who.run})`);
