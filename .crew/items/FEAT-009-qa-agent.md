@@ -24,3 +24,4 @@ Slice of G-003 (Agent team): QA agent — independent evidence for every criteri
 
 ## Notes
 - 2026-10-23: triaged from G-003 breakdown
+- 2026-10-23: T5: qa.md, evidence.role (lifecycle: qa) — only QA's checks count toward done; QA writes drafts only

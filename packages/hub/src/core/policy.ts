@@ -45,7 +45,7 @@ const GLOBAL: Record<string, Shape> = {
   budgets: { max_agents: "num", run: { max_cost: "num", max_tokens: "num" }, project: { max_cost: "num", max_tokens: "num" } },
   git: { protected_branches: "list", force_push: "bool", no_verify: "bool" },
   secrets: { files: "list", patterns: "list" },
-  escalation: { to: "str" },
+  escalation: { to: "str" }, evidence: { role: "str" },
   limits: { max_turns: "num", stale_claim_hours: "num", max_bounces: "num", max_attempts: "num" },
 };
 const UNION = new Set(["reserved", "secrets.files", "secrets.patterns", "git.protected_branches", "paths.protected", "tools.deny"]);
@@ -60,7 +60,7 @@ export interface Effective {
   budgets: { max_agents: number | null; run: { max_cost: number | null; max_tokens: number | null };
     project: { max_cost: number | null; max_tokens: number | null } };
   git: { protected_branches: string[]; force_push: boolean; no_verify: boolean };
-  secrets: { files: string[]; patterns: string[] }; escalation: { to: string };
+  secrets: { files: string[]; patterns: string[] }; escalation: { to: string }; evidence: { role: string | null };
   limits: { max_turns: number | null; stale_claim_hours: number | null; max_bounces: number | null; max_attempts: number | null };
 }
 export interface Resolved {
@@ -242,6 +242,8 @@ export function resolveLayers(layers: Layer[], roles: readonly string[] = ROLES)
   }
   const to = get<string>("escalation.to", "executive");
   if (!roles.includes(to)) errors.push(`escalation.to: '${to}' is not a role (${roles.join(", ")})`);
+  const ev = get<string | null>("evidence.role", null);
+  if (ev !== null && !roles.includes(ev)) errors.push(`evidence.role: '${ev}' is not a role (${roles.join(", ")})`);
   const deny = get<string[]>("tools.deny", []);
   const allow = get<string[]>("tools.allow", []);
   for (const t of allow.filter((a) => deny.includes(a))) errors.push(`tools.allow: '${t}' is denied by ${sources.get("tools.deny")} (deny wins)`);
@@ -253,7 +255,7 @@ export function resolveLayers(layers: Layer[], roles: readonly string[] = ROLES)
     budgets: { max_agents: num("budgets.max_agents"), run: { max_cost: num("budgets.run.max_cost"), max_tokens: num("budgets.run.max_tokens") },
       project: { max_cost: num("budgets.project.max_cost"), max_tokens: num("budgets.project.max_tokens") } },
     git: { protected_branches: get("git.protected_branches", []), force_push: get("git.force_push", false), no_verify: get("git.no_verify", false) },
-    secrets: { files: get("secrets.files", []), patterns: get("secrets.patterns", []) }, escalation: { to: get("escalation.to", "executive") },
+    secrets: { files: get("secrets.files", []), patterns: get("secrets.patterns", []) }, escalation: { to: get("escalation.to", "executive") }, evidence: { role: ev },
     limits: { max_turns: num("limits.max_turns"), stale_claim_hours: num("limits.stale_claim_hours"),
       max_bounces: num("limits.max_bounces"), max_attempts: num("limits.max_attempts") },
   };

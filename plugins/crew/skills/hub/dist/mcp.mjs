@@ -7770,7 +7770,9 @@ var PRESETS = {
         // code review against the spec; done needs an approval of the current code
       },
       // liveness: a claim quiet for a day is stale; a third bounce or a sixth failed attempt goes to the Director
-      limits: { stale_claim_hours: 24, max_bounces: 2, max_attempts: 5 }
+      limits: { stale_claim_hours: 24, max_bounces: 2, max_attempts: 5 },
+      evidence: { role: "qa" }
+      // only QA's checks count toward done
     },
     roles: { director: DRAFTS, pm: DRAFTS, qa: DRAFTS, release: DRAFTS }
   }
@@ -7819,6 +7821,7 @@ var GLOBAL = {
   git: { protected_branches: "list", force_push: "bool", no_verify: "bool" },
   secrets: { files: "list", patterns: "list" },
   escalation: { to: "str" },
+  evidence: { role: "str" },
   limits: { max_turns: "num", stale_claim_hours: "num", max_bounces: "num", max_attempts: "num" }
 };
 var UNION = /* @__PURE__ */ new Set(["reserved", "secrets.files", "secrets.patterns", "git.protected_branches", "paths.protected", "tools.deny"]);
@@ -7989,6 +7992,8 @@ function resolveLayers(layers, roles = ROLES) {
   }
   const to = get("escalation.to", "executive");
   if (!roles.includes(to)) errors.push(`escalation.to: '${to}' is not a role (${roles.join(", ")})`);
+  const ev = get("evidence.role", null);
+  if (ev !== null && !roles.includes(ev)) errors.push(`evidence.role: '${ev}' is not a role (${roles.join(", ")})`);
   const deny = get("tools.deny", []);
   const allow = get("tools.allow", []);
   for (const t of allow.filter((a) => deny.includes(a))) errors.push(`tools.allow: '${t}' is denied by ${sources.get("tools.deny")} (deny wins)`);
@@ -8009,6 +8014,7 @@ function resolveLayers(layers, roles = ROLES) {
     git: { protected_branches: get("git.protected_branches", []), force_push: get("git.force_push", false), no_verify: get("git.no_verify", false) },
     secrets: { files: get("secrets.files", []), patterns: get("secrets.patterns", []) },
     escalation: { to: get("escalation.to", "executive") },
+    evidence: { role: ev },
     limits: {
       max_turns: num2("limits.max_turns"),
       stale_claim_hours: num2("limits.stale_claim_hours"),
@@ -8259,16 +8265,22 @@ function implementers(events, planId) {
 }
 var checkpoints = (events, planId) => events.filter((e) => e.type === "checkpoint" && e.ref === planId);
 function evidence(store, plan) {
-  const events = store.ledger.events(), impl = implementers(events, plan.id);
+  const events = store.ledger.events(), impl = implementers(events, plan.id), only = store.policy.policy.evidence.role;
   return criteria(plan).map((ac, i) => {
     let found = null;
     const print = acPrint(ac);
     for (const e of checkpoints(events, plan.id)) {
       for (const v of e.verify ?? []) {
-        if (v.ac_text ? v.ac_text.includes(print) : v.ac.includes(i + 1)) found = { verify: v, by: e.run };
+        if (v.ac_text ? v.ac_text.includes(print) : v.ac.includes(i + 1)) found = { verify: v, by: e.run, role: e.role };
       }
     }
-    return { ac, verify: found?.verify ?? null, by: found?.by ?? null, independent: !!found && !impl.has(found.by) };
+    return {
+      ac,
+      verify: found?.verify ?? null,
+      by: found?.by ?? null,
+      role: found?.role ?? null,
+      independent: !!found && !impl.has(found.by) && (!only || found.role === only)
+    };
   });
 }
 function evidenceProblems(store, plan, approvedBy) {
@@ -8281,7 +8293,10 @@ function evidenceProblems(store, plan, approvedBy) {
     if (approvedBy && /\bevidence:/i.test(e.ac)) return;
     if (!e.verify) problems.push(`AC${i + 1} has no evidence: \`checkpoint ${plan.id} --run "<check>" --ac ${i + 1}\` \u2014 ${e.ac}`);
     else if (!e.verify.ok) problems.push(`AC${i + 1}: its latest check failed (${e.verify.cmd})`);
-    else if (!e.independent) problems.push(`AC${i + 1}: only verified by the implementer (${e.by}); verify it from another run`);
+    else if (!e.independent) {
+      const only = store.policy.policy.evidence.role;
+      problems.push(only && e.role !== only ? `AC${i + 1}: checked by the ${e.role ?? "no"} role; only the ${only} role's checks count (evidence.role)` : `AC${i + 1}: only verified by the implementer (${e.by}); verify it from another run`);
+    }
   });
   return problems;
 }

@@ -24,6 +24,7 @@ export const PRESETS: Record<string, { global: Raw; roles: Record<string, Raw> }
       },
       // liveness: a claim quiet for a day is stale; a third bounce or a sixth failed attempt goes to the Director
       limits: { stale_claim_hours: 24, max_bounces: 2, max_attempts: 5 },
+      evidence: { role: "qa" },          // only QA's checks count toward done
     },
     roles: { director: DRAFTS, pm: DRAFTS, qa: DRAFTS, release: DRAFTS },
   },

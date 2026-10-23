@@ -3,7 +3,7 @@ import json
 import re
 
 from conftest import Repo
-from test_hub import PLAN_DRAFT, events, init, new_bug, new_goal, new_plan, plan_file, tr
+from test_hub import PLAN_DRAFT, agent, events, hook, init, new_bug, new_goal, new_plan, plan_file, tr
 
 LIFECYCLE = "preset: lifecycle\n"
 
@@ -320,3 +320,45 @@ def test_review_sends_changes_back_and_done_needs_an_approval_of_the_current_cod
     r = as_(repo, "pm", "move", "P-001", "done")
     assert r.returncode == 0, r.stderr
     assert [e["verdict"] for e in events(repo, "--type", "review")] == ["changes", "approve", "approve"]
+
+
+# ------------------------------------------------------------------ T5: Developer & QA, QA-only evidence
+def test_only_qa_checks_count_as_evidence_under_the_lifecycle(repo: Repo):
+    in_review(repo)  # QA checked every criterion with --run true
+    repo.env["CREW_RUN"] = "arch"
+    assert as_(repo, "architect", "review", "P-001", "--approve").returncode == 0
+    repo.env["CREW_RUN"] = "pm"  # a later check by another role replaces QA's as the latest — and doesn't count
+    assert as_(repo, "pm", "checkpoint", "P-001", "--verify", "looked fine", "--result", "pass", "--ac", "all").returncode == 0
+    r = as_(repo, "pm", "move", "P-001", "done")
+    assert r.returncode != 0 and "checked by the pm role; only the qa role's checks count (evidence.role)" in r.stderr
+    repo.env["CREW_RUN"] = "qa"
+    assert as_(repo, "qa", "checkpoint", "P-001", "--run", "true", "--ac", "all").returncode == 0
+    repo.env["CREW_RUN"] = "pm"
+    assert as_(repo, "pm", "move", "P-001", "done").returncode == 0
+
+
+def test_raci_under_the_lifecycle(repo: Repo):
+    """One check per enforced row: what each role may not do."""
+    lifecycle(repo)
+    assert new_bug(repo).returncode == 0 and new_plan(repo).returncode == 0
+    refused = {
+        ("developer", "triage", "BUG-001", "--priority", "P1", "--severity", "S2"): "for the pm role",
+        ("developer", "move", "P-001", "ready"): "for the architect role",
+        ("pm", "move", "P-001", "ready"): "for the architect role",
+        ("qa", "move", "P-001", "ready"): "for the architect role",
+    }
+    for (role, *cmd), why in refused.items():
+        r = as_(repo, role, *cmd)
+        assert r.returncode != 0 and why in r.stderr, (role, cmd, r.stderr)
+    assert as_(repo, "architect", "move", "P-001", "ready").returncode == 0
+    for role in ("developer", "qa", "architect", "director"):
+        r = as_(repo, role, "assign", "P-001", "--to", "developer")
+        assert r.returncode != 0 and "for the pm role" in r.stderr, role
+    # QA can't edit code (the guard); it writes drafts only
+    agent(repo, "crew-qa", "qa")
+    w = lambda p: hook(repo, {"tool_name": "Write", "agent_type": "crew-qa", "agent_id": "a", "tool_input": {"file_path": p}})
+    assert w("src/auth/signup.py")["permissionDecision"] == "deny"
+    assert w(".crew/drafts/bug.md") is None
+    agent(repo, "crew-developer", "developer")
+    assert hook(repo, {"tool_name": "Write", "agent_type": "crew-developer", "agent_id": "a",
+                       "tool_input": {"file_path": "src/auth/signup.py"}}) is None

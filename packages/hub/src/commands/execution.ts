@@ -37,18 +37,20 @@ export function implementers(events: LedgerEvent[], planId: string): Set<string>
 
 const checkpoints = (events: LedgerEvent[], planId: string) => events.filter((e) => e.type === "checkpoint" && e.ref === planId);
 
-/** Per criterion: the latest verify covering it, and whether it counts as independent evidence. */
-export function evidence(store: Store, plan: Doc): { ac: string; verify: Verify | null; by: string | null; independent: boolean }[] {
-  const events = store.ledger.events(), impl = implementers(events, plan.id);
+/** Per criterion: the latest verify covering it, and whether it counts as independent evidence: not from an implementer,
+ * and — when the policy names an `evidence.role` (the lifecycle preset: qa) — recorded by that role. */
+export function evidence(store: Store, plan: Doc): { ac: string; verify: Verify | null; by: string | null; role: string | null; independent: boolean }[] {
+  const events = store.ledger.events(), impl = implementers(events, plan.id), only = store.policy.policy.evidence.role;
   return criteria(plan).map((ac, i) => {
-    let found: { verify: Verify; by: string } | null = null;
+    let found: { verify: Verify; by: string; role: string | null } | null = null;
     const print = acPrint(ac);
     for (const e of checkpoints(events, plan.id)) {
       for (const v of (e.verify as Verify[] | undefined) ?? []) {
-        if (v.ac_text ? v.ac_text.includes(print) : v.ac.includes(i + 1)) found = { verify: v, by: e.run };
+        if (v.ac_text ? v.ac_text.includes(print) : v.ac.includes(i + 1)) found = { verify: v, by: e.run, role: e.role };
       }
     }
-    return { ac, verify: found?.verify ?? null, by: found?.by ?? null, independent: !!found && !impl.has(found.by) };
+    return { ac, verify: found?.verify ?? null, by: found?.by ?? null, role: found?.role ?? null,
+      independent: !!found && !impl.has(found.by) && (!only || found.role === only) };
   });
 }
 
@@ -64,7 +66,11 @@ export function evidenceProblems(store: Store, plan: Doc, approvedBy?: string): 
     if (approvedBy && /\bevidence:/i.test(e.ac)) return;
     if (!e.verify) problems.push(`AC${i + 1} has no evidence: \`checkpoint ${plan.id} --run "<check>" --ac ${i + 1}\` — ${e.ac}`);
     else if (!e.verify.ok) problems.push(`AC${i + 1}: its latest check failed (${e.verify.cmd})`);
-    else if (!e.independent) problems.push(`AC${i + 1}: only verified by the implementer (${e.by}); verify it from another run`);
+    else if (!e.independent) {
+      const only = store.policy.policy.evidence.role;
+      problems.push(only && e.role !== only ? `AC${i + 1}: checked by the ${e.role ?? "no"} role; only the ${only} role's checks count (evidence.role)`
+        : `AC${i + 1}: only verified by the implementer (${e.by}); verify it from another run`);
+    }
   });
   return problems;
 }
