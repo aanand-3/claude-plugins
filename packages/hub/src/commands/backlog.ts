@@ -2,6 +2,7 @@
 import { type Doc, splitSections } from "../core/doc.js";
 import { triageProblems } from "../core/gates.js";
 import { ITEM_TYPES, SEVERITY_PRIORITY } from "../core/model.js";
+import { approvalReason } from "../core/policy.js";
 import { Store } from "../core/store.js";
 import { fail, slugify } from "../core/text.js";
 import { move } from "./workflow.js";
@@ -39,12 +40,14 @@ export function newItem(store: Store, typ: string, title: string, draftPath: str
   if (draftFile) store.consume(draftFile, o.keep);
   if (o.priority || severity) { // a triage decision given at intake: apply it if the gate passes
     const problems = triageProblems(it);
+    const human = approvalReason(store.policy.policy, "item.triaged");
     if (problems.length) store.say(`note: ${it.id} stays new until triaged — ${problems.join("; ")}`);
+    else if (human) store.say(`note: ${it.id} stays new — triage is ${human}: \`triage ${it.id} --approved-by <name>\``);
     else move(store, it.id, "triaged", summary(it));
   }
 }
 
-export interface TriageOptions { priority?: string; severity?: string; goal?: string; reject?: string; note?: string }
+export interface TriageOptions { priority?: string; severity?: string; goal?: string; reject?: string; note?: string; approvedBy?: string }
 
 const summary = (it: Doc) => ["priority", "severity"].filter((k) => it.get(k)).map((k) => `${k} ${it.get(k)}`).join(", ");
 
@@ -54,7 +57,7 @@ export function triage(store: Store, itemId: string, o: TriageOptions = {}): voi
   if (!item.get("type")) fail("triage works on FEAT/BUG/CHORE/SPIKE items.");
   if (o.reject) {
     if (!o.note) fail("--reject needs --note (why, or which item it duplicates).");
-    move(store, itemId, o.reject, o.note);
+    move(store, itemId, o.reject, o.note, false, o.approvedBy);
     return;
   }
   let priority = o.priority;
@@ -74,7 +77,7 @@ export function triage(store: Store, itemId: string, o: TriageOptions = {}): voi
     return;
   }
   item.save();
-  move(store, item.id, "triaged", summary(item));
+  move(store, item.id, "triaged", summary(item), false, o.approvedBy);
 }
 
 /** Turn each Breakdown bullet into a FEAT item linked to the goal (or link an existing item ID). */
@@ -107,7 +110,7 @@ function itemFromCandidate(store: Store, goal: Doc, cand: string): Doc {
   const [name, desc] = sep ? [cand.slice(0, sep.index).trim(), cand.slice(sep.index + sep[0].length).trim()] : [cand, ""];
   const body = `## Summary\n${desc || name}\n\nSlice of ${goal.id} (${goal.get("title")}): ${cand}\n`;
   const it = createItem(store, "FEAT", name, body, { goal: goal.id, priority: goal.get("priority") || "P2" });
-  if (!triageProblems(it).length) {
+  if (!triageProblems(it).length && !approvalReason(store.policy.policy, "item.triaged")) {
     it.set("status", "triaged");
     it.appendLog(`triaged from ${goal.id} breakdown`, "Notes");
     it.save();

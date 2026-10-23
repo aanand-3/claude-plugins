@@ -15,23 +15,25 @@ export interface LedgerEvent {
   type: EventType;
   ref: string | null;               // the document it is about (P-001, IDEA, …), if any
   run: string;                      // the agent run or session that wrote it
-  actor: string;                    // who: a role, an agent or a person
+  actor: string;                    // who: an agent or a person
+  role: string | null;              // the role it acted in (CREW_ROLE), e.g. developer, qa
   worktree: string;                 // where it was written
   [field: string]: unknown;         // type-specific: branch, from/to/note, text, tokens_in/tokens_out/cost/model
 }
 
-export interface Who { run: string; actor: string; worktree: string }
+export interface Who { run: string; actor: string; role: string | null; worktree: string }
 export interface Spend { cost: number; tokensIn: number; tokensOut: number; byActor: Record<string, number> }
 
 const LOCK_WAIT_MS = 5_000;
 const LOCK_STALE_MS = 30_000;
 
-/** Who is writing: CREW_RUN / CREW_ACTOR, else one run per worktree and the git user. */
+/** Who is writing: CREW_RUN / CREW_ACTOR / CREW_ROLE, else one run per worktree, the git author and no role. */
 export function whoAmI(root: string): Who {
   const hash = createHash("sha1").update(root).digest("hex").slice(0, 8);
   return {
     run: process.env.CREW_RUN || `wt:${basename(root)}-${hash}`,
     actor: process.env.CREW_ACTOR || git.userName() || "unknown",
+    role: process.env.CREW_ROLE || null,
     worktree: root,
   };
 }

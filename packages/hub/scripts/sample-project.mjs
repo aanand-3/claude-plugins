@@ -51,6 +51,8 @@ git("commit", "-q", "--allow-empty", "-m", "init");
 day("2026-10-05");
 tr("init");
 writeFileSync(join(dir, ".crew/config.yaml"), "hub:\n  wip_limit: 2\n");
+writeFileSync(join(dir, ".crew/policy.yaml"), "mode: ai-native   # agents run the work; the idea's decision stays with the executive\n"
+  + "budgets:\n  max_agents: 3\n");
 
 tr("new-idea", "Habitly", "--from", draft("idea", `## Problem
 People who want a daily habit (exercise, reading, language practice) give up within two weeks: nothing reminds them
@@ -73,7 +75,7 @@ Mobile-first web app (PWA) with email reminders; native apps only if the pilot w
 ## Constraints
 One developer plus agents; pilot by mid-November; Postgres.
 `));
-tr("move", "IDEA", "researching"); tr("move", "IDEA", "proposed"); tr("move", "IDEA", "decided", "--note", "go: pilot by mid-November");
+tr("move", "IDEA", "researching"); tr("move", "IDEA", "proposed"); tr("move", "IDEA", "decided", "--note", "go: pilot by mid-November", "--approved-by", "Asha (executive)");
 tr("new-goal", "Accounts", "--priority", "P1", "--from", draft("e1", `## Outcome
 A pilot user can create an account, verify their email and get back in when they forget the password.
 

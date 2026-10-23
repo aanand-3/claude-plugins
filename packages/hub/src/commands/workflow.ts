@@ -2,6 +2,7 @@
 import * as git from "../core/git.js";
 import type { Doc } from "../core/doc.js";
 import { decisionProblems, readinessProblems, triageProblems } from "../core/gates.js";
+import { approvalReason } from "../core/policy.js";
 import { CLOSED, FLOWS, ITEM_CLOSED, type Kind } from "../core/model.js";
 import * as q from "../core/queries.js";
 import type { Store } from "../core/store.js";
@@ -9,7 +10,7 @@ import { fail, kindOf, slugify, today } from "../core/text.js";
 
 const LOG_SECTION: Partial<Record<Kind, string>> = { item: "Notes" };
 
-export function move(store: Store, docId: string, status: string, note?: string, force = false): Doc {
+export function move(store: Store, docId: string, status: string, note?: string, force = false, approvedBy?: string): Doc {
   store.require();
   docId = docId.toUpperCase();
   const kind = kindOf(docId);
@@ -22,14 +23,49 @@ export function move(store: Store, docId: string, status: string, note?: string,
     fail(`${docId}: ${old} → ${status} not allowed (from ${old}: ${allowed}). Use --force to override.`);
   }
   if (!force) guard(store, kind!, doc, status);
+  authorize(store, doc.id, `${kind}.${status}`, approvedBy);
   stamp(kind!, doc, status);
   doc.set("status", status);
-  doc.appendLog(`status ${old} → ${status}` + (note ? ` — ${note}` : ""), LOG_SECTION[kind!] ?? "Progress log");
+  const approval = approvedBy ? ` (approved by ${approvedBy})` : "";
+  doc.appendLog(`status ${old} → ${status}` + (note ? ` — ${note}` : "") + approval, LOG_SECTION[kind!] ?? "Progress log");
   doc.save();
-  store.ledger.record("move", doc.id, { from: old, to: status, ...(note ? { note } : {}) });
+  store.ledger.record("move", doc.id, { from: old, to: status, ...(note ? { note } : {}), ...(approvedBy ? { approved_by: approvedBy } : {}) });
   if (CLOSED.has(status) && store.ledger.claims().has(doc.id)) store.ledger.record("release", doc.id, { reason: status });
   store.say(`${doc.id}: ${old} → ${status}`);
   return doc;
+}
+
+/** Policy: human gates and reserved decisions need a named human (`--approved-by`, CLI only); role gates need the role.
+ * --force never bypasses these, and an invalid policy refuses every move until it is fixed. */
+function authorize(store: Store, id: string, transition: string, approvedBy?: string): void {
+  const { policy, errors } = store.policy;
+  if (errors.length) fail(`The policy is invalid, so nothing moves until it is fixed (\`crew.mjs policy check\`):\n  - ${errors.join("\n  - ")}`);
+  if (approvedBy !== undefined && !approvedBy.trim()) fail("--approved-by needs the approving person's name.");
+  if (approvedBy) return;
+  const reason = approvalReason(policy, transition);
+  const [, status] = transition.split(".");
+  if (reason) {
+    fail(`${id} → ${status} is ${reason}: a human approves it with \`crew.mjs move ${id} ${status} --approved-by <name>\` `
+      + `(agents over MCP can't). Ask the ${policy.escalation.to} first.`);
+  }
+  const role = policy.role_gates[transition];
+  const mine = store.ledger.who.role;
+  if (role && mine !== role) fail(`${id} → ${status} is for the ${role} role; this run is ${mine ? `the ${mine} role` : "in no role"} (CREW_ROLE).`);
+}
+
+/** Why this run may not take on new work (budgets in the policy), or none. */
+export function budgetProblems(store: Store): string[] {
+  const { budgets } = store.policy.policy;
+  const events = store.ledger.events(), me = store.ledger.who.run;
+  const mine = store.ledger.spend(events.filter((e) => e.run === me)), all = store.ledger.spend(events);
+  const over = (what: string, used: number, cap: number | null, unit = "") =>
+    cap !== null && used >= cap ? [`${what}: ${unit}${+used.toFixed(2)} used of ${unit}${cap}`] : [];
+  const holders = new Set([...store.ledger.claims(events).values()].map((c) => c.run));
+  const agents = budgets.max_agents !== null && !holders.has(me) && holders.size >= budgets.max_agents
+    ? [`max_agents: ${holders.size} runs already hold work (limit ${budgets.max_agents})`] : [];
+  return [...over("run cost", mine.cost, budgets.run.max_cost, "$"), ...over("run tokens", mine.tokensIn + mine.tokensOut, budgets.run.max_tokens),
+    ...over("project cost", all.cost, budgets.project.max_cost, "$"), ...over("project tokens", all.tokensIn + all.tokensOut, budgets.project.max_tokens),
+    ...agents];
 }
 
 /** Refuse a transition whose gate isn't met (bypassed only with --force). */
@@ -62,10 +98,14 @@ function stamp(kind: Kind, doc: Doc, status: string): void {
   if (status === "done") doc.set("completed", today());
 }
 
-export function start(store: Store, planId: string, force = false): void {
+export function start(store: Store, planId: string, force = false, approvedBy?: string): void {
   store.require();
   let doc = store.find(planId);
   if (!force) checkStartable(store, doc);
+  const over = budgetProblems(store);
+  if (over.length && !approvedBy) {
+    fail(`Over budget — no new work without a human's approval (\`start ${doc.id} --approved-by <name>\`):\n  - ${over.join("\n  - ")}`);
+  }
   const held = store.ledger.claims().get(doc.id);
   if (held && held.run !== store.ledger.who.run && !force) {
     fail(`${doc.id} is claimed by ${held.actor} (${held.run}, ${held.worktree}) since ${held.ts.slice(0, 10)}. `
@@ -82,7 +122,7 @@ export function start(store: Store, planId: string, force = false): void {
     doc.save();
   }
   store.ledger.record("claim", doc.id, { branch, ...(force ? { force: true } : {}) });
-  move(store, planId, "in-progress", `branch ${branch}`, force);
+  move(store, planId, "in-progress", `branch ${branch}`, force, approvedBy);
   store.say(`Switched to ${branch} — claimed by ${store.ledger.who.actor} (${store.ledger.who.run})`);
 }
 
@@ -128,6 +168,8 @@ export function usage(store: Store, u: { tokensIn?: number; tokensOut?: number; 
   store.ledger.record("usage", u.ref ? u.ref.toUpperCase() : null, {
     tokens_in: u.tokensIn ?? 0, tokens_out: u.tokensOut ?? 0, cost: u.cost ?? 0, ...(u.model ? { model: u.model } : {}) });
   store.say(`usage recorded for ${store.ledger.who.actor} (${store.ledger.who.run})`);
+  const over = budgetProblems(store);
+  if (over.length) store.say(`warning: over budget — new work needs a human's approval: ${over.join("; ")}`);
 }
 
 export function log(store: Store, docId: string, text: string): void {

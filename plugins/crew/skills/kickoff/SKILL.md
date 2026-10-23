@@ -42,13 +42,14 @@ On start, if it exists, show what's done and continue from the first `pending` s
    node "${CLAUDE_PLUGIN_ROOT}/skills/hub/dist/crew.mjs" init
    ```
    (Vendors the hub into `.crew/bin/` and templates into `.crew/templates/`.)
+   - **Mode** (one AskUserQuestion): who approves what from here on. *AI-assisted (Recommended)*: agents do the work, a human approves each plan before it starts and before it's done. *AI-native*: agents run everything after the idea is decided; humans answer escalations. *Human-led*: humans drive and also approve triage. Write `.crew/policy.yaml` with `mode: <choice>` and, if the user names any, budgets (`budgets: {max_agents: N, run: {max_cost: USD}}`). Run `crew.mjs policy check`. Reserved decisions (deciding or killing the idea, production deploys, publishing, spending, deleting data, policy changes) always need the user, whatever the mode.
 
 5. **Git** — follow the `git-setup` skill and run its setup script.
    - **Graph** (only with `modules.graphify`): now that `.githooks` is active, follow the `codemap` skill (`${CLAUDE_PLUGIN_ROOT}/skills/codemap/SKILL.md`), *enable* only. There's no code to map yet, so don't build. Mark the `graph` step done.
    - Review the staged files with the user, then make the initial commit `chore: project scaffold (crew)`. GitHub remote only if the user asks.
 
 6. **Idea, goals & first plan** (only with `modules.hub`; otherwise `skipped`). Follow the hub skill's workflows 1 and 3, and its writing guide (`${CLAUDE_PLUGIN_ROOT}/skills/hub/references/writing-guide.md`). The result is a concrete, reviewable plan, not just a list of goals.
-   - **Idea:** draft `idea.md` from the brief: the problem, the outcome, **success criteria as a checklist** the user can verify, the direction chosen in discover (and the alternatives weighed), constraints. With `docs/research/idea-research.md`, put its verdict and key findings under Research and its open assumptions under Constraints. Create it with `crew.mjs new-idea "<title>" --from .crew/drafts/idea.md`. Ask the user to confirm the success criteria, then `move IDEA decided` on their yes (the user decides; never decide for them).
+   - **Idea:** draft `idea.md` from the brief: the problem, the outcome, **success criteria as a checklist** the user can verify, the direction chosen in discover (and the alternatives weighed), constraints. With `docs/research/idea-research.md`, put its verdict and key findings under Research and its open assumptions under Constraints. Create it with `crew.mjs new-idea "<title>" --from .crew/drafts/idea.md`. Ask the user to confirm the success criteria, then `move IDEA decided --approved-by <their name>` on their yes (a reserved decision: the user decides, never you).
    - **Goals:** propose 1–3 from the brief's MVP capabilities. With research, its *Worth adopting* features become candidate goal slices or FEAT items. For each goal the user approves:
      - write a complete draft whose **Breakdown** lists vertical slices (`Title — what it delivers`);
      - create it with `new-goal "<title>" --from … --priority P1`;
@@ -67,7 +68,7 @@ On start, if it exists, show what's done and continue from the first `pending` s
      - **Acceptance criteria** include `make check` green from a clean checkout, with every configured tool run at least once.
      - Every task ends with `→ verify:`. The Test plan says how each tool is exercised; Rollout & rollback is "n/a — local tooling only".
      - `touches:` covers the tooling files, the app shells and the Makefile.
-     - Capture it first as `new-item chore "Project tooling & dev environment" --why … --priority P0` (that triages it). Create the plan with `new-plan "Project tooling & dev environment" --from … --items CHORE-001 --touches "…"`, then `move P-001 ready` once the user agrees.
+     - Capture it first as `new-item chore "Project tooling & dev environment" --why … --priority P0` (that triages it). Create the plan with `new-plan "Project tooling & dev environment" --from … --items CHORE-001 --touches "…"`, then `move P-001 ready` once the user agrees (adding `--approved-by <their name>` when the mode gates it).
    - Write the plan for the focus goal's first slice too, only if the user wants two plans ready.
    - Capture deferred ideas as items with `new-item … --why`; no backlog bullets.
    - Run `crew.mjs check` (it must report no errors) and `status`. Show the user the status output. Commit `chore(hub): idea, goals and P-001`.

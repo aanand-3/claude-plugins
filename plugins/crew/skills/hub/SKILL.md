@@ -35,7 +35,8 @@ All state changes go through the script. Never hand-edit `status`, dates, IDs, `
 | `new-item feat\|bug\|chore\|spike TITLE (--from DRAFT \| --why TEXT) [--goal] [--priority] [--severity]` | capture backlog work |
 | `triage ID [--priority] [--severity] [--goal]` · `triage ID --reject wontfix\|duplicate --note …` | triage gate → `triaged`, or close |
 | `new-plan TITLE --from DRAFT [--goal] [--items FEAT-001,BUG-002] [--touches "src/a/**, docs/b.md"] [--depends P-###]` | a plan that delivers items |
-| `move ID STATUS [--note]` | validated transition (`ready` enforces DoR; IDEA `decided` needs success criteria) |
+| `move ID STATUS [--note] [--approved-by NAME]` | validated transition (`ready` enforces DoR; IDEA `decided` needs success criteria); policy gates need a human's approval |
+| `policy show [--role R] [--team T] [--json]` · `policy check` | the effective policy and its source layers · validation (CI) |
 | `start P-###` | claim the plan, branch `plan/P-###-<slug>`, `in-progress` (checks the claim, dependencies and this run's WIP) |
 | `log ID TEXT` | progress log / item notes (also a ledger event) |
 | `release P-### [--note] [--force]` | give up a claim; another run's claim needs `--force` |
@@ -47,6 +48,11 @@ All state changes go through the script. Never hand-edit `status`, dates, IDs, `
 | `export [--json] [--out FILE]` · `ui [--port 8765] [--no-open]` | the interactive view: a self-contained page (`.crew/view/index.html`, gitignored) or a live local server; `--json` is the graph for scripts |
 
 **Who you are and the ledger.** Every move, log, claim and usage record lands in the shared ledger (`<git common dir>/crew/ledger.jsonl`), so every worktree and agent sees the same claims. Set `CREW_RUN` (one per agent run or session) and `CREW_ACTOR` (your role or name) in the environment; without them the run is one per worktree and the actor is the git author. A plan someone else has claimed can't be started; `ledger` shows who holds what.
+
+**Policy.** `.crew/policy.yaml` (with an org layer from the playbook repo) sets the `mode` and what needs a human. `crew.mjs policy show` prints the effective policy and where each value came from; `policy check` validates it (and `check` includes it).
+- **Human gates and reserved decisions** (by mode: `ai-assisted` gates plan `ready`/`done` and goal `done`; reserved always: deciding or killing the idea, production deploy, publish, spend, delete data, policy change) are refused over MCP and without `--approved-by`. **Never pass `--approved-by` on your own.** Ask the user, and pass it only after they approved that exact step in this conversation, with their name. `--force` does not bypass these.
+- **Role gates** (`role_gates: {plan.done: qa}`) need `CREW_ROLE` to match.
+- **Budgets** (`budgets.run`, `budgets.project`, `max_agents`): over budget, `start` refuses new work until the user approves it.
 
 **Nothing is created empty.** Write the content as a draft in `.crew/drafts/<slug>.md`, using the template's `## ` headings, then create the document from it. The draft is consumed. The only lightweight intake is `new-item … --why "<one line>"`; such an item stays `new` until it passes triage. Giving `--priority`/`--severity` at intake triages it right away when the gate passes.
 
@@ -132,4 +138,5 @@ Start every workflow by checking where you are: `git branch --show-current`, `cr
 - Respect the WIP limit (`wip_limit`, default 1 plan in progress).
 - Never mark a plan `done` with unchecked tasks or an empty Outcome. Never close a goal without the user confirming its acceptance criteria. Only the user decides or kills the idea.
 - Every bug fix ships with a regression test.
+- Never approve on the user's behalf: `--approved-by` only carries an approval the user gave you for that step.
 - Don't use `--force` to get around a gate. If a gate is wrong for this project, change the setting under `hub:` in `.crew/config.yaml` and say so.

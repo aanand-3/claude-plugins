@@ -24,7 +24,9 @@ async function bundleNode(entry, outfile) {
     platform: "node",
     format: "esm",
     target: "node20",
-    banner: { js: "#!/usr/bin/env node\n// Generated from packages/hub by `npm run build`. Do not edit." },
+    // createRequire: bundled CommonJS dependencies (yaml) call require() for Node built-ins
+    banner: { js: "#!/usr/bin/env node\n// Generated from packages/hub by `npm run build`. Do not edit.\n"
+      + 'import { createRequire as __crewRequire } from "node:module"; const require = __crewRequire(import.meta.url);' },
     define: { HUB_VERSION: JSON.stringify(VERSION) },
     legalComments: "none",
     logLevel: "warning",

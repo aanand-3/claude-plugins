@@ -106,10 +106,15 @@ One line.
 """
 
 
-def init(repo: Repo, commit: bool = False) -> None:
+def init(repo: Repo, commit: bool = False, mode: str = "ai-native") -> None:
+    """A hub with no human gates by default (the gates have their own tests); the idea's decision stays reserved."""
     if commit:
         repo.git("commit", "-q", "--allow-empty", "-m", "init")
     assert repo.py(HUB, "init").returncode == 0
+    if mode:
+        repo.write(".crew/policy.yaml", f"mode: {mode}\n")
+        if commit:
+            repo.commit("chore(hub): policy")
 
 
 def tr(repo: Repo, *args: str):
@@ -336,7 +341,9 @@ def test_idea_is_decided_only_with_checkable_success_criteria(repo: Repo):
     assert r.returncode != 0 and "checklist" in r.stderr
     idea = repo.path / ".crew/idea.md"
     idea.write_text(idea.read_text().replace("3 pilot", "- [ ] 3 pilot").replace("no data", "- [ ] no data"))
-    assert tr(repo, "move", "IDEA", "decided", "--note", "go").returncode == 0
+    r = tr(repo, "move", "IDEA", "decided", "--note", "go")
+    assert r.returncode != 0 and "reserved decision" in r.stderr  # only the executive decides
+    assert tr(repo, "move", "IDEA", "decided", "--note", "go", "--approved-by", "Amit").returncode == 0
     text = idea.read_text()
     assert "status: decided" in text and re.search(r"^decided: \d{4}-\d{2}-\d{2}$", text, re.M)
     assert tr(repo, "move", "IDEA", "proposed").returncode == 0  # a pivot reopens the decision
@@ -785,3 +792,139 @@ def test_usage_needs_numbers(repo: Repo):
     assert tr(repo, "usage", "--cost", "abc").returncode != 0
     assert tr(repo, "usage", "--tokens-in", "x").returncode == 2
     assert events(repo) == []
+
+
+# ------------------------------------------------------------------ policy
+MCP = HUB.parent / "mcp.mjs"
+
+
+def mcp_call(repo: Repo, tool: str, args: dict) -> dict:
+    msgs = [{"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2025-06-18"}},
+            {"jsonrpc": "2.0", "id": 2, "method": "tools/call", "params": {"name": tool, "arguments": args}}]
+    r = repo.run("node", MCP, input="".join(json.dumps(m) + "\n" for m in msgs))
+    return [json.loads(line) for line in r.stdout.splitlines()][-1]["result"]
+
+
+def org_playbook(repo: Repo, global_yaml: str, roles: dict[str, str] | None = None) -> Repo:
+    pb = Repo(repo.path.parent / f"{repo.path.name}-playbook")
+    pb.env = repo.env
+    pb.path.mkdir()
+    pb.git("init", "-q", "-b", "main")
+    pb.write("policy/global.yaml", global_yaml)
+    for role, text in (roles or {}).items():
+        pb.write(f"policy/roles/{role}.yaml", text)
+    pb.commit("org policy")
+    repo.env["CREW_PLAYBOOK"] = str(pb.path)
+    return pb
+
+
+def test_policy_show_reports_each_value_and_its_layer(repo: Repo):
+    init(repo, mode="")
+    org_playbook(repo, "budgets:\n  run: { max_cost: 10 }\nreserved: [prod-db-migration]\n",
+                 {"qa": "models: { default: claude-haiku-5-5 }\ntools: { deny: [deploy] }\n"})
+    repo.write(".crew/policy.yaml", "mode: ai-native\nbudgets:\n  run: { max_cost: 4 }\n"
+               "roles:\n  qa:\n    tools: { allow: [run-tests] }\nteams:\n  web:\n    scope: [web/**]\n    paths: { write: [web/**] }\n")
+    out = tr(repo, "policy", "show", "--role", "qa").stdout
+    row = lambda key: next(ln for ln in out.splitlines() if ln.strip().startswith(key + " "))
+    assert "ai-native" in row("mode") and "(project)" in row("mode")
+    assert "(built-in: mode ai-native)" in row("human_gates")
+    assert "claude-haiku-5-5" in row("models.default") and "(org role qa)" in row("models.default")
+    assert "deploy" in row("tools.deny") and "run-tests" in row("tools.allow") and "(project role qa)" in row("tools.allow")
+    assert " 4 " in row("budgets.run.max_cost") and "(project)" in row("budgets.run.max_cost")
+    assert "prod-db-migration" in row("reserved") and "(built-in + org)" in row("reserved")
+    team = json.loads(tr(repo, "policy", "show", "--team", "web", "--json").stdout)
+    assert team["policy"]["paths"]["write"] == ["web/**"] and team["sources"]["paths.write"] == "project team web"
+    assert tr(repo, "policy", "check").stdout.strip() == "Policy OK."
+
+
+def test_policy_check_refuses_a_project_that_loosens_the_org(repo: Repo):
+    init(repo, mode="")
+    org_playbook(repo, "budgets:\n  run: { max_cost: 10 }\ntools: { deny: [deploy] }\ngit: { no_verify: false }\n")
+    repo.write(".crew/policy.yaml", "budgets:\n  run: { max_cost: 50 }\ntools: { allow: [deploy] }\ngit: { no_verify: true }\n"
+               "roles:\n  dev:\n    mode: ai-native\nrole_gates:\n  plan.shipped: qa\nwhatever: 1\n")
+    r = tr(repo, "policy", "check")
+    assert r.returncode == 1
+    for problem in ("budgets.run.max_cost: 50 exceeds the ceiling 10 set by org", "'deploy' is denied by org (deny wins)",
+                    "git.no_verify: true loosens a guardrail", "roles.dev.mode: can only be set globally",
+                    "'plan.shipped': plan has no status 'shipped'", "whatever: unknown key"):
+        assert problem in r.stdout, problem
+    assert tr(repo, "check").returncode == 1 and "policy: " in tr(repo, "check").stdout
+    new_plan(repo)
+    r = tr(repo, "move", "P-001", "ready")
+    assert r.returncode != 0 and "The policy is invalid" in r.stderr  # fail closed
+
+
+def test_org_policy_is_read_at_the_pinned_ref(repo: Repo):
+    init(repo, mode="")
+    pb = org_playbook(repo, "budgets:\n  max_agents: 2\n")
+    pinned = pb.git("rev-parse", "HEAD").stdout.strip()
+    pb.write("policy/global.yaml", "budgets:\n  max_agents: 9\n")
+    pb.commit("raise")
+    del repo.env["CREW_PLAYBOOK"]
+    repo.write(".crew/config.yaml", f"playbook:\n  path: ../{pb.path.name}\n  ref: {pinned}\n")
+    assert " 2 " in next(ln for ln in tr(repo, "policy", "show").stdout.splitlines() if "max_agents" in ln)
+    repo.write(".crew/config.yaml", "playbook:\n  path: ../nowhere\n")
+    assert "playbook ../nowhere not found" in tr(repo, "policy", "check").stdout
+
+
+def test_human_gate_refused_over_mcp_and_approved_on_the_cli(repo: Repo):
+    init(repo, commit=True, mode="ai-assisted")
+    new_plan(repo)
+    r = tr(repo, "move", "P-001", "ready", "--force")
+    assert r.returncode != 0 and "a human gate (mode ai-assisted)" in r.stderr  # --force never bypasses it
+    res = mcp_call(repo, "move", {"id": "P-001", "status": "ready"})
+    assert res["isError"] and "--approved-by" in res["content"][0]["text"]
+    assert events(repo) == []
+    assert tr(repo, "move", "P-001", "ready", "--approved-by", "").returncode != 0
+    r = tr(repo, "move", "P-001", "ready", "--approved-by", "Amit")
+    assert r.returncode == 0, r.stderr
+    assert events(repo, "--type", "move")[-1]["approved_by"] == "Amit"
+    assert "(approved by Amit)" in plan_file(repo, "P-001").read_text()
+
+
+def test_role_gates(repo: Repo):
+    init(repo, commit=True, mode="")
+    repo.write(".crew/policy.yaml", "mode: ai-native\nrole_gates:\n  plan.done: qa\n")
+    ready_plan(repo)
+    repo.commit("chore(hub): plan")
+    repo.env["CREW_ROLE"] = "developer"
+    tr(repo, "start", "P-001")
+    p = plan_file(repo, "P-001")
+    p.write_text(p.read_text().replace("- [ ] T", "- [x] T").rstrip() + "\nShipped.\n")
+    assert tr(repo, "move", "P-001", "in-review").returncode == 0
+    r = tr(repo, "move", "P-001", "done")
+    assert r.returncode != 0 and "for the qa role; this run is the developer role" in r.stderr
+    repo.env["CREW_ROLE"] = "qa"
+    assert tr(repo, "move", "P-001", "done").returncode == 0
+    assert events(repo, "--type", "move")[-1]["role"] == "qa"
+
+
+def test_budgets_stop_new_work_until_a_human_approves(repo: Repo):
+    init(repo, commit=True, mode="")
+    repo.write(".crew/policy.yaml", "mode: ai-native\nbudgets:\n  max_agents: 1\n  run: { max_cost: 1 }\n  project: { max_tokens: 5000 }\n")
+    ready_plan(repo, "One")
+    ready_plan(repo, "Two")
+    repo.commit("chore(hub): plans")
+    repo.env["CREW_RUN"] = "agent-a"
+    r = tr(repo, "usage", "--cost", "1.5", "--tokens-in", "1000")
+    assert "over budget" in r.stdout and "run cost: $1.5 used of $1" in r.stdout
+    r = tr(repo, "start", "P-001")
+    assert r.returncode != 0 and "Over budget" in r.stderr and "run cost" in r.stderr
+    assert tr(repo, "start", "P-001", "--approved-by", "Amit").returncode == 0
+    repo.commit("chore(P-001): start")
+    repo.git("switch", "-q", "main")
+    repo.env["CREW_RUN"] = "agent-b"  # fresh run, no spend of its own
+    r = tr(repo, "start", "P-002")
+    assert r.returncode != 0 and "max_agents: 1 runs already hold work (limit 1)" in r.stderr
+    tr(repo, "usage", "--tokens-out", "4500")
+    assert "project tokens: 5500 used of 5000" in tr(repo, "start", "P-002").stderr
+
+
+def test_human_led_triage_needs_a_human(repo: Repo):
+    init(repo, mode="human-led")
+    r = tr(repo, "new-item", "chore", "Upgrade Node", "--why", "LTS", "--priority", "P2")
+    assert "stays new — triage is a human gate" in r.stdout and "status: new" in item(repo, "CHORE-001")
+    assert tr(repo, "triage", "CHORE-001").returncode != 0
+    assert tr(repo, "triage", "CHORE-001", "--approved-by", "Amit").returncode == 0
+    new_goal(repo, "Accounts", GOAL_DRAFT, "--priority", "P1")
+    assert "status: new" in item(repo, "FEAT-001")  # breakdown items wait for the human too

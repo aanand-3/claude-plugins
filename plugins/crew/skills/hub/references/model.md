@@ -33,6 +33,29 @@ Every event carries `ts`, `ref`, `run` (`CREW_RUN`, else one per worktree), `act
 can't both claim a plan. Derived from it: live claims (owner in `status` and the view), each run's WIP, spend, and a `check`
 hint when a plan file disagrees with the ledger's last move or a closed plan is still claimed.
 
+## Policy
+`.crew/policy.yaml`, layered over the built-in defaults and the org playbook (`playbook: {path, ref}` in config.yaml, or
+`CREW_PLAYBOOK`): built-in → org → org role → project → project role → project team.
+
+| Key | Where | Merge |
+|---|---|---|
+| `mode` | global | override; sets the default `human_gates` |
+| `human_gates`, `reserved` | global | `<kind>.<status>` transitions needing `--approved-by`; the org's are a floor, reserved is a union |
+| `role_gates` | global | `{plan.done: qa}` — the transition needs `CREW_ROLE` to match |
+| `models`, `tools.allow`, `paths.write` | global, role, team | override |
+| `tools.deny`, `paths.protected`, `secrets.*`, `git.protected_branches` | (as above) | union — a deny always beats an allow |
+| `git.force_push`, `git.no_verify` | global | can only be turned off |
+| `budgets.run`, `budgets.project`, `budgets.max_agents` | run also per role/team | override, but never above an org ceiling |
+
+| Mode | Human gates by default |
+|---|---|
+| `ai-native` | none (only reserved decisions) |
+| `ai-assisted` (default) | plan `ready`, plan `done`, goal `done` |
+| `human-led` | those, plus item `triaged` |
+
+The hub enforces gates, reserved transitions and budgets; models, tools and paths are applied by the agent harness
+(Workstream T). An invalid policy blocks every move until `policy check` passes.
+
 ## Focus
 `focus G-###` records one goal on the idea. Everything orients to it:
 - `next` and the backlog ranking put focus work first;

@@ -53,7 +53,7 @@ export const TOOLS: Record<string, Tool> = {
       note: text("required with reject") }, ["id"]),
     run: (st, a) => triage(st, up(a, "id"), { priority: s(a, "priority"), severity: s(a, "severity"), goal: s(a, "goal"),
       reject: s(a, "reject"), note: s(a, "note") }) },
-  move: { description: "Move a document to a new status (`crew.mjs move`). Gates (Definition of Ready, WIP limit, …) apply; there is no force.",
+  move: { description: "Move a document to a new status (`crew.mjs move`). Gates (Definition of Ready, WIP limit, policy role gates) apply; there is no force. Steps the policy reserves for a human (human gates, reserved decisions) are refused here: escalate to the human, who approves on the CLI with --approved-by.",
     input: obj({ id: text("e.g. P-004"), status: text("target status, e.g. ready, in-review, done"), note: text("optional note") }, ["id", "status"]),
     run: (st, a) => { move(st, s(a, "id")!, s(a, "status")!, s(a, "note")); } },
   log: { description: "Append a dated line to a document's log (`crew.mjs log`).",

@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import * as git from "./git.js";
 import { assemble, Doc, fill } from "./doc.js";
 import { Ledger } from "./ledger.js";
+import { type Resolved, resolvePolicy } from "./policy.js";
 import { CLOSED, DEFAULT_SETTINGS, DIRS, type Kind, PRIORITIES } from "./model.js";
 import { fail, kindOf, stripComments, today } from "./text.js";
 import { Workspace } from "./workspace.js";
@@ -40,6 +41,7 @@ export class Store {
   readonly dirs: Record<DirKind, string>;
   readonly ideaPath: string;
   private ledgerCache: Ledger | null = null;
+  private policyCache: Resolved | null = null;
 
   constructor(readonly ws: Workspace) {
     this.dir = join(ws.root, ".crew");
@@ -54,6 +56,11 @@ export class Store {
   /** The shared event log (claims, moves, logs, usage); see ledger.ts. */
   get ledger(): Ledger {
     return (this.ledgerCache ??= Ledger.at(this.ws, this.dir));
+  }
+
+  /** The effective policy for this run's role (see policy.ts). */
+  get policy(): Resolved {
+    return (this.policyCache ??= resolvePolicy(this.ws.root, this.dir, this.ledger.who.role));
   }
 
   rel(p: string): string {

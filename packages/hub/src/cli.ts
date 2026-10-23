@@ -11,6 +11,7 @@ import { serve } from "./server.js";
 import { init, newGoal, newIdea, newPlan, setFocus } from "./commands/planning.js";
 import { status } from "./commands/reports.js";
 import { showLedger } from "./commands/ledger.js";
+import { policyCheck, policyShow } from "./commands/policy.js";
 import { log, move, release, start, usage } from "./commands/workflow.js";
 
 export const USAGE = `crew hub: the team's shared context — the idea, goals, backlog items, plans and tasks.
@@ -25,10 +26,12 @@ Commands:
   new-goal TITLE --from DRAFT [--priority P1]   an outcome; each Breakdown line becomes a FEAT item
   focus G-###                                   the goal the team works toward now
   new-item feat|bug|chore|spike TITLE (--from DRAFT | --why TEXT) [--goal] [--priority] [--severity]
-  triage ID [--priority P1] [--severity S2] [--goal G-001]
+  triage ID [--priority P1] [--severity S2] [--goal G-001] [--approved-by NAME]
   triage ID --reject wontfix|duplicate --note TXT
   new-plan TITLE --from DRAFT [--goal] [--items FEAT-001,BUG-002] [--touches "src/a/**, docs/b.md"] [--depends P-002]
   start PLAN_ID · move ID STATUS [--note] · log ID TEXT      (ID: IDEA, G-###, P-###, FEAT/BUG/CHORE/SPIKE-###)
+           start/move/triage take --approved-by NAME: a human approving a gated or reserved step (never an agent)
+  policy show [--role R] [--team T] [--json] · policy check      the effective policy and where each value comes from
   release PLAN_ID [--note TXT] [--force]        give up a claim (another run's claim needs --force)
   usage [--tokens-in N] [--tokens-out N] [--cost USD] [--model M] [--ref ID]   record what a run used
   ledger [--ref ID] [--type T] [--limit 20] [--json]   the shared event log (who/what/when) and live claims
@@ -63,18 +66,21 @@ const COMMANDS: Record<string, Spec> = {
   "new-item": { pos: ["type", "title"], str: ["from", "why", "goal", "priority", "severity"], flag: ["keep-draft"],
     run: (s, a) => newItem(s, a.pos[0], a.pos[1], str(a, "from"), str(a, "why"), {
       goal: str(a, "goal"), priority: str(a, "priority"), severity: str(a, "severity"), keep: !!a.opt["keep-draft"] }) },
-  triage: { pos: ["id"], str: ["priority", "severity", "goal", "note", "reject"],
+  triage: { pos: ["id"], str: ["priority", "severity", "goal", "note", "reject", "approved-by"],
     choices: { reject: ["duplicate", "wontfix"] },
     run: (s, a) => triage(s, a.pos[0].toUpperCase(), {
       priority: str(a, "priority"), severity: str(a, "severity"), goal: str(a, "goal"), reject: str(a, "reject"),
-      note: str(a, "note") }) },
+      note: str(a, "note"), approvedBy: str(a, "approved-by") }) },
   "new-plan": { pos: ["title"], ...DRAFTED, str: ["from", "goal", "depends", "items", "touches"],
     run: (s, a) => newPlan(s, a.pos[0], str(a, "from")!, {
       goal: str(a, "goal"), depends: str(a, "depends"), items: str(a, "items"), touches: str(a, "touches"),
       keep: !!a.opt["keep-draft"] }) },
-  start: { pos: ["id"], flag: ["force"], run: (s, a) => start(s, a.pos[0].toUpperCase(), !!a.opt.force) },
-  move: { pos: ["id", "status"], str: ["note"], flag: ["force"],
-    run: (s, a) => { move(s, a.pos[0], a.pos[1], str(a, "note"), !!a.opt.force); } },
+  start: { pos: ["id"], str: ["approved-by"], flag: ["force"],
+    run: (s, a) => start(s, a.pos[0].toUpperCase(), !!a.opt.force, str(a, "approved-by")) },
+  move: { pos: ["id", "status"], str: ["note", "approved-by"], flag: ["force"],
+    run: (s, a) => { move(s, a.pos[0], a.pos[1], str(a, "note"), !!a.opt.force, str(a, "approved-by")); } },
+  policy: { pos: ["action"], str: ["role", "team"], flag: ["json"], choices: { action: ["show", "check"] },
+    run: (s, a) => (a.pos[0] === "show" ? policyShow(s, str(a, "role"), str(a, "team"), !!a.opt.json) : policyCheck(s)) },
   log: { pos: ["id", "text"], run: (s, a) => log(s, a.pos[0].toUpperCase(), a.pos[1]) },
   release: { pos: ["id"], str: ["note"], flag: ["force"], run: (s, a) => release(s, a.pos[0], str(a, "note"), !!a.opt.force) },
   usage: { pos: [], str: ["cost", "model", "ref"], int: ["tokens-in", "tokens-out"],

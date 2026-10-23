@@ -5,6 +5,7 @@ import type { Doc } from "../core/doc.js";
 import { decisionProblems, readinessProblems, triageProblems } from "../core/gates.js";
 import { ACTIVE, CLOSED, GOAL_FLOW, IDEA_FLOW, ITEM_FLOW, MAX_WRITTEN_AHEAD, PLAN_FLOW, REQUIRED_ON_CREATE } from "../core/model.js";
 import * as q from "../core/queries.js";
+import { policyFindings } from "./policy.js";
 import type { Docs, Store } from "../core/store.js";
 import { idList, stripComments } from "../core/text.js";
 
@@ -33,7 +34,8 @@ const up = (s: string | null) => (s ?? "").toUpperCase();
 export function findings(store: Store): Findings {
   const s = new Snapshot(store), f: Findings = { errors: [], hints: [] };
   for (const rule of [idea, plans, items, goals, ledger, hygiene]) rule(s, f);
-  return f;
+  const p = policyFindings(store);
+  return { errors: [...f.errors, ...p.errors], hints: [...f.hints, ...p.hints] };
 }
 
 /** Prints findings; returns the exit code (1 when there are errors). */
