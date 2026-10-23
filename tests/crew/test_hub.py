@@ -152,11 +152,24 @@ def plan_file(repo: Repo, plan_id: str):
 
 
 def finish(repo: Repo, plan_id: str) -> None:
-    """Tick all tasks, write the outcome and walk the plan to done on its branch."""
+    """Tick all tasks, write the outcome and walk the plan to review; a separate QA run verifies it and moves it to done."""
     p = plan_file(repo, plan_id)
     p.write_text(p.read_text().replace("- [ ] T", "- [x] T").rstrip() + "\nShipped.\nLearnings: none\n")
     assert tr(repo, "move", plan_id, "in-review").returncode == 0
-    assert tr(repo, "move", plan_id, "done").returncode == 0
+    qa_done(repo, plan_id)
+
+
+def qa_done(repo: Repo, plan_id: str, check: str = "true") -> None:
+    saved = {k: repo.env.get(k) for k in ("CREW_RUN", "CREW_ACTOR")}
+    repo.env["CREW_RUN"], repo.env["CREW_ACTOR"] = "qa-run", "qa"
+    assert tr(repo, "checkpoint", plan_id, "--run", check, "--ac", "all").returncode == 0
+    r = tr(repo, "move", plan_id, "done")
+    assert r.returncode == 0, r.stderr
+    for k, v in saved.items():
+        if v is None:
+            repo.env.pop(k, None)
+        else:
+            repo.env[k] = v
 
 
 # ------------------------------------------------------------------ basics
@@ -892,6 +905,8 @@ def test_role_gates(repo: Repo):
     p = plan_file(repo, "P-001")
     p.write_text(p.read_text().replace("- [ ] T", "- [x] T").rstrip() + "\nShipped.\nLearnings: none\n")
     assert tr(repo, "move", "P-001", "in-review").returncode == 0
+    repo.env["CREW_RUN"] = "reviewer"  # another run, with evidence, but in the wrong role
+    assert tr(repo, "checkpoint", "P-001", "--run", "true", "--ac", "all").returncode == 0
     r = tr(repo, "move", "P-001", "done")
     assert r.returncode != 0 and "for the qa role; this run is the developer role" in r.stderr
     repo.env["CREW_ROLE"] = "qa"
@@ -1024,3 +1039,90 @@ def test_recall_reads_playbook_lessons_at_the_pinned_ref(repo: Repo):
     out = tr(repo, "recall", "--paths", "db/migrations/0001.sql").stdout
     assert "Write the migration and its rollback together" in out and "playbook" in out
     assert "K-2026-01-02" not in tr(repo, "status").stdout  # playbook lessons are recalled, not project knowledge
+
+
+# ------------------------------------------------------------------ execution state and evidence
+def started(repo: Repo) -> None:
+    init(repo, commit=True)
+    repo.write("src/auth/signup.py", "x\n")
+    ready_plan(repo)
+    repo.commit("chore(hub): plan")
+    repo.env["CREW_RUN"], repo.env["CREW_ACTOR"] = "dev-run", "developer"
+    assert tr(repo, "start", "P-001").returncode == 0
+    repo.commit("chore(P-001): start")
+
+
+def test_a_crashed_run_resumes_from_the_ledger(repo: Repo):
+    started(repo)
+    r = tr(repo, "checkpoint", "--run", "echo 'AssertionError: 409 expected' && false", "--ac", "1")
+    assert r.returncode == 1 and "✗" in r.stdout  # a failing check is recorded and reported
+    assert tr(repo, "checkpoint", "--attempt", "unique index on lower(email)", "--why", "breaks the existing mixed-case rows").returncode == 0
+    p = plan_file(repo, "P-001")
+    p.write_text(p.read_text().replace("- [ ] T1", "- [x] T1"))
+    repo.write("src/auth/signup.py", "def signup(): ...\n")
+    repo.commit("feat(P-001): route")
+    repo.write("src/auth/repo.py", "half-written\n")  # the session dies here
+    out = tr(repo, "resume").stdout
+    assert "P-001: Signup [in-progress] tasks 1/2 — claimed by developer (dev-run)" in out
+    assert "since then 1 commit(s), 1 uncommitted file(s): src/auth/repo.py" in out
+    assert "✗ echo 'AssertionError: 409 expected' && false (AC 1) — AssertionError: 409 expected" in out
+    assert "don't retry: unique index on lower(email) — breaks the existing mixed-case rows" in out
+    assert "next: T2: service + repository → verify: unit test" in out
+    assert "evidence: AC1 ✗" in out
+    assert json.loads(tr(repo, "resume", "P-001", "--json").stdout)["plan"] == "P-001"
+
+
+def test_auto_checkpoints_are_cheap(repo: Repo):
+    started(repo)
+    repo.git("switch", "-q", "main")
+    assert tr(repo, "checkpoint", "--auto").returncode == 0  # not a plan branch: nothing to record
+    repo.git("switch", "-q", "plan/P-001-signup")
+    for _ in range(3):
+        tr(repo, "checkpoint", "--auto")
+    assert len(events(repo, "--type", "checkpoint")) == 1  # an unchanged tree isn't recorded twice
+    repo.write("src/auth/new.py", "x\n")
+    tr(repo, "checkpoint", "--auto")
+    cps = events(repo, "--type", "checkpoint")
+    assert len(cps) == 2 and cps[-1]["auto"] and cps[-1]["dirty"] == ["src/auth/new.py"] and cps[-1]["step"] == "T1"
+
+
+def test_done_needs_independent_evidence_for_every_criterion(repo: Repo):
+    started(repo)
+    tr(repo, "checkpoint", "--run", "true", "--ac", "all")  # the implementer's own check
+    p = plan_file(repo, "P-001")
+    p.write_text(p.read_text().replace("- [ ] T", "- [x] T").rstrip() + "\nShipped.\nLearnings: none\n")
+    assert tr(repo, "move", "P-001", "in-review").returncode == 0
+    handoff = p.read_text().split("## Handoff")[1].split("## Progress log")[0]
+    assert "Generated" in handoff and "evidence: AC1 ✓ (self)" in handoff
+    r = tr(repo, "move", "P-001", "done")
+    assert r.returncode != 0 and "this run (dev-run) implemented P-001" in r.stderr and "only verified by the implementer" in r.stderr
+    repo.env["CREW_RUN"], repo.env["CREW_ACTOR"] = "qa-run", "qa"
+    r = tr(repo, "move", "P-001", "done")
+    assert r.returncode != 0 and "only verified by the implementer" in r.stderr
+    assert tr(repo, "checkpoint", "P-001", "--run", "false", "--ac", "1").returncode == 1
+    assert "AC1: its latest check failed (false)" in tr(repo, "move", "P-001", "done").stderr
+    assert tr(repo, "checkpoint", "P-001", "--run", "true", "--ac", "1").returncode == 0
+    r = tr(repo, "move", "P-001", "done")
+    assert r.returncode == 0, r.stderr
+
+
+def test_human_approval_accepts_evidence_notes(repo: Repo):
+    started(repo)
+    p = plan_file(repo, "P-001")
+    p.write_text(p.read_text().replace("- [ ] T", "- [x] T").replace("409 on duplicate email", "409 on duplicate email — evidence: demo video in PR #4")
+                 .rstrip() + "\nShipped.\nLearnings: none\n")
+    tr(repo, "move", "P-001", "in-review")
+    assert tr(repo, "move", "P-001", "done").returncode != 0
+    assert tr(repo, "move", "P-001", "done", "--approved-by", "Amit").returncode == 0
+
+
+def test_checkpoint_records_reported_results_and_hides_secrets(repo: Repo):
+    started(repo)
+    res = mcp_call(repo, "checkpoint", {"verify": "manual smoke test", "result": "pass", "ac": "1", "step": "T2"})
+    assert not res["isError"], res
+    assert "✓ manual smoke test (AC 1) (reported)" in tr(repo, "resume").stdout
+    tr(repo, "checkpoint", "--run", "echo token ghp_" + "a" * 36)
+    assert events(repo, "--type", "checkpoint")[-1]["verify"][0]["output"].startswith("(output withheld")
+    assert tr(repo, "checkpoint", "--attempt", "x").returncode != 0  # needs --why
+    assert tr(repo, "checkpoint", "--verify", "x").returncode != 0  # needs --result
+    assert tr(repo, "checkpoint", "--run", "true", "--ac", "9").returncode != 0  # only AC 1

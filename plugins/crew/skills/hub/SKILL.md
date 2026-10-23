@@ -25,7 +25,7 @@ All state changes go through the script. Never hand-edit `status`, dates, IDs, `
 - In a project: `node .crew/bin/crew.mjs <cmd>` (vendored single-file copy — prefer this). Needs Node.js ≥ 20; nothing to install.
 - Not yet initialized: `node "${CLAUDE_SKILL_DIR}/dist/crew.mjs" init` at the repo root. If config has `modules.hub: false`, set it to `true` first, then refresh what was rendered without it: `/crew:guidelines --refresh` (CLAUDE.md, settings, tooling), and for `.githooks/pre-commit`, `commit-msg` and the PR template, show the user the diff against a fresh render (`setup_git.py` in a temp copy) and replace them only with a yes.
 - A project-kit project (`.project/`): `node "${CLAUDE_SKILL_DIR}/dist/crew.mjs" migrate` on a clean `main`, then follow the `next:` lines it prints, and commit `chore(hub): migrate to crew`.
-- **Tools first.** When the plugin's `hub` MCP tools are available (`next`, `current`, `status`, `check`, `graph`, `new_item`, `triage`, `move`, `log`, `focus`, `usage`, `learn`, `recall`, `ledger`), call them instead of the matching commands. They run the same code with the same gates; a refusal comes back as a tool error with the CLI's text, and nothing is written. Everything else (`init`, `migrate`, `new-idea`, `new-goal`, `new-plan`, `start`, `release`, `export`, `ui`) and any `--force` stays in the CLI. Use the CLI too when the tools are missing.
+- **Tools first.** When the plugin's `hub` MCP tools are available (`next`, `current`, `status`, `check`, `graph`, `new_item`, `triage`, `move`, `log`, `focus`, `usage`, `learn`, `recall`, `checkpoint`, `resume`, `handoff`, `ledger`), call them instead of the matching commands. They run the same code with the same gates; a refusal comes back as a tool error with the CLI's text, and nothing is written. Everything else (`init`, `migrate`, `new-idea`, `new-goal`, `new-plan`, `start`, `release`, `export`, `ui`) and any `--force` stays in the CLI. Use the CLI too when the tools are missing.
 
 | Command | Purpose |
 |---|---|
@@ -42,6 +42,8 @@ All state changes go through the script. Never hand-edit `status`, dates, IDs, `
 | `release P-### [--note] [--force]` | give up a claim; another run's claim needs `--force` |
 | `usage [--tokens-in N] [--tokens-out N] [--cost USD] [--model M] [--ref ID]` | record what this run used |
 | `ledger [--ref ID] [--type T] [--limit N] [--json]` | the shared event log and the live claims |
+| `checkpoint [P-###] [--run CMD \| --verify CMD --result pass\|fail] [--ac 1,2\|all] [--attempt WHAT --why WHY] [--step T3]` | record where the work stands: the commit and dirty files, a check and the criteria it covers (`--run` executes it and records the real result), an approach that failed |
+| `resume [P-###]` · `handoff [P-###]` | where the work stopped vs git now (checks, attempts not to retry, next task, evidence) · the same written into the plan's Handoff |
 | `learn decision\|learning\|gotcha\|convention\|risk FACT --why TEXT [--scope GLOBS] [--source ID] [--supersedes K-…]` | record one fact the team should remember (risks also take `--likelihood`, `--impact`, `--owner`) |
 | `recall [--plan P-###] [--paths a,b] [--topic WORDS] [--type T] [--all]` | the knowledge that applies to a plan's touches, some paths or a topic (project + playbook) |
 | `next` · `current` · `check` | single best next step · where am I · consistency (CI runs `check`) |
@@ -102,7 +104,9 @@ Start every workflow by checking where you are: `git branch --show-current`, `cr
 7. Commit on main: `chore(hub): plan P-### <title>`.
 
 ### 4. Execute
+- **Picking work up (a new session, after compaction, or someone else's plan):** `resume` first. It shows the last checkpoint against git now, the checks that failed, the approaches not to retry and the next task. Don't repeat an attempt it lists.
 - Be on an up-to-date `main` with a clean tree, then `start P-###` and commit `chore(P-###): start`. Starting claims the plan for your run; `done` or `dropped` releases it.
+- **Checkpoint as you go:** after each task or check, `checkpoint --run "<the task's verify command>" --ac <criteria it covers>`; when an approach fails, `checkpoint --attempt "<what>" --why "<why it failed>"`. The Stop and PreCompact hooks checkpoint automatically, so a crash loses at most one step. Before ending a session, `handoff`.
 - Record what the work costs as you go: `usage --tokens-in … --tokens-out … --cost … --ref P-###` (the hooks will do this automatically later).
 - After each task, tick it and commit it with the code: `feat(P-###): …`.
 - Use `log P-### "<decision / deviation / blocker>"` as you go. If blocked: `move P-### blocked --note "<why>"`.
@@ -112,14 +116,14 @@ Start every workflow by checking where you are: `git branch --show-current`, `cr
 - **Bugs found mid-plan:** capture them as BUG items on main later; record them in the plan's Outcome as follow-ups for now.
 
 ### 5. Finish a plan
-1. **Verify every acceptance criterion** with the checks the tasks and test plan name. Run `python3 .crew/bin/check_structure.py --all`.
+1. **Verify every acceptance criterion** with the checks the tasks and test plan name (`checkpoint --run … --ac …`). Run `python3 .crew/bin/check_structure.py --all`.
 2. Tick all tasks and write the **Outcome**: what shipped, deviations, follow-ups, and `Learnings: K-…` (or `none`). `in-review` is refused without it.
 3. `move P-### in-review`, then open the PR:
    - title `P-###: <title>`;
    - the body comes from the PR template and links the plan, its items and its goal;
    - put the URL in the plan's `pr:`;
    - with no remote, summarize the diff for review instead.
-4. After approval: `move P-### done`, commit `chore(P-###): complete`. **Ask before squash-merging.** The linked items become `done` automatically.
+4. **Done needs independent evidence.** Another run (QA, `CREW_RUN`/`CREW_ROLE`) re-runs the checks: `checkpoint P-### --run "<check>" --ac all`, then `move P-### done`. The run that implemented the plan can't mark it done, and its own checks don't count. With a human's `--approved-by`, an `evidence: …` note on a criterion also counts. Then commit `chore(P-###): complete`. **Ask before squash-merging.** The linked items become `done` automatically.
 5. **On main:** capture follow-ups as items, run `check` and act on its hints.
 
 ### 6. Close a goal, finish the idea

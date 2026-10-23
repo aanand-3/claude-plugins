@@ -9,6 +9,7 @@ import { newItem, triage } from "./commands/backlog.js";
 import { check } from "./commands/checks.js";
 import { buildGraph } from "./commands/graph.js";
 import { status } from "./commands/reports.js";
+import { checkpoint, handoff, resume } from "./commands/execution.js";
 import { learn, recallCmd } from "./commands/knowledge.js";
 import { showLedger } from "./commands/ledger.js";
 import { setFocus } from "./commands/planning.js";
@@ -80,8 +81,21 @@ export const TOOLS: Record<string, Tool> = {
       type: { type: "string", enum: ["decision", "learning", "gotcha", "convention", "risk"] }, all: { type: "boolean" } }),
     run: (st, a) => recallCmd(st, { plan: s(a, "plan"), paths: s(a, "paths"), topic: s(a, "topic"), type: s(a, "type"),
       all: a.all === true, json: true }) },
+  checkpoint: { description: "Record where the work on a plan stands (`crew.mjs checkpoint`): the step, the commit and dirty files, "
+    + "a check you ran with its result and the acceptance criteria it covers, or an approach that failed and why. Call it after each "
+    + "task or check, and whenever an approach fails. A failed check returns an error result but is still recorded.",
+    input: obj({ plan: text("e.g. P-004; default: the plan of this branch"), step: text("e.g. T3"), verify: text("the check you ran"),
+      result: { type: "string", enum: ["pass", "fail"] }, ac: text("criteria it covers: 1,2 or all"), output: text("the end of its output"),
+      attempt: text("an approach that failed"), why: text("why it failed"), note: text("anything else") }),
+    run: (st, a) => checkpoint(st, s(a, "plan"), { step: s(a, "step"), verify: s(a, "verify"), result: s(a, "result"), ac: s(a, "ac"),
+      output: s(a, "output"), attempt: s(a, "attempt"), why: s(a, "why"), note: s(a, "note") }) },
+  resume: { description: "Where a plan's work stopped (`crew.mjs resume`): last checkpoint vs git now, check results, approaches not to retry, "
+    + "the next task and each criterion's evidence. Call it first when picking work up.",
+    input: obj({ plan: text("e.g. P-004; default: the plan of this branch") }), run: (st, a) => resume(st, s(a, "plan")) },
+  handoff: { description: "Write the resume view into the plan's Handoff section (`crew.mjs handoff`), before ending a session.",
+    input: obj({ plan: text("e.g. P-004; default: the plan of this branch") }), run: (st, a) => handoff(st, s(a, "plan")) },
   ledger: { description: "Recent events from the shared ledger and the live claims (`crew.mjs ledger --json`).",
-    input: obj({ ref: text("only events about this ID"), type: { type: "string", enum: ["claim", "release", "move", "log", "usage", "learn"] },
+    input: obj({ ref: text("only events about this ID"), type: { type: "string", enum: ["claim", "release", "move", "log", "usage", "learn", "checkpoint"] },
       limit: num("how many, newest last (default 20)") }),
     run: (st, a) => showLedger(st, { ref: s(a, "ref"), type: s(a, "type"), limit: n(a, "limit"), json: true }) },
 };

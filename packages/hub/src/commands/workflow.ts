@@ -3,6 +3,7 @@ import * as git from "../core/git.js";
 import type { Doc } from "../core/doc.js";
 import { decisionProblems, learningsProblems, readinessProblems, triageProblems } from "../core/gates.js";
 import { approvalReason } from "../core/policy.js";
+import { evidenceProblems, writeHandoff } from "./execution.js";
 import { CLOSED, FLOWS, ITEM_CLOSED, type Kind } from "../core/model.js";
 import * as q from "../core/queries.js";
 import type { Store } from "../core/store.js";
@@ -22,10 +23,11 @@ export function move(store: Store, docId: string, status: string, note?: string,
     const allowed = [...(flow[old] ?? [])].sort().join(", ") || "none";
     fail(`${docId}: ${old} → ${status} not allowed (from ${old}: ${allowed}). Use --force to override.`);
   }
-  if (!force) guard(store, kind!, doc, status);
+  if (!force) guard(store, kind!, doc, status, approvedBy);
   authorize(store, doc.id, `${kind}.${status}`, approvedBy);
   stamp(kind!, doc, status);
   doc.set("status", status);
+  if (kind === "plan" && status === "in-review" && doc.source === "worktree") writeHandoff(store, doc);
   const approval = approvedBy ? ` (approved by ${approvedBy})` : "";
   doc.appendLog(`status ${old} → ${status}` + (note ? ` — ${note}` : "") + approval, LOG_SECTION[kind!] ?? "Progress log");
   doc.save();
@@ -69,7 +71,7 @@ export function budgetProblems(store: Store): string[] {
 }
 
 /** Refuse a transition whose gate isn't met (bypassed only with --force). */
-function guard(store: Store, kind: Kind, doc: Doc, status: string): void {
+function guard(store: Store, kind: Kind, doc: Doc, status: string, approvedBy?: string): void {
   let problems: string[] = [];
   let label = "";
   if (kind === "plan" && status === "ready") {
@@ -79,7 +81,8 @@ function guard(store: Store, kind: Kind, doc: Doc, status: string): void {
     problems = learningsProblems(doc, new Set(store.knowledge().map((e) => e.id)));
     label = "can't go to review";
   } else if (kind === "plan" && status === "done") {
-    problems = doc.tasks().filter(([done]) => !done).map(([, t]) => `unchecked task: ${t}`);
+    problems = [...doc.tasks().filter(([done]) => !done).map(([, t]) => `unchecked task: ${t}`),
+      ...evidenceProblems(store, doc, approvedBy)];
     label = "can't be done";
   } else if (kind === "goal" && status === "active") {
     problems = doc.missing(["Outcome", "Acceptance criteria"]).map((n) => `empty section: ${n}`);

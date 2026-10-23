@@ -35,8 +35,11 @@ function ship(pid, outcome) { // start → tick → review → done on the branc
   tr("start", pid);
   const learnings = outcome.includes("Learnings:") ? "" : "\nLearnings: none";
   edit(file("plans", pid), (t) => t.replace(/- \[ \] T/g, "- [x] T").trimEnd() + `\n${outcome}${learnings}\n`);
+  tr("checkpoint", pid, "--run", "true", "--ac", "all", "--note", "the developer's own run");
   tr("move", pid, "in-review");
-  tr("move", pid, "done");
+  const qa = { ...env, CREW_RUN: "qa", CREW_ACTOR: "qa", CREW_ROLE: "qa" };
+  execFileSync("node", [hub, "checkpoint", pid, "--run", "true", "--ac", "all"], { cwd: dir, env: qa, encoding: "utf8" });
+  execFileSync("node", [hub, "move", pid, "done"], { cwd: dir, env: qa, encoding: "utf8" });
   commit(`feat(${pid}): done`);
   const branch = git("branch", "--show-current").trim();
   git("switch", "-q", "main");
@@ -235,6 +238,7 @@ commit("chore(hub): check-in and streak plans");
 tr("start", "P-006");
 edit(file("plans", "P-006"), (t) => t.replace("- [ ] T1", "- [x] T1").replace("- [ ] T2", "- [x] T2"));
 tr("log", "P-006", "offline queue needs the service worker from the PWA spike — see SPIKE-001 notes");
+tr("checkpoint", "P-006", "--attempt", "background sync API", "--why", "not available in Safari; the queue needs the service worker");
 commit("feat(P-006): API and home button");
 git("switch", "-q", "main");
 // P-008 blocked on its branch

@@ -115,6 +115,20 @@ export class Doc {
     this.text = this.text.slice(0, start) + (block ? `${block}\n` : "") + `${entry}\n\n` + this.text.slice(end);
   }
 
+  /** Replace a section's body (a generated section such as Handoff); add the section before `before` when it's missing. */
+  replaceSection(name: string, body: string, before = "Progress log"): void {
+    const m = sectionRe(name).exec(this.text);
+    const block = `${rstrip(body)}\n\n`;
+    if (m) {
+      const [start, end] = m.indices![1]!;
+      this.text = this.text.slice(0, start) + block + this.text.slice(end);
+      return;
+    }
+    const at = new RegExp(`^## ${escapeRe(before)}\\s*$`, "m").exec(this.text);
+    if (at) this.text = `${this.text.slice(0, at.index)}## ${name}\n${block}${this.text.slice(at.index)}`;
+    else this.text = `${rstrip(this.text)}\n\n## ${name}\n${block}`;
+  }
+
   appendLog(note: string, section = "Progress log"): void {
     this.appendTo(section, `- ${today()}: ${note}`);
   }

@@ -45,6 +45,26 @@
           }
         ]
       }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" || exit 0; [ -f .crew/bin/crew.mjs ] && node .crew/bin/crew.mjs checkpoint --auto >/dev/null 2>&1; true"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" || exit 0; [ -f .crew/bin/crew.mjs ] && node .crew/bin/crew.mjs checkpoint --auto >/dev/null 2>&1; true"
+          }
+        ]
+      }
     ]
   }
 }

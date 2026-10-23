@@ -33,6 +33,17 @@ Every event carries `ts`, `ref`, `run` (`CREW_RUN`, else one per worktree), `act
 can't both claim a plan. Derived from it: live claims (owner in `status` and the view), each run's WIP, spend, and a `check`
 hint when a plan file disagrees with the ledger's last move or a closed plan is still claimed.
 
+## Execution state
+`checkpoint` events in the ledger record a plan's step, commit, dirty files, check results (command, pass/fail, the criteria
+it covers, the end of its output; `--run` executes the check, otherwise the result is *reported*) and failed attempts. The
+Stop/PreCompact hooks call `checkpoint --auto`, which records nothing off a plan branch or when the tree hasn't changed.
+`resume` compares the last checkpoint with git now; `handoff` writes the same into the plan's `## Handoff` (also on
+`in-review`), so another machine resumes from git alone.
+
+**Evidence (plan → `done`):** every acceptance criterion's latest check passed and was recorded by a run other than the
+implementer (the run holding the claim), and the implementer can't make the move itself. With `--approved-by`, an
+`evidence: …` note on a criterion's line also counts.
+
 ## Knowledge (project memory)
 `.crew/knowledge/K-<yyyy-mm-dd>-<slug>.md` — collision-free across branches, committed, reviewed with the code.
 

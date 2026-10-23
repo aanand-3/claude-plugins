@@ -8,7 +8,7 @@ import * as git from "./git.js";
 import { fail } from "./text.js";
 import type { Workspace } from "./workspace.js";
 
-export type EventType = "claim" | "release" | "move" | "log" | "usage" | "learn";
+export type EventType = "claim" | "release" | "move" | "log" | "usage" | "learn" | "checkpoint";
 
 export interface LedgerEvent {
   ts: string;                       // ISO timestamp

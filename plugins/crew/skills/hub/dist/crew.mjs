@@ -7678,6 +7678,25 @@ ${entry}
 
 ` + this.text.slice(end);
   }
+  /** Replace a section's body (a generated section such as Handoff); add the section before `before` when it's missing. */
+  replaceSection(name, body2, before = "Progress log") {
+    const m = sectionRe(name).exec(this.text);
+    const block = `${rstrip(body2)}
+
+`;
+    if (m) {
+      const [start2, end] = m.indices[1];
+      this.text = this.text.slice(0, start2) + block + this.text.slice(end);
+      return;
+    }
+    const at = new RegExp(`^## ${escapeRe(before)}\\s*$`, "m").exec(this.text);
+    if (at) this.text = `${this.text.slice(0, at.index)}## ${name}
+${block}${this.text.slice(at.index)}`;
+    else this.text = `${rstrip(this.text)}
+
+## ${name}
+${block}`;
+  }
   appendLog(note, section = "Progress log") {
     this.appendTo(section, `- ${today()}: ${note}`);
   }
@@ -8647,6 +8666,160 @@ function itemProblems(store, plan) {
   return problems;
 }
 
+// src/commands/execution.ts
+import { spawnSync as spawnSync2 } from "node:child_process";
+import { createHash as createHash2 } from "node:crypto";
+var OUTPUT_LINES = 15;
+var OUTPUT_CHARS = 2e3;
+var RUN_TIMEOUT_MS = 10 * 6e4;
+function criteria(plan) {
+  const list = plan.checklist("Acceptance criteria").map(([, c]) => c);
+  return list.length ? list : plan.bullets("Acceptance criteria");
+}
+function implementer(events, planId) {
+  return [...events].reverse().find((e) => e.type === "claim" && e.ref === planId)?.run ?? null;
+}
+var checkpoints = (events, planId) => events.filter((e) => e.type === "checkpoint" && e.ref === planId);
+function evidence(store, plan) {
+  const events = store.ledger.events(), impl = implementer(events, plan.id);
+  return criteria(plan).map((ac, i) => {
+    let found = null;
+    for (const e of checkpoints(events, plan.id)) {
+      for (const v of e.verify ?? []) if (v.ac.includes(i + 1)) found = { verify: v, by: e.run };
+    }
+    return { ac, verify: found?.verify ?? null, by: found?.by ?? null, independent: !!found && (!impl || found.by !== impl) };
+  });
+}
+function evidenceProblems(store, plan, approvedBy) {
+  const problems = [];
+  const impl = implementer(store.ledger.events(), plan.id);
+  if (impl && impl === store.ledger.who.run && !approvedBy) {
+    problems.push(`this run (${impl}) implemented ${plan.id}; another run \u2014 QA \u2014 verifies it and moves it to done`);
+  }
+  evidence(store, plan).forEach((e, i) => {
+    if (approvedBy && /\bevidence:/i.test(e.ac)) return;
+    if (!e.verify) problems.push(`AC${i + 1} has no evidence: \`checkpoint ${plan.id} --run "<check>" --ac ${i + 1}\` \u2014 ${e.ac}`);
+    else if (!e.verify.ok) problems.push(`AC${i + 1}: its latest check failed (${e.verify.cmd})`);
+    else if (!e.independent) problems.push(`AC${i + 1}: only verified by the implementer (${e.by}); verify it from another run`);
+  });
+  return problems;
+}
+function snapshot() {
+  const sha = git(["rev-parse", "HEAD"])?.trim() || null;
+  const status2 = git(["status", "--porcelain"]) ?? "";
+  const dirty = status2.split("\n").filter(Boolean).map((l) => l.slice(3)).filter((p) => !p.startsWith(".crew/drafts/"));
+  const diff = git(["diff", "HEAD"]) ?? "";
+  return { sha, dirty, fingerprint: createHash2("sha1").update(`${sha}
+${status2}
+${diff}`).digest("hex").slice(0, 12) };
+}
+function planFromBranch(store, id) {
+  const pid = id?.toUpperCase() ?? /^plan\/(P-\d+)/.exec(currentBranch() ?? "")?.[1];
+  return pid ? store.plans(true).get(pid) ?? fail(`No plan ${pid}.`) : null;
+}
+function tail(text, extra) {
+  const lines = text.trimEnd().split("\n").slice(-OUTPUT_LINES).join("\n").slice(-OUTPUT_CHARS);
+  return secretsIn(lines, extra).length ? "(output withheld: it looked like it contained a secret)" : lines;
+}
+function checkpoint(store, id, o = {}) {
+  store.require();
+  const plan = planFromBranch(store, id);
+  if (!plan) {
+    if (o.auto) return 0;
+    fail("Not on a plan branch: name the plan (`checkpoint P-###`).");
+  }
+  const snap = snapshot();
+  const last = checkpoints(store.ledger.events(), plan.id).at(-1);
+  if (o.auto && last?.fingerprint === snap.fingerprint) return 0;
+  const acs = parseAc(o.ac, criteria(plan).length);
+  const verify = [];
+  if (o.run) {
+    const r = spawnSync2(o.run, { shell: true, cwd: store.ws.root, encoding: "utf8", timeout: RUN_TIMEOUT_MS, maxBuffer: 32 << 20 });
+    verify.push({ cmd: o.run, ok: r.status === 0, ac: acs, output: tail(`${r.stdout ?? ""}${r.stderr ?? ""}`, store.policy.policy.secrets.patterns), observed: true });
+  }
+  if (o.verify) {
+    if (o.result !== "pass" && o.result !== "fail") fail("--verify needs --result pass|fail.");
+    verify.push({ cmd: o.verify, ok: o.result === "pass", ac: acs, ...o.output ? { output: tail(o.output, store.policy.policy.secrets.patterns) } : {}, observed: false });
+  }
+  if (o.attempt && !o.why) fail("--attempt needs --why: what made it fail, so the next run doesn't retry it.");
+  const step = o.step ?? plan.tasks().find(([done]) => !done)?.[1].split(":")[0] ?? "done";
+  store.ledger.record("checkpoint", plan.id, {
+    step,
+    sha: snap.sha,
+    dirty: snap.dirty.slice(0, 50),
+    fingerprint: snap.fingerprint,
+    ...verify.length ? { verify } : {},
+    ...o.attempt ? { attempt: { what: o.attempt, why: o.why } } : {},
+    ...o.note ? { note: o.note } : {},
+    ...o.auto ? { auto: true } : {}
+  });
+  if (!o.auto) {
+    store.say(`${plan.id}: checkpoint at ${step}${snap.sha ? ` (${snap.sha.slice(0, 7)})` : ""}` + verify.map((v) => ` \u2014 ${v.ok ? "\u2713" : "\u2717"} ${v.cmd}`).join(""));
+  }
+  return verify.some((v) => !v.ok) ? 1 : 0;
+}
+function parseAc(spec, n) {
+  if (!spec) return [];
+  if (spec === "all") return Array.from({ length: n }, (_, i) => i + 1);
+  const nums = spec.split(",").map((x) => Number(x.trim().replace(/^AC/i, "")));
+  const bad = nums.filter((x) => !Number.isInteger(x) || x < 1 || x > n);
+  if (bad.length) fail(`--ac: the plan has acceptance criteria 1\u2013${n} (or "all").`);
+  return nums;
+}
+function recovery(store, plan) {
+  const events = store.ledger.events();
+  const cps = checkpoints(events, plan.id);
+  const last = cps.at(-1);
+  const owner2 = store.ledger.claims(events).get(plan.id);
+  const tasks = plan.tasks();
+  const out = [`${plan.id}: ${plan.get("title")} [${plan.get("status")}] tasks ${tasks.filter(([d]) => d).length}/${tasks.length}` + (owner2 ? ` \u2014 claimed by ${owner2.actor} (${owner2.run})` : "")];
+  if (last) {
+    const here = currentBranch() === plan.get("branch");
+    const now = here ? snapshot() : null;
+    const ahead = here && last.sha && now?.sha ? Number(git(["rev-list", "--count", `${last.sha}..HEAD`])?.trim() || 0) : 0;
+    out.push(`last checkpoint ${String(last.ts).slice(0, 16).replace("T", " ")} at ${last.step} (${String(last.sha ?? "?").slice(0, 7)}) by ${last.actor}` + (now ? `; since then ${ahead} commit(s), ${now.dirty.length} uncommitted file(s)${now.dirty.length ? `: ${now.dirty.slice(0, 8).join(", ")}` : ""}` : ""));
+  } else out.push("no checkpoint yet");
+  const latest = /* @__PURE__ */ new Map();
+  for (const e of cps) for (const v of e.verify ?? []) latest.set(v.cmd, { ...v, ts: e.ts });
+  for (const v of latest.values()) {
+    out.push(`${v.ok ? "\u2713" : "\u2717"} ${v.cmd}${v.ac.length ? ` (AC ${v.ac.join(",")})` : ""}${v.observed ? "" : " (reported)"}` + (!v.ok && v.output ? ` \u2014 ${v.output.split("\n").filter(Boolean).at(-1)}` : ""));
+  }
+  for (const e of cps.filter((c) => c.attempt)) {
+    const a = e.attempt;
+    out.push(`don't retry: ${a.what} \u2014 ${a.why}`);
+  }
+  const nxt = tasks.find(([d]) => !d)?.[1];
+  if (nxt) out.push(`next: ${nxt}`);
+  const ev = evidence(store, plan);
+  if (ev.length) {
+    out.push(`evidence: ${ev.map((e, i) => `AC${i + 1} ${!e.verify ? "\u2014" : !e.verify.ok ? "\u2717" : e.independent ? "\u2713" : "\u2713 (self)"}`).join(", ")}`);
+  }
+  return out;
+}
+function resume(store, id, json = false) {
+  store.require();
+  const plan = planFromBranch(store, id) ?? fail("Not on a plan branch: name the plan (`resume P-###`).");
+  if (json) store.say(JSON.stringify({ plan: plan.id, lines: recovery(store, plan) }));
+  else for (const line of recovery(store, plan)) store.say(line);
+}
+function writeHandoff(store, plan) {
+  const logs = stripComments(plan.section("Progress log")).split("\n").filter((l) => l.trim().startsWith("- ")).slice(-3);
+  plan.replaceSection("Handoff", [
+    `_Generated ${today()} by \`crew.mjs handoff\` from the ledger._`,
+    "",
+    ...recovery(store, plan).map((l) => `- ${l}`),
+    ...logs.length ? ["", "Latest log:", ...logs] : []
+  ].join("\n"));
+}
+function handoff(store, id) {
+  store.require();
+  const plan = planFromBranch(store, id) ?? fail("Not on a plan branch: name the plan (`handoff P-###`).");
+  if (plan.source !== "worktree") fail(`${plan.id} lives on ${plan.source}; write its handoff there.`);
+  writeHandoff(store, plan);
+  plan.save();
+  store.say(`${plan.id}: handoff written`);
+}
+
 // src/commands/workflow.ts
 var LOG_SECTION = { item: "Notes" };
 function move(store, docId, status2, note, force = false, approvedBy) {
@@ -8661,10 +8834,11 @@ function move(store, docId, status2, note, force = false, approvedBy) {
     const allowed = [...flow[old] ?? []].sort().join(", ") || "none";
     fail(`${docId}: ${old} \u2192 ${status2} not allowed (from ${old}: ${allowed}). Use --force to override.`);
   }
-  if (!force) guard(store, kind, doc, status2);
+  if (!force) guard(store, kind, doc, status2, approvedBy);
   authorize(store, doc.id, `${kind}.${status2}`, approvedBy);
   stamp(kind, doc, status2);
   doc.set("status", status2);
+  if (kind === "plan" && status2 === "in-review" && doc.source === "worktree") writeHandoff(store, doc);
   const approval = approvedBy ? ` (approved by ${approvedBy})` : "";
   doc.appendLog(`status ${old} \u2192 ${status2}` + (note ? ` \u2014 ${note}` : "") + approval, LOG_SECTION[kind] ?? "Progress log");
   doc.save();
@@ -8703,7 +8877,7 @@ function budgetProblems(store) {
     ...agents
   ];
 }
-function guard(store, kind, doc, status2) {
+function guard(store, kind, doc, status2, approvedBy) {
   let problems = [];
   let label = "";
   if (kind === "plan" && status2 === "ready") {
@@ -8713,7 +8887,10 @@ function guard(store, kind, doc, status2) {
     problems = learningsProblems(doc, new Set(store.knowledge().map((e) => e.id)));
     label = "can't go to review";
   } else if (kind === "plan" && status2 === "done") {
-    problems = doc.tasks().filter(([done]) => !done).map(([, t]) => `unchecked task: ${t}`);
+    problems = [
+      ...doc.tasks().filter(([done]) => !done).map(([, t]) => `unchecked task: ${t}`),
+      ...evidenceProblems(store, doc, approvedBy)
+    ];
     label = "can't be done";
   } else if (kind === "goal" && status2 === "active") {
     problems = doc.missing(["Outcome", "Acceptance criteria"]).map((n) => `empty section: ${n}`);
@@ -9544,10 +9721,10 @@ function milestoneCriteria(texts) {
   }
   return out;
 }
-function addExitCriteria(goal, milestone, criteria) {
+function addExitCriteria(goal, milestone, criteria2) {
   const mid = (milestone ?? "").toUpperCase();
-  for (const c of criteria.get(mid) ?? []) goal.appendTo("Acceptance criteria", `- [ ] ${c} (from ${mid} exit criteria)`);
-  criteria.delete(mid);
+  for (const c of criteria2.get(mid) ?? []) goal.appendTo("Acceptance criteria", `- [ ] ${c} (from ${mid} exit criteria)`);
+  criteria2.delete(mid);
 }
 function hubSettings(config, projectPlan) {
   const wip = projectPlan ? Doc.parse(projectPlan).get("wip_limit") : null;
@@ -9766,8 +9943,8 @@ function status(store, write) {
 function ideaLines(store, goals2, plans2, items2, focus) {
   const idea2 = store.idea();
   if (!idea2) return ["_No idea written yet._"];
-  const criteria = idea2.checklist("Success criteria");
-  const out = [`**${idea2.get("title")}** \u2014 ${idea2.get("status")}` + (criteria.length ? ` \xB7 success criteria ${criteria.filter(([d]) => d).length}/${criteria.length} met` : "")];
+  const criteria2 = idea2.checklist("Success criteria");
+  const out = [`**${idea2.get("title")}** \u2014 ${idea2.get("status")}` + (criteria2.length ? ` \xB7 success criteria ${criteria2.filter(([d]) => d).length}/${criteria2.length} met` : "")];
   const g = goals2.get(focus);
   if (!g) return [...out, "", "_No focus goal._"];
   const gp = goalPlans(focus, plans2, items2);
@@ -9901,6 +10078,7 @@ var DETAIL = {
   move: (e) => `${e.from} \u2192 ${e.to}${e.note ? ` \u2014 ${e.note}` : ""}`,
   log: (e) => String(e.text ?? ""),
   learn: (e) => `${e.kind}: ${e.title}${e.supersedes ? ` (supersedes ${e.supersedes})` : ""}`,
+  checkpoint: (e) => `at ${e.step}${e.sha ? ` (${String(e.sha).slice(0, 7)})` : ""}` + (e.verify ?? []).map((v) => ` ${v.ok ? "\u2713" : "\u2717"} ${v.cmd}`).join("") + (e.attempt ? ` \u2014 tried: ${e.attempt.what}` : ""),
   usage: (e) => `${e.tokens_in} in / ${e.tokens_out} out tokens, $${Number(e.cost ?? 0).toFixed(2)}${e.model ? ` (${e.model})` : ""}`
 };
 function showLedger(store, o = {}) {
@@ -9948,6 +10126,9 @@ Commands:
   learn decision|learning|gotcha|convention|risk FACT (--why TEXT | --from DRAFT) [--scope "src/a/**, b.md"]
         [--source P-###] [--supersedes K-\u2026] [--candidate] [--likelihood H|M|L --impact H|M|L --owner WHO]
   recall [--paths a,b] [--plan P-###] [--topic WORDS] [--type T] [--all] [--json]   the knowledge that applies
+  checkpoint [P-###] [--step T3] [--run CMD | --verify CMD --result pass|fail] [--ac 1,2|all] [--output TXT]
+             [--attempt WHAT --why WHY] [--note TXT] [--auto]   record where the work is (the plan of this branch by default)
+  resume [P-###] [--json] \xB7 handoff [P-###]     where the work stopped vs git now \xB7 write it into the plan's Handoff
   next \xB7 current \xB7 check \xB7 status [--write]
   export [--json] [--out FILE]                  interactive HTML view (.crew/view/index.html) or the graph as JSON
   ui [--port 8765] [--no-open]                  serve the view live on 127.0.0.1 (updates as files change)
@@ -10050,6 +10231,27 @@ var COMMANDS = {
       json: !!a.opt.json
     })
   },
+  checkpoint: {
+    pos: [],
+    rest: true,
+    str: ["step", "run", "verify", "result", "ac", "output", "attempt", "why", "note"],
+    flag: ["auto"],
+    choices: { result: ["pass", "fail"] },
+    run: (s, a) => checkpoint(s, a.pos[0], {
+      step: str2(a, "step"),
+      run: str2(a, "run"),
+      verify: str2(a, "verify"),
+      result: str2(a, "result"),
+      ac: str2(a, "ac"),
+      output: str2(a, "output"),
+      attempt: str2(a, "attempt"),
+      why: str2(a, "why"),
+      note: str2(a, "note"),
+      auto: !!a.opt.auto
+    })
+  },
+  resume: { pos: [], rest: true, flag: ["json"], run: (s, a) => resume(s, a.pos[0], !!a.opt.json) },
+  handoff: { pos: [], rest: true, run: (s, a) => handoff(s, a.pos[0]) },
   policy: {
     pos: ["action"],
     str: ["role", "team"],

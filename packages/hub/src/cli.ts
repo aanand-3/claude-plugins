@@ -10,6 +10,7 @@ import { exportGraph } from "./commands/export.js";
 import { serve } from "./server.js";
 import { init, newGoal, newIdea, newPlan, setFocus } from "./commands/planning.js";
 import { status } from "./commands/reports.js";
+import { checkpoint, handoff, resume } from "./commands/execution.js";
 import { learn, recallCmd } from "./commands/knowledge.js";
 import { showLedger } from "./commands/ledger.js";
 import { policyCheck, policyShow } from "./commands/policy.js";
@@ -39,6 +40,9 @@ Commands:
   learn decision|learning|gotcha|convention|risk FACT (--why TEXT | --from DRAFT) [--scope "src/a/**, b.md"]
         [--source P-###] [--supersedes K-…] [--candidate] [--likelihood H|M|L --impact H|M|L --owner WHO]
   recall [--paths a,b] [--plan P-###] [--topic WORDS] [--type T] [--all] [--json]   the knowledge that applies
+  checkpoint [P-###] [--step T3] [--run CMD | --verify CMD --result pass|fail] [--ac 1,2|all] [--output TXT]
+             [--attempt WHAT --why WHY] [--note TXT] [--auto]   record where the work is (the plan of this branch by default)
+  resume [P-###] [--json] · handoff [P-###]     where the work stopped vs git now · write it into the plan's Handoff
   next · current · check · status [--write]
   export [--json] [--out FILE]                  interactive HTML view (.crew/view/index.html) or the graph as JSON
   ui [--port 8765] [--no-open]                  serve the view live on 127.0.0.1 (updates as files change)
@@ -91,6 +95,12 @@ const COMMANDS: Record<string, Spec> = {
   recall: { pos: [], str: ["paths", "plan", "topic", "type"], flag: ["all", "json"],
     run: (s, a) => recallCmd(s, { paths: str(a, "paths"), plan: str(a, "plan"), topic: str(a, "topic"), type: str(a, "type"),
       all: !!a.opt.all, json: !!a.opt.json }) },
+  checkpoint: { pos: [], rest: true, str: ["step", "run", "verify", "result", "ac", "output", "attempt", "why", "note"], flag: ["auto"],
+    choices: { result: ["pass", "fail"] },
+    run: (s, a) => checkpoint(s, a.pos[0], { step: str(a, "step"), run: str(a, "run"), verify: str(a, "verify"), result: str(a, "result"),
+      ac: str(a, "ac"), output: str(a, "output"), attempt: str(a, "attempt"), why: str(a, "why"), note: str(a, "note"), auto: !!a.opt.auto }) },
+  resume: { pos: [], rest: true, flag: ["json"], run: (s, a) => resume(s, a.pos[0], !!a.opt.json) },
+  handoff: { pos: [], rest: true, run: (s, a) => handoff(s, a.pos[0]) },
   policy: { pos: ["action"], str: ["role", "team"], flag: ["json"], choices: { action: ["show", "check"] },
     run: (s, a) => (a.pos[0] === "show" ? policyShow(s, str(a, "role"), str(a, "team"), !!a.opt.json) : policyCheck(s)) },
   log: { pos: ["id", "text"], run: (s, a) => log(s, a.pos[0].toUpperCase(), a.pos[1]) },

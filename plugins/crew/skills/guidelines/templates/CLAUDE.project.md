@@ -18,6 +18,7 @@ Rules live in `.claude/rules/`. `base.md` and `project.md` always load; the othe
 ## How we work
 {{#hub}}
 - **Approvals are the user's.** Steps the policy gates (`crew.mjs policy show`) need the user's explicit yes; only then pass `--approved-by <their name>`. Never approve on their behalf.
+- **Resume, checkpoint, hand off.** Start picked-up work with `crew.mjs resume`; after each task or check `crew.mjs checkpoint --run "<check>" --ac <n>`; record failed approaches with `--attempt … --why …`; end a session with `crew.mjs handoff`.
 - **Recall, then learn.** Before working in an area run `crew.mjs recall --plan P-###`; record what the next person must know with `crew.mjs learn` (gotchas, decisions, conventions).
 - **No code without a plan.** Every change belongs to a plan in `.crew/plans/` (goals in `.crew/goals/`). Use `/crew:hub`. Check the active plan with `node .crew/bin/crew.mjs current`.
 - **One plan = one branch = one PR.** Branch `plan/P-###-<slug>` from `main`; commits `type(P-###): summary` (Conventional Commits); squash-merge.
