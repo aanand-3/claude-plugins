@@ -7724,7 +7724,7 @@ function overlapping(plan, plans2) {
     return globs.length ? [{ id: p.id, globs }] : [];
   });
 }
-function drift(plan, base = "main") {
+function drift(plan, base) {
   if (currentBranch() !== plan.get("branch") || !plan.touches().length) return null;
   const fork = git(["merge-base", base, "HEAD"])?.trim();
   if (!fork) return null;
@@ -7798,12 +7798,14 @@ function loadLayers(root, crewDir, role, team) {
     if (r) layers.push({ name: `org role ${role}`, org: true, raw: r });
   }
   const projectPath = join(crewDir, "policy.yaml");
+  if (team && !existsSync(projectPath)) errors.push(`team '${team}' (CREW_TEAM) is set, but there is no .crew/policy.yaml defining teams`);
   const project = read(".crew/policy.yaml", existsSync(projectPath) ? readFileSync(projectPath, "utf8") : null);
   if (project) {
     const { roles, teams, ...global } = project;
     layers.push({ name: "project", org: false, raw: global });
     const pick = (m, key) => key && m && typeof m === "object" ? m[key] : void 0;
     const r = pick(roles, role), t = pick(teams, team);
+    if (team && !t) errors.push(`team '${team}' (CREW_TEAM) is not defined under teams: in .crew/policy.yaml`);
     if (r) layers.push({ name: `project role ${role}`, org: false, raw: r });
     if (t) layers.push({ name: `project team ${team}`, org: false, raw: t });
     for (const [name, section] of Object.entries({ ...roles ?? {} })) validate(section, SCOPED, `roles.${name}`, errors);
@@ -7969,6 +7971,7 @@ import { createHash } from "node:crypto";
 var OUTPUT_LINES = 15;
 var OUTPUT_CHARS = 2e3;
 var RUN_TIMEOUT_MS = 10 * 6e4;
+var acPrint = (text2) => createHash("sha1").update(text2.replace(/\s*(?:[—–-]\s*)?\bevidence:.*$/i, "").replace(/\s+/g, " ").trim().toLowerCase()).digest("hex").slice(0, 10);
 function criteria(plan) {
   const list = plan.checklist("Acceptance criteria").map(([, c]) => c);
   return list.length ? list : plan.bullets("Acceptance criteria");
@@ -7981,8 +7984,11 @@ function evidence(store, plan) {
   const events = store.ledger.events(), impl = implementers(events, plan.id);
   return criteria(plan).map((ac, i) => {
     let found = null;
+    const print = acPrint(ac);
     for (const e of checkpoints(events, plan.id)) {
-      for (const v of e.verify ?? []) if (v.ac.includes(i + 1)) found = { verify: v, by: e.run };
+      for (const v of e.verify ?? []) {
+        if (v.ac_text ? v.ac_text.includes(print) : v.ac.includes(i + 1)) found = { verify: v, by: e.run };
+      }
     }
     return { ac, verify: found?.verify ?? null, by: found?.by ?? null, independent: !!found && !impl.has(found.by) };
   });
@@ -8029,14 +8035,15 @@ function checkpoint(store, id, o = {}) {
   const last = checkpoints(store.ledger.events(), plan.id).at(-1);
   if (o.auto && last?.fingerprint === snap.fingerprint) return 0;
   const acs = parseAc(o.ac, criteria(plan).length);
+  const prints = acs.map((n2) => acPrint(criteria(plan)[n2 - 1]));
   const verify = [];
   if (o.run) {
     const r = spawnSync2(o.run, { shell: true, cwd: store.ws.root, encoding: "utf8", timeout: RUN_TIMEOUT_MS, maxBuffer: 32 << 20 });
-    verify.push({ cmd: o.run, ok: r.status === 0, ac: acs, output: tail(`${r.stdout ?? ""}${r.stderr ?? ""}`, store.policy.policy.secrets.patterns), observed: true });
+    verify.push({ cmd: o.run, ok: r.status === 0, ac: acs, ac_text: prints, output: tail(`${r.stdout ?? ""}${r.stderr ?? ""}`, store.policy.policy.secrets.patterns), observed: true });
   }
   if (o.verify) {
     if (o.result !== "pass" && o.result !== "fail") fail("--verify needs --result pass|fail.");
-    verify.push({ cmd: o.verify, ok: o.result === "pass", ac: acs, ...o.output ? { output: tail(o.output, store.policy.policy.secrets.patterns) } : {}, observed: false });
+    verify.push({ cmd: o.verify, ok: o.result === "pass", ac: acs, ac_text: prints, ...o.output ? { output: tail(o.output, store.policy.policy.secrets.patterns) } : {}, observed: false });
   }
   if (o.attempt && !o.why) fail("--attempt needs --why: what made it fail, so the next run doesn't retry it.");
   const step = o.step ?? plan.tasks().find(([done]) => !done)?.[1].split(":")[0] ?? "done";
@@ -8826,8 +8833,8 @@ import { dirname as dirname3, join as join5, resolve as resolve3 } from "node:pa
 import { fileURLToPath } from "node:url";
 
 // src/core/ledger.ts
-import { createHash as createHash2 } from "node:crypto";
-import { appendFileSync, closeSync, existsSync as existsSync2, mkdirSync, openSync, readFileSync as readFileSync2, statSync as statSync2, unlinkSync } from "node:fs";
+import { createHash as createHash2, randomBytes as randomBytes2 } from "node:crypto";
+import { appendFileSync, existsSync as existsSync2, linkSync, mkdirSync, readFileSync as readFileSync2, renameSync, statSync as statSync2, unlinkSync, writeFileSync } from "node:fs";
 import { basename, dirname, join as join3 } from "node:path";
 var LOCK_WAIT_MS = 5e3;
 var LOCK_STALE_MS = 3e4;
@@ -8837,6 +8844,7 @@ function whoAmI(root) {
     run: process.env.CREW_RUN || `wt:${basename(root)}-${hash}`,
     actor: process.env.CREW_ACTOR || userName() || "unknown",
     role: process.env.CREW_ROLE || null,
+    team: process.env.CREW_TEAM || null,
     worktree: root
   };
 }
@@ -8912,7 +8920,7 @@ var Ledger = class _Ledger {
     if (!this.staged.length) return;
     mkdirSync(dirname(this.path), { recursive: true });
     const lock = `${this.path}.lock`;
-    acquire(lock);
+    const token = acquireLock(lock);
     try {
       const live = this.claims(this.onDisk());
       for (const ev of this.staged.filter((e) => e.type === "claim" && e.ref && !e.force)) {
@@ -8924,30 +8932,56 @@ var Ledger = class _Ledger {
 `).join(""));
       this.staged = [];
     } finally {
-      unlinkSync(lock);
+      releaseLock(lock, token);
     }
   }
 };
-function acquire(lock) {
-  const deadline = Date.now() + LOCK_WAIT_MS;
+function acquireLock(lock, waitMs = LOCK_WAIT_MS, staleMs = LOCK_STALE_MS) {
+  const token = `${process.pid}-${randomBytes2(6).toString("hex")}`;
+  const deadline = Date.now() + waitMs;
   for (; ; ) {
     try {
-      closeSync(openSync(lock, "wx"));
-      return;
+      writeFileSync(lock, token, { flag: "wx" });
+      return token;
     } catch (e) {
       if (e.code !== "EEXIST") throw e;
-      try {
-        if (Date.now() - statSync2(lock).mtimeMs > LOCK_STALE_MS) unlinkSync(lock);
-      } catch {
-      }
+      takeOverIfStale(lock, staleMs, token);
       if (Date.now() > deadline) fail(`The ledger is locked (${lock}). Another crew command is writing; retry.`);
       Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 20);
     }
   }
 }
+function takeOverIfStale(lock, staleMs, token) {
+  let seen;
+  try {
+    if (Date.now() - statSync2(lock).mtimeMs <= staleMs) return;
+    seen = readFileSync2(lock, "utf8");
+  } catch {
+    return;
+  }
+  const aside = `${lock}.stale-${token}`;
+  try {
+    renameSync(lock, aside);
+  } catch {
+    return;
+  }
+  if (readFileSync2(aside, "utf8") !== seen) {
+    try {
+      linkSync(aside, lock);
+    } catch {
+    }
+  }
+  unlinkSync(aside);
+}
+function releaseLock(lock, token) {
+  try {
+    if (readFileSync2(lock, "utf8") === token) unlinkSync(lock);
+  } catch {
+  }
+}
 
 // src/core/workspace.ts
-import { chmodSync, copyFileSync, existsSync as existsSync3, mkdirSync as mkdirSync2, readdirSync as readdirSync2, readFileSync as readFileSync3, rmSync, statSync as statSync3, writeFileSync } from "node:fs";
+import { chmodSync, copyFileSync, existsSync as existsSync3, mkdirSync as mkdirSync2, readdirSync as readdirSync2, readFileSync as readFileSync3, rmSync, statSync as statSync3, writeFileSync as writeFileSync2 } from "node:fs";
 import { dirname as dirname2, join as join4, relative, sep } from "node:path";
 var Workspace = class {
   constructor(root) {
@@ -9035,7 +9069,7 @@ var Workspace = class {
         copyFileSync(v.from, path);
         continue;
       }
-      writeFileSync(path, v.text);
+      writeFileSync2(path, v.text);
       if (v.mode !== void 0) chmodSync(path, v.mode);
     }
     this.pending.clear();
@@ -9084,9 +9118,9 @@ var Store = class _Store {
   get ledger() {
     return this.ledgerCache ??= Ledger.at(this.ws, this.dir);
   }
-  /** The effective policy for this run's role (see policy.ts). */
+  /** The effective policy for this run's role and team (CREW_ROLE, CREW_TEAM; see policy.ts). */
   get policy() {
-    return this.policyCache ??= resolvePolicy(this.ws.root, this.dir, this.ledger.who.role);
+    return this.policyCache ??= resolvePolicy(this.ws.root, this.dir, this.ledger.who.role, this.ledger.who.team);
   }
   rel(p) {
     return this.ws.rel(p);
@@ -9142,6 +9176,12 @@ var Store = class _Store {
       return d?.id ? [toEntry(d, "playbook")] : [];
     }) : [];
     return linkSupersession([...project, ...lessons]);
+  }
+  /** The branch plans start from: `git.default_branch` in .crew/config.yaml, else the policy's first protected branch. */
+  baseBranch() {
+    const text2 = this.ws.read(join5(this.dir, "config.yaml"));
+    const configured = text2 === null ? void 0 : yamlBlock(text2, "git").default_branch;
+    return configured || this.policy.policy.git.protected_branches[0] || "main";
   }
   /** The project's idea (.crew/idea.md), if it has been written. */
   idea() {
@@ -9399,7 +9439,7 @@ function plans(s2, f) {
     if (st === "ready") f.errors.push(...readinessProblems(s2.store, p).map((problem) => `${pid}: ready but ${problem}`));
     if (st === "done") donePlan(pid, p, f);
     if (ACTIVE.has(st ?? "")) activePlan(pid, p, s2, f, branches, here);
-    const outside = drift(s2.allPlans.get(pid) ?? p);
+    const outside = drift(s2.allPlans.get(pid) ?? p, s2.store.baseBranch());
     if (outside?.length) f.hints.push(`${pid}: changes outside its touches: ${outside.slice(0, 8).join(", ")} \u2014 widen touches (and log why) or move the work`);
     if ((ACTIVE.has(st ?? "") || st === "ready") && !onFocus(p, s2.items, s2.focus)) {
       f.hints.push(`${pid}: ${st} but does not serve the focus goal ${s2.focus} (only bugs and chores may run off focus)`);
@@ -9778,7 +9818,7 @@ function planSections(store, plan, role) {
     lines: plan.tasks().filter(([d]) => !d).map(([, t]) => t)
   };
   const waits = unmetDeps(plan, plans2), asks = openQuestions(store.ledger.events(), plan.id);
-  const over = overlapping(plan, plans2), outside = drift(plan) ?? [];
+  const over = overlapping(plan, plans2), outside = drift(plan, store.baseBranch()) ?? [];
   const questions2 = { title: "Open questions", more: "crew.mjs questions", lines: [
     ...asks.map((x) => `${x.blocking ? "blocking: " : ""}${x.id} ${x.by} \u2192 ${x.to}: ${x.text}`),
     ...openQuestions(store.ledger.events()).filter((x) => x.to === role && x.ref !== plan.id).map((x) => `for you: ${x.id} from ${x.by}${x.ref ? ` about ${x.ref}` : ""}: ${x.text}`)

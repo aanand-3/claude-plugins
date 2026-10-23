@@ -105,8 +105,9 @@ Phases 0–7 and the dogfood step are built on stacked branches (`refactor/renam
 `feat/hub-ledger` → `feat/hub-policy` → `feat/hub-knowledge` → `feat/hub-execution` → `feat/hub-context` →
 `chore/dogfood-crew` → `fix/hub-review`), with `docs/vision` merged into the dogfood branch. What changed from the plan:
 - **Recovery view:** `resume` (Phase 6) shows where work stopped; `context` (Phase 7) includes it.
-- **Evidence:** a check covers acceptance criteria by number; every run that claimed a plan or moved it to in-progress is
-  an implementer, and their checks never count as independent evidence.
+- **Evidence:** a check covers acceptance criteria by their text (a fingerprint), not their position; every run that
+  claimed a plan or moved it to in-progress is an implementer, and their checks never count as independent evidence.
+- **Teams:** `CREW_TEAM` selects a run's team, whose policy section (models, tools, paths, run budgets) then applies.
 - **Questions:** an `ask` records who must answer; only that role (or a human with `--approved-by`) answers, never the asker.
 - **Default mode** is `ai-assisted` (a breaking change): without `.crew/policy.yaml`, plan ready/done and goal done need a human.
 - **Secrets in knowledge** are an error in `check`, not a hint: knowledge is committed.

@@ -87,7 +87,7 @@ function plans(s: Snapshot, f: Findings): void {
     if (st === "ready") f.errors.push(...readinessProblems(s.store, p).map((problem) => `${pid}: ready but ${problem}`));
     if (st === "done") donePlan(pid, p, f);
     if (ACTIVE.has(st ?? "")) activePlan(pid, p, s, f, branches, here);
-    const outside = drift(s.allPlans.get(pid) ?? p);
+    const outside = drift(s.allPlans.get(pid) ?? p, s.store.baseBranch());
     if (outside?.length) f.hints.push(`${pid}: changes outside its touches: ${outside.slice(0, 8).join(", ")} — widen touches (and log why) or move the work`);
     if ((ACTIVE.has(st ?? "") || st === "ready") && !q.onFocus(p, s.items, s.focus)) {
       f.hints.push(`${pid}: ${st} but does not serve the focus goal ${s.focus} (only bugs and chores may run off focus)`);

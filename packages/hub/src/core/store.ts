@@ -62,9 +62,9 @@ export class Store {
     return (this.ledgerCache ??= Ledger.at(this.ws, this.dir));
   }
 
-  /** The effective policy for this run's role (see policy.ts). */
+  /** The effective policy for this run's role and team (CREW_ROLE, CREW_TEAM; see policy.ts). */
   get policy(): Resolved {
-    return (this.policyCache ??= resolvePolicy(this.ws.root, this.dir, this.ledger.who.role));
+    return (this.policyCache ??= resolvePolicy(this.ws.root, this.dir, this.ledger.who.role, this.ledger.who.team));
   }
 
   rel(p: string): string {
@@ -125,6 +125,13 @@ export class Store {
       return d?.id ? [toEntry(d, "playbook")] : [];
     }) : [];
     return linkSupersession([...project, ...lessons]);
+  }
+
+  /** The branch plans start from: `git.default_branch` in .crew/config.yaml, else the policy's first protected branch. */
+  baseBranch(): string {
+    const text = this.ws.read(join(this.dir, "config.yaml"));
+    const configured = text === null ? undefined : yamlBlock(text, "git").default_branch;
+    return configured || this.policy.policy.git.protected_branches[0] || "main";
   }
 
   /** The project's idea (.crew/idea.md), if it has been written. */

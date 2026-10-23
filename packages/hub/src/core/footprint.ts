@@ -18,7 +18,7 @@ export function overlapping(plan: Doc, plans: Docs): { id: string; globs: string
 
 /** Files changed on the plan's branch (since it left the base branch, plus uncommitted) that no `touches:` glob covers.
  * Only answerable on the plan's own branch; elsewhere it returns null. */
-export function drift(plan: Doc, base = "main"): string[] | null {
+export function drift(plan: Doc, base: string): string[] | null {
   if (git.currentBranch() !== plan.get("branch") || !plan.touches().length) return null;
   const fork = git.git(["merge-base", base, "HEAD"])?.trim();
   if (!fork) return null;

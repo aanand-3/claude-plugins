@@ -1404,3 +1404,64 @@ def test_context_puts_open_questions_first(repo: Repo):
     out = tr(repo, "context").stdout
     assert section_order(out)[:2] == ["Where the work stands", "Open questions"] and "Index on email?" in out
     assert section_order(tr(repo, "context", "P-001", "--role", "qa").stdout)[0] == "Open questions"
+
+
+def test_parallel_writers_take_over_a_stale_lock_once(repo: Repo):
+    init(repo, commit=True)
+    tr(repo, "usage", "--cost", "0")
+    lock = repo.path / ".git/crew/ledger.jsonl.lock"
+    lock.write_text("crashed-writer")
+    old = __import__("time").time() - 120
+    __import__("os").utime(lock, (old, old))
+    procs = [subprocess.Popen(["node", str(HUB), "usage", "--cost", "0.01"], cwd=repo.path, env=repo.env,
+                              stdout=subprocess.PIPE, stderr=subprocess.PIPE) for _ in range(20)]
+    assert all(p.wait(timeout=60) == 0 for p in procs)
+    assert len(events(repo, "--type", "usage")) == 21
+    assert not lock.exists() and not list(lock.parent.glob("*.stale-*"))
+
+
+def test_evidence_follows_the_criterion_not_its_position(repo: Repo):
+    started(repo)
+    p = plan_file(repo, "P-001")
+    p.write_text(p.read_text().replace("- [ ] T", "- [x] T").rstrip() + "\nShipped.\nLearnings: none\n")
+    tr(repo, "move", "P-001", "in-review")
+    repo.env["CREW_RUN"] = "qa-run"
+    assert tr(repo, "checkpoint", "P-001", "--run", "true", "--ac", "1").returncode == 0
+    # a new criterion inserted above the verified one: the pass must stay with its own criterion
+    p.write_text(p.read_text().replace("- [ ] 201 on valid input", "- [ ] rate limited to 5 tries a minute\n- [ ] 201 on valid input"))
+    r = tr(repo, "move", "P-001", "done")
+    assert r.returncode != 0 and "AC1 has no evidence" in r.stderr and "rate limited" in r.stderr and "AC2" not in r.stderr
+    p.write_text(p.read_text().replace("- [ ] 201 on valid input; 409 on duplicate email",
+                                       "- [ ] 201 on valid input; 409 on duplicate email — evidence: see the API test log"))
+    assert "AC2 ✓" in tr(repo, "resume", "P-001").stdout  # an evidence note doesn't change the criterion
+
+
+def test_the_team_policy_layer_is_enforced(repo: Repo):
+    init(repo, commit=True, mode="")
+    repo.write(".crew/policy.yaml", "mode: ai-native\nteams:\n  web:\n    scope: [web/**]\n    budgets:\n      run: { max_cost: 1 }\n")
+    ready_plan(repo)
+    repo.commit("chore(hub): plan")
+    repo.env["CREW_TEAM"] = "web"
+    tr(repo, "usage", "--cost", "2")
+    r = tr(repo, "start", "P-001")
+    assert r.returncode != 0 and "run cost: $2 used of $1" in r.stderr
+    assert "(project team web)" in next(ln for ln in tr(repo, "policy", "show").stdout.splitlines() if "budgets.run.max_cost" in ln)
+    repo.env["CREW_TEAM"] = "mobile"
+    r = tr(repo, "move", "P-001", "draft")
+    assert r.returncode != 0 and "team 'mobile' (CREW_TEAM) is not defined" in r.stderr
+    del repo.env["CREW_TEAM"]
+    assert tr(repo, "start", "P-001").returncode == 0  # no team: no team budget
+
+
+def test_drift_uses_the_configured_default_branch(repo: Repo):
+    repo.git("branch", "-m", "trunk")
+    init(repo, commit=True)
+    repo.write(".crew/config.yaml", "git:\n  default_branch: trunk\n")
+    new_plan(repo, "Login", PLAN_DRAFT, "--touches", "src/auth/**")
+    repo.write(".crew/policy.yaml", "mode: ai-native\ngit:\n  protected_branches: [trunk]\n")
+    tr(repo, "move", "P-001", "ready")
+    repo.commit("chore(hub): plan")
+    tr(repo, "start", "P-001")
+    repo.write("docs/notes.md", "outside\n")
+    repo.commit("feat(P-001): wip")
+    assert "P-001: changes outside its touches: docs/notes.md" in tr(repo, "check").stdout

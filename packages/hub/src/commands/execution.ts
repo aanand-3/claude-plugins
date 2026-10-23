@@ -12,7 +12,13 @@ import { fail, stripComments, today } from "../core/text.js";
 
 const OUTPUT_LINES = 15, OUTPUT_CHARS = 2000, RUN_TIMEOUT_MS = 10 * 60_000;
 
-export interface Verify { cmd: string; ok: boolean; ac: number[]; output?: string; observed: boolean }
+/** A check's result. `ac` numbers the criteria it covered when it ran; `ac_text` fingerprints their text, which is what
+ * evidence matches on, so inserting or reordering criteria never moves a pass onto a different criterion. */
+export interface Verify { cmd: string; ok: boolean; ac: number[]; ac_text?: string[]; output?: string; observed: boolean }
+
+/** Fingerprint of a criterion's text; whitespace, case and a trailing `evidence: …` note don't count. */
+export const acPrint = (text: string) => createHash("sha1")
+  .update(text.replace(/\s*(?:[—–-]\s*)?\bevidence:.*$/i, "").replace(/\s+/g, " ").trim().toLowerCase()).digest("hex").slice(0, 10);
 
 /** The plan's acceptance criteria, numbered from 1: checklist lines, else bullets. */
 export function criteria(plan: Doc): string[] {
@@ -34,8 +40,11 @@ export function evidence(store: Store, plan: Doc): { ac: string; verify: Verify 
   const events = store.ledger.events(), impl = implementers(events, plan.id);
   return criteria(plan).map((ac, i) => {
     let found: { verify: Verify; by: string } | null = null;
+    const print = acPrint(ac);
     for (const e of checkpoints(events, plan.id)) {
-      for (const v of (e.verify as Verify[] | undefined) ?? []) if (v.ac.includes(i + 1)) found = { verify: v, by: e.run };
+      for (const v of (e.verify as Verify[] | undefined) ?? []) {
+        if (v.ac_text ? v.ac_text.includes(print) : v.ac.includes(i + 1)) found = { verify: v, by: e.run };
+      }
     }
     return { ac, verify: found?.verify ?? null, by: found?.by ?? null, independent: !!found && !impl.has(found.by) };
   });
@@ -93,14 +102,15 @@ export function checkpoint(store: Store, id: string | undefined, o: CheckpointOp
   const last = checkpoints(store.ledger.events(), plan.id).at(-1);
   if (o.auto && last?.fingerprint === snap.fingerprint) return 0;
   const acs = parseAc(o.ac, criteria(plan).length);
+  const prints = acs.map((n) => acPrint(criteria(plan)[n - 1]));
   const verify: Verify[] = [];
   if (o.run) {
     const r = spawnSync(o.run, { shell: true, cwd: store.ws.root, encoding: "utf8", timeout: RUN_TIMEOUT_MS, maxBuffer: 32 << 20 });
-    verify.push({ cmd: o.run, ok: r.status === 0, ac: acs, output: tail(`${r.stdout ?? ""}${r.stderr ?? ""}`, store.policy.policy.secrets.patterns), observed: true });
+    verify.push({ cmd: o.run, ok: r.status === 0, ac: acs, ac_text: prints, output: tail(`${r.stdout ?? ""}${r.stderr ?? ""}`, store.policy.policy.secrets.patterns), observed: true });
   }
   if (o.verify) {
     if (o.result !== "pass" && o.result !== "fail") fail("--verify needs --result pass|fail.");
-    verify.push({ cmd: o.verify, ok: o.result === "pass", ac: acs, ...(o.output ? { output: tail(o.output, store.policy.policy.secrets.patterns) } : {}), observed: false });
+    verify.push({ cmd: o.verify, ok: o.result === "pass", ac: acs, ac_text: prints, ...(o.output ? { output: tail(o.output, store.policy.policy.secrets.patterns) } : {}), observed: false });
   }
   if (o.attempt && !o.why) fail("--attempt needs --why: what made it fail, so the next run doesn't retry it.");
   const step = o.step ?? plan.tasks().find(([done]) => !done)?.[1].split(":")[0] ?? "done";

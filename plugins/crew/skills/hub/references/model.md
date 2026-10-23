@@ -52,7 +52,8 @@ Stop/PreCompact hooks call `checkpoint --auto`, which records nothing off a plan
 
 **Evidence (plan → `done`):** every acceptance criterion's latest check passed and was recorded by a run other than the
 implementers (every run that claimed the plan or moved it to in-progress — moving a plan to in-progress claims it), and
-an implementer can't make the move itself. With `--approved-by`, an
+an implementer can't make the move itself. A check covers criteria by their text (a fingerprint), so inserting or
+reordering criteria never moves a pass onto another one; adding an `evidence:` note doesn't change a criterion. With `--approved-by`, an
 `evidence: …` note on a criterion's line also counts.
 
 ## Knowledge (project memory)
@@ -84,6 +85,9 @@ the Outcome's `Learnings:` line lists the entries captured, or `none`, before `i
 | `tools.deny`, `paths.protected`, `secrets.*`, `git.protected_branches` | (as above) | union — a deny always beats an allow |
 | `git.force_push`, `git.no_verify` | global | can only be turned off |
 | `budgets.run`, `budgets.project`, `budgets.max_agents` | run also per role/team | override, but never above an org ceiling |
+
+A run's role and team come from `CREW_ROLE` and `CREW_TEAM`; an unknown team is a policy error. Drift (changes outside
+`touches:`) is measured from `git.default_branch` in config.yaml, else the first protected branch, else `main`.
 
 | Mode | Human gates by default |
 |---|---|

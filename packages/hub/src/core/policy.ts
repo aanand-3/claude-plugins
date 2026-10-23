@@ -81,12 +81,14 @@ export function loadLayers(root: string, crewDir: string, role: string | null, t
     if (r) layers.push({ name: `org role ${role}`, org: true, raw: r });
   }
   const projectPath = join(crewDir, "policy.yaml");
+  if (team && !existsSync(projectPath)) errors.push(`team '${team}' (CREW_TEAM) is set, but there is no .crew/policy.yaml defining teams`);
   const project = read(".crew/policy.yaml", existsSync(projectPath) ? readFileSync(projectPath, "utf8") : null);
   if (project) {
     const { roles, teams, ...global } = project;
     layers.push({ name: "project", org: false, raw: global });
     const pick = (m: unknown, key: string | null) => (key && m && typeof m === "object" ? (m as Raw)[key] as Raw | undefined : undefined);
     const r = pick(roles, role), t = pick(teams, team);
+    if (team && !t) errors.push(`team '${team}' (CREW_TEAM) is not defined under teams: in .crew/policy.yaml`);
     if (r) layers.push({ name: `project role ${role}`, org: false, raw: r });
     if (t) layers.push({ name: `project team ${team}`, org: false, raw: t });
     for (const [name, section] of Object.entries({ ...(roles as Raw ?? {}) })) validate(section, SCOPED, `roles.${name}`, errors);
