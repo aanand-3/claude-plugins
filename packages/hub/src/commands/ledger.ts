@@ -16,6 +16,7 @@ const DETAIL: Record<string, (e: LedgerEvent) => string> = {
   answer: (e) => `${e.qid}: ${e.text}${e.approved_by ? ` (by ${e.approved_by})` : ""}`,
   assign: (e) => `to the ${e.to} role${e.team ? `, team ${e.team}` : ""}${e.note ? ` — ${e.note}` : ""}`,
   review: (e) => `${e.verdict === "approve" ? "approved" : `changes: ${e.text}`}${e.sha ? ` (${String(e.sha).slice(0, 7)})` : ""}`,
+  notify: (e) => `${e.kind}: ${e.text}`,
   pause: (e) => String(e.reason ?? "paused"),
   resume: (e) => String(e.note ?? "resumed"),
   usage: (e) => `${e.tokens_in} in / ${e.tokens_out} out tokens, $${Number(e.cost ?? 0).toFixed(2)}${e.model ? ` (${e.model})` : ""}`,

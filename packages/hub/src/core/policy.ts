@@ -11,6 +11,8 @@ import { PRESETS } from "./presets.js";
 
 export const MODES = ["ai-native", "ai-assisted", "human-led"] as const;
 /** Gated steps that aren't status changes: `<kind>.<action>`, usable in human_gates and role_gates. */
+/** What `notify.command` can be told about (docs/vision.md → Workstream T, autonomy). */
+export const NOTIFY_ON = ["escalation", "budget", "stale", "goal-done", "paused"];
 export const ACTIONS = new Set(["plan.assigned", "plan.reassigned", "plan.reviewed"]);
 /** Transitions (`<kind>.<status>`) that need a human, by mode, until the project sets `human_gates`. */
 export const MODE_GATES: Record<string, string[]> = {
@@ -45,7 +47,8 @@ const GLOBAL: Record<string, Shape> = {
   budgets: { max_agents: "num", run: { max_cost: "num", max_tokens: "num" }, project: { max_cost: "num", max_tokens: "num" } },
   git: { protected_branches: "list", force_push: "bool", no_verify: "bool" },
   secrets: { files: "list", patterns: "list" },
-  escalation: { to: "str" }, evidence: { role: "str" },
+  escalation: { to: "str" }, evidence: { role: "str" }, notify: { command: "str", on: "list" },
+  fast_lane: { types: "list", max_tasks: "num" },
   limits: { max_turns: "num", stale_claim_hours: "num", max_bounces: "num", max_attempts: "num" },
 };
 const UNION = new Set(["reserved", "secrets.files", "secrets.patterns", "git.protected_branches", "paths.protected", "tools.deny"]);
@@ -61,6 +64,7 @@ export interface Effective {
     project: { max_cost: number | null; max_tokens: number | null } };
   git: { protected_branches: string[]; force_push: boolean; no_verify: boolean };
   secrets: { files: string[]; patterns: string[] }; escalation: { to: string }; evidence: { role: string | null };
+  notify: { command: string | null; on: string[] }; fast_lane: { types: string[]; max_tasks: number | null };
   limits: { max_turns: number | null; stale_claim_hours: number | null; max_bounces: number | null; max_attempts: number | null };
 }
 export interface Resolved {
@@ -244,6 +248,7 @@ export function resolveLayers(layers: Layer[], roles: readonly string[] = ROLES)
   if (!roles.includes(to)) errors.push(`escalation.to: '${to}' is not a role (${roles.join(", ")})`);
   const ev = get<string | null>("evidence.role", null);
   if (ev !== null && !roles.includes(ev)) errors.push(`evidence.role: '${ev}' is not a role (${roles.join(", ")})`);
+  for (const o of get<string[]>("notify.on", []).filter((x) => !NOTIFY_ON.includes(x))) errors.push(`notify.on: '${o}' is not one of ${NOTIFY_ON.join(", ")}`);
   const deny = get<string[]>("tools.deny", []);
   const allow = get<string[]>("tools.allow", []);
   for (const t of allow.filter((a) => deny.includes(a))) errors.push(`tools.allow: '${t}' is denied by ${sources.get("tools.deny")} (deny wins)`);
@@ -256,6 +261,8 @@ export function resolveLayers(layers: Layer[], roles: readonly string[] = ROLES)
       project: { max_cost: num("budgets.project.max_cost"), max_tokens: num("budgets.project.max_tokens") } },
     git: { protected_branches: get("git.protected_branches", []), force_push: get("git.force_push", false), no_verify: get("git.no_verify", false) },
     secrets: { files: get("secrets.files", []), patterns: get("secrets.patterns", []) }, escalation: { to: get("escalation.to", "executive") }, evidence: { role: ev },
+    notify: { command: get("notify.command", null), on: get("notify.on", []) },
+    fast_lane: { types: get<string[]>("fast_lane.types", []).map((t) => t.toUpperCase()), max_tasks: num("fast_lane.max_tasks") },
     limits: { max_turns: num("limits.max_turns"), stale_claim_hours: num("limits.stale_claim_hours"),
       max_bounces: num("limits.max_bounces"), max_attempts: num("limits.max_attempts") },
   };

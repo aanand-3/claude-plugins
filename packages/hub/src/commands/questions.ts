@@ -5,6 +5,7 @@ import type { LedgerEvent } from "../core/ledger.js";
 import type { Store } from "../core/store.js";
 import { fail, kindOf } from "../core/text.js";
 import { learn } from "./knowledge.js";
+import { notify } from "./autonomy.js";
 
 export interface Question { id: string; ref: string | null; to: string; text: string; by: string; run: string; ts: string;
   blocking: boolean; escalation: boolean; answer: { text: string; by: string; ts: string } | null }
@@ -42,6 +43,7 @@ export function ask(store: Store, ref: string | undefined, to: string, text: str
   const qid = `Q-${randomBytes(3).toString("hex")}`;
   store.ledger.record("ask", id ?? null, { qid, to, text, ...(o.fyi ? { blocking: false } : {}), ...(o.escalation ? { escalation: true } : {}) });
   store.say(`${qid} → ${to}${id ? ` about ${id}` : ""}${o.fyi ? "" : id ? ` (blocks ${id} until answered)` : ""}`);
+  if (o.escalation || to === "executive") notify(store, "escalation", id ?? null, `${qid}: ${text}`, qid);
   return qid;
 }
 

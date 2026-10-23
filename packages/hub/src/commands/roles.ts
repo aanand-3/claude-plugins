@@ -11,6 +11,7 @@ import { openQuestions } from "./questions.js";
 import { staffing } from "./team.js";
 import { reviewProblems } from "./review.js";
 import { mergeOrder } from "./release.js";
+import { fastLane } from "../core/gates.js";
 import { paused, staleClaims } from "./liveness.js";
 
 type Rule = (s: View) => string[];
@@ -111,7 +112,7 @@ const RULES: Record<string, Rule[]> = {
   release: [
     (v) => mergeOrder(v.store).merge.slice(0, 1)
       .map((p) => `ship ${p.id}: merge ${p.branch} (first in \`merge-order\`), follow its Rollout & rollback, then delete the branch`),
-    (v) => v.status("in-review").filter((p) => p.hasContent("Rollout & rollback")
+    (v) => v.status("in-review").filter((p) => !fastLane(v.store, p) && p.hasContent("Rollout & rollback")
       && !/^\s*n\/a\b/i.test(stripComments(p.section("Rollout & rollback"))))
       .map((p) => `prepare the rollout of ${p.id}: ${p.get("title")} (see its Rollout & rollback)`),
   ],

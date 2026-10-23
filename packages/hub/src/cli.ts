@@ -17,6 +17,7 @@ import { assign, reassign, staff } from "./commands/team.js";
 import { pauseTeam, resumeTeam } from "./commands/liveness.js";
 import { review } from "./commands/review.js";
 import { mergeOrderCmd } from "./commands/release.js";
+import { run, usageHook } from "./commands/autonomy.js";
 import { recordStep, resumeWorkflow } from "./commands/runs.js";
 import { checkpoint, handoff, resume } from "./commands/execution.js";
 import { answer, ask, escalate, listQuestions } from "./commands/questions.js";
@@ -45,6 +46,8 @@ Commands:
   policy show [--role R] [--team T] [--json] · policy check      the effective policy and where each value comes from
   release PLAN_ID [--note TXT] [--force]        give up a claim (another run's claim needs --force)
   usage [--tokens-in N] [--tokens-out N] [--cost USD] [--model M] [--ref ID]   record what a run used
+  usage --hook                                  SubagentStop hook: a crew agent's tokens from its transcript
+  run [--check] [--json]                        run the team unattended: the loop, and whether it may go on (exit 1: stop)
   ledger [--ref ID] [--type T] [--limit 20] [--json]   the shared event log (who/what/when) and live claims
   learn decision|learning|gotcha|convention|risk FACT (--why TEXT | --from DRAFT) [--scope "src/a/**, b.md"]
         [--source P-###] [--supersedes K-…] [--candidate] [--likelihood H|M|L --impact H|M|L --owner WHO]
@@ -140,9 +143,10 @@ const COMMANDS: Record<string, Spec> = {
     run: (s, a) => (a.pos[0] === "show" ? policyShow(s, str(a, "role"), str(a, "team"), !!a.opt.json) : policyCheck(s)) },
   log: { pos: ["id", "text"], run: (s, a) => log(s, a.pos[0].toUpperCase(), a.pos[1]) },
   release: { pos: ["id"], str: ["note"], flag: ["force"], run: (s, a) => release(s, a.pos[0], str(a, "note"), !!a.opt.force) },
-  usage: { pos: [], str: ["cost", "model", "ref"], int: ["tokens-in", "tokens-out"],
-    run: (s, a) => usage(s, { tokensIn: a.num["tokens-in"], tokensOut: a.num["tokens-out"],
-      cost: str(a, "cost") === undefined ? undefined : Number(str(a, "cost")), model: str(a, "model"), ref: str(a, "ref") }) },
+  usage: { pos: [], str: ["cost", "model", "ref"], int: ["tokens-in", "tokens-out"], flag: ["hook"],
+    run: (s, a) => (a.opt.hook ? usageHook(s) : usage(s, { tokensIn: a.num["tokens-in"], tokensOut: a.num["tokens-out"],
+      cost: str(a, "cost") === undefined ? undefined : Number(str(a, "cost")), model: str(a, "model"), ref: str(a, "ref") })) },
+  run: { pos: [], flag: ["check", "json"], run: (s, a) => run(s, !!a.opt.check, !!a.opt.json) },
   ledger: { pos: [], str: ["ref", "type"], int: ["limit"], flag: ["json"],
     run: (s, a) => showLedger(s, { ref: str(a, "ref"), type: str(a, "type"), limit: a.num.limit, json: !!a.opt.json }) },
   current: { pos: [], run: (s) => current(s) },

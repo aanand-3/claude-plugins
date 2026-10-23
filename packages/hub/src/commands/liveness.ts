@@ -4,6 +4,7 @@ import type { LedgerEvent } from "../core/ledger.js";
 import type { Store } from "../core/store.js";
 import { fail } from "../core/text.js";
 import { ask, openQuestions } from "./questions.js";
+import { notify } from "./autonomy.js";
 
 const HOUR = 3_600_000;
 const ACTIVITY = new Set(["claim", "checkpoint", "move", "log"]);
@@ -43,6 +44,7 @@ export function pauseTeam(store: Store, reason?: string): void {
   mayPause(store);
   if (paused(store.ledger.events())) fail("The team is already paused.");
   store.ledger.record("pause", null, reason ? { reason } : {});
+  notify(store, "paused", null, `team paused by ${store.ledger.who.actor}${reason ? `: ${reason}` : ""}`, new Date().toISOString());
   store.say(`Team paused${reason ? `: ${reason}` : ""}. Runs in flight finish their current step and hand off; \`staff\` and \`start\` refuse until \`resume\`.`);
 }
 

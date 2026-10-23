@@ -22,3 +22,4 @@ Budgets only see usage a run records with crew.mjs usage; nothing captures token
 
 ## Notes
 - 2026-10-23: status new → triaged — priority P2
+- 2026-10-23: T7: usage --hook (SubagentStop) sums each crew agent's transcript tokens under its role and run (branch feat/team-autonomy)

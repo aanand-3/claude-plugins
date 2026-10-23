@@ -37,6 +37,15 @@ you ── this session ── crew-director ─┬─ crew-pm ─ crew-architec
    conversation; an approval for one step is never reused for another.
 4. Continue (hand "continue" to the Director again) while the user wants the team to keep going and nothing waits on them.
 
+## Unattended
+`node .crew/bin/crew.mjs run` prints a loop that hands "continue" to the Director until `run --check` says stop (an
+escalation, a pause, an exhausted project budget, a done or missing focus goal), and a one-shot form for a scheduler.
+Offer it when the user wants the team to keep going without them. With `notify:` in the policy
+(`{command: "<shell>", on: [escalation, budget, stale, goal-done, paused]}`) the hub runs that command with each event
+as JSON on stdin — ntfy, a Slack webhook, mail: the user's choice, and a policy change, so theirs to make. A
+SubagentStop hook (`crew.mjs usage --hook`, in the guidelines settings template) records each agent's tokens, so
+token budgets apply.
+
 ## Rules
 - This session never does the roles' work itself and never approves on the user's behalf.
 - Stop and report when the Director reports an escalation, a pause, an exhausted budget or a done goal.

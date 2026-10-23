@@ -1,7 +1,7 @@
 /** Status changes: validated transitions, starting a plan, progress logs. */
 import * as git from "../core/git.js";
 import type { Doc } from "../core/doc.js";
-import { decisionProblems, learningsProblems, readinessProblems, triageProblems } from "../core/gates.js";
+import { decisionProblems, fastLane, learningsProblems, readinessProblems, triageProblems } from "../core/gates.js";
 import { overlapping } from "../core/footprint.js";
 import { approvalReason } from "../core/policy.js";
 import { evidenceProblems, writeHandoff } from "./execution.js";
@@ -9,6 +9,7 @@ import { FORWARD, openQuestions } from "./questions.js";
 import { goalProblems } from "./goals.js";
 import { reviewProblems } from "./review.js";
 import { bounces, escalateLimit, refuseWhilePaused } from "./liveness.js";
+import { notify } from "./autonomy.js";
 import { CLOSED, FLOWS, ITEM_CLOSED, type Kind } from "../core/model.js";
 import * as q from "../core/queries.js";
 import type { Store } from "../core/store.js";
@@ -36,7 +37,8 @@ export function move(store: Store, docId: string, status: string, note?: string,
       + "(`crew.mjs questions`; --force to move anyway)");
   }
   if (kind === "plan" && status === "in-progress" && !via) assignedHere(store, doc.id);
-  authorize(store, doc.id, via ?? `${kind}.${status}`, approvedBy, via ? undefined : old);
+  const lane = kind === "plan" && status === "ready" && fastLane(store, doc); // the PM may make a small one ready too
+  authorize(store, doc.id, via ?? `${kind}.${status}`, approvedBy, via ? undefined : old, undefined, lane ? ["pm"] : []);
   if (kind === "plan" && status === "in-progress" && !via) claimFor(store, doc, force); // the developer's claim stays
   stamp(kind!, doc, status);
   doc.set("status", status);
@@ -50,6 +52,7 @@ export function move(store: Store, docId: string, status: string, note?: string,
   store.ledger.record("move", doc.id, { from: old, to: status, ...(note ? { note } : {}), ...(approvedBy ? { approved_by: approvedBy } : {}),
     ...(via ? { via } : {}) });
   if (CLOSED.has(status) && store.ledger.claims().has(doc.id)) store.ledger.record("release", doc.id, { reason: status });
+  if (kind === "goal" && status === "done") notify(store, "goal-done", doc.id, `${doc.id} is done: ${doc.get("title")}`);
   store.say(`${doc.id}: ${old} → ${status}`);
   return doc;
 }
@@ -58,7 +61,7 @@ export function move(store: Store, docId: string, status: string, note?: string,
  * the gate on this exact edge (`plan.in-review>in-progress`) if there is one, else on the target (`plan.in-progress`).
  * --force never bypasses these, and an invalid policy refuses every move until it is fixed. */
 export function authorize(store: Store, id: string, transition: string, approvedBy?: string, from?: string,
-  cmd = `move ${id} ${transition.split(".")[1]}`): void {
+  cmd = `move ${id} ${transition.split(".")[1]}`, also: string[] = []): void {
   const { policy, errors } = store.policy;
   if (errors.length) fail(`The policy is invalid, so nothing moves until it is fixed (\`crew.mjs policy check\`):\n  - ${errors.join("\n  - ")}`);
   if (approvedBy !== undefined && !approvedBy.trim()) fail("--approved-by needs the approving person's name.");
@@ -72,7 +75,7 @@ export function authorize(store: Store, id: string, transition: string, approved
   const [kind] = transition.split(".");
   const role = (from ? policy.role_gates[`${kind}.${from}>${status}`] : undefined) ?? policy.role_gates[transition];
   const mine = store.ledger.who.role;
-  if (role && mine !== role) fail(`${id} → ${status} is for the ${role} role; this run is ${mine ? `the ${mine} role` : "in no role"} (CREW_ROLE).`);
+  if (role && mine !== role && !also.includes(mine ?? "")) fail(`${id} → ${status} is for the ${role} role; this run is ${mine ? `the ${mine} role` : "in no role"} (CREW_ROLE).`);
 }
 
 /** Whoever moves a plan into in-progress holds it: record the claim (another run's live claim refuses, unless forced). */

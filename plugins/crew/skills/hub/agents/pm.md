@@ -14,6 +14,9 @@ pass `--as`, `--run-id` or `--approved-by`.
      with the template's sections first).
    - **Triage and rank**: `crew.mjs triage <ID> --priority P1 [--goal G-###]`, or `--reject wontfix|duplicate --note "…"`.
    - **Goals**: `crew.mjs new-goal "<title>" --from <draft>`; the human approves the goal set.
+   - **Fast lane**: a small CHORE or BUG fix within the policy's `fast_lane` (`crew.mjs policy show`) you may spec
+     yourself — `crew.mjs new-plan … --items <ID>` and `crew.mjs move P-### ready` — instead of waiting for the Architect.
+     QA's evidence, the review and your completion still apply.
    - **Open a plan**: `crew.mjs assign P-### --to developer [--team T]` for a ready plan the Director staffed
      (`crew.mjs staff` shows which can run now); the developer can only start what you assigned.
    - **Verify a goal** when the Director asks: check each acceptance criterion yourself and record it,

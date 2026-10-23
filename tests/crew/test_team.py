@@ -2,8 +2,8 @@
 import json
 import re
 
-from conftest import Repo
-from test_hub import PLAN_DRAFT, agent, events, hook, init, new_bug, new_goal, new_plan, plan_file, tr
+from conftest import HUB as HUB_PATH, Repo
+from test_hub import PLAN_DRAFT, agent, new_idea, events, hook, init, new_bug, new_goal, new_plan, plan_file, tr
 
 LIFECYCLE = "preset: lifecycle\n"
 
@@ -416,3 +416,103 @@ def test_a_plan_waits_for_its_unmerged_dependency(repo: Repo):
     out = json.loads(tr(repo, "merge-order", "--json").stdout)
     assert out["merge"] == [] and out["waiting"] == [{"id": "P-002", "why": "depends on P-001, not merged yet"}]
     assert "WAIT P-002: depends on P-001" in tr(repo, "merge-order").stdout
+
+
+# ------------------------------------------------------------------ T7: autonomy
+def test_the_runner_stops_on_escalation_pause_budget_and_a_done_goal(repo: Repo):
+    lifecycle(repo)
+    assert new_idea(repo).returncode == 0 and new_goal(repo).returncode == 0
+    tr(repo, "move", "G-001", "active", "--approved-by", "Amit")
+    r = tr(repo, "run", "--check")
+    assert r.returncode == 1 and "no focus goal" in r.stdout
+    tr(repo, "focus", "G-001")
+    assert tr(repo, "run", "--check").returncode == 0
+    assert "while node .crew/bin/crew.mjs run --check" in tr(repo, "run").stdout
+    assert as_(repo, "director", "escalate", "G-001", "Ship to production?").returncode == 0
+    r = tr(repo, "run", "--check")
+    assert r.returncode == 1 and "waiting for the executive" in r.stdout
+    qid = events(repo, "--type", "ask")[-1]["qid"]
+    tr(repo, "answer", qid, "not yet", "--approved-by", "Amit")
+    tr(repo, "pause", "--reason", "holiday")
+    assert "paused by" in tr(repo, "run", "--check").stdout
+    tr(repo, "resume", "--team")
+    repo.write(".crew/policy.yaml", LIFECYCLE + "budgets: { project: { max_tokens: 100 } }\n")
+    tr(repo, "usage", "--tokens-in", "150")
+    assert "budget: project tokens" in tr(repo, "run", "--check").stdout
+    repo.write(".crew/policy.yaml", LIFECYCLE)
+    assert tr(repo, "run", "--check").returncode == 0
+    assert as_(repo, "director", "move", "G-001", "done", "--force").returncode == 0
+    assert "G-001 is done" in tr(repo, "run", "--check").stdout
+
+
+def test_notify_runs_the_policy_command_once_per_event(repo: Repo):
+    lifecycle(repo)
+    out = repo.path / "notified.jsonl"
+    repo.write(".crew/policy.yaml", LIFECYCLE + f"notify:\n  command: \"cat >> {out}; echo >> {out}\"\n  on: [escalation, paused]\n")
+    assert new_goal(repo).returncode == 0
+    assert as_(repo, "director", "escalate", "G-001", "Budget for a designer?").returncode == 0
+    assert as_(repo, "director", "ask", "G-001", "--to", "pm", "Which slice first?").returncode == 0  # not an escalation
+    tr(repo, "pause")
+    sent = [json.loads(line) for line in out.read_text().splitlines() if line.strip()]
+    assert [(e["kind"], e["ref"]) for e in sent] == [("escalation", "G-001"), ("paused", None)]
+    assert sent[0]["role"] == "director" and "Budget for a designer?" in sent[0]["text"]
+    repo.write(".crew/policy.yaml", LIFECYCLE + "notify: { command: \"exit 3\", on: [escalation] }\n")
+    r = as_(repo, "director", "escalate", "G-001", "Again?")
+    assert r.returncode == 0 and "notify.command failed" in r.stdout  # a broken notifier never blocks the team
+    repo.write(".crew/policy.yaml", LIFECYCLE + "notify: { on: [lunch] }\n")
+    assert "notify.on: 'lunch' is not one of" in tr(repo, "policy", "check").stdout
+
+
+TRANSCRIPT = [
+    {"type": "user", "message": {"role": "user", "content": "go"}},
+    {"type": "assistant", "message": {"id": "m1", "model": "claude-sonnet-5-5", "usage": {"input_tokens": 10, "output_tokens": 5}}},
+    {"type": "assistant", "message": {"id": "m1", "model": "claude-sonnet-5-5", "usage": {"input_tokens": 10, "output_tokens": 40}}},
+    {"type": "assistant", "message": {"id": "m2", "model": "claude-sonnet-5-5",
+                                      "usage": {"input_tokens": 3, "cache_creation_input_tokens": 100, "cache_read_input_tokens": 900, "output_tokens": 60}}},
+]
+
+
+def test_usage_is_captured_from_each_agents_transcript_and_budgets_bite(repo: Repo):
+    lifecycle(repo)
+    repo.write(".crew/policy.yaml", LIFECYCLE + "budgets: { project: { max_tokens: 200 } }\n")
+    agent(repo, "crew-qa", "qa")
+    path = repo.write("transcript.jsonl", "\n".join(json.dumps(t) for t in TRANSCRIPT) + "\n{torn")
+    payload = {"hook_event_name": "SubagentStop", "agent_type": "crew-qa", "agent_id": "x9", "agent_transcript_path": str(path)}
+    r = repo.run("node", HUB_PATH, "usage", "--hook", input=json.dumps(payload))
+    assert r.returncode == 0, r.stderr
+    e = events(repo, "--type", "usage")[-1]
+    assert (e["role"], e["run"], e["tokens_in"], e["tokens_out"], e["cache_read"], e["model"]) == \
+        ("qa", "qa:x9", 113, 100, 900, "claude-sonnet-5-5")  # each message once, its last record
+    for p in ({**payload, "agent_type": "Explore"}, {"tool_name": "Bash"}):
+        assert repo.run("node", HUB_PATH, "usage", "--hook", input=json.dumps(p)).returncode == 0  # not a crew agent: nothing
+    assert len(events(repo, "--type", "usage")) == 1
+    assert "budget: project tokens: 213 used of 200" in tr(repo, "run", "--check").stdout
+
+
+def test_the_fast_lane_skips_the_architect_but_not_qa(repo: Repo):
+    lifecycle(repo)
+    repo.write(".crew/policy.yaml", LIFECYCLE + "fast_lane: { types: [CHORE, BUG], max_tasks: 3 }\n")
+    assert new_bug(repo).returncode == 0
+    assert as_(repo, "pm", "triage", "BUG-001", "--priority", "P1", "--severity", "S2").returncode == 0
+    fix = PLAN_DRAFT.replace("## Test plan\n", "## Test plan\nA regression test for the 500.\n")
+    assert new_plan(repo, "Fix login 500", fix, "--items", "BUG-001").returncode == 0
+    assert new_plan(repo, "Signup", PLAN_DRAFT).returncode == 0  # no fast-lane item
+    assert as_(repo, "pm", "move", "P-001", "ready").returncode == 0  # the PM specs a small bug fix
+    r = as_(repo, "pm", "move", "P-002", "ready")
+    assert r.returncode != 0 and "for the architect role" in r.stderr
+    as_(repo, "pm", "assign", "P-001", "--to", "developer")
+    repo.commit("chore(hub): fast lane")
+    repo.env["CREW_RUN"] = "dev"
+    assert as_(repo, "developer", "start", "P-001").returncode == 0
+    p = plan_file(repo, "P-001")
+    p.write_text(p.read_text().replace("- [ ] T", "- [x] T").rstrip() + "\nShipped.\nLearnings: none\n")
+    assert as_(repo, "developer", "move", "P-001", "in-review").returncode == 0
+    repo.env["CREW_RUN"] = "arch"
+    assert as_(repo, "architect", "review", "P-001", "--approve").returncode == 0
+    repo.env["CREW_RUN"] = "pm"
+    r = as_(repo, "pm", "move", "P-001", "done")
+    assert r.returncode != 0 and "AC1 has no evidence" in r.stderr  # QA still verifies
+    repo.env["CREW_RUN"] = "qa"
+    as_(repo, "qa", "checkpoint", "P-001", "--run", "true", "--ac", "all")
+    repo.env["CREW_RUN"] = "pm"
+    assert as_(repo, "pm", "move", "P-001", "done").returncode == 0
