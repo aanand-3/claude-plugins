@@ -1,5 +1,5 @@
 # crew policy for the crew repository itself (see docs/vision.md → Policy; `crew.mjs policy show`).
-# The executive (the maintainer) approves each plan before it starts and before it's done; agents do the work in between.
-mode: ai-assisted
+# Lifecycle preset: each step belongs to one role (PM, Architect, Developer, QA, Director); the executive approves the goal set.
+preset: lifecycle
 budgets:
   max_agents: 3

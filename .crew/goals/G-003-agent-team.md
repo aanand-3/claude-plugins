@@ -42,3 +42,4 @@ through the hub, with the policy applied to each role and humans involved only w
 
 ## Progress log
 - 2026-10-23: T8: agents rendered in this repo (.claude/agents/crew-*.md), guard + SubagentStop hooks in .claude/settings.json, docs updated. First /crew:team run on BUG-001 still to do in a new session (agents load at session start).
+- 2026-10-23: First /crew:team run on BUG-001 stopped before handover: the side session that ran it did not load the crew-* agents (no crew-director subagent type). Policy switched to preset: lifecycle with the executive's yes. Next: run again from a fresh session opened in this worktree.
