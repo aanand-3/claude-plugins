@@ -52,4 +52,5 @@ completed:
 <!-- Append-only, newest last: `- YYYY-MM-DD: what happened / decision / blocker` -->
 
 ## Outcome
-<!-- Filled when done: what shipped, PR link, deviations from plan, follow-ups captured as items. -->
+<!-- Filled before review: what shipped, PR link, deviations from plan, follow-ups captured as items, and
+     `Learnings: K-…, K-…` (entries captured with `crew.mjs learn`) or `Learnings: none`. -->

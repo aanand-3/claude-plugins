@@ -8,6 +8,7 @@ const DETAIL: Record<string, (e: LedgerEvent) => string> = {
   release: (e) => String(e.reason ?? ""),
   move: (e) => `${e.from} → ${e.to}${e.note ? ` — ${e.note}` : ""}`,
   log: (e) => String(e.text ?? ""),
+  learn: (e) => `${e.kind}: ${e.title}${e.supersedes ? ` (supersedes ${e.supersedes})` : ""}`,
   usage: (e) => `${e.tokens_in} in / ${e.tokens_out} out tokens, $${Number(e.cost ?? 0).toFixed(2)}${e.model ? ` (${e.model})` : ""}`,
 };
 

@@ -9,6 +9,7 @@ import { newItem, triage } from "./commands/backlog.js";
 import { check } from "./commands/checks.js";
 import { buildGraph } from "./commands/graph.js";
 import { status } from "./commands/reports.js";
+import { learn, recallCmd } from "./commands/knowledge.js";
 import { showLedger } from "./commands/ledger.js";
 import { setFocus } from "./commands/planning.js";
 import { log, move, usage } from "./commands/workflow.js";
@@ -65,8 +66,22 @@ export const TOOLS: Record<string, Tool> = {
       ref: text("the document the work was for, e.g. P-004") }),
     run: (st, a) => usage(st, { tokensIn: n(a, "tokens_in"), tokensOut: n(a, "tokens_out"), cost: n(a, "cost"), model: s(a, "model"),
       ref: s(a, "ref") }) },
+  learn: { description: "Record one fact the team should remember (`crew.mjs learn`): a decision, learning, gotcha, convention or risk, "
+    + "with why, scoped to the paths it applies to. Refused if it looks like a secret.",
+    input: obj({ type: { type: "string", enum: ["decision", "learning", "gotcha", "convention", "risk"] }, title: text("the fact, one line"),
+      why: text("the reason or evidence"), scope: text("comma-separated path globs; omit for everywhere"),
+      source: text("the plan or item it came from"), supersedes: text("a K-… entry this replaces"),
+      likelihood: text("risks: H/M/L"), impact: text("risks: H/M/L"), owner: text("risks: who watches it") }, ["type", "title", "why"]),
+    run: (st, a) => { learn(st, s(a, "type")!, s(a, "title")!, { why: s(a, "why"), scope: s(a, "scope"), source: s(a, "source"),
+      supersedes: s(a, "supersedes"), likelihood: s(a, "likelihood"), impact: s(a, "impact"), owner: s(a, "owner") }); } },
+  recall: { description: "The knowledge that applies (`crew.mjs recall --json`): to a plan's touches, to paths, or to a topic. "
+    + "Call it before working in an area.",
+    input: obj({ plan: text("e.g. P-004: match its touches"), paths: text("comma-separated paths"), topic: text("words to match"),
+      type: { type: "string", enum: ["decision", "learning", "gotcha", "convention", "risk"] }, all: { type: "boolean" } }),
+    run: (st, a) => recallCmd(st, { plan: s(a, "plan"), paths: s(a, "paths"), topic: s(a, "topic"), type: s(a, "type"),
+      all: a.all === true, json: true }) },
   ledger: { description: "Recent events from the shared ledger and the live claims (`crew.mjs ledger --json`).",
-    input: obj({ ref: text("only events about this ID"), type: { type: "string", enum: ["claim", "release", "move", "log", "usage"] },
+    input: obj({ ref: text("only events about this ID"), type: { type: "string", enum: ["claim", "release", "move", "log", "usage", "learn"] },
       limit: num("how many, newest last (default 20)") }),
     run: (st, a) => showLedger(st, { ref: s(a, "ref"), type: s(a, "type"), limit: n(a, "limit"), json: true }) },
 };

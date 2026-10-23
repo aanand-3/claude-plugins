@@ -6,9 +6,9 @@ import { IdLink, StatusChip } from "./primitives";
 interface Group { label: string; ids: string[] }
 
 const OUT: [EdgeType, string][] = [["serves", "Idea"], ["in-goal", "Goal"], ["delivers", "Delivers"],
-  ["depends-on", "Depends on"], ["mentions", "Mentions"]];
+  ["depends-on", "Depends on"], ["learned-in", "Learned in"], ["supersedes", "Supersedes"], ["mentions", "Mentions"]];
 const IN: [EdgeType, string][] = [["serves", "Goals"], ["in-goal", "In this goal"], ["delivers", "Delivered by"],
-  ["depends-on", "Blocks"], ["mentions", "Mentioned in"]];
+  ["depends-on", "Blocks"], ["learned-in", "Knowledge from here"], ["supersedes", "Superseded by"], ["mentions", "Mentioned in"]];
 
 export function relationGroups(ix: Index, id: string): Group[] {
   const pick = (edges: typeof ix.g.edges, key: "from" | "to", type: EdgeType) => edges.filter((e) => e.type === type).map((e) => e[key]);

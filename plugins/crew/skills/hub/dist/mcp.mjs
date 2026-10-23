@@ -7535,6 +7535,9 @@ function commonDir(root) {
 function userName() {
   return /^(.*?) </.exec(git(["var", "GIT_AUTHOR_IDENT"]) ?? "")?.[1].trim() || null;
 }
+function files(root) {
+  return words(git(["-C", root, "ls-files", "--cached", "--others", "--exclude-standard"]));
+}
 function currentBranch() {
   return git(["branch", "--show-current"])?.trim() || null;
 }
@@ -7865,6 +7868,114 @@ ${body2.trim()}
 `;
 }
 
+// src/core/knowledge.ts
+var KNOWLEDGE_TYPES = ["decision", "learning", "gotcha", "convention", "risk"];
+var TIERS = ["project", "playbook-candidate"];
+var K_ID_RE = /\bK-\d{4}-\d{2}-\d{2}-[a-z0-9-]+\b/g;
+var RISK_LEVELS = ["H", "M", "L"];
+var SECRET_PATTERNS = {
+  "AWS access key": /\b(AKIA|ASIA)[0-9A-Z]{16}\b/,
+  "private key": /-----BEGIN [A-Z ]*PRIVATE KEY-----/,
+  "GitHub token": /\b(gh[pousr]_[A-Za-z0-9]{36,}|github_pat_[A-Za-z0-9_]{60,})\b/,
+  "Slack token": /\bxox[abprs]-[A-Za-z0-9-]{10,}\b/,
+  "Anthropic API key": /\bsk-ant-[A-Za-z0-9_-]{20,}/,
+  "OpenAI API key": /\bsk-(proj-)?[A-Za-z0-9_-]{32,}/,
+  "Google API key": /\bAIza[0-9A-Za-z_-]{35}\b/,
+  "Stripe live key": /\b(sk|rk)_live_[0-9A-Za-z]{20,}\b/,
+  "credentials in URL": /\b[a-z][a-z0-9+.-]*:\/\/[^/\s:@]+:[^/\s:@]{8,}@(?!localhost|127\.0\.0\.1|postgres|redis|db\b)/
+};
+function secretsIn(text2, extra = []) {
+  const lines = text2.split("\n").filter((l) => !l.includes("pk:allow-secret")).join("\n");
+  const custom = Object.fromEntries(extra.flatMap((p, i) => {
+    try {
+      return [[`policy secrets.patterns[${i}]`, new RegExp(p)]];
+    } catch {
+      return [];
+    }
+  }));
+  return Object.entries({ ...SECRET_PATTERNS, ...custom }).filter(([, re]) => re.test(lines)).map(([name]) => name);
+}
+function globRe(glob) {
+  const g = glob.replace(/^\.\//, "").replace(/\/$/, "/**");
+  let re = "";
+  for (let i = 0; i < g.length; i++) {
+    const c = g[i];
+    if (c === "*" && g[i + 1] === "*") {
+      re += g[i + 2] === "/" ? "(?:.*/)?" : ".*";
+      i += g[i + 2] === "/" ? 2 : 1;
+    } else if (c === "*") re += "[^/]*";
+    else if (c === "?") re += "[^/]";
+    else re += c.replace(/[.+^${}()|[\]\\]/g, "\\$&");
+  }
+  return new RegExp(`^${re}(?:/.*)?$`);
+}
+var stem = (glob) => glob.replace(/^\.\//, "").split(/[*?[]/)[0];
+function globsOverlap(a, b) {
+  const [x, y] = [stem(a), stem(b)];
+  return x.startsWith(y) || y.startsWith(x) || globRe(a).test(stem(b)) || globRe(b).test(stem(a));
+}
+function toEntry(doc, origin) {
+  return {
+    doc,
+    id: doc.id,
+    type: doc.get("type") ?? "",
+    title: doc.get("title") ?? "",
+    origin,
+    scope: (doc.get("scope") ?? "").split(",").map((s2) => s2.trim()).filter(Boolean),
+    tier: doc.get("tier") || "project",
+    source: doc.get("source") ?? "",
+    supersedes: (doc.get("supersedes") || "").trim() || null,
+    supersededBy: null
+  };
+}
+function linkSupersession(entries) {
+  const by = new Map(entries.map((e) => [e.id, e]));
+  for (const e of entries) if (e.supersedes && by.has(e.supersedes)) by.get(e.supersedes).supersededBy = e.id;
+  return entries;
+}
+function recall(entries, q) {
+  const words2 = (q.topic ?? "").toLowerCase().split(/\s+/).filter(Boolean);
+  return entries.filter((e) => {
+    if (!q.all && e.supersededBy) return false;
+    if (q.type && e.type !== q.type) return false;
+    if (words2.length) {
+      const text2 = `${e.title}
+${stripComments(e.doc.text)}`.toLowerCase();
+      if (!words2.every((w) => text2.includes(w))) return false;
+    }
+    if (!q.paths?.length && !q.globs?.length) return true;
+    if (!e.scope.length) return true;
+    return e.scope.some((s2) => (q.paths ?? []).some((p) => globRe(s2).test(p)) || (q.globs ?? []).some((g) => globsOverlap(s2, g)));
+  });
+}
+function entryText(f) {
+  const risk = f.type === "risk" ? `likelihood: ${f.risk?.likelihood ?? ""}
+impact: ${f.risk?.impact ?? ""}
+owner: ${f.risk?.owner ?? ""}
+` : "";
+  return `---
+id: ${f.id}
+type: ${f.type}
+title: ${f.title}
+scope: ${f.scope.join(", ")}
+source: ${f.source}
+` + `supersedes: ${f.supersedes}
+tier: ${f.tier}
+${risk}created: ${today()}
+---
+
+# ${f.title}
+
+${f.why.trim()}
+`.replace(/: \n/g, ":\n");
+}
+function knowledgeId(title, taken) {
+  const base = `K-${today()}-${slugify(title).slice(0, 40).replace(/-+$/, "")}`;
+  let id = base, n2 = 2;
+  while (taken(id)) id = `${base}-${n2++}`;
+  return id;
+}
+
 // src/core/gates.ts
 function triageProblems(item) {
   const prefix = item.id.split("-")[0];
@@ -7880,6 +7991,13 @@ function readinessProblems(store, plan) {
     ...taskProblems(store, plan),
     ...itemProblems(store, plan)
   ];
+}
+function learningsProblems(plan, known) {
+  const m = /^\s*[-*]?\s*\**learnings?\**\s*:\**\s*(.*)$/im.exec(stripComments(plan.section("Outcome")));
+  if (!m) return ["Outcome has no `Learnings:` line \u2014 list the K-\u2026 entries captured with `learn`, or write `Learnings: none`"];
+  const ids = m[1].match(K_ID_RE) ?? [];
+  if (!ids.length && !/^none\b/i.test(m[1].trim())) return ["`Learnings:` must list K-\u2026 entries or say none"];
+  return ids.filter((i) => !known.has(i)).map((i) => `Learnings: ${i} does not exist`);
 }
 function decisionProblems(idea2) {
   const problems = idea2.missing(DECIDED_SECTIONS).map((n2) => `empty section: ${n2}`);
@@ -7916,7 +8034,7 @@ function itemProblems(store, plan) {
 
 // src/core/policy.ts
 var import_yaml = __toESM(require_dist(), 1);
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, resolve as resolve2 } from "node:path";
 var MODES = ["ai-native", "ai-assisted", "human-led"];
 var MODE_GATES = {
@@ -8010,8 +8128,16 @@ function playbook(root, crewDir) {
   const dir = resolve2(root, path);
   if (!existsSync(dir)) return { read: null, hint: `playbook ${path} not found \u2014 the org policy layer is skipped` };
   const ref = typeof pb.ref === "string" && pb.ref ? pb.ref : null;
-  if (ref) return { read: (rel) => git(["-C", dir, "show", `${ref}:${rel}`]) };
-  return { read: (rel) => existsSync(join(dir, rel)) ? readFileSync(join(dir, rel), "utf8") : null };
+  if (ref) {
+    return {
+      read: (rel) => git(["-C", dir, "show", `${ref}:${rel}`]),
+      list: (sub) => (git(["-C", dir, "ls-tree", "-r", "--name-only", ref, sub]) ?? "").split("\n").filter(Boolean)
+    };
+  }
+  return {
+    read: (rel) => existsSync(join(dir, rel)) ? readFileSync(join(dir, rel), "utf8") : null,
+    list: (sub) => existsSync(join(dir, sub)) ? readdirSync(join(dir, sub), { recursive: true, encoding: "utf8" }).map((f) => `${sub}/${f}`.replace(/\\/g, "/")).filter((f) => existsSync(join(dir, f)) && !statSync(join(dir, f)).isDirectory()) : []
+  };
 }
 var isList = (v) => Array.isArray(v) && v.every((x) => typeof x === "string");
 function validate(raw, shape, where, errors) {
@@ -8129,7 +8255,7 @@ import { fileURLToPath } from "node:url";
 
 // src/core/ledger.ts
 import { createHash } from "node:crypto";
-import { appendFileSync, closeSync, existsSync as existsSync2, mkdirSync, openSync, readFileSync as readFileSync2, statSync, unlinkSync } from "node:fs";
+import { appendFileSync, closeSync, existsSync as existsSync2, mkdirSync, openSync, readFileSync as readFileSync2, statSync as statSync2, unlinkSync } from "node:fs";
 import { basename, dirname, join as join2 } from "node:path";
 var LOCK_WAIT_MS = 5e3;
 var LOCK_STALE_MS = 3e4;
@@ -8238,7 +8364,7 @@ function acquire(lock) {
     } catch (e) {
       if (e.code !== "EEXIST") throw e;
       try {
-        if (Date.now() - statSync(lock).mtimeMs > LOCK_STALE_MS) unlinkSync(lock);
+        if (Date.now() - statSync2(lock).mtimeMs > LOCK_STALE_MS) unlinkSync(lock);
       } catch {
       }
       if (Date.now() > deadline) fail(`The ledger is locked (${lock}). Another crew command is writing; retry.`);
@@ -8248,7 +8374,7 @@ function acquire(lock) {
 }
 
 // src/core/workspace.ts
-import { chmodSync, existsSync as existsSync3, mkdirSync as mkdirSync2, readdirSync, readFileSync as readFileSync3, rmSync, statSync as statSync2, writeFileSync } from "node:fs";
+import { chmodSync, existsSync as existsSync3, mkdirSync as mkdirSync2, readdirSync as readdirSync2, readFileSync as readFileSync3, rmSync, statSync as statSync3, writeFileSync } from "node:fs";
 import { dirname as dirname2, join as join3, relative, sep } from "node:path";
 var Workspace = class {
   constructor(root) {
@@ -8276,12 +8402,12 @@ var Workspace = class {
     return this.pending.has(path) ? this.pending.get(path) !== null : this.isFileOnDisk(path);
   }
   isDir(path) {
-    if (existsSync3(path) && statSync2(path).isDirectory()) return true;
+    if (existsSync3(path) && statSync3(path).isDirectory()) return true;
     return [...this.pending].some(([p, v]) => v !== null && p.startsWith(path + sep));
   }
   /** File names directly inside dir (staged files included, staged removals excluded), sorted. */
   list(dir) {
-    const names = new Set(existsSync3(dir) && statSync2(dir).isDirectory() ? readdirSync(dir, { withFileTypes: true }).filter((e) => e.isFile()).map((e) => e.name) : []);
+    const names = new Set(existsSync3(dir) && statSync3(dir).isDirectory() ? readdirSync2(dir, { withFileTypes: true }).filter((e) => e.isFile()).map((e) => e.name) : []);
     for (const [p, v] of this.pending) {
       if (dirname2(p) !== dir) continue;
       const name = p.slice(dir.length + 1);
@@ -8314,7 +8440,7 @@ var Workspace = class {
     this.pending.clear();
   }
   isFileOnDisk(path) {
-    return existsSync3(path) && statSync2(path).isFile();
+    return existsSync3(path) && statSync3(path).isFile();
   }
 };
 
@@ -8340,11 +8466,13 @@ var Store = class _Store {
     this.dir = join4(ws.root, ".crew");
     this.dirs = Object.fromEntries(Object.entries(DIRS).map(([k, v]) => [k, join4(this.dir, v)]));
     this.ideaPath = join4(this.dir, "idea.md");
+    this.knowledgeDir = join4(this.dir, "knowledge");
   }
   ws;
   dir;
   dirs;
   ideaPath;
+  knowledgeDir;
   ledgerCache = null;
   policyCache = null;
   static open(root = repoRoot()) {
@@ -8401,6 +8529,17 @@ var Store = class _Store {
   }
   items() {
     return this.loadDir(this.dirs.item);
+  }
+  /** Project knowledge, plus the org playbook's lessons (`lessons/**.md`, read-only) when a playbook is configured. */
+  knowledge(withPlaybook = true) {
+    const project = [...this.loadDir(this.knowledgeDir).values()].map((d) => toEntry(d, "project"));
+    const pb = withPlaybook ? playbook(this.ws.root, this.dir) : { read: null };
+    const lessons = pb.read && pb.list ? pb.list("lessons").filter((f) => f.endsWith(".md")).flatMap((f) => {
+      const text2 = pb.read(f);
+      const d = text2 === null ? null : Doc.parse(text2, null, "playbook");
+      return d?.id ? [toEntry(d, "playbook")] : [];
+    }) : [];
+    return linkSupersession([...project, ...lessons]);
   }
   /** The project's idea (.crew/idea.md), if it has been written. */
   idea() {
@@ -8559,6 +8698,9 @@ function guard(store, kind, doc, status2) {
   if (kind === "plan" && status2 === "ready") {
     problems = readinessProblems(store, doc);
     label = "is not ready (Definition of Ready)";
+  } else if (kind === "plan" && status2 === "in-review") {
+    problems = learningsProblems(doc, new Set(store.knowledge().map((e) => e.id)));
+    label = "can't go to review";
   } else if (kind === "plan" && status2 === "done") {
     problems = doc.tasks().filter(([done]) => !done).map(([, t]) => `unchecked task: ${t}`);
     label = "can't be done";
@@ -8717,7 +8859,7 @@ var valid = (flow, st) => st !== null && Object.hasOwn(flow, st);
 var up2 = (s2) => (s2 ?? "").toUpperCase();
 function findings(store) {
   const s2 = new Snapshot(store), f = { errors: [], hints: [] };
-  for (const rule of [idea, plans, items, goals, ledger, hygiene]) rule(s2, f);
+  for (const rule of [idea, plans, items, goals, ledger, knowledge, hygiene]) rule(s2, f);
   const p = policyFindings(store);
   return { errors: [...f.errors, ...p.errors], hints: [...f.hints, ...p.hints] };
 }
@@ -8821,6 +8963,28 @@ function goals(s2, f) {
     if (!CLOSED.has(st ?? "") && !eps.length && !eitems.length) f.hints.push(`${eid}: no plans and no items \u2014 break the goal down`);
   }
 }
+function knowledge(s2, f) {
+  const entries = s2.store.knowledge(false);
+  if (!entries.length) return;
+  const files2 = files(s2.store.ws.root);
+  const ids = new Set(entries.map((e) => e.id));
+  const open = [s2.idea, ...s2.goals.values(), ...s2.allPlans.values()].filter((d) => !!d && !CLOSED.has(d.get("status") ?? ""));
+  const cited = /* @__PURE__ */ new Map();
+  for (const d of open) for (const k of d.text.match(K_ID_RE) ?? []) cited.set(k, [...cited.get(k) ?? [], d.id]);
+  for (const e of entries) {
+    if (!KNOWLEDGE_TYPES.includes(e.type)) f.errors.push(`${e.id}: unknown type '${e.type}'`);
+    if (e.supersedes && !ids.has(e.supersedes)) f.errors.push(`${e.id}: supersedes missing ${e.supersedes}`);
+    const secrets = secretsIn(e.doc.text, s2.store.policy.policy.secrets.patterns);
+    if (secrets.length) f.errors.push(`${e.id}: looks like it contains a secret (${secrets.join(", ")}) \u2014 remove it and rotate the secret`);
+    for (const glob of e.scope) {
+      if (!files2.some((p) => globRe(glob).test(p))) f.hints.push(`${e.id}: scope '${glob}' matches no file \u2014 update the scope or supersede the entry`);
+    }
+    if (e.supersededBy && cited.has(e.id)) {
+      f.hints.push(`${e.id}: superseded by ${e.supersededBy} but still cited in ${cited.get(e.id).join(", ")}`);
+    }
+    if (e.type === "risk" && !e.doc.get("owner") && !e.supersededBy) f.hints.push(`${e.id}: risk with no owner`);
+  }
+}
 function ledger(s2, f) {
   const events = s2.store.ledger.events();
   for (const [ref, claim] of s2.store.ledger.claims(events)) {
@@ -8850,10 +9014,10 @@ function hygiene(s2, f) {
 import { basename as basename2 } from "node:path";
 
 // src/graph-types.ts
-var SCHEMA_VERSION = 3;
+var SCHEMA_VERSION = 4;
 
 // src/commands/graph.ts
-var ID_RE = /\b(?:IDEA|(?:G|P|FEAT|BUG|CHORE|SPIKE)-\d+)\b/g;
+var ID_RE = /\b(?:IDEA|(?:G|P|FEAT|BUG|CHORE|SPIKE)-\d+|K-\d{4}-\d{2}-\d{2}-[a-z0-9-]+)\b/g;
 var DATE_KEYS = ["created", "started", "completed", "decided", "closed"];
 var up3 = (s2) => s2 ? s2.toUpperCase() : null;
 function buildGraph(store) {
@@ -8870,6 +9034,7 @@ function buildGraph(store) {
   if (idea2) docs.push(toDoc(store, idea2, "idea", all));
   const kinds = [["goal", all.goals], ["item", all.items], ["plan", all.plans]];
   for (const [kind, set] of kinds) for (const d of set.values()) docs.push(toDoc(store, d, kind, all));
+  for (const e of store.knowledge(false)) docs.push(knowledgeDoc(store, e));
   return {
     schemaVersion: SCHEMA_VERSION,
     generatedAt: (/* @__PURE__ */ new Date()).toISOString(),
@@ -8912,6 +9077,35 @@ function toDoc(store, d, kind, all) {
     sections: sections(d.text)
   };
 }
+function knowledgeDoc(store, e) {
+  const d = e.doc;
+  return {
+    id: e.id,
+    kind: "knowledge",
+    type: e.type,
+    title: e.title,
+    status: e.supersededBy ? "superseded" : "active",
+    priority: null,
+    severity: null,
+    goal: null,
+    plan: null,
+    items: [],
+    dependsOn: e.supersedes ? [e.supersedes] : [],
+    waitsFor: [],
+    touches: e.scope,
+    onFocus: false,
+    owner: null,
+    branch: null,
+    pr: null,
+    dates: Object.fromEntries(DATE_KEYS.filter((k) => d.get(k)).map((k) => [k, d.get(k)])),
+    tasks: null,
+    gate: null,
+    source: e.source,
+    path: d.path ? store.rel(d.path) : null,
+    sections: [{ heading: "Why", markdown: knowledgeBody(d.text) }]
+  };
+}
+var knowledgeBody = (text2) => stripComments(body(text2)).replace(/^# .*\n/m, "").trim();
 function owner(c) {
   return c ? { actor: c.actor, run: c.run, since: c.ts } : null;
 }
@@ -8940,6 +9134,10 @@ function edges(docs) {
   for (const d of docs) {
     if (d.kind === "goal") add(d.id, IDEA_ID, "serves");
     if (d.kind === "item") add(d.id, d.goal, "in-goal");
+    if (d.kind === "knowledge") {
+      add(d.id, /^(?:IDEA|[A-Z]+-\d+)$/.test(d.source) ? d.source : null, "learned-in");
+      for (const k of d.dependsOn) add(d.id, k, "supersedes");
+    }
     if (d.kind === "plan") {
       add(d.id, d.goal, "in-goal");
       for (const i of d.items) add(d.id, i, "delivers");
@@ -8971,6 +9169,10 @@ function status(store, write) {
   lines.push("## Top of the backlog", "", ...backlogTop(ranked(items2, goals2, focus), plans2), "");
   lines.push("## Open bugs", "", ...openBugs(items2, plans2), "");
   lines.push("## Recently done", "", ...recentlyDone(plans2));
+  const learned = store.knowledge(false).filter((e) => !e.supersededBy).sort(byKey((e) => [e.doc.get("created") ?? "", e.id])).reverse().slice(0, TOP);
+  if (learned.length) {
+    lines.push("", "## Recent knowledge", "", ...learned.map((e) => `- ${e.id} [${e.type}] ${e.title}` + (e.scope.length ? ` (${e.scope.join(", ")})` : "")));
+  }
   const spend = store.ledger.spend();
   if (spend.cost || spend.tokensIn || spend.tokensOut) {
     lines.push("", "## Spend", "", `$${spend.cost.toFixed(2)} \xB7 ${spend.tokensIn + spend.tokensOut} tokens \u2014 ` + Object.entries(spend.byActor).sort(([, a], [, b]) => b - a).map(([who, c]) => `${who} $${c.toFixed(2)}`).join(", "));
@@ -9042,12 +9244,85 @@ function recentlyDone(plans2) {
   return done.length ? done.map((p) => `- ${p.get("completed") || "?"} \u2014 ${p.id}: ${p.get("title")}` + (p.get("pr") ? ` \u2014 ${p.get("pr")}` : "")) : ["_None._"];
 }
 
+// src/commands/knowledge.ts
+import { join as join6 } from "node:path";
+function learn(store, type, title, o = {}) {
+  store.require();
+  if (!KNOWLEDGE_TYPES.includes(type)) fail(`Unknown type '${type}'. Use ${KNOWLEDGE_TYPES.join(", ")}.`);
+  if (Boolean(o.why) === Boolean(o.from)) fail("Give exactly one of --why TEXT or --from DRAFT: the reason or evidence behind the fact.");
+  const [draftFile, why] = o.from ? store.readDraft(o.from, "knowledge entry") : [null, o.why];
+  if (!stripComments(why).trim()) fail("The entry has no content. Nothing was written.");
+  const found = secretsIn(`${title}
+${why}`, store.policy.policy.secrets.patterns);
+  if (found.length) fail(`Refused: the entry looks like it contains a secret (${found.join(", ")}). Knowledge is committed; describe it instead.`);
+  const entries = store.knowledge(false);
+  const supersedes = (o.supersedes ?? "").trim();
+  if (supersedes && !entries.some((e) => e.id === supersedes)) fail(`--supersedes ${supersedes}: no such entry.`);
+  const risk = type === "risk" ? { likelihood: o.likelihood?.toUpperCase(), impact: o.impact?.toUpperCase(), owner: o.owner } : void 0;
+  if (risk && (!RISK_LEVELS.includes(risk.likelihood ?? "") || !RISK_LEVELS.includes(risk.impact ?? ""))) {
+    fail("A risk needs --likelihood and --impact (H, M or L).");
+  }
+  const id = knowledgeId(title, (k) => store.ws.isFile(join6(store.knowledgeDir, `${k}.md`)));
+  const branch = /^plan\/(P-\d+)/.exec(currentBranch() ?? "")?.[1];
+  const text2 = entryText({
+    id,
+    type,
+    title,
+    why,
+    risk,
+    supersedes,
+    tier: o.candidate ? TIERS[1] : TIERS[0],
+    scope: (o.scope ?? "").split(",").map((s2) => s2.trim()).filter(Boolean),
+    source: o.source?.toUpperCase() ?? branch ?? ""
+  });
+  store.ws.write(join6(store.knowledgeDir, `${id}.md`), text2);
+  if (draftFile) store.consume(draftFile, o.keep);
+  store.ledger.record("learn", id, { kind: type, title, ...supersedes ? { supersedes } : {} });
+  store.say(store.rel(join6(store.knowledgeDir, `${id}.md`)));
+  return id;
+}
+function recallCmd(store, o = {}) {
+  store.require();
+  let globs = [];
+  if (o.plan) {
+    const plan = store.plans(true).get(o.plan.toUpperCase()) ?? fail(`No plan ${o.plan.toUpperCase()}.`);
+    globs = plan.touches();
+    if (!globs.length) store.say(`note: ${plan.id} declares no touches: \u2014 showing everything`);
+  }
+  const paths = (o.paths ?? "").split(",").map((p) => p.trim()).filter(Boolean);
+  const hits = recall(store.knowledge(), { paths, globs, topic: o.topic, type: o.type, all: o.all });
+  if (o.json) {
+    for (const e of hits) store.say(JSON.stringify(view(e, store)));
+    return;
+  }
+  if (!hits.length) store.say("Nothing recalled.");
+  for (const e of hits) {
+    const where = e.scope.length ? e.scope.join(", ") : "everywhere";
+    store.say(`${e.id}  [${e.type}${e.origin === "playbook" ? ", playbook" : ""}${e.supersededBy ? `, superseded by ${e.supersededBy}` : ""}]  ${e.title}  (${where})`);
+  }
+}
+function view(e, store) {
+  return {
+    id: e.id,
+    type: e.type,
+    title: e.title,
+    scope: e.scope,
+    source: e.source,
+    tier: e.tier,
+    origin: e.origin,
+    supersededBy: e.supersededBy,
+    path: e.doc.path ? store.rel(e.doc.path) : null,
+    body: stripComments(e.doc.text.replace(/^---\n[\s\S]*?\n---\n/, "")).replace(/^# .*\n/m, "").trim()
+  };
+}
+
 // src/commands/ledger.ts
 var DETAIL = {
   claim: (e) => `branch ${e.branch ?? "?"}${e.force ? " (forced)" : ""}`,
   release: (e) => String(e.reason ?? ""),
   move: (e) => `${e.from} \u2192 ${e.to}${e.note ? ` \u2014 ${e.note}` : ""}`,
   log: (e) => String(e.text ?? ""),
+  learn: (e) => `${e.kind}: ${e.title}${e.supersedes ? ` (supersedes ${e.supersedes})` : ""}`,
   usage: (e) => `${e.tokens_in} in / ${e.tokens_out} out tokens, $${Number(e.cost ?? 0).toFixed(2)}${e.model ? ` (${e.model})` : ""}`
 };
 function showLedger(store, o = {}) {
@@ -9187,11 +9462,54 @@ var TOOLS = {
       ref: s(a, "ref")
     })
   },
+  learn: {
+    description: "Record one fact the team should remember (`crew.mjs learn`): a decision, learning, gotcha, convention or risk, with why, scoped to the paths it applies to. Refused if it looks like a secret.",
+    input: obj({
+      type: { type: "string", enum: ["decision", "learning", "gotcha", "convention", "risk"] },
+      title: text("the fact, one line"),
+      why: text("the reason or evidence"),
+      scope: text("comma-separated path globs; omit for everywhere"),
+      source: text("the plan or item it came from"),
+      supersedes: text("a K-\u2026 entry this replaces"),
+      likelihood: text("risks: H/M/L"),
+      impact: text("risks: H/M/L"),
+      owner: text("risks: who watches it")
+    }, ["type", "title", "why"]),
+    run: (st, a) => {
+      learn(st, s(a, "type"), s(a, "title"), {
+        why: s(a, "why"),
+        scope: s(a, "scope"),
+        source: s(a, "source"),
+        supersedes: s(a, "supersedes"),
+        likelihood: s(a, "likelihood"),
+        impact: s(a, "impact"),
+        owner: s(a, "owner")
+      });
+    }
+  },
+  recall: {
+    description: "The knowledge that applies (`crew.mjs recall --json`): to a plan's touches, to paths, or to a topic. Call it before working in an area.",
+    input: obj({
+      plan: text("e.g. P-004: match its touches"),
+      paths: text("comma-separated paths"),
+      topic: text("words to match"),
+      type: { type: "string", enum: ["decision", "learning", "gotcha", "convention", "risk"] },
+      all: { type: "boolean" }
+    }),
+    run: (st, a) => recallCmd(st, {
+      plan: s(a, "plan"),
+      paths: s(a, "paths"),
+      topic: s(a, "topic"),
+      type: s(a, "type"),
+      all: a.all === true,
+      json: true
+    })
+  },
   ledger: {
     description: "Recent events from the shared ledger and the live claims (`crew.mjs ledger --json`).",
     input: obj({
       ref: text("only events about this ID"),
-      type: { type: "string", enum: ["claim", "release", "move", "log", "usage"] },
+      type: { type: "string", enum: ["claim", "release", "move", "log", "usage", "learn"] },
       limit: num("how many, newest last (default 20)")
     }),
     run: (st, a) => showLedger(st, { ref: s(a, "ref"), type: s(a, "type"), limit: n(a, "limit"), json: true })

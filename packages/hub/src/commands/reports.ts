@@ -21,6 +21,12 @@ export function status(store: Store, write: boolean): void {
   lines.push("## Top of the backlog", "", ...backlogTop(q.ranked(items, goals, focus), plans), "");
   lines.push("## Open bugs", "", ...openBugs(items, plans), "");
   lines.push("## Recently done", "", ...recentlyDone(plans));
+  const learned = store.knowledge(false).filter((e) => !e.supersededBy)
+    .sort(byKey((e) => [e.doc.get("created") ?? "", e.id])).reverse().slice(0, TOP);
+  if (learned.length) {
+    lines.push("", "## Recent knowledge", "", ...learned.map((e) => `- ${e.id} [${e.type}] ${e.title}`
+      + (e.scope.length ? ` (${e.scope.join(", ")})` : "")));
+  }
   const spend = store.ledger.spend();
   if (spend.cost || spend.tokensIn || spend.tokensOut) {
     lines.push("", "## Spend", "", `$${spend.cost.toFixed(2)} · ${spend.tokensIn + spend.tokensOut} tokens — `

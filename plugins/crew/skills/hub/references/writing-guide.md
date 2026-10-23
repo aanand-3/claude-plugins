@@ -46,6 +46,13 @@ UI plans (projects with `docs/design/DESIGN.md`) also end with a task like `Visu
 
 **Sizing:** 3–8 tasks (never more than `max_tasks`), a narrow `touches:`, and a PR a reviewer can read in one sitting. If it's bigger, or touches unrelated areas, split it: separate `touches:` is also what lets plans run in parallel.
 
+### Knowledge entries
+| Field | Good | Bad |
+|---|---|---|
+| Fact (title) | One actionable statement: "Validate request bodies before any repository lookup" | A topic: "Auth notes" |
+| Why | What happened or the evidence, with the ID: "Empty email raised KeyError → 500 (BUG-001)" | "Learned the hard way" |
+| Scope | The narrowest globs where it applies: `src/auth/**` | `**`, or none for something only one module needs |
+
 ## Worked example — goal draft
 
 ```markdown

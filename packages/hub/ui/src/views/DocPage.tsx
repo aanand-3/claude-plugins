@@ -38,7 +38,7 @@ function Facts({ doc }: { doc: GraphDoc }) {
     ["Off focus", doc.kind === "plan" && !doc.onFocus && !["done", "dropped"].includes(doc.status) && <Chip tone="warning">does not serve {ix.g.focus}</Chip>],
     ["Goal", doc.goal && <IdLink id={doc.goal} withTitle />],
     ["Plan", doc.plan && <IdLink id={doc.plan} withTitle />],
-    ["Touches", doc.touches.length > 0 && <code>{doc.touches.join(", ")}</code>],
+    [doc.kind === "knowledge" ? "Applies to" : "Touches", doc.touches.length > 0 && <code>{doc.touches.join(", ")}</code>],
     ["Owner", doc.owner && <span title={`${doc.owner.run} · since ${doc.owner.since}`}>{doc.owner.actor}</span>],
     ["Branch", doc.branch && <code>{doc.branch}</code>],
     ["Pull request", doc.pr && <a href={doc.pr} target="_blank" rel="noreferrer">{doc.pr}</a>],

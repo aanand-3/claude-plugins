@@ -6,7 +6,8 @@ import { join } from "node:path";
 import { Doc } from "../core/doc.js";
 import * as git from "../core/git.js";
 import type { Store } from "../core/store.js";
-import { fail, mdTable, slugify, today } from "../core/text.js";
+import { entryText, knowledgeId } from "../core/knowledge.js";
+import { fail, mdTable } from "../core/text.js";
 import { createItem } from "./backlog.js";
 import { init } from "./planning.js";
 
@@ -123,10 +124,11 @@ function raid(store: Store, text: string): { knowledge: number; issues: number }
       const title = row.decision || row.assumption || row.risk || Object.values(row).find((v) => v && !/^[A-Z]+-?\d+$/.test(v)) || "";
       if (!title) continue;
       const fields = Object.entries(row).filter(([, v]) => v).map(([k, v]) => `- **${k}:** ${v}`).join("\n");
-      const id = uniqueId(store, `K-${today()}-${slugify(title).slice(0, 40)}`);
-      store.ws.write(join(store.dir, "knowledge", `${id}.md`), `---\nid: ${id}\ntype: ${type}\ntitle: ${title}\nscope:\n`
-        + `source: raid.md (${section.toLowerCase()}, migrated)\nsupersedes:\ntier: project\ncreated: ${today()}\n---\n\n`
-        + `# ${title}\n\n${section === "Assumptions" ? "Assumption, not yet confirmed.\n\n" : ""}${fields}\n`);
+      const id = knowledgeId(title, (k) => store.ws.isFile(join(store.knowledgeDir, `${k}.md`)));
+      const level = (v?: string) => (v ?? "").trim().slice(0, 1).toUpperCase();
+      store.ws.write(join(store.knowledgeDir, `${id}.md`), entryText({ id, type, title, scope: [], supersedes: "", tier: "project",
+        source: `raid.md (${section.toLowerCase()}, migrated)`, why: `${section === "Assumptions" ? "Assumption, not yet confirmed.\n\n" : ""}${fields}`,
+        risk: { likelihood: level(row.probability), impact: level(row.impact), owner: row.owner } }));
       knowledge++;
     }
   }
@@ -139,10 +141,4 @@ function raid(store: Store, text: string): { knowledge: number; issues: number }
     issues++;
   }
   return { knowledge, issues };
-}
-
-function uniqueId(store: Store, base: string): string {
-  let id = base, n = 2;
-  while (store.ws.isFile(join(store.dir, "knowledge", `${id}.md`))) id = `${base}-${n++}`;
-  return id;
 }

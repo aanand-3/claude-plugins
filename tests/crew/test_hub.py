@@ -154,7 +154,7 @@ def plan_file(repo: Repo, plan_id: str):
 def finish(repo: Repo, plan_id: str) -> None:
     """Tick all tasks, write the outcome and walk the plan to done on its branch."""
     p = plan_file(repo, plan_id)
-    p.write_text(p.read_text().replace("- [ ] T", "- [x] T").rstrip() + "\nShipped.\n")
+    p.write_text(p.read_text().replace("- [ ] T", "- [x] T").rstrip() + "\nShipped.\nLearnings: none\n")
     assert tr(repo, "move", plan_id, "in-review").returncode == 0
     assert tr(repo, "move", plan_id, "done").returncode == 0
 
@@ -890,7 +890,7 @@ def test_role_gates(repo: Repo):
     repo.env["CREW_ROLE"] = "developer"
     tr(repo, "start", "P-001")
     p = plan_file(repo, "P-001")
-    p.write_text(p.read_text().replace("- [ ] T", "- [x] T").rstrip() + "\nShipped.\n")
+    p.write_text(p.read_text().replace("- [ ] T", "- [x] T").rstrip() + "\nShipped.\nLearnings: none\n")
     assert tr(repo, "move", "P-001", "in-review").returncode == 0
     r = tr(repo, "move", "P-001", "done")
     assert r.returncode != 0 and "for the qa role; this run is the developer role" in r.stderr
@@ -928,3 +928,99 @@ def test_human_led_triage_needs_a_human(repo: Repo):
     assert tr(repo, "triage", "CHORE-001", "--approved-by", "Amit").returncode == 0
     new_goal(repo, "Accounts", GOAL_DRAFT, "--priority", "P1")
     assert "status: new" in item(repo, "FEAT-001")  # breakdown items wait for the human too
+
+
+# ------------------------------------------------------------------ project memory (knowledge)
+def knowledge(repo: Repo) -> dict[str, str]:
+    return {p.stem: p.read_text() for p in (repo.path / ".crew/knowledge").glob("K-*.md")}
+
+
+def test_learn_and_recall_round_trip(repo: Repo):
+    init(repo)
+    repo.write("src/auth/login.py", "x\n")
+    repo.write("src/billing/invoice.py", "x\n")
+    r = tr(repo, "learn", "gotcha", "Validate bodies before the user lookup", "--why", "Empty email raised KeyError → 500.",
+           "--scope", "src/auth/**", "--source", "bug-001")
+    assert r.returncode == 0, r.stderr
+    kid = r.stdout.strip().split("/")[-1].removesuffix(".md")
+    assert re.fullmatch(r"K-\d{4}-\d{2}-\d{2}-validate-bodies-before-the-user-lookup", kid)
+    text = knowledge(repo)[kid]
+    for line in ("type: gotcha", "scope: src/auth/**", "source: BUG-001", "tier: project", "supersedes:\n"):
+        assert line in text, line
+    tr(repo, "learn", "convention", "Money is integer cents", "--why", "Floats rounded invoices.", "--scope", "src/billing/**")
+    tr(repo, "learn", "decision", "Postgres for everything", "--why", "One database to run.")   # unscoped: applies everywhere
+    out = tr(repo, "recall", "--paths", "src/auth/login.py").stdout
+    assert kid in out and "Postgres" in out and "cents" not in out
+    assert "cents" in tr(repo, "recall", "--topic", "integer CENTS").stdout
+    hit = json.loads(tr(repo, "recall", "--paths", "src/auth/login.py", "--type", "gotcha", "--json").stdout)
+    assert hit["id"] == kid and hit["body"] == "Empty email raised KeyError → 500."
+    new_plan(repo, "Invoices", PLAN_DRAFT, "--touches", "src/billing/*.py")
+    out = tr(repo, "recall", "--plan", "P-001").stdout
+    assert "cents" in out and kid not in out
+    assert [e["type"] for e in events(repo, "--type", "learn")] == ["learn"] * 3
+    res = mcp_call(repo, "recall", {"paths": "src/billing/invoice.py"})
+    assert not res["isError"] and "Money is integer cents" in res["content"][0]["text"]
+
+
+def test_learn_validates_and_refuses_secrets(repo: Repo):
+    init(repo)
+    assert tr(repo, "learn", "rumour", "x", "--why", "y").returncode != 0
+    assert tr(repo, "learn", "gotcha", "x").returncode != 0  # needs why
+    r = tr(repo, "learn", "risk", "Key loss", "--why", "one admin")
+    assert r.returncode != 0 and "--likelihood and --impact" in r.stderr
+    assert tr(repo, "learn", "risk", "Key loss", "--why", "one admin", "--likelihood", "l", "--impact", "H", "--owner", "Amit").returncode == 0
+    risk = next(iter(knowledge(repo).values()))
+    assert "likelihood: L" in risk and "impact: H" in risk and "owner: Amit" in risk
+    r = tr(repo, "learn", "learning", "Staging creds", "--why", "token is ghp_" + "a" * 36)
+    assert r.returncode != 0 and "GitHub token" in r.stderr
+    assert tr(repo, "learn", "decision", "x", "--why", "y", "--supersedes", "K-2020-01-01-nope").returncode != 0
+    assert len(knowledge(repo)) == 1
+
+
+def test_supersession_and_rot_checks(repo: Repo):
+    init(repo)
+    repo.write("src/a.py", "x\n")
+    old = tr(repo, "learn", "decision", "Use SQLite", "--why", "simple", "--scope", "src/**").stdout.strip().split("/")[-1][:-3]
+    new = tr(repo, "learn", "decision", "Use Postgres", "--why", "multi-user", "--scope", "src/**", "--supersedes", old)
+    assert new.returncode == 0
+    out = tr(repo, "recall").stdout
+    assert "Use Postgres" in out and "Use SQLite" not in out
+    assert "superseded by" in tr(repo, "recall", "--all").stdout
+    tr(repo, "learn", "gotcha", "Old module quirk", "--why", "x", "--scope", "lib/legacy/**")
+    new_plan(repo, "Cites the old one", PLAN_DRAFT.replace("First slice", f"See {old}. First slice"))
+    checked = tr(repo, "check").stdout
+    assert "scope 'lib/legacy/**' matches no file" in checked
+    assert f"{old}: superseded by" in checked and "still cited in P-001" in checked
+    k = repo.path / ".crew/knowledge" / f"{old}.md"
+    k.write_text(k.read_text() + "\nAWS key AKIA" + "A" * 16 + "\n")
+    r = tr(repo, "check")
+    assert r.returncode == 1 and "looks like it contains a secret (AWS access key)" in r.stdout
+
+
+def test_review_needs_learnings(repo: Repo):
+    init(repo, commit=True)
+    ready_plan(repo)
+    repo.commit("chore(hub): plan")
+    tr(repo, "start", "P-001")
+    p = plan_file(repo, "P-001")
+    p.write_text(p.read_text().replace("- [ ] T", "- [x] T").rstrip() + "\nShipped.\n")
+    r = tr(repo, "move", "P-001", "in-review")
+    assert r.returncode != 0 and "no `Learnings:` line" in r.stderr
+    p.write_text(p.read_text().rstrip() + "\nLearnings: K-2026-01-01-made-up\n")
+    r = tr(repo, "move", "P-001", "in-review")
+    assert r.returncode != 0 and "K-2026-01-01-made-up does not exist" in r.stderr
+    kid = tr(repo, "learn", "gotcha", "Signup needs the mail mock", "--why", "tests hang without it").stdout.strip().split("/")[-1][:-3]
+    p.write_text(p.read_text().replace("K-2026-01-01-made-up", kid))
+    assert tr(repo, "move", "P-001", "in-review").returncode == 0
+    assert f"source: P-001" in knowledge(repo)[kid]  # learned on the plan's branch
+
+
+def test_recall_reads_playbook_lessons_at_the_pinned_ref(repo: Repo):
+    init(repo)
+    pb = org_playbook(repo, "mode: ai-native\n")
+    lesson = "---\nid: K-2026-01-02-write-the-migration-and-rollback\ntype: learning\ntitle: Write the migration and its rollback together\n"
+    pb.write("lessons/developer/migrations.md", lesson + "scope: **/migrations/**\ntier: playbook\n---\n\n# x\n\nRollbacks written later were wrong.\n")
+    pb.commit("lesson")
+    out = tr(repo, "recall", "--paths", "db/migrations/0001.sql").stdout
+    assert "Write the migration and its rollback together" in out and "playbook" in out
+    assert "K-2026-01-02" not in tr(repo, "status").stdout  # playbook lessons are recalled, not project knowledge

@@ -27,6 +27,11 @@ export function userName(): string | null {
   return /^(.*?) </.exec(git(["var", "GIT_AUTHOR_IDENT"]) ?? "")?.[1].trim() || null;
 }
 
+/** Paths git tracks (and untracked, not ignored ones), repository-relative. */
+export function files(root: string): string[] {
+  return words(git(["-C", root, "ls-files", "--cached", "--others", "--exclude-standard"]));
+}
+
 export function currentBranch(): string | null {
   return git(["branch", "--show-current"])?.trim() || null;
 }

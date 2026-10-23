@@ -2,7 +2,7 @@
  * Layers, later ones overriding earlier ones: built-in → org (the playbook repo) → org role → project → project role →
  * project team. Guardrails only tighten: lists of protections are unions, `force_push`/`no_verify` can only turn off,
  * budgets can't exceed an org ceiling, and a deny always beats an allow. See docs/vision.md → Policy. */
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { parse } from "yaml";
 import * as git from "./git.js";
@@ -103,8 +103,11 @@ export function loadLayers(root: string, crewDir: string, role: string | null, t
   return { layers, errors, hints };
 }
 
-/** Where the org layer comes from: CREW_PLAYBOOK, else `playbook: {path, ref}` in .crew/config.yaml. */
-function playbook(root: string, crewDir: string): { read: ((rel: string) => string | null) | null; hint?: string } {
+export interface Playbook { read: ((rel: string) => string | null) | null; list?: (dir: string) => string[]; hint?: string }
+
+/** The org playbook repo (policy layer and role lessons): CREW_PLAYBOOK, else `playbook: {path, ref}` in .crew/config.yaml.
+ * With a ref, files are read at that commit (`git show`), so a project uses a pinned version. */
+export function playbook(root: string, crewDir: string): Playbook {
   const cfgPath = join(crewDir, "config.yaml");
   let cfg: Raw = {};
   try {
@@ -116,8 +119,13 @@ function playbook(root: string, crewDir: string): { read: ((rel: string) => stri
   const dir = resolve(root, path);
   if (!existsSync(dir)) return { read: null, hint: `playbook ${path} not found — the org policy layer is skipped` };
   const ref = typeof pb.ref === "string" && pb.ref ? pb.ref : null;
-  if (ref) return { read: (rel) => git.git(["-C", dir, "show", `${ref}:${rel}`]) };
-  return { read: (rel) => (existsSync(join(dir, rel)) ? readFileSync(join(dir, rel), "utf8") : null) };
+  if (ref) {
+    return { read: (rel) => git.git(["-C", dir, "show", `${ref}:${rel}`]),
+      list: (sub) => (git.git(["-C", dir, "ls-tree", "-r", "--name-only", ref, sub]) ?? "").split("\n").filter(Boolean) };
+  }
+  return { read: (rel) => (existsSync(join(dir, rel)) ? readFileSync(join(dir, rel), "utf8") : null),
+    list: (sub) => (existsSync(join(dir, sub)) ? readdirSync(join(dir, sub), { recursive: true, encoding: "utf8" })
+      .map((f) => `${sub}/${f}`.replace(/\\/g, "/")).filter((f) => existsSync(join(dir, f)) && !statSync(join(dir, f)).isDirectory()) : []) };
 }
 
 const isList = (v: unknown) => Array.isArray(v) && v.every((x) => typeof x === "string");

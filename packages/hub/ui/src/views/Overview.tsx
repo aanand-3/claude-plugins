@@ -3,6 +3,7 @@ import { ArrowRight, Ban, Hourglass } from "lucide-react";
 import { Card, Chip, DocTitle, Empty, IdLink, Kpi, ProgressBar, StatusChip } from "../components/primitives";
 import { Markdown } from "../components/Markdown";
 import { docsOf, focusGoal, idea, useData } from "../data";
+import { docHref } from "../router";
 
 const NEXT_ICON: Record<string, typeof ArrowRight> = { NEXT: ArrowRight, WAITING: Hourglass, "IN PROGRESS": ArrowRight };
 const CLOSED = ["done", "dropped", "wontfix", "duplicate"];
@@ -18,6 +19,8 @@ export function Overview() {
   const serious = bugs.filter((d) => d.severity === "S1" || d.severity === "S2");
   const active = plans.filter((d) => ["in-progress", "in-review"].includes(d.status));
   const blocked = plans.filter((d) => d.status === "blocked");
+  const learned = docsOf(ix, "knowledge").filter((d) => d.status === "active")
+    .sort((a, b) => (b.dates.created ?? "").localeCompare(a.dates.created ?? "")).slice(0, 5);
   const waiting = plans.filter((d) => d.waitsFor.length && !["done", "dropped"].includes(d.status));
   const criteria = root?.tasks;
   const outcome = (id: string) => ix.byId.get(id)?.sections.find((s) => s.heading === "Outcome")?.markdown ?? "";
@@ -71,7 +74,7 @@ export function Overview() {
         ) : <Empty command="crew.mjs new-idea TITLE --from DRAFT">The idea is the root every goal serves.</Empty>}
       </Card>
 
-      <div className="grid-2">
+      <div className="grid-3">
         <Card title="Blocked & waiting">
           {blocked.length + waiting.length ? (
             <ul className="rows">
@@ -86,6 +89,16 @@ export function Overview() {
               {bugs.map((d) => <li key={d.id}><Chip tone={d.severity === "S1" || d.severity === "S2" ? "destructive" : "warning"}>{d.severity ?? "—"}</Chip><DocTitle doc={d} /><StatusChip status={d.status} /></li>)}
             </ul>
           ) : <Empty>No open bugs.</Empty>}
+        </Card>
+        <Card title="Recent knowledge">
+          {learned.length ? (
+            <ul className="rows">
+              {learned.map((d) => (
+                <li key={d.id}><Chip tone={d.type === "risk" ? "warning" : "neutral"}>{d.type}</Chip>
+                  <a className="idlink" href={docHref(d.id)} title={d.id}>{d.title}</a></li>
+              ))}
+            </ul>
+          ) : <Empty command='crew.mjs learn gotcha "…" --why "…" --scope "…"'>Nothing recorded yet.</Empty>}
         </Card>
       </div>
 

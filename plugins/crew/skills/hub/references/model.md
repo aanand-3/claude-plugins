@@ -33,6 +33,22 @@ Every event carries `ts`, `ref`, `run` (`CREW_RUN`, else one per worktree), `act
 can't both claim a plan. Derived from it: live claims (owner in `status` and the view), each run's WIP, spend, and a `check`
 hint when a plan file disagrees with the ledger's last move or a closed plan is still claimed.
 
+## Knowledge (project memory)
+`.crew/knowledge/K-<yyyy-mm-dd>-<slug>.md` — collision-free across branches, committed, reviewed with the code.
+
+| Field | Meaning |
+|---|---|
+| `type` | `decision`, `learning`, `gotcha`, `convention` or `risk` (risks add `likelihood`, `impact`, `owner`) |
+| `scope` | path globs it applies to; empty = everywhere |
+| `source` | the plan, item or idea it came from (defaults to the plan of the current branch) |
+| `supersedes` | the entry it replaces; superseded entries drop out of `recall` (`--all` shows them) |
+| `tier` | `project`, or `playbook-candidate` for a lesson worth promoting to the org playbook |
+
+`recall` matches a plan's `touches:` or concrete paths against scopes, plus words in the title or body; the org playbook's
+`lessons/**.md` (at the pinned ref) are recalled with project entries. `check` reports scopes that match no file, superseded
+entries still cited by open work, risks with no owner, and — as errors — anything that looks like a secret. Definition of Done:
+the Outcome's `Learnings:` line lists the entries captured, or `none`, before `in-review`.
+
 ## Policy
 `.crew/policy.yaml`, layered over the built-in defaults and the org playbook (`playbook: {path, ref}` in config.yaml, or
 `CREW_PLAYBOOK`): built-in → org → org role → project → project role → project team.

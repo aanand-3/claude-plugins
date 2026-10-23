@@ -33,7 +33,8 @@ function newPlan(title, items, touches, body, ...extra) {
 function ship(pid, outcome) { // start → tick → review → done on the branch, squash-merge to main
   commit(`chore(hub): before ${pid}`);
   tr("start", pid);
-  edit(file("plans", pid), (t) => t.replace(/- \[ \] T/g, "- [x] T").trimEnd() + `\n${outcome}\n`);
+  const learnings = outcome.includes("Learnings:") ? "" : "\nLearnings: none";
+  edit(file("plans", pid), (t) => t.replace(/- \[ \] T/g, "- [x] T").trimEnd() + `\n${outcome}${learnings}\n`);
   tr("move", pid, "in-review");
   tr("move", pid, "done");
   commit(`feat(${pid}): done`);
@@ -51,6 +52,10 @@ git("commit", "-q", "--allow-empty", "-m", "init");
 day("2026-10-05");
 tr("init");
 writeFileSync(join(dir, ".crew/config.yaml"), "hub:\n  wip_limit: 2\n");
+for (const src of ["src/auth/login.py", "src/auth/signup.py", "src/checkins/time.py", "src/habits/models.py", "web/home/index.tsx"]) {
+  mkdirSync(join(dir, src, ".."), { recursive: true });
+  writeFileSync(join(dir, src), "# sample\n");
+}
 writeFileSync(join(dir, ".crew/policy.yaml"), "mode: ai-native   # agents run the work; the idea's decision stays with the executive\n"
   + "budgets:\n  max_agents: 3\n");
 
@@ -180,7 +185,11 @@ newPlan("Create habit", "FEAT-005", "src/habits/**, web/habits/**", plan("First 
 newPlan("Fix login 500 on empty email", "BUG-001", "src/auth/login.py, tests/auth/**", plan("Fixes BUG-001 found in pilot onboarding.",
   "validate email before lookup", ["regression test: empty email returns 422", "valid logins unaffected"], ["regression test", "validation fix"]));
 tr("move", "P-003", "ready"); tr("move", "P-004", "ready");
-day("2026-10-13"); ship("P-004", "Fixed; regression test in auth suite.");
+day("2026-10-13");
+const gotcha = tr("learn", "gotcha", "Validate request bodies before any repository lookup", "--why",
+  "An empty email reached the user lookup and raised KeyError, so login answered 500 instead of 422 (BUG-001).",
+  "--scope", "src/auth/**", "--source", "P-004").trim().split("/").pop().replace(".md", "");
+ship("P-004", `Fixed; regression test in auth suite.\nLearnings: ${gotcha}`);
 day("2026-10-16"); ship("P-003", "Shipped habit creation; colour picker uses design tokens.");
 
 // ---- reset, check-in, streaks; the focus moves to habit tracking
@@ -206,6 +215,11 @@ newPlan("Password reset", "FEAT-003", "src/auth/reset/**, web/reset/**", plan("L
   "--depends", "P-002");
 tr("move", "P-005", "ready");
 day("2026-10-20"); ship("P-005", "Shipped password reset; sessions revoked on reset.");
+tr("learn", "decision", "Streaks are computed in the user's timezone, never UTC", "--why",
+  "BUG-002: users outside UTC lost streaks at UTC midnight. Store the timezone on the user; compute days locally.",
+  "--scope", "src/checkins/**, src/habits/**", "--source", "BUG-002");
+tr("learn", "risk", "Email provider rate limits block verification at launch", "--why", "Postmark caps sends per minute; SPIKE-001 evaluates a fallback.",
+  "--likelihood", "H", "--impact", "H", "--owner", "Asha");
 tr("focus", "G-002");
 tr("move", "G-002", "active");
 newPlan("Daily check-in", "FEAT-006", "src/checkins/**, web/home/**", plan("The core loop of G-002.", "one-tap check-in from home",

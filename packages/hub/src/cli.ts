@@ -10,6 +10,7 @@ import { exportGraph } from "./commands/export.js";
 import { serve } from "./server.js";
 import { init, newGoal, newIdea, newPlan, setFocus } from "./commands/planning.js";
 import { status } from "./commands/reports.js";
+import { learn, recallCmd } from "./commands/knowledge.js";
 import { showLedger } from "./commands/ledger.js";
 import { policyCheck, policyShow } from "./commands/policy.js";
 import { log, move, release, start, usage } from "./commands/workflow.js";
@@ -35,6 +36,9 @@ Commands:
   release PLAN_ID [--note TXT] [--force]        give up a claim (another run's claim needs --force)
   usage [--tokens-in N] [--tokens-out N] [--cost USD] [--model M] [--ref ID]   record what a run used
   ledger [--ref ID] [--type T] [--limit 20] [--json]   the shared event log (who/what/when) and live claims
+  learn decision|learning|gotcha|convention|risk FACT (--why TEXT | --from DRAFT) [--scope "src/a/**, b.md"]
+        [--source P-###] [--supersedes K-…] [--candidate] [--likelihood H|M|L --impact H|M|L --owner WHO]
+  recall [--paths a,b] [--plan P-###] [--topic WORDS] [--type T] [--all] [--json]   the knowledge that applies
   next · current · check · status [--write]
   export [--json] [--out FILE]                  interactive HTML view (.crew/view/index.html) or the graph as JSON
   ui [--port 8765] [--no-open]                  serve the view live on 127.0.0.1 (updates as files change)
@@ -79,6 +83,14 @@ const COMMANDS: Record<string, Spec> = {
     run: (s, a) => start(s, a.pos[0].toUpperCase(), !!a.opt.force, str(a, "approved-by")) },
   move: { pos: ["id", "status"], str: ["note", "approved-by"], flag: ["force"],
     run: (s, a) => { move(s, a.pos[0], a.pos[1], str(a, "note"), !!a.opt.force, str(a, "approved-by")); } },
+  learn: { pos: ["type", "title"], str: ["why", "from", "scope", "source", "supersedes", "likelihood", "impact", "owner"],
+    flag: ["candidate", "keep-draft"],
+    run: (s, a) => { learn(s, a.pos[0], a.pos[1], { why: str(a, "why"), from: str(a, "from"), scope: str(a, "scope"),
+      source: str(a, "source"), supersedes: str(a, "supersedes"), candidate: !!a.opt.candidate, likelihood: str(a, "likelihood"),
+      impact: str(a, "impact"), owner: str(a, "owner"), keep: !!a.opt["keep-draft"] }); } },
+  recall: { pos: [], str: ["paths", "plan", "topic", "type"], flag: ["all", "json"],
+    run: (s, a) => recallCmd(s, { paths: str(a, "paths"), plan: str(a, "plan"), topic: str(a, "topic"), type: str(a, "type"),
+      all: !!a.opt.all, json: !!a.opt.json }) },
   policy: { pos: ["action"], str: ["role", "team"], flag: ["json"], choices: { action: ["show", "check"] },
     run: (s, a) => (a.pos[0] === "show" ? policyShow(s, str(a, "role"), str(a, "team"), !!a.opt.json) : policyCheck(s)) },
   log: { pos: ["id", "text"], run: (s, a) => log(s, a.pos[0].toUpperCase(), a.pos[1]) },

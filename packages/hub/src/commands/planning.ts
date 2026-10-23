@@ -9,7 +9,7 @@ import { breakdownToItems } from "./backlog.js";
 import { UI_FILE } from "./export.js";
 
 export function init(store: Store): void {
-  for (const d of [...Object.values(store.dirs), join(store.dir, "drafts")]) {
+  for (const d of [...Object.values(store.dirs), store.knowledgeDir, join(store.dir, "drafts")]) {
     const keep = join(d, ".gitkeep");
     if (!store.ws.isFile(keep)) store.ws.write(keep, "");
   }

@@ -21,9 +21,13 @@ describe("graph", () => {
   const doc = (id: string) => graph.docs.find((d) => d.id === id)!;
 
   it("has every document kind and every edge type", () => {
-    expect(new Set(graph.docs.map((d) => d.kind))).toEqual(new Set(["idea", "goal", "item", "plan"]));
-    expect(new Set(graph.edges.map((e) => e.type))).toEqual(new Set(["serves", "in-goal", "delivers", "depends-on", "mentions"]));
-    expect(graph.schemaVersion).toBe(3);
+    expect(new Set(graph.docs.map((d) => d.kind))).toEqual(new Set(["idea", "goal", "item", "plan", "knowledge"]));
+    expect(new Set(graph.edges.map((e) => e.type))).toEqual(
+      new Set(["serves", "in-goal", "delivers", "depends-on", "learned-in", "mentions"]));
+    expect(graph.schemaVersion).toBe(4);
+    const gotcha = graph.docs.find((d) => d.kind === "knowledge" && d.type === "gotcha")!;
+    expect(gotcha).toMatchObject({ status: "active", touches: ["src/auth/**"], source: "P-004" });
+    expect(graph.edges).toContainEqual({ from: gotcha.id, to: "P-004", type: "learned-in" });
     expect(graph.focus).toBe("G-002");
   });
 
@@ -95,7 +99,7 @@ describe("ui server", () => {
   it("serves the page without data (the page fetches it) and the graph as JSON", async () => {
     const page = await (await fetch(url)).text();
     expect(page).toContain('<script id="graph" type="application/json">null</script>');
-    expect((await (await fetch(`${url}api/graph`)).json()).schemaVersion).toBe(3);
+    expect((await (await fetch(`${url}api/graph`)).json()).schemaVersion).toBe(4);
   });
 
   it("refuses commands without the page's token, from another origin, or for another host", async () => {

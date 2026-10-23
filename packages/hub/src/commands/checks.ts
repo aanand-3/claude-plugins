@@ -5,6 +5,7 @@ import type { Doc } from "../core/doc.js";
 import { decisionProblems, readinessProblems, triageProblems } from "../core/gates.js";
 import { ACTIVE, CLOSED, GOAL_FLOW, IDEA_FLOW, ITEM_FLOW, MAX_WRITTEN_AHEAD, PLAN_FLOW, REQUIRED_ON_CREATE } from "../core/model.js";
 import * as q from "../core/queries.js";
+import { globRe, K_ID_RE, KNOWLEDGE_TYPES, secretsIn } from "../core/knowledge.js";
 import { policyFindings } from "./policy.js";
 import type { Docs, Store } from "../core/store.js";
 import { idList, stripComments } from "../core/text.js";
@@ -33,7 +34,7 @@ const up = (s: string | null) => (s ?? "").toUpperCase();
 
 export function findings(store: Store): Findings {
   const s = new Snapshot(store), f: Findings = { errors: [], hints: [] };
-  for (const rule of [idea, plans, items, goals, ledger, hygiene]) rule(s, f);
+  for (const rule of [idea, plans, items, goals, ledger, knowledge, hygiene]) rule(s, f);
   const p = policyFindings(store);
   return { errors: [...f.errors, ...p.errors], hints: [...f.hints, ...p.hints] };
 }
@@ -144,6 +145,30 @@ function goals(s: Snapshot, f: Findings): void {
       f.hints.push(`${eid}: has started plans but is still 'proposed' — \`move ${eid} active\` (on main)`);
     }
     if (!CLOSED.has(st ?? "") && !eps.length && !eitems.length) f.hints.push(`${eid}: no plans and no items — break the goal down`);
+  }
+}
+
+/** Memory rots: scopes that match nothing, superseded entries still cited, secrets that must never be committed. */
+function knowledge(s: Snapshot, f: Findings): void {
+  const entries = s.store.knowledge(false);
+  if (!entries.length) return;
+  const files = git.files(s.store.ws.root);
+  const ids = new Set(entries.map((e) => e.id));
+  const open = [s.idea, ...s.goals.values(), ...s.allPlans.values()].filter((d): d is Doc => !!d && !CLOSED.has(d.get("status") ?? ""));
+  const cited = new Map<string, string[]>();
+  for (const d of open) for (const k of d.text.match(K_ID_RE) ?? []) cited.set(k, [...(cited.get(k) ?? []), d.id]);
+  for (const e of entries) {
+    if (!(KNOWLEDGE_TYPES as readonly string[]).includes(e.type)) f.errors.push(`${e.id}: unknown type '${e.type}'`);
+    if (e.supersedes && !ids.has(e.supersedes)) f.errors.push(`${e.id}: supersedes missing ${e.supersedes}`);
+    const secrets = secretsIn(e.doc.text, s.store.policy.policy.secrets.patterns);
+    if (secrets.length) f.errors.push(`${e.id}: looks like it contains a secret (${secrets.join(", ")}) — remove it and rotate the secret`);
+    for (const glob of e.scope) {
+      if (!files.some((p) => globRe(glob).test(p))) f.hints.push(`${e.id}: scope '${glob}' matches no file — update the scope or supersede the entry`);
+    }
+    if (e.supersededBy && cited.has(e.id)) {
+      f.hints.push(`${e.id}: superseded by ${e.supersededBy} but still cited in ${cited.get(e.id)!.join(", ")}`);
+    }
+    if (e.type === "risk" && !e.doc.get("owner") && !e.supersededBy) f.hints.push(`${e.id}: risk with no owner`);
   }
 }
 

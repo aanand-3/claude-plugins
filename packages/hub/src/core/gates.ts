@@ -1,8 +1,9 @@
 /** Quality gates: what an item needs to be triaged, a plan to be ready and the idea to be decided. */
 import type { Doc } from "./doc.js";
+import { K_ID_RE } from "./knowledge.js";
 import { DECIDED_SECTIONS, PRIORITIES, READY_SECTIONS, SEVERITY_PRIORITY, TRIAGE_SECTIONS } from "./model.js";
 import type { Store } from "./store.js";
-import { idList } from "./text.js";
+import { idList, stripComments } from "./text.js";
 
 export function triageProblems(item: Doc): string[] {
   const prefix = item.id.split("-")[0];
@@ -20,6 +21,15 @@ export function readinessProblems(store: Store, plan: Doc): string[] {
     ...taskProblems(store, plan),
     ...itemProblems(store, plan),
   ];
+}
+
+/** Definition of Done, memory part: the Outcome names what was learned (K-… entries from `learn`) or says `none`. */
+export function learningsProblems(plan: Doc, known: Set<string>): string[] {
+  const m = /^\s*[-*]?\s*\**learnings?\**\s*:\**\s*(.*)$/im.exec(stripComments(plan.section("Outcome")));
+  if (!m) return ["Outcome has no `Learnings:` line — list the K-… entries captured with `learn`, or write `Learnings: none`"];
+  const ids = m[1].match(K_ID_RE) ?? [];
+  if (!ids.length && !/^none\b/i.test(m[1].trim())) return ["`Learnings:` must list K-… entries or say none"];
+  return ids.filter((i) => !known.has(i)).map((i) => `Learnings: ${i} does not exist`);
 }
 
 /** What the executive must have agreed before the idea is decided. */

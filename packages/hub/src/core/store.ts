@@ -5,7 +5,8 @@ import { fileURLToPath } from "node:url";
 import * as git from "./git.js";
 import { assemble, Doc, fill } from "./doc.js";
 import { Ledger } from "./ledger.js";
-import { type Resolved, resolvePolicy } from "./policy.js";
+import { type Entry, linkSupersession, toEntry } from "./knowledge.js";
+import { playbook, type Resolved, resolvePolicy } from "./policy.js";
 import { CLOSED, DEFAULT_SETTINGS, DIRS, type Kind, PRIORITIES } from "./model.js";
 import { fail, kindOf, stripComments, today } from "./text.js";
 import { Workspace } from "./workspace.js";
@@ -40,6 +41,7 @@ export class Store {
   readonly dir: string;
   readonly dirs: Record<DirKind, string>;
   readonly ideaPath: string;
+  readonly knowledgeDir: string;
   private ledgerCache: Ledger | null = null;
   private policyCache: Resolved | null = null;
 
@@ -47,6 +49,7 @@ export class Store {
     this.dir = join(ws.root, ".crew");
     this.dirs = Object.fromEntries(Object.entries(DIRS).map(([k, v]) => [k, join(this.dir, v)])) as Record<DirKind, string>;
     this.ideaPath = join(this.dir, "idea.md");
+    this.knowledgeDir = join(this.dir, "knowledge");
   }
 
   static open(root = git.repoRoot()): Store {
@@ -110,6 +113,18 @@ export class Store {
 
   goals(): Docs { return this.loadDir(this.dirs.goal); }
   items(): Docs { return this.loadDir(this.dirs.item); }
+
+  /** Project knowledge, plus the org playbook's lessons (`lessons/**.md`, read-only) when a playbook is configured. */
+  knowledge(withPlaybook = true): Entry[] {
+    const project = [...this.loadDir(this.knowledgeDir).values()].map((d) => toEntry(d, "project"));
+    const pb = withPlaybook ? playbook(this.ws.root, this.dir) : { read: null };
+    const lessons = pb.read && pb.list ? pb.list("lessons").filter((f) => f.endsWith(".md")).flatMap((f) => {
+      const text = pb.read!(f);
+      const d = text === null ? null : Doc.parse(text, null, "playbook");
+      return d?.id ? [toEntry(d, "playbook")] : [];
+    }) : [];
+    return linkSupersession([...project, ...lessons]);
+  }
 
   /** The project's idea (.crew/idea.md), if it has been written. */
   idea(): Doc | null {

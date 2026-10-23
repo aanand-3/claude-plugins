@@ -4,7 +4,7 @@ import remarkGfm from "remark-gfm";
 import { useData } from "../data";
 import { docHref } from "../router";
 
-const ID_RE = /\b(?:G|P|M|S|FEAT|BUG|CHORE|SPIKE)-\d+\b/g;
+const ID_RE = /\b(?:IDEA|(?:G|P|FEAT|BUG|CHORE|SPIKE)-\d+|K-\d{4}-\d{2}-\d{2}-[a-z0-9-]+)\b/g;
 const CODE_RE = /(```[\s\S]*?```|`[^`\n]*`)/;
 
 /** Link every known ID outside code spans and fences. */

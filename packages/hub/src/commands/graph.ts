@@ -3,6 +3,7 @@
 import { basename } from "node:path";
 import * as git from "../core/git.js";
 import { type Doc, splitSections } from "../core/doc.js";
+import type { Entry } from "../core/knowledge.js";
 import type { LedgerEvent } from "../core/ledger.js";
 import { decisionProblems, readinessProblems, triageProblems } from "../core/gates.js";
 import { CLOSED, IDEA_ID, type Kind } from "../core/model.js";
@@ -13,7 +14,7 @@ import { type Graph, type GraphDoc, type GraphEdge, SCHEMA_VERSION } from "../gr
 import { nextLines } from "./advisor.js";
 import { findings } from "./checks.js";
 
-const ID_RE = /\b(?:IDEA|(?:G|P|FEAT|BUG|CHORE|SPIKE)-\d+)\b/g;
+const ID_RE = /\b(?:IDEA|(?:G|P|FEAT|BUG|CHORE|SPIKE)-\d+|K-\d{4}-\d{2}-\d{2}-[a-z0-9-]+)\b/g;
 const DATE_KEYS = ["created", "started", "completed", "decided", "closed"];
 const up = (s: string | null) => (s ? s.toUpperCase() : null);
 
@@ -28,6 +29,7 @@ export function buildGraph(store: Store): Graph {
   if (idea) docs.push(toDoc(store, idea, "idea", all));
   const kinds: [Kind, Docs][] = [["goal", all.goals], ["item", all.items], ["plan", all.plans]];
   for (const [kind, set] of kinds) for (const d of set.values()) docs.push(toDoc(store, d, kind, all));
+  for (const e of store.knowledge(false)) docs.push(knowledgeDoc(store, e));
   return {
     schemaVersion: SCHEMA_VERSION,
     generatedAt: new Date().toISOString(),
@@ -72,6 +74,17 @@ function toDoc(store: Store, d: Doc, kind: Kind, all: Loaded): GraphDoc {
   };
 }
 
+function knowledgeDoc(store: Store, e: Entry): GraphDoc {
+  const d = e.doc;
+  return { id: e.id, kind: "knowledge", type: e.type, title: e.title, status: e.supersededBy ? "superseded" : "active",
+    priority: null, severity: null, goal: null, plan: null, items: [], dependsOn: e.supersedes ? [e.supersedes] : [], waitsFor: [],
+    touches: e.scope, onFocus: false, owner: null, branch: null, pr: null,
+    dates: Object.fromEntries(DATE_KEYS.filter((k) => d.get(k)).map((k) => [k, d.get(k)!])), tasks: null, gate: null,
+    source: e.source, path: d.path ? store.rel(d.path) : null, sections: [{ heading: "Why", markdown: knowledgeBody(d.text) }] };
+}
+
+const knowledgeBody = (text: string) => stripComments(body(text)).replace(/^# .*\n/m, "").trim();
+
 function owner(c: LedgerEvent | undefined): GraphDoc["owner"] {
   return c ? { actor: c.actor, run: c.run, since: c.ts } : null;
 }
@@ -106,6 +119,10 @@ function edges(docs: GraphDoc[]): GraphEdge[] {
   for (const d of docs) {
     if (d.kind === "goal") add(d.id, IDEA_ID, "serves");
     if (d.kind === "item") add(d.id, d.goal, "in-goal");
+    if (d.kind === "knowledge") {
+      add(d.id, /^(?:IDEA|[A-Z]+-\d+)$/.test(d.source) ? d.source : null, "learned-in");
+      for (const k of d.dependsOn) add(d.id, k, "supersedes");
+    }
     if (d.kind === "plan") {
       add(d.id, d.goal, "in-goal");
       for (const i of d.items) add(d.id, i, "delivers");

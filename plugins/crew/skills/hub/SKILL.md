@@ -25,7 +25,7 @@ All state changes go through the script. Never hand-edit `status`, dates, IDs, `
 - In a project: `node .crew/bin/crew.mjs <cmd>` (vendored single-file copy — prefer this). Needs Node.js ≥ 20; nothing to install.
 - Not yet initialized: `node "${CLAUDE_SKILL_DIR}/dist/crew.mjs" init` at the repo root. If config has `modules.hub: false`, set it to `true` first, then refresh what was rendered without it: `/crew:guidelines --refresh` (CLAUDE.md, settings, tooling), and for `.githooks/pre-commit`, `commit-msg` and the PR template, show the user the diff against a fresh render (`setup_git.py` in a temp copy) and replace them only with a yes.
 - A project-kit project (`.project/`): `node "${CLAUDE_SKILL_DIR}/dist/crew.mjs" migrate` on a clean `main`, then follow the `next:` lines it prints, and commit `chore(hub): migrate to crew`.
-- **Tools first.** When the plugin's `hub` MCP tools are available (`next`, `current`, `status`, `check`, `graph`, `new_item`, `triage`, `move`, `log`, `focus`, `usage`, `ledger`), call them instead of the matching commands. They run the same code with the same gates; a refusal comes back as a tool error with the CLI's text, and nothing is written. Everything else (`init`, `migrate`, `new-idea`, `new-goal`, `new-plan`, `start`, `release`, `export`, `ui`) and any `--force` stays in the CLI. Use the CLI too when the tools are missing.
+- **Tools first.** When the plugin's `hub` MCP tools are available (`next`, `current`, `status`, `check`, `graph`, `new_item`, `triage`, `move`, `log`, `focus`, `usage`, `learn`, `recall`, `ledger`), call them instead of the matching commands. They run the same code with the same gates; a refusal comes back as a tool error with the CLI's text, and nothing is written. Everything else (`init`, `migrate`, `new-idea`, `new-goal`, `new-plan`, `start`, `release`, `export`, `ui`) and any `--force` stays in the CLI. Use the CLI too when the tools are missing.
 
 | Command | Purpose |
 |---|---|
@@ -42,6 +42,8 @@ All state changes go through the script. Never hand-edit `status`, dates, IDs, `
 | `release P-### [--note] [--force]` | give up a claim; another run's claim needs `--force` |
 | `usage [--tokens-in N] [--tokens-out N] [--cost USD] [--model M] [--ref ID]` | record what this run used |
 | `ledger [--ref ID] [--type T] [--limit N] [--json]` | the shared event log and the live claims |
+| `learn decision\|learning\|gotcha\|convention\|risk FACT --why TEXT [--scope GLOBS] [--source ID] [--supersedes K-…]` | record one fact the team should remember (risks also take `--likelihood`, `--impact`, `--owner`) |
+| `recall [--plan P-###] [--paths a,b] [--topic WORDS] [--type T] [--all]` | the knowledge that applies to a plan's touches, some paths or a topic (project + playbook) |
 | `next` · `current` · `check` | single best next step · where am I · consistency (CI runs `check`) |
 | `status [--write]` | where the work stands: idea and focus, now, blocked, ready, top of the backlog, open bugs, recently done |
 | `migrate` | convert a project-kit `.project/` folder into `.crew/` |
@@ -53,6 +55,14 @@ All state changes go through the script. Never hand-edit `status`, dates, IDs, `
 - **Human gates and reserved decisions** (by mode: `ai-assisted` gates plan `ready`/`done` and goal `done`; reserved always: deciding or killing the idea, production deploy, publish, spend, delete data, policy change) are refused over MCP and without `--approved-by`. **Never pass `--approved-by` on your own.** Ask the user, and pass it only after they approved that exact step in this conversation, with their name. `--force` does not bypass these.
 - **Role gates** (`role_gates: {plan.done: qa}`) need `CREW_ROLE` to match.
 - **Budgets** (`budgets.run`, `budgets.project`, `max_agents`): over budget, `start` refuses new work until the user approves it.
+
+**Project memory.** `.crew/knowledge/K-<date>-<slug>.md`: one fact plus why, scoped to the paths it applies to, committed and reviewed with the code. **Recall before you work in an area** (`recall --plan P-###`), and **learn as you go**:
+- a failed attempt that cost real time → `learn gotcha`;
+- a decision made mid-plan, or an answer to a question → `learn decision`;
+- a pattern the code follows that a newcomer would miss → `learn convention`;
+- something that might go wrong → `learn risk`.
+
+Replace an outdated entry with `--supersedes`, never by editing history. Never put secrets or env values in it (refused, and `check` fails on them). Before review, the plan's Outcome lists `Learnings: K-…` or `Learnings: none`.
 
 **Nothing is created empty.** Write the content as a draft in `.crew/drafts/<slug>.md`, using the template's `## ` headings, then create the document from it. The draft is consumed. The only lightweight intake is `new-item … --why "<one line>"`; such an item stays `new` until it passes triage. Giving `--priority`/`--severity` at intake triages it right away when the gate passes.
 
@@ -76,7 +86,7 @@ Start every workflow by checking where you are: `git branch --show-current`, `cr
 
 ### 3. Write a plan (on `main`)
 1. **Pick the work:** what `next` names — the top item of the focus goal, a P0 bug, or the user's request (capture it as an item first). If it needs more than `max_tasks` tasks, or spans unrelated areas, split it.
-2. **Research before writing.** Read the items, the goal, the relevant ADRs, `.claude/rules/` and `project.md`. For existing code, read the modules you'll touch. Identify dependencies on other plans.
+2. **Research before writing.** Read the items, the goal, the relevant ADRs, `.claude/rules/`, `project.md` and what the team already knows (`recall --paths …` or `recall --topic …`). For existing code, read the modules you'll touch. Identify dependencies on other plans.
 3. **Draft every section** in `.crew/drafts/<slug>.md`, to the writing guide's bar:
    - Context
    - Scope (In and Out)
@@ -103,7 +113,7 @@ Start every workflow by checking where you are: `git branch --show-current`, `cr
 
 ### 5. Finish a plan
 1. **Verify every acceptance criterion** with the checks the tasks and test plan name. Run `python3 .crew/bin/check_structure.py --all`.
-2. Tick all tasks and write the **Outcome**: what shipped, deviations, follow-ups.
+2. Tick all tasks and write the **Outcome**: what shipped, deviations, follow-ups, and `Learnings: K-…` (or `none`). `in-review` is refused without it.
 3. `move P-### in-review`, then open the PR:
    - title `P-###: <title>`;
    - the body comes from the PR template and links the plan, its items and its goal;

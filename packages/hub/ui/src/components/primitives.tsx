@@ -9,7 +9,7 @@ const STATUS_TONE: Record<string, Tone> = {
   draft: "neutral", ready: "accent", "in-progress": "primary", blocked: "destructive", "in-review": "warning",
   done: "success", dropped: "muted", new: "neutral", triaged: "accent", planned: "accent", wontfix: "muted",
   duplicate: "muted", proposed: "neutral", active: "primary", exploring: "neutral", researching: "accent",
-  decided: "success", killed: "muted",
+  decided: "success", killed: "muted", superseded: "muted",
 };
 
 export const toneOf = (status: string): Tone => STATUS_TONE[status] ?? "neutral";

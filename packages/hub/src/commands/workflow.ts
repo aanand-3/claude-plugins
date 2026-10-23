@@ -1,7 +1,7 @@
 /** Status changes: validated transitions, starting a plan, progress logs. */
 import * as git from "../core/git.js";
 import type { Doc } from "../core/doc.js";
-import { decisionProblems, readinessProblems, triageProblems } from "../core/gates.js";
+import { decisionProblems, learningsProblems, readinessProblems, triageProblems } from "../core/gates.js";
 import { approvalReason } from "../core/policy.js";
 import { CLOSED, FLOWS, ITEM_CLOSED, type Kind } from "../core/model.js";
 import * as q from "../core/queries.js";
@@ -75,6 +75,9 @@ function guard(store: Store, kind: Kind, doc: Doc, status: string): void {
   if (kind === "plan" && status === "ready") {
     problems = readinessProblems(store, doc);
     label = "is not ready (Definition of Ready)";
+  } else if (kind === "plan" && status === "in-review") {
+    problems = learningsProblems(doc, new Set(store.knowledge().map((e) => e.id)));
+    label = "can't go to review";
   } else if (kind === "plan" && status === "done") {
     problems = doc.tasks().filter(([done]) => !done).map(([, t]) => `unchecked task: ${t}`);
     label = "can't be done";

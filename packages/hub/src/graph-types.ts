@@ -1,19 +1,19 @@
 /** The hub graph: the JSON contract between the CLI (`export`), the local server and the UI.
  * Bump SCHEMA_VERSION on any breaking change; consumers check it. Types only, no runtime code. */
 
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
-export type DocKind = "idea" | "goal" | "item" | "plan";
-export type EdgeType = "serves" | "in-goal" | "delivers" | "depends-on" | "mentions";
+export type DocKind = "idea" | "goal" | "item" | "plan" | "knowledge";
+export type EdgeType = "serves" | "in-goal" | "delivers" | "depends-on" | "learned-in" | "supersedes" | "mentions";
 
 export interface Section { heading: string; markdown: string }
 
 export interface GraphDoc {
   id: string;
   kind: DocKind;
-  type: string | null;              // FEAT | BUG | CHORE | SPIKE for items
+  type: string | null;              // FEAT | BUG | CHORE | SPIKE for items; decision | learning | gotcha | convention | risk for knowledge
   title: string;
-  status: string;                   // derived for items linked to a plan
+  status: string;                   // derived for items linked to a plan; knowledge: active | superseded
   priority: string | null;
   severity: string | null;
   goal: string | null;              // a plan's goal is derived from its items when not set directly
@@ -21,7 +21,7 @@ export interface GraphDoc {
   items: string[];                  // items a plan delivers
   dependsOn: string[];
   waitsFor: string[];               // unfinished dependencies of an open plan
-  touches: string[];                // paths (globs) a plan expects to change
+  touches: string[];                // paths (globs): what a plan will change; what a knowledge entry applies to
   onFocus: boolean;                 // plans: serves the focus goal (or only bugs/chores)
   owner: { actor: string; run: string; since: string } | null;   // the live claim on a plan (from the ledger)
   branch: string | null;
