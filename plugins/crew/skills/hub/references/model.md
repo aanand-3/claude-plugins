@@ -26,7 +26,14 @@ Documents hold the *content* (reviewed in git); the ledger holds *what is happen
 | `release` | `done`/`dropped`, `release` | `reason` |
 | `move` | every status change | `from`, `to`, `note` |
 | `log` | `log` | `text` |
-| `usage` | `usage` | `tokens_in`, `tokens_out`, `cost`, `model` |
+| `usage` | `usage`, `usage --hook` | `tokens_in`, `tokens_out`, `cost`, `model` (from a transcript: `cache_read`, `source`) |
+| `checkpoint` | `checkpoint` | `step`, `sha`, `verify`, `attempt`; for a workflow run `workflow`, `step`, `state` |
+| `ask` / `answer` | `ask`, `escalate`, limits / `answer` | `qid`, `to`, `text`, `escalation`, `approved_by` |
+| `learn` | `learn` | `kind`, `title` |
+| `assign` | `assign`, `reassign` | `to` (a role), `team`, `note`, `reassigned` |
+| `review` | `review` | `verdict` (approve, changes), `sha`, `text` |
+| `pause` / `resume` | `pause` / `resume --team` | `reason` / `note` |
+| `notify` | a `notify:` alert sent | `kind`, `text`, `key` |
 
 Every event carries `ts`, `ref`, `run` (`CREW_RUN`, else one per worktree), `actor` (`CREW_ACTOR`, else the git author) and
 `worktree`. Events are written only when the command succeeds, under a lock, and claims are re-checked inside it, so two runs
@@ -84,7 +91,12 @@ the Outcome's `Learnings:` line lists the entries captured, or `none`, before `i
 |---|---|---|
 | `mode` | global | override; sets the default `human_gates` |
 | `human_gates`, `reserved` | global | `<kind>.<status>` transitions needing `--approved-by`; the org's are a floor, reserved is a union |
-| `role_gates` | global | `{plan.done: qa}` — the transition needs `CREW_ROLE` to match |
+| `preset` | global | `lifecycle`: a layer between org and project with the team's RACI as gates (see below) |
+| `role_gates` | global | `{plan.done: qa}` — the step needs the acting role; keys are `<kind>.<status>`, one edge `<kind>.<from>><to>` (wins over the status), or an action: `plan.assigned`, `plan.reassigned`, `plan.reviewed` |
+| `evidence.role` | global | only that role's checks count toward a plan's done |
+| `limits` | global (`max_turns` also per role) | `stale_claim_hours`, `max_bounces`, `max_attempts` (over → a question to the director), `max_turns` (agents) |
+| `notify` | global | `{command, on: [escalation, budget, stale, goal-done, paused]}` — the command gets each event as JSON on stdin |
+| `fast_lane` | global | `{types: [CHORE, BUG], max_tasks: 3}` — the PM may make such plans ready |
 | `models`, `tools.allow`, `paths.write` | global, role, team | override |
 | `tools.deny`, `paths.protected`, `secrets.*`, `git.protected_branches` | (as above) | union — a deny always beats an allow |
 | `git.force_push`, `git.no_verify` | global | can only be turned off |
@@ -99,8 +111,16 @@ A run's role and team come from `CREW_ROLE` and `CREW_TEAM`; an unknown team is 
 | `ai-assisted` (default) | plan `ready`, plan `done`, goal `done` |
 | `human-led` | those, plus item `triaged` |
 
-The hub enforces gates, reserved transitions and budgets; models, tools and paths are applied by the agent harness
-(Workstream T). An invalid policy blocks every move until `policy check` passes.
+The hub enforces gates, reserved transitions and budgets; models and tools reach the agents through `crew.mjs agents`
+(their frontmatter) and the `guard` hook enforces tool patterns, `paths.write`, `paths.protected` and `secrets.files`.
+An invalid policy blocks every move until `policy check` passes.
+
+`preset: lifecycle`: mode `ai-native`; the executive approves `goal.active`; role gates `item.triaged`, `plan.assigned`,
+`plan.done`, `plan.dropped` → pm; `plan.ready`, `plan.reviewed` → architect; `plan.in-progress`, `plan.in-review` →
+developer; `goal.done`, `plan.reassigned` → director; `evidence.role: qa`; `limits: {stale_claim_hours: 24, max_bounces:
+2, max_attempts: 5}`; the director, pm, qa and release roles write only `.crew/drafts/`. Under a policy that gates
+`plan.assigned`, `start` needs an assignment; under one that gates `plan.reviewed`, `done` needs an approving review that
+covers the last code change; under one that gates `goal.done`, the PM verifies a goal's criteria.
 
 ## Focus
 `focus G-###` records one goal on the idea. Everything orients to it:

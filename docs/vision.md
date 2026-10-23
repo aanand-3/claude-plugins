@@ -115,6 +115,23 @@ Phases 0–7 and the dogfood step are built on stacked branches (`refactor/renam
   applies models, tools, paths and secrets per role (T); automatic `usage` capture (budgets bite only when runs record usage);
   cross-machine ledger sync (SPIKE-001 in this repo's hub). The rest is tracked in `.crew/` on `chore/dogfood-crew`.
 
+## Status (Workstream T built)
+Phases T0–T8 are built on stacked branches (`feat/team-identity` → `feat/team-agents` → `feat/team-director` →
+`feat/team-liveness` → `feat/team-architect` → `feat/team-dev-qa` → `feat/team-release` → `feat/team-autonomy` →
+`feat/team-docs`), following the approved Workstream T plan (RACI, role charters, lifecycle, autonomy); the T0 spike's
+findings are decisions and learnings in this repo's hub knowledge. What changed from the plan:
+- **Gates are opt-in by policy:** assignment before `start`, a review before `done`, PM-verified goals and QA-only evidence
+  apply when the policy gates `plan.assigned`, `plan.reviewed`, `goal.done` and sets `evidence.role` — all of which
+  `preset: lifecycle` does. Projects without the preset keep the Workstream C behaviour.
+- **Team resume** is `resume --team` (plain `resume` stays the work-state view).
+- **Takeover:** after `reassign`, `start` switches to the plan's existing branch (even if the gone run's worktree still has
+  it) and claims it; uncommitted work in the old worktree isn't carried over.
+- **Usage capture** records tokens from each subagent's transcript, not cost (no price table yet); the main session isn't
+  captured.
+- **Found and logged for after the plan** (G-003 in this repo's hub): CHORE-002 (no MCP `agents` tool), BUG-002 (`init`
+  from a subagent rewrites `.crew/bin`), CHORE-003 (a wrong-role move hears about content gates first), SPIKE-002 (agents
+  other than developers must work on a plan's branch to move or review it), CHORE-004 (captured usage has no cost).
+
 # Workstream C: the hub
 
 ## The model
@@ -127,7 +144,7 @@ Phases 0–7 and the dogfood step are built on stacked branches (`refactor/renam
 | **Context** | what I need right now | computed by `crew context [--role R] [ID]`, never stored | one turn |
 
 **Ledger.**
-- **Events:** `claim`, `release`, `move`, `log`, `checkpoint` (step, sha, verify results, attempts), `ask` (an escalation is an `ask` to the executive), `answer`, `learn`, `usage` (tokens/cost per run and role, recorded by `crew.mjs usage`; nothing records it automatically yet).
+- **Events:** `claim`, `release`, `move`, `log`, `checkpoint` (step, sha, verify results, attempts), `ask` (an escalation is an `ask` to the executive), `answer`, `learn`, `usage` (tokens/cost per run and role, recorded by `crew.mjs usage`, and for crew agents by the SubagentStop hook).
 - Live status, claims, WIP, recovery, handoffs, metrics, budget checks and the audit trail are all derived from it.
 - One writer path with a lock and atomic append. JSONL merges by union.
 - Later, for cross-machine and cloud agents: sync the ledger to `refs/crew/ledger` without changing the format.
@@ -164,7 +181,7 @@ Phases 0–7 and the dogfood step are built on stacked branches (`refactor/renam
 - Recovery compares the checkpoint with git (HEAD, dirty tree), plus the last verify and the attempts to avoid.
 - `## Handoff` is generated from the ledger at session end and on `in-review`.
 - `done` requires evidence for every AC (a passing verify event or an `evidence:` note), recorded by a different run from the implementer.
-- `kickoff`/`onboard` progress becomes ledger runs (`kind: workflow`) — deferred to Workstream T: both run before (or without) the hub, so they keep their yaml progress files until kickoff becomes the team's first job.
+- `kickoff`/`onboard` progress becomes ledger runs — done in Workstream T (T4): with the hub they record each step with `checkpoint --workflow kickoff|onboard --step S` and resume with `resume --workflow`; without the hub they keep their yaml progress files.
 
 ### Memory (project tier)
 - An entry has:
