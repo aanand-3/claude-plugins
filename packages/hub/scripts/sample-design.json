@@ -1,0 +1,55 @@
+{
+  "project": "Habitly",
+  "surface": "app",
+  "moods": ["calm", "warm", "friendly"],
+  "avoid": ["#58cc02"],
+  "screens": [
+    {"id": "today", "name": "Today", "purpose": "Check in on today's habits in under ten seconds", "shell": "sidebar-app",
+     "nav": ["Today", "Habits", "Insights", "Settings"],
+     "blocks": [
+       {"type": "page-header", "title": "Today", "subtitle": "Thursday 22 October · 3 of 5 done", "actions": ["Log check-in", "Add habit"]},
+       {"type": "stat-row", "stats": [{"label": "Current streak", "value": "12 days", "delta": "best 21"}, {"label": "Done this week", "value": "23 / 35"}, {"label": "Check-in time", "value": "08:40", "delta": "usual"}]},
+       {"type": "split", "ratio": "3:2",
+        "left": [{"type": "list", "title": "Habits", "items": [
+          {"title": "Read 20 pages", "meta": "Evening · 12-day streak", "status": "Done"},
+          {"title": "Walk 6,000 steps", "meta": "Anytime · 4-day streak", "status": "Due"},
+          {"title": "No phone after 22:00", "meta": "Night · 2-day streak", "status": "Due"},
+          {"title": "Stretch for 10 minutes", "meta": "Morning · 9-day streak", "status": "Done"}]}],
+        "right": [{"type": "detail-panel", "title": "Read 20 pages", "fields": [
+          {"label": "Schedule", "value": "Every day"}, {"label": "Reminder", "value": "21:30"},
+          {"label": "This month", "value": "19 of 22 days"}, {"label": "Best streak", "value": "21 days"}], "actions": ["Log check-in", "Edit"]}]}
+     ]},
+    {"id": "habits", "name": "Habits", "purpose": "See every habit and how it is going", "shell": "sidebar-app",
+     "nav": ["Today", "Habits", "Insights", "Settings"],
+     "blocks": [
+       {"type": "page-header", "title": "Habits", "actions": ["Add habit"]},
+       {"type": "filter-bar", "search": "Search habits", "filters": ["All", "Active", "Paused"]},
+       {"type": "data-table", "title": "habits", "columns": ["Habit", "Schedule", "Status", "Streak", "Done %"], "numeric": [3, 4], "status": 2,
+        "rows": [["Read 20 pages", "Every day", "Active", "12", "86%"], ["Walk 6,000 steps", "Weekdays", "Active", "4", "71%"],
+                 ["No phone after 22:00", "Every day", "Active", "2", "54%"], ["Learn Spanish", "Mon, Wed, Fri", "Paused", "0", "38%"]]},
+       {"type": "chart", "title": "Check-ins are up 18% since reminders moved to the evening", "kind": "bar",
+        "series": [18, 21, 19, 24, 26, 25, 29], "labels": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]}
+     ]},
+    {"id": "settings", "name": "Settings", "purpose": "Set the timezone and reminders (fixes the streak reset, BUG-002)", "shell": "topbar-app",
+     "nav": ["Today", "Habits", "Settings"],
+     "blocks": [
+       {"type": "page-header", "title": "Settings", "subtitle": "Your streaks follow your timezone."},
+       {"type": "tabs", "tabs": ["Profile", "Reminders", "Data"], "active": 0},
+       {"type": "form", "fields": [
+         {"label": "Name", "placeholder": "Asha Kumar"},
+         {"label": "Email", "type": "email", "placeholder": "asha@example.com"},
+         {"label": "Timezone", "type": "select", "placeholder": "Asia/Kolkata (UTC+5:30)", "help": "A day ends at midnight in this timezone."},
+         {"label": "Send me a Sunday summary", "type": "checkbox"}], "submit": "Save settings"}
+     ]},
+    {"id": "landing", "name": "Landing page", "purpose": "Explain Habitly to new visitors and start the pilot sign-up", "shell": "marketing",
+     "nav": ["How it works", "Pricing", "Sign in"],
+     "blocks": [
+       {"type": "hero", "eyebrow": "Pilot open", "headline": "Keep a habit for 30 days with a ten-second check-in", "body": "Habitly tracks streaks in your own timezone and reminds you when you usually check in, not at a random hour.", "actions": ["Join the pilot", "See how it works"]},
+       {"type": "feature-section", "title": "Built for the days you forget", "items": [
+         {"title": "One tap a day", "body": "Check in from the home screen; streaks update at once."},
+         {"title": "Your timezone", "body": "Travel without losing a streak at midnight UTC."},
+         {"title": "Evening reminders", "body": "Nudges at the time you usually check in."}]},
+       {"type": "footer", "text": "© 2026 Habitly", "links": ["Privacy", "Terms", "Contact"]}
+     ]}
+  ]
+}

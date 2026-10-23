@@ -7,9 +7,9 @@
   "description": "Reusable Claude Code skills for starting and running projects.",
   "plugins": [
     {
-      "name": "project-kit",
-      "source": "./plugins/project-kit",
-      "description": "Project kickoff and adoption: research, discover, design, guidelines, tracker, graph, git-setup, global-setup."
+      "name": "crew",
+      "source": "./plugins/crew",
+      "description": "Agent harness from idea to shipped: research, discover, kickoff, onboard, design, guidelines, hub (shared context), codemap, git-setup, global-setup."
     }
   ]
 }

@@ -1,0 +1,107 @@
+# crew reference CI — copy to .github/workflows/ci.yml. Jobs skip themselves until
+# the matching app exists, so this can be committed before any code.
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  guards:
+    name: guards (structure, hub, secrets)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Structure report (add --strict once the layout settles)
+        run: python3 .crew/bin/check_structure.py --all
+      - name: Hub consistency
+        run: node .crew/bin/crew.mjs check
+      - name: Secret scan (gitleaks)
+        env:
+          GITLEAKS_VERSION: 8.28.0
+        run: |
+          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" | tar -xz gitleaks
+          ./gitleaks git . --redact --no-banner
+
+  backend:
+    if: ${{ hashFiles('backend/pyproject.toml') != '' }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app
+          POSTGRES_DB: app_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U app" --health-interval 5s --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:8
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      APP_ENV: test
+      DATABASE_URL: postgresql+asyncpg://app:app@localhost:5432/app_test
+      REDIS_URL: redis://localhost:6379/1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv sync --frozen
+      - name: Lint
+        run: uv run ruff check .
+      - name: Format
+        run: uv run ruff format --check .
+      - name: Types
+        run: uv run pyright
+      - name: Architecture contracts
+        run: uv run lint-imports
+      - name: Tests
+        run: uv run pytest --cov --cov-report=term-missing
+      - name: Dependency audit
+        run: |
+          uv export --frozen --no-hashes --format requirements-txt > /tmp/requirements.txt
+          uvx pip-audit --disable-pip --no-deps -r /tmp/requirements.txt
+
+  frontend:
+    if: ${{ hashFiles('frontend/package.json') != '' }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: frontend/package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: frontend/.nvmrc
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: Gate (typecheck, lint incl. boundaries, format, tests)
+        run: pnpm check
+      - name: Build
+        run: pnpm build
+      - name: Dependency audit
+        run: pnpm audit --prod --audit-level high

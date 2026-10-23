@@ -1,0 +1,5 @@
+# crew policy for the crew repository itself (see docs/vision.md → Policy; `crew.mjs policy show`).
+# The executive (the maintainer) approves each plan before it starts and before it's done; agents do the work in between.
+mode: ai-assisted
+budgets:
+  max_agents: 3

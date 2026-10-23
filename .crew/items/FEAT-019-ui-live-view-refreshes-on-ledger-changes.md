@@ -1,0 +1,24 @@
+---
+id: FEAT-019
+type: feat
+title: UI live view refreshes on ledger changes
+status: triaged
+priority: P3
+goal: G-001
+plan:
+created: 2026-10-23
+closed:
+---
+
+# FEAT-019: UI live view refreshes on ledger changes
+
+## Summary
+The ui server watches .crew/, .git/refs and .git/HEAD only: questions, usage, claims and checkpoints (all in <git common dir>/crew/ledger.jsonl) don't refresh the page, and in a linked worktree .git is a file so the git paths aren't watched at all. Watch the ledger path from Ledger.at() and the common dir's refs.
+
+## User story
+
+## Acceptance criteria
+- [ ]
+
+## Notes
+- 2026-10-23: status new → triaged — priority P3
