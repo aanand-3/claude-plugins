@@ -5,9 +5,9 @@ goal:
 items: CHORE-006
 touches: .crew/config.yaml, README.md, plugins/crew/.claude-plugin/plugin.json, plugins/crew/skills/codemap/**, plugins/crew/skills/discover/**, plugins/crew/skills/git-setup/**, plugins/crew/skills/guidelines/**, plugins/crew/skills/kickoff/**, plugins/crew/skills/onboard/**, packages/hub/src/commands/checks.ts, packages/hub/test/**, packages/hub/scripts/sample-project.mjs, plugins/crew/skills/hub/dist/**, .crew/bin/crew.mjs, tests/crew/**
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-001-nothing-optional-graphify-always-on
-pr:
+pr: https://github.com/aanand-3/claude-plugins/pull/5
 created: 2026-10-24
 started: 2026-10-24
 completed:
@@ -80,12 +80,27 @@ graphify stays an external tool: PyPI `graphifyy`, installed with uv, the one de
 
 ## Handoff
 
+_Generated 2026-10-24 by `crew.mjs handoff` from the ledger._
+
+- P-001: Nothing optional: graphify always on [in-review] tasks 5/5 — claimed by Arpit Anand (main-node-only)
+- last checkpoint 2026-10-23 19:02 at done (92e332e) by Arpit Anand; since then 1 commit(s), 0 uncommitted file(s)
+- ✓ for s in tests/*/; do uvx --with pyyaml pytest $s -q; done (166 + 3 passed) (AC 2,3,5) (reported)
+- ✓ cd packages/hub && npm run typecheck && npm test (48 passed, incl. test/codegraph.test.ts) (AC 4,5) (reported)
+- ✓ git grep -nE '\{\{[#^/][a-z]+\}\}|modules\.graphify|--no-hub|[Oo]ptional modules' -- ':!.crew/knowledge' ':!.crew/plans' ':!.crew/items' && exit 1 || exit 0 (AC 1)
+- evidence: AC1 ✓ (self), AC2 ✓ (self), AC3 ✓ (self), AC4 ✓ (self), AC5 ✓ (self)
+
+Latest log:
+- 2026-10-24: assigned to the developer role
+- 2026-10-24: status ready → in-progress — branch plan/P-001-nothing-optional-graphify-always-on
+- 2026-10-24: touches: brace globs aren't supported, listed each skill dir; added scripts/sample-project.mjs (the sample now has graphify's hook, as every crew project does)
+
 ## Progress log
 
 - 2026-10-24: status draft → ready
 - 2026-10-24: assigned to the developer role
 - 2026-10-24: status ready → in-progress — branch plan/P-001-nothing-optional-graphify-always-on
 - 2026-10-24: touches: brace globs aren't supported, listed each skill dir; added scripts/sample-project.mjs (the sample now has graphify's hook, as every crew project does)
+- 2026-10-24: status in-progress → in-review
 
 ## Outcome
 - **What shipped:** graphify is always on.
