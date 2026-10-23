@@ -3,7 +3,7 @@ id: {id}
 title: {title}
 goal: {goal}
 items: {items}
-points: {points}
+touches: {touches}
 depends_on: {depends_on}
 status: draft
 branch: {branch}
@@ -30,7 +30,8 @@ completed:
 - [ ]
 
 ## Approach
-<!-- Key design decisions, files/modules touched, assumptions, what is reused. Keep it short. -->
+<!-- Key design decisions, assumptions, what is reused. Keep it short.
+     `touches:` above lists the paths (globs) this plan expects to change; it is required before ready. -->
 
 ## Tasks
 <!-- Each task: small, verifiable. "→ verify:" says how we'll know it's done. -->

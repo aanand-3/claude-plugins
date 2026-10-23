@@ -21,22 +21,26 @@ describe("graph", () => {
   const doc = (id: string) => graph.docs.find((d) => d.id === id)!;
 
   it("has every document kind and every edge type", () => {
-    expect(new Set(graph.docs.map((d) => d.kind))).toEqual(new Set(["milestone", "goal", "item", "plan", "sprint", "project-plan", "raid"]));
-    expect(new Set(graph.edges.map((e) => e.type))).toEqual(
-      new Set(["in-milestone", "in-goal", "delivers", "depends-on", "committed-to", "mentions"]));
-    expect(graph.schemaVersion).toBe(1);
+    expect(new Set(graph.docs.map((d) => d.kind))).toEqual(new Set(["idea", "goal", "item", "plan"]));
+    expect(new Set(graph.edges.map((e) => e.type))).toEqual(new Set(["serves", "in-goal", "delivers", "depends-on", "mentions"]));
+    expect(graph.schemaVersion).toBe(2);
+    expect(graph.focus).toBe("G-002");
   });
 
-  it("derives item status and milestone, and reads live plan branches", () => {
-    expect(doc("FEAT-006")).toMatchObject({ status: "in-progress", plan: "P-006", milestone: "M-01", goal: "G-002" });
-    expect(doc("P-006")).toMatchObject({ status: "in-progress", source: "plan/P-006-daily-check-in", tasks: { done: 2, total: 4 }, sprint: "S-03" });
+  it("derives item status and a plan's goal, and reads live plan branches", () => {
+    expect(doc("FEAT-006")).toMatchObject({ status: "in-progress", plan: "P-006", goal: "G-002" });
+    expect(doc("P-006")).toMatchObject({ status: "in-progress", source: "plan/P-006-daily-check-in", tasks: { done: 2, total: 4 },
+      goal: "G-002", onFocus: true, touches: ["src/checkins/**", "web/home/**"] });
+    expect(doc("P-001")).toMatchObject({ goal: "G-001", onFocus: false });
+    expect(doc("IDEA")).toMatchObject({ status: "decided", tasks: { done: 0, total: 3 }, gate: null });
+    expect(graph.edges).toContainEqual({ from: "G-001", to: "IDEA", type: "serves" });
     expect(doc("P-007").waitsFor).toEqual(["P-006"]);
     expect(graph.edges).toContainEqual({ from: "P-007", to: "P-006", type: "depends-on" });
   });
 
   it("carries the gate each document is waiting on", () => {
     expect(doc("P-009").gate).toEqual(["empty section: Test plan", "tasks without '→ verify:': T1: profile API"]);
-    expect(doc("CHORE-001").gate).toContain("no estimate (--points)");
+    expect(doc("CHORE-001").gate).toEqual(["no priority (P0–P3)"]);
     expect(doc("P-005").gate).toBeNull();
   });
 
@@ -45,12 +49,10 @@ describe("graph", () => {
     expect(graph.edges.filter((e) => e.from === "G-001" && e.type === "mentions" && e.to.startsWith("FEAT-"))).toEqual([]);
   });
 
-  it("matches the CLI's metrics", () => {
-    expect(graph.sprints.find((s) => s.id === "S-03")).toMatchObject({ committed: 15, done: 5 });
-    expect(graph.sprints.find((s) => s.id === "S-03")!.burndown!.days).toHaveLength(7);
-    expect(graph.milestones.map((m) => m.id)).toEqual(["M-01", "M-02"]);
+  it("matches the CLI", () => {
+    expect(graph.settings).toEqual({ wip_limit: 2, max_tasks: 10 });
     expect(graph.next.at(-1)).toMatch(/^NEXT {9}refine draft P-009/);
-    expect(graph.risks[0].id).toBe("R1");
+    expect(graph.check).toEqual({ errors: [], hints: [] });
     expect(doc("P-009").sections.find((s) => s.heading === "Risks & open questions")!.markdown).toBe(""); // empty template bullet dropped
   });
 });
@@ -91,7 +93,7 @@ describe("ui server", () => {
   it("serves the page without data (the page fetches it) and the graph as JSON", async () => {
     const page = await (await fetch(url)).text();
     expect(page).toContain('<script id="graph" type="application/json">null</script>');
-    expect((await (await fetch(`${url}api/graph`)).json()).schemaVersion).toBe(1);
+    expect((await (await fetch(`${url}api/graph`)).json()).schemaVersion).toBe(2);
   });
 
   it("refuses commands without the page's token, from another origin, or for another host", async () => {
@@ -113,7 +115,7 @@ describe("ui server", () => {
     expect((await refused.json()).error).toContain("Definition of Ready");
     const events = await fetch(`${url}api/events`);
     const reader = events.body!.getReader();
-    const ok = await post("triage", { id: "CHORE-001", priority: "P2", points: 2 }, { "x-hub-token": t });
+    const ok = await post("triage", { id: "CHORE-001", priority: "P2" }, { "x-hub-token": t });
     expect(ok.status).toBe(200);
     let seen = "";
     while (!seen.includes("event: change")) seen += new TextDecoder().decode((await reader.read()).value);

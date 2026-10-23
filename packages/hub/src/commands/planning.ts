@@ -1,14 +1,12 @@
-/** Creating tracked documents: init, project plan / RAID, milestones, goals, plans. */
+/** Creating tracked documents: init, the idea, goals, plans; setting the focus goal. */
 import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import type { Doc } from "../core/doc.js";
-import { DEFAULT_SETTINGS, ITEM_CLOSED, REQUIRED_ON_CREATE, TEMPLATE_NAMES } from "../core/model.js";
+import { CLOSED, ITEM_CLOSED, type Kind, REQUIRED_ON_CREATE, TEMPLATE_NAMES } from "../core/model.js";
 import { SCRIPT_DIR, SCRIPT_FILE, SKILL_DIR, Store } from "../core/store.js";
-import { asDate, fail, idList, mdTable, slugify } from "../core/text.js";
+import { fail, idList, slugify } from "../core/text.js";
 import { breakdownToItems } from "./backlog.js";
 import { UI_FILE } from "./export.js";
-import { roadmap } from "./reports.js";
-import { sprintAdd } from "./sprints.js";
 
 export function init(store: Store): void {
   for (const d of [...Object.values(store.dirs), join(store.dir, "drafts")]) {
@@ -19,7 +17,6 @@ export function init(store: Store): void {
   const readme = join(store.dir, "README.md");
   const model = store.ws.read(join(SKILL_DIR, "references", "model.md"));
   if (!store.ws.isFile(readme) && model !== null) store.ws.write(readme, model);
-  roadmap(store, true);
   store.say(`Initialized ${store.rel(store.dir)}/`);
 }
 
@@ -36,73 +33,65 @@ function vendor(store: Store): void {
   if (guide !== null) store.ws.write(join(templates, "writing-guide.md"), guide); // quality bar, available without the plugin
 }
 
-function requireSections(doc: Doc, kind: string): void {
-  let missing = doc.missing(REQUIRED_ON_CREATE[kind]);
-  if (kind === "raid" && !missing.length && !mdTable(doc.section("Risks")).length) {
-    missing = ["Risks (at least one row in the table)"];
-  }
+function requireSections(doc: Doc, kind: Kind): void {
+  const missing = doc.missing(REQUIRED_ON_CREATE[kind]);
   if (missing.length) {
     fail(`Draft is incomplete — write these sections before creating the ${kind}: ${missing.join(", ")}. Nothing was created.`);
   }
 }
 
-export function newDoc(store: Store, kind: string, draftPath: string, capacity?: number, length?: number, keep = false): void {
+/** The project's one idea (.crew/idea.md): the root every goal serves. */
+export function newIdea(store: Store, title: string, draftPath: string, keep = false): void {
   store.require();
-  if (kind !== "project-plan" && kind !== "raid") fail("new-doc KIND must be project-plan or raid.");
-  const path = join(store.dir, `${kind}.md`);
-  if (store.ws.isFile(path)) fail(`${store.rel(path)} already exists — edit it directly.`);
-  const [draftFile, draft] = store.readDraft(draftPath, kind);
-  const fields = { ...DEFAULT_SETTINGS };
-  if (capacity) fields.capacity_points = String(capacity);
-  if (length) fields.sprint_length_days = String(length);
-  const doc = store.build(`${kind}.md`, draft, fields);
-  requireSections(doc, kind);
-  store.writeNew(doc, path);
+  if (store.ws.isFile(store.ideaPath)) fail(`${store.rel(store.ideaPath)} already exists — edit it directly.`);
+  const [draftFile, draft] = store.readDraft(draftPath, "idea");
+  const doc = store.build("idea.md", draft, { title });
+  requireSections(doc, "idea");
+  store.writeNew(doc, store.ideaPath);
   store.consume(draftFile, keep);
 }
 
-export function newMilestone(store: Store, title: string, draftPath: string, target: string, keep = false): void {
+/** Point the team at one goal: `context` opens with it, `next` ranks it first and `check` flags work off it. */
+export function setFocus(store: Store, goalId: string): void {
   store.require();
-  if (!asDate(target)) fail("--target must be an ISO date (YYYY-MM-DD).");
-  const [draftFile, draft] = store.readDraft(draftPath, "milestone");
-  const mid = store.nextId("M", "milestone");
-  const doc = store.build("milestone.md", draft, { id: mid, title, target });
-  requireSections(doc, "milestone");
-  store.writeNew(doc, join(store.dirs.milestone, `${mid}-${slugify(title)}.md`));
-  store.consume(draftFile, keep);
+  const idea = store.idea() ?? fail(`Write the idea first (\`new-idea\`): the focus goal is recorded on it.`);
+  const gid = store.checkRef(goalId, "goal");
+  const goal = store.find(gid);
+  if (CLOSED.has(goal.get("status") ?? "")) fail(`${gid} is ${goal.get("status")} — focus on an open goal.`);
+  const old = idea.get("focus");
+  idea.set("focus", gid);
+  idea.appendLog(`focus ${old || "—"} → ${gid}`);
+  idea.save();
+  store.say(`focus: ${gid} (${goal.get("title")})`);
+  if (goal.get("status") === "proposed") store.say(`note: ${gid} is still proposed — \`move ${gid} active\` when its first plan starts`);
 }
 
-export function newGoal(store: Store, title: string, draftPath: string, milestone?: string, priority?: string, keep = false): void {
+export function newGoal(store: Store, title: string, draftPath: string, priority?: string, keep = false): void {
   store.require();
   const [draftFile, draft] = store.readDraft(draftPath, "goal");
-  const fields = { milestone: store.checkRef(milestone, "milestone"), priority: Store.checkPriority(priority) || "P2" };
   const eid = store.nextId("G", "goal");
-  const doc = store.build("goal.md", draft, { id: eid, title, ...fields });
+  const doc = store.build("goal.md", draft, { id: eid, title, priority: Store.checkPriority(priority) || "P2" });
   requireSections(doc, "goal");
   store.writeNew(doc, join(store.dirs.goal, `${eid}-${slugify(title)}.md`));
   breakdownToItems(store, doc);
   store.consume(draftFile, keep);
 }
 
-export interface PlanOptions { goal?: string; depends?: string; items?: string; points?: number; sprint?: string; keep?: boolean }
+export interface PlanOptions { goal?: string; depends?: string; items?: string; touches?: string; keep?: boolean }
 
 export function newPlan(store: Store, title: string, draftPath: string, o: PlanOptions = {}): void {
   store.require();
   const [draftFile, draft] = store.readDraft(draftPath, "plan");
   const goal = store.checkRef(o.goal, "goal");
-  const sprint = store.checkRef(o.sprint, "sprint");
   const deps = checkDeps(store, idList(o.depends));
   const linked = idList(o.items);
   const items = checkLinkable(store, linked);
-  let points = o.points;
-  if (points === undefined && linked.length && linked.every((i) => items.get(i)!.points())) {
-    points = linked.reduce((n, i) => n + items.get(i)!.points()!, 0);
-  }
+  const touches = (o.touches ?? "").split(",").map((t) => t.trim()).filter(Boolean);
   const pid = store.nextId("P", "plan");
   const slug = slugify(title);
   const doc = store.build("plan.md", draft, {
     id: pid, title, goal, branch: `plan/${pid}-${slug}`,
-    depends_on: deps.join(", "), items: linked.join(", "), points: points ? String(points) : "",
+    depends_on: deps.join(", "), items: linked.join(", "), touches: touches.join(", "),
   });
   requireSections(doc, "plan");
   store.writeNew(doc, join(store.dirs.plan, `${pid}-${slug}.md`));
@@ -113,7 +102,6 @@ export function newPlan(store: Store, title: string, draftPath: string, o: PlanO
   }
   if (goal && !linked.length) hintUnplanned(store, goal, items);
   store.consume(draftFile, o.keep);
-  if (sprint) sprintAdd(store, sprint, [pid]);
 }
 
 function checkDeps(store: Store, deps: string[]): string[] {

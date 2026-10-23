@@ -30,7 +30,7 @@ On start, if it exists, switch to its branch, show what's done and continue from
      - the default branch and remote.
    - **Tools:** `git`, `python3` ≥ 3.9, `node` ≥ 20 (only with the hub).
    - **Optional modules** (one AskUserQuestion, multiSelect):
-     - *Hub (Recommended)*: plans, sprints and a backlog in `.crew/`, with one branch and one PR per plan;
+     - *Hub (Recommended)*: the team's shared context in `.crew/` (idea, goals, backlog, plans), with one branch and one PR per plan. A project-kit `.project/` folder is migrated instead (`crew.mjs migrate`);
      - *Code graph (graphify)*: maps the codebase for this onboarding and for every later session.
      **With the hub off, nothing hub-related is generated.**
 
@@ -55,11 +55,11 @@ On start, if it exists, switch to its branch, show what's done and continue from
    - The same goes for `.claude/settings.json` (merge the keys), the README (keep the content, add the *Where to find things* map and link instead of copying) and `.env.example`.
 
 5. **Hub** (only with `modules.hub`): `node "${CLAUDE_PLUGIN_ROOT}/skills/hub/dist/crew.mjs" init`. Then offer, one question with multiSelect and nothing forced:
-   - a light project plan and RAID, from the brief and the risks found while mapping;
-   - M-01 for the release currently in progress, with exit criteria;
+   - the idea (`new-idea`), from the brief: what the project is for and the success criteria the user agrees to;
+   - a goal for the work currently in progress, set as the focus (`focus G-001`);
    - **import work in flight:** open GitHub issues (`gh issue list`, if a remote and `gh` are available) and TODO/FIXME clusters, as `new-item … --why` items left `new` for triage;
    - a CHORE item to apply the tooling reference configs (`.crew/templates/tooling/`) where the repo lacks lint, type-check or CI.
-   No Sprint 1 unless the user asks. Planning normally happens on main; during onboarding it rides along on the onboard branch and lands with its PR.
+   Planning normally happens on main; during onboarding it rides along on the onboard branch and lands with its PR.
 
 6. **Git** — follow the `git-setup` skill. `setup_git.py` never re-inits, never overwrites existing files, and leaves existing hooks alone unless `--take-over-hooks` (ask first; offer to merge the guard lines into the existing hooks instead).
    - Existing `.gitignore`: only the missing sections are appended. Review them.

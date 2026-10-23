@@ -1,5 +1,5 @@
 /** Pure helpers for dates, IDs, slugs, markdown tables and Python-compatible number formatting. */
-import { KINDS, type Kind, SECTION_ALIASES, SLUG_STOPWORDS } from "./model.js";
+import { IDEA_ID, KINDS, type Kind, SECTION_ALIASES, SLUG_STOPWORDS } from "./model.js";
 
 /** A refusal: printed to stderr, exit code 1, and nothing is written. */
 export class HubError extends Error {}
@@ -49,6 +49,7 @@ export function idList(s: string | null | undefined): string[] {
 }
 
 export function kindOf(docId: string): Kind | null {
+  if (docId.toUpperCase() === IDEA_ID) return "idea";
   const m = /^([A-Z]+)-\d+$/.exec(docId.toUpperCase());
   return (m && KINDS[m[1]]) || null;
 }

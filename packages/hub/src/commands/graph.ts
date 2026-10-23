@@ -1,51 +1,39 @@
 /** The hub as one graph: every document, the typed relations between them and the derived metrics.
  * This is what `export` writes and what the UI renders; see graph-types.ts for the contract. */
-import { basename, join } from "node:path";
+import { basename } from "node:path";
 import * as git from "../core/git.js";
 import { type Doc, splitSections } from "../core/doc.js";
-import { readinessProblems, triageProblems } from "../core/gates.js";
-import { CLOSED, type Kind } from "../core/model.js";
+import { decisionProblems, readinessProblems, triageProblems } from "../core/gates.js";
+import { CLOSED, IDEA_ID, type Kind } from "../core/model.js";
 import * as q from "../core/queries.js";
 import type { Docs, Store } from "../core/store.js";
-import { byKey, idList, stripComments, today } from "../core/text.js";
-import { type DocKind, type Graph, type GraphDoc, type GraphEdge, type MilestoneMetrics, SCHEMA_VERSION,
-  type SprintMetrics } from "../graph-types.js";
+import { stripComments, today } from "../core/text.js";
+import { type Graph, type GraphDoc, type GraphEdge, SCHEMA_VERSION } from "../graph-types.js";
 import { nextLines } from "./advisor.js";
 import { findings } from "./checks.js";
-import { forecast, scope } from "./milestones.js";
-import { burndownSeries } from "./sprints.js";
 
-const ID_RE = /\b(?:G|P|M|S|FEAT|BUG|CHORE|SPIKE)-\d+\b/g;
-const DATE_KEYS = ["created", "started", "completed", "target", "start", "end", "released", "closed"];
+const ID_RE = /\b(?:IDEA|(?:G|P|FEAT|BUG|CHORE|SPIKE)-\d+)\b/g;
+const DATE_KEYS = ["created", "started", "completed", "decided", "closed"];
 const up = (s: string | null) => (s ? s.toUpperCase() : null);
 
-interface Loaded { goals: Docs; items: Docs; plans: Docs; milestones: Docs; sprints: Docs }
+interface Loaded { goals: Docs; items: Docs; plans: Docs; focus: string }
 
 export function buildGraph(store: Store): Graph {
   store.require();
-  const all: Loaded = { goals: store.goals(), items: store.items(), plans: store.plans(true),
-    milestones: store.milestones(), sprints: store.sprints() };
+  const all: Loaded = { goals: store.goals(), items: store.items(), plans: store.plans(true), focus: store.focus() };
   const docs: GraphDoc[] = [];
-  const kinds: [Kind, Docs][] = [["milestone", all.milestones], ["goal", all.goals], ["item", all.items],
-    ["plan", all.plans], ["sprint", all.sprints]];
+  const idea = store.idea();
+  if (idea) docs.push(toDoc(store, idea, "idea", all));
+  const kinds: [Kind, Docs][] = [["goal", all.goals], ["item", all.items], ["plan", all.plans]];
   for (const [kind, set] of kinds) for (const d of set.values()) docs.push(toDoc(store, d, kind, all));
-  for (const [id, title] of [["project-plan", "Project plan"], ["raid", "RAID log"]] as const) {
-    const text = store.ws.read(join(store.dir, `${id}.md`));
-    if (text !== null) docs.push(singleton(store, id, title, text));
-  }
   return {
     schemaVersion: SCHEMA_VERSION,
     generatedAt: new Date().toISOString(),
     project: { name: basename(store.ws.root), branch: git.currentBranch(), today: today() },
     settings: store.settings(),
+    focus: all.focus || null,
     docs,
     edges: edges(docs),
-    milestones: milestoneMetrics(store, all),
-    sprints: [...all.sprints.values()].sort(byKey((s) => [s.id])).map((s) => sprintMetrics(s, all.plans)),
-    velocity: q.velocity(all.sprints),
-    risks: store.openRisks().map((r) => ({ id: r.id ?? "", risk: r.risk ?? "", probability: r.probability ?? "",
-      impact: r.impact ?? "", owner: r.owner ?? "", mitigation: r.mitigation ?? "", score: q.riskScore(r) }))
-      .sort(byKey((r) => [-r.score])),
     next: nextLines(store),
     check: findings(store),
   };
@@ -53,30 +41,26 @@ export function buildGraph(store: Store): Graph {
 
 function toDoc(store: Store, d: Doc, kind: Kind, all: Loaded): GraphDoc {
   const status = kind === "item" ? q.itemStatus(d, all.plans) : d.get("status") ?? "";
-  const tasks = kind === "plan" ? d.tasks() : [];
-  const milestone = kind === "item" ? q.itemMilestone(d, all.goals) : kind === "plan"
-    ? q.planMilestone(d, all.goals, all.items) : kind === "goal" ? up(d.get("milestone")) ?? "" : "";
+  const tasks = kind === "plan" ? d.tasks() : kind === "idea" ? d.checklist("Success criteria") : [];
   return {
-    id: d.id,
-    kind,
+    id: kind === "idea" ? IDEA_ID : d.id,
+    kind: kind as GraphDoc["kind"],
     type: kind === "item" ? d.id.split("-")[0] : null,
-    title: d.get("title") ?? (kind === "sprint" ? d.id : ""),
+    title: d.get("title") ?? "",
     status,
     priority: d.get("priority"),
     severity: d.get("severity"),
-    points: d.points(),
-    milestone: milestone || null,
-    goal: up(d.get("goal")),
-    sprint: kind === "plan" ? q.sprintOf(d.id, all.sprints)?.id ?? null : null,
+    goal: kind === "plan" ? q.planGoal(d, all.items) || null : up(d.get("goal")),
     plan: kind === "item" ? up(d.get("plan")) : null,
-    items: kind === "plan" ? q.planItems(d, all.items).map((i) => i.id)
-      : kind === "sprint" ? idList(d.get("plans")) : [],
+    items: kind === "plan" ? q.planItems(d, all.items).map((i) => i.id) : [],
     dependsOn: d.dependsOn(),
     waitsFor: kind === "plan" && !CLOSED.has(status) ? q.unmetDeps(d, all.plans) : [],
+    touches: kind === "plan" ? d.touches() : [],
+    onFocus: kind === "plan" ? q.onFocus(d, all.items, all.focus) : kind === "goal" ? d.id === all.focus : false,
     branch: d.get("branch"),
     pr: d.get("pr"),
     dates: Object.fromEntries(DATE_KEYS.filter((k) => d.get(k)).map((k) => [k, d.get(k)!])),
-    tasks: kind === "plan" ? { done: tasks.filter(([x]) => x).length, total: tasks.length } : null,
+    tasks: tasks.length || kind === "plan" ? { done: tasks.filter(([x]) => x).length, total: tasks.length } : null,
     gate: gate(store, d, kind, status),
     source: d.source,
     path: d.path ? store.rel(d.path) : null,
@@ -86,14 +70,9 @@ function toDoc(store: Store, d: Doc, kind: Kind, all: Loaded): GraphDoc {
 
 function gate(store: Store, d: Doc, kind: Kind, status: string): string[] | null {
   if (kind === "plan" && (status === "draft" || status === "ready")) return readinessProblems(store, d);
-  if (kind === "item" && status === "new") return triageProblems(store, d);
+  if (kind === "item" && status === "new") return triageProblems(d);
+  if (kind === "idea" && status !== "decided" && status !== "killed") return decisionProblems(d);
   return null;
-}
-
-function singleton(store: Store, id: DocKind, title: string, text: string): GraphDoc {
-  return { id, kind: id, type: null, title, status: "", priority: null, severity: null, points: null, milestone: null,
-    goal: null, sprint: null, plan: null, items: [], dependsOn: [], waitsFor: [], branch: null, pr: null, dates: {},
-    tasks: null, gate: null, source: "worktree", path: store.rel(join(store.dir, `${id}.md`)), sections: sections(text) };
 }
 
 function body(text: string): string {
@@ -117,15 +96,13 @@ function edges(docs: GraphDoc[]): GraphEdge[] {
     if (to && known.has(to) && from !== to) out.push({ from, to, type });
   };
   for (const d of docs) {
-    if (d.kind === "goal") add(d.id, d.milestone, "in-milestone");
+    if (d.kind === "goal") add(d.id, IDEA_ID, "serves");
     if (d.kind === "item") add(d.id, d.goal, "in-goal");
-    if (d.kind === "item" && !d.goal) add(d.id, d.milestone, "in-milestone");
     if (d.kind === "plan") {
       add(d.id, d.goal, "in-goal");
       for (const i of d.items) add(d.id, i, "delivers");
       for (const p of d.dependsOn) add(d.id, p, "depends-on");
     }
-    if (d.kind === "sprint") for (const p of d.items) add(p, d.id, "committed-to");
   }
   const linked = new Set(out.flatMap((e) => [`${e.from}>${e.to}`, `${e.to}>${e.from}`]));
   for (const d of docs) {
@@ -135,26 +112,4 @@ function edges(docs: GraphDoc[]): GraphEdge[] {
     }
   }
   return out;
-}
-
-function milestoneMetrics(store: Store, all: Loaded): MilestoneMetrics[] {
-  const order = q.milestoneOrder(all.milestones);
-  let queued = 0; // as in the roadmap: each milestone's forecast starts after the earlier ones
-  return [...all.milestones.keys()].sort(byKey((k) => [order.get(k)!])).map((mid) => {
-    const m = all.milestones.get(mid)!;
-    const sc = scope(mid, all.goals, all.items, all.plans);
-    const f = forecast(store, m, sc, all.sprints, queued);
-    if (!["released", "dropped"].includes(m.get("status") ?? "")) queued += sc.total - sc.done;
-    return { id: mid, total: sc.total, done: sc.done, unestimated: sc.unestimated, projected: f.projected,
-      sprints: f.sprints, velocity: f.velocity, health: f.health };
-  });
-}
-
-function sprintMetrics(s: Doc, plans: Docs): SprintMetrics {
-  const committed = idList(s.get("plans"));
-  const done = committed.filter((p) => plans.get(p)?.get("status") === "done");
-  const pts = (ids: string[]) => ids.reduce((n, p) => n + (plans.get(p)?.points() ?? 0), 0);
-  const v = s.get("velocity");
-  return { id: s.id, goal: stripComments(s.section("Goal")).trim(), committed: pts(committed), done: pts(done),
-    velocity: v && /^\d+$/.test(v) ? Number(v) : null, burndown: burndownSeries(s, plans) };
 }

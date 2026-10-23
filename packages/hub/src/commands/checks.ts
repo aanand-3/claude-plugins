@@ -2,28 +2,28 @@
 import { join } from "node:path";
 import * as git from "../core/git.js";
 import type { Doc } from "../core/doc.js";
-import { readinessProblems, triageProblems } from "../core/gates.js";
-import { ACTIVE, CLOSED, GOAL_FLOW, ITEM_FLOW, MAX_WRITTEN_AHEAD, MILESTONE_FLOW, PLAN_FLOW, REQUIRED_ON_CREATE,
-  SPRINT_FLOW } from "../core/model.js";
+import { decisionProblems, readinessProblems, triageProblems } from "../core/gates.js";
+import { ACTIVE, CLOSED, GOAL_FLOW, IDEA_FLOW, ITEM_FLOW, MAX_WRITTEN_AHEAD, PLAN_FLOW, REQUIRED_ON_CREATE } from "../core/model.js";
 import * as q from "../core/queries.js";
 import type { Docs, Store } from "../core/store.js";
-import { asInt, idList, stripComments, today } from "../core/text.js";
+import { idList, stripComments } from "../core/text.js";
 
 export interface Findings { errors: string[]; hints: string[] }
 
 class Snapshot {
-  goals: Docs; items: Docs; milestones: Docs; sprints: Docs;
+  goals: Docs; items: Docs;
   plans: Docs;     // this worktree
   allPlans: Docs;  // plus live plan branches
-  now = today();
+  idea: Doc | null;
+  focus: string;
 
   constructor(readonly store: Store) {
     this.goals = store.goals();
     this.items = store.items();
-    this.milestones = store.milestones();
-    this.sprints = store.sprints();
     this.plans = store.plans();
     this.allPlans = store.plans(true);
+    this.idea = store.idea();
+    this.focus = store.focus();
   }
 }
 
@@ -32,7 +32,7 @@ const up = (s: string | null) => (s ?? "").toUpperCase();
 
 export function findings(store: Store): Findings {
   const s = new Snapshot(store), f: Findings = { errors: [], hints: [] };
-  for (const rule of [plans, items, sprints, milestones, goals, risks, hygiene]) rule(s, f);
+  for (const rule of [idea, plans, items, goals, hygiene]) rule(s, f);
   return f;
 }
 
@@ -44,6 +44,24 @@ export function check(store: Store): number {
   for (const h of f.hints) store.say(`HINT   ${h}`);
   if (!f.errors.length && !f.hints.length) store.say("Hub OK.");
   return f.errors.length ? 1 : 0;
+}
+
+function idea(s: Snapshot, f: Findings): void {
+  const i = s.idea;
+  if (!i) {
+    f.hints.push("no idea.md — write the problem, outcome and success criteria with `new-idea TITLE --from <draft>`");
+    return;
+  }
+  const st = i.get("status");
+  if (!valid(IDEA_FLOW, st)) f.errors.push(`IDEA: invalid status '${st}'`);
+  if (st === "decided") f.errors.push(...decisionProblems(i).map((p) => `IDEA: decided but ${p}`));
+  if (s.focus) {
+    const g = s.goals.get(s.focus);
+    if (!g) f.errors.push(`IDEA: focus ${s.focus} is not a goal`);
+    else if (CLOSED.has(g.get("status") ?? "")) f.hints.push(`focus ${s.focus} is ${g.get("status")} — set the next focus with \`focus G-###\``);
+  } else if ([...s.goals.values()].some((g) => !CLOSED.has(g.get("status") ?? ""))) {
+    f.hints.push("no focus goal — `focus G-###` so the team works toward one goal at a time");
+  }
 }
 
 function plans(s: Snapshot, f: Findings): void {
@@ -65,6 +83,9 @@ function plans(s: Snapshot, f: Findings): void {
     if (st === "ready") f.errors.push(...readinessProblems(s.store, p).map((problem) => `${pid}: ready but ${problem}`));
     if (st === "done") donePlan(pid, p, f);
     if (ACTIVE.has(st ?? "")) activePlan(pid, p, s, f, branches, here);
+    if ((ACTIVE.has(st ?? "") || st === "ready") && !q.onFocus(p, s.items, s.focus)) {
+      f.hints.push(`${pid}: ${st} but does not serve the focus goal ${s.focus} (only bugs and chores may run off focus)`);
+    }
   }
 }
 
@@ -89,7 +110,7 @@ function items(s: Snapshot, f: Findings): void {
     const st = it.get("status");
     if (!valid(ITEM_FLOW, st)) f.errors.push(`${iid}: invalid status '${st}'`);
     if (st === "triaged") {
-      const problems = triageProblems(s.store, it);
+      const problems = triageProblems(it);
       if (problems.length) f.errors.push(`${iid}: triaged but ${problems.join("; ")}`);
     }
     const owner = up(it.get("plan"));
@@ -97,9 +118,7 @@ function items(s: Snapshot, f: Findings): void {
     if (s.allPlans.get(owner)?.get("status") === "dropped") {
       f.hints.push(`${iid}: its plan ${owner} was dropped — clear \`plan:\` to return it to the backlog`);
     }
-    for (const [key, known] of [["goal", s.goals], ["milestone", s.milestones]] as const) {
-      if (it.get(key) && !known.has(up(it.get(key)))) f.errors.push(`${iid}: references missing ${key} ${it.get(key)}`);
-    }
+    if (it.get("goal") && !s.goals.has(up(it.get("goal")))) f.errors.push(`${iid}: references missing goal ${it.get("goal")}`);
     if (iid.startsWith("BUG-") && it.get("priority") === "P0" && ["new", "triaged"].includes(q.itemStatus(it, s.allPlans))) {
       f.hints.push(`${iid}: P0 bug with no plan — expedite it`);
     }
@@ -108,43 +127,13 @@ function items(s: Snapshot, f: Findings): void {
   if (untriaged.length > 10) f.hints.push(`${untriaged.length} untriaged items — run a triage session`);
 }
 
-function sprints(s: Snapshot, f: Findings): void {
-  const active = [...s.sprints.values()].filter((sp) => sp.get("status") === "active");
-  if (active.length > 1) f.errors.push(`more than one active sprint: ${active.map((sp) => sp.id).join(", ")}`);
-  for (const [sid, sp] of s.sprints) {
-    if (!valid(SPRINT_FLOW, sp.get("status"))) f.errors.push(`${sid}: invalid status '${sp.get("status")}'`);
-    const unknown = idList(sp.get("plans")).filter((p) => !s.allPlans.has(p));
-    if (unknown.length) f.errors.push(`${sid}: commits unknown plans ${unknown.join(", ")}`);
-    if (sp.get("status") === "active" && (sp.get("end") || "9999") < s.now) {
-      f.hints.push(`${sid}: ended ${sp.get("end")} — write Review and Retro, then \`sprint close ${sid}\``);
-    }
-    if (sp.get("status") !== "closed") {
-      const total = q.committedPoints(sp, s.allPlans);
-      const cap = asInt(sp.get("capacity")) || s.store.settings().capacity_points;
-      if (total > cap) f.hints.push(`${sid}: ${total} pts committed > capacity ${cap}`);
-    }
-  }
-}
-
-function milestones(s: Snapshot, f: Findings): void {
-  for (const [mid, m] of s.milestones) {
-    if (!valid(MILESTONE_FLOW, m.get("status"))) f.errors.push(`${mid}: invalid status '${m.get("status")}'`);
-    if (["planned", "active"].includes(m.get("status") ?? "") && (m.get("target") || "9999") < s.now) {
-      f.hints.push(`${mid}: target ${m.get("target")} has passed — release it, or re-plan and record why`);
-    }
-  }
-}
-
 function goals(s: Snapshot, f: Findings): void {
   for (const [eid, e] of s.goals) {
     const st = e.get("status");
     if (!valid(GOAL_FLOW, st)) f.errors.push(`${eid}: invalid status '${st}'`);
     const missing = e.missing(["Outcome", "Scope", "Acceptance criteria"]);
     if (!CLOSED.has(st ?? "") && missing.length) f.errors.push(`${eid}: skeleton goal — empty ${missing.join(", ")}`);
-    if (e.get("milestone") && !s.milestones.has(up(e.get("milestone")))) {
-      f.errors.push(`${eid}: references missing milestone ${e.get("milestone")}`);
-    }
-    const eps = q.goalPlans(eid, s.allPlans), eitems = q.goalItems(eid, s.items);
+    const eps = q.goalPlans(eid, s.allPlans, s.items), eitems = q.goalItems(eid, s.items);
     const openItems = eitems.filter((i) => q.itemStatus(i, s.allPlans) !== "done");
     if (eps.length && eps.every((p) => CLOSED.has(p.get("status") ?? "")) && !openItems.length && st === "active") {
       f.hints.push(`${eid}: all plans and items closed — verify acceptance criteria, then \`move ${eid} done\``);
@@ -156,29 +145,16 @@ function goals(s: Snapshot, f: Findings): void {
   }
 }
 
-function risks(s: Snapshot, f: Findings): void {
-  for (const r of s.store.openRisks()) {
-    if (!r.owner || !r.mitigation) f.hints.push(`risk ${r.id || r.risk || "?"}: no owner or mitigation`);
-  }
-}
-
 function hygiene(s: Snapshot, f: Findings): void {
-  const ahead = [...s.plans.values()].filter((p) => ["draft", "ready"].includes(p.get("status") ?? ""));
-  const openSprints = [...s.sprints.values()].filter((sp) => sp.get("status") !== "closed");
-  const committed = new Set(openSprints.flatMap((sp) => idList(sp.get("plans"))));
-  const stray = openSprints.length ? ahead.filter((p) => !committed.has(p.id)) : ahead;
-  if (stray.length > MAX_WRITTEN_AHEAD) {
-    const where = openSprints.length ? "not committed to a current/next sprint" : `written ahead of the work (> ${MAX_WRITTEN_AHEAD})`;
-    f.hints.push(`${stray.length} plans ${where} — keep later work as backlog items so plans don't go stale`);
+  const ahead = [...s.allPlans.values()].filter((p) => ["draft", "ready"].includes(p.get("status") ?? ""));
+  if (ahead.length > MAX_WRITTEN_AHEAD) {
+    f.hints.push(`${ahead.length} plans written ahead of the work (> ${MAX_WRITTEN_AHEAD}) — keep later work as backlog items so plans don't go stale`);
   }
   const leftovers = s.store.ws.list(join(s.store.dir, "drafts")).filter((n) => n.endsWith(".md"));
   if (leftovers.length) {
     f.hints.push(`unconverted drafts in .crew/drafts/: ${leftovers.join(", ")} — create the document from them or delete`);
   }
-  if (s.store.ws.list(s.store.dir).includes("backlog.md")) { // exact name: BACKLOG.md is generated
-    f.hints.push("legacy .crew/backlog.md — capture its entries with `new-item … --why`, then delete it");
-  }
-  if (!s.store.ws.isFile(join(s.store.dir, "project-plan.md"))) {
-    f.hints.push("no project-plan.md — `new-doc project-plan --from <draft>` (cadence and capacity use defaults)");
+  if (s.store.ws.isDir(join(s.store.ws.root, ".project"))) {
+    f.hints.push("a .project/ directory from project-kit is still here — `crew.mjs migrate` moves it into .crew/");
   }
 }

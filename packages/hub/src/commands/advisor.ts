@@ -4,12 +4,12 @@ import type { Doc } from "../core/doc.js";
 import { ACTIVE } from "../core/model.js";
 import * as q from "../core/queries.js";
 import type { Docs, Store } from "../core/store.js";
-import { asDate, byKey, daysBetween, idList, type SortKey, today } from "../core/text.js";
+import { byKey, type SortKey } from "../core/text.js";
 
 export function current(store: Store): void {
   if (!store.ws.isDir(store.dir)) return;
-  const sprint = q.activeSprint(store.sprints());
-  if (sprint) store.say(sprintLine(sprint));
+  const focus = store.focus();
+  if (focus) store.say(`crew hub — focus ${focus}: ${store.goals().get(focus)?.get("title") ?? "(missing goal)"}`);
   const branch = git.currentBranch() ?? "";
   const m = /^plan\/(P-\d+)/.exec(branch);
   if (!m) {
@@ -32,14 +32,6 @@ export function current(store: Store): void {
     + ` — file: ${doc.path ? store.rel(doc.path) : ""}`);
 }
 
-function sprintLine(sprint: Doc): string {
-  const begin = asDate(sprint.get("start")), end = asDate(sprint.get("end")), now = asDate(today())!;
-  const day = begin ? daysBetween(begin, now) + 1 : 0;
-  const total = begin && end ? daysBetween(begin, end) + 1 : 0;
-  const late = end && now > end ? " (past its end — close it)" : "";
-  return `crew hub — sprint ${sprint.id} day ${day}/${total}${late}`;
-}
-
 /** In-progress work, then exactly one NEXT line, in priority order. */
 export function nextStep(store: Store): void {
   store.require();
@@ -50,19 +42,17 @@ export function nextStep(store: Store): void {
 export function nextLines(store: Store): string[] {
   const ctx = new Context(store);
   for (const p of ctx.active) ctx.lines.push(`IN PROGRESS  ${p.id}: ${p.get("title")} [${p.get("status")}]`);
-  for (const rule of [ctx.expedite, ctx.wipFull, ctx.startReady, ctx.refineDraft, ctx.triage, ctx.planItem, ctx.goal]) {
+  for (const rule of [ctx.expedite, ctx.wipFull, ctx.startReady, ctx.refineDraft, ctx.triage, ctx.planItem, ctx.idea, ctx.goal]) {
     const line = rule.call(ctx);
     if (line) return [...ctx.lines, `NEXT         ${line}`];
   }
-  return [...ctx.lines, "NEXT         nothing planned — create a goal or capture items for the next outcome"];
+  return [...ctx.lines, "NEXT         nothing planned — write a goal for the next outcome, or capture items"];
 }
 
 /** Everything `next` needs, loaded once; each rule returns a NEXT line or null. */
 class Context {
   goals: Docs; items: Docs; plans: Docs;
-  morder: Map<string, number>;
-  sprint: Doc | null;
-  inSprint: Set<string>;
+  focus: string;
   active: Doc[];
   lines: string[] = [];
 
@@ -70,16 +60,14 @@ class Context {
     this.goals = store.goals();
     this.items = store.items();
     this.plans = store.plans(true);
-    this.morder = q.milestoneOrder(store.milestones());
-    this.sprint = q.activeSprint(store.sprints());
-    this.inSprint = new Set(this.sprint ? idList(this.sprint.get("plans")) : []);
+    this.focus = store.focus();
     this.active = [...this.plans.values()].filter((p) => ACTIVE.has(p.get("status") ?? "")).sort(byKey((p) => this.key(p)));
   }
 
+  /** Focus work first, then goal order, then ID. */
   private key(p: Doc): SortKey {
     const eorder = q.goalOrder(this.goals);
-    return [!this.inSprint.has(p.id), this.morder.get(q.planMilestone(p, this.goals, this.items)) ?? this.morder.size,
-      eorder.get((p.get("goal") ?? "").toUpperCase()) ?? eorder.size, p.id];
+    return [!q.onFocus(p, this.items, this.focus), eorder.get(q.planGoal(p, this.items)) ?? eorder.size, p.id];
   }
 
   private withStatus(status: string): Doc[] {
@@ -87,8 +75,7 @@ class Context {
   }
 
   private ranked(status: string): Doc[] {
-    return [...this.items.values()].filter((i) => q.itemStatus(i, this.plans) === status)
-      .sort(byKey((i) => q.itemRank(i, this.goals, this.morder)));
+    return q.ranked(this.items, this.goals, this.focus).filter((i) => q.itemStatus(i, this.plans) === status);
   }
 
   expedite(): string | null {
@@ -107,20 +94,16 @@ class Context {
 
   startReady(): string | null {
     const ready = this.withStatus("ready");
-    let startable = ready.filter((p) => !q.unmetDeps(p, this.plans).length);
+    const startable = ready.filter((p) => !q.unmetDeps(p, this.plans).length);
     for (const p of ready) {
       if (!startable.includes(p)) {
         this.lines.push(`WAITING      ${p.id}: ${p.get("title")} — needs ${q.unmetDeps(p, this.plans).join(", ")}`);
       }
     }
-    if (this.sprint) {
-      const inSprint = startable.filter((p) => this.inSprint.has(p.id));
-      if (inSprint.length) startable = inSprint;
-    }
     if (!startable.length) return null;
     const p = startable[0];
-    const extra = !this.sprint || this.inSprint.has(p.id) ? "" : ` (not in ${this.sprint.id} — unplanned)`;
-    return `${p.id}: ${p.get("title")} → crew.mjs start ${p.id}${extra}`;
+    const off = q.onFocus(p, this.items, this.focus) ? "" : ` (off focus ${this.focus})`;
+    return `${p.id}: ${p.get("title")} → crew.mjs start ${p.id}${off}`;
   }
 
   refineDraft(): string | null {
@@ -136,13 +119,19 @@ class Context {
   planItem(): string | null {
     const [i] = this.ranked("triaged");
     if (!i) return null;
-    return `write a plan for ${i.id}: ${i.get("title")} (${i.get("priority")}, ${i.points() || "?"} pts)`
-      + (i.get("goal") ? ` — goal ${i.get("goal")}` : "");
+    return `write a plan for ${i.id}: ${i.get("title")} (${i.get("priority")})` + (i.get("goal") ? ` — goal ${i.get("goal")}` : "");
+  }
+
+  idea(): string | null {
+    const idea = this.store.idea();
+    if (!idea) return "write the idea (problem, outcome, success criteria) → new-idea TITLE --from DRAFT";
+    const st = idea.get("status");
+    return st === "decided" || st === "killed" ? null : `take the idea from ${st} to a decision (go / pivot / kill)`;
   }
 
   goal(): string | null {
-    const ids = [...this.goals.keys()].sort(byKey((e) => [this.goals.get(e)!.get("status") !== "active", e]));
-    const eid = ids.find((e) => ["active", "proposed"].includes(this.goals.get(e)!.get("status") ?? ""));
-    return eid ? `break ${eid} down further, or close it once its acceptance criteria are verified` : null;
+    const ids = [...this.goals.keys()].sort(byKey((e) => [e !== this.focus, this.goals.get(e)!.get("status") !== "active", e]));
+    const gid = ids.find((e) => ["active", "proposed"].includes(this.goals.get(e)!.get("status") ?? ""));
+    return gid ? `break ${gid} down further, or close it once its acceptance criteria are verified` : null;
   }
 }

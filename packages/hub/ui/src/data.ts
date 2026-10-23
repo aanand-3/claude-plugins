@@ -52,23 +52,19 @@ export const docsOf = (ix: Index, kind: GraphDoc["kind"]) => ix.g.docs.filter((d
 export const targets = (ix: Index, id: string, type: EdgeType) => (ix.out.get(id) ?? []).filter((e) => e.type === type).map((e) => e.to);
 export const sources = (ix: Index, id: string, type: EdgeType) => (ix.in.get(id) ?? []).filter((e) => e.type === type).map((e) => e.from);
 
-export const activeSprint = (ix: Index) => ix.g.docs.find((d) => d.kind === "sprint" && d.status === "active") ?? null;
-
-/** Points of a set of docs. */
-export const points = (docs: GraphDoc[]) => docs.reduce((n, d) => n + (d.points ?? 0), 0);
+export const idea = (ix: Index) => ix.byId.get("IDEA") ?? null;
+export const focusGoal = (ix: Index) => (ix.g.focus ? ix.byId.get(ix.g.focus) ?? null : null);
 
 // ---------------------------------------------------------------- filters shared by the list views
-export interface Filters { q: string; milestone: string; goal: string; sprint: string; type: string; priority: string }
-export const NO_FILTERS: Filters = { q: "", milestone: "", goal: "", sprint: "", type: "", priority: "" };
+export interface Filters { q: string; goal: string; type: string; priority: string }
+export const NO_FILTERS: Filters = { q: "", goal: "", type: "", priority: "" };
 
 export function matches(d: GraphDoc, f: Filters): boolean {
   if (f.q) {
     const q = f.q.toLowerCase();
     if (!d.id.toLowerCase().includes(q) && !d.title.toLowerCase().includes(q)) return false;
   }
-  if (f.milestone && d.milestone !== f.milestone && d.id !== f.milestone) return false;
   if (f.goal && d.goal !== f.goal && d.id !== f.goal) return false;
-  if (f.sprint && d.sprint !== f.sprint) return false;
   if (f.type && (d.kind === "item" ? d.type : "PLAN") !== f.type) return false;
   if (f.priority && d.priority !== f.priority) return false;
   return true;

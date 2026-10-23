@@ -1,36 +1,34 @@
 /** Command-line interface: argument parsing and dispatch to the command modules. */
 import { parseArgs } from "node:util";
 import { Store } from "./core/store.js";
-import { fail, HubError } from "./core/text.js";
+import { HubError } from "./core/text.js";
 import { current, nextStep } from "./commands/advisor.js";
 import { newItem, triage } from "./commands/backlog.js";
 import { check } from "./commands/checks.js";
+import { migrate } from "./commands/migrate.js";
 import { exportGraph } from "./commands/export.js";
 import { serve } from "./server.js";
-import { releaseNotes } from "./commands/milestones.js";
-import { init, newDoc, newGoal, newMilestone, newPlan } from "./commands/planning.js";
-import { roadmap, status } from "./commands/reports.js";
-import { sprintAdd, sprintClose, sprintNew, sprintShow, sprintStart } from "./commands/sprints.js";
+import { init, newGoal, newIdea, newPlan, setFocus } from "./commands/planning.js";
+import { status } from "./commands/reports.js";
 import { log, move, start } from "./commands/workflow.js";
 
-export const USAGE = `Repo-local project hub: milestones, sprints, goals, backlog items, plans, tasks.
+export const USAGE = `crew hub: the team's shared context — the idea, goals, backlog items, plans and tasks.
 
 Nothing is created as an empty skeleton: write the content first (sections as in the templates)
 to a draft file, then create the tracked document from it with --from.
 
 Commands:
-  init                                          create .crew/ structure
-  new-doc project-plan|raid --from DRAFT [--capacity N] [--sprint-length N]
-  new-milestone TITLE --from DRAFT --target YYYY-MM-DD
-  new-goal TITLE --from DRAFT [--milestone M-01] [--priority P1]   (Breakdown → FEAT items)
-  new-item feat|bug|chore|spike TITLE (--from DRAFT | --why TEXT) [--goal] [--milestone]
-           [--priority] [--points] [--severity]
-  triage ID [--priority P1] [--points 3] [--severity S2] [--milestone] [--goal]
+  init                                          create the .crew/ structure
+  migrate                                       convert a project-kit .project/ directory into .crew/
+  new-idea TITLE --from DRAFT                   the project's idea (problem, outcome, success criteria)
+  new-goal TITLE --from DRAFT [--priority P1]   an outcome; each Breakdown line becomes a FEAT item
+  focus G-###                                   the goal the team works toward now
+  new-item feat|bug|chore|spike TITLE (--from DRAFT | --why TEXT) [--goal] [--priority] [--severity]
+  triage ID [--priority P1] [--severity S2] [--goal G-001]
   triage ID --reject wontfix|duplicate --note TXT
-  new-plan TITLE --from DRAFT [--goal] [--items FEAT-001,BUG-002] [--points N] [--depends P-002] [--sprint S-01]
-  sprint new --goal TEXT [--start DATE] [--length N] | add S-01 P-003 … | start S-01 | close S-01 | show [S-01]
-  start PLAN_ID · move ID STATUS [--note] · log ID TEXT
-  next · current · check · roadmap [--write] · status [--write] · release-notes M-01 [--write]
+  new-plan TITLE --from DRAFT [--goal] [--items FEAT-001,BUG-002] [--touches "src/a/**, docs/b.md"] [--depends P-002]
+  start PLAN_ID · move ID STATUS [--note] · log ID TEXT      (ID: IDEA, G-###, P-###, FEAT/BUG/CHORE/SPIKE-###)
+  next · current · check · status [--write]
   export [--json] [--out FILE]                  interactive HTML view (.crew/view/index.html) or the graph as JSON
   ui [--port 8765] [--no-open]                  serve the view live on 127.0.0.1 (updates as files change)
 `;
@@ -52,28 +50,24 @@ const DRAFTED = { str: ["from"], flag: ["keep-draft"], required: ["from"] };
 
 const COMMANDS: Record<string, Spec> = {
   init: { pos: [], run: (s) => init(s) },
-  "new-doc": { pos: ["kind"], ...DRAFTED, int: ["capacity", "sprint-length"],
-    run: (s, a) => newDoc(s, a.pos[0], str(a, "from")!, a.num.capacity, a.num["sprint-length"], !!a.opt["keep-draft"]) },
-  "new-milestone": { pos: ["title"], ...DRAFTED, str: ["from", "target"], required: ["from", "target"],
-    run: (s, a) => newMilestone(s, a.pos[0], str(a, "from")!, str(a, "target")!, !!a.opt["keep-draft"]) },
-  "new-goal": { pos: ["title"], ...DRAFTED, str: ["from", "milestone", "priority"],
-    run: (s, a) => newGoal(s, a.pos[0], str(a, "from")!, str(a, "milestone"), str(a, "priority"), !!a.opt["keep-draft"]) },
-  "new-item": { pos: ["type", "title"], str: ["from", "why", "goal", "milestone", "priority", "severity"], int: ["points"],
-    flag: ["keep-draft"],
+  migrate: { pos: [], run: (s) => migrate(s) },
+  "new-idea": { pos: ["title"], ...DRAFTED,
+    run: (s, a) => newIdea(s, a.pos[0], str(a, "from")!, !!a.opt["keep-draft"]) },
+  "new-goal": { pos: ["title"], ...DRAFTED, str: ["from", "priority"],
+    run: (s, a) => newGoal(s, a.pos[0], str(a, "from")!, str(a, "priority"), !!a.opt["keep-draft"]) },
+  focus: { pos: ["goal"], run: (s, a) => setFocus(s, a.pos[0]) },
+  "new-item": { pos: ["type", "title"], str: ["from", "why", "goal", "priority", "severity"], flag: ["keep-draft"],
     run: (s, a) => newItem(s, a.pos[0], a.pos[1], str(a, "from"), str(a, "why"), {
-      goal: str(a, "goal"), milestone: str(a, "milestone"), priority: str(a, "priority"), points: a.num.points,
-      severity: str(a, "severity"), keep: !!a.opt["keep-draft"] }) },
-  triage: { pos: ["id"], str: ["priority", "severity", "milestone", "goal", "note", "reject"], int: ["points"],
+      goal: str(a, "goal"), priority: str(a, "priority"), severity: str(a, "severity"), keep: !!a.opt["keep-draft"] }) },
+  triage: { pos: ["id"], str: ["priority", "severity", "goal", "note", "reject"],
     choices: { reject: ["duplicate", "wontfix"] },
     run: (s, a) => triage(s, a.pos[0].toUpperCase(), {
-      priority: str(a, "priority"), points: a.num.points, severity: str(a, "severity"), milestone: str(a, "milestone"),
-      goal: str(a, "goal"), reject: str(a, "reject"), note: str(a, "note") }) },
-  "new-plan": { pos: ["title"], ...DRAFTED, str: ["from", "goal", "depends", "items", "sprint"], int: ["points"],
+      priority: str(a, "priority"), severity: str(a, "severity"), goal: str(a, "goal"), reject: str(a, "reject"),
+      note: str(a, "note") }) },
+  "new-plan": { pos: ["title"], ...DRAFTED, str: ["from", "goal", "depends", "items", "touches"],
     run: (s, a) => newPlan(s, a.pos[0], str(a, "from")!, {
-      goal: str(a, "goal"), depends: str(a, "depends"), items: str(a, "items"), points: a.num.points,
-      sprint: str(a, "sprint"), keep: !!a.opt["keep-draft"] }) },
-  sprint: { pos: ["action"], rest: true, str: ["goal", "start"], int: ["length"], flag: ["force"],
-    choices: { action: ["new", "add", "start", "close", "show"] }, run: runSprint },
+      goal: str(a, "goal"), depends: str(a, "depends"), items: str(a, "items"), touches: str(a, "touches"),
+      keep: !!a.opt["keep-draft"] }) },
   start: { pos: ["id"], flag: ["force"], run: (s, a) => start(s, a.pos[0].toUpperCase(), !!a.opt.force) },
   move: { pos: ["id", "status"], str: ["note"], flag: ["force"],
     run: (s, a) => { move(s, a.pos[0], a.pos[1], str(a, "note"), !!a.opt.force); } },
@@ -81,7 +75,6 @@ const COMMANDS: Record<string, Spec> = {
   current: { pos: [], run: (s) => current(s) },
   next: { pos: [], run: (s) => nextStep(s) },
   check: { pos: [], run: (s) => check(s) },
-  roadmap: { pos: [], flag: ["write"], run: (s, a) => { s.require(); roadmap(s, !!a.opt.write); } },
   status: { pos: [], flag: ["write"], run: (s, a) => status(s, !!a.opt.write) },
   export: { pos: [], str: ["out"], flag: ["json"],
     run: (s, a) => exportGraph(s, a.opt.json ? "json" : "html", str(a, "out")) },
@@ -90,24 +83,11 @@ const COMMANDS: Record<string, Spec> = {
       ({ url }) => process.stdout.write(`Hub UI at ${url} — live while this runs (Ctrl-C to stop)\n`),
       (e: Error) => { process.stderr.write(`${e.message}\n`); process.exit(1); });
   } },
-  "release-notes": { pos: ["id"], flag: ["write"], run: (s, a) => releaseNotes(s, a.pos[0].toUpperCase(), !!a.opt.write) },
 };
 
 function str(a: Args, key: string): string | undefined {
   const v = a.opt[key];
   return typeof v === "string" ? v : undefined;
-}
-
-function runSprint(s: Store, a: Args): void {
-  const [action, ...rest] = a.pos;
-  const need: Record<string, number> = { add: 2, start: 1, close: 1 };
-  if (rest.length < (need[action] ?? 0)) fail(`usage: sprint ${action} S-## ` + (action === "add" ? "P-### [P-### …]" : ""));
-  const ids = rest.map((x) => x.toUpperCase());
-  if (action === "new") sprintNew(s, str(a, "goal") ?? "", str(a, "start"), a.num.length);
-  else if (action === "add") sprintAdd(s, ids[0], ids.slice(1));
-  else if (action === "start") sprintStart(s, ids[0]);
-  else if (action === "close") sprintClose(s, ids[0], !!a.opt.force);
-  else sprintShow(s, ids[0]);
 }
 
 class UsageError extends Error {}
@@ -157,7 +137,7 @@ export function main(argv: string[], open: () => Store = () => Store.open()): nu
   try {
     parsed = parse(argv);
   } catch (e) {
-    process.stderr.write(`usage: crew.mjs <command> …  (crew.mjs --help)\nhub.mjs: error: ${(e as Error).message}\n`);
+    process.stderr.write(`usage: crew.mjs <command> …  (crew.mjs --help)\ncrew.mjs: error: ${(e as Error).message}\n`);
     return 2;
   }
   const store = open();

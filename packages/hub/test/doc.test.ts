@@ -9,7 +9,7 @@ const template = (name: string) => readFileSync(new URL(name, TEMPLATES), "utf8"
 const TEXT = `---
 id: P-001
 title: Signup
-points: 3
+touches: src/auth/**, web/signup.tsx
 ---
 
 # P-001: Signup
@@ -33,7 +33,7 @@ describe("Doc", () => {
   it("reads frontmatter and sections", () => {
     const d = Doc.parse(TEXT);
     expect(d.id).toBe("P-001");
-    expect(d.points()).toBe(3);
+    expect(d.touches()).toEqual(["src/auth/**", "web/signup.tsx"]);
     expect(d.hasContent("Context")).toBe(true);
     expect(d.missing(["Scope", "Context", "Nope"])).toEqual(["Scope", "Nope"]);
     expect(d.tasks()).toEqual([[true, "T1: route → verify: test"], [false, "T2: service → verify: test"]]);
@@ -42,10 +42,10 @@ describe("Doc", () => {
   it("edits frontmatter in place and appends to sections", () => {
     const d = Doc.parse(TEXT);
     d.set("status", "ready");
-    d.set("points", "5");
+    d.set("touches", "src/**");
     d.appendTo("Progress log", "- first");
     d.appendTo("Outcome", "Shipped.");
-    expect(d.text).toContain("points: 5\nstatus: ready\n---");
+    expect(d.text).toContain("touches: src/**\nstatus: ready\n---");
     expect(d.section("Progress log")).toBe("- first\n\n");
     expect(d.text.trimEnd().endsWith("## Outcome\nShipped.")).toBe(true);
   });

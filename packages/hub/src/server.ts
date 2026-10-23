@@ -9,24 +9,21 @@ import { join } from "node:path";
 import { triage } from "./commands/backlog.js";
 import { DATA_SLOT, renderHtmlShell } from "./commands/export.js";
 import { buildGraph } from "./commands/graph.js";
-import { sprintAdd } from "./commands/sprints.js";
+import { setFocus } from "./commands/planning.js";
 import { log, move } from "./commands/workflow.js";
 import { Store } from "./core/store.js";
 import { fail, HubError } from "./core/text.js";
 
 type Body = Record<string, unknown>;
 const str = (b: Body, k: string) => (typeof b[k] === "string" && b[k] ? (b[k] as string) : undefined);
-const num = (b: Body, k: string) => (typeof b[k] === "number" ? (b[k] as number) : undefined);
 
 /** The commands the page may run: name → (store, body). Adding one is one entry here. */
 export const ACTIONS: Record<string, (s: Store, b: Body) => void> = {
   move: (s, b) => { move(s, str(b, "id") ?? fail("id is required"), str(b, "status") ?? fail("status is required"), str(b, "note")); },
   log: (s, b) => log(s, (str(b, "id") ?? fail("id is required")).toUpperCase(), str(b, "text") ?? fail("text is required")),
   triage: (s, b) => triage(s, (str(b, "id") ?? fail("id is required")).toUpperCase(), {
-    priority: str(b, "priority"), points: num(b, "points"), severity: str(b, "severity"),
-    milestone: str(b, "milestone"), goal: str(b, "goal") }),
-  "sprint-add": (s, b) => sprintAdd(s, (str(b, "sprint") ?? fail("sprint is required")).toUpperCase(),
-    Array.isArray(b.plans) ? b.plans.map(String) : fail("plans is required")),
+    priority: str(b, "priority"), severity: str(b, "severity"), goal: str(b, "goal") }),
+  focus: (s, b) => setFocus(s, str(b, "goal") ?? fail("goal is required")),
 };
 
 /** Run one action like the CLI does: writes only land if it succeeds. */

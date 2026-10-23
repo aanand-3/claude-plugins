@@ -23,7 +23,7 @@ function rpc<T>(method: string, params?: object): Promise<T> {
     waiting.set(id, (m) => (m.error ? reject(new Error(m.error.message)) : resolve(m.result as T))));
 }
 const call = (name: string, args: object = {}) => rpc<Result>("tools/call", { name, arguments: args });
-const snapshot = () => Object.fromEntries(["items", "plans", "sprints"].flatMap((sub) =>
+const snapshot = () => Object.fromEntries(["items", "plans", "goals"].flatMap((sub) =>
   readdirSync(join(dir, ".crew", sub)).map((f) => [`${sub}/${f}`, readFileSync(join(dir, ".crew", sub, f), "utf8")])));
 
 beforeAll(async () => {
@@ -45,7 +45,7 @@ afterAll(() => server?.kill());
 it("lists the hub tools with input schemas", async () => {
   const { tools } = await rpc<{ tools: { name: string; inputSchema: { type: string; required?: string[] } }[] }>("tools/list");
   expect(tools.map((t) => t.name)).toEqual(
-    ["next", "current", "status", "check", "graph", "new_item", "triage", "move", "log", "sprint_add"]);
+    ["next", "current", "status", "check", "graph", "new_item", "triage", "move", "log", "focus"]);
   expect(tools.every((t) => t.inputSchema.type === "object")).toBe(true);
   expect(tools.find((t) => t.name === "move")!.inputSchema.required).toEqual(["id", "status"]);
 });
@@ -55,7 +55,7 @@ it("answers like the CLI", async () => {
   expect(r.isError).toBe(false);
   expect(r.content[0].text).toBe(tr("next").trimEnd());
   const graph = JSON.parse((await call("graph")).content[0].text);
-  expect(graph.schemaVersion).toBe(1);
+  expect(graph.schemaVersion).toBe(2);
 });
 
 it("captures an item, writing it to .crew/", async () => {

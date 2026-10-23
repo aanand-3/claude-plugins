@@ -1,6 +1,6 @@
 /** A tracked markdown document: flat `key: value` frontmatter plus `## ` sections. */
 import { TASK_RE } from "./model.js";
-import { asInt, idList, mdTable, norm, rstrip, stripComments, today } from "./text.js";
+import { idList, mdTable, norm, rstrip, stripComments, today } from "./text.js";
 
 const EMPTY_LINES = new Set(["-", "- [ ]", "1."]);
 const END = "(?![\\s\\S])"; // Python's \Z
@@ -59,8 +59,9 @@ export class Doc {
     this.text = head + rest;
   }
 
-  points(): number | null {
-    return asInt(this.get("points"));
+  /** Paths (globs) a plan expects to change, as written: not upper-cased like IDs. */
+  touches(): string[] {
+    return (this.get("touches") ?? "").split(",").map((t) => t.trim()).filter(Boolean);
   }
 
   dependsOn(): string[] {

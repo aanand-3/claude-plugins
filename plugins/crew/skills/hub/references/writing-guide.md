@@ -4,22 +4,13 @@ A tracked document is a contract between whoever plans the work and whoever does
 
 ## Quality bar
 
-### Project plan
+### Idea
 | Section | Good | Bad |
 |---|---|---|
-| Objectives | 2–4 measurable outcomes ("pilot consultants complete 3 migrations without engineering help") | A feature list |
-| Success measures | Metric, baseline, target, when measured | "Users are happy" |
-| Milestones | Each has a goal, a target date the user agreed to, and summarized exit criteria | Dates without scope, or scope without dates |
-| Cadence & capacity | Sprint length, starting capacity *and why* (e.g. "1 dev + Claude, ~4 focused days → 20 pts"), ceremonies | Missing; capacity copied from the default without thought |
-
-### Milestone
-| Section | Good | Bad |
-|---|---|---|
-| Goal | What becomes possible, for whom | "Finish G-001 and G-002" |
-| Exit criteria | Checkable list: function, quality (no open S1/S2), operations (deployed, monitored, rollback tested), docs | "All done" |
-
-### RAID
-Every risk has a probability, an impact, an **owner** and a **mitigation**. Risks are things that *might* happen; things happening now are Issues. Close or retire risks at each sprint review.
+| Problem | Who has it, what it costs them today, why now | A solution in disguise ("we need an app that…") |
+| Outcome | What is true for users or the business when it has shipped | A feature list |
+| Success criteria | A checklist the executive can verify with evidence ("pilot consultants complete 3 migrations without engineering help") | "Users are happy"; criteria nobody can measure |
+| Direction | The chosen approach, the alternatives weighed, and the decision with its reason | Only the winner, so a later pivot can't see what was ruled out |
 
 ### Items
 | Type | Good | Bad |
@@ -31,20 +22,13 @@ Every risk has a probability, an impact, an **owner** and a **mitigation**. Risk
 
 UI plans (projects with `docs/design/DESIGN.md`) also end with a task like `Visual QA → verify: check_design.py --all clean; screenshots at 375/1280 px, light and dark, match DESIGN.md`.
 
-### Sprint
-| Section | Good | Bad |
-|---|---|---|
-| Goal | One sentence that every committed plan serves | A list of plan IDs |
-| Review | Shipped (demo-able), not shipped and why, unplanned work, goal met?, forecast change | "Went well" |
-| Retro | Specific Keep / Stop / Try. Each Try is an action someone can do next sprint | Vague feelings; ten tries |
-
 ### Goal
 | Section | Good | Bad |
 |---|---|---|
 | Outcome | What changes for whom, in one or two sentences | A list of features; "implement X" |
 | Scope | Explicit **Out**, which prevents creep | Only "In"; vague areas |
 | Acceptance criteria | User-visible and checkable at the end of the goal | Restating plan titles; "works well" |
-| Breakdown | 2–6 vertical slices in delivery order, one line each, with a rough estimate and dependencies: `Title — what it delivers (5 pts) (after X)`. Each becomes a FEAT item. | Layer-by-layer slices ("DB", "API", "UI") that ship nothing alone; no estimates |
+| Breakdown | 2–6 vertical slices in delivery order, one line each: `Title — what it delivers`. Each becomes a FEAT item at the goal's priority. | Layer-by-layer slices ("DB", "API", "UI") that ship nothing alone |
 
 ### Plan
 | Section | Good | Bad |
@@ -52,7 +36,7 @@ UI plans (projects with `docs/design/DESIGN.md`) also end with a task like `Visu
 | Context | Why this, why now; links to the goal, ADRs and earlier plans | A copy of the title |
 | Scope | In **and** Out; Out names the tempting adjacent work | Empty Out |
 | Acceptance criteria | Observable behavior: inputs → outputs, error cases, non-functional limits where relevant. Each maps to a test or a demonstrable check | "Code is clean", "tests pass", "feature works" |
-| Approach | Key decisions and why; modules/files touched; assumptions; what is reused | A restatement of the tasks |
+| Approach | Key decisions and why; assumptions; what is reused. `touches:` (front matter) lists the paths it will change | A restatement of the tasks; `touches: src/**` |
 | Tasks | 3–8 steps, each ≤ ~half a day, in order, each ending `→ verify: <command, test or check>` | "Implement backend", or tasks with no way to verify them |
 | Test plan | Which tests cover which criterion (unit / integration / e2e / manual); bugs name the regression test that fails before the fix | "Add tests" |
 | Rollout & rollback | Migrations, flags, config, observability, how to back out; or "n/a — internal refactor, no runtime change" | Empty on a change that touches data or config |
@@ -60,9 +44,7 @@ UI plans (projects with `docs/design/DESIGN.md`) also end with a task like `Visu
 
 **Slicing:** prefer thin vertical slices that deliver something working end to end, then widen. A plan should be mergeable on its own and leave `main` releasable.
 
-**Sizing:** at most `max_plan_points` (default 8), 3–8 tasks, and a PR a reviewer can read in one sitting. If it's bigger, split it.
-
-**Estimating:** points are relative. Calibrate against a reference: 1 = a config or copy change with a test; 3 = one endpoint or screen with tests; 5 = a feature touching two layers plus a migration; 8 = the largest thing that still fits in one PR. 13 means "split me".
+**Sizing:** 3–8 tasks (never more than `max_tasks`), a narrow `touches:`, and a PR a reviewer can read in one sitting. If it's bigger, or touches unrelated areas, split it: separate `touches:` is also what lets plans run in parallel.
 
 ## Worked example — goal draft
 
@@ -86,11 +68,11 @@ Consultants can connect a client's HubSpot and Salesforce sandboxes to Ferry sec
 - [ ] Users of tenant A cannot see tenant B's connections (API-level test)
 
 ## Breakdown
-- OIDC sign-in & tenancy — JWT validation, tenant model, current-user dependency (5 pts)
-- Connection model & encryption — Connection entity, AES-GCM with key IDs, audit events (5 pts) (after OIDC sign-in)
-- HubSpot OAuth connect — authorize/callback, token refresh, health check (5 pts) (after Connection model)
-- Salesforce OAuth connect — same flow for Salesforce, sandbox/prod login URL (3 pts) (after Connection model)
-- Connections UI — list, connect, disconnect, health status (8 pts) (after HubSpot OAuth connect)
+- OIDC sign-in & tenancy — JWT validation, tenant model, current-user dependency
+- Connection model & encryption — Connection entity, AES-GCM with key IDs, audit events (after OIDC sign-in)
+- HubSpot OAuth connect — authorize/callback, token refresh, health check (after Connection model)
+- Salesforce OAuth connect — same flow for Salesforce, sandbox/prod login URL (after Connection model)
+- Connections UI — list, connect, disconnect, health status (after HubSpot OAuth connect)
 
 ## Notes
 ADR-0006 (auth & credentials). Open: key management (env key now, KMS later). See the brief.
@@ -175,7 +157,7 @@ Request id 7f3a9c in the test logs; screenshot attached to the PR.
 ## Impact
 Every user who submits without an email; workaround: none needed (user error), but it pages on-call via the 5xx alert.
 ```
-Captured with `new-item bug "Login 500 on empty email" --from … --severity S3`. Triaged P1 rather than the default P2 because it pages on-call: `triage BUG-004 --priority P1 --points 1`.
+Captured with `new-item bug "Login 500 on empty email" --from … --severity S3`. Triaged P1 rather than the default P2 because it pages on-call: `triage BUG-004 --priority P1`.
 
 ## Worked example — spike
 
@@ -190,33 +172,11 @@ Can we use HubSpot's CRM export API for full-sandbox discovery within rate limit
 ADR-0008 with the recommendation and measured numbers; follow-up FEAT items for the chosen approach.
 ```
 
-## Worked example — sprint review & retro
-
-```markdown
-## Review
-- Shipped: P-004 Connection model (FEAT-002), P-005 HubSpot OAuth (FEAT-003); demoed connect + health check in test.
-- Not shipped: P-006 Salesforce OAuth — sandbox login URL issue (RAID I-2); carried over.
-- Unplanned: P-007 fix for BUG-004 (P1, 1 pt).
-- Goal ("a consultant can connect HubSpot"): met.
-- Forecast: M-01 moved from 🟢 to 🟡 — 8 pts carried; considering moving Connections UI polish to M-02.
-
-## Retro
-**Keep:**
-- Writing the test plan before the code
-
-**Stop:**
-- Starting a plan before its dependency is merged
-
-**Try:**
-- Time-box third-party sandbox setup to half a day and log blockers in RAID immediately
-```
-
 ## Common failures to avoid
 - **Skeletons:** placeholders, or only a one-line Context. The script refuses to create them; don't work around it.
-- **Plans written too early:** writing a plan for every item up front produces stale plans. Write plans for the current and next sprint only; everything later stays as estimated items.
-- **Untracked work:** a bug fixed or a chore done without an item never shows up in velocity, release notes or the status report. Capture first, even with a one-line `--why`.
-- **Overcommitting:** a sprint planned above velocity fails quietly. Respect the capacity warning and leave slack for bugs.
-- **Unestimated backlog:** the milestone forecast is only as good as its estimates. Triage regularly.
+- **Plans written too early:** writing a plan for every item up front produces stale plans. Write plans for the work about to start (`check` warns past 3 written ahead); everything later stays as items.
+- **Untracked work:** a bug fixed or a chore done without an item never shows up in the status report or the next session's context. Capture first, even with a one-line `--why`.
+- **Off-focus work:** plans that don't serve the focus goal dilute it. Capture them as items; bugs and chores are the exception.
 - **Acceptance criteria nobody can check:** if you can't name the test or command, rewrite the criterion.
 - **Tasks split by layer, not behavior:** prefer tasks that each end in something verifiable.
 - **Missing Out scope:** it's how reviewers spot scope creep.

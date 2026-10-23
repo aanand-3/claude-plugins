@@ -8,16 +8,11 @@ export type Tone = "neutral" | "accent" | "primary" | "success" | "warning" | "d
 const STATUS_TONE: Record<string, Tone> = {
   draft: "neutral", ready: "accent", "in-progress": "primary", blocked: "destructive", "in-review": "warning",
   done: "success", dropped: "muted", new: "neutral", triaged: "accent", planned: "accent", wontfix: "muted",
-  duplicate: "muted", proposed: "neutral", active: "primary", released: "success", closed: "muted",
-  "on-track": "success", "at-risk": "warning", late: "destructive", "no-target": "neutral", "no-scope": "neutral",
-};
-const HEALTH_LABEL: Record<string, string> = {
-  "on-track": "on track", "at-risk": "at risk", late: "late", released: "released", dropped: "dropped",
-  "no-target": "no target", "no-scope": "no scope",
+  duplicate: "muted", proposed: "neutral", active: "primary", exploring: "neutral", researching: "accent",
+  decided: "success", killed: "muted",
 };
 
 export const toneOf = (status: string): Tone => STATUS_TONE[status] ?? "neutral";
-export const healthLabel = (h: string) => HEALTH_LABEL[h] ?? h;
 
 export function Chip({ tone = "neutral", dot, children, title }: { tone?: Tone; dot?: boolean; children: ReactNode; title?: string }) {
   return <span className={`chip chip--${tone}`} title={title}>{dot && <i className="chip__dot" />}{children}</span>;

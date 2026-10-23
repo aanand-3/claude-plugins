@@ -47,7 +47,7 @@ def nudge(draft: str, root: Path) -> str:
                 f"{draft}. Work that is out of {pid}'s scope becomes an item: `{HUB} new-item … --why …`.")
     return (f"crew: this plan is not tracked yet ({draft}). Before writing code, on main: rewrite it into the "
             f"plan sections (/crew:hub → 'From plan mode'), then `{HUB} new-plan \"<title>\" --from "
-            f"{draft} [--goal G-###] [--items FEAT-###]`, `{HUB} move P-### ready` and `{HUB} start P-###`.")
+            f"{draft} --touches \"<paths>\" [--goal G-###] [--items FEAT-###]`, `{HUB} move P-### ready` and `{HUB} start P-###`.")
 
 
 def main() -> None:

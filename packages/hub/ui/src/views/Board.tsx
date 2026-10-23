@@ -3,7 +3,7 @@ import { useState } from "react";
 import { DocCard } from "../components/DocCard";
 import { FilterBar, useFilters } from "../components/FilterBar";
 import { Empty, StatusChip } from "../components/primitives";
-import { docsOf, type GraphDoc, matches, points, useData } from "../data";
+import { docsOf, type GraphDoc, matches, useData } from "../data";
 
 const PLAN_COLUMNS = ["draft", "ready", "in-progress", "blocked", "in-review", "done"];
 const ITEM_COLUMNS = ["new", "triaged", "planned", "in-progress", "done"];
@@ -42,7 +42,7 @@ export function Board() {
               <section key={status} className="board__col" aria-label={status}>
                 <h2 className="board__head">
                   <StatusChip status={status} />
-                  <span className="muted">{cards.length + hidden} · {points(cards)} pts</span>
+                  <span className="muted">{cards.length + hidden}</span>
                 </h2>
                 {cards.map((d) => <DocCard key={d.id} doc={d} />)}
                 {!cards.length && <p className="board__empty">None</p>}

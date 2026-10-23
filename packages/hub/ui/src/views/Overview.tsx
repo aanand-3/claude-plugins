@@ -1,48 +1,50 @@
-/** Overview: the 3–5 numbers that matter, then the sprint trend, then what needs attention. */
-import { AlertTriangle, ArrowRight, Ban, Hourglass } from "lucide-react";
-import { burndownInsight, Burndown } from "../components/charts";
-import { Card, Chip, DocTitle, Empty, fmtDate, healthLabel, IdLink, Kpi, ProgressBar, StatusChip, toneOf } from "../components/primitives";
+/** Overview, the executive view: the idea and its success criteria, the focus goal, what's next, what needs attention. */
+import { ArrowRight, Ban, Hourglass } from "lucide-react";
+import { Card, Chip, DocTitle, Empty, IdLink, Kpi, ProgressBar, StatusChip } from "../components/primitives";
 import { Markdown } from "../components/Markdown";
-import { activeSprint, docsOf, type Index, useData } from "../data";
+import { docsOf, focusGoal, idea, useData } from "../data";
 
 const NEXT_ICON: Record<string, typeof ArrowRight> = { NEXT: ArrowRight, WAITING: Hourglass, "IN PROGRESS": ArrowRight };
-
-function sprintDay(ix: Index, start?: string, end?: string): string {
-  if (!start || !end) return "";
-  const d = (a: string, b: string) => Math.round((Date.parse(b) - Date.parse(a)) / 86_400_000);
-  return `day ${Math.min(d(start, ix.g.project.today), d(start, end)) + 1}/${d(start, end) + 1}`;
-}
+const CLOSED = ["done", "dropped", "wontfix", "duplicate"];
 
 export function Overview() {
   const ix = useData();
   const { g } = ix;
-  const sprint = activeSprint(ix);
-  const sm = sprint ? g.sprints.find((s) => s.id === sprint.id) : null;
-  const next = g.milestones.find((m) => !["released", "dropped"].includes(m.health));
-  const nextDoc = next ? ix.byId.get(next.id) : null;
-  const bugs = docsOf(ix, "item").filter((d) => d.type === "BUG" && !["done", "wontfix", "duplicate"].includes(d.status));
+  const root = idea(ix), focus = focusGoal(ix);
+  const plans = docsOf(ix, "plan");
+  const focusItems = focus ? docsOf(ix, "item").filter((i) => i.goal === focus.id && !["wontfix", "duplicate"].includes(i.status)) : [];
+  const focusPlans = focus ? plans.filter((p) => p.goal === focus.id) : [];
+  const bugs = docsOf(ix, "item").filter((d) => d.type === "BUG" && !CLOSED.includes(d.status));
   const serious = bugs.filter((d) => d.severity === "S1" || d.severity === "S2");
-  const blocked = docsOf(ix, "plan").filter((d) => d.status === "blocked");
-  const waiting = docsOf(ix, "plan").filter((d) => d.waitsFor.length && !["done", "dropped"].includes(d.status));
+  const active = plans.filter((d) => ["in-progress", "in-review"].includes(d.status));
+  const blocked = plans.filter((d) => d.status === "blocked");
+  const waiting = plans.filter((d) => d.waitsFor.length && !["done", "dropped"].includes(d.status));
+  const criteria = root?.tasks;
+  const outcome = (id: string) => ix.byId.get(id)?.sections.find((s) => s.heading === "Outcome")?.markdown ?? "";
   return (
     <div className="stack">
       <div className="kpis">
-        <Kpi value={sm ? `${sm.done} / ${sm.committed}` : "—"} caption={sprint ? `pts done · ${sprint.id} ${sprintDay(ix, sprint.dates.start, sprint.dates.end)}` : "no active sprint"} />
-        <Kpi value={next ? healthLabel(next.health) : "—"} tone={next ? toneOf(next.health) : undefined}
-          caption={next ? `${next.id} projected ${fmtDate(next.projected)} · target ${fmtDate(nextDoc?.dates.target)}` : "no open milestone"} />
-        <Kpi value={serious.length} tone={serious.length ? "destructive" : "success"} caption="open S1/S2 bugs" />
-        <Kpi value={blocked.length} tone={blocked.length ? "destructive" : "success"} caption="blocked plans" />
-        <Kpi value={g.velocity === null ? "—" : Math.round(g.velocity)} caption="velocity · pts per sprint (last 3)" />
+        <Kpi value={root ? root.status : "—"} caption={root ? "idea" : "no idea written yet"} />
+        <Kpi value={criteria?.total ? `${criteria.done} / ${criteria.total}` : "—"} caption="success criteria met" />
+        <Kpi value={focus ? `${focusItems.filter((i) => i.status === "done").length} / ${focusItems.length}` : "—"}
+          caption={focus ? `items done · focus ${focus.id}` : "no focus goal"} />
+        <Kpi value={active.length} caption="plans in progress or review" />
+        <Kpi value={blocked.length + serious.length} tone={blocked.length + serious.length ? "destructive" : "success"}
+          caption="blocked plans + open S1/S2 bugs" />
       </div>
 
       <div className="grid-2">
-        <Card title={sm?.burndown ? burndownInsight(sm.burndown.days) : "Sprint"} aside={sprint && <IdLink id={sprint.id} />}>
-          {sprint && sm ? (
+        <Card title="Focus" aside={focus && <IdLink id={focus.id} />}>
+          {focus ? (
             <>
-              <p className="lead">{sm.goal || sprint.title}</p>
-              {sm.burndown ? <Burndown total={sm.burndown.total} days={sm.burndown.days} /> : <Empty>No dates on this sprint.</Empty>}
+              <p className="lead">{focus.title}</p>
+              <Markdown text={outcome(focus.id)} />
+              <ProgressBar value={focusItems.filter((i) => i.status === "done").length} total={focusItems.length} label="focus progress" />
+              <ul className="rows">
+                {focusPlans.map((p) => <li key={p.id}><DocTitle doc={p} /><StatusChip status={p.status} /></li>)}
+              </ul>
             </>
-          ) : <Empty command='crew.mjs sprint new --goal "…"'>No active sprint.</Empty>}
+          ) : <Empty command="crew.mjs focus G-###">No focus goal: the team has no single target.</Empty>}
         </Card>
         <Card title="What's next">
           <ul className="nextlist">
@@ -59,28 +61,16 @@ export function Overview() {
         </Card>
       </div>
 
-      <Card title="Milestones">
-        {g.milestones.length ? (
-          <div className="milestones">
-            {g.milestones.map((m) => {
-              const doc = ix.byId.get(m.id)!;
-              return (
-                <div key={m.id} className="milestone">
-                  <div className="milestone__head"><DocTitle doc={doc} /><StatusChip status={m.health} label={healthLabel(m.health)} /></div>
-                  <ProgressBar value={m.done} total={m.total} label={`${m.id} progress`} />
-                  <p className="muted">
-                    {m.done}/{m.total} pts · target {fmtDate(doc.dates.target)}
-                    {m.projected && ` · projected ${fmtDate(m.projected)}`}
-                    {m.unestimated.length > 0 && ` · ${m.unestimated.length} unestimated`}
-                  </p>
-                </div>
-              );
-            })}
-          </div>
-        ) : <Empty command="crew.mjs new-milestone TITLE --from DRAFT --target YYYY-MM-DD">No milestones yet.</Empty>}
+      <Card title="Idea" aside={root && <IdLink id={root.id} />}>
+        {root ? (
+          <>
+            <p className="lead">{root.title}</p>
+            <Markdown text={outcome(root.id)} />
+          </>
+        ) : <Empty command="crew.mjs new-idea TITLE --from DRAFT">The idea is the root every goal serves.</Empty>}
       </Card>
 
-      <div className="grid-3">
+      <div className="grid-2">
         <Card title="Blocked & waiting">
           {blocked.length + waiting.length ? (
             <ul className="rows">
@@ -95,19 +85,6 @@ export function Overview() {
               {bugs.map((d) => <li key={d.id}><Chip tone={d.severity === "S1" || d.severity === "S2" ? "destructive" : "warning"}>{d.severity ?? "—"}</Chip><DocTitle doc={d} /><StatusChip status={d.status} /></li>)}
             </ul>
           ) : <Empty>No open bugs.</Empty>}
-        </Card>
-        <Card title="Top risks" aside={ix.byId.has("raid") && <a className="idlink" href="#/doc/raid">RAID log</a>}>
-          {g.risks.length ? (
-            <ul className="rows">
-              {g.risks.slice(0, 5).map((r) => (
-                <li key={r.id}>
-                  <Chip tone={r.score >= 6 ? "destructive" : r.score >= 4 ? "warning" : "neutral"}>{r.probability}×{r.impact}</Chip>
-                  <span>{r.risk}</span>
-                  {(!r.owner || !r.mitigation) && <AlertTriangle size={14} className="tone-warning" aria-label="no owner or mitigation" />}
-                </li>
-              ))}
-            </ul>
-          ) : <Empty>No open risks recorded.</Empty>}
         </Card>
       </div>
 

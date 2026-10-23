@@ -1,7 +1,7 @@
 {{#hub}}
 ## P-###: <plan title>
 
-**Plan:** `.crew/plans/P-###-<slug>.md` · **Items:** FEAT-### / BUG-### · **Goal:** G-### / standalone · **Sprint:** S-##
+**Plan:** `.crew/plans/P-###-<slug>.md` · **Items:** FEAT-### / BUG-### · **Goal:** G-### / standalone
 {{/hub}}
 {{^hub}}
 ## <type(scope): summary>

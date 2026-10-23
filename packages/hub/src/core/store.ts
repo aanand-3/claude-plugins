@@ -1,10 +1,11 @@
 /** Reading and writing tracked documents in .crew/: loading, IDs, templates, settings, drafts. */
+import { existsSync, realpathSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as git from "./git.js";
 import { assemble, Doc, fill } from "./doc.js";
 import { CLOSED, DEFAULT_SETTINGS, DIRS, type Kind, PRIORITIES } from "./model.js";
-import { fail, kindOf, mdTable, stripComments, today } from "./text.js";
+import { fail, kindOf, stripComments, today } from "./text.js";
 import { Workspace } from "./workspace.js";
 
 /** dist/ in the plugin, or .crew/bin/ when running the vendored copy. */
@@ -13,21 +14,35 @@ export const SCRIPT_DIR = dirname(SCRIPT_FILE);
 export const SKILL_DIR = dirname(SCRIPT_DIR);
 
 export type Docs = Map<string, Doc>;
+export type DirKind = Exclude<Kind, "idea">;
 export interface Settings {
-  sprint_length_days: number;
-  capacity_points: number;
-  points_scale: number[];
-  max_plan_points: number;
   wip_limit: number;
+  max_tasks: number;
+}
+
+/** `key: value` lines of one top-level block of a YAML file (`hub:` in config.yaml); enough for flat settings. */
+export function yamlBlock(text: string, block: string): Record<string, string> {
+  const out: Record<string, string> = {};
+  let inside = false;
+  for (const line of text.split("\n")) {
+    if (/^\S/.test(line)) inside = line.replace(/#.*/, "").trim() === `${block}:`;
+    else if (inside) {
+      const m = /^\s+([\w-]+):\s*([^#]*)/.exec(line);
+      if (m && m[2].trim()) out[m[1]] = m[2].trim().replace(/^["']|["']$/g, "");
+    }
+  }
+  return out;
 }
 
 export class Store {
   readonly dir: string;
-  readonly dirs: Record<Kind, string>;
+  readonly dirs: Record<DirKind, string>;
+  readonly ideaPath: string;
 
   constructor(readonly ws: Workspace) {
     this.dir = join(ws.root, ".crew");
-    this.dirs = Object.fromEntries(Object.entries(DIRS).map(([k, v]) => [k, join(this.dir, v)])) as Record<Kind, string>;
+    this.dirs = Object.fromEntries(Object.entries(DIRS).map(([k, v]) => [k, join(this.dir, v)])) as Record<DirKind, string>;
+    this.ideaPath = join(this.dir, "idea.md");
   }
 
   static open(root = git.repoRoot()): Store {
@@ -55,28 +70,12 @@ export class Store {
     return fail(`Template ${name} not found.`);
   }
 
-  /** Hub settings from project-plan.md frontmatter, with defaults. */
+  /** Hub settings from the `hub:` block of .crew/config.yaml, with defaults. */
   settings(): Settings {
-    const s = { ...DEFAULT_SETTINGS };
-    const text = this.ws.read(join(this.dir, "project-plan.md"));
-    if (text !== null) {
-      const meta = Doc.parse(text).meta;
-      for (const k of Object.keys(s)) if (meta[k]) s[k] = meta[k]!;
-    }
-    return {
-      sprint_length_days: parseInt(s.sprint_length_days, 10),
-      capacity_points: parseInt(s.capacity_points, 10),
-      points_scale: (s.points_scale.match(/\d+/g) ?? []).map(Number),
-      max_plan_points: parseInt(s.max_plan_points, 10),
-      wip_limit: parseInt(s.wip_limit, 10),
-    };
-  }
-
-  openRisks(): Record<string, string>[] {
-    const text = this.ws.read(join(this.dir, "raid.md"));
-    if (text === null) return [];
-    return mdTable(Doc.parse(text).section("Risks"))
-      .filter((r) => !["closed", "retired", "done"].includes((r.status || "open").toLowerCase()));
+    const text = this.ws.read(join(this.dir, "config.yaml"));
+    const s = { ...DEFAULT_SETTINGS, ...(text === null ? {} : yamlBlock(text, "hub")) };
+    const int = (k: string) => (/^\d+$/.test(s[k]) ? parseInt(s[k], 10) : parseInt(DEFAULT_SETTINGS[k], 10));
+    return { wip_limit: int("wip_limit"), max_tasks: int("max_tasks") };
   }
 
   // -- loading
@@ -97,8 +96,17 @@ export class Store {
 
   goals(): Docs { return this.loadDir(this.dirs.goal); }
   items(): Docs { return this.loadDir(this.dirs.item); }
-  milestones(): Docs { return this.loadDir(this.dirs.milestone); }
-  sprints(): Docs { return this.loadDir(this.dirs.sprint); }
+
+  /** The project's idea (.crew/idea.md), if it has been written. */
+  idea(): Doc | null {
+    const text = this.ws.read(this.ideaPath);
+    return text === null ? null : this.attach(Doc.parse(text, this.ideaPath));
+  }
+
+  /** The focus goal's ID, as set on the idea (`focus G-###`). */
+  focus(): string {
+    return (this.idea()?.get("focus") ?? "").toUpperCase();
+  }
 
   /** Plans on the worktree; with includeBranches, live copies from every plan/* branch win
    * unless main already closed the plan (merged or dropped). */
@@ -135,15 +143,16 @@ export class Store {
   find(docId: string): Doc {
     docId = docId.toUpperCase();
     const kind = kindOf(docId);
-    if (!kind) fail(`Unrecognised ID '${docId}'. Expected G-###, P-###, M-##, S-##, FEAT/BUG/CHORE/SPIKE-###.`);
+    if (!kind) fail(`Unrecognised ID '${docId}'. Expected IDEA, G-###, P-### or FEAT/BUG/CHORE/SPIKE-###.`);
+    if (kind === "idea") return this.idea() ?? fail(`No idea yet: write ${this.rel(this.ideaPath)} with \`new-idea\`.`);
     const doc = this.loadDir(this.dirs[kind]).get(docId);
     return doc ?? fail(`${docId} not found in ${this.rel(this.dirs[kind])}`);
   }
 
   /** Next free ID, scanning the worktree and every branch so parallel work never reuses one. */
-  nextId(prefix: string, kind: Kind): string {
+  nextId(prefix: string, kind: DirKind): string {
     const d = this.dirs[kind];
-    const width = kind === "sprint" || kind === "milestone" ? 2 : 3;
+    const width = 3;
     const names = this.ws.list(d);
     const rel = `${this.rel(d)}/`;
     for (const ref of git.allRefs()) names.push(...git.lsTree(ref, rel).map((n) => n.split("/").pop()!));
@@ -163,8 +172,8 @@ export class Store {
   }
 
   consume(draftFile: string, keep = false): void {
-    const drafts = resolve(this.dir, "drafts");
-    if (!keep && draftFile.startsWith(drafts + "/")) this.ws.remove(draftFile);
+    const real = (p: string) => (existsSync(p) ? realpathSync(p) : p); // /var vs /private/var on macOS
+    if (!keep && real(draftFile).startsWith(real(resolve(this.dir, "drafts")) + "/")) this.ws.remove(draftFile);
   }
 
   build(template: string, draft: string, fields: Record<string, string>): Doc {
@@ -181,7 +190,7 @@ export class Store {
   }
 
   // -- argument validation
-  checkRef(docId: string | undefined, kind: Kind): string {
+  checkRef(docId: string | undefined, kind: DirKind): string {
     if (!docId) return "";
     docId = docId.toUpperCase();
     if (kindOf(docId) !== kind || !this.loadDir(this.dirs[kind]).has(docId)) {
@@ -193,12 +202,5 @@ export class Store {
   static checkPriority(p: string | undefined): string {
     if (p && !PRIORITIES.includes(p.toUpperCase())) fail(`Priority must be one of ${PRIORITIES.join(", ")}.`);
     return (p ?? "").toUpperCase();
-  }
-
-  checkPoints(n: number | undefined): string {
-    if (n === undefined) return "";
-    const scale = this.settings().points_scale;
-    if (!scale.includes(n)) fail(`${n} is not on the points scale (${scale.join(", ")}).`);
-    return String(n);
   }
 }

@@ -96,26 +96,6 @@
 .md pre { background: var(--muted); padding: var(--space-3); border-radius: var(--radius-md); overflow-x: auto; }
 .md pre code { background: none; padding: 0; }
 
-/* ---- charts */
-.chart { position: relative; width: 100%; }
-.chart svg { display: block; overflow: visible; }
-.chart__grid { stroke: var(--border); stroke-width: 1; }
-.chart__axis { fill: var(--muted-foreground); font: 400 11px var(--font-body); }
-.chart__label { fill: var(--foreground); font: 600 12px var(--font-body); }
-.chart__ideal { fill: none; stroke: var(--muted-foreground); stroke-width: 1.5; stroke-dasharray: 4 4; }
-.chart__line { fill: none; stroke: var(--chart-1); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
-.chart__marker { fill: var(--chart-1); stroke: var(--card); stroke-width: 2; }
-.chart__crosshair { stroke: var(--muted-foreground); stroke-width: 1; }
-.chart__tip {
-  position: absolute; pointer-events: none; display: flex; flex-direction: column; gap: 2px; min-width: 140px; z-index: 3;
-  padding: var(--space-2) var(--space-3); background: var(--card); border: 1px solid var(--border);
-  border-radius: var(--radius-md); box-shadow: var(--overlay-shadow); font-size: var(--text-xs);
-}
-.chart__legend { display: flex; gap: var(--space-4); list-style: none; padding: 0; font-size: var(--text-xs); color: var(--muted-foreground); flex-wrap: wrap; margin-bottom: var(--space-2); }
-.chart__legend--below { margin: var(--space-2) 0 0; }
-.chart__legend li { display: inline-flex; align-items: center; gap: 6px; }
-.chart__legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; }
-
 /* ---- filters & toolbars */
 .toolbar { display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap; }
 .filters { display: flex; gap: var(--space-2); flex-wrap: wrap; align-items: center; }
@@ -123,3 +103,9 @@
 .segmented { display: inline-flex; background: var(--muted); border-radius: var(--radius-md); padding: 3px; }
 .segmented__btn { border: 0; background: transparent; height: 30px; padding: 0 var(--space-3); border-radius: var(--radius-sm); font: 500 var(--text-sm) var(--font-body); color: var(--muted-foreground); cursor: pointer; }
 .segmented__btn--on { background: var(--card); color: var(--foreground); }
+
+/* ---- legend (graph view) */
+.chart__legend { display: flex; gap: var(--space-4); list-style: none; padding: 0; font-size: var(--text-xs); color: var(--muted-foreground); flex-wrap: wrap; margin-bottom: var(--space-2); }
+.chart__legend--below { margin: var(--space-2) 0 0; }
+.chart__legend li { display: inline-flex; align-items: center; gap: 6px; }
+.chart__legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; }

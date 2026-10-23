@@ -8,17 +8,15 @@ export const useFilters = () => useContext(FilterContext);
 
 type Key = Exclude<keyof Filters, "q">;
 
-export function FilterBar({ show = ["milestone", "goal", "sprint", "type", "priority"] }: { show?: Key[] }) {
+export function FilterBar({ show = ["goal", "type", "priority"] }: { show?: Key[] }) {
   const ix = useData();
   const [f, setF] = useFilters();
   const options: Record<Key, [string, string][]> = {
-    milestone: docsOf(ix, "milestone").map((d) => [d.id, `${d.id} ${d.title}`]),
-    goal: docsOf(ix, "goal").map((d) => [d.id, `${d.id} ${d.title}`]),
-    sprint: docsOf(ix, "sprint").map((d) => [d.id, `${d.id}${d.status === "active" ? " (active)" : ""}`]),
+    goal: docsOf(ix, "goal").map((d) => [d.id, `${d.id} ${d.title}${d.id === ix.g.focus ? " (focus)" : ""}`]),
     type: ["PLAN", "FEAT", "BUG", "CHORE", "SPIKE"].map((t) => [t, t]),
     priority: ["P0", "P1", "P2", "P3"].map((p) => [p, p]),
   };
-  const label: Record<Key, string> = { milestone: "Milestone", goal: "Goal", sprint: "Sprint", type: "Type", priority: "Priority" };
+  const label: Record<Key, string> = { goal: "Goal", type: "Type", priority: "Priority" };
   const active = show.some((k) => f[k]) || f.q;
   return (
     <div className="filters" role="group" aria-label="Filters">

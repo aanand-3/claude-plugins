@@ -22,7 +22,7 @@ Rules live in `.claude/rules/`. `base.md` and `project.md` always load; the othe
 - On `main`, commit only hub/planning changes under `.crew/`. On a plan branch, edit only that plan's hub file.
 - Tick tasks in the plan file as you complete them; log decisions and blockers with `crew.mjs log`.
 - Bugs, ideas and tech debt found along the way are captured as items (`crew.mjs new-item bug|feat|chore … --why`) on `main`, not fixed silently. P0 bugs take the expedite lane.
-- Planning lives in `.crew/`: `project-plan.md` (cadence, capacity), `raid.md`, milestones, sprints, `BACKLOG.md` (ranked). `crew.mjs status` answers "are we on track?".
+- The shared context lives in `.crew/`: `idea.md` (what this is for, success criteria, the focus goal), goals, items, plans. Work toward the focus goal; `crew.mjs next` names the next step and `crew.mjs status` answers "where are we?".
 - Before marking a plan done: all acceptance criteria verified, the full check is green, docs and `.env.example` updated, Outcome written.
 {{/hub}}
 {{^hub}}

@@ -82,7 +82,7 @@ research:
 packs: [base]           # guideline packs applied to .claude/rules/ (incl. exactly one arch-* pack for a backend)
 
 modules:                # optional parts of crew, chosen at kickoff/onboard
-  hub: <true | false>    # repo-local planning in .crew/ (plans, sprints, backlog); false = no hub files at all
+  hub: <true | false>    # the shared context in .crew/ (idea, goals, backlog, plans); false = no hub files at all
   graphify: <true | false>   # code knowledge graph via graphify (graphify-out/, gitignored; /crew:codemap)
 
 git:

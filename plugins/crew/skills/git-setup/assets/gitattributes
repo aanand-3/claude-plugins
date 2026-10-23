@@ -5,4 +5,4 @@
 *.woff2 binary
 uv.lock linguist-generated=true
 pnpm-lock.yaml linguist-generated=true
-.crew/ROADMAP.md linguist-generated=true
+.crew/STATUS.md linguist-generated=true

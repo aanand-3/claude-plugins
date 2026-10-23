@@ -1,4 +1,4 @@
-/** Graph: milestones, goals, items and plans as a left-to-right dependency graph (dagre layout, React Flow canvas).
+/** Graph: the idea, goals, items and plans as a left-to-right dependency graph (dagre layout, React Flow canvas).
  * Unfinished dependencies are highlighted; hovering a node dims everything it isn't connected to. */
 import dagre from "@dagrejs/dagre";
 import { Background, Controls, type Edge, Handle, MarkerType, type Node, type NodeProps, Position, ReactFlow } from "@xyflow/react";
@@ -10,7 +10,7 @@ import { type GraphDoc, type GraphEdge, matches, useData } from "../data";
 import { docHref, go } from "../router";
 
 const W = 220, H = 64;
-const KINDS = new Set(["milestone", "goal", "item", "plan"]);
+const KINDS = new Set(["idea", "goal", "item", "plan"]);
 
 type DocNode = Node<{ doc: GraphDoc; dim: boolean }, "doc">;
 
@@ -27,7 +27,7 @@ function DocNodeView({ data }: NodeProps<DocNode>) {
 }
 const nodeTypes = { doc: DocNodeView };
 
-/** Parent → child direction for layout and drawing (milestone → goal → item → plan; dependency → dependent). */
+/** Parent → child direction for layout and drawing (idea → goal → item → plan; dependency → dependent). */
 function oriented(e: GraphEdge): [string, string] {
   return e.type === "delivers" ? [e.to, e.from] : e.type === "mentions" ? [e.from, e.to] : [e.to, e.from];
 }
@@ -40,7 +40,7 @@ export function GraphView() {
   const { nodes, edges } = useMemo(() => {
     const docs = ix.g.docs.filter((d) => KINDS.has(d.kind) && !["dropped", "wontfix", "duplicate"].includes(d.status));
     const shown = new Set(docs.filter((d) => matches(d, f)).map((d) => d.id));
-    const types = new Set<GraphEdge["type"]>(["in-milestone", "in-goal", "delivers", "depends-on", ...(mentions ? ["mentions" as const] : [])]);
+    const types = new Set<GraphEdge["type"]>(["serves", "in-goal", "delivers", "depends-on", ...(mentions ? ["mentions" as const] : [])]);
     const es = ix.g.edges.filter((e) => types.has(e.type) && shown.has(e.from) && shown.has(e.to));
     const layout = new dagre.graphlib.Graph();
     layout.setGraph({ rankdir: "LR", nodesep: 16, ranksep: 64, marginx: 16, marginy: 16 });
@@ -65,7 +65,7 @@ export function GraphView() {
   return (
     <div className="stack">
       <div className="toolbar">
-        <FilterBar show={["milestone", "goal", "type", "priority"]} />
+        <FilterBar show={["goal", "type", "priority"]} />
         <label className="check"><input type="checkbox" checked={mentions} onChange={(e) => setMentions(e.target.checked)} /> Show mentions</label>
       </div>
       {nodes.length ? (

@@ -6,9 +6,9 @@ import { type ActionResult, runAction } from "../api";
 import { docsOf, type GraphDoc, useData } from "../data";
 import { Card } from "./primitives";
 
-const MOVABLE = new Set<Kind>(["plan", "item", "goal", "milestone"]);
+const MOVABLE = new Set<Kind>(["plan", "item", "goal", "idea"]);
 const CLI_ONLY: Record<string, string> = { "ready>in-progress": "start" }; // needs a branch: `crew.mjs start`
-const FORWARD = new Set(["ready", "in-review", "done", "active", "released"]); // the one primary action; the rest are ghost
+const FORWARD = new Set(["ready", "in-review", "done", "active", "researching", "proposed", "decided"]); // the one primary action; the rest are ghost
 
 function Result({ r }: { r: ActionResult | null }) {
   if (!r) return null;
@@ -21,7 +21,7 @@ export function Actions({ doc }: { doc: GraphDoc }) {
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<ActionResult | null>(null);
   const [note, setNote] = useState("");
-  const [tri, setTri] = useState({ priority: doc.priority ?? "", points: doc.points ? String(doc.points) : "", severity: doc.severity ?? "" });
+  const [tri, setTri] = useState({ priority: doc.priority ?? "", severity: doc.severity ?? "" });
   if (!ix.served || !MOVABLE.has(doc.kind as Kind)) return null;
   const run = async (name: string, body: Record<string, unknown>) => {
     setBusy(true);
@@ -37,7 +37,7 @@ export function Actions({ doc }: { doc: GraphDoc }) {
   const flow = FLOWS[doc.kind as Kind];
   // Items linked to a plan follow the plan; their stored status is not moved by hand.
   const moves = doc.kind === "item" && doc.plan ? [] : (flow[doc.status] ?? []).filter((s) => s !== "triaged");
-  const openSprints = docsOf(ix, "sprint").filter((s) => s.status !== "closed" && !s.items.includes(doc.id));
+  const focusable = doc.kind === "goal" && doc.id !== ix.g.focus && !["done", "dropped"].includes(doc.status) && docsOf(ix, "idea").length > 0;
   const triageable = doc.kind === "item" && (doc.status === "new" || doc.status === "triaged");
   return (
     <Card title="Actions" className="actions">
@@ -51,12 +51,9 @@ export function Actions({ doc }: { doc: GraphDoc }) {
       )}
       {triageable && (
         <form className="actions__row" onSubmit={(e) => { e.preventDefault(); run("triage", { id: doc.id, priority: tri.priority || undefined,
-          points: tri.points ? Number(tri.points) : undefined, severity: tri.severity || undefined }); }}>
+          severity: tri.severity || undefined }); }}>
           <select className="select" value={tri.priority} aria-label="Priority" onChange={(e) => setTri({ ...tri, priority: e.target.value })}>
             <option value="">Priority</option>{["P0", "P1", "P2", "P3"].map((p) => <option key={p}>{p}</option>)}
-          </select>
-          <select className="select" value={tri.points} aria-label="Points" onChange={(e) => setTri({ ...tri, points: e.target.value })}>
-            <option value="">Points</option>{ix.g.settings.points_scale.map((p) => <option key={p}>{p}</option>)}
           </select>
           {doc.type === "BUG" && (
             <select className="select" value={tri.severity} aria-label="Severity" onChange={(e) => setTri({ ...tri, severity: e.target.value })}>
@@ -66,13 +63,9 @@ export function Actions({ doc }: { doc: GraphDoc }) {
           <button className="btn btn--ghost" disabled={busy}>{doc.status === "new" ? "Triage" : "Re-triage"}</button>
         </form>
       )}
-      {doc.kind === "plan" && openSprints.length > 0 && !["done", "dropped"].includes(doc.status) && (
+      {focusable && (
         <div className="actions__row">
-          {openSprints.map((s) => (
-            <button key={s.id} className="btn btn--ghost" disabled={busy} onClick={() => run("sprint-add", { sprint: s.id, plans: [doc.id] })}>
-              Add to {s.id}{s.status === "active" ? " (active)" : ""}
-            </button>
-          ))}
+          <button className="btn btn--ghost" disabled={busy} onClick={() => run("focus", { goal: doc.id })}>Make this the focus goal</button>
         </div>
       )}
       <form className="actions__row" onSubmit={(e) => { e.preventDefault(); if (note.trim()) run("log", { id: doc.id, text: note.trim() }).then(() => setNote("")); }}>

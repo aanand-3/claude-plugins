@@ -4,9 +4,7 @@ type: chore
 title: {title}
 status: new
 priority: {priority}
-points: {points}
 goal: {goal}
-milestone: {milestone}
 plan:
 created: {date}
 closed:

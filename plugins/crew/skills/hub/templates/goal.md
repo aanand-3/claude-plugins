@@ -2,7 +2,6 @@
 id: {id}
 title: {title}
 status: proposed
-milestone: {milestone}
 priority: {priority}
 created: {date}
 completed:
@@ -29,12 +28,12 @@ integration_branch:
 <!-- Optional: how we'll measure the outcome after release. -->
 
 ## Breakdown
-<!-- Vertical slices in delivery order: `Title — what it delivers (5 pts) (after X)`.
-     On creation each line becomes a FEAT item linked to this goal (estimated lines are triaged).
+<!-- Vertical slices in delivery order: `Title — what it delivers`.
+     On creation each line becomes a FEAT item linked to this goal, triaged at the goal's priority.
      Existing items can be listed by ID. Plans are written just in time and link items with --items. -->
 -
 
 ## Notes & decisions
-<!-- Links to ADRs, risks, open questions. -->
+<!-- Links to ADRs and knowledge entries, open questions. -->
 
 ## Progress log

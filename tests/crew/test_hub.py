@@ -2,6 +2,20 @@ import re
 
 from conftest import HUB, Repo
 
+IDEA_DRAFT = """## Problem
+Consultants migrate CRM data by hand; it takes weeks and loses history.
+
+## Outcome
+A consultant migrates a client's CRM without engineering help.
+
+## Success criteria
+- [ ] 3 pilot migrations complete without engineering help
+- [ ] no data loss in a full-sandbox comparison
+
+## Direction
+Hosted web app; rejected: a CLI (consultants don't use terminals).
+"""
+
 GOAL_DRAFT = """## Outcome
 Users can sign up and manage their account.
 
@@ -16,8 +30,8 @@ Users can sign up and manage their account.
 - [ ] a new user can sign up and log in
 
 ## Candidate plans
-- Signup endpoint — POST /signup with email verification (5 pts)
-- Password reset — token by email (after Signup endpoint)
+- Signup endpoint — POST /signup with email verification
+- Password reset — token by email
 
 ## Notes
 See ADR-0002.
@@ -60,24 +74,6 @@ local, commit abc123
 500 Internal Server Error
 """
 
-MILESTONE_DRAFT = """## Goal
-Pilot users can sign up.
-
-## Scope
-**In:**
-- G-001
-
-## Exit criteria
-- [ ] pilot user signs up in test
-"""
-
-RAID_DRAFT = """## Risks
-| ID | Risk | Probability | Impact | Owner | Mitigation | Status |
-|---|---|---|---|---|---|---|
-| R1 | Email provider limits | H | H | Amit | batch sends | open |
-| R2 | Key loss | L | H | | | open |
-"""
-
 # What the 0.1.0 kickoff produced in Ferry: a template with only a one-line context.
 SKELETON_PLAN = """---
 id: P-009
@@ -118,6 +114,11 @@ def tr(repo: Repo, *args: str):
     return repo.py(HUB, *args)
 
 
+def new_idea(repo: Repo, body: str = IDEA_DRAFT):
+    repo.write(".crew/drafts/idea.md", body)
+    return tr(repo, "new-idea", "Ferry", "--from", ".crew/drafts/idea.md")
+
+
 def new_goal(repo: Repo, title: str = "Accounts", body: str = GOAL_DRAFT, *extra: str):
     repo.write(".crew/drafts/goal.md", body)
     return tr(repo, "new-goal", title, "--from", ".crew/drafts/goal.md", *extra)
@@ -125,8 +126,8 @@ def new_goal(repo: Repo, title: str = "Accounts", body: str = GOAL_DRAFT, *extra
 
 def new_plan(repo: Repo, title: str = "Signup endpoint", body: str = PLAN_DRAFT, *extra: str):
     repo.write(".crew/drafts/plan.md", body)
-    if "--items" not in extra and "--points" not in extra:
-        extra = (*extra, "--points", "3")
+    if "--touches" not in extra:
+        extra = (*extra, "--touches", "src/auth/**, tests/auth/**")
     return tr(repo, "new-plan", title, "--from", ".crew/drafts/plan.md", *extra)
 
 
@@ -154,11 +155,12 @@ def finish(repo: Repo, plan_id: str) -> None:
 # ------------------------------------------------------------------ basics
 def test_init_vendors_script_and_templates(repo: Repo):
     init(repo)
-    for rel in ("bin/crew.mjs", "bin/ui.html", "templates/plan.md", "templates/goal.md", "templates/sprint.md",
-                "templates/item-bug.md", "templates/project-plan.md", "templates/writing-guide.md",
-                "README.md", "ROADMAP.md", "BACKLOG.md", "items/.gitkeep", "sprints/.gitkeep", "milestones/.gitkeep"):
+    for rel in ("bin/crew.mjs", "bin/ui.html", "templates/plan.md", "templates/goal.md", "templates/idea.md",
+                "templates/item-bug.md", "templates/writing-guide.md", "README.md",
+                "items/.gitkeep", "plans/.gitkeep", "goals/.gitkeep"):
         assert (repo.path / ".crew" / rel).is_file(), rel
-    assert "backlog.md" not in [p.name for p in (repo.path / ".crew").iterdir()]
+    for gone in ("sprints", "milestones", "ROADMAP.md", "BACKLOG.md", "templates/sprint.md", "templates/raid.md"):
+        assert not (repo.path / ".crew" / gone).exists(), gone
 
 
 def test_vendored_copy_runs_without_the_plugin(repo: Repo):
@@ -169,23 +171,25 @@ def test_vendored_copy_runs_without_the_plugin(repo: Repo):
     assert repo.py(vendored, "init").returncode == 0  # re-init from the vendored copy is a no-op vendor
 
 
-
 def test_refused_command_writes_nothing(repo: Repo):
     init(repo)
-    tr(repo, "new-item", "feat", "Dark mode", "--why", "asked")
-    before = item(repo, "FEAT-001")
-    r = tr(repo, "triage", "FEAT-001", "--priority", "P1")  # no estimate → refused after setting priority
-    assert r.returncode == 1 and "no estimate" in r.stderr
-    assert item(repo, "FEAT-001") == before
+    tr(repo, "new-item", "bug", "Crash", "--why", "500 on login")
+    before = item(repo, "BUG-001")
+    r = tr(repo, "triage", "BUG-001", "--priority", "P1")  # no steps or severity → refused after setting priority
+    assert r.returncode == 1 and "Steps to reproduce" in r.stderr
+    assert item(repo, "BUG-001") == before
 
 
 def test_usage_errors(repo: Repo):
     init(repo)
     assert tr(repo, "bogus").returncode == 2
     assert tr(repo, "move", "P-001").returncode == 2  # missing STATUS
-    r = tr(repo, "triage", "FEAT-001", "--points", "x")
-    assert r.returncode == 2 and "invalid int" in r.stderr
-    assert "new-plan TITLE --from DRAFT" in tr(repo, "--help").stdout
+    r = tr(repo, "triage", "FEAT-001", "--points", "3")
+    assert r.returncode == 2 and "--points" in r.stderr  # points are gone
+    for gone in ("sprint", "new-milestone", "new-doc", "roadmap", "release-notes"):
+        assert tr(repo, gone).returncode == 2, gone
+    help_text = tr(repo, "--help").stdout
+    assert "new-plan TITLE --from DRAFT" in help_text and "focus G-###" in help_text and "migrate" in help_text
 
 
 def test_no_skeletons_draft_required_and_validated(repo: Repo):
@@ -196,12 +200,9 @@ def test_no_skeletons_draft_required_and_validated(repo: Repo):
     assert not list((repo.path / ".crew/plans").glob("P-*.md"))
     r = new_goal(repo, "E", "## Outcome\nsomething\n")
     assert r.returncode != 0 and "Breakdown" in r.stderr
-    repo.write(".crew/drafts/m.md", "## Goal\nx\n")
-    r = tr(repo, "new-milestone", "MVP", "--from", ".crew/drafts/m.md", "--target", "2026-12-01")
-    assert r.returncode != 0 and "Exit criteria" in r.stderr
-    repo.write(".crew/drafts/raid.md", "## Risks\n| ID | Risk |\n|---|---|\n")
-    r = tr(repo, "new-doc", "raid", "--from", ".crew/drafts/raid.md")
-    assert r.returncode != 0 and "Risks" in r.stderr
+    r = new_idea(repo, "## Problem\nslow\n")
+    assert r.returncode != 0 and "Outcome" in r.stderr
+    assert not (repo.path / ".crew/idea.md").exists()
 
 
 def test_created_plan_keeps_draft_content_in_template_order(repo: Repo):
@@ -212,23 +213,32 @@ def test_created_plan_keeps_draft_content_in_template_order(repo: Repo):
     assert (text.index("## Context") < text.index("## Tasks") < text.index("## Test plan")
             < text.index("## Risks & open questions") < text.index("## Progress log"))
     assert "- email provider choice" in text.split("## Risks & open questions")[1]
-    assert "points: 3" in text
+    assert "touches: src/auth/**, tests/auth/**" in text and "points:" not in text
     assert not (repo.path / ".crew/drafts/plan.md").exists()  # consumed
 
 
 def test_definition_of_ready(repo: Repo):
     init(repo)
     new_plan(repo, "Signup", PLAN_DRAFT.replace("→ verify: unit test", "").replace("## Test plan\n", "## Test plan\n<!-- x -->\n#"),
-             "--points", "13")
+             "--touches", "")
     r = tr(repo, "move", "P-001", "ready")
     assert r.returncode != 0
-    assert "without '→ verify:'" in r.stderr and "13 points > max_plan_points" in r.stderr
+    assert "without '→ verify:'" in r.stderr and "no touches:" in r.stderr
     plan = plan_file(repo, "P-001")
     text = plan.read_text().replace("T2: service + repository", "T2: service + repository → verify: unit test")
-    text = text.replace("points: 13", "points: 5")
+    text = text.replace("touches:\n", "touches: src/auth/**\n")
     text = re.sub(r"## Test plan\n.*?\n\n", "## Test plan\nAPI tests.\n\n", text, flags=re.S)
     plan.write_text(text)
     assert tr(repo, "move", "P-001", "ready").returncode == 0
+
+
+def test_too_many_tasks_needs_a_split(repo: Repo):
+    init(repo)
+    repo.write(".crew/config.yaml", "packs: [base]\nhub:\n  max_tasks: 2   # small plans\n")
+    tasks = "\n".join(f"- [ ] T{n}: step → verify: test" for n in range(1, 4))
+    new_plan(repo, "Big", re.sub(r"## Tasks\n.*?\n\n", f"## Tasks\n{tasks}\n\n", PLAN_DRAFT, flags=re.S))
+    r = tr(repo, "move", "P-001", "ready")
+    assert r.returncode != 0 and "3 tasks (> max_tasks 2)" in r.stderr
 
 
 def test_illegal_transition_rejected(repo: Repo):
@@ -249,7 +259,7 @@ def test_dependencies_gate_start_and_drive_next(repo: Repo):
     assert "WAITING      P-002" in nxt and "NEXT         P-001" in nxt
     r = tr(repo, "start", "P-002")
     assert r.returncode != 0 and "unfinished plans: P-001" in r.stderr
-    assert "waits for P-001" in tr(repo, "roadmap").stdout
+    assert "waits for P-001" in tr(repo, "status").stdout
     repo.write(".crew/drafts/bad.md", PLAN_DRAFT)
     r = tr(repo, "new-plan", "Bad", "--from", ".crew/drafts/bad.md", "--depends", "P-404")
     assert r.returncode != 0 and "Unknown dependencies: P-404" in r.stderr
@@ -266,6 +276,10 @@ def test_wip_limit_gates_start(repo: Repo):
     repo.commit("chore(P-001): start")
     r = tr(repo, "start", "P-002")
     assert r.returncode != 0 and "WIP limit (1) reached: P-001" in r.stderr
+    repo.git("switch", "-q", "main")
+    repo.write(".crew/config.yaml", "hub:\n  wip_limit: 2\n")
+    repo.commit("chore(hub): wip 2")
+    assert tr(repo, "start", "P-002").returncode == 0
 
 
 def test_check_flags_skeletons_and_leftover_drafts(repo: Repo):
@@ -276,7 +290,6 @@ def test_check_flags_skeletons_and_leftover_drafts(repo: Repo):
     assert r.returncode == 1
     assert "P-009: skeleton plan — empty Scope, Acceptance criteria" in r.stdout
     assert "unconverted drafts" in r.stdout and "forgotten.md" in r.stdout
-    assert "legacy .crew/backlog.md" not in r.stdout  # BACKLOG.md is generated, not legacy
 
 
 def test_goal_cannot_activate_without_outcome(repo: Repo):
@@ -299,16 +312,64 @@ def test_ids_do_not_collide_across_branches(repo: Repo):
 
 
 def test_created_docs_drop_template_guidance_comments(repo: Repo):
-    setup_sprint(repo)  # project plan + plans
-    repo.write(".crew/drafts/raid.md", RAID_DRAFT)
-    assert tr(repo, "new-doc", "raid", "--from", ".crew/drafts/raid.md").returncode == 0
+    init(repo)
+    new_idea(repo)
     new_goal(repo)
-    for rel in ("project-plan.md", "raid.md"):
-        assert "<!--" not in (repo.path / ".crew" / rel).read_text(), rel
-    for doc in (plan_file(repo, "P-001"), next((repo.path / ".crew/goals").glob("G-001-*.md"))):
+    new_plan(repo)
+    for doc in (repo.path / ".crew/idea.md", plan_file(repo, "P-001"), next((repo.path / ".crew/goals").glob("G-001-*.md"))):
         assert "<!--" not in doc.read_text(), doc.name
     assert "<!--" not in item(repo, "FEAT-001")
     assert "<!--" in (repo.path / ".crew/templates/plan.md").read_text()  # guidance stays in the templates
+
+
+# ------------------------------------------------------------------ the idea and the focus goal
+def test_idea_is_decided_only_with_checkable_success_criteria(repo: Repo):
+    init(repo)
+    assert new_idea(repo, IDEA_DRAFT.replace("- [ ] 3 pilot", "3 pilot").replace("- [ ] no data", "no data")).returncode == 0
+    assert "status: exploring" in (repo.path / ".crew/idea.md").read_text()
+    assert new_idea(repo).returncode != 0  # only one idea
+    for st in ("researching", "proposed"):
+        assert tr(repo, "move", "IDEA", st).returncode == 0
+    r = tr(repo, "move", "IDEA", "decided")
+    assert r.returncode != 0 and "checklist" in r.stderr
+    idea = repo.path / ".crew/idea.md"
+    idea.write_text(idea.read_text().replace("3 pilot", "- [ ] 3 pilot").replace("no data", "- [ ] no data"))
+    assert tr(repo, "move", "IDEA", "decided", "--note", "go").returncode == 0
+    text = idea.read_text()
+    assert "status: decided" in text and re.search(r"^decided: \d{4}-\d{2}-\d{2}$", text, re.M)
+    assert tr(repo, "move", "IDEA", "proposed").returncode == 0  # a pivot reopens the decision
+
+
+def test_next_asks_for_the_idea_until_it_is_decided(repo: Repo):
+    init(repo)
+    assert "write the idea" in tr(repo, "next").stdout
+    assert "no idea.md" in tr(repo, "check").stdout
+    new_idea(repo)
+    assert "take the idea from exploring to a decision" in tr(repo, "next").stdout
+
+
+def test_focus_ranks_work_and_flags_off_focus_plans(repo: Repo):
+    init(repo, commit=True)
+    assert tr(repo, "focus", "G-001").returncode != 0  # needs the idea
+    new_idea(repo)
+    new_goal(repo, "Accounts", GOAL_DRAFT, "--priority", "P1")                       # FEAT-001, FEAT-002
+    new_goal(repo, "Billing", GOAL_DRAFT.replace("Signup endpoint", "Invoices"), "--priority", "P1")  # FEAT-003, FEAT-004
+    assert "no focus goal" in tr(repo, "check").stdout
+    r = tr(repo, "focus", "G-002")
+    assert r.returncode == 0 and "focus: G-002 (Billing)" in r.stdout and "still proposed" in r.stdout
+    assert "focus: G-002" in (repo.path / ".crew/idea.md").read_text()
+    assert "write a plan for FEAT-003" in tr(repo, "next").stdout  # same priority: the focus goal wins
+    assert tr(repo, "focus", "G-404").returncode != 0
+
+    new_plan(repo, "Signup", PLAN_DRAFT, "--items", "FEAT-001")
+    tr(repo, "move", "P-001", "ready")
+    assert "P-001: ready but does not serve the focus goal G-002" in tr(repo, "check").stdout
+    new_bug(repo, "Login 500", "--severity", "S3")
+    new_plan(repo, "Fix login", PLAN_DRAFT.replace("201 on valid", "regression test: 422; 201 on valid"), "--items", "BUG-001")
+    tr(repo, "move", "P-002", "ready")
+    assert "P-002" not in tr(repo, "check").stdout  # bugs may run off focus
+    repo.commit("chore(hub): plans")
+    assert "does not serve the focus goal G-002" in tr(repo, "start", "P-001").stdout
 
 
 # ------------------------------------------------------------------ backlog items
@@ -321,14 +382,12 @@ def test_item_intake_and_triage_gate(repo: Repo):
 
     assert new_bug(repo, "Login 500", "--severity", "S1").returncode == 0
     assert "priority: P0" in item(repo, "BUG-002")  # severity → default priority
-    assert tr(repo, "triage", "BUG-002").returncode == 0
-    assert "status: triaged" in item(repo, "BUG-002")
+    assert "status: triaged" in item(repo, "BUG-002")  # severity at intake triages when the gate passes
 
     tr(repo, "new-item", "feat", "Dark mode", "--why", "users asked for it")
-    r = tr(repo, "triage", "FEAT-001", "--priority", "P2")
-    assert r.returncode != 0 and "no estimate" in r.stderr
-    assert tr(repo, "triage", "FEAT-001", "--points", "4").returncode != 0  # not Fibonacci
-    assert tr(repo, "triage", "FEAT-001", "--priority", "P2", "--points", "5").returncode == 0
+    assert "status: new" in item(repo, "FEAT-001")
+    assert tr(repo, "triage", "FEAT-001", "--priority", "P2").returncode == 0
+    assert "status: triaged" in item(repo, "FEAT-001") and "points" not in item(repo, "FEAT-001")
 
     r = tr(repo, "triage", "BUG-001", "--reject", "duplicate")
     assert r.returncode != 0 and "--note" in r.stderr
@@ -336,37 +395,35 @@ def test_item_intake_and_triage_gate(repo: Repo):
     assert "status: duplicate" in item(repo, "BUG-001") and "same as BUG-002" in item(repo, "BUG-001")
 
 
-def test_new_item_with_priority_and_points_is_triaged(repo: Repo):
+def test_new_item_with_priority_is_triaged(repo: Repo):
     init(repo)
-    r = tr(repo, "new-item", "chore", "Project tooling", "--why", "dev env", "--priority", "P0", "--points", "5")
+    r = tr(repo, "new-item", "chore", "Project tooling", "--why", "dev env", "--priority", "P0")
     assert r.returncode == 0, r.stderr
     assert "status: triaged" in item(repo, "CHORE-001")
-    r = tr(repo, "new-item", "feat", "Dark mode", "--why", "asked", "--points", "5")
-    assert "status: new" in item(repo, "FEAT-001") and "points: 5" in item(repo, "FEAT-001")
-    assert "stays new" in r.stdout and "no priority" in r.stdout
+    r = tr(repo, "new-item", "spike", "Rate limits", "--why", "unknown", "--priority", "P1")
+    assert "status: new" in item(repo, "SPIKE-001")  # a spike needs its Question and Timebox
+    assert "stays new" in r.stdout and "Question" in r.stdout
 
 
-def test_goal_breakdown_becomes_items(repo: Repo):
+def test_goal_breakdown_becomes_triaged_items(repo: Repo):
     init(repo)
     assert new_goal(repo, "Accounts", GOAL_DRAFT, "--priority", "P1").returncode == 0
     goal = next((repo.path / ".crew/goals").glob("G-001-*.md")).read_text()
-    assert "## Breakdown" in goal and "## Candidate plans" not in goal
-    assert "- FEAT-001: Signup endpoint — POST /signup with email verification (5 pts)" in goal
+    assert "## Breakdown" in goal and "## Candidate plans" not in goal and "milestone" not in goal
+    assert "- FEAT-001: Signup endpoint — POST /signup with email verification" in goal
     feat1, feat2 = item(repo, "FEAT-001"), item(repo, "FEAT-002")
-    assert "title: Signup endpoint" in feat1 and "points: 5" in feat1 and "status: triaged" in feat1
+    assert "title: Signup endpoint" in feat1 and "status: triaged" in feat1
     assert "goal: G-001" in feat1 and "priority: P1" in feat1
-    assert "title: Password reset" in feat2 and "status: new" in feat2  # unestimated → needs triage
-    assert "triage 1 item(s), starting with FEAT-002" in tr(repo, "next").stdout
+    assert "title: Password reset" in feat2 and "status: triaged" in feat2
+    assert "write a plan for FEAT-001" in tr(repo, "next").stdout
 
 
 def test_plan_links_items_and_item_status_is_derived(repo: Repo):
     init(repo, commit=True)
     new_goal(repo)
-    tr(repo, "triage", "FEAT-002", "--points", "3")
     repo.write(".crew/drafts/plan.md", PLAN_DRAFT)
-    r = tr(repo, "new-plan", "Signup", "--from", ".crew/drafts/plan.md", "--goal", "G-001", "--items", "FEAT-001,FEAT-002")
+    r = tr(repo, "new-plan", "Signup", "--from", ".crew/drafts/plan.md", "--items", "FEAT-001,FEAT-002", "--touches", "src/**")
     assert r.returncode == 0, r.stderr
-    assert "points: 8" in plan_file(repo, "P-001").read_text()  # sum of item points
     assert "plan: P-001" in item(repo, "FEAT-001")
     r = new_plan(repo, "Again", PLAN_DRAFT, "--items", "FEAT-001")
     assert r.returncode != 0 and "already planned in P-001" in r.stderr
@@ -377,16 +434,16 @@ def test_plan_links_items_and_item_status_is_derived(repo: Repo):
     finish(repo, "P-001")
     repo.commit("chore(P-001): complete")
     repo.git("switch", "-q", "main")
-    tr(repo, "roadmap", "--write")  # reads the live branch: items are done before merge
-    backlog = (repo.path / ".crew/BACKLOG.md").read_text()
-    assert "2 items done" in backlog
-    assert "| FEAT-001 |" not in backlog.split("## Closed")[0]
+    out = tr(repo, "status").stdout  # reads the live branch: done before merge
+    assert "P-001: Signup" in out.split("## Recently done")[1]
+    graph = tr(repo, "export", "--json").stdout
+    assert re.search(r'"id": "FEAT-001",\s+"kind": "item",\s+"type": "FEAT",\s+"title": "Signup endpoint",\s+"status": "done"', graph)
+    assert '"goal": "G-001"' in graph  # the plan's goal comes from its items
 
 
 def test_bug_plan_needs_regression_test(repo: Repo):
     init(repo)
     new_bug(repo, "Login 500", "--severity", "S2")
-    tr(repo, "triage", "BUG-001", "--points", "1")
     new_plan(repo, "Fix login 500", PLAN_DRAFT, "--items", "BUG-001")
     r = tr(repo, "move", "P-001", "ready")
     assert r.returncode != 0 and "regression test" in r.stderr
@@ -398,7 +455,7 @@ def test_bug_plan_needs_regression_test(repo: Repo):
 def test_untriaged_item_blocks_ready(repo: Repo):
     init(repo)
     tr(repo, "new-item", "feat", "Dark mode", "--why", "asked")
-    new_plan(repo, "Dark mode", PLAN_DRAFT, "--items", "FEAT-001", "--points", "3")
+    new_plan(repo, "Dark mode", PLAN_DRAFT, "--items", "FEAT-001")
     r = tr(repo, "move", "P-001", "ready")
     assert r.returncode != 0 and "item FEAT-001 is not triaged" in r.stderr
 
@@ -413,166 +470,205 @@ def test_next_ordering_expedites_p0_bugs(repo: Repo):
     assert "BUG-001: P0 bug with no plan" in tr(repo, "check").stdout
 
 
-# ------------------------------------------------------------------ sprints
-def setup_sprint(repo: Repo, capacity: str = "8"):
-    init(repo, commit=True)
-    repo.write(".crew/drafts/pp.md", "## Objectives\n- ship\n\n## Success measures\n- 3 pilots\n\n"
-               "## Milestones\n| M | Goal |\n|---|---|\n| M-01 | MVP |\n\n## Cadence & capacity\n1-week sprints.\n")
-    assert tr(repo, "new-doc", "project-plan", "--from", ".crew/drafts/pp.md", "--capacity", capacity).returncode == 0
-    new_plan(repo, "Signup", PLAN_DRAFT, "--points", "5")
-    new_plan(repo, "Reset", PLAN_DRAFT, "--points", "5")
-    for pid in ("P-001", "P-002"):
-        tr(repo, "move", pid, "ready")
-
-
-def test_sprint_capacity_and_single_active(repo: Repo):
-    repo.env["HUB_TODAY"] = "2026-10-12"
-    setup_sprint(repo)
-    assert tr(repo, "sprint", "new").returncode != 0  # goal required
-    assert tr(repo, "sprint", "new", "--goal", "Signup live").returncode == 0
-    s1 = (repo.path / ".crew/sprints/S-01.md").read_text()
-    assert "start: 2026-10-12" in s1 and "end: 2026-10-18" in s1
-    r = tr(repo, "sprint", "add", "S-01", "P-001", "P-002")
-    assert "over capacity: 10 > 8" in r.stdout
-    r = tr(repo, "sprint", "start", "S-01")
-    assert r.returncode == 0 and "starts" not in r.stdout  # starts today: no warning
-    tr(repo, "sprint", "new", "--goal", "Next")
-    assert "start: 2026-10-19" in (repo.path / ".crew/sprints/S-02.md").read_text()
-    r = tr(repo, "sprint", "add", "S-02", "P-001")
-    assert r.returncode != 0 and "already committed to S-01" in r.stderr
-    r = tr(repo, "sprint", "start", "S-02")
-    assert r.returncode != 0 and "S-01 is still active" in r.stderr
-
-
-def test_sprint_start_warns_when_start_date_is_ahead(repo: Repo):
-    repo.env["HUB_TODAY"] = "2026-10-15"
-    setup_sprint(repo)
-    tr(repo, "sprint", "new", "--goal", "Signup live", "--start", "2026-10-19")
-    tr(repo, "sprint", "add", "S-01", "P-001")
-    r = tr(repo, "sprint", "start", "S-01")
-    assert r.returncode == 0 and "S-01 starts 2026-10-19, in 4 day(s)" in r.stdout
-
-
-def test_sprint_close_velocity_carry_over_and_retro_actions(repo: Repo):
-    repo.env["HUB_TODAY"] = "2026-10-12"
-    setup_sprint(repo, capacity="13")
-    tr(repo, "sprint", "new", "--goal", "Signup live")
-    tr(repo, "sprint", "add", "S-01", "P-001", "P-002")
-    tr(repo, "sprint", "start", "S-01")
-    repo.commit("chore(hub): sprint 1")
-    tr(repo, "start", "P-001")
-    repo.env["HUB_TODAY"] = "2026-10-14"
-    finish(repo, "P-001")
-    repo.commit("feat(P-001): done")
-    repo.git("switch", "-q", "main")
-    repo.git("merge", "-q", "--squash", "plan/P-001-signup")
-    repo.commit("P-001: Signup")
-
-    burndown = tr(repo, "sprint", "show").stdout
-    assert "2026-10-13" in burndown and "2026-10-14" in burndown and " 5 (ideal" in burndown
-
-    repo.env["HUB_TODAY"] = "2026-10-18"
-    r = tr(repo, "sprint", "close", "S-01")
-    assert r.returncode != 0 and "Review and Retro" in r.stderr
-    s = repo.path / ".crew/sprints/S-01.md"
-    s.write_text(s.read_text().replace("## Review\n", "## Review\nSignup shipped; reset slipped.\n")
-                 .replace("**Try:**\n", "**Try:**\n- Smaller plans\n"))
-    r = tr(repo, "sprint", "close", "S-01")
-    assert r.returncode == 0, r.stderr
-    closed = s.read_text()
-    assert "velocity: 5" in closed and "carried_over: P-002" in closed and "status: closed" in closed
-    assert "Retro action from S-01: Smaller plans" in item(repo, "CHORE-001")
-    assert "carrying over from S-01: P-002" in tr(repo, "sprint", "new", "--goal", "Reset").stdout
-    assert "plans: P-002" in (repo.path / ".crew/sprints/S-02.md").read_text()
-    tr(repo, "roadmap", "--write")
-    assert "| S-01 | 2026-10-12 → 2026-10-18 | 10 | 5 |" in (repo.path / ".crew/ROADMAP.md").read_text()
-
-
-# ------------------------------------------------------------------ milestones & reports
-def setup_milestone(repo: Repo, target: str):
-    init(repo, commit=True)
-    repo.write(".crew/drafts/m.md", MILESTONE_DRAFT)
-    assert tr(repo, "new-milestone", "MVP", "--from", ".crew/drafts/m.md", "--target", target).returncode == 0
-    new_goal(repo, "Accounts", GOAL_DRAFT, "--milestone", "M-01")
-    tr(repo, "triage", "FEAT-002", "--points", "8")  # 13 pts in scope
-
-
-def test_milestone_forecast(repo: Repo):
-    repo.env["HUB_TODAY"] = "2026-10-12"
-    setup_milestone(repo, "2026-12-31")
-    assert "🟢 on track" in tr(repo, "status").stdout  # 13 pts @ 20/sprint → 1 sprint
-    m = next((repo.path / ".crew/milestones").glob("M-01-*.md"))
-    m.write_text(m.read_text().replace("target: 2026-12-31", "target: 2026-10-13"))
-    out = tr(repo, "status").stdout
-    assert "🔴 late" in out or "🟡 at risk" in out
-    assert "M-01: target 2026-10-13 has passed" not in tr(repo, "check").stdout  # not yet passed
-    repo.env["HUB_TODAY"] = "2026-10-20"
-    assert "M-01: target 2026-10-13 has passed" in tr(repo, "check").stdout
-
-
-def milestone_row(out: str, mid: str) -> str:
-    return next(ln for ln in out.splitlines() if ln.startswith(f"| {mid}:"))
-
-
-def test_milestone_forecasts_queue_behind_earlier_milestones(repo: Repo):
-    repo.env["HUB_TODAY"] = "2026-10-15"
-    init(repo, commit=True)
-    for title, target in (("MVP", "2026-12-15"), ("Later", "2027-02-26"), ("Someday", "2027-06-30")):
-        repo.write(".crew/drafts/m.md", MILESTONE_DRAFT)
-        assert tr(repo, "new-milestone", title, "--from", ".crew/drafts/m.md", "--target", target).returncode == 0
-    for n, (mid, pts) in enumerate((("M-01", 13), ("M-01", 13), ("M-01", 8), ("M-02", 8), ("M-02", 5))):
-        tr(repo, "new-item", "feat", f"Slice {n}", "--why", "x", "--milestone", mid, "--points", str(pts))
-    out = tr(repo, "status").stdout
-    assert "2026-10-28 (2 sprints @ 20 pts)" in milestone_row(out, "M-01")  # 34 pts from today
-    assert "2026-11-04 (3 sprints @ 20 pts)" in milestone_row(out, "M-02")  # 13 more pts after M-01's 34
-    empty = milestone_row(out, "M-03")
-    assert "on track" not in empty and "2026-10-15" not in empty and "no scope" in empty
-
-    tr(repo, "sprint", "new", "--goal", "Start", "--start", "2026-10-19")  # Sprint 1 starts Monday
-    out = tr(repo, "status").stdout
-    assert "2026-11-01 (2 sprints @ 20 pts)" in milestone_row(out, "M-01")
-    assert "2026-11-08 (3 sprints @ 20 pts)" in milestone_row(out, "M-02")
-
-
-def test_breakdown_items_follow_the_goal_milestone(repo: Repo):
-    setup_milestone(repo, "2026-12-31")
-    repo.write(".crew/drafts/m.md", MILESTONE_DRAFT)
-    tr(repo, "new-milestone", "Later", "--from", ".crew/drafts/m.md", "--target", "2027-06-30")
-    assert "milestone:\n" in item(repo, "FEAT-001")  # derived from the goal, not copied
-    tr(repo, "roadmap", "--write")
-    assert re.search(r"\| FEAT-001 \|.*\| M-01 \| G-001 \|", (repo.path / ".crew/BACKLOG.md").read_text())
-    goal = next((repo.path / ".crew/goals").glob("G-001-*.md"))
-    goal.write_text(goal.read_text().replace("milestone: M-01", "milestone: M-02"))  # retarget the goal
-    out = tr(repo, "status").stdout
-    assert "0/13 pts" in milestone_row(out, "M-02") and "no scope" in milestone_row(out, "M-01")
-
-
-def test_milestone_release_gate_and_release_notes(repo: Repo):
-    setup_milestone(repo, "2026-12-31")
-    repo.write(".crew/drafts/plan.md", PLAN_DRAFT)
-    tr(repo, "new-plan", "Signup", "--from", ".crew/drafts/plan.md", "--goal", "G-001", "--items", "FEAT-001")
-    tr(repo, "move", "P-001", "ready")
-    repo.commit("chore(hub): plan")
-    tr(repo, "start", "P-001")
-    finish(repo, "P-001")
-    repo.commit("feat(P-001): done")
-    repo.git("switch", "-q", "main")
-    notes = tr(repo, "release-notes", "M-01").stdout
-    assert "## Features" in notes and "- FEAT-001: Signup endpoint (P-001)" in notes
-    assert "Password reset" not in notes
-    tr(repo, "move", "M-01", "active")
-    r = tr(repo, "move", "M-01", "released")
-    assert r.returncode != 0 and "unmet exit criteria" in r.stderr
-
-
-def test_status_report_sections_and_risks(repo: Repo):
+# ------------------------------------------------------------------ status
+def test_status_report_sections(repo: Repo):
     init(repo)
-    repo.write(".crew/drafts/raid.md", RAID_DRAFT)
-    assert tr(repo, "new-doc", "raid", "--from", ".crew/drafts/raid.md").returncode == 0
+    new_idea(repo)
+    new_goal(repo, "Accounts", GOAL_DRAFT, "--priority", "P1")
+    tr(repo, "focus", "G-001")
     new_bug(repo, "Login 500", "--severity", "S2")
     out = tr(repo, "status").stdout
-    for heading in ("## Sprint", "## Milestones", "## Blocked", "## Open bugs", "## Top risks"):
+    for heading in ("## Idea and focus", "## Now", "## Blocked", "## Ready to start", "## Top of the backlog",
+                    "## Open bugs", "## Recently done"):
         assert heading in out
-    assert out.index("R1 Email provider limits") < out.index("R2 Key loss")  # sorted by P × I
+    assert "**Ferry** — exploring · success criteria 0/2 met" in out
+    assert "Focus **G-001: Accounts** — proposed, 0/0 plans closed" in out
     assert "| BUG-001 | S2 | P1 |" in out
-    assert "risk R2: no owner or mitigation" in tr(repo, "check").stdout
+    top = out.split("## Top of the backlog")[1]
+    assert top.index("FEAT-001") < top.index("BUG-001")  # the focus goal ranks ahead of priority (only P0 jumps it)
+    assert tr(repo, "status", "--write").returncode == 0
+    assert (repo.path / ".crew/STATUS.md").read_text().startswith("# Status — ")
+
+
+# ------------------------------------------------------------------ migrate from project-kit
+OLD_EPIC = """---
+id: EP-001
+title: Accounts
+status: active
+milestone: M-01
+priority: P1
+created: 2026-10-01
+---
+
+# EP-001: Accounts
+
+## Outcome
+Users sign up.
+
+## Scope
+**In:**
+- signup
+
+## Acceptance criteria
+- [ ] a user signs up
+
+## Breakdown
+- FEAT-001: Signup — POST /signup (5 pts)
+"""
+
+OLD_ITEM = """---
+id: FEAT-001
+type: feat
+title: Signup
+status: triaged
+priority: P1
+points: 5
+epic: EP-001
+milestone:
+plan: P-001
+created: 2026-10-01
+closed:
+---
+
+# FEAT-001: Signup
+
+## Summary
+POST /signup, see EP-001.
+"""
+
+OLD_PLAN = """---
+id: P-001
+title: Signup
+epic: EP-001
+items: FEAT-001
+points: 5
+depends_on:
+status: ready
+branch: plan/P-001-signup
+---
+
+# P-001: Signup
+
+## Context
+First slice of EP-001; run `python3 .project/bin/tracker.py next` for more.
+
+## Scope
+**In:**
+- POST /signup
+
+## Acceptance criteria
+- [ ] 201 on valid input
+
+## Tasks
+- [ ] T1: route → verify: api test
+
+## Test plan
+API test.
+
+## Progress log
+"""
+
+OLD_MILESTONE = """---
+id: M-01
+title: MVP
+status: active
+target: 2026-12-01
+---
+
+## Exit criteria
+- [x] deployed
+- [ ] no open S1/S2 bugs
+"""
+
+OLD_RAID = """# RAID
+
+## Risks
+| ID | Risk | Probability | Impact | Owner | Mitigation | Status |
+|---|---|---|---|---|---|---|
+| R1 | Email provider limits | H | H | Amit | batch sends | open |
+
+## Assumptions
+| ID | Assumption |
+|---|---|
+| A1 | Pilot users have Gmail |
+
+## Issues
+| ID | Issue | Status |
+|---|---|---|
+| I1 | Staging DB is shared with QA | open |
+| I2 | Old CI runner | closed |
+
+## Decisions
+| Date | Decision | Why |
+|---|---|---|
+| 2026-10-01 | Postgres over SQLite | multi-user |
+"""
+
+
+def old_project(repo: Repo) -> None:
+    repo.git("commit", "-q", "--allow-empty", "-m", "init")
+    repo.write(".project/config.yaml", "packs: [base]\nmodules:\n  tracker: true\n")
+    repo.write(".project/project-plan.md", "---\nwip_limit: 2\ncapacity_points: 20\n---\n\n## Objectives\n- ship\n")
+    repo.write(".project/raid.md", OLD_RAID)
+    repo.write(".project/milestones/M-01-mvp.md", OLD_MILESTONE)
+    repo.write(".project/sprints/S-01.md", "---\nid: S-01\nstatus: closed\n---\n")
+    repo.write(".project/epics/EP-001-accounts.md", OLD_EPIC)
+    repo.write(".project/items/FEAT-001-signup.md", OLD_ITEM)
+    repo.write(".project/plans/P-001-signup.md", OLD_PLAN)
+    repo.write(".project/bin/tracker.mjs", "// old\n")
+    repo.write(".project/ROADMAP.md", "# Roadmap\n")
+    repo.write(".project/drafts/note.md", "## Context\nsee EP-001\n")
+    repo.write("CLAUDE.md", "Run `node .project/bin/tracker.mjs next`.\n")
+    repo.commit("chore: project-kit")
+
+
+def test_migrate_converts_a_project_kit_folder(repo: Repo):
+    old_project(repo)
+    r = tr(repo, "migrate")
+    assert r.returncode == 0, r.stderr
+    crew = repo.path / ".crew"
+    assert not (repo.path / ".project").exists()
+    goal = (crew / "goals/G-001-accounts.md").read_text()
+    assert "id: G-001" in goal and "milestone" not in goal and "# G-001: Accounts" in goal
+    assert "- [ ] no open S1/S2 bugs (from M-01 exit criteria)" in goal and "deployed (from" not in goal
+    feat = (crew / "items/FEAT-001-signup.md").read_text()
+    assert "goal: G-001" in feat and "points" not in feat and "milestone" not in feat and "see G-001" in feat
+    plan = (crew / "plans/P-001-signup.md").read_text()
+    assert "goal: G-001" in plan and "touches:" in plan and "points" not in plan
+    assert "status: draft" in plan and "declare `touches:`" in plan  # ready → draft until it declares touches
+    assert ".project/" not in plan and ".crew/bin/tracker.py" in plan  # paths renamed in prose too
+    for archived in ("archive/raid.md", "archive/project-plan.md", "archive/milestones/M-01-mvp.md", "archive/sprints/S-01.md"):
+        assert (crew / archived).is_file(), archived
+    assert not (crew / "ROADMAP.md").exists() and (crew / "bin/crew.mjs").is_file() and (crew / "drafts/note.md").is_file()
+    assert "see G-001" in (crew / "drafts/note.md").read_text()
+    config = (crew / "config.yaml").read_text()
+    assert "  hub: true" in config and "tracker" not in config and "hub:" in config and "wip_limit: 2" in config
+
+    knowledge = sorted(p.read_text() for p in (crew / "knowledge").glob("K-*.md"))
+    assert len(knowledge) == 3  # decision, assumption, risk
+    assert any("type: decision" in k and "title: Postgres over SQLite" in k for k in knowledge)
+    assert any("type: risk" in k and "Email provider limits" in k for k in knowledge)
+    assert any("Assumption, not yet confirmed" in k for k in knowledge)
+    assert "Staging DB is shared with QA" in item(repo, "CHORE-001")  # open issue → item; the closed one is skipped
+    assert not list((crew / "items").glob("CHORE-002-*.md"))
+
+    assert "ready plan(s) went back to draft" in r.stdout
+    assert "write the idea" in r.stdout and "CLAUDE.md" in r.stdout  # files that still mention .project/
+    assert tr(repo, "check").returncode == 0
+
+
+def test_migrate_refuses_without_project_or_over_crew(repo: Repo):
+    repo.git("commit", "-q", "--allow-empty", "-m", "init")
+    r = tr(repo, "migrate")
+    assert r.returncode != 0 and "No .project/" in r.stderr
+    old_project(repo)
+    init(repo)
+    r = tr(repo, "migrate")
+    assert r.returncode != 0 and "already exists" in r.stderr
+    assert (repo.path / ".project/raid.md").is_file()  # nothing changed
+
+
+def test_check_points_at_migrate_while_project_folder_remains(repo: Repo):
+    init(repo)
+    repo.write(".project/raid.md", OLD_RAID)
+    assert "crew.mjs migrate" in tr(repo, "check").stdout

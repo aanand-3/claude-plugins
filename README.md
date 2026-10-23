@@ -2,7 +2,7 @@
 
 A Claude Code plugin marketplace. It currently contains one plugin, **crew**, which takes the repeated manual setup out of starting a project.
 
-![crew demo: kickoff, generated rules and ADRs, the sprint plan, and commit guardrails](docs/assets/crew-demo.gif)
+![crew demo: kickoff, generated rules and ADRs, the plan, and commit guardrails](docs/assets/crew-demo.gif)
 
 ## Install
 
@@ -18,12 +18,12 @@ Start a new Claude Code session to load it. To pick up later releases, run `clau
 | Skill | Invoke | Purpose |
 |---|---|---|
 | research | `/crew:research <idea>` | Standalone, before or after kickoff. Finds competitors, open-source prior art and user complaints, lists features worth adopting, gives a rough bottom-up market estimate, and recommends **go / pivot / kill**. Every claim cites evidence that a script has fetched and checked. Writes `docs/research/` |
-| kickoff | `/crew:kickoff <idea>` | New projects. Asks which optional modules you want (hub, code graph), then runs discover, design, guidelines, hub, git, graph and the project plan in order, and can resume after an interruption |
+| kickoff | `/crew:kickoff <idea>` | New projects. Asks which optional modules you want (hub, code graph), then runs discover, design, guidelines, hub, git, graph and the idea, goals and first plan in order, and can resume after an interruption |
 | onboard | `/crew:onboard` | Existing projects. Maps the repo (with graphify if chosen), infers the stack and layout and confirms them with you, then merges config, docs, CLAUDE.md, rules and git guards into what's there, on a `chore/crew-onboard` branch. Leaves existing hooks and CI alone unless you say otherwise |
 | discover | `/crew:discover` | Interview → `.crew/config.yaml`, brief, architecture, ADRs |
 | design | `/crew:design [init\|page\|review\|refresh]` | A gallery page of all of Sanzo Wada's *Dictionary of Color Combinations*, each previewed as UI with WCAG-checked roles for light and dark. You shortlist 2–4, and each becomes a full style tile to compare. The pick becomes `docs/design/DESIGN.md` (tokens, layout shell, component inventory, do's and don'ts). Pages are composed from it, and `check_design.py` flags drift |
 | guidelines | `/crew:guidelines` | `CLAUDE.md`, path-scoped `.claude/rules/` from stack packs, settings, hygiene files |
-| hub | `/crew:hub …` | Repo-local project management in `.crew/` (Node ≥ 20 CLI, no install): project plan + RAID, milestones with forecasts, sprints (capacity, burndown, velocity, review/retro), a ranked backlog of FEAT/BUG/CHORE/SPIKE items with priority and story points, and plans with tasks (one branch and one PR per plan). Enforced gates: no skeletons, triage, Definition of Ready, WIP limit, exit criteria. Generated roadmap, backlog, status report and release notes, plus an interactive view (`export` for an offline page, `ui` for a live local server): dashboard, board, hierarchy, roadmap, dependency graph and linked document pages. The plugin also registers the hub as MCP tools (`next`, `status`, `graph`, `new_item`, `triage`, `move`, `log`, `sprint_add`, …), so Claude calls typed tools behind the same gates instead of shelling out |
+| hub | `/crew:hub …` | The team's shared context in `.crew/` (Node ≥ 20 CLI, no install): the idea with its success criteria and the focus goal, goals, a ranked backlog of FEAT/BUG/CHORE/SPIKE items with priority, and plans with verifiable tasks and a declared footprint (`touches:`; one branch and one PR per plan). Enforced gates: no skeletons, triage, Definition of Ready, WIP limit, the idea's decision. `next` names the single best next step; `status` reports where the work stands; `migrate` converts a project-kit `.project/`. An interactive view (`export` for an offline page, `ui` for a live local server): executive overview, board, hierarchy, dependency graph and linked document pages. The plugin also registers the hub as MCP tools (`next`, `status`, `graph`, `new_item`, `triage`, `move`, `log`, `focus`, …), so agents call typed tools behind the same gates instead of shelling out |
 | codemap | `/crew:codemap [enable\|build\|remove]` | Optional code knowledge graph via [graphify](https://pypi.org/project/graphifyy/): installs the CLI with your yes, wires its rebuild-on-commit hook and CLAUDE.md section, gitignores `graphify-out/`, and builds the graph so Claude queries it instead of reading files broadly |
 | git-setup | `/crew:git-setup` | git init, `.gitignore`, PR template, hooks that protect `main` and enforce Conventional Commits |
 | global-setup | `/crew:global-setup` | One-time install of the Karpathy-style working principles into `~/.claude/CLAUDE.md` |
@@ -33,11 +33,20 @@ Kickoff and onboard ask which of these to include. The choice is recorded in `.c
 
 | Module | Default | When off |
 |---|---|---|
-| `hub` | on | Nothing hub-related is generated: no `.crew/bin/crew.mjs`, plans or sprints, and no hub lines in CLAUDE.md, settings, hooks, the PR template or CI. `main` is still protected, and any branch name works (`feat/<slug>`, `fix/<slug>`, …) |
+| `hub` | on | Nothing hub-related is generated: no `.crew/bin/crew.mjs`, idea, goals or plans, and no hub lines in CLAUDE.md, settings, hooks, the PR template or CI. `main` is still protected, and any branch name works (`feat/<slug>`, `fix/<slug>`, …) |
 | `graphify` | off | No graph. When on, `graphify-out/` is local and gitignored, and on machines without graphify, commits still succeed |
 
 ### Existing projects
 Run `/crew:onboard` in the repo (clean working tree). It works on a `chore/crew-onboard` branch, so `main` is never touched, and opens a PR at the end. Kickoff points you there when it finds existing code.
+
+### Upgrading from project-kit
+crew 1.0 replaces project-kit 0.x. Install `crew@aanand-plugins`, then in each project on a clean `main`:
+
+```bash
+node ~/.claude/plugins/marketplaces/aanand-plugins/plugins/crew/skills/hub/dist/crew.mjs migrate
+```
+
+or ask Claude to run `/crew:hub migrate`. It turns `.project/` into `.crew/`: epics become goals (`EP-` → `G-`), points, milestones and sprints are dropped (milestone exit criteria join their goals' acceptance criteria), RAID rows become knowledge entries, and the rest is archived in `.crew/archive/`. It then lists the files to re-render (`/crew:guidelines --refresh`, `/crew:git-setup`). Write the idea (`new-idea`) and set the focus goal afterwards.
 
 ### What a kicked-off project looks like
 
@@ -48,14 +57,11 @@ CLAUDE.md                      # project facts + "how we work"
   rules/                       # base.md + project.md (always) + stack/arch packs (path-scoped)
 .crew/
   config.yaml                  # every stack/architecture decision, read by all skills
-  project-plan.md              # charter: objectives, milestones, cadence & capacity (hub settings)
-  raid.md                      # risks, assumptions, issues, decisions
-  milestones/M-01-<slug>.md    # release: goal, target date, exit criteria
-  goals/G-001-<slug>.md       # outcome; its breakdown becomes FEAT items
-  items/FEAT-001-<slug>.md     # backlog: FEAT / BUG / CHORE / SPIKE with priority, points, severity
-  plans/P-001-<slug>.md        # one plan = one branch = one PR; delivers items
-  sprints/S-01.md              # goal, committed plans, daily log, review, retro, velocity
-  ROADMAP.md BACKLOG.md STATUS.md releases/   # generated
+  idea.md                      # problem, outcome, success criteria, direction; holds the focus goal
+  goals/G-001-<slug>.md        # outcome; its breakdown becomes FEAT items
+  items/FEAT-001-<slug>.md     # backlog: FEAT / BUG / CHORE / SPIKE with priority, severity
+  plans/P-001-<slug>.md        # one plan = one branch = one PR; delivers items; declares touches:
+  STATUS.md                    # generated by `crew.mjs status --write`
   view/index.html              # generated by `crew.mjs export`: the interactive view (gitignored)
   drafts/                      # plan-mode output before it becomes a tracked plan
   bin/crew.mjs + ui.html    # vendored single-file hub (Node ≥ 20) and its view, so the repo works without the plugin
@@ -73,7 +79,7 @@ docs/
 .gitignore .gitattributes .editorconfig .env.example README.md
 ```
 
-### Stack packs (v0.11.0)
+### Stack packs (v1.0.0)
 
 | Scope | Packs |
 |---|---|

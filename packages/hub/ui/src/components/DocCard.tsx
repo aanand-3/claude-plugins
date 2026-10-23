@@ -26,12 +26,10 @@ export function DocCard({ doc }: { doc: GraphDoc }) {
         {related && <Chip>{related}</Chip>}
         {doc.waitsFor.length > 0 && <Chip tone="warning"><Hourglass size={12} aria-hidden />waits {doc.waitsFor.join(", ")}</Chip>}
         {doc.gate && doc.gate.length > 0 && (
-          <Chip tone="neutral" title={doc.gate.join("\n")}>{doc.gate.length} to {doc.kind === "item" ? "triage" : "ready"}</Chip>
+          <Chip tone="neutral" title={doc.gate.join("\n")}>{doc.gate.length} to {doc.kind === "item" ? "triage" : doc.kind === "idea" ? "decide" : "ready"}</Chip>
         )}
         {doc.source !== "worktree" && <Chip title={`live copy from ${doc.source}`}><GitBranch size={12} aria-hidden />live</Chip>}
-        <span className="doccard__pts">
-          {doc.tasks && doc.tasks.total > 0 ? `${doc.tasks.done}/${doc.tasks.total} tasks · ` : ""}{doc.points ?? "?"} pts
-        </span>
+        {doc.tasks && doc.tasks.total > 0 && <span className="doccard__pts">{doc.tasks.done}/{doc.tasks.total} tasks</span>}
       </div>
     </a>
   );

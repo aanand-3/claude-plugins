@@ -5,9 +5,7 @@ title: {title}
 status: new
 severity: {severity}
 priority: {priority}
-points: {points}
 goal: {goal}
-milestone: {milestone}
 plan:
 created: {date}
 closed:

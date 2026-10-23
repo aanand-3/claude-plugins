@@ -1,11 +1,20 @@
-/** Vocabulary of the hub: document kinds, status flows, item types and defaults. */
+/** Vocabulary of the hub: document kinds, status flows, item types and defaults. See docs/vision.md. */
 
-export type Kind = "goal" | "plan" | "milestone" | "sprint" | "item";
+export type Kind = "idea" | "goal" | "plan" | "item";
 export type Flow = Record<string, readonly string[]>;
 
-export const TEMPLATE_NAMES = ["project-plan.md", "raid.md", "milestone.md", "goal.md", "plan.md", "sprint.md",
+export const TEMPLATE_NAMES = ["idea.md", "goal.md", "plan.md",
   "item-feat.md", "item-bug.md", "item-chore.md", "item-spike.md"] as const;
 
+/** The project's one idea: explored and researched by humans and agents, then decided (go) or killed. */
+export const IDEA_ID = "IDEA";
+export const IDEA_FLOW: Flow = {
+  exploring: ["researching", "killed"],
+  researching: ["proposed", "exploring", "killed"],
+  proposed: ["decided", "researching", "killed"],
+  decided: ["proposed"],                // a pivot reopens the decision
+  killed: ["exploring"],
+};
 export const PLAN_FLOW: Flow = {
   draft: ["ready", "dropped"],
   ready: ["in-progress", "draft", "dropped"],
@@ -28,13 +37,6 @@ export const ITEM_FLOW: Flow = {
   wontfix: ["new"],
   duplicate: ["new"],
 };
-export const MILESTONE_FLOW: Flow = {
-  planned: ["active", "dropped"],
-  active: ["released", "planned", "dropped"],
-  released: [],
-  dropped: ["planned"],
-};
-export const SPRINT_FLOW: Flow = { planned: ["active"], active: ["closed"], closed: [] };
 export const CLOSED = new Set(["done", "dropped"]);
 export const ACTIVE = new Set(["in-progress", "blocked", "in-review"]);
 export const ITEM_CLOSED = new Set(["wontfix", "duplicate"]);
@@ -44,17 +46,14 @@ export const PLAN_TO_ITEM: Record<string, string> = {
 };
 
 export const KINDS: Record<string, Kind> = {
-  G: "goal", P: "plan", M: "milestone", S: "sprint",
-  FEAT: "item", BUG: "item", CHORE: "item", SPIKE: "item",
+  G: "goal", P: "plan", FEAT: "item", BUG: "item", CHORE: "item", SPIKE: "item",
 };
-export const DIRS: Record<Kind, string> = {
-  goal: "goals", plan: "plans", milestone: "milestones", sprint: "sprints", item: "items",
-};
-export const FLOWS: Record<Kind, Flow> = {
-  goal: GOAL_FLOW, plan: PLAN_FLOW, milestone: MILESTONE_FLOW, sprint: SPRINT_FLOW, item: ITEM_FLOW,
-};
+export const DIRS: Record<Exclude<Kind, "idea">, string> = { goal: "goals", plan: "plans", item: "items" };
+export const FLOWS: Record<Kind, Flow> = { idea: IDEA_FLOW, goal: GOAL_FLOW, plan: PLAN_FLOW, item: ITEM_FLOW };
 export const ITEM_TYPES: Record<string, string> = { FEAT: "feat", BUG: "bug", CHORE: "chore", SPIKE: "spike" };
 export const TYPE_LABEL: Record<string, string> = { FEAT: "Features", BUG: "Fixes", CHORE: "Chores", SPIKE: "Spikes" };
+/** Item types that may be worked on outside the focus goal. */
+export const OFF_FOCUS_OK = new Set(["BUG", "CHORE"]);
 /** Triage gate: sections that must have content before an item is triaged. */
 export const TRIAGE_SECTIONS: Record<string, readonly string[]> = {
   FEAT: ["Summary"],
@@ -65,23 +64,17 @@ export const TRIAGE_SECTIONS: Record<string, readonly string[]> = {
 export const PRIORITIES = ["P0", "P1", "P2", "P3"];
 export const SEVERITY_PRIORITY: Record<string, string> = { S1: "P0", S2: "P1", S3: "P2", S4: "P3" };
 
-export const REQUIRED_ON_CREATE: Record<string, readonly string[]> = {
-  "project-plan": ["Objectives", "Success measures", "Milestones", "Cadence & capacity"],
-  raid: ["Risks"],
-  milestone: ["Goal", "Scope", "Exit criteria"],
+export const REQUIRED_ON_CREATE: Record<Kind, readonly string[]> = {
+  idea: ["Problem", "Outcome"],
   goal: ["Outcome", "Scope", "Acceptance criteria", "Breakdown"],
   plan: ["Context", "Scope", "Acceptance criteria"],
+  item: [],
 };
+export const DECIDED_SECTIONS = ["Problem", "Outcome", "Success criteria"];
 export const READY_SECTIONS = ["Context", "Scope", "Acceptance criteria", "Test plan"];
 export const SECTION_ALIASES: Record<string, string> = { candidateplans: "breakdown" };
-export const DEFAULT_SETTINGS: Record<string, string> = {
-  sprint_length_days: "7", capacity_points: "20", points_scale: "1, 2, 3, 5, 8, 13",
-  max_plan_points: "8", wip_limit: "1",
-};
-export const MAX_TASKS = 10;
-export const MAX_WRITTEN_AHEAD = 3; // without sprints: draft + ready plans not yet started
+/** `hub:` settings in .crew/config.yaml. */
+export const DEFAULT_SETTINGS: Record<string, string> = { wip_limit: "1", max_tasks: "10" };
+export const MAX_WRITTEN_AHEAD = 3; // draft + ready plans not yet started
 export const SLUG_STOPWORDS = new Set(["a", "an", "and", "the", "of", "for", "to", "with", "in", "on", "or", "via", "by"]);
 export const TASK_RE = /^\s*- \[( |x|X)\]\s*(.*)$/;
-export const POINTS_RE = /\s*\((\d+)\s*(?:pts?|points?|sp)\)/i;
-export const AFTER_RE = /\s*\(after [^)]*\)/i;
-export const LEVEL: Record<string, number> = { h: 3, high: 3, m: 2, med: 2, medium: 2, l: 1, low: 1 };

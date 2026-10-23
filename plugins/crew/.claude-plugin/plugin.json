@@ -1,6 +1,6 @@
 {
   "name": "crew",
-  "version": "0.11.0",
+  "version": "1.0.0",
   "description": "Agent harness that carries a project from idea to shipped. Kick off or onboard projects consistently: idea research (competitors, prior art, go/pivot/kill), requirements discovery, a persisted visual design system, stack-aware CLAUDE.md and engineering rules, branch-per-change git conventions, and optional modules: a repo-local project hub and a graphify code graph.",
   "author": {
     "name": "Arpit Anand",
@@ -12,7 +12,8 @@
     "guidelines",
     "claude-md",
     "hub",
-    "sprints",
+    "agents",
+    "shared-context",
     "backlog",
     "git",
     "fastapi",

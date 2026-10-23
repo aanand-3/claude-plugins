@@ -1,20 +1,14 @@
-/** Quality gates: what an item needs to be triaged and a plan needs to be ready. */
+/** Quality gates: what an item needs to be triaged, a plan to be ready and the idea to be decided. */
 import type { Doc } from "./doc.js";
-import { MAX_TASKS, PRIORITIES, READY_SECTIONS, SEVERITY_PRIORITY, TRIAGE_SECTIONS } from "./model.js";
+import { DECIDED_SECTIONS, PRIORITIES, READY_SECTIONS, SEVERITY_PRIORITY, TRIAGE_SECTIONS } from "./model.js";
 import type { Store } from "./store.js";
 import { idList } from "./text.js";
 
-const list = (xs: number[]) => `[${xs.join(", ")}]`;
-
-export function triageProblems(store: Store, item: Doc): string[] {
+export function triageProblems(item: Doc): string[] {
   const prefix = item.id.split("-")[0];
   const problems = item.missing(TRIAGE_SECTIONS[prefix]).map((n) => `empty section: ${n}`);
   if (!PRIORITIES.includes(item.get("priority") ?? "")) problems.push("no priority (P0–P3)");
   if (prefix === "BUG" && !Object.hasOwn(SEVERITY_PRIORITY, item.get("severity") ?? "")) problems.push("no severity (S1–S4)");
-  const scale = store.settings().points_scale;
-  const pts = item.points();
-  if (prefix !== "BUG" && pts === null) problems.push("no estimate (--points)");
-  if (pts !== null && !scale.includes(pts)) problems.push(`points ${pts} not on the scale ${list(scale)}`);
   return problems;
 }
 
@@ -22,28 +16,29 @@ export function triageProblems(store: Store, item: Doc): string[] {
 export function readinessProblems(store: Store, plan: Doc): string[] {
   return [
     ...plan.missing(READY_SECTIONS).map((n) => `empty section: ${n}`),
-    ...taskProblems(plan),
-    ...estimateProblems(store, plan),
+    ...(plan.touches().length ? [] : ["no touches: (the paths this plan will change)"]),
+    ...taskProblems(store, plan),
     ...itemProblems(store, plan),
   ];
 }
 
-function taskProblems(plan: Doc): string[] {
-  const tasks = plan.tasks();
-  const problems = tasks.length ? [] : ["no tasks"];
-  const noVerify = tasks.filter(([, t]) => !t.toLowerCase().includes("verify")).map(([, t]) => t.split("→")[0].trim());
-  if (noVerify.length) problems.push(`tasks without '→ verify:': ${noVerify.join("; ")}`);
-  if (tasks.length > MAX_TASKS) problems.push(`${tasks.length} tasks (> ${MAX_TASKS}) — split the plan`);
+/** What the executive must have agreed before the idea is decided. */
+export function decisionProblems(idea: Doc): string[] {
+  const problems = idea.missing(DECIDED_SECTIONS).map((n) => `empty section: ${n}`);
+  if (idea.hasContent("Success criteria") && !idea.checklist("Success criteria").length) {
+    problems.push("Success criteria must be a checklist (`- [ ] …`) so each one can be verified");
+  }
   return problems;
 }
 
-function estimateProblems(store: Store, plan: Doc): string[] {
-  const s = store.settings();
-  const pts = plan.points();
-  if (pts === null) return ["no estimate (points:)"];
-  if (!s.points_scale.includes(pts)) return [`points ${pts} not on the scale ${list(s.points_scale)}`];
-  if (pts > s.max_plan_points) return [`${pts} points > max_plan_points (${s.max_plan_points}) — split the plan`];
-  return [];
+function taskProblems(store: Store, plan: Doc): string[] {
+  const tasks = plan.tasks();
+  const max = store.settings().max_tasks;
+  const problems = tasks.length ? [] : ["no tasks"];
+  const noVerify = tasks.filter(([, t]) => !t.toLowerCase().includes("verify")).map(([, t]) => t.split("→")[0].trim());
+  if (noVerify.length) problems.push(`tasks without '→ verify:': ${noVerify.join("; ")}`);
+  if (tasks.length > max) problems.push(`${tasks.length} tasks (> max_tasks ${max}) — split the plan`);
+  return problems;
 }
 
 function itemProblems(store: Store, plan: Doc): string[] {

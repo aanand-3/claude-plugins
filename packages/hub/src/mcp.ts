@@ -9,7 +9,7 @@ import { newItem, triage } from "./commands/backlog.js";
 import { check } from "./commands/checks.js";
 import { buildGraph } from "./commands/graph.js";
 import { status } from "./commands/reports.js";
-import { sprintAdd } from "./commands/sprints.js";
+import { setFocus } from "./commands/planning.js";
 import { log, move } from "./commands/workflow.js";
 import { Store } from "./core/store.js";
 import { HubError } from "./core/text.js";
@@ -21,49 +21,42 @@ type Schema = { type: "object"; properties: Record<string, unknown>; required?: 
 interface Tool { description: string; input: Schema; run: (s: Store, a: Args) => number | void }
 
 const text = (description: string) => ({ type: "string", description });
-const int = (description: string) => ({ type: "integer", description });
 const obj = (properties: Record<string, unknown> = {}, required: string[] = []): Schema =>
   ({ type: "object", properties, ...(required.length ? { required } : {}), additionalProperties: false });
 const s = (a: Args, k: string) => (typeof a[k] === "string" && a[k] ? (a[k] as string) : undefined);
-const n = (a: Args, k: string) => (typeof a[k] === "number" ? (a[k] as number) : undefined);
 const up = (a: Args, k: string) => s(a, k)!.toUpperCase();
 
-const ITEM_FIELDS = {
-  priority: text("P0–P3"), points: int("story points on the project's scale"), severity: text("bugs only: S1–S4"),
-  milestone: text("e.g. M-01"), goal: text("e.g. G-002"),
-};
+const ITEM_FIELDS = { priority: text("P0–P3"), severity: text("bugs only: S1–S4"), goal: text("e.g. G-002") };
 
 /** name → tool. Required arguments are checked against `input.required` before `run`. */
 export const TOOLS: Record<string, Tool> = {
   next: { description: "The single best next step for the project (same as `crew.mjs next`).", input: obj(),
     run: (st) => nextStep(st) },
-  current: { description: "Where work stands: the active sprint and the plan on the current branch (`crew.mjs current`).",
+  current: { description: "Where work stands: the focus goal and the plan on the current branch (`crew.mjs current`).",
     input: obj(), run: (st) => current(st) },
   status: { description: "Status report for the project (`crew.mjs status`); write=true also saves it to .crew/status.md.",
     input: obj({ write: { type: "boolean" } }), run: (st, a) => status(st, a.write === true) },
   check: { description: "Validate .crew/ (`crew.mjs check`): ERROR and HINT lines; an error result means problems were found.",
     input: obj(), run: (st) => check(st) },
-  graph: { description: "Every tracked document with status, gates, relations, sprint and milestone metrics, as JSON (`crew.mjs export --json`).",
+  graph: { description: "Every tracked document (idea, goals, items, plans) with status, gates, relations and the focus, as JSON (`crew.mjs export --json`).",
     input: obj(), run: (st) => { st.require(); st.say(JSON.stringify(buildGraph(st))); } },
-  new_item: { description: "Capture a backlog item (`crew.mjs new-item`). Give exactly one of `from` (a draft file with the item template's sections) or `why` (one-paragraph summary). Priority or points at intake triage it if the triage gate passes.",
+  new_item: { description: "Capture a backlog item (`crew.mjs new-item`). Give exactly one of `from` (a draft file with the item template's sections) or `why` (one-paragraph summary). Priority or severity at intake triage it if the triage gate passes.",
     input: obj({ type: { type: "string", enum: ["feat", "bug", "chore", "spike"] }, title: text("short title"),
       from: text("path to a draft file"), why: text("summary, instead of a draft"), ...ITEM_FIELDS }, ["type", "title"]),
     run: (st, a) => newItem(st, s(a, "type")!, s(a, "title")!, s(a, "from"), s(a, "why"), {
-      goal: s(a, "goal"), milestone: s(a, "milestone"), priority: s(a, "priority"), points: n(a, "points"), severity: s(a, "severity") }) },
-  triage: { description: "Triage a new item (`crew.mjs triage`): set priority/points/severity/milestone/goal, or reject it with a note.",
+      goal: s(a, "goal"), priority: s(a, "priority"), severity: s(a, "severity") }) },
+  triage: { description: "Triage a new item (`crew.mjs triage`): set priority/severity/goal, or reject it with a note.",
     input: obj({ id: text("e.g. FEAT-003"), ...ITEM_FIELDS, reject: { type: "string", enum: ["duplicate", "wontfix"] },
       note: text("required with reject") }, ["id"]),
-    run: (st, a) => triage(st, up(a, "id"), { priority: s(a, "priority"), points: n(a, "points"), severity: s(a, "severity"),
-      milestone: s(a, "milestone"), goal: s(a, "goal"), reject: s(a, "reject"), note: s(a, "note") }) },
+    run: (st, a) => triage(st, up(a, "id"), { priority: s(a, "priority"), severity: s(a, "severity"), goal: s(a, "goal"),
+      reject: s(a, "reject"), note: s(a, "note") }) },
   move: { description: "Move a document to a new status (`crew.mjs move`). Gates (Definition of Ready, WIP limit, …) apply; there is no force.",
     input: obj({ id: text("e.g. P-004"), status: text("target status, e.g. ready, in-review, done"), note: text("optional note") }, ["id", "status"]),
     run: (st, a) => { move(st, s(a, "id")!, s(a, "status")!, s(a, "note")); } },
   log: { description: "Append a dated line to a document's log (`crew.mjs log`).",
     input: obj({ id: text("e.g. P-004"), text: text("the log entry") }, ["id", "text"]), run: (st, a) => log(st, up(a, "id"), s(a, "text")!) },
-  sprint_add: { description: "Commit plans to a sprint (`crew.mjs sprint add`). Capacity and readiness gates apply.",
-    input: obj({ sprint: text("e.g. S-03"), plans: { type: "array", items: { type: "string" }, minItems: 1, description: "plan IDs" } },
-      ["sprint", "plans"]),
-    run: (st, a) => sprintAdd(st, up(a, "sprint"), (a.plans as unknown[]).map((p) => String(p).toUpperCase())) },
+  focus: { description: "Set the focus goal the team works toward now (`crew.mjs focus`).",
+    input: obj({ goal: text("e.g. G-002") }, ["goal"]), run: (st, a) => setFocus(st, s(a, "goal")!) },
 };
 
 export interface ToolResult { content: { type: "text"; text: string }[]; isError: boolean }
