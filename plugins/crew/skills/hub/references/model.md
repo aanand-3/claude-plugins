@@ -34,6 +34,10 @@ can't both claim a plan. Derived from it: live claims (owner in `status` and the
 hint when a plan file disagrees with the ledger's last move or a closed plan is still claimed.
 
 ## Roles, questions and context
+Roles are the built-in seven (`executive`, `director`, `pm`, `architect`, `developer`, `qa`, `release`) plus any the policy
+declares under `roles.<name>` with a `charter:` (lower-case name). Identity is `--as ROLE --run-id ID` on any command
+(`as`/`run_id` on MCP), else `CREW_ROLE`/`CREW_RUN`; for crew agents the `guard` hook injects it from the agent's verified
+definition, so an agent can't act as another role. An unknown acting role makes the policy invalid, so moves fail closed.
 Roles: `executive` (the human), `director`, `pm`, `architect`, `developer`, `qa`, `release` (`CREW_ROLE`). Questions are
 ledger events (`ask` → `answer`): an open, blocking question on a document refuses its forward moves and its `start`, and
 nothing else. Only the addressed role answers (or a human with `--approved-by`), never the asking run. Escalations go to the

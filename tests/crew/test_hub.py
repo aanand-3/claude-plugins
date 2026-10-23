@@ -1465,3 +1465,115 @@ def test_drift_uses_the_configured_default_branch(repo: Repo):
     repo.write("docs/notes.md", "outside\n")
     repo.commit("feat(P-001): wip")
     assert "P-001: changes outside its touches: docs/notes.md" in tr(repo, "check").stdout
+
+
+# ------------------------------------------------------------------ Workstream T1: identity and the guard
+def agent(repo: Repo, name: str, role: str | None) -> None:
+    repo.write(f".claude/agents/{name}.md", f"---\nname: {name}\n" + (f"crew-role: {role}\n" if role else "") + "---\nbody\n")
+
+
+def hook(repo: Repo, payload: dict) -> dict | None:
+    r = repo.run("node", HUB, "guard", input=json.dumps(payload))
+    assert r.returncode == 0, r.stderr
+    return json.loads(r.stdout)["hookSpecificOutput"] if r.stdout.strip() else None
+
+
+def bash(agent_type: str | None, command: str, agent_id: str = "a1") -> dict:
+    return {"tool_name": "Bash", "tool_input": {"command": command}, **({"agent_type": agent_type, "agent_id": agent_id} if agent_type else {})}
+
+
+def test_identity_flags_win_over_the_environment(repo: Repo):
+    init(repo)
+    repo.env["CREW_ROLE"], repo.env["CREW_RUN"] = "developer", "env-run"
+    tr(repo, "--as", "qa", "usage", "--cost", "1", "--run-id", "flag-run")
+    e = events(repo, "--type", "usage")[-1]
+    assert (e["role"], e["run"]) == ("qa", "flag-run")
+    assert "nothing for the qa role" in tr(repo, "next", "--as", "qa").stdout  # next follows the acting role
+    res = mcp_call(repo, "usage", {"cost": 1, "as": "pm", "run_id": "mcp-run"})
+    assert not res["isError"]
+    e = events(repo, "--type", "usage")[-1]
+    assert (e["role"], e["run"]) == ("pm", "mcp-run")
+
+
+def test_guard_leaves_the_main_session_alone(repo: Repo):
+    init(repo)
+    assert hook(repo, bash(None, "node .crew/bin/crew.mjs move P-001 done --approved-by Amit")) is None
+    assert hook(repo, {"tool_name": "Edit", "tool_input": {"file_path": ".crew/policy.yaml"}}) is None
+
+
+def test_guard_injects_identity_and_refuses_other_claims(repo: Repo):
+    init(repo)
+    agent(repo, "crew-qa", "qa")
+    out = hook(repo, bash("crew-qa", "node .crew/bin/crew.mjs next && node .crew/bin/crew.mjs checkpoint --run \"npm test > out.txt\""))
+    assert "permissionDecision" not in out  # never "allow": the normal permission flow stays
+    assert out["updatedInput"]["command"] == ("node .crew/bin/crew.mjs --as qa --run-id qa:a1 next && "
+                                              "node .crew/bin/crew.mjs --as qa --run-id qa:a1 checkpoint --run \"npm test > out.txt\"")
+    for cmd, why in (("node .crew/bin/crew.mjs next --as developer", "don't pass --as for another role"),
+                     ("node .crew/bin/crew.mjs next --run-id x", "don't pass --run-id"),
+                     ("CREW_ROLE=pm node .crew/bin/crew.mjs next", "CREW_* variables"),
+                     ("node .crew/bin/crew.mjs move P-001 done --approved-by Amit", "never pass --approved-by")):
+        out = hook(repo, bash("crew-qa", cmd))
+        assert out["permissionDecision"] == "deny" and why in out["permissionDecisionReason"], cmd
+    mcp = hook(repo, {"tool_name": "mcp__plugin_crew_hub__next", "agent_type": "crew-qa", "agent_id": "a1", "tool_input": {}})
+    assert mcp["updatedInput"] == {"as": "qa", "run_id": "qa:a1"}
+    assert hook(repo, {"tool_name": "mcp__hub__move", "agent_type": "crew-qa", "agent_id": "a1",
+                       "tool_input": {"id": "P-001", "status": "done", "as": "pm"}})["permissionDecision"] == "deny"
+    assert hook(repo, bash("crew-qa", "npm test")) is None  # not a hub call: untouched
+
+
+def test_injected_identity_reaches_the_ledger(repo: Repo):
+    init(repo)
+    agent(repo, "crew-qa", "qa")
+    cmd = hook(repo, bash("crew-qa", "node .crew/bin/crew.mjs usage --cost 1", agent_id="abc123"))["updatedInput"]["command"]
+    assert repo.run("sh", "-c", cmd).returncode == 0
+    e = events(repo, "--type", "usage")[-1]
+    assert (e["role"], e["run"]) == ("qa", "qa:abc123")
+
+
+def test_guard_protects_its_own_files_from_every_subagent(repo: Repo):
+    init(repo)
+    agent(repo, "crew-developer", "developer")
+    for path in (".crew/policy.yaml", ".claude/settings.json", ".claude/agents/crew-developer.md", ".crew/bin/crew.mjs",
+                 str(repo.path / ".claude/settings.local.json")):
+        for who in ("crew-developer", "Explore"):
+            out = hook(repo, {"tool_name": "Write", "agent_type": who, "agent_id": "a", "tool_input": {"file_path": path}})
+            assert out and out["permissionDecision"] == "deny" and "protected" in out["permissionDecisionReason"], (who, path)
+    for cmd in ("rm .claude/settings.json", "echo x > .crew/policy.yaml", "cp evil.mjs .crew/bin/crew.mjs",
+                "sed -i '' s/a/b/ .claude/agents/crew-developer.md", "git checkout -- .crew/policy.yaml"):
+        assert hook(repo, bash("Explore", cmd))["permissionDecision"] == "deny", cmd
+    assert hook(repo, bash("crew-developer", "cat .crew/policy.yaml")) is None  # reading the policy is fine
+    assert hook(repo, {"tool_name": "Read", "agent_type": "Explore", "agent_id": "a", "tool_input": {"file_path": ".env"}})["permissionDecision"] == "deny"
+    assert hook(repo, bash("Explore", "cat .env"))["permissionDecision"] == "deny"
+
+
+def test_guard_applies_the_roles_policy(repo: Repo):
+    init(repo, mode="")
+    repo.write(".crew/policy.yaml", "mode: ai-native\nroles:\n  developer:\n    tools: { deny: [\"Bash(git push *)\", WebFetch] }\n"
+               "    paths: { write: [\"src/**\", \"tests/**\"] }\n")
+    agent(repo, "crew-developer", "developer")
+    agent(repo, "crew-qa", "qa")
+    assert hook(repo, bash("crew-developer", "git add -A && git push origin main"))["permissionDecision"] == "deny"
+    assert hook(repo, bash("crew-developer", "git status")) is None
+    assert hook(repo, {"tool_name": "WebFetch", "agent_type": "crew-developer", "agent_id": "a", "tool_input": {}})["permissionDecision"] == "deny"
+    w = lambda who, p: hook(repo, {"tool_name": "Write", "agent_type": who, "agent_id": "a", "tool_input": {"file_path": p}})
+    assert w("crew-developer", "src/app.py") is None
+    assert "may only write src/**, tests/**" in w("crew-developer", "docs/notes.md")["permissionDecisionReason"]
+    assert w("crew-qa", "docs/notes.md") is None  # the qa role has no write scope of its own
+
+
+def test_projects_can_define_their_own_roles(repo: Repo):
+    init(repo, commit=True, mode="")
+    repo.write(".crew/policy.yaml", "mode: ai-native\nroles:\n  designer:\n    charter: owns the visual design; never writes backend code\n"
+               "role_gates:\n  plan.ready: designer\n")
+    assert tr(repo, "policy", "check").returncode == 0
+    ready = new_plan(repo)
+    assert ready.returncode == 0
+    r = tr(repo, "move", "P-001", "ready")
+    assert r.returncode != 0 and "for the designer role" in r.stderr
+    assert tr(repo, "--as", "designer", "move", "P-001", "ready").returncode == 0
+    assert tr(repo, "ask", "P-001", "--to", "designer", "Which palette?").returncode == 0
+    assert "QUESTION" in tr(repo, "next", "--as", "designer").stdout
+    repo.write(".crew/policy.yaml", "mode: ai-native\nroles:\n  Bad_Name: {}\n")
+    out = tr(repo, "policy", "check").stdout
+    assert "lower-case letters" in out and "needs a charter" in out
+    assert tr(repo, "--as", "wizard", "move", "P-001", "draft").returncode != 0  # an unknown acting role fails closed

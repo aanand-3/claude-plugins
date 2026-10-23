@@ -18,7 +18,8 @@ export const MODE_GATES: Record<string, string[]> = {
 const BUILT_IN: Raw = {
   mode: "ai-assisted",
   reserved: ["idea.decided", "idea.killed", "policy.change", "deploy.production", "publish", "spend", "delete-data"],
-  paths: { protected: [".crew/policy.yaml"] },
+  // the guard's own files: no agent may remove the hook, rewrite its definition, loosen the policy or swap the CLI
+  paths: { protected: [".crew/policy.yaml", ".crew/bin/**", ".claude/settings.json", ".claude/settings.local.json", ".claude/agents/**"] },
   budgets: { max_agents: 4 },
   git: { protected_branches: ["main"], force_push: false, no_verify: false },
   secrets: { files: [".env", "**/.env", "**/*.pem", "**/*.key"] },
@@ -55,11 +56,15 @@ export interface Effective {
   git: { protected_branches: string[]; force_push: boolean; no_verify: boolean };
   secrets: { files: string[]; patterns: string[] }; escalation: { to: string };
 }
-export interface Resolved { policy: Effective; sources: Map<string, string>; errors: string[]; hints: string[]; role: string | null; team: string | null }
+export interface Resolved {
+  policy: Effective; sources: Map<string, string>; errors: string[]; hints: string[]; role: string | null; team: string | null;
+  roles: string[];                  // the built-in roles plus the project's own (`roles.<name>` with a charter)
+}
 
 /** Read the layers that apply to a role and team. Unreadable files become errors, not crashes. */
-export function loadLayers(root: string, crewDir: string, role: string | null, team: string | null): { layers: Layer[]; errors: string[]; hints: string[] } {
-  const errors: string[] = [], hints: string[] = [];
+export function loadLayers(root: string, crewDir: string, role: string | null, team: string | null):
+  { layers: Layer[]; errors: string[]; hints: string[]; custom: string[] } {
+  const errors: string[] = [], hints: string[] = [], custom: string[] = [];
   const read = (label: string, text: string | null): Raw | null => {
     if (text === null) return null;
     try {
@@ -91,7 +96,14 @@ export function loadLayers(root: string, crewDir: string, role: string | null, t
     if (team && !t) errors.push(`team '${team}' (CREW_TEAM) is not defined under teams: in .crew/policy.yaml`);
     if (r) layers.push({ name: `project role ${role}`, org: false, raw: r });
     if (t) layers.push({ name: `project team ${team}`, org: false, raw: t });
-    for (const [name, section] of Object.entries({ ...(roles as Raw ?? {}) })) validate(section, SCOPED, `roles.${name}`, errors);
+    for (const [name, section] of Object.entries({ ...(roles as Raw ?? {}) })) {
+      validate(section, { ...SCOPED, charter: "str" }, `roles.${name}`, errors);
+      if (!(ROLES as readonly string[]).includes(name)) {
+        custom.push(name);
+        if (!/^[a-z][a-z0-9-]*$/.test(name)) errors.push(`roles.${name}: a role name is lower-case letters, digits and dashes`);
+        if (typeof (section as Raw | null)?.charter !== "string") errors.push(`roles.${name}: a new role needs a charter (what it owns and never does)`);
+      }
+    }
     for (const [name, section] of Object.entries({ ...(teams as Raw ?? {}) })) {
       const { scope, ...rest } = (section ?? {}) as Raw;
       if (scope !== undefined && !isList(scope)) errors.push(`teams.${name}.scope: expected a list of path globs`);
@@ -102,7 +114,7 @@ export function loadLayers(root: string, crewDir: string, role: string | null, t
     if (l.name === "org" || l.name === "project") validate(l.raw, GLOBAL, l.name === "org" ? "org" : "", errors);
     else if (l.name.startsWith("org role")) validate(l.raw, SCOPED, l.name, errors);
   }
-  return { layers, errors, hints };
+  return { layers, errors, hints, custom };
 }
 
 export interface Playbook { read: ((rel: string) => string | null) | null; list?: (dir: string) => string[]; hint?: string }
@@ -164,7 +176,7 @@ function flatten(raw: Raw, prefix = ""): [string, unknown][] {
 }
 
 /** Merge the layers into the effective policy, remembering where each value came from. */
-export function resolveLayers(layers: Layer[]): { policy: Effective; sources: Map<string, string>; errors: string[] } {
+export function resolveLayers(layers: Layer[], roles: readonly string[] = ROLES): { policy: Effective; sources: Map<string, string>; errors: string[] } {
   const values = new Map<string, unknown>(), sources = new Map<string, string>(), ceilings = new Map<string, [number, string]>();
   const errors: string[] = [];
   for (const layer of layers) {
@@ -204,7 +216,7 @@ export function resolveLayers(layers: Layer[]): { policy: Effective; sources: Ma
   const gates = [...new Set([...get<string[]>("human_gates", MODE_GATES[mode] ?? []), ...get<string[]>("human_gates.org", [])])];
   const role_gates = Object.fromEntries([...values].filter(([p]) => p.startsWith("role_gates[")).map(([p, v]) => [p.slice(11, -1), String(v)]));
   for (const t of [...gates, ...Object.keys(role_gates), ...get<string[]>("reserved", [])]) errors.push(...transitionProblem(t));
-  for (const [t, r] of Object.entries(role_gates)) if (!(ROLES as readonly string[]).includes(r)) errors.push(`role_gates ${t}: '${r}' is not a role (${ROLES.join(", ")})`);
+  for (const [t, r] of Object.entries(role_gates)) if (!roles.includes(r)) errors.push(`role_gates ${t}: '${r}' is not a role (${roles.join(", ")})`);
   for (const p of get<string[]>("secrets.patterns", [])) {
     try {
       new RegExp(p);
@@ -213,7 +225,7 @@ export function resolveLayers(layers: Layer[]): { policy: Effective; sources: Ma
     }
   }
   const to = get<string>("escalation.to", "executive");
-  if (!(ROLES as readonly string[]).includes(to)) errors.push(`escalation.to: '${to}' is not a role (${ROLES.join(", ")})`);
+  if (!roles.includes(to)) errors.push(`escalation.to: '${to}' is not a role (${roles.join(", ")})`);
   const deny = get<string[]>("tools.deny", []);
   const allow = get<string[]>("tools.allow", []);
   for (const t of allow.filter((a) => deny.includes(a))) errors.push(`tools.allow: '${t}' is denied by ${sources.get("tools.deny")} (deny wins)`);
@@ -238,9 +250,11 @@ function transitionProblem(t: string): string[] {
 }
 
 export function resolvePolicy(root: string, crewDir: string, role: string | null = null, team: string | null = null): Resolved {
-  const { layers, errors, hints } = loadLayers(root, crewDir, role, team);
-  const r = resolveLayers(layers);
-  return { policy: r.policy, sources: r.sources, errors: [...errors, ...r.errors], hints, role, team };
+  const { layers, errors, hints, custom } = loadLayers(root, crewDir, role, team);
+  const roles = [...ROLES, ...custom];
+  const r = resolveLayers(layers, roles);
+  if (role && !roles.includes(role)) errors.push(`role '${role}' is not a role (${roles.join(", ")})`);
+  return { policy: r.policy, sources: r.sources, errors: [...errors, ...r.errors], hints, role, team, roles };
 }
 
 /** Why a transition needs a named human approval, or null. */

@@ -11,6 +11,7 @@ import { serve } from "./server.js";
 import { init, newGoal, newIdea, newPlan, setFocus } from "./commands/planning.js";
 import { status } from "./commands/reports.js";
 import { context } from "./commands/context.js";
+import { guard } from "./commands/guard.js";
 import { checkpoint, handoff, resume } from "./commands/execution.js";
 import { answer, ask, escalate, listQuestions } from "./commands/questions.js";
 import { learn, recallCmd } from "./commands/knowledge.js";
@@ -46,7 +47,9 @@ Commands:
              [--attempt WHAT --why WHY] [--note TXT] [--auto]   record where the work is (the plan of this branch by default)
   resume [P-###] [--json] · handoff [P-###]     where the work stopped vs git now · write it into the plan's Handoff
   context [P-###] [--role R] [--budget CHARS] [--json]   what you need right now, within a budget (default 6000 chars)
-  next [--role R] · current · check · status [--write]    (roles: executive, director, pm, architect, developer, qa, release)
+  next [--role R] · current · check · status [--write]    (roles: executive, director, pm, architect, developer, qa, release + the policy's)
+  --as ROLE · --run-id ID                       who is acting, on any command (wins over CREW_ROLE / CREW_RUN)
+  guard                                         PreToolUse hook: reads the hook JSON on stdin, prints the decision
   ask [ID] --to ROLE TEXT [--fyi] · escalate [ID] TEXT · answer Q-… TEXT [--decision [--scope GLOBS]] [--approved-by NAME]
   questions [--to ROLE] [--ref ID] [--all] [--json]       questions between roles; an open one blocks only its document
   export [--json] [--out FILE]                  interactive HTML view (.crew/view/index.html) or the graph as JSON
@@ -106,6 +109,7 @@ const COMMANDS: Record<string, Spec> = {
       ac: str(a, "ac"), output: str(a, "output"), attempt: str(a, "attempt"), why: str(a, "why"), note: str(a, "note"), auto: !!a.opt.auto }) },
   resume: { pos: [], rest: true, flag: ["json"], run: (s, a) => resume(s, a.pos[0], !!a.opt.json) },
   handoff: { pos: [], rest: true, run: (s, a) => handoff(s, a.pos[0]) },
+  guard: { pos: [], run: (s) => guard(s) },
   policy: { pos: ["action"], str: ["role", "team"], flag: ["json"], choices: { action: ["show", "check"] },
     run: (s, a) => (a.pos[0] === "show" ? policyShow(s, str(a, "role"), str(a, "team"), !!a.opt.json) : policyCheck(s)) },
   log: { pos: ["id", "text"], run: (s, a) => log(s, a.pos[0].toUpperCase(), a.pos[1]) },
@@ -116,7 +120,7 @@ const COMMANDS: Record<string, Spec> = {
   ledger: { pos: [], str: ["ref", "type"], int: ["limit"], flag: ["json"],
     run: (s, a) => showLedger(s, { ref: str(a, "ref"), type: str(a, "type"), limit: a.num.limit, json: !!a.opt.json }) },
   current: { pos: [], run: (s) => current(s) },
-  next: { pos: [], str: ["role"], run: (s, a) => nextStep(s, str(a, "role")) },
+  next: { pos: [], str: ["role"], run: (s, a) => nextStep(s, str(a, "role") ?? s.ledger.who.role ?? undefined) },
   context: { pos: [], rest: true, str: ["role"], int: ["budget"], flag: ["json"],
     run: (s, a) => context(s, { id: a.pos[0], role: str(a, "role"), budget: a.num.budget, json: !!a.opt.json }) },
   ask: { pos: ["text"], rest: true, str: ["to"], flag: ["fyi"], required: ["to"],
@@ -182,7 +186,23 @@ export function parse(argv: string[]): { cmd: string; spec: Spec; args: Args } {
 }
 
 /** Run one command. Writes happen only if it succeeds; returns the exit code. */
+/** `--as ROLE` / `--run-id ID` may appear anywhere: who is acting (the guard injects them for agents). They win over the env. */
+export function identity(argv: string[]): string[] {
+  const rest: string[] = [];
+  for (let i = 0; i < argv.length; i++) {
+    const m = /^--(as|run-id)(?:=(.*))?$/.exec(argv[i]);
+    if (!m) {
+      rest.push(argv[i]);
+      continue;
+    }
+    const value = m[2] ?? argv[++i];
+    if (value) process.env[m[1] === "as" ? "CREW_ROLE" : "CREW_RUN"] = value;
+  }
+  return rest;
+}
+
 export function main(argv: string[], open: () => Store = () => Store.open()): number {
+  argv = identity(argv);
   if (!argv.length || argv[0] === "--help" || argv[0] === "-h" || argv[0] === "help") {
     process.stdout.write(USAGE);
     return argv.length ? 0 : 2;

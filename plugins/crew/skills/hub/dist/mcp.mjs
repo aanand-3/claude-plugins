@@ -7749,7 +7749,8 @@ var MODE_GATES = {
 var BUILT_IN = {
   mode: "ai-assisted",
   reserved: ["idea.decided", "idea.killed", "policy.change", "deploy.production", "publish", "spend", "delete-data"],
-  paths: { protected: [".crew/policy.yaml"] },
+  // the guard's own files: no agent may remove the hook, rewrite its definition, loosen the policy or swap the CLI
+  paths: { protected: [".crew/policy.yaml", ".crew/bin/**", ".claude/settings.json", ".claude/settings.local.json", ".claude/agents/**"] },
   budgets: { max_agents: 4 },
   git: { protected_branches: ["main"], force_push: false, no_verify: false },
   secrets: { files: [".env", "**/.env", "**/*.pem", "**/*.key"] },
@@ -7776,7 +7777,7 @@ var UNION = /* @__PURE__ */ new Set(["reserved", "secrets.files", "secrets.patte
 var TIGHTEN = /* @__PURE__ */ new Set(["git.force_push", "git.no_verify"]);
 var CEILING = /^budgets\./;
 function loadLayers(root, crewDir, role, team) {
-  const errors = [], hints = [];
+  const errors = [], hints = [], custom = [];
   const read = (label, text2) => {
     if (text2 === null) return null;
     try {
@@ -7808,7 +7809,14 @@ function loadLayers(root, crewDir, role, team) {
     if (team && !t) errors.push(`team '${team}' (CREW_TEAM) is not defined under teams: in .crew/policy.yaml`);
     if (r) layers.push({ name: `project role ${role}`, org: false, raw: r });
     if (t) layers.push({ name: `project team ${team}`, org: false, raw: t });
-    for (const [name, section] of Object.entries({ ...roles ?? {} })) validate(section, SCOPED, `roles.${name}`, errors);
+    for (const [name, section] of Object.entries({ ...roles ?? {} })) {
+      validate(section, { ...SCOPED, charter: "str" }, `roles.${name}`, errors);
+      if (!ROLES.includes(name)) {
+        custom.push(name);
+        if (!/^[a-z][a-z0-9-]*$/.test(name)) errors.push(`roles.${name}: a role name is lower-case letters, digits and dashes`);
+        if (typeof section?.charter !== "string") errors.push(`roles.${name}: a new role needs a charter (what it owns and never does)`);
+      }
+    }
     for (const [name, section] of Object.entries({ ...teams ?? {} })) {
       const { scope, ...rest } = section ?? {};
       if (scope !== void 0 && !isList(scope)) errors.push(`teams.${name}.scope: expected a list of path globs`);
@@ -7819,7 +7827,7 @@ function loadLayers(root, crewDir, role, team) {
     if (l.name === "org" || l.name === "project") validate(l.raw, GLOBAL, l.name === "org" ? "org" : "", errors);
     else if (l.name.startsWith("org role")) validate(l.raw, SCOPED, l.name, errors);
   }
-  return { layers, errors, hints };
+  return { layers, errors, hints, custom };
 }
 function playbook(root, crewDir) {
   const cfgPath = join(crewDir, "config.yaml");
@@ -7874,7 +7882,7 @@ function flatten(raw, prefix = "") {
     return v && typeof v === "object" && !Array.isArray(v) ? flatten(v, path) : [[path, v]];
   });
 }
-function resolveLayers(layers) {
+function resolveLayers(layers, roles = ROLES) {
   const values = /* @__PURE__ */ new Map(), sources = /* @__PURE__ */ new Map(), ceilings = /* @__PURE__ */ new Map();
   const errors = [];
   for (const layer of layers) {
@@ -7916,7 +7924,7 @@ function resolveLayers(layers) {
   const gates = [.../* @__PURE__ */ new Set([...get("human_gates", MODE_GATES[mode] ?? []), ...get("human_gates.org", [])])];
   const role_gates = Object.fromEntries([...values].filter(([p]) => p.startsWith("role_gates[")).map(([p, v]) => [p.slice(11, -1), String(v)]));
   for (const t of [...gates, ...Object.keys(role_gates), ...get("reserved", [])]) errors.push(...transitionProblem(t));
-  for (const [t, r] of Object.entries(role_gates)) if (!ROLES.includes(r)) errors.push(`role_gates ${t}: '${r}' is not a role (${ROLES.join(", ")})`);
+  for (const [t, r] of Object.entries(role_gates)) if (!roles.includes(r)) errors.push(`role_gates ${t}: '${r}' is not a role (${roles.join(", ")})`);
   for (const p of get("secrets.patterns", [])) {
     try {
       new RegExp(p);
@@ -7925,7 +7933,7 @@ function resolveLayers(layers) {
     }
   }
   const to = get("escalation.to", "executive");
-  if (!ROLES.includes(to)) errors.push(`escalation.to: '${to}' is not a role (${ROLES.join(", ")})`);
+  if (!roles.includes(to)) errors.push(`escalation.to: '${to}' is not a role (${roles.join(", ")})`);
   const deny = get("tools.deny", []);
   const allow = get("tools.allow", []);
   for (const t of allow.filter((a) => deny.includes(a))) errors.push(`tools.allow: '${t}' is denied by ${sources.get("tools.deny")} (deny wins)`);
@@ -7955,9 +7963,11 @@ function transitionProblem(t) {
   return Object.hasOwn(FLOWS[kind], status2 ?? "") ? [] : [`'${t}': ${kind} has no status '${status2}'`];
 }
 function resolvePolicy(root, crewDir, role = null, team = null) {
-  const { layers, errors, hints } = loadLayers(root, crewDir, role, team);
-  const r = resolveLayers(layers);
-  return { policy: r.policy, sources: r.sources, errors: [...errors, ...r.errors], hints, role, team };
+  const { layers, errors, hints, custom } = loadLayers(root, crewDir, role, team);
+  const roles = [...ROLES, ...custom];
+  const r = resolveLayers(layers, roles);
+  if (role && !roles.includes(role)) errors.push(`role '${role}' is not a role (${roles.join(", ")})`);
+  return { policy: r.policy, sources: r.sources, errors: [...errors, ...r.errors], hints, role, team, roles };
 }
 function approvalReason(p, transition) {
   if (p.reserved.includes(transition)) return "a reserved decision";
@@ -8287,7 +8297,8 @@ function ask(store, ref, to, text2, o = {}) {
     if (!kindOf(id)) fail(`Unrecognised ID '${id}'.`);
     store.find(id);
   }
-  if (!ROLES.includes(to)) fail(`--to must be one of ${ROLES.join(", ")}.`);
+  const roles = store.policy.roles;
+  if (!roles.includes(to)) fail(`--to must be one of ${roles.join(", ")}.`);
   if (!text2.trim()) fail("Ask a question.");
   const qid = `Q-${randomBytes(3).toString("hex")}`;
   store.ledger.record("ask", id ?? null, { qid, to, text: text2, ...o.fyi ? { blocking: false } : {}, ...o.escalation ? { escalation: true } : {} });
@@ -8528,10 +8539,11 @@ var RULES = {
   ]
 };
 function roleLines(store, role) {
-  if (!ROLES.includes(role)) fail(`Unknown role '${role}'. Roles: ${ROLES.join(", ")}.`);
+  const roles = store.policy.roles;
+  if (!roles.includes(role)) fail(`Unknown role '${role}'. Roles: ${roles.join(", ")}.`);
   const v = new View(store);
   const asked = openQuestions(v.events).filter((x) => x.to === role && !(role === "executive" && x.escalation)).map((x) => `QUESTION     ${x.id} from ${x.by}${x.ref ? ` about ${x.ref}` : ""}: ${x.text} \u2192 answer ${x.id} "\u2026"`);
-  const work = RULES[role].flatMap((r) => r(v));
+  const work = (RULES[role] ?? []).flatMap((r) => r(v));
   return [
     ...asked,
     ...work.map((w, i) => `${i ? "THEN" : "NEXT"}         ${w}`).slice(0, 8),
@@ -9903,7 +9915,8 @@ function assemble2(header, sections2, budget) {
 function context(store, o = {}) {
   store.require();
   const role = o.role ?? store.ledger.who.role ?? "any";
-  if (role !== "any" && !ROLES.includes(role)) fail(`Unknown role '${role}'. Roles: ${ROLES.join(", ")}.`);
+  const roles = store.policy.roles;
+  if (role !== "any" && !roles.includes(role)) fail(`Unknown role '${role}'. Roles: ${roles.join(", ")}.`);
   const budget = o.budget ?? DEFAULT_BUDGET;
   if (budget < 200) fail("--budget must be at least 200 characters.");
   const pid = o.id?.toUpperCase() ?? /^plan\/(P-\d+)/.exec(currentBranch() ?? "")?.[1];
@@ -9963,7 +9976,16 @@ function setFocus(store, goalId) {
 
 // src/mcp.ts
 var text = (description) => ({ type: "string", description });
-var obj = (properties = {}, required = []) => ({ type: "object", properties, ...required.length ? { required } : {}, additionalProperties: false });
+var obj = (properties = {}, required = []) => ({
+  type: "object",
+  properties: {
+    ...properties,
+    as: { type: "string", description: "your role (set by the guard for agents)" },
+    run_id: { type: "string", description: "your run id (set by the guard for agents)" }
+  },
+  ...required.length ? { required } : {},
+  additionalProperties: false
+});
 var s = (a, k) => typeof a[k] === "string" && a[k] ? a[k] : void 0;
 var up4 = (a, k) => s(a, k).toUpperCase();
 var num = (description) => ({ type: "number", description });
@@ -9972,14 +9994,14 @@ var ITEM_FIELDS = { priority: text("P0\u2013P3"), severity: text("bugs only: S1\
 var TOOLS = {
   next: {
     description: "The single best next step (`crew.mjs next`); with a role, that role's own queue, questions to it first.",
-    input: obj({ role: { type: "string", enum: [...ROLES] } }),
-    run: (st, a) => nextStep(st, s(a, "role"))
+    input: obj({ role: text("a role: executive, director, pm, architect, developer, qa, release, or one the policy defines") }),
+    run: (st, a) => nextStep(st, s(a, "role") ?? st.ledger.who.role ?? void 0)
   },
   context: {
     description: "What you need right now (`crew.mjs context`): for a plan, where the work stands, its goal, criteria with evidence, tasks, blockers and questions, knowledge in scope; without one, the idea, focus, your next steps and the team. Sliced for your role and kept within a budget. Call it at the start of every session.",
     input: obj({
       plan: text("e.g. P-004; default: the plan of this branch"),
-      role: { type: "string", enum: [...ROLES] },
+      role: text("a role: executive, director, pm, architect, developer, qa, release, or one the policy defines"),
       budget: num("characters, default 6000")
     }),
     run: (st, a) => context(st, { id: s(a, "plan"), role: s(a, "role"), budget: n(a, "budget") })
@@ -9988,7 +10010,7 @@ var TOOLS = {
     description: "Ask another role a question (`crew.mjs ask`), recorded so it isn't lost. It blocks the document it is about from moving forward until answered (fyi: true doesn't block).",
     input: obj({
       ref: text("the document it is about, e.g. P-004"),
-      to: { type: "string", enum: [...ROLES] },
+      to: text("a role: executive, director, pm, architect, developer, qa, release, or one the policy defines"),
       text: text("the question"),
       fyi: { type: "boolean" }
     }, ["to", "text"]),
@@ -10013,7 +10035,7 @@ var TOOLS = {
   },
   questions: {
     description: "Open questions between roles (`crew.mjs questions --json`).",
-    input: obj({ to: { type: "string", enum: [...ROLES] }, ref: text("only about this document"), all: { type: "boolean" } }),
+    input: obj({ to: text("a role: executive, director, pm, architect, developer, qa, release, or one the policy defines"), ref: text("only about this document"), all: { type: "boolean" } }),
     run: (st, a) => listQuestions(st, { to: s(a, "to"), ref: s(a, "ref"), all: a.all === true, json: true })
   },
   current: {
@@ -10197,6 +10219,19 @@ function callTool(open, name, args = {}) {
   if (!tool) return result([`Unknown tool '${name}'.`], true);
   const missing = (tool.input.required ?? []).filter((k) => args[k] === void 0 || args[k] === "");
   if (missing.length) return result([`missing ${missing.join(", ")}`], true);
+  const saved = { role: process.env.CREW_ROLE, run: process.env.CREW_RUN };
+  if (typeof args.as === "string" && args.as) process.env.CREW_ROLE = args.as;
+  if (typeof args.run_id === "string" && args.run_id) process.env.CREW_RUN = args.run_id;
+  try {
+    return runTool(open, tool, args, result);
+  } finally {
+    for (const [k, v] of [["CREW_ROLE", saved.role], ["CREW_RUN", saved.run]]) {
+      if (v === void 0) delete process.env[k];
+      else process.env[k] = v;
+    }
+  }
+}
+function runTool(open, tool, args, result) {
   const store = open();
   try {
     const code = tool.run(store, args) ?? 0;

@@ -16,7 +16,6 @@ import { learn, recallCmd } from "./commands/knowledge.js";
 import { showLedger } from "./commands/ledger.js";
 import { setFocus } from "./commands/planning.js";
 import { log, move, usage } from "./commands/workflow.js";
-import { ROLES } from "./core/model.js";
 import { Store } from "./core/store.js";
 import { HubError } from "./core/text.js";
 
@@ -27,8 +26,11 @@ type Schema = { type: "object"; properties: Record<string, unknown>; required?: 
 interface Tool { description: string; input: Schema; run: (s: Store, a: Args) => number | void }
 
 const text = (description: string) => ({ type: "string", description });
+/** Every tool takes `as` (role) and `run_id`: who is acting. The guard fills them in from the calling agent. */
 const obj = (properties: Record<string, unknown> = {}, required: string[] = []): Schema =>
-  ({ type: "object", properties, ...(required.length ? { required } : {}), additionalProperties: false });
+  ({ type: "object", properties: { ...properties, as: { type: "string", description: "your role (set by the guard for agents)" },
+    run_id: { type: "string", description: "your run id (set by the guard for agents)" } }, ...(required.length ? { required } : {}),
+  additionalProperties: false });
 const s = (a: Args, k: string) => (typeof a[k] === "string" && a[k] ? (a[k] as string) : undefined);
 const up = (a: Args, k: string) => s(a, k)!.toUpperCase();
 const num = (description: string) => ({ type: "number", description });
@@ -39,16 +41,16 @@ const ITEM_FIELDS = { priority: text("P0–P3"), severity: text("bugs only: S1�
 /** name → tool. Required arguments are checked against `input.required` before `run`. */
 export const TOOLS: Record<string, Tool> = {
   next: { description: "The single best next step (`crew.mjs next`); with a role, that role's own queue, questions to it first.",
-    input: obj({ role: { type: "string", enum: [...ROLES] } }), run: (st, a) => nextStep(st, s(a, "role")) },
+    input: obj({ role: text("a role: executive, director, pm, architect, developer, qa, release, or one the policy defines") }), run: (st, a) => nextStep(st, s(a, "role") ?? st.ledger.who.role ?? undefined) },
   context: { description: "What you need right now (`crew.mjs context`): for a plan, where the work stands, its goal, criteria with "
     + "evidence, tasks, blockers and questions, knowledge in scope; without one, the idea, focus, your next steps and the team. "
     + "Sliced for your role and kept within a budget. Call it at the start of every session.",
-    input: obj({ plan: text("e.g. P-004; default: the plan of this branch"), role: { type: "string", enum: [...ROLES] },
+    input: obj({ plan: text("e.g. P-004; default: the plan of this branch"), role: text("a role: executive, director, pm, architect, developer, qa, release, or one the policy defines"),
       budget: num("characters, default 6000") }),
     run: (st, a) => context(st, { id: s(a, "plan"), role: s(a, "role"), budget: n(a, "budget") }) },
   ask: { description: "Ask another role a question (`crew.mjs ask`), recorded so it isn't lost. It blocks the document it is about "
     + "from moving forward until answered (fyi: true doesn't block).",
-    input: obj({ ref: text("the document it is about, e.g. P-004"), to: { type: "string", enum: [...ROLES] }, text: text("the question"),
+    input: obj({ ref: text("the document it is about, e.g. P-004"), to: text("a role: executive, director, pm, architect, developer, qa, release, or one the policy defines"), text: text("the question"),
       fyi: { type: "boolean" } }, ["to", "text"]),
     run: (st, a) => { ask(st, s(a, "ref"), s(a, "to")!, s(a, "text")!, { fyi: a.fyi === true }); } },
   escalate: { description: "Escalate to the executive (`crew.mjs escalate`): reserved decisions, a goal at risk, anything only a human "
@@ -61,7 +63,7 @@ export const TOOLS: Record<string, Tool> = {
       ["id", "text"]),
     run: (st, a) => answer(st, s(a, "id")!, s(a, "text")!, { decision: a.decision === true, scope: s(a, "scope") }) },
   questions: { description: "Open questions between roles (`crew.mjs questions --json`).",
-    input: obj({ to: { type: "string", enum: [...ROLES] }, ref: text("only about this document"), all: { type: "boolean" } }),
+    input: obj({ to: text("a role: executive, director, pm, architect, developer, qa, release, or one the policy defines"), ref: text("only about this document"), all: { type: "boolean" } }),
     run: (st, a) => listQuestions(st, { to: s(a, "to"), ref: s(a, "ref"), all: a.all === true, json: true }) },
   current: { description: "Where work stands: the focus goal and the plan on the current branch (`crew.mjs current`).",
     input: obj(), run: (st) => current(st) },
@@ -136,6 +138,19 @@ export function callTool(open: () => Store, name: string, args: Args = {}): Tool
   if (!tool) return result([`Unknown tool '${name}'.`], true);
   const missing = (tool.input.required ?? []).filter((k) => args[k] === undefined || args[k] === "");
   if (missing.length) return result([`missing ${missing.join(", ")}`], true);
+  const saved = { role: process.env.CREW_ROLE, run: process.env.CREW_RUN };
+  if (typeof args.as === "string" && args.as) process.env.CREW_ROLE = args.as; // this call only; restored below
+  if (typeof args.run_id === "string" && args.run_id) process.env.CREW_RUN = args.run_id;
+  try {
+    return runTool(open, tool, args, result);
+  } finally {
+    for (const [k, v] of [["CREW_ROLE", saved.role], ["CREW_RUN", saved.run]] as const) {
+      if (v === undefined) delete process.env[k]; else process.env[k] = v;
+    }
+  }
+}
+
+function runTool(open: () => Store, tool: Tool, args: Args, result: (lines: string[], isError: boolean) => ToolResult): ToolResult {
   const store = open();
   try {
     const code = tool.run(store, args) ?? 0;

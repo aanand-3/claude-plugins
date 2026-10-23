@@ -4,7 +4,6 @@ import type { Doc } from "../core/doc.js";
 import { drift, overlapping } from "../core/footprint.js";
 import * as git from "../core/git.js";
 import { type Entry, recall } from "../core/knowledge.js";
-import { ROLES } from "../core/model.js";
 import * as q from "../core/queries.js";
 import type { Store } from "../core/store.js";
 import { fail, firstParagraph, stripComments } from "../core/text.js";
@@ -118,7 +117,8 @@ export function assemble(header: string, sections: Section[], budget: number): s
 export function context(store: Store, o: { id?: string; role?: string; budget?: number; json?: boolean } = {}): void {
   store.require();
   const role = o.role ?? store.ledger.who.role ?? "any";
-  if (role !== "any" && !(ROLES as readonly string[]).includes(role)) fail(`Unknown role '${role}'. Roles: ${ROLES.join(", ")}.`);
+  const roles = store.policy.roles;
+  if (role !== "any" && !roles.includes(role)) fail(`Unknown role '${role}'. Roles: ${roles.join(", ")}.`);
   const budget = o.budget ?? DEFAULT_BUDGET;
   if (budget < 200) fail("--budget must be at least 200 characters.");
   const pid = o.id?.toUpperCase() ?? /^plan\/(P-\d+)/.exec(git.currentBranch() ?? "")?.[1];

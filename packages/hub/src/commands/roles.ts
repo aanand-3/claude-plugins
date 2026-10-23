@@ -2,7 +2,6 @@
 import type { Doc } from "../core/doc.js";
 import * as git from "../core/git.js";
 import { overlapping } from "../core/footprint.js";
-import { ROLES } from "../core/model.js";
 import { approvalReason } from "../core/policy.js";
 import * as q from "../core/queries.js";
 import type { Store } from "../core/store.js";
@@ -93,11 +92,12 @@ const RULES: Record<string, Rule[]> = {
 };
 
 export function roleLines(store: Store, role: string): string[] {
-  if (!(ROLES as readonly string[]).includes(role)) fail(`Unknown role '${role}'. Roles: ${ROLES.join(", ")}.`);
+  const roles = store.policy.roles;
+  if (!roles.includes(role)) fail(`Unknown role '${role}'. Roles: ${roles.join(", ")}.`);
   const v = new View(store);
   const asked = openQuestions(v.events).filter((x) => x.to === role && !(role === "executive" && x.escalation))
     .map((x) => `QUESTION     ${x.id} from ${x.by}${x.ref ? ` about ${x.ref}` : ""}: ${x.text} → answer ${x.id} "…"`);
-  const work = RULES[role].flatMap((r) => r(v));
+  const work = (RULES[role] ?? []).flatMap((r) => r(v)); // a project-defined role has questions, no built-in queue
   return [...asked, ...work.map((w, i) => `${i ? "THEN" : "NEXT"}         ${w}`).slice(0, 8),
     ...(asked.length || work.length ? [] : [`NEXT         nothing for the ${role} role right now`])];
 }

@@ -2,7 +2,6 @@
  * An open, blocking question on a document stops that document moving forward — nothing else. */
 import { randomBytes } from "node:crypto";
 import type { LedgerEvent } from "../core/ledger.js";
-import { ROLES } from "../core/model.js";
 import type { Store } from "../core/store.js";
 import { fail, kindOf } from "../core/text.js";
 import { learn } from "./knowledge.js";
@@ -37,7 +36,8 @@ export function ask(store: Store, ref: string | undefined, to: string, text: str
     if (!kindOf(id)) fail(`Unrecognised ID '${id}'.`);
     store.find(id);
   }
-  if (!(ROLES as readonly string[]).includes(to)) fail(`--to must be one of ${ROLES.join(", ")}.`);
+  const roles = store.policy.roles;
+  if (!roles.includes(to)) fail(`--to must be one of ${roles.join(", ")}.`);
   if (!text.trim()) fail("Ask a question.");
   const qid = `Q-${randomBytes(3).toString("hex")}`;
   store.ledger.record("ask", id ?? null, { qid, to, text, ...(o.fyi ? { blocking: false } : {}), ...(o.escalation ? { escalation: true } : {}) });
