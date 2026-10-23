@@ -9,7 +9,7 @@ import { fail } from "./text.js";
 import type { Workspace } from "./workspace.js";
 
 export type EventType = "claim" | "release" | "move" | "log" | "usage" | "learn" | "checkpoint" | "ask" | "answer"
-  | "assign" | "pause" | "resume";
+  | "assign" | "pause" | "resume" | "review";
 
 export interface LedgerEvent {
   ts: string;                       // ISO timestamp

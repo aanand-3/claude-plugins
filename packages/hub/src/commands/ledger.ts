@@ -9,12 +9,13 @@ const DETAIL: Record<string, (e: LedgerEvent) => string> = {
   move: (e) => `${e.from} → ${e.to}${e.note ? ` — ${e.note}` : ""}`,
   log: (e) => String(e.text ?? ""),
   learn: (e) => `${e.kind}: ${e.title}${e.supersedes ? ` (supersedes ${e.supersedes})` : ""}`,
-  checkpoint: (e) => `at ${e.step}${e.sha ? ` (${String(e.sha).slice(0, 7)})` : ""}`
+  checkpoint: (e) => (e.workflow ? `${e.workflow}: ${e.step} ${e.state}` : `at ${e.step}${e.sha ? ` (${String(e.sha).slice(0, 7)})` : ""}`
     + ((e.verify as { cmd: string; ok: boolean }[] | undefined) ?? []).map((v) => ` ${v.ok ? "✓" : "✗"} ${v.cmd}`).join("")
-    + (e.attempt ? ` — tried: ${(e.attempt as { what: string }).what}` : ""),
+    + (e.attempt ? ` — tried: ${(e.attempt as { what: string }).what}` : "")),
   ask: (e) => `${e.qid} → ${e.to}${e.escalation ? " (escalation)" : ""}: ${e.text}`,
   answer: (e) => `${e.qid}: ${e.text}${e.approved_by ? ` (by ${e.approved_by})` : ""}`,
   assign: (e) => `to the ${e.to} role${e.team ? `, team ${e.team}` : ""}${e.note ? ` — ${e.note}` : ""}`,
+  review: (e) => `${e.verdict === "approve" ? "approved" : `changes: ${e.text}`}${e.sha ? ` (${String(e.sha).slice(0, 7)})` : ""}`,
   pause: (e) => String(e.reason ?? "paused"),
   resume: (e) => String(e.note ?? "resumed"),
   usage: (e) => `${e.tokens_in} in / ${e.tokens_out} out tokens, $${Number(e.cost ?? 0).toFixed(2)}${e.model ? ` (${e.model})` : ""}`,

@@ -7,6 +7,7 @@ import { approvalReason } from "../core/policy.js";
 import { evidenceProblems, writeHandoff } from "./execution.js";
 import { FORWARD, openQuestions } from "./questions.js";
 import { goalProblems } from "./goals.js";
+import { reviewProblems } from "./review.js";
 import { bounces, escalateLimit, refuseWhilePaused } from "./liveness.js";
 import { CLOSED, FLOWS, ITEM_CLOSED, type Kind } from "../core/model.js";
 import * as q from "../core/queries.js";
@@ -15,7 +16,8 @@ import { fail, kindOf, slugify, today } from "../core/text.js";
 
 const LOG_SECTION: Partial<Record<Kind, string>> = { item: "Notes" };
 
-export function move(store: Store, docId: string, status: string, note?: string, force = false, approvedBy?: string): Doc {
+/** `via`: the step that causes this move and whose gate applies instead (a review sending a plan back: `plan.reviewed`). */
+export function move(store: Store, docId: string, status: string, note?: string, force = false, approvedBy?: string, via?: string): Doc {
   store.require();
   docId = docId.toUpperCase();
   const kind = kindOf(docId);
@@ -33,9 +35,9 @@ export function move(store: Store, docId: string, status: string, note?: string,
     fail(`${doc.id} waits for an answer before it moves on:\n  - ${waiting.map((x) => `${x.id} → ${x.to}: ${x.text}`).join("\n  - ")}\n`
       + "(`crew.mjs questions`; --force to move anyway)");
   }
-  if (kind === "plan" && status === "in-progress") assignedHere(store, doc.id);
-  authorize(store, doc.id, `${kind}.${status}`, approvedBy, old);
-  if (kind === "plan" && status === "in-progress") claimFor(store, doc, force);
+  if (kind === "plan" && status === "in-progress" && !via) assignedHere(store, doc.id);
+  authorize(store, doc.id, via ?? `${kind}.${status}`, approvedBy, via ? undefined : old);
+  if (kind === "plan" && status === "in-progress" && !via) claimFor(store, doc, force); // the developer's claim stays
   stamp(kind!, doc, status);
   doc.set("status", status);
   if (kind === "plan" && status === "in-review" && doc.source === "worktree") writeHandoff(store, doc);
@@ -45,7 +47,8 @@ export function move(store: Store, docId: string, status: string, note?: string,
   const approval = approvedBy ? ` (approved by ${approvedBy})` : "";
   doc.appendLog(`status ${old} → ${status}` + (note ? ` — ${note}` : "") + approval, LOG_SECTION[kind!] ?? "Progress log");
   doc.save();
-  store.ledger.record("move", doc.id, { from: old, to: status, ...(note ? { note } : {}), ...(approvedBy ? { approved_by: approvedBy } : {}) });
+  store.ledger.record("move", doc.id, { from: old, to: status, ...(note ? { note } : {}), ...(approvedBy ? { approved_by: approvedBy } : {}),
+    ...(via ? { via } : {}) });
   if (CLOSED.has(status) && store.ledger.claims().has(doc.id)) store.ledger.record("release", doc.id, { reason: status });
   store.say(`${doc.id}: ${old} → ${status}`);
   return doc;
@@ -110,7 +113,7 @@ function guard(store: Store, kind: Kind, doc: Doc, status: string, approvedBy?: 
     label = "can't go to review";
   } else if (kind === "plan" && status === "done") {
     problems = [...doc.tasks().filter(([done]) => !done).map(([, t]) => `unchecked task: ${t}`),
-      ...evidenceProblems(store, doc, approvedBy)];
+      ...evidenceProblems(store, doc, approvedBy), ...reviewProblems(store, doc)];
     label = "can't be done";
   } else if (kind === "goal" && status === "done") {
     problems = goalProblems(store, doc);

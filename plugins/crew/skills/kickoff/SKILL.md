@@ -18,6 +18,12 @@ steps: {preflight: done, discover: done, design: pending, guidelines: pending, h
 A step for a module the user didn't choose is `skipped`.
 On start, if it exists, show what's done and continue from the first `pending` step.
 
+**With the hub, the ledger tracks the run instead** (no `kickoff.yaml`): after each step,
+`node .crew/bin/crew.mjs checkpoint --workflow kickoff --step <step>` (`--skip` for a skipped one); on start,
+`node .crew/bin/crew.mjs resume --workflow kickoff` shows what's done and the next step. The hub's ledger lives in the git
+repository, so with the hub chosen run `git init -b main` in preflight if there is no repository yet (git-setup completes
+it later), and record the steps done before the hub existed right after `init`. Any session or agent can then resume.
+
 ## Steps
 
 0. **Preflight**
@@ -48,7 +54,7 @@ On start, if it exists, show what's done and continue from the first `pending` s
    - **Graph** (only with `modules.graphify`): now that `.githooks` is active, follow the `codemap` skill (`${CLAUDE_PLUGIN_ROOT}/skills/codemap/SKILL.md`), *enable* only. There's no code to map yet, so don't build. Mark the `graph` step done.
    - Review the staged files with the user, then make the initial commit `chore: project scaffold (crew)`. GitHub remote only if the user asks.
 
-6. **Idea, goals & first plan** (only with `modules.hub`; otherwise `skipped`). Follow the hub skill's workflows 1 and 3, and its writing guide (`${CLAUDE_PLUGIN_ROOT}/skills/hub/references/writing-guide.md`). The result is a concrete, reviewable plan, not just a list of goals.
+6. **Idea, goals & first plan** (only with `modules.hub`; otherwise `skipped`). **With the Agent team mode** (`preset: lifecycle`), deciding the idea stays with the user here; the rest is the team's first job: hand it to `/crew:team "kickoff: goals and the first plans from the decided idea"` — the PM drafts the goals and the backlog, the Architect specs P-001 and the focus goal's first plan, the Director checks and records the step; the user approves the goal set (`goal.active` is their gate). Otherwise: Follow the hub skill's workflows 1 and 3, and its writing guide (`${CLAUDE_PLUGIN_ROOT}/skills/hub/references/writing-guide.md`). The result is a concrete, reviewable plan, not just a list of goals.
    - **Idea:** draft `idea.md` from the brief: the problem, the outcome, **success criteria as a checklist** the user can verify, the direction chosen in discover (and the alternatives weighed), constraints. With `docs/research/idea-research.md`, put its verdict and key findings under Research and its open assumptions under Constraints. Create it with `crew.mjs new-idea "<title>" --from .crew/drafts/idea.md`. Ask the user to confirm the success criteria, then `move IDEA decided --approved-by <their name>` on their yes (a reserved decision: the user decides, never you).
    - **Goals:** propose 1–3 from the brief's MVP capabilities. With research, its *Worth adopting* features become candidate goal slices or FEAT items. For each goal the user approves:
      - write a complete draft whose **Breakdown** lists vertical slices (`Title — what it delivers`);

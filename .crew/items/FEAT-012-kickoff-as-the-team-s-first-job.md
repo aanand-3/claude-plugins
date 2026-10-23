@@ -24,3 +24,4 @@ Slice of G-003 (Agent team): Kickoff as the team's first job — progress as led
 
 ## Notes
 - 2026-10-23: triaged from G-003 breakdown
+- 2026-10-23: T4: checkpoint --workflow kickoff|onboard --step S / resume --workflow; kickoff hands goals and first plans to /crew:team under the lifecycle preset

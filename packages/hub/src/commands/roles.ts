@@ -10,6 +10,7 @@ import { evidence, implementers } from "./execution.js";
 import { budgetProblems } from "./workflow.js";
 import { openQuestions } from "./questions.js";
 import { staffing } from "./team.js";
+import { reviewProblems } from "./review.js";
 import { paused, staleClaims } from "./liveness.js";
 
 type Rule = (s: View) => string[];
@@ -79,10 +80,13 @@ const RULES: Record<string, Rule[]> = {
       .map((g) => `break ${g.id} down: it has no open items`),
     (v) => (v.gate("plan.assigned") === "pm" ? v.status("ready").filter((p) => !v.assigned.has(p.id)) : [])
       .map((p) => `open ${p.id}: ${p.get("title")} → assign ${p.id} --to developer (\`staff\` shows what can run now)`),
-    (v) => (v.gate("plan.done") === "pm" ? v.status("in-review") : []).filter((p) => complete(v, p))
-      .map((p) => `complete ${p.id}: ${p.get("title")} — QA's evidence is complete → move ${p.id} done`),
+    (v) => (v.gate("plan.done") === "pm" ? v.status("in-review") : []).filter((p) => complete(v, p) && !reviewProblems(v.store, p).length)
+      .map((p) => `complete ${p.id}: ${p.get("title")} — QA's evidence and the review are in → move ${p.id} done`),
   ],
   architect: [
+    (v) => (v.gate("plan.reviewed") === "architect" ? v.status("in-review") : [])
+      .filter((p) => reviewProblems(v.store, p).length && !implementers(v.events, p.id).has(v.store.ledger.who.run))
+      .map((p) => `review ${p.id}: ${p.get("title")} — its diff against the spec → review ${p.id} --approve | --changes "…"`),
     (v) => v.status("draft").map((p) => `refine ${p.id}: ${p.get("title")} to the Definition of Ready`),
     (v) => v.ranked("triaged").slice(0, 2).map((i) => `write a plan for ${i.id}: ${i.get("title")} (${i.get("priority")})`),
     (v) => v.status("ready").flatMap((p) => overlapping(p, v.plans).map((o) => `${p.id} overlaps ${o.id} (${o.globs.join(", ")}): add depends_on or narrow touches`)),

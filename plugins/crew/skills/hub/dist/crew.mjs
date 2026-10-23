@@ -8046,8 +8046,10 @@ var PRESETS = {
         "plan.dropped": "pm",
         "goal.done": "director",
         // the Director closes a goal the PM has verified
-        "plan.reassigned": "director"
+        "plan.reassigned": "director",
         // … and moves stuck work to someone else
+        "plan.reviewed": "architect"
+        // code review against the spec; done needs an approval of the current code
       },
       // liveness: a claim quiet for a day is stale; a third bounce or a sixth failed attempt goes to the Director
       limits: { stale_claim_hours: 24, max_bounces: 2, max_attempts: 5 }
@@ -8058,7 +8060,7 @@ var PRESETS = {
 
 // src/core/policy.ts
 var MODES = ["ai-native", "ai-assisted", "human-led"];
-var ACTIONS = /* @__PURE__ */ new Set(["plan.assigned", "plan.reassigned"]);
+var ACTIONS = /* @__PURE__ */ new Set(["plan.assigned", "plan.reassigned", "plan.reviewed"]);
 var MODE_GATES = {
   "ai-native": [],
   "ai-assisted": ["plan.ready", "plan.done", "goal.done"],
@@ -8896,7 +8898,7 @@ function criteria(plan) {
   return list.length ? list : plan.bullets("Acceptance criteria");
 }
 function implementers(events, planId) {
-  return new Set(events.filter((e) => e.ref === planId && (e.type === "claim" || e.type === "move" && e.to === "in-progress")).map((e) => e.run));
+  return new Set(events.filter((e) => e.ref === planId && (e.type === "claim" || e.type === "move" && e.to === "in-progress" && !e.via)).map((e) => e.run));
 }
 var checkpoints = (events, planId) => events.filter((e) => e.type === "checkpoint" && e.ref === planId);
 function evidence(store, plan) {
@@ -9487,9 +9489,40 @@ function goalProblems(store, goal) {
   return problems;
 }
 
+// src/commands/review.ts
+var lastCode = (branch) => git(["log", "-1", "--format=%H", branch, "--", ".", ":(exclude).crew"])?.trim() || null;
+function review(store, planId, o) {
+  store.require();
+  const plan = store.find(store.checkRef(planId, "plan"));
+  if (!!o.approve === !!o.changes) fail('Give one verdict: --approve, or --changes "<what to change>".');
+  if (plan.get("status") !== "in-review") fail(`${plan.id} is '${plan.get("status")}': only a plan in review is reviewed.`);
+  authorize(store, plan.id, "plan.reviewed", void 0, void 0, `review ${plan.id}`);
+  const me = store.ledger.who.run;
+  if (implementers(store.ledger.events(), plan.id).has(me)) fail(`This run (${me}) implemented ${plan.id}; another role reviews it.`);
+  const branch = plan.get("branch") ?? "";
+  const sha = branch && git(["rev-parse", "--verify", "-q", branch])?.trim() || null;
+  store.ledger.record("review", plan.id, { verdict: o.approve ? "approve" : "changes", sha, ...o.changes ? { text: o.changes } : {} });
+  if (o.changes) {
+    plan.appendLog(`review: changes requested \u2014 ${o.changes}`, "Progress log");
+    plan.save();
+    move(store, plan.id, "in-progress", `changes requested: ${o.changes}`, false, void 0, "plan.reviewed");
+  } else store.say(`${plan.id}: approved${sha ? ` at ${sha.slice(0, 7)}` : ""}`);
+}
+function reviewProblems(store, plan) {
+  if (!store.policy.policy.role_gates["plan.reviewed"]) return [];
+  const last = store.ledger.events().filter((e) => e.type === "review" && e.ref === plan.id).at(-1);
+  const how = `\`review ${plan.id} --approve\` by the ${store.policy.policy.role_gates["plan.reviewed"]}`;
+  if (!last) return [`no code review yet: ${how}`];
+  if (last.verdict !== "approve") return [`the last review asked for changes: ${last.text}`];
+  const code = lastCode(plan.get("branch") ?? "");
+  const dirty = (git(["status", "--porcelain"]) ?? "").split("\n").filter((l) => l.trim() && !l.slice(3).startsWith(".crew/"));
+  const covered = !code || !!last.sha && git(["merge-base", "--is-ancestor", code, String(last.sha)]) !== null;
+  return covered && !(currentBranch() === plan.get("branch") && dirty.length) ? [] : [`the code changed since the approving review (${String(last.sha ?? "?").slice(0, 7)}): ${how} again`];
+}
+
 // src/commands/workflow.ts
 var LOG_SECTION = { item: "Notes" };
-function move(store, docId, status2, note, force = false, approvedBy) {
+function move(store, docId, status2, note, force = false, approvedBy, via) {
   store.require();
   docId = docId.toUpperCase();
   const kind = kindOf(docId);
@@ -9508,9 +9541,9 @@ function move(store, docId, status2, note, force = false, approvedBy) {
   - ${waiting.map((x) => `${x.id} \u2192 ${x.to}: ${x.text}`).join("\n  - ")}
 (\`crew.mjs questions\`; --force to move anyway)`);
   }
-  if (kind === "plan" && status2 === "in-progress") assignedHere(store, doc.id);
-  authorize(store, doc.id, `${kind}.${status2}`, approvedBy, old);
-  if (kind === "plan" && status2 === "in-progress") claimFor(store, doc, force);
+  if (kind === "plan" && status2 === "in-progress" && !via) assignedHere(store, doc.id);
+  authorize(store, doc.id, via ?? `${kind}.${status2}`, approvedBy, via ? void 0 : old);
+  if (kind === "plan" && status2 === "in-progress" && !via) claimFor(store, doc, force);
   stamp(kind, doc, status2);
   doc.set("status", status2);
   if (kind === "plan" && status2 === "in-review" && doc.source === "worktree") writeHandoff(store, doc);
@@ -9520,7 +9553,13 @@ function move(store, docId, status2, note, force = false, approvedBy) {
   const approval = approvedBy ? ` (approved by ${approvedBy})` : "";
   doc.appendLog(`status ${old} \u2192 ${status2}` + (note ? ` \u2014 ${note}` : "") + approval, LOG_SECTION[kind] ?? "Progress log");
   doc.save();
-  store.ledger.record("move", doc.id, { from: old, to: status2, ...note ? { note } : {}, ...approvedBy ? { approved_by: approvedBy } : {} });
+  store.ledger.record("move", doc.id, {
+    from: old,
+    to: status2,
+    ...note ? { note } : {},
+    ...approvedBy ? { approved_by: approvedBy } : {},
+    ...via ? { via } : {}
+  });
   if (CLOSED.has(status2) && store.ledger.claims().has(doc.id)) store.ledger.record("release", doc.id, { reason: status2 });
   store.say(`${doc.id}: ${old} \u2192 ${status2}`);
   return doc;
@@ -9576,7 +9615,8 @@ function guard(store, kind, doc, status2, approvedBy) {
   } else if (kind === "plan" && status2 === "done") {
     problems = [
       ...doc.tasks().filter(([done]) => !done).map(([, t]) => `unchecked task: ${t}`),
-      ...evidenceProblems(store, doc, approvedBy)
+      ...evidenceProblems(store, doc, approvedBy),
+      ...reviewProblems(store, doc)
     ];
     label = "can't be done";
   } else if (kind === "goal" && status2 === "done") {
@@ -9846,9 +9886,10 @@ var RULES = {
     (v) => v.ranked("new").filter((i) => !i.id.startsWith("BUG-")).slice(0, 3).map((i) => `triage ${i.id}: ${i.get("title")}`),
     (v) => [...v.goals.values()].filter((g) => ["proposed", "active"].includes(g.get("status") ?? "") && !goalItems(g.id, v.items).some((i) => itemStatus(i, v.plans) !== "done")).map((g) => `break ${g.id} down: it has no open items`),
     (v) => (v.gate("plan.assigned") === "pm" ? v.status("ready").filter((p) => !v.assigned.has(p.id)) : []).map((p) => `open ${p.id}: ${p.get("title")} \u2192 assign ${p.id} --to developer (\`staff\` shows what can run now)`),
-    (v) => (v.gate("plan.done") === "pm" ? v.status("in-review") : []).filter((p) => complete(v, p)).map((p) => `complete ${p.id}: ${p.get("title")} \u2014 QA's evidence is complete \u2192 move ${p.id} done`)
+    (v) => (v.gate("plan.done") === "pm" ? v.status("in-review") : []).filter((p) => complete(v, p) && !reviewProblems(v.store, p).length).map((p) => `complete ${p.id}: ${p.get("title")} \u2014 QA's evidence and the review are in \u2192 move ${p.id} done`)
   ],
   architect: [
+    (v) => (v.gate("plan.reviewed") === "architect" ? v.status("in-review") : []).filter((p) => reviewProblems(v.store, p).length && !implementers(v.events, p.id).has(v.store.ledger.who.run)).map((p) => `review ${p.id}: ${p.get("title")} \u2014 its diff against the spec \u2192 review ${p.id} --approve | --changes "\u2026"`),
     (v) => v.status("draft").map((p) => `refine ${p.id}: ${p.get("title")} to the Definition of Ready`),
     (v) => v.ranked("triaged").slice(0, 2).map((i) => `write a plan for ${i.id}: ${i.get("title")} (${i.get("priority")})`),
     (v) => v.status("ready").flatMap((p) => overlapping(p, v.plans).map((o) => `${p.id} overlaps ${o.id} (${o.globs.join(", ")}): add depends_on or narrow touches`))
@@ -11030,6 +11071,41 @@ function guard2(store) {
   return 0;
 }
 
+// src/commands/runs.ts
+var WORKFLOWS = {
+  kickoff: ["preflight", "discover", "design", "guidelines", "hub", "git", "graph", "idea-and-plan"],
+  onboard: ["preflight", "map", "discover", "design", "guidelines", "hub", "git", "graph"]
+};
+var steps = (name) => WORKFLOWS[name] ?? fail(`Unknown workflow '${name}'. Workflows: ${Object.keys(WORKFLOWS).join(", ")}.`);
+function recordStep(store, workflow, step, o = {}) {
+  store.require();
+  const all = steps(workflow);
+  if (!step) fail(`Name the step: --step ${all.join("|")}.`);
+  if (!all.includes(step)) fail(`${workflow} has no step '${step}'. Steps: ${all.join(", ")}.`);
+  const state = o.skip ? "skipped" : "done";
+  store.ledger.record("checkpoint", null, { workflow, step, state, ...o.note ? { note: o.note } : {} });
+  store.say(`${workflow}: ${step} ${state}`);
+}
+function workflowState(events, workflow) {
+  const last = /* @__PURE__ */ new Map();
+  for (const e of events) if (e.type === "checkpoint" && e.workflow === workflow) last.set(String(e.step), e);
+  return steps(workflow).map((step) => ({ step, event: last.get(step) ?? null }));
+}
+function resumeWorkflow(store, workflow, json = false) {
+  store.require();
+  const state = workflowState(store.ledger.events(), workflow);
+  const next = state.find((s) => !s.event)?.step ?? null;
+  if (json) {
+    store.say(JSON.stringify({ workflow, next, steps: state.map(({ step, event }) => ({ step, state: event ? event.state : "pending", by: event?.actor ?? null, role: event?.role ?? null, ts: event?.ts ?? null })) }));
+    return;
+  }
+  if (!state.some((s) => s.event)) store.say(`${workflow}: not started \u2014 begin with ${state[0].step}`);
+  for (const { step, event } of state) {
+    store.say(`  ${(event ? String(event.state) : "pending").padEnd(8)} ${step}` + (event ? `  (${event.actor}${event.role ? `, ${event.role}` : ""}, ${event.ts.slice(0, 16).replace("T", " ")})${event.note ? ` \u2014 ${event.note}` : ""}` : ""));
+  }
+  store.say(next ? `next: ${next}` : `${workflow}: every step is done or skipped`);
+}
+
 // src/commands/ledger.ts
 var DETAIL = {
   claim: (e) => `branch ${e.branch ?? "?"}${e.force ? " (forced)" : ""}`,
@@ -11037,10 +11113,11 @@ var DETAIL = {
   move: (e) => `${e.from} \u2192 ${e.to}${e.note ? ` \u2014 ${e.note}` : ""}`,
   log: (e) => String(e.text ?? ""),
   learn: (e) => `${e.kind}: ${e.title}${e.supersedes ? ` (supersedes ${e.supersedes})` : ""}`,
-  checkpoint: (e) => `at ${e.step}${e.sha ? ` (${String(e.sha).slice(0, 7)})` : ""}` + (e.verify ?? []).map((v) => ` ${v.ok ? "\u2713" : "\u2717"} ${v.cmd}`).join("") + (e.attempt ? ` \u2014 tried: ${e.attempt.what}` : ""),
+  checkpoint: (e) => e.workflow ? `${e.workflow}: ${e.step} ${e.state}` : `at ${e.step}${e.sha ? ` (${String(e.sha).slice(0, 7)})` : ""}` + (e.verify ?? []).map((v) => ` ${v.ok ? "\u2713" : "\u2717"} ${v.cmd}`).join("") + (e.attempt ? ` \u2014 tried: ${e.attempt.what}` : ""),
   ask: (e) => `${e.qid} \u2192 ${e.to}${e.escalation ? " (escalation)" : ""}: ${e.text}`,
   answer: (e) => `${e.qid}: ${e.text}${e.approved_by ? ` (by ${e.approved_by})` : ""}`,
   assign: (e) => `to the ${e.to} role${e.team ? `, team ${e.team}` : ""}${e.note ? ` \u2014 ${e.note}` : ""}`,
+  review: (e) => `${e.verdict === "approve" ? "approved" : `changes: ${e.text}`}${e.sha ? ` (${String(e.sha).slice(0, 7)})` : ""}`,
   pause: (e) => String(e.reason ?? "paused"),
   resume: (e) => String(e.note ?? "resumed"),
   usage: (e) => `${e.tokens_in} in / ${e.tokens_out} out tokens, $${Number(e.cost ?? 0).toFixed(2)}${e.model ? ` (${e.model})` : ""}`
@@ -11094,6 +11171,8 @@ Commands:
   checkpoint [P-###] [--step T3] [--run CMD | --verify CMD --result pass|fail] [--ac 1,2|all] [--output TXT]
              [--attempt WHAT --why WHY] [--note TXT] [--auto]   record where the work is (the plan of this branch by default)
   resume [P-###] [--json] \xB7 handoff [P-###]     where the work stopped vs git now \xB7 write it into the plan's Handoff
+  checkpoint --workflow kickoff|onboard --step S [--skip] [--note] \xB7 resume --workflow W   a multi-step job's progress
+  review P-### --approve | --changes TXT        code review of a plan in review (never by its implementer)
   context [P-###] [--role R] [--budget CHARS] [--json]   what you need right now, within a budget (default 6000 chars)
   next [--role R] \xB7 current \xB7 check \xB7 status [--write]    (roles: executive, director, pm, architect, developer, qa, release + the policy's)
   --as ROLE \xB7 --run-id ID                       who is acting, on any command (wins over CREW_ROLE / CREW_RUN)
@@ -11209,10 +11288,10 @@ var COMMANDS = {
   checkpoint: {
     pos: [],
     rest: true,
-    str: ["step", "run", "verify", "result", "ac", "output", "attempt", "why", "note"],
-    flag: ["auto"],
+    str: ["step", "run", "verify", "result", "ac", "output", "attempt", "why", "note", "workflow"],
+    flag: ["auto", "skip"],
     choices: { result: ["pass", "fail"] },
-    run: (s, a) => checkpoint(s, a.pos[0], {
+    run: (s, a) => a.opt.workflow ? recordStep(s, str2(a, "workflow"), str2(a, "step"), { skip: !!a.opt.skip, note: str2(a, "note") }) : checkpoint(s, a.pos[0], {
       step: str2(a, "step"),
       run: str2(a, "run"),
       verify: str2(a, "verify"),
@@ -11228,9 +11307,15 @@ var COMMANDS = {
   resume: {
     pos: [],
     rest: true,
-    str: ["note"],
+    str: ["note", "workflow"],
     flag: ["json", "team"],
-    run: (s, a) => a.opt.team ? resumeTeam(s, str2(a, "note")) : resume(s, a.pos[0], !!a.opt.json)
+    run: (s, a) => a.opt.team ? resumeTeam(s, str2(a, "note")) : a.opt.workflow ? resumeWorkflow(s, str2(a, "workflow"), !!a.opt.json) : resume(s, a.pos[0], !!a.opt.json)
+  },
+  review: {
+    pos: ["id"],
+    str: ["changes"],
+    flag: ["approve"],
+    run: (s, a) => review(s, a.pos[0], { approve: !!a.opt.approve, changes: str2(a, "changes") })
   },
   pause: { pos: [], str: ["reason"], run: (s, a) => pauseTeam(s, str2(a, "reason")) },
   reassign: {

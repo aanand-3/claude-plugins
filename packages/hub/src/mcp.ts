@@ -17,6 +17,8 @@ import { EVENT_TYPES, showLedger } from "./commands/ledger.js";
 import { setFocus } from "./commands/planning.js";
 import { assign, reassign, staff } from "./commands/team.js";
 import { pauseTeam, resumeTeam } from "./commands/liveness.js";
+import { review } from "./commands/review.js";
+import { recordStep, resumeWorkflow } from "./commands/runs.js";
 import { log, move, usage } from "./commands/workflow.js";
 import { Store } from "./core/store.js";
 import { HubError } from "./core/text.js";
@@ -132,12 +134,18 @@ export const TOOLS: Record<string, Tool> = {
     + "task or check, and whenever an approach fails. A failed check returns an error result but is still recorded.",
     input: obj({ plan: text("e.g. P-004; default: the plan of this branch"), step: text("e.g. T3"), verify: text("the check you ran"),
       result: { type: "string", enum: ["pass", "fail"] }, ac: text("criteria it covers: 1,2 or all"), output: text("the end of its output"),
-      attempt: text("an approach that failed"), why: text("why it failed"), note: text("anything else") }),
-    run: (st, a) => checkpoint(st, s(a, "plan"), { step: s(a, "step"), verify: s(a, "verify"), result: s(a, "result"), ac: s(a, "ac"),
-      output: s(a, "output"), attempt: s(a, "attempt"), why: s(a, "why"), note: s(a, "note") }) },
+      attempt: text("an approach that failed"), why: text("why it failed"), note: text("anything else"),
+      workflow: text("instead of a plan: a workflow run (kickoff, onboard) whose step just finished"), skip: { type: "boolean" } }),
+    run: (st, a) => (s(a, "workflow") ? recordStep(st, s(a, "workflow")!, s(a, "step"), { skip: a.skip === true, note: s(a, "note") }) : checkpoint(st, s(a, "plan"), { step: s(a, "step"), verify: s(a, "verify"), result: s(a, "result"), ac: s(a, "ac"),
+      output: s(a, "output"), attempt: s(a, "attempt"), why: s(a, "why"), note: s(a, "note") })) },
   resume: { description: "Where a plan's work stopped (`crew.mjs resume`): last checkpoint vs git now, check results, approaches not to retry, "
     + "the next task and each criterion's evidence. Call it first when picking work up.",
-    input: obj({ plan: text("e.g. P-004; default: the plan of this branch") }), run: (st, a) => resume(st, s(a, "plan")) },
+    input: obj({ plan: text("e.g. P-004; default: the plan of this branch"), workflow: text("instead: a workflow run (kickoff, onboard)") }),
+    run: (st, a) => (s(a, "workflow") ? resumeWorkflow(st, s(a, "workflow")!) : resume(st, s(a, "plan"))) },
+  review: { description: "Code review of a plan in review (`crew.mjs review`): approve, or request changes, which sends it back to the "
+    + "developer. Never by the plan's implementer; under the lifecycle preset the Architect's, and done needs an approval of the current code.",
+    input: obj({ id: text("e.g. P-004"), approve: { type: "boolean" }, changes: text("what must change") }, ["id"]),
+    run: (st, a) => { review(st, s(a, "id")!, { approve: a.approve === true, changes: s(a, "changes") }); } },
   handoff: { description: "Write the resume view into the plan's Handoff section (`crew.mjs handoff`), before ending a session.",
     input: obj({ plan: text("e.g. P-004; default: the plan of this branch") }), run: (st, a) => handoff(st, s(a, "plan")) },
   ledger: { description: "Recent events from the shared ledger and the live claims (`crew.mjs ledger --json`).",

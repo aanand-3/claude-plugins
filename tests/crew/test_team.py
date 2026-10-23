@@ -121,6 +121,9 @@ def test_under_the_lifecycle_only_the_pm_completes_and_triages(repo: Repo):
     repo.env["CREW_RUN"] = "qa"
     assert as_(repo, "qa", "checkpoint", "P-001", "--run", "true", "--ac", "all").returncode == 0
     assert "report to the pm, who completes it" in as_(repo, "qa", "next").stdout
+    repo.env["CREW_RUN"] = "arch"
+    assert as_(repo, "architect", "review", "P-001", "--approve").returncode == 0
+    repo.env["CREW_RUN"] = "qa"
     r = as_(repo, "qa", "move", "P-001", "done")
     assert r.returncode != 0 and "for the pm role" in r.stderr
     repo.env["CREW_RUN"] = "pm"
@@ -252,3 +255,68 @@ def test_a_paused_team_staffs_and_starts_nothing(repo: Repo):
     assert "the team is paused" in as_(repo, "director", "next").stdout
     assert as_(repo, "director", "resume", "--team").returncode == 0
     assert as_(repo, "developer", "start", "P-001").returncode == 0
+
+
+# ------------------------------------------------------------------ T4: kickoff as a ledger workflow, code review
+def test_kickoff_runs_in_the_ledger(repo: Repo):
+    init(repo)
+    assert "kickoff: not started — begin with preflight" in tr(repo, "resume", "--workflow", "kickoff").stdout
+    for step in ("preflight", "discover"):
+        assert tr(repo, "checkpoint", "--workflow", "kickoff", "--step", step).returncode == 0
+    assert tr(repo, "checkpoint", "--workflow", "kickoff", "--step", "design", "--skip", "--note", "a CLI").returncode == 0
+    assert as_(repo, "architect", "checkpoint", "--workflow", "kickoff", "--step", "guidelines").returncode == 0
+    out = tr(repo, "resume", "--workflow", "kickoff").stdout
+    assert "skipped  design" in out and "a CLI" in out and "architect" in out and "next: hub" in out
+    state = json.loads(tr(repo, "resume", "--workflow", "kickoff", "--json").stdout)
+    assert state["next"] == "hub" and [s["state"] for s in state["steps"][:4]] == ["done", "done", "skipped", "done"]
+    r = tr(repo, "checkpoint", "--workflow", "kickoff", "--step", "deploy")
+    assert r.returncode != 0 and "kickoff has no step 'deploy'" in r.stderr
+    assert tr(repo, "resume", "--workflow", "launch").returncode != 0
+    assert "kickoff: guidelines done" in tr(repo, "ledger").stdout
+
+
+def in_review(repo: Repo) -> None:
+    started(repo)
+    repo.write("src/auth/signup.py", "def signup(): ...\n")
+    p = plan_file(repo, "P-001")
+    p.write_text(p.read_text().replace("- [ ] T", "- [x] T").rstrip() + "\nShipped.\nLearnings: none\n")
+    repo.commit("feat(P-001): signup")
+    assert as_(repo, "developer", "move", "P-001", "in-review").returncode == 0
+    repo.env["CREW_RUN"] = "qa"
+    assert as_(repo, "qa", "checkpoint", "P-001", "--run", "true", "--ac", "all").returncode == 0
+
+
+def test_review_sends_changes_back_and_done_needs_an_approval_of_the_current_code(repo: Repo):
+    in_review(repo)
+    repo.env["CREW_RUN"] = "pm"
+    r = as_(repo, "pm", "move", "P-001", "done")
+    assert r.returncode != 0 and "no code review yet" in r.stderr  # QA's evidence alone isn't enough under the preset
+    repo.env["CREW_RUN"] = "dev"
+    r = as_(repo, "developer", "review", "P-001", "--approve")
+    assert r.returncode != 0 and "for the architect role" in r.stderr
+    r = as_(repo, "architect", "review", "P-001", "--approve")  # the implementing run, even in the right role
+    assert r.returncode != 0 and "implemented P-001" in r.stderr
+    repo.env["CREW_RUN"] = "arch"
+    assert "review P-001" in as_(repo, "architect", "next").stdout
+    r = as_(repo, "qa", "review", "P-001", "--approve")
+    assert r.returncode != 0 and "for the architect role" in r.stderr
+    assert as_(repo, "architect", "review", "P-001", "--changes", "validate the email").returncode == 0
+    assert "in-progress" in plan_file(repo, "P-001").read_text() and "changes requested: validate the email" in plan_file(repo, "P-001").read_text()
+    claim = [e for e in events(repo, "--type", "claim") if e["ref"] == "P-001"][-1]
+    assert claim["run"] == "dev"  # the developer still holds it
+    repo.env["CREW_RUN"] = "dev"
+    assert as_(repo, "developer", "move", "P-001", "in-review").returncode == 0
+    repo.env["CREW_RUN"] = "arch"
+    assert as_(repo, "architect", "review", "P-001", "--approve").returncode == 0
+    repo.commit("chore(hub): reviewed")  # hub bookkeeping isn't a code change
+    repo.env["CREW_RUN"] = "pm"
+    repo.write("src/auth/signup.py", "def signup(): return 1\n")
+    repo.commit("feat(P-001): after the review")
+    r = as_(repo, "pm", "move", "P-001", "done")
+    assert r.returncode != 0 and "the code changed since the approving review" in r.stderr
+    repo.env["CREW_RUN"] = "arch"
+    assert as_(repo, "architect", "review", "P-001", "--approve").returncode == 0
+    repo.env["CREW_RUN"] = "pm"
+    r = as_(repo, "pm", "move", "P-001", "done")
+    assert r.returncode == 0, r.stderr
+    assert [e["verdict"] for e in events(repo, "--type", "review")] == ["changes", "approve", "approve"]

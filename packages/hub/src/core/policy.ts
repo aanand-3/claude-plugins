@@ -11,7 +11,7 @@ import { PRESETS } from "./presets.js";
 
 export const MODES = ["ai-native", "ai-assisted", "human-led"] as const;
 /** Gated steps that aren't status changes: `<kind>.<action>`, usable in human_gates and role_gates. */
-export const ACTIONS = new Set(["plan.assigned", "plan.reassigned"]);
+export const ACTIONS = new Set(["plan.assigned", "plan.reassigned", "plan.reviewed"]);
 /** Transitions (`<kind>.<status>`) that need a human, by mode, until the project sets `human_gates`. */
 export const MODE_GATES: Record<string, string[]> = {
   "ai-native": [],

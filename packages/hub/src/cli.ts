@@ -15,6 +15,8 @@ import { guard } from "./commands/guard.js";
 import { agents } from "./commands/agents.js";
 import { assign, reassign, staff } from "./commands/team.js";
 import { pauseTeam, resumeTeam } from "./commands/liveness.js";
+import { review } from "./commands/review.js";
+import { recordStep, resumeWorkflow } from "./commands/runs.js";
 import { checkpoint, handoff, resume } from "./commands/execution.js";
 import { answer, ask, escalate, listQuestions } from "./commands/questions.js";
 import { learn, recallCmd } from "./commands/knowledge.js";
@@ -49,6 +51,8 @@ Commands:
   checkpoint [P-###] [--step T3] [--run CMD | --verify CMD --result pass|fail] [--ac 1,2|all] [--output TXT]
              [--attempt WHAT --why WHY] [--note TXT] [--auto]   record where the work is (the plan of this branch by default)
   resume [P-###] [--json] · handoff [P-###]     where the work stopped vs git now · write it into the plan's Handoff
+  checkpoint --workflow kickoff|onboard --step S [--skip] [--note] · resume --workflow W   a multi-step job's progress
+  review P-### --approve | --changes TXT        code review of a plan in review (never by its implementer)
   context [P-###] [--role R] [--budget CHARS] [--json]   what you need right now, within a budget (default 6000 chars)
   next [--role R] · current · check · status [--write]    (roles: executive, director, pm, architect, developer, qa, release + the policy's)
   --as ROLE · --run-id ID                       who is acting, on any command (wins over CREW_ROLE / CREW_RUN)
@@ -111,12 +115,15 @@ const COMMANDS: Record<string, Spec> = {
   recall: { pos: [], str: ["paths", "plan", "topic", "type"], flag: ["all", "json"],
     run: (s, a) => recallCmd(s, { paths: str(a, "paths"), plan: str(a, "plan"), topic: str(a, "topic"), type: str(a, "type"),
       all: !!a.opt.all, json: !!a.opt.json }) },
-  checkpoint: { pos: [], rest: true, str: ["step", "run", "verify", "result", "ac", "output", "attempt", "why", "note"], flag: ["auto"],
-    choices: { result: ["pass", "fail"] },
-    run: (s, a) => checkpoint(s, a.pos[0], { step: str(a, "step"), run: str(a, "run"), verify: str(a, "verify"), result: str(a, "result"),
-      ac: str(a, "ac"), output: str(a, "output"), attempt: str(a, "attempt"), why: str(a, "why"), note: str(a, "note"), auto: !!a.opt.auto }) },
-  resume: { pos: [], rest: true, str: ["note"], flag: ["json", "team"],
-    run: (s, a) => (a.opt.team ? resumeTeam(s, str(a, "note")) : resume(s, a.pos[0], !!a.opt.json)) },
+  checkpoint: { pos: [], rest: true, str: ["step", "run", "verify", "result", "ac", "output", "attempt", "why", "note", "workflow"],
+    flag: ["auto", "skip"], choices: { result: ["pass", "fail"] },
+    run: (s, a) => (a.opt.workflow ? recordStep(s, str(a, "workflow")!, str(a, "step"), { skip: !!a.opt.skip, note: str(a, "note") }) : checkpoint(s, a.pos[0], { step: str(a, "step"), run: str(a, "run"), verify: str(a, "verify"), result: str(a, "result"),
+      ac: str(a, "ac"), output: str(a, "output"), attempt: str(a, "attempt"), why: str(a, "why"), note: str(a, "note"), auto: !!a.opt.auto })) },
+  resume: { pos: [], rest: true, str: ["note", "workflow"], flag: ["json", "team"],
+    run: (s, a) => (a.opt.team ? resumeTeam(s, str(a, "note")) : a.opt.workflow ? resumeWorkflow(s, str(a, "workflow")!, !!a.opt.json)
+      : resume(s, a.pos[0], !!a.opt.json)) },
+  review: { pos: ["id"], str: ["changes"], flag: ["approve"],
+    run: (s, a) => review(s, a.pos[0], { approve: !!a.opt.approve, changes: str(a, "changes") }) },
   pause: { pos: [], str: ["reason"], run: (s, a) => pauseTeam(s, str(a, "reason")) },
   reassign: { pos: ["id"], str: ["to", "note", "approved-by"], flag: ["force"],
     run: (s, a) => reassign(s, a.pos[0], str(a, "to"), str(a, "note"), !!a.opt.force, str(a, "approved-by")) },

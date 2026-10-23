@@ -16,6 +16,9 @@ branch: chore/crew-onboard
 modules: {hub: true, graphify: false}
 steps: {preflight: done, map: pending, discover: pending, design: pending, guidelines: pending, hub: pending, git: pending, graph: pending}
 ```
+**With the hub, the ledger tracks the run instead** (no `onboard.yaml`): after each step,
+`node .crew/bin/crew.mjs checkpoint --workflow onboard --step <step>` (`--skip` for a skipped one), recording the steps
+done before the hub existed right after `init`; on start, `node .crew/bin/crew.mjs resume --workflow onboard`.
 On start, if it exists, switch to its branch, show what's done and continue from the first `pending` step. A step for a module the user didn't choose is `skipped`.
 
 ## Steps

@@ -27,10 +27,11 @@ export function criteria(plan: Doc): string[] {
   return list.length ? list : plan.bullets("Acceptance criteria");
 }
 
-/** Every run that implemented a plan: each one that claimed it or moved it to in-progress. After a takeover the earlier
- * implementer stays one, so its own checks never become "independent" evidence. */
+/** Every run that implemented a plan: each one that claimed it or moved it to in-progress (a reviewer sending it back
+ * doesn't, `via` its review). After a takeover the earlier implementer stays one, so its own checks never become
+ * "independent" evidence. */
 export function implementers(events: LedgerEvent[], planId: string): Set<string> {
-  return new Set(events.filter((e) => e.ref === planId && (e.type === "claim" || (e.type === "move" && e.to === "in-progress")))
+  return new Set(events.filter((e) => e.ref === planId && (e.type === "claim" || (e.type === "move" && e.to === "in-progress" && !e.via)))
     .map((e) => e.run));
 }
 
