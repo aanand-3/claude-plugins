@@ -4445,13 +4445,13 @@ var require_resolve_block_scalar = __commonJS({
   "node_modules/yaml/dist/compose/resolve-block-scalar.js"(exports) {
     "use strict";
     var Scalar = require_Scalar();
-    function resolveBlockScalar(ctx, scalar, onError) {
-      const start = scalar.offset;
-      const header = parseBlockScalarHeader(scalar, ctx.options.strict, onError);
+    function resolveBlockScalar(ctx, scalar2, onError) {
+      const start = scalar2.offset;
+      const header = parseBlockScalarHeader(scalar2, ctx.options.strict, onError);
       if (!header)
         return { value: "", type: null, comment: "", range: [start, start, start] };
       const type = header.mode === ">" ? Scalar.Scalar.BLOCK_FOLDED : Scalar.Scalar.BLOCK_LITERAL;
-      const lines = scalar.source ? splitLines(scalar.source) : [];
+      const lines = scalar2.source ? splitLines(scalar2.source) : [];
       let chompStart = lines.length;
       for (let i = lines.length - 1; i >= 0; --i) {
         const content = lines[i][1];
@@ -4463,12 +4463,12 @@ var require_resolve_block_scalar = __commonJS({
       if (chompStart === 0) {
         const value2 = header.chomp === "+" && lines.length > 0 ? "\n".repeat(Math.max(1, lines.length - 1)) : "";
         let end2 = start + header.length;
-        if (scalar.source)
-          end2 += scalar.source.length;
+        if (scalar2.source)
+          end2 += scalar2.source.length;
         return { value: value2, type, comment: header.comment, range: [start, end2, end2] };
       }
-      let trimIndent = scalar.indent + header.indent;
-      let offset = scalar.offset + header.length;
+      let trimIndent = scalar2.indent + header.indent;
+      let offset = scalar2.offset + header.length;
       let contentStart = 0;
       for (let i = 0; i < chompStart; ++i) {
         const [indent, content] = lines[i];
@@ -4546,7 +4546,7 @@ var require_resolve_block_scalar = __commonJS({
         default:
           value += "\n";
       }
-      const end = start + header.length + scalar.source.length;
+      const end = start + header.length + scalar2.source.length;
       return { value, type, comment: header.comment, range: [start, end, end] };
     }
     function parseBlockScalarHeader({ offset, props }, strict, onError) {
@@ -4629,8 +4629,8 @@ var require_resolve_flow_scalar = __commonJS({
     "use strict";
     var Scalar = require_Scalar();
     var resolveEnd = require_resolve_end();
-    function resolveFlowScalar(scalar, strict, onError) {
-      const { offset, type, source, end } = scalar;
+    function resolveFlowScalar(scalar2, strict, onError) {
+      const { offset, type, source, end } = scalar2;
       let _type;
       let value;
       const _onError = (rel, code, msg) => onError(offset + rel, code, msg);
@@ -4649,7 +4649,7 @@ var require_resolve_flow_scalar = __commonJS({
           break;
         /* istanbul ignore next should not happen */
         default:
-          onError(scalar, "UNEXPECTED_TOKEN", `Expected a flow scalar value, but found: ${type}`);
+          onError(scalar2, "UNEXPECTED_TOKEN", `Expected a flow scalar value, but found: ${type}`);
           return {
             value: "",
             type: null,
@@ -4863,26 +4863,26 @@ var require_compose_scalar = __commonJS({
         tag = findScalarTagByTest(ctx, value, token, onError);
       else
         tag = ctx.schema[identity.SCALAR];
-      let scalar;
+      let scalar2;
       try {
         const res = tag.resolve(value, (msg) => onError(tagToken ?? token, "TAG_RESOLVE_FAILED", msg), ctx.options);
-        scalar = identity.isScalar(res) ? res : new Scalar.Scalar(res);
+        scalar2 = identity.isScalar(res) ? res : new Scalar.Scalar(res);
       } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
         onError(tagToken ?? token, "TAG_RESOLVE_FAILED", msg);
-        scalar = new Scalar.Scalar(value);
+        scalar2 = new Scalar.Scalar(value);
       }
-      scalar.range = range;
-      scalar.source = value;
+      scalar2.range = range;
+      scalar2.source = value;
       if (type)
-        scalar.type = type;
+        scalar2.type = type;
       if (tagName)
-        scalar.tag = tagName;
+        scalar2.tag = tagName;
       if (tag.format)
-        scalar.format = tag.format;
+        scalar2.format = tag.format;
       if (comment)
-        scalar.comment = comment;
-      return scalar;
+        scalar2.comment = comment;
+      return scalar2;
     }
     function findScalarTagByName(schema, value, tagName, tagToken, onError) {
       if (tagName === "!")
@@ -6710,37 +6710,37 @@ var require_parser = __commonJS({
           };
         }
       }
-      *scalar(scalar) {
+      *scalar(scalar2) {
         if (this.type === "map-value-ind") {
           const prev = getPrevProps(this.peek(2));
           const start = getFirstKeyStartProps(prev);
           let sep2;
-          if (scalar.end) {
-            sep2 = scalar.end;
+          if (scalar2.end) {
+            sep2 = scalar2.end;
             sep2.push(this.sourceToken);
-            delete scalar.end;
+            delete scalar2.end;
           } else
             sep2 = [this.sourceToken];
           const map = {
             type: "block-map",
-            offset: scalar.offset,
-            indent: scalar.indent,
-            items: [{ start, key: scalar, sep: sep2 }]
+            offset: scalar2.offset,
+            indent: scalar2.indent,
+            items: [{ start, key: scalar2, sep: sep2 }]
           };
           this.onKeyLine = true;
           this.stack[this.stack.length - 1] = map;
         } else
-          yield* this.lineEnd(scalar);
+          yield* this.lineEnd(scalar2);
       }
-      *blockScalar(scalar) {
+      *blockScalar(scalar2) {
         switch (this.type) {
           case "space":
           case "comment":
           case "newline":
-            scalar.props.push(this.sourceToken);
+            scalar2.props.push(this.sourceToken);
             return;
           case "scalar":
-            scalar.source = this.source;
+            scalar2.source = this.source;
             this.atNewLine = true;
             this.indent = 0;
             if (this.onNewLine) {
@@ -7521,8 +7521,12 @@ function byKey(key) {
 }
 
 // src/core/git.ts
+var ROOT = null;
+function useRoot(root) {
+  ROOT = root;
+}
 function git(args, check2 = false) {
-  const r = spawnSync("git", args, { encoding: "utf8" });
+  const r = spawnSync("git", ROOT && args[0] !== "-C" ? ["-C", ROOT, ...args] : args, { encoding: "utf8" });
   if (r.status !== 0) {
     if (check2) fail(`git ${args.join(" ")} failed: ${(r.stderr ?? "").trim()}`);
     return null;
@@ -7720,7 +7724,7 @@ function overlapping(plan, plans2) {
     return globs.length ? [{ id: p.id, globs }] : [];
   });
 }
-function drift(plan, base = "main") {
+function drift(plan, base) {
   if (currentBranch() !== plan.get("branch") || !plan.touches().length) return null;
   const fork = git(["merge-base", base, "HEAD"])?.trim();
   if (!fork) return null;
@@ -7736,7 +7740,48 @@ function drift(plan, base = "main") {
 var import_yaml = __toESM(require_dist(), 1);
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, resolve as resolve2 } from "node:path";
+
+// src/core/presets.ts
+var DRAFTS = { paths: { write: [".crew/drafts/**"] } };
+var PRESETS = {
+  lifecycle: {
+    global: {
+      mode: "ai-native",
+      human_gates: ["goal.active"],
+      role_gates: {
+        "item.triaged": "pm",
+        // only the PM triages and ranks
+        "plan.ready": "architect",
+        // only the Architect makes a spec ready
+        "plan.assigned": "pm",
+        // the PM opens a plan for a developer; `start` then needs that assignment
+        "plan.in-progress": "developer",
+        // only the assigned developer implements (and fixes what comes back)
+        "plan.in-review": "developer",
+        // … and hands over to test
+        "plan.done": "pm",
+        // the PM completes, against QA's evidence
+        "plan.dropped": "pm",
+        "goal.done": "director",
+        // the Director closes a goal the PM has verified
+        "plan.reassigned": "director",
+        // … and moves stuck work to someone else
+        "plan.reviewed": "architect"
+        // code review against the spec; done needs an approval of the current code
+      },
+      // liveness: a claim quiet for a day is stale; a third bounce or a sixth failed attempt goes to the Director
+      limits: { stale_claim_hours: 24, max_bounces: 2, max_attempts: 5 },
+      evidence: { role: "qa" }
+      // only QA's checks count toward done
+    },
+    roles: { director: DRAFTS, pm: DRAFTS, qa: DRAFTS, release: DRAFTS }
+  }
+};
+
+// src/core/policy.ts
 var MODES = ["ai-native", "ai-assisted", "human-led"];
+var NOTIFY_ON = ["escalation", "budget", "stale", "goal-done", "paused"];
+var ACTIONS = /* @__PURE__ */ new Set(["plan.assigned", "plan.reassigned", "plan.reviewed"]);
 var MODE_GATES = {
   "ai-native": [],
   "ai-assisted": ["plan.ready", "plan.done", "goal.done"],
@@ -7745,7 +7790,15 @@ var MODE_GATES = {
 var BUILT_IN = {
   mode: "ai-assisted",
   reserved: ["idea.decided", "idea.killed", "policy.change", "deploy.production", "publish", "spend", "delete-data"],
-  paths: { protected: [".crew/policy.yaml"] },
+  // the guard's own files: no agent may remove the hook, rewrite its definition, loosen the policy or swap the CLI
+  paths: { protected: [
+    ".crew/policy.yaml",
+    ".crew/bin/**",
+    ".claude/settings.json",
+    ".claude/settings.local.json",
+    ".claude/agents/**",
+    ".crew/templates/agents/**"
+  ] },
   budgets: { max_agents: 4 },
   git: { protected_branches: ["main"], force_push: false, no_verify: false },
   secrets: { files: [".env", "**/.env", "**/*.pem", "**/*.key"] },
@@ -7755,10 +7808,12 @@ var SCOPED = {
   models: { default: "str", fallback: "str" },
   tools: { allow: "list", deny: "list" },
   paths: { protected: "list", write: "list" },
-  budgets: { run: { max_cost: "num", max_tokens: "num" } }
+  budgets: { run: { max_cost: "num", max_tokens: "num" } },
+  limits: { max_turns: "num" }
 };
 var GLOBAL = {
   mode: "str",
+  preset: "str",
   human_gates: "list",
   role_gates: "map",
   reserved: "list",
@@ -7766,13 +7821,18 @@ var GLOBAL = {
   budgets: { max_agents: "num", run: { max_cost: "num", max_tokens: "num" }, project: { max_cost: "num", max_tokens: "num" } },
   git: { protected_branches: "list", force_push: "bool", no_verify: "bool" },
   secrets: { files: "list", patterns: "list" },
-  escalation: { to: "str" }
+  escalation: { to: "str" },
+  evidence: { role: "str" },
+  notify: { command: "str", on: "list" },
+  fast_lane: { types: "list", max_tasks: "num" },
+  limits: { max_turns: "num", stale_claim_hours: "num", max_bounces: "num", max_attempts: "num" }
 };
 var UNION = /* @__PURE__ */ new Set(["reserved", "secrets.files", "secrets.patterns", "git.protected_branches", "paths.protected", "tools.deny"]);
 var TIGHTEN = /* @__PURE__ */ new Set(["git.force_push", "git.no_verify"]);
 var CEILING = /^budgets\./;
 function loadLayers(root, crewDir, role, team) {
-  const errors = [], hints = [];
+  const errors = [], hints = [], custom = [], charters = {};
+  const teamScopes = {};
   const read = (label, text2) => {
     if (text2 === null) return null;
     try {
@@ -7794,18 +7854,33 @@ function loadLayers(root, crewDir, role, team) {
     if (r) layers.push({ name: `org role ${role}`, org: true, raw: r });
   }
   const projectPath = join(crewDir, "policy.yaml");
+  if (team && !existsSync(projectPath)) errors.push(`team '${team}' (CREW_TEAM) is set, but there is no .crew/policy.yaml defining teams`);
   const project = read(".crew/policy.yaml", existsSync(projectPath) ? readFileSync(projectPath, "utf8") : null);
   if (project) {
-    const { roles, teams, ...global } = project;
+    const { roles, teams, preset, ...global } = project;
+    const p = typeof preset === "string" ? PRESETS[preset] : void 0;
+    if (preset !== void 0 && !p) errors.push(`preset: '${String(preset)}' is not a preset (${Object.keys(PRESETS).join(", ")})`);
+    if (p) layers.push({ name: `preset ${preset}`, org: false, raw: p.global });
+    if (p && role && p.roles[role]) layers.push({ name: `preset ${preset} role ${role}`, org: false, raw: p.roles[role] });
     layers.push({ name: "project", org: false, raw: global });
     const pick = (m, key) => key && m && typeof m === "object" ? m[key] : void 0;
     const r = pick(roles, role), t = pick(teams, team);
+    if (team && !t) errors.push(`team '${team}' (CREW_TEAM) is not defined under teams: in .crew/policy.yaml`);
     if (r) layers.push({ name: `project role ${role}`, org: false, raw: r });
     if (t) layers.push({ name: `project team ${team}`, org: false, raw: t });
-    for (const [name, section] of Object.entries({ ...roles ?? {} })) validate(section, SCOPED, `roles.${name}`, errors);
+    for (const [name, section] of Object.entries({ ...roles ?? {} })) {
+      validate(section, { ...SCOPED, charter: "str" }, `roles.${name}`, errors);
+      if (typeof section?.charter === "string") charters[name] = section.charter;
+      if (!ROLES.includes(name)) {
+        custom.push(name);
+        if (!/^[a-z][a-z0-9-]*$/.test(name)) errors.push(`roles.${name}: a role name is lower-case letters, digits and dashes`);
+        if (typeof section?.charter !== "string") errors.push(`roles.${name}: a new role needs a charter (what it owns and never does)`);
+      }
+    }
     for (const [name, section] of Object.entries({ ...teams ?? {} })) {
       const { scope, ...rest } = section ?? {};
       if (scope !== void 0 && !isList(scope)) errors.push(`teams.${name}.scope: expected a list of path globs`);
+      else teamScopes[name] = scope ?? [];
       validate(rest, SCOPED, `teams.${name}`, errors);
     }
   }
@@ -7813,7 +7888,7 @@ function loadLayers(root, crewDir, role, team) {
     if (l.name === "org" || l.name === "project") validate(l.raw, GLOBAL, l.name === "org" ? "org" : "", errors);
     else if (l.name.startsWith("org role")) validate(l.raw, SCOPED, l.name, errors);
   }
-  return { layers, errors, hints };
+  return { layers, errors, hints, custom, charters, teams: teamScopes };
 }
 function playbook(root, crewDir) {
   const cfgPath = join(crewDir, "config.yaml");
@@ -7868,7 +7943,7 @@ function flatten(raw, prefix = "") {
     return v && typeof v === "object" && !Array.isArray(v) ? flatten(v, path) : [[path, v]];
   });
 }
-function resolveLayers(layers) {
+function resolveLayers(layers, roles = ROLES) {
   const values = /* @__PURE__ */ new Map(), sources = /* @__PURE__ */ new Map(), ceilings = /* @__PURE__ */ new Map();
   const errors = [];
   for (const layer of layers) {
@@ -7893,9 +7968,9 @@ function resolveLayers(layers) {
         values.set(path, v);
         sources.set(path, layer.name);
       } else if (path === "human_gates") {
-        values.set(path, v);
-        sources.set(path, layer.name);
-        if (layer.org) values.set("human_gates.org", [.../* @__PURE__ */ new Set([...values.get("human_gates.org") ?? [], ...v])]);
+        const key = layer.org ? "human_gates.org" : path;
+        values.set(key, layer.org ? [.../* @__PURE__ */ new Set([...values.get(key) ?? [], ...v])] : v);
+        sources.set(key, layer.name);
       } else {
         values.set(path, v);
         sources.set(path, layer.name);
@@ -7905,13 +7980,24 @@ function resolveLayers(layers) {
   const get = (p, d) => values.has(p) ? values.get(p) : d;
   const mode = get("mode", "ai-assisted");
   if (!MODES.includes(mode)) errors.push(`mode: '${mode}' is not one of ${MODES.join(", ")}`);
-  if (!values.has("human_gates")) sources.set("human_gates", `built-in: mode ${mode}`);
+  const floor = sources.get("human_gates.org");
+  sources.set("human_gates", `${values.has("human_gates") ? sources.get("human_gates") : `built-in: mode ${mode}`}${floor ? ` + ${floor} floor` : ""}`);
   const gates = [.../* @__PURE__ */ new Set([...get("human_gates", MODE_GATES[mode] ?? []), ...get("human_gates.org", [])])];
   const role_gates = Object.fromEntries([...values].filter(([p]) => p.startsWith("role_gates[")).map(([p, v]) => [p.slice(11, -1), String(v)]));
   for (const t of [...gates, ...Object.keys(role_gates), ...get("reserved", [])]) errors.push(...transitionProblem(t));
-  for (const [t, r] of Object.entries(role_gates)) if (!ROLES.includes(r)) errors.push(`role_gates ${t}: '${r}' is not a role (${ROLES.join(", ")})`);
+  for (const [t, r] of Object.entries(role_gates)) if (!roles.includes(r)) errors.push(`role_gates ${t}: '${r}' is not a role (${roles.join(", ")})`);
+  for (const p of get("secrets.patterns", [])) {
+    try {
+      new RegExp(p);
+    } catch {
+      errors.push(`secrets.patterns: '${p}' is not a valid JavaScript regular expression (no inline flags like (?i))`);
+    }
+  }
   const to = get("escalation.to", "executive");
-  if (!ROLES.includes(to)) errors.push(`escalation.to: '${to}' is not a role (${ROLES.join(", ")})`);
+  if (!roles.includes(to)) errors.push(`escalation.to: '${to}' is not a role (${roles.join(", ")})`);
+  const ev = get("evidence.role", null);
+  if (ev !== null && !roles.includes(ev)) errors.push(`evidence.role: '${ev}' is not a role (${roles.join(", ")})`);
+  for (const o of get("notify.on", []).filter((x) => !NOTIFY_ON.includes(x))) errors.push(`notify.on: '${o}' is not one of ${NOTIFY_ON.join(", ")}`);
   const deny = get("tools.deny", []);
   const allow = get("tools.allow", []);
   for (const t of allow.filter((a) => deny.includes(a))) errors.push(`tools.allow: '${t}' is denied by ${sources.get("tools.deny")} (deny wins)`);
@@ -7931,19 +8017,32 @@ function resolveLayers(layers) {
     },
     git: { protected_branches: get("git.protected_branches", []), force_push: get("git.force_push", false), no_verify: get("git.no_verify", false) },
     secrets: { files: get("secrets.files", []), patterns: get("secrets.patterns", []) },
-    escalation: { to: get("escalation.to", "executive") }
+    escalation: { to: get("escalation.to", "executive") },
+    evidence: { role: ev },
+    notify: { command: get("notify.command", null), on: get("notify.on", []) },
+    fast_lane: { types: get("fast_lane.types", []).map((t) => t.toUpperCase()), max_tasks: num2("fast_lane.max_tasks") },
+    limits: {
+      max_turns: num2("limits.max_turns"),
+      stale_claim_hours: num2("limits.stale_claim_hours"),
+      max_bounces: num2("limits.max_bounces"),
+      max_attempts: num2("limits.max_attempts")
+    }
   };
   return { policy, sources, errors };
 }
 function transitionProblem(t) {
-  const [kind, status2] = t.split(".");
-  if (!Object.hasOwn(FLOWS, kind)) return [];
-  return Object.hasOwn(FLOWS[kind], status2 ?? "") ? [] : [`'${t}': ${kind} has no status '${status2}'`];
+  const [kind, step] = t.split(".");
+  if (!Object.hasOwn(FLOWS, kind) || ACTIONS.has(t)) return [];
+  const flow = FLOWS[kind], [from, to] = (step ?? "").split(">");
+  if (to === void 0) return Object.hasOwn(flow, from) ? [] : [`'${t}': ${kind} has no status '${from}'`];
+  return (flow[from] ?? []).includes(to) ? [] : [`'${t}': ${kind} can't go from '${from}' to '${to}'`];
 }
 function resolvePolicy(root, crewDir, role = null, team = null) {
-  const { layers, errors, hints } = loadLayers(root, crewDir, role, team);
-  const r = resolveLayers(layers);
-  return { policy: r.policy, sources: r.sources, errors: [...errors, ...r.errors], hints, role, team };
+  const { layers, errors, hints, custom, charters, teams } = loadLayers(root, crewDir, role, team);
+  const roles = [...ROLES, ...custom];
+  const r = resolveLayers(layers, roles);
+  if (role && !roles.includes(role)) errors.push(`role '${role}' is not a role (${roles.join(", ")})`);
+  return { policy: r.policy, sources: r.sources, errors: [...errors, ...r.errors], hints, role, team, roles, charters, teams };
 }
 function approvalReason(p, transition) {
   if (p.reserved.includes(transition)) return "a reserved decision";
@@ -7952,217 +8051,11 @@ function approvalReason(p, transition) {
 }
 
 // src/commands/execution.ts
-import { spawnSync as spawnSync2 } from "node:child_process";
-import { createHash } from "node:crypto";
-var OUTPUT_LINES = 15;
-var OUTPUT_CHARS = 2e3;
-var RUN_TIMEOUT_MS = 10 * 6e4;
-function criteria(plan) {
-  const list = plan.checklist("Acceptance criteria").map(([, c]) => c);
-  return list.length ? list : plan.bullets("Acceptance criteria");
-}
-function implementer(events, planId) {
-  return [...events].reverse().find((e) => e.type === "claim" && e.ref === planId)?.run ?? null;
-}
-var checkpoints = (events, planId) => events.filter((e) => e.type === "checkpoint" && e.ref === planId);
-function evidence(store, plan) {
-  const events = store.ledger.events(), impl = implementer(events, plan.id);
-  return criteria(plan).map((ac, i) => {
-    let found = null;
-    for (const e of checkpoints(events, plan.id)) {
-      for (const v of e.verify ?? []) if (v.ac.includes(i + 1)) found = { verify: v, by: e.run };
-    }
-    return { ac, verify: found?.verify ?? null, by: found?.by ?? null, independent: !!found && (!impl || found.by !== impl) };
-  });
-}
-function evidenceProblems(store, plan, approvedBy) {
-  const problems = [];
-  const impl = implementer(store.ledger.events(), plan.id);
-  if (impl && impl === store.ledger.who.run && !approvedBy) {
-    problems.push(`this run (${impl}) implemented ${plan.id}; another run \u2014 QA \u2014 verifies it and moves it to done`);
-  }
-  evidence(store, plan).forEach((e, i) => {
-    if (approvedBy && /\bevidence:/i.test(e.ac)) return;
-    if (!e.verify) problems.push(`AC${i + 1} has no evidence: \`checkpoint ${plan.id} --run "<check>" --ac ${i + 1}\` \u2014 ${e.ac}`);
-    else if (!e.verify.ok) problems.push(`AC${i + 1}: its latest check failed (${e.verify.cmd})`);
-    else if (!e.independent) problems.push(`AC${i + 1}: only verified by the implementer (${e.by}); verify it from another run`);
-  });
-  return problems;
-}
-function snapshot() {
-  const sha = git(["rev-parse", "HEAD"])?.trim() || null;
-  const status2 = git(["status", "--porcelain"]) ?? "";
-  const dirty = status2.split("\n").filter(Boolean).map((l) => l.slice(3)).filter((p) => !p.startsWith(".crew/drafts/"));
-  const diff = git(["diff", "HEAD"]) ?? "";
-  return { sha, dirty, fingerprint: createHash("sha1").update(`${sha}
-${status2}
-${diff}`).digest("hex").slice(0, 12) };
-}
-function planFromBranch(store, id) {
-  const pid = id?.toUpperCase() ?? /^plan\/(P-\d+)/.exec(currentBranch() ?? "")?.[1];
-  return pid ? store.plans(true).get(pid) ?? fail(`No plan ${pid}.`) : null;
-}
-function tail(text2, extra) {
-  const lines = text2.trimEnd().split("\n").slice(-OUTPUT_LINES).join("\n").slice(-OUTPUT_CHARS);
-  return secretsIn(lines, extra).length ? "(output withheld: it looked like it contained a secret)" : lines;
-}
-function checkpoint(store, id, o = {}) {
-  store.require();
-  const plan = planFromBranch(store, id);
-  if (!plan) {
-    if (o.auto) return 0;
-    fail("Not on a plan branch: name the plan (`checkpoint P-###`).");
-  }
-  const snap = snapshot();
-  const last = checkpoints(store.ledger.events(), plan.id).at(-1);
-  if (o.auto && last?.fingerprint === snap.fingerprint) return 0;
-  const acs = parseAc(o.ac, criteria(plan).length);
-  const verify = [];
-  if (o.run) {
-    const r = spawnSync2(o.run, { shell: true, cwd: store.ws.root, encoding: "utf8", timeout: RUN_TIMEOUT_MS, maxBuffer: 32 << 20 });
-    verify.push({ cmd: o.run, ok: r.status === 0, ac: acs, output: tail(`${r.stdout ?? ""}${r.stderr ?? ""}`, store.policy.policy.secrets.patterns), observed: true });
-  }
-  if (o.verify) {
-    if (o.result !== "pass" && o.result !== "fail") fail("--verify needs --result pass|fail.");
-    verify.push({ cmd: o.verify, ok: o.result === "pass", ac: acs, ...o.output ? { output: tail(o.output, store.policy.policy.secrets.patterns) } : {}, observed: false });
-  }
-  if (o.attempt && !o.why) fail("--attempt needs --why: what made it fail, so the next run doesn't retry it.");
-  const step = o.step ?? plan.tasks().find(([done]) => !done)?.[1].split(":")[0] ?? "done";
-  store.ledger.record("checkpoint", plan.id, {
-    step,
-    sha: snap.sha,
-    dirty: snap.dirty.slice(0, 50),
-    fingerprint: snap.fingerprint,
-    ...verify.length ? { verify } : {},
-    ...o.attempt ? { attempt: { what: o.attempt, why: o.why } } : {},
-    ...o.note ? { note: o.note } : {},
-    ...o.auto ? { auto: true } : {}
-  });
-  if (!o.auto) {
-    store.say(`${plan.id}: checkpoint at ${step}${snap.sha ? ` (${snap.sha.slice(0, 7)})` : ""}` + verify.map((v) => ` \u2014 ${v.ok ? "\u2713" : "\u2717"} ${v.cmd}`).join(""));
-  }
-  return verify.some((v) => !v.ok) ? 1 : 0;
-}
-function parseAc(spec, n2) {
-  if (!spec) return [];
-  if (spec === "all") return Array.from({ length: n2 }, (_, i) => i + 1);
-  const nums = spec.split(",").map((x) => Number(x.trim().replace(/^AC/i, "")));
-  const bad = nums.filter((x) => !Number.isInteger(x) || x < 1 || x > n2);
-  if (bad.length) fail(`--ac: the plan has acceptance criteria 1\u2013${n2} (or "all").`);
-  return nums;
-}
-function recovery(store, plan) {
-  const events = store.ledger.events();
-  const cps = checkpoints(events, plan.id);
-  const last = cps.at(-1);
-  const owner2 = store.ledger.claims(events).get(plan.id);
-  const tasks = plan.tasks();
-  const out = [`${plan.id}: ${plan.get("title")} [${plan.get("status")}] tasks ${tasks.filter(([d]) => d).length}/${tasks.length}` + (owner2 ? ` \u2014 claimed by ${owner2.actor} (${owner2.run})` : "")];
-  if (last) {
-    const here = currentBranch() === plan.get("branch");
-    const now = here ? snapshot() : null;
-    const ahead = here && last.sha && now?.sha ? Number(git(["rev-list", "--count", `${last.sha}..HEAD`])?.trim() || 0) : 0;
-    out.push(`last checkpoint ${String(last.ts).slice(0, 16).replace("T", " ")} at ${last.step} (${String(last.sha ?? "?").slice(0, 7)}) by ${last.actor}` + (now ? `; since then ${ahead} commit(s), ${now.dirty.length} uncommitted file(s)${now.dirty.length ? `: ${now.dirty.slice(0, 8).join(", ")}` : ""}` : ""));
-  } else out.push("no checkpoint yet");
-  const latest = /* @__PURE__ */ new Map();
-  for (const e of cps) for (const v of e.verify ?? []) latest.set(v.cmd, { ...v, ts: e.ts });
-  for (const v of latest.values()) {
-    out.push(`${v.ok ? "\u2713" : "\u2717"} ${v.cmd}${v.ac.length ? ` (AC ${v.ac.join(",")})` : ""}${v.observed ? "" : " (reported)"}` + (!v.ok && v.output ? ` \u2014 ${v.output.split("\n").filter(Boolean).at(-1)}` : ""));
-  }
-  for (const e of cps.filter((c) => c.attempt)) {
-    const a = e.attempt;
-    out.push(`don't retry: ${a.what} \u2014 ${a.why}`);
-  }
-  const nxt = tasks.find(([d]) => !d)?.[1];
-  if (nxt) out.push(`next: ${nxt}`);
-  const ev = evidence(store, plan);
-  if (ev.length) {
-    out.push(`evidence: ${ev.map((e, i) => `AC${i + 1} ${!e.verify ? "\u2014" : !e.verify.ok ? "\u2717" : e.independent ? "\u2713" : "\u2713 (self)"}`).join(", ")}`);
-  }
-  return out;
-}
-function resume(store, id, json = false) {
-  store.require();
-  const plan = planFromBranch(store, id) ?? fail("Not on a plan branch: name the plan (`resume P-###`).");
-  if (json) store.say(JSON.stringify({ plan: plan.id, lines: recovery(store, plan) }));
-  else for (const line2 of recovery(store, plan)) store.say(line2);
-}
-function writeHandoff(store, plan) {
-  const logs = stripComments(plan.section("Progress log")).split("\n").filter((l) => l.trim().startsWith("- ")).slice(-3);
-  plan.replaceSection("Handoff", [
-    `_Generated ${today()} by \`crew.mjs handoff\` from the ledger._`,
-    "",
-    ...recovery(store, plan).map((l) => `- ${l}`),
-    ...logs.length ? ["", "Latest log:", ...logs] : []
-  ].join("\n"));
-}
-function handoff(store, id) {
-  store.require();
-  const plan = planFromBranch(store, id) ?? fail("Not on a plan branch: name the plan (`handoff P-###`).");
-  if (plan.source !== "worktree") fail(`${plan.id} lives on ${plan.source}; write its handoff there.`);
-  writeHandoff(store, plan);
-  plan.save();
-  store.say(`${plan.id}: handoff written`);
-}
-
-// src/core/gates.ts
-function triageProblems(item) {
-  const prefix = item.id.split("-")[0];
-  const problems = item.missing(TRIAGE_SECTIONS[prefix]).map((n2) => `empty section: ${n2}`);
-  if (!PRIORITIES.includes(item.get("priority") ?? "")) problems.push("no priority (P0\u2013P3)");
-  if (prefix === "BUG" && !Object.hasOwn(SEVERITY_PRIORITY, item.get("severity") ?? "")) problems.push("no severity (S1\u2013S4)");
-  return problems;
-}
-function readinessProblems(store, plan) {
-  return [
-    ...plan.missing(READY_SECTIONS).map((n2) => `empty section: ${n2}`),
-    ...plan.touches().length ? [] : ["no touches: (the paths this plan will change)"],
-    ...taskProblems(store, plan),
-    ...itemProblems(store, plan)
-  ];
-}
-function learningsProblems(plan, known) {
-  const m = /^\s*[-*]?\s*\**learnings?\**\s*:\**\s*(.*)$/im.exec(stripComments(plan.section("Outcome")));
-  if (!m) return ["Outcome has no `Learnings:` line \u2014 list the K-\u2026 entries captured with `learn`, or write `Learnings: none`"];
-  const ids = m[1].match(K_ID_RE) ?? [];
-  if (!ids.length && !/^none\b/i.test(m[1].trim())) return ["`Learnings:` must list K-\u2026 entries or say none"];
-  return ids.filter((i) => !known.has(i)).map((i) => `Learnings: ${i} does not exist`);
-}
-function decisionProblems(idea2) {
-  const problems = idea2.missing(DECIDED_SECTIONS).map((n2) => `empty section: ${n2}`);
-  if (idea2.hasContent("Success criteria") && !idea2.checklist("Success criteria").length) {
-    problems.push("Success criteria must be a checklist (`- [ ] \u2026`) so each one can be verified");
-  }
-  return problems;
-}
-function taskProblems(store, plan) {
-  const tasks = plan.tasks();
-  const max = store.settings().max_tasks;
-  const problems = tasks.length ? [] : ["no tasks"];
-  const noVerify = tasks.filter(([, t]) => !t.toLowerCase().includes("verify")).map(([, t]) => t.split("\u2192")[0].trim());
-  if (noVerify.length) problems.push(`tasks without '\u2192 verify:': ${noVerify.join("; ")}`);
-  if (tasks.length > max) problems.push(`${tasks.length} tasks (> max_tasks ${max}) \u2014 split the plan`);
-  return problems;
-}
-function itemProblems(store, plan) {
-  const items2 = store.items();
-  const linked = idList(plan.get("items"));
-  const problems = [];
-  for (const i of linked) {
-    if (!items2.has(i)) problems.push(`unknown item ${i}`);
-    else if (items2.get(i).get("status") === "new") problems.push(`item ${i} is not triaged`);
-  }
-  if (linked.some((i) => i.startsWith("BUG-"))) {
-    const text2 = (plan.section("Acceptance criteria") + plan.section("Tasks") + plan.section("Test plan")).toLowerCase();
-    if (!text2.includes("regression")) {
-      problems.push("fixes a bug but names no regression test (acceptance criteria, tasks or test plan)");
-    }
-  }
-  return problems;
-}
+import { spawnSync as spawnSync3 } from "node:child_process";
+import { createHash as createHash2 } from "node:crypto";
 
 // src/commands/questions.ts
-import { randomBytes } from "node:crypto";
+import { randomBytes as randomBytes2 } from "node:crypto";
 
 // src/commands/knowledge.ts
 import { join as join2 } from "node:path";
@@ -8236,385 +8129,8 @@ function view(e, store) {
   };
 }
 
-// src/commands/questions.ts
-function questions(events) {
-  const byId = /* @__PURE__ */ new Map();
-  for (const e of events) {
-    if (e.type === "ask") {
-      byId.set(String(e.qid), {
-        id: String(e.qid),
-        ref: e.ref,
-        to: String(e.to),
-        text: String(e.text),
-        by: e.actor,
-        run: e.run,
-        ts: e.ts,
-        blocking: e.blocking !== false,
-        escalation: e.escalation === true,
-        answer: null
-      });
-    } else if (e.type === "answer" && byId.has(String(e.qid))) {
-      byId.get(String(e.qid)).answer = { text: String(e.text), by: String(e.approved_by ?? e.actor), ts: e.ts };
-    }
-  }
-  return [...byId.values()];
-}
-var openQuestions = (events, ref) => questions(events).filter((q) => !q.answer && (!ref || q.ref === ref));
-var FORWARD = /* @__PURE__ */ new Set(["ready", "in-progress", "in-review", "done", "active", "decided", "triaged"]);
-function ask(store, ref, to, text2, o = {}) {
-  store.require();
-  const id = ref?.toUpperCase();
-  if (id) {
-    if (!kindOf(id)) fail(`Unrecognised ID '${id}'.`);
-    store.find(id);
-  }
-  if (!ROLES.includes(to)) fail(`--to must be one of ${ROLES.join(", ")}.`);
-  if (!text2.trim()) fail("Ask a question.");
-  const qid = `Q-${randomBytes(3).toString("hex")}`;
-  store.ledger.record("ask", id ?? null, { qid, to, text: text2, ...o.fyi ? { blocking: false } : {}, ...o.escalation ? { escalation: true } : {} });
-  store.say(`${qid} \u2192 ${to}${id ? ` about ${id}` : ""}${o.fyi ? "" : id ? ` (blocks ${id} until answered)` : ""}`);
-  return qid;
-}
-function escalate(store, ref, text2) {
-  return ask(store, ref, store.policy.policy.escalation.to, text2, { escalation: true });
-}
-function answer(store, qid, text2, o = {}) {
-  store.require();
-  const q = questions(store.ledger.events()).find((x) => x.id === qid.toLowerCase().replace(/^q-/, "Q-")) ?? fail(`No question ${qid}.`);
-  if (q.answer) fail(`${q.id} was already answered by ${q.answer.by}: ${q.answer.text}`);
-  if (!text2.trim()) fail("Give the answer.");
-  if ((q.escalation || q.to === "executive") && !o.approvedBy) {
-    fail(`${q.id} is an escalation to the ${q.to}: a human answers it with \`crew.mjs answer ${q.id} "\u2026" --approved-by <name>\` (agents can't).`);
-  }
-  store.ledger.record("answer", q.ref, { qid: q.id, text: text2, ...o.approvedBy ? { approved_by: o.approvedBy } : {} });
-  store.say(`${q.id} answered${q.ref ? ` \u2014 ${q.ref} is unblocked` : ""}`);
-  if (o.decision) {
-    learn(store, "decision", text2, { why: `Answer to ${q.id} (${q.to}): ${q.text}`, scope: o.scope, source: q.ref ?? void 0 });
-  }
-}
-function listQuestions(store, o = {}) {
-  store.require();
-  const qs = questions(store.ledger.events()).filter((q) => (o.all || !q.answer) && (!o.to || q.to === o.to) && (!o.ref || q.ref === o.ref.toUpperCase()));
-  if (o.json) {
-    for (const q of qs) store.say(JSON.stringify(q));
-    return;
-  }
-  if (!qs.length) store.say(o.all ? "No questions." : "No open questions.");
-  for (const q of qs) {
-    store.say(`${q.id}  ${q.escalation ? "ESCALATION " : ""}${q.by} \u2192 ${q.to}${q.ref ? ` about ${q.ref}` : ""}: ${q.text}` + (q.answer ? `  \u2014 answered by ${q.answer.by}: ${q.answer.text}` : q.blocking && q.ref ? "  (blocking)" : ""));
-  }
-}
-
-// src/commands/workflow.ts
-var LOG_SECTION = { item: "Notes" };
-function move(store, docId, status2, note, force = false, approvedBy) {
-  store.require();
-  docId = docId.toUpperCase();
-  const kind = kindOf(docId);
-  const doc = store.find(docId);
-  const flow = FLOWS[kind];
-  const old = doc.get("status") ?? "";
-  if (!Object.hasOwn(flow, status2)) fail(`Unknown status '${status2}'. Valid: ${Object.keys(flow).join(", ")}`);
-  if (!(flow[old] ?? []).includes(status2) && !force) {
-    const allowed = [...flow[old] ?? []].sort().join(", ") || "none";
-    fail(`${docId}: ${old} \u2192 ${status2} not allowed (from ${old}: ${allowed}). Use --force to override.`);
-  }
-  if (!force) guard(store, kind, doc, status2, approvedBy);
-  const waiting = FORWARD.has(status2) ? openQuestions(store.ledger.events(), doc.id).filter((x) => x.blocking) : [];
-  if (waiting.length && !force) {
-    fail(`${doc.id} waits for an answer before it moves on:
-  - ${waiting.map((x) => `${x.id} \u2192 ${x.to}: ${x.text}`).join("\n  - ")}
-(\`crew.mjs questions\`; --force to move anyway)`);
-  }
-  authorize(store, doc.id, `${kind}.${status2}`, approvedBy);
-  stamp(kind, doc, status2);
-  doc.set("status", status2);
-  if (kind === "plan" && status2 === "in-review" && doc.source === "worktree") writeHandoff(store, doc);
-  const approval = approvedBy ? ` (approved by ${approvedBy})` : "";
-  doc.appendLog(`status ${old} \u2192 ${status2}` + (note ? ` \u2014 ${note}` : "") + approval, LOG_SECTION[kind] ?? "Progress log");
-  doc.save();
-  store.ledger.record("move", doc.id, { from: old, to: status2, ...note ? { note } : {}, ...approvedBy ? { approved_by: approvedBy } : {} });
-  if (CLOSED.has(status2) && store.ledger.claims().has(doc.id)) store.ledger.record("release", doc.id, { reason: status2 });
-  store.say(`${doc.id}: ${old} \u2192 ${status2}`);
-  return doc;
-}
-function authorize(store, id, transition, approvedBy) {
-  const { policy, errors } = store.policy;
-  if (errors.length) fail(`The policy is invalid, so nothing moves until it is fixed (\`crew.mjs policy check\`):
-  - ${errors.join("\n  - ")}`);
-  if (approvedBy !== void 0 && !approvedBy.trim()) fail("--approved-by needs the approving person's name.");
-  if (approvedBy) return;
-  const reason = approvalReason(policy, transition);
-  const [, status2] = transition.split(".");
-  if (reason) {
-    fail(`${id} \u2192 ${status2} is ${reason}: a human approves it with \`crew.mjs move ${id} ${status2} --approved-by <name>\` (agents over MCP can't). Ask the ${policy.escalation.to} first.`);
-  }
-  const role = policy.role_gates[transition];
-  const mine = store.ledger.who.role;
-  if (role && mine !== role) fail(`${id} \u2192 ${status2} is for the ${role} role; this run is ${mine ? `the ${mine} role` : "in no role"} (CREW_ROLE).`);
-}
-function budgetProblems(store) {
-  const { budgets } = store.policy.policy;
-  const events = store.ledger.events(), me = store.ledger.who.run;
-  const mine = store.ledger.spend(events.filter((e) => e.run === me)), all = store.ledger.spend(events);
-  const over = (what, used, cap, unit = "") => cap !== null && used >= cap ? [`${what}: ${unit}${+used.toFixed(2)} used of ${unit}${cap}`] : [];
-  const holders = new Set([...store.ledger.claims(events).values()].map((c) => c.run));
-  const agents = budgets.max_agents !== null && !holders.has(me) && holders.size >= budgets.max_agents ? [`max_agents: ${holders.size} runs already hold work (limit ${budgets.max_agents})`] : [];
-  return [
-    ...over("run cost", mine.cost, budgets.run.max_cost, "$"),
-    ...over("run tokens", mine.tokensIn + mine.tokensOut, budgets.run.max_tokens),
-    ...over("project cost", all.cost, budgets.project.max_cost, "$"),
-    ...over("project tokens", all.tokensIn + all.tokensOut, budgets.project.max_tokens),
-    ...agents
-  ];
-}
-function guard(store, kind, doc, status2, approvedBy) {
-  let problems = [];
-  let label = "";
-  if (kind === "plan" && status2 === "ready") {
-    problems = readinessProblems(store, doc);
-    label = "is not ready (Definition of Ready)";
-  } else if (kind === "plan" && status2 === "in-review") {
-    problems = learningsProblems(doc, new Set(store.knowledge().map((e) => e.id)));
-    label = "can't go to review";
-  } else if (kind === "plan" && status2 === "done") {
-    problems = [
-      ...doc.tasks().filter(([done]) => !done).map(([, t]) => `unchecked task: ${t}`),
-      ...evidenceProblems(store, doc, approvedBy)
-    ];
-    label = "can't be done";
-  } else if (kind === "goal" && status2 === "active") {
-    problems = doc.missing(["Outcome", "Acceptance criteria"]).map((n2) => `empty section: ${n2}`);
-    label = "can't be active";
-  } else if (kind === "item" && status2 === "triaged") {
-    problems = triageProblems(doc);
-    label = "can't be triaged";
-  } else if (kind === "idea" && status2 === "decided") {
-    problems = decisionProblems(doc);
-    label = "can't be decided";
-  }
-  if (problems.length) fail(`${doc.id} ${label}:
-  - ${problems.join("\n  - ")}
-(--force to override)`);
-}
-function stamp(kind, doc, status2) {
-  if (kind === "plan" && status2 === "in-progress" && !doc.get("started")) doc.set("started", today());
-  if (kind === "idea" && status2 === "decided") doc.set("decided", today());
-  if (kind === "item" && ITEM_CLOSED.has(status2)) doc.set("closed", today());
-  if (status2 === "done") doc.set("completed", today());
-}
-function usage(store, u) {
-  store.require();
-  if (u.tokensIn === void 0 && u.tokensOut === void 0 && u.cost === void 0) fail("Give --tokens-in, --tokens-out or --cost.");
-  if (u.cost !== void 0 && !(u.cost >= 0)) fail("--cost must be a number \u2265 0.");
-  store.ledger.record("usage", u.ref ? u.ref.toUpperCase() : null, {
-    tokens_in: u.tokensIn ?? 0,
-    tokens_out: u.tokensOut ?? 0,
-    cost: u.cost ?? 0,
-    ...u.model ? { model: u.model } : {}
-  });
-  store.say(`usage recorded for ${store.ledger.who.actor} (${store.ledger.who.run})`);
-  const over = budgetProblems(store);
-  if (over.length) store.say(`warning: over budget \u2014 new work needs a human's approval: ${over.join("; ")}`);
-}
-function log(store, docId, text2) {
-  const doc = store.find(docId);
-  doc.appendLog(text2, LOG_SECTION[kindOf(docId) ?? "plan"] ?? "Progress log");
-  doc.save();
-  store.ledger.record("log", doc.id, { text: text2 });
-}
-
-// src/commands/roles.ts
-var View = class {
-  constructor(store) {
-    this.store = store;
-    this.plans = store.plans(true);
-    this.items = store.items();
-    this.goals = store.goals();
-    this.focus = store.focus();
-    this.events = store.ledger.events();
-  }
-  store;
-  plans;
-  items;
-  goals;
-  focus;
-  events;
-  status(st) {
-    return [...this.plans.values()].filter((p) => p.get("status") === st).sort(byKey((p) => [!onFocus(p, this.items, this.focus), p.id]));
-  }
-  ranked(st) {
-    return ranked(this.items, this.goals, this.focus).filter((i) => itemStatus(i, this.plans) === st);
-  }
-};
-var RULES = {
-  executive: [
-    (v) => openQuestions(v.events).filter((x) => x.escalation).map((x) => `answer ${x.id} (${x.by}${x.ref ? ` about ${x.ref}` : ""}): ${x.text}`),
-    (v) => v.status("in-review").filter((p) => approvalReason(v.store.policy.policy, "plan.done") && evidence(v.store, p).every((e) => e.verify?.ok && e.independent)).map((p) => `approve ${p.id}: ${p.get("title")} \u2014 evidence complete \u2192 move ${p.id} done --approved-by <you>`),
-    (v) => ["exploring", "researching", "proposed"].includes(v.store.idea()?.get("status") ?? "") ? ["decide the idea (go / pivot / kill)"] : []
-  ],
-  director: [
-    (v) => openQuestions(v.events).filter((x) => x.escalation).map((x) => `waiting on the executive: ${x.id} \u2014 ${x.text}`),
-    (v) => budgetProblems(v.store).map((b) => `over budget: ${b}`),
-    (v) => v.status("blocked").map((p) => `unblock ${p.id}: ${p.get("title")}`),
-    (v) => [...v.plans.values()].filter((p) => p.get("status") === "in-progress").flatMap((p) => overlapping(p, v.plans).map((o) => `${p.id} and ${o.id} overlap on ${o.globs.join(", ")} \u2014 sequence them or split the work`)),
-    (v) => {
-      const g = v.goals.get(v.focus);
-      if (!v.focus) return v.goals.size ? ["set the focus goal: focus G-###"] : [];
-      const open = goalPlans(v.focus, v.plans, v.items).filter((p) => !["done", "dropped"].includes(p.get("status") ?? ""));
-      return g && !open.length && !goalItems(v.focus, v.items).some((i) => itemStatus(i, v.plans) !== "done") ? [`${v.focus} has nothing open: confirm its acceptance criteria, move it done, and focus the next goal`] : [];
-    }
-  ],
-  pm: [
-    (v) => v.ranked("new").filter((i) => i.id.startsWith("BUG-")).slice(0, 3).map((i) => `triage bug ${i.id}: ${i.get("title")}`),
-    (v) => v.ranked("new").filter((i) => !i.id.startsWith("BUG-")).slice(0, 3).map((i) => `triage ${i.id}: ${i.get("title")}`),
-    (v) => [...v.goals.values()].filter((g) => ["proposed", "active"].includes(g.get("status") ?? "") && !goalItems(g.id, v.items).some((i) => itemStatus(i, v.plans) !== "done")).map((g) => `break ${g.id} down: it has no open items`)
-  ],
-  architect: [
-    (v) => v.status("draft").map((p) => `refine ${p.id}: ${p.get("title")} to the Definition of Ready`),
-    (v) => v.ranked("triaged").slice(0, 2).map((i) => `write a plan for ${i.id}: ${i.get("title")} (${i.get("priority")})`),
-    (v) => v.status("ready").flatMap((p) => overlapping(p, v.plans).map((o) => `${p.id} overlaps ${o.id} (${o.globs.join(", ")}): add depends_on or narrow touches`))
-  ],
-  developer: [
-    (v) => [...v.plans.values()].filter((p) => ["in-progress", "blocked"].includes(p.get("status") ?? "") && v.store.ledger.claims(v.events).get(p.id)?.run === v.store.ledger.who.run).map((p) => `continue ${p.id}: ${p.get("title")} \u2192 resume ${p.id}`),
-    (v) => v.status("ready").filter((p) => !unmetDeps(p, v.plans).length && !v.store.ledger.claims(v.events).has(p.id) && !openQuestions(v.events, p.id).some((x) => x.blocking)).slice(0, 1).map((p) => `start ${p.id}: ${p.get("title")} \u2192 start ${p.id}`)
-  ],
-  qa: [
-    (v) => v.status("in-review").filter((p) => implementer(v.events, p.id) !== v.store.ledger.who.run).map((p) => {
-      const missing = evidence(v.store, p).flatMap((e, i) => e.verify?.ok && e.independent ? [] : [`AC${i + 1}`]);
-      return missing.length ? `verify ${p.id}: ${missing.join(", ")} \u2192 checkpoint ${p.id} --run "<check>" --ac \u2026` : `${p.id}: evidence complete \u2192 move ${p.id} done`;
-    }),
-    (v) => v.ranked("new").filter((i) => i.id.startsWith("BUG-")).slice(0, 2).map((i) => `reproduce ${i.id}: ${i.get("title")}`)
-  ],
-  release: [
-    (v) => v.status("done").filter((p) => planBranches().includes(p.get("branch") ?? "")).map((p) => `ship ${p.id}: merge ${p.get("branch")}, follow its Rollout & rollback, then delete the branch`),
-    (v) => v.status("in-review").filter((p) => p.hasContent("Rollout & rollback") && !/^\s*n\/a\b/i.test(stripComments(p.section("Rollout & rollback")))).map((p) => `prepare the rollout of ${p.id}: ${p.get("title")} (see its Rollout & rollback)`)
-  ]
-};
-function roleLines(store, role) {
-  if (!ROLES.includes(role)) fail(`Unknown role '${role}'. Roles: ${ROLES.join(", ")}.`);
-  const v = new View(store);
-  const asked = openQuestions(v.events).filter((x) => x.to === role && !(role === "executive" && x.escalation)).map((x) => `QUESTION     ${x.id} from ${x.by}${x.ref ? ` about ${x.ref}` : ""}: ${x.text} \u2192 answer ${x.id} "\u2026"`);
-  const work = RULES[role].flatMap((r) => r(v));
-  return [
-    ...asked,
-    ...work.map((w, i) => `${i ? "THEN" : "NEXT"}         ${w}`).slice(0, 8),
-    ...asked.length || work.length ? [] : [`NEXT         nothing for the ${role} role right now`]
-  ];
-}
-
-// src/commands/advisor.ts
-function current(store) {
-  if (!store.ws.isDir(store.dir)) return;
-  const focus = store.focus();
-  if (focus) store.say(`crew hub \u2014 focus ${focus}: ${store.goals().get(focus)?.get("title") ?? "(missing goal)"}`);
-  const branch = currentBranch() ?? "";
-  const m = /^plan\/(P-\d+)/.exec(branch);
-  if (!m) {
-    const active = [...store.plans(true).values()].filter((p) => ACTIVE.has(p.get("status") ?? ""));
-    if (active.length) {
-      store.say("crew hub \u2014 active plans: " + active.map((p) => `${p.id} (${p.get("status")})`).join(", "));
-    }
-    return;
-  }
-  const doc = store.plans().get(m[1]);
-  if (!doc) {
-    store.say(`crew hub: branch ${branch} has no matching plan file.`);
-    return;
-  }
-  const tasks = doc.tasks();
-  const nxt = tasks.find(([d]) => !d)?.[1];
-  store.say(`crew hub \u2014 current plan ${doc.id}: ${doc.get("title")} [${doc.get("status")}] tasks ${tasks.filter(([d]) => d).length}/${tasks.length}` + (nxt ? ` \u2014 next: ${nxt}` : "") + ` \u2014 file: ${doc.path ? store.rel(doc.path) : ""}`);
-}
-function nextStep(store, role) {
-  store.require();
-  for (const line2 of role ? roleLines(store, role) : nextLines(store)) store.say(line2);
-}
-function nextLines(store) {
-  const ctx = new Context(store);
-  for (const p of ctx.active) ctx.lines.push(`IN PROGRESS  ${p.id}: ${p.get("title")} [${p.get("status")}]`);
-  for (const rule of [ctx.expedite, ctx.wipFull, ctx.startReady, ctx.refineDraft, ctx.triage, ctx.planItem, ctx.idea, ctx.goal]) {
-    const line2 = rule.call(ctx);
-    if (line2) return [...ctx.lines, `NEXT         ${line2}`];
-  }
-  return [...ctx.lines, "NEXT         nothing planned \u2014 write a goal for the next outcome, or capture items"];
-}
-var Context = class {
-  constructor(store) {
-    this.store = store;
-    this.goals = store.goals();
-    this.items = store.items();
-    this.plans = store.plans(true);
-    this.focus = store.focus();
-    this.active = [...this.plans.values()].filter((p) => ACTIVE.has(p.get("status") ?? "")).sort(byKey((p) => this.key(p)));
-  }
-  store;
-  goals;
-  items;
-  plans;
-  focus;
-  active;
-  lines = [];
-  /** Focus work first, then goal order, then ID. */
-  key(p) {
-    const eorder = goalOrder(this.goals);
-    return [!onFocus(p, this.items, this.focus), eorder.get(planGoal(p, this.items)) ?? eorder.size, p.id];
-  }
-  withStatus(status2) {
-    return [...this.plans.values()].filter((p) => p.get("status") === status2).sort(byKey((p) => this.key(p)));
-  }
-  ranked(status2) {
-    return ranked(this.items, this.goals, this.focus).filter((i) => itemStatus(i, this.plans) === status2);
-  }
-  expedite() {
-    const bugs = [...this.items.values()].filter((i) => i.id.startsWith("BUG-") && i.get("priority") === "P0" && ["new", "triaged"].includes(itemStatus(i, this.plans))).map((i) => i.id).sort();
-    if (!bugs.length) return null;
-    const b = this.items.get(bugs[0]);
-    return `expedite ${b.id}: ${b.get("title")} (P0) \u2192 write a fix plan: new-plan \u2026 --items ${b.id}`;
-  }
-  wipFull() {
-    const limit = this.store.settings().wip_limit;
-    const wip = this.active.filter((p) => p.get("status") === "in-progress");
-    return wip.length >= limit ? `finish ${wip[0].id} (WIP limit ${limit})` : null;
-  }
-  startReady() {
-    const ready = this.withStatus("ready");
-    const startable = ready.filter((p2) => !unmetDeps(p2, this.plans).length);
-    for (const p2 of ready) {
-      if (!startable.includes(p2)) {
-        this.lines.push(`WAITING      ${p2.id}: ${p2.get("title")} \u2014 needs ${unmetDeps(p2, this.plans).join(", ")}`);
-      }
-    }
-    if (!startable.length) return null;
-    const p = startable[0];
-    const off = onFocus(p, this.items, this.focus) ? "" : ` (off focus ${this.focus})`;
-    return `${p.id}: ${p.get("title")} \u2192 crew.mjs start ${p.id}${off}`;
-  }
-  refineDraft() {
-    const [d] = this.withStatus("draft");
-    return d ? `refine draft ${d.id}: ${d.get("title")} to meet the Definition of Ready, then move it to ready` : null;
-  }
-  triage() {
-    const fresh = this.ranked("new");
-    return fresh.length ? `triage ${fresh.length} item(s), starting with ${fresh[0].id}: ${fresh[0].get("title")}` : null;
-  }
-  planItem() {
-    const [i] = this.ranked("triaged");
-    if (!i) return null;
-    return `write a plan for ${i.id}: ${i.get("title")} (${i.get("priority")})` + (i.get("goal") ? ` \u2014 goal ${i.get("goal")}` : "");
-  }
-  idea() {
-    const idea2 = this.store.idea();
-    if (!idea2) return "write the idea (problem, outcome, success criteria) \u2192 new-idea TITLE --from DRAFT";
-    const st = idea2.get("status");
-    return st === "decided" || st === "killed" ? null : `take the idea from ${st} to a decision (go / pivot / kill)`;
-  }
-  goal() {
-    const ids = [...this.goals.keys()].sort(byKey((e) => [e !== this.focus, this.goals.get(e).get("status") !== "active", e]));
-    const gid = ids.find((e) => ["active", "proposed"].includes(this.goals.get(e).get("status") ?? ""));
-    return gid ? `break ${gid} down further, or close it once its acceptance criteria are verified` : null;
-  }
-};
+// src/commands/autonomy.ts
+import { spawnSync as spawnSync2 } from "node:child_process";
 
 // src/core/doc.ts
 var EMPTY_LINES = /* @__PURE__ */ new Set(["-", "- [ ]", "1."]);
@@ -8749,8 +8265,8 @@ ${block}`;
 `);
   }
 };
-function fill(template, fields) {
-  return template.replace(/\{(\w+)\}/g, (_, k) => fields[k] ?? "");
+function fill(template2, fields) {
+  return template2.replace(/\{(\w+)\}/g, (_, k) => fields[k] ?? "");
 }
 function splitSections(text2) {
   const parts = text2.split(/^## (.+?)\s*$/m);
@@ -8758,8 +8274,8 @@ function splitSections(text2) {
   for (let i = 1; i < parts.length; i += 2) sections2.push([parts[i].trim(), parts[i + 1] ?? ""]);
   return [parts[0], sections2];
 }
-function assemble(template, draft) {
-  const [pre, tmplSections] = splitSections(template);
+function assemble(template2, draft) {
+  const [pre, tmplSections] = splitSections(template2);
   let remaining = splitSections(draft)[1];
   const take = (name) => {
     const i = remaining.findIndex(([h]) => norm(name).startsWith(norm(h)) || norm(h).startsWith(norm(name)));
@@ -8791,23 +8307,91 @@ ${body2.trim()}
 `;
 }
 
+// src/core/gates.ts
+function triageProblems(item) {
+  const prefix = item.id.split("-")[0];
+  const problems = item.missing(TRIAGE_SECTIONS[prefix]).map((n2) => `empty section: ${n2}`);
+  if (!PRIORITIES.includes(item.get("priority") ?? "")) problems.push("no priority (P0\u2013P3)");
+  if (prefix === "BUG" && !Object.hasOwn(SEVERITY_PRIORITY, item.get("severity") ?? "")) problems.push("no severity (S1\u2013S4)");
+  return problems;
+}
+function fastLane(store, plan) {
+  const { types, max_tasks } = store.policy.policy.fast_lane;
+  const items2 = planItems(plan, store.items());
+  return types.length > 0 && items2.length > 0 && items2.every((i) => types.includes(i.id.split("-")[0])) && (max_tasks === null || plan.tasks().length <= max_tasks);
+}
+function readinessProblems(store, plan) {
+  return [
+    ...plan.missing(READY_SECTIONS).map((n2) => `empty section: ${n2}`),
+    ...plan.touches().length ? [] : ["no touches: (the paths this plan will change)"],
+    ...taskProblems(store, plan),
+    ...itemProblems(store, plan)
+  ];
+}
+function learningsProblems(plan, known) {
+  const m = /^\s*[-*]?\s*\**learnings?\**\s*:\**\s*(.*)$/im.exec(stripComments(plan.section("Outcome")));
+  if (!m) return ["Outcome has no `Learnings:` line \u2014 list the K-\u2026 entries captured with `learn`, or write `Learnings: none`"];
+  const ids = m[1].match(K_ID_RE) ?? [];
+  if (!ids.length && !/^none\b/i.test(m[1].trim())) return ["`Learnings:` must list K-\u2026 entries or say none"];
+  return ids.filter((i) => !known.has(i)).map((i) => `Learnings: ${i} does not exist`);
+}
+function decisionProblems(idea2) {
+  const problems = idea2.missing(DECIDED_SECTIONS).map((n2) => `empty section: ${n2}`);
+  if (idea2.hasContent("Success criteria") && !idea2.checklist("Success criteria").length) {
+    problems.push("Success criteria must be a checklist (`- [ ] \u2026`) so each one can be verified");
+  }
+  return problems;
+}
+function taskProblems(store, plan) {
+  const tasks = plan.tasks();
+  const max = store.settings().max_tasks;
+  const problems = tasks.length ? [] : ["no tasks"];
+  const noVerify = tasks.filter(([, t]) => !t.toLowerCase().includes("verify")).map(([, t]) => t.split("\u2192")[0].trim());
+  if (noVerify.length) problems.push(`tasks without '\u2192 verify:': ${noVerify.join("; ")}`);
+  if (tasks.length > max) problems.push(`${tasks.length} tasks (> max_tasks ${max}) \u2014 split the plan`);
+  return problems;
+}
+function itemProblems(store, plan) {
+  const items2 = store.items();
+  const linked = idList(plan.get("items"));
+  const problems = [];
+  for (const i of linked) {
+    if (!items2.has(i)) problems.push(`unknown item ${i}`);
+    else if (items2.get(i).get("status") === "new") problems.push(`item ${i} is not triaged`);
+  }
+  if (linked.some((i) => i.startsWith("BUG-"))) {
+    const text2 = (plan.section("Acceptance criteria") + plan.section("Tasks") + plan.section("Test plan")).toLowerCase();
+    if (!text2.includes("regression")) {
+      problems.push("fixes a bug but names no regression test (acceptance criteria, tasks or test plan)");
+    }
+  }
+  return problems;
+}
+
+// src/commands/checks.ts
+import { join as join7 } from "node:path";
+
+// src/commands/agents.ts
+import { join as join6 } from "node:path";
+
 // src/core/store.ts
 import { existsSync as existsSync4, realpathSync } from "node:fs";
 import { dirname as dirname3, join as join5, resolve as resolve3 } from "node:path";
 import { fileURLToPath } from "node:url";
 
 // src/core/ledger.ts
-import { createHash as createHash2 } from "node:crypto";
-import { appendFileSync, closeSync, existsSync as existsSync2, mkdirSync, openSync, readFileSync as readFileSync2, statSync as statSync2, unlinkSync } from "node:fs";
+import { createHash, randomBytes } from "node:crypto";
+import { appendFileSync, existsSync as existsSync2, linkSync, mkdirSync, readFileSync as readFileSync2, renameSync, statSync as statSync2, unlinkSync, writeFileSync } from "node:fs";
 import { basename, dirname, join as join3 } from "node:path";
 var LOCK_WAIT_MS = 5e3;
 var LOCK_STALE_MS = 3e4;
 function whoAmI(root) {
-  const hash = createHash2("sha1").update(root).digest("hex").slice(0, 8);
+  const hash = createHash("sha1").update(root).digest("hex").slice(0, 8);
   return {
     run: process.env.CREW_RUN || `wt:${basename(root)}-${hash}`,
     actor: process.env.CREW_ACTOR || userName() || "unknown",
     role: process.env.CREW_ROLE || null,
+    team: process.env.CREW_TEAM || null,
     worktree: root
   };
 }
@@ -8850,6 +8434,12 @@ var Ledger = class _Ledger {
     }
     return live;
   }
+  /** plan → its current assignment (the last `assign` event: `to` a role, optionally a `team`). */
+  assignments(events = this.events()) {
+    const out = /* @__PURE__ */ new Map();
+    for (const ev of events) if (ev.type === "assign" && ev.ref) out.set(ev.ref, ev);
+    return out;
+  }
   /** ref → the status its last `move` event set. */
   lastStatus(events = this.events()) {
     const out = /* @__PURE__ */ new Map();
@@ -8883,41 +8473,68 @@ var Ledger = class _Ledger {
     if (!this.staged.length) return;
     mkdirSync(dirname(this.path), { recursive: true });
     const lock = `${this.path}.lock`;
-    acquire(lock);
+    const token = acquireLock(lock);
     try {
       const live = this.claims(this.onDisk());
       for (const ev of this.staged.filter((e) => e.type === "claim" && e.ref && !e.force)) {
         const held = live.get(ev.ref);
         if (held && held.run !== ev.run) fail(`${ev.ref} was just claimed by ${held.actor} (${held.run}). Nothing was changed.`);
       }
-      appendFileSync(this.path, this.staged.map((e) => `${JSON.stringify(e)}
+      const torn = existsSync2(this.path) && statSync2(this.path).size > 0 && !readFileSync2(this.path, "utf8").endsWith("\n");
+      appendFileSync(this.path, (torn ? "\n" : "") + this.staged.map((e) => `${JSON.stringify(e)}
 `).join(""));
       this.staged = [];
     } finally {
-      unlinkSync(lock);
+      releaseLock(lock, token);
     }
   }
 };
-function acquire(lock) {
-  const deadline = Date.now() + LOCK_WAIT_MS;
+function acquireLock(lock, waitMs = LOCK_WAIT_MS, staleMs = LOCK_STALE_MS) {
+  const token = `${process.pid}-${randomBytes(6).toString("hex")}`;
+  const deadline = Date.now() + waitMs;
   for (; ; ) {
     try {
-      closeSync(openSync(lock, "wx"));
-      return;
+      writeFileSync(lock, token, { flag: "wx" });
+      return token;
     } catch (e) {
       if (e.code !== "EEXIST") throw e;
-      try {
-        if (Date.now() - statSync2(lock).mtimeMs > LOCK_STALE_MS) unlinkSync(lock);
-      } catch {
-      }
+      takeOverIfStale(lock, staleMs, token);
       if (Date.now() > deadline) fail(`The ledger is locked (${lock}). Another crew command is writing; retry.`);
       Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 20);
     }
   }
 }
+function takeOverIfStale(lock, staleMs, token) {
+  let seen;
+  try {
+    if (Date.now() - statSync2(lock).mtimeMs <= staleMs) return;
+    seen = readFileSync2(lock, "utf8");
+  } catch {
+    return;
+  }
+  const aside = `${lock}.stale-${token}`;
+  try {
+    renameSync(lock, aside);
+  } catch {
+    return;
+  }
+  if (readFileSync2(aside, "utf8") !== seen) {
+    try {
+      linkSync(aside, lock);
+    } catch {
+    }
+  }
+  unlinkSync(aside);
+}
+function releaseLock(lock, token) {
+  try {
+    if (readFileSync2(lock, "utf8") === token) unlinkSync(lock);
+  } catch {
+  }
+}
 
 // src/core/workspace.ts
-import { chmodSync, existsSync as existsSync3, mkdirSync as mkdirSync2, readdirSync as readdirSync2, readFileSync as readFileSync3, rmSync, statSync as statSync3, writeFileSync } from "node:fs";
+import { chmodSync, copyFileSync, existsSync as existsSync3, mkdirSync as mkdirSync2, readdirSync as readdirSync2, readFileSync as readFileSync3, rmSync, statSync as statSync3, writeFileSync as writeFileSync2 } from "node:fs";
 import { dirname as dirname2, join as join4, relative, sep } from "node:path";
 var Workspace = class {
   constructor(root) {
@@ -8926,17 +8543,25 @@ var Workspace = class {
   root;
   pending = /* @__PURE__ */ new Map();
   hooks = [];
+  aborts = [];
   output = [];
   /** A line for stdout (shown even when the command later refuses). */
   say(line2) {
     this.output.push(line2);
   }
   read(path) {
-    if (this.pending.has(path)) return this.pending.get(path)?.text ?? null;
+    if (this.pending.has(path)) {
+      const p = this.pending.get(path);
+      return p === null || p === void 0 ? null : "from" in p ? readFileSync3(p.from, "utf8") : p.text;
+    }
     return this.isFileOnDisk(path) ? readFileSync3(path, "utf8") : null;
   }
   write(path, text2, mode) {
     this.pending.set(path, { text: text2, mode });
+  }
+  /** Stage a byte-for-byte copy (binary files must not go through a string). */
+  copy(from, to) {
+    this.pending.set(to, { from });
   }
   remove(path) {
     this.pending.set(path, null);
@@ -8969,15 +8594,35 @@ var Workspace = class {
   beforeFlush(fn) {
     this.hooks.push(fn);
   }
+  /** Undo a side effect that isn't staged (a git branch) if the command is refused after making it. */
+  onAbort(fn) {
+    this.aborts.push(fn);
+  }
+  /** The command was refused: drop the staged writes and undo unstaged side effects, newest first. */
+  abort() {
+    this.pending.clear();
+    this.hooks = [];
+    for (const fn of this.aborts.splice(0).reverse()) fn();
+  }
   flush() {
-    for (const hook of this.hooks.splice(0)) hook();
+    try {
+      for (const hook of this.hooks.splice(0)) hook();
+    } catch (e) {
+      this.abort();
+      throw e;
+    }
+    this.aborts = [];
     for (const [path, v] of this.pending) {
       if (v === null) {
         rmSync(path, { force: true, recursive: true });
         continue;
       }
       mkdirSync2(dirname2(path), { recursive: true });
-      writeFileSync(path, v.text);
+      if ("from" in v) {
+        copyFileSync(v.from, path);
+        continue;
+      }
+      writeFileSync2(path, v.text);
       if (v.mode !== void 0) chmodSync(path, v.mode);
     }
     this.pending.clear();
@@ -9006,6 +8651,7 @@ function yamlBlock(text2, block) {
 var Store = class _Store {
   constructor(ws) {
     this.ws = ws;
+    useRoot(ws.root);
     this.dir = join5(ws.root, ".crew");
     this.dirs = Object.fromEntries(Object.entries(DIRS).map(([k, v]) => [k, join5(this.dir, v)]));
     this.ideaPath = join5(this.dir, "idea.md");
@@ -9025,9 +8671,9 @@ var Store = class _Store {
   get ledger() {
     return this.ledgerCache ??= Ledger.at(this.ws, this.dir);
   }
-  /** The effective policy for this run's role (see policy.ts). */
+  /** The effective policy for this run's role and team (CREW_ROLE, CREW_TEAM; see policy.ts). */
   get policy() {
-    return this.policyCache ??= resolvePolicy(this.ws.root, this.dir, this.ledger.who.role);
+    return this.policyCache ??= resolvePolicy(this.ws.root, this.dir, this.ledger.who.role, this.ledger.who.team);
   }
   rel(p) {
     return this.ws.rel(p);
@@ -9083,6 +8729,12 @@ var Store = class _Store {
       return d?.id ? [toEntry(d, "playbook")] : [];
     }) : [];
     return linkSupersession([...project, ...lessons]);
+  }
+  /** The branch plans start from: `git.default_branch` in .crew/config.yaml, else the policy's first protected branch. */
+  baseBranch() {
+    const text2 = this.ws.read(join5(this.dir, "config.yaml"));
+    const configured = text2 === null ? void 0 : yamlBlock(text2, "git").default_branch;
+    return configured || this.policy.policy.git.protected_branches[0] || "main";
   }
   /** The project's idea (.crew/idea.md), if it has been written. */
   idea() {
@@ -9154,8 +8806,8 @@ var Store = class _Store {
     const real = (p) => existsSync4(p) ? realpathSync(p) : p;
     if (!keep && real(draftFile).startsWith(real(resolve3(this.dir, "drafts")) + "/")) this.ws.remove(draftFile);
   }
-  build(template, draft, fields) {
-    const tmpl = fill(stripComments(this.template(template)), { date: today(), ...fields }).replace(/^(\w+): $/gm, "$1:");
+  build(template2, draft, fields) {
+    const tmpl = fill(stripComments(this.template(template2)), { date: today(), ...fields }).replace(/^(\w+): $/gm, "$1:");
     return Doc.parse(assemble(tmpl, draft));
   }
   writeNew(doc, path) {
@@ -9179,78 +8831,74 @@ var Store = class _Store {
   }
 };
 
-// src/commands/backlog.ts
-function createItem(store, prefix, title, body2, fields) {
-  const iid = store.nextId(prefix, "item");
-  const doc = store.build(`item-${ITEM_TYPES[prefix]}.md`, body2, { id: iid, title, type: ITEM_TYPES[prefix], ...fields });
-  return store.writeNew(doc, `${store.dirs.item}/${iid}-${slugify(title)}.md`);
-}
-function checkSeverity(severity) {
-  const s2 = (severity ?? "").toUpperCase();
-  if (s2 && !Object.hasOwn(SEVERITY_PRIORITY, s2)) fail(`Severity must be one of ${Object.keys(SEVERITY_PRIORITY).join(", ")}.`);
-  return s2;
-}
-function newItem(store, typ, title, draftPath, why, o = {}) {
-  store.require();
-  const prefix = typ.toUpperCase();
-  if (!Object.hasOwn(ITEM_TYPES, prefix)) fail(`Unknown item type '${typ}'. Use feat, bug, chore or spike.`);
-  if (Boolean(draftPath) === Boolean(why)) fail("Give exactly one of --from DRAFT or --why TEXT.");
-  const [draftFile, body2] = draftPath ? store.readDraft(draftPath, "item") : [null, `## Summary
-${why}
-`];
-  const severity = checkSeverity(o.severity);
-  if (severity && prefix !== "BUG") fail("--severity applies to bugs only.");
-  const fields = {
-    goal: store.checkRef(o.goal, "goal"),
-    priority: Store.checkPriority(o.priority) || (SEVERITY_PRIORITY[severity] ?? ""),
-    severity
-  };
-  const probe = store.build(`item-${ITEM_TYPES[prefix]}.md`, body2, { id: "X", title, ...fields });
-  if (!splitSections(probe.text)[1].some(([h]) => probe.hasContent(h))) fail("The item has no content. Nothing was created.");
-  const it = createItem(store, prefix, title, body2, fields);
-  if (draftFile) store.consume(draftFile, o.keep);
-  if (o.priority || severity) {
-    const problems = triageProblems(it);
-    const human = approvalReason(store.policy.policy, "item.triaged");
-    if (problems.length) store.say(`note: ${it.id} stays new until triaged \u2014 ${problems.join("; ")}`);
-    else if (human) store.say(`note: ${it.id} stays new \u2014 triage is ${human}: \`triage ${it.id} --approved-by <name>\``);
-    else move(store, it.id, "triaged", summary(it));
+// src/commands/agents.ts
+var HUMAN = "executive";
+var PLAIN = /^[\w-]+$/;
+var agentsDir = (store) => join6(store.ws.root, ".claude", "agents");
+var agentFile = (store, role) => join6(agentsDir(store), `crew-${role}.md`);
+function template(store, name) {
+  for (const d of [join6(store.dir, "templates", "agents"), join6(SKILL_DIR, "agents")]) {
+    const text2 = store.ws.read(join6(d, `${name}.md`));
+    if (text2 !== null) return text2;
   }
+  return fail(`Agent template ${name}.md not found. Re-run \`crew.mjs init\` from the plugin.`);
 }
-var summary = (it) => ["priority", "severity"].filter((k) => it.get(k)).map((k) => `${k} ${it.get(k)}`).join(", ");
-function triage(store, itemId, o = {}) {
-  store.require();
-  const item = store.find(itemId);
-  if (!item.get("type")) fail("triage works on FEAT/BUG/CHORE/SPIKE items.");
-  if (o.reject) {
-    if (!o.note) fail("--reject needs --note (why, or which item it duplicates).");
-    move(store, itemId, o.reject, o.note, false, o.approvedBy);
-    return;
-  }
-  let priority = o.priority;
-  const severity = checkSeverity(o.severity);
-  if (severity) {
-    item.set("severity", severity);
-    if (!priority && !item.get("priority")) priority = SEVERITY_PRIORITY[severity];
-  }
-  const updates = [["priority", Store.checkPriority(priority)], ["goal", store.checkRef(o.goal, "goal")]];
-  for (const [key, value] of updates) if (value) item.set(key, value);
-  const problems = triageProblems(item);
-  if (problems.length) fail(`${item.id} can't be triaged:
-  - ${problems.join("\n  - ")}
-Nothing was changed.`);
-  if (item.get("status") === "triaged") {
-    item.appendLog(`re-triaged: ${summary(item)}`, "Notes");
-    item.save();
-    store.say(`${item.id}: updated`);
-    return;
-  }
-  item.save();
-  move(store, item.id, "triaged", summary(item), false, o.approvedBy);
+var scalar = (v) => /^["']/.test(v) || !/(: | #|^[\s\W])|\s$/.test(v) ? v : JSON.stringify(v);
+function renderAgent(store, role) {
+  const r = resolvePolicy(store.ws.root, store.dir, role);
+  const custom = !ROLES.includes(role);
+  let text2 = template(store, custom ? "generic" : role);
+  if (custom) text2 = text2.replaceAll("{{role}}", role).replaceAll("{{charter}}", (r.charters[role] ?? "").replace(/\s+/g, " ").trim());
+  const m = /^---\n([\s\S]*?)\n---\n/.exec(text2);
+  const meta = (m?.[1] ?? "").split("\n").filter((l) => /^[\w-]+:/.test(l)).map((l) => [l.slice(0, l.indexOf(":")), l.slice(l.indexOf(":") + 1).trim()]);
+  const p = r.policy, deny = p.tools.deny.filter((t) => PLAIN.test(t));
+  const derived = [
+    ["crew-role", role],
+    ["model", p.models.default],
+    ["tools", p.tools.allow.filter((t) => PLAIN.test(t)).join(", ") || null],
+    ["disallowedTools", deny.join(", ") || null],
+    ["isolation", role === "developer" ? "worktree" : null],
+    // parallel developers never share a checkout
+    ["maxTurns", p.limits.max_turns === null ? null : String(p.limits.max_turns)]
+  ];
+  const own = /* @__PURE__ */ new Set(["name", ...derived.map(([k]) => k)]);
+  const lines = [
+    ["name", `crew-${role}`],
+    ...meta.filter(([k]) => k === "description"),
+    ...derived.filter((d) => d[1] !== null),
+    ...meta.filter(([k]) => !own.has(k) && k !== "description")
+  ];
+  const body2 = m ? text2.slice(m[0].length) : text2;
+  return { text: `---
+${lines.map(([k, v]) => `${k}: ${scalar(v)}`).join("\n")}
+---
+${body2}`, errors: r.errors };
 }
-
-// src/commands/checks.ts
-import { join as join6 } from "node:path";
+var agentRoles = (store) => resolvePolicy(store.ws.root, store.dir).roles.filter((r) => r !== HUMAN);
+function rendered(store) {
+  const out = /* @__PURE__ */ new Map();
+  for (const name of store.ws.list(agentsDir(store)).filter((n2) => /^crew-.*\.md$/.test(n2))) {
+    const role = Doc.parse(store.ws.read(join6(agentsDir(store), name)) ?? "").get("crew-role");
+    if (role) out.set(join6(agentsDir(store), name), role);
+  }
+  return out;
+}
+function agentProblems(store) {
+  const roles = agentRoles(store), problems = [];
+  for (const role of roles) {
+    const path = agentFile(store, role), now = store.ws.read(path);
+    if (now === null) problems.push({ path, problem: "missing" });
+    else if (now !== renderAgent(store, role).text) problems.push({ path, problem: "stale against the policy or its template" });
+  }
+  for (const [path, role] of rendered(store)) {
+    if (!roles.includes(role)) problems.push({ path, problem: `its role '${role}' is no longer defined` });
+  }
+  return problems;
+}
+function agentHints(store) {
+  if (!rendered(store).size) return [];
+  return agentProblems(store).map((p) => `agents: ${store.rel(p.path)} is ${p.problem} \u2014 run \`crew.mjs agents\``);
+}
 
 // src/commands/policy.ts
 var import_yaml2 = __toESM(require_dist(), 1);
@@ -9295,7 +8943,7 @@ function findings(store) {
   const s2 = new Snapshot(store), f = { errors: [], hints: [] };
   for (const rule of [idea, plans, overlaps, items, goals, ledger, knowledge, hygiene]) rule(s2, f);
   const p = policyFindings(store);
-  return { errors: [...f.errors, ...p.errors], hints: [...f.hints, ...p.hints] };
+  return { errors: [...f.errors, ...p.errors], hints: [...f.hints, ...p.hints, ...agentHints(store), ...livenessHints(store)] };
 }
 function check(store) {
   store.require();
@@ -9340,7 +8988,7 @@ function plans(s2, f) {
     if (st === "ready") f.errors.push(...readinessProblems(s2.store, p).map((problem) => `${pid}: ready but ${problem}`));
     if (st === "done") donePlan(pid, p, f);
     if (ACTIVE.has(st ?? "")) activePlan(pid, p, s2, f, branches, here);
-    const outside = drift(s2.allPlans.get(pid) ?? p);
+    const outside = drift(s2.allPlans.get(pid) ?? p, s2.store.baseBranch());
     if (outside?.length) f.hints.push(`${pid}: changes outside its touches: ${outside.slice(0, 8).join(", ")} \u2014 widen touches (and log why) or move the work`);
     if ((ACTIVE.has(st ?? "") || st === "ready") && !onFocus(p, s2.items, s2.focus)) {
       f.hints.push(`${pid}: ${st} but does not serve the focus goal ${s2.focus} (only bugs and chores may run off focus)`);
@@ -9445,24 +9093,960 @@ function hygiene(s2, f) {
   if (ahead.length > MAX_WRITTEN_AHEAD) {
     f.hints.push(`${ahead.length} plans written ahead of the work (> ${MAX_WRITTEN_AHEAD}) \u2014 keep later work as backlog items so plans don't go stale`);
   }
-  const leftovers = s2.store.ws.list(join6(s2.store.dir, "drafts")).filter((n2) => n2.endsWith(".md"));
+  const leftovers = s2.store.ws.list(join7(s2.store.dir, "drafts")).filter((n2) => n2.endsWith(".md"));
   if (leftovers.length) {
     f.hints.push(`unconverted drafts in .crew/drafts/: ${leftovers.join(", ")} \u2014 create the document from them or delete`);
   }
-  if (s2.store.ws.isDir(join6(s2.store.ws.root, ".project"))) {
+  if (s2.store.ws.isDir(join7(s2.store.ws.root, ".project"))) {
     f.hints.push("a .project/ directory from project-kit is still here \u2014 `crew.mjs migrate` moves it into .crew/");
   }
 }
 
+// src/commands/goals.ts
+function goalEvidence(store, goal) {
+  const cps = store.ledger.events().filter((e) => e.type === "checkpoint" && e.ref === goal.id);
+  return criteria(goal).map((ac) => {
+    let found = null;
+    for (const e of cps) for (const v of e.verify ?? []) if (v.ac_text?.includes(acPrint(ac))) found = { verify: v, role: e.role };
+    return { ac, verify: found?.verify ?? null, role: found?.role ?? null };
+  });
+}
+function goalProblems(store, goal) {
+  const plans2 = store.plans(true), items2 = store.items();
+  const verifier = store.policy.policy.role_gates["goal.done"] ? "pm" : null;
+  const problems = goalEvidence(store, goal).flatMap((e, i) => {
+    const how = `\`checkpoint ${goal.id} --verify "<how you checked>" --result pass --ac ${i + 1}\``;
+    if (!e.verify) return [`AC${i + 1} is not verified: ${how}${verifier ? ` (the ${verifier})` : ""} \u2014 ${e.ac}`];
+    if (!e.verify.ok) return [`AC${i + 1}: its latest check failed (${e.verify.cmd})`];
+    if (verifier && e.role !== verifier) return [`AC${i + 1}: verified by the ${e.role ?? "no"} role; the ${verifier} verifies goals: ${how}`];
+    return [];
+  });
+  const gp = goalPlans(goal.id, plans2, items2);
+  for (const p of gp.filter((x) => !CLOSED.has(x.get("status") ?? ""))) problems.push(`${p.id} is ${p.get("status")}: complete or drop it`);
+  for (const i of goalItems(goal.id, items2).filter((x) => itemStatus(x, plans2) !== "done")) {
+    problems.push(`${i.id} is still open (${itemStatus(i, plans2)}): deliver it, or move it to another goal`);
+  }
+  const ids = new Set(gp.map((p) => p.id));
+  const { errors, hints } = findings(store);
+  for (const f of [...errors, ...hints].filter((x) => /outside its touches/.test(x) && ids.has(x.split(":")[0]))) problems.push(`drift: ${f}`);
+  return problems;
+}
+
+// src/commands/review.ts
+var lastCode = (branch) => git(["log", "-1", "--format=%H", branch, "--", ".", ":(exclude).crew"])?.trim() || null;
+function review(store, planId, o) {
+  store.require();
+  const plan = store.find(store.checkRef(planId, "plan"));
+  if (!!o.approve === !!o.changes) fail('Give one verdict: --approve, or --changes "<what to change>".');
+  if (plan.get("status") !== "in-review") fail(`${plan.id} is '${plan.get("status")}': only a plan in review is reviewed.`);
+  authorize(store, plan.id, "plan.reviewed", void 0, void 0, `review ${plan.id}`);
+  const me = store.ledger.who.run;
+  if (implementers(store.ledger.events(), plan.id).has(me)) fail(`This run (${me}) implemented ${plan.id}; another role reviews it.`);
+  const branch = plan.get("branch") ?? "";
+  const sha = branch && git(["rev-parse", "--verify", "-q", branch])?.trim() || null;
+  store.ledger.record("review", plan.id, { verdict: o.approve ? "approve" : "changes", sha, ...o.changes ? { text: o.changes } : {} });
+  if (o.changes) {
+    plan.appendLog(`review: changes requested \u2014 ${o.changes}`, "Progress log");
+    plan.save();
+    move(store, plan.id, "in-progress", `changes requested: ${o.changes}`, false, void 0, "plan.reviewed");
+  } else store.say(`${plan.id}: approved${sha ? ` at ${sha.slice(0, 7)}` : ""}`);
+}
+function reviewProblems(store, plan) {
+  if (!store.policy.policy.role_gates["plan.reviewed"]) return [];
+  const last = store.ledger.events().filter((e) => e.type === "review" && e.ref === plan.id).at(-1);
+  const how = `\`review ${plan.id} --approve\` by the ${store.policy.policy.role_gates["plan.reviewed"]}`;
+  if (!last) return [`no code review yet: ${how}`];
+  if (last.verdict !== "approve") return [`the last review asked for changes: ${last.text}`];
+  const code = lastCode(plan.get("branch") ?? "");
+  const dirty = (git(["status", "--porcelain"]) ?? "").split("\n").filter((l) => l.trim() && !l.slice(3).startsWith(".crew/"));
+  const covered = !code || !!last.sha && git(["merge-base", "--is-ancestor", code, String(last.sha)]) !== null;
+  return covered && !(currentBranch() === plan.get("branch") && dirty.length) ? [] : [`the code changed since the approving review (${String(last.sha ?? "?").slice(0, 7)}): ${how} again`];
+}
+
+// src/commands/workflow.ts
+var LOG_SECTION = { item: "Notes" };
+function move(store, docId, status2, note, force = false, approvedBy, via) {
+  store.require();
+  docId = docId.toUpperCase();
+  const kind = kindOf(docId);
+  const doc = store.find(docId);
+  const flow = FLOWS[kind];
+  const old = doc.get("status") ?? "";
+  if (!Object.hasOwn(flow, status2)) fail(`Unknown status '${status2}'. Valid: ${Object.keys(flow).join(", ")}`);
+  if (!(flow[old] ?? []).includes(status2) && !force) {
+    const allowed = [...flow[old] ?? []].sort().join(", ") || "none";
+    fail(`${docId}: ${old} \u2192 ${status2} not allowed (from ${old}: ${allowed}). Use --force to override.`);
+  }
+  if (!force) guard(store, kind, doc, status2, approvedBy);
+  const waiting = FORWARD.has(status2) ? openQuestions(store.ledger.events(), doc.id).filter((x) => x.blocking) : [];
+  if (waiting.length && !force) {
+    fail(`${doc.id} waits for an answer before it moves on:
+  - ${waiting.map((x) => `${x.id} \u2192 ${x.to}: ${x.text}`).join("\n  - ")}
+(\`crew.mjs questions\`; --force to move anyway)`);
+  }
+  if (kind === "plan" && status2 === "in-progress" && !via) assignedHere(store, doc.id);
+  const lane = kind === "plan" && status2 === "ready" && fastLane(store, doc);
+  authorize(store, doc.id, via ?? `${kind}.${status2}`, approvedBy, via ? void 0 : old, void 0, lane ? ["pm"] : []);
+  if (kind === "plan" && status2 === "in-progress" && !via) claimFor(store, doc, force);
+  stamp(kind, doc, status2);
+  doc.set("status", status2);
+  if (kind === "plan" && status2 === "in-review" && doc.source === "worktree") writeHandoff(store, doc);
+  if (kind === "plan" && old === "in-review" && status2 === "in-progress") {
+    escalateLimit(store, doc.id, bounces(store.ledger.events(), doc.id) + 1, store.policy.policy.limits.max_bounces, "came back from review");
+  }
+  const approval = approvedBy ? ` (approved by ${approvedBy})` : "";
+  doc.appendLog(`status ${old} \u2192 ${status2}` + (note ? ` \u2014 ${note}` : "") + approval, LOG_SECTION[kind] ?? "Progress log");
+  doc.save();
+  store.ledger.record("move", doc.id, {
+    from: old,
+    to: status2,
+    ...note ? { note } : {},
+    ...approvedBy ? { approved_by: approvedBy } : {},
+    ...via ? { via } : {}
+  });
+  if (CLOSED.has(status2) && store.ledger.claims().has(doc.id)) store.ledger.record("release", doc.id, { reason: status2 });
+  if (kind === "goal" && status2 === "done") notify(store, "goal-done", doc.id, `${doc.id} is done: ${doc.get("title")}`);
+  store.say(`${doc.id}: ${old} \u2192 ${status2}`);
+  return doc;
+}
+function authorize(store, id, transition, approvedBy, from, cmd = `move ${id} ${transition.split(".")[1]}`, also = []) {
+  const { policy, errors } = store.policy;
+  if (errors.length) fail(`The policy is invalid, so nothing moves until it is fixed (\`crew.mjs policy check\`):
+  - ${errors.join("\n  - ")}`);
+  if (approvedBy !== void 0 && !approvedBy.trim()) fail("--approved-by needs the approving person's name.");
+  if (approvedBy) return;
+  const reason = approvalReason(policy, transition);
+  const [, status2] = transition.split(".");
+  if (reason) {
+    fail(`${id} \u2192 ${status2} is ${reason}: a human approves it with \`crew.mjs ${cmd} --approved-by <name>\` (agents over MCP can't). Ask the ${policy.escalation.to} first.`);
+  }
+  const [kind] = transition.split(".");
+  const role = (from ? policy.role_gates[`${kind}.${from}>${status2}`] : void 0) ?? policy.role_gates[transition];
+  const mine = store.ledger.who.role;
+  if (role && mine !== role && !also.includes(mine ?? "")) fail(`${id} \u2192 ${status2} is for the ${role} role; this run is ${mine ? `the ${mine} role` : "in no role"} (CREW_ROLE).`);
+}
+function claimFor(store, doc, force) {
+  const held = store.ledger.claims().get(doc.id);
+  if (held?.run === store.ledger.who.run) return;
+  if (held && !force) {
+    fail(`${doc.id} is claimed by ${held.actor} (${held.run}, ${held.worktree}) since ${held.ts.slice(0, 10)}. Coordinate with them, or \`release ${doc.id} --force\` if that run is gone.`);
+  }
+  store.ledger.record("claim", doc.id, { branch: doc.get("branch") ?? "", ...force ? { force: true } : {} });
+}
+function budgetProblems(store) {
+  const { budgets } = store.policy.policy;
+  const events = store.ledger.events(), me = store.ledger.who.run;
+  const mine = store.ledger.spend(events.filter((e) => e.run === me)), all = store.ledger.spend(events);
+  const over = (what, used, cap, unit = "") => cap !== null && used >= cap ? [`${what}: ${unit}${+used.toFixed(2)} used of ${unit}${cap}`] : [];
+  const holders = new Set([...store.ledger.claims(events).values()].map((c) => c.run));
+  const agents = budgets.max_agents !== null && !holders.has(me) && holders.size >= budgets.max_agents ? [`max_agents: ${holders.size} runs already hold work (limit ${budgets.max_agents})`] : [];
+  return [
+    ...over("run cost", mine.cost, budgets.run.max_cost, "$"),
+    ...over("run tokens", mine.tokensIn + mine.tokensOut, budgets.run.max_tokens),
+    ...over("project cost", all.cost, budgets.project.max_cost, "$"),
+    ...over("project tokens", all.tokensIn + all.tokensOut, budgets.project.max_tokens),
+    ...agents
+  ];
+}
+function guard(store, kind, doc, status2, approvedBy) {
+  let problems = [];
+  let label = "";
+  if (kind === "plan" && status2 === "ready") {
+    problems = readinessProblems(store, doc);
+    label = "is not ready (Definition of Ready)";
+  } else if (kind === "plan" && status2 === "in-review") {
+    problems = learningsProblems(doc, new Set(store.knowledge().map((e) => e.id)));
+    label = "can't go to review";
+  } else if (kind === "plan" && status2 === "done") {
+    problems = [
+      ...doc.tasks().filter(([done]) => !done).map(([, t]) => `unchecked task: ${t}`),
+      ...evidenceProblems(store, doc, approvedBy),
+      ...reviewProblems(store, doc)
+    ];
+    label = "can't be done";
+  } else if (kind === "goal" && status2 === "done") {
+    problems = goalProblems(store, doc);
+    label = "isn't reached";
+  } else if (kind === "goal" && status2 === "active") {
+    problems = doc.missing(["Outcome", "Acceptance criteria"]).map((n2) => `empty section: ${n2}`);
+    label = "can't be active";
+  } else if (kind === "item" && status2 === "triaged") {
+    problems = triageProblems(doc);
+    label = "can't be triaged";
+  } else if (kind === "idea" && status2 === "decided") {
+    problems = decisionProblems(doc);
+    label = "can't be decided";
+  }
+  if (problems.length) fail(`${doc.id} ${label}:
+  - ${problems.join("\n  - ")}
+(--force to override)`);
+}
+function stamp(kind, doc, status2) {
+  if (kind === "plan" && status2 === "in-progress" && !doc.get("started")) doc.set("started", today());
+  if (kind === "idea" && status2 === "decided") doc.set("decided", today());
+  if (kind === "item" && ITEM_CLOSED.has(status2)) doc.set("closed", today());
+  if (status2 === "done") doc.set("completed", today());
+}
+function assignedHere(store, id) {
+  const a = store.ledger.assignments().get(id), me = store.ledger.who.role, by = store.policy.policy.role_gates["plan.assigned"];
+  if (!a && by) fail(`${id} isn't assigned yet: the ${by} opens it with \`assign ${id} --to developer\`.`);
+  if (a && a.to !== me) fail(`${id} is assigned to the ${a.to} role; this run is ${me ? `the ${me} role` : "in no role"}.`);
+}
+function usage(store, u) {
+  store.require();
+  if (u.tokensIn === void 0 && u.tokensOut === void 0 && u.cost === void 0) fail("Give --tokens-in, --tokens-out or --cost.");
+  if (u.cost !== void 0 && !(Number.isFinite(u.cost) && u.cost >= 0)) fail("--cost must be a number \u2265 0.");
+  for (const [flag, n2] of [["--tokens-in", u.tokensIn], ["--tokens-out", u.tokensOut]]) {
+    if (n2 !== void 0 && !(Number.isInteger(n2) && n2 >= 0)) fail(`${flag} must be a whole number \u2265 0.`);
+  }
+  store.ledger.record("usage", u.ref ? u.ref.toUpperCase() : null, {
+    tokens_in: u.tokensIn ?? 0,
+    tokens_out: u.tokensOut ?? 0,
+    cost: u.cost ?? 0,
+    ...u.model ? { model: u.model } : {}
+  });
+  store.say(`usage recorded for ${store.ledger.who.actor} (${store.ledger.who.run})`);
+  const over = budgetProblems(store);
+  if (over.length) store.say(`warning: over budget \u2014 new work needs a human's approval: ${over.join("; ")}`);
+}
+function log(store, docId, text2) {
+  const doc = store.find(docId);
+  doc.appendLog(text2, LOG_SECTION[kindOf(docId) ?? "plan"] ?? "Progress log");
+  doc.save();
+  store.ledger.record("log", doc.id, { text: text2 });
+}
+
+// src/commands/autonomy.ts
+function notify(store, kind, ref, text2, key = "") {
+  const { command, on } = store.policy.policy.notify;
+  if (!command || !on.includes(kind)) return;
+  const sent = store.ledger.events().some((e) => e.type === "notify" && e.kind === kind && e.ref === ref && (e.key ?? "") === key);
+  if (sent) return;
+  store.ledger.record("notify", ref, { kind, text: text2, ...key ? { key } : {} });
+  const event = { kind, ref, text: text2, project: store.ws.root, by: store.ledger.who.actor, role: store.ledger.who.role, ts: (/* @__PURE__ */ new Date()).toISOString() };
+  store.ws.beforeFlush(() => {
+    const r = spawnSync2(command, { shell: true, input: JSON.stringify(event), encoding: "utf8", timeout: 3e4, cwd: store.ws.root });
+    if (r.status !== 0) store.say(`warning: notify.command failed (${r.status ?? r.signal}): ${(r.stderr ?? "").trim().split("\n")[0]}`);
+  });
+}
+
+// src/commands/questions.ts
+function questions(events) {
+  const byId = /* @__PURE__ */ new Map();
+  for (const e of events) {
+    if (e.type === "ask") {
+      byId.set(String(e.qid), {
+        id: String(e.qid),
+        ref: e.ref,
+        to: String(e.to),
+        text: String(e.text),
+        by: e.actor,
+        run: e.run,
+        ts: e.ts,
+        blocking: e.blocking !== false,
+        escalation: e.escalation === true,
+        answer: null
+      });
+    } else if (e.type === "answer" && byId.has(String(e.qid))) {
+      byId.get(String(e.qid)).answer = { text: String(e.text), by: String(e.approved_by ?? e.actor), ts: e.ts };
+    }
+  }
+  return [...byId.values()];
+}
+var openQuestions = (events, ref) => questions(events).filter((q) => !q.answer && (!ref || q.ref === ref));
+var FORWARD = /* @__PURE__ */ new Set(["ready", "in-progress", "in-review", "done", "active", "decided", "triaged"]);
+function ask(store, ref, to, text2, o = {}) {
+  store.require();
+  const id = ref?.toUpperCase();
+  if (id) {
+    if (!kindOf(id)) fail(`Unrecognised ID '${id}'.`);
+    store.find(id);
+  }
+  const roles = store.policy.roles;
+  if (!roles.includes(to)) fail(`--to must be one of ${roles.join(", ")}.`);
+  if (!text2.trim()) fail("Ask a question.");
+  const qid = `Q-${randomBytes2(3).toString("hex")}`;
+  store.ledger.record("ask", id ?? null, { qid, to, text: text2, ...o.fyi ? { blocking: false } : {}, ...o.escalation ? { escalation: true } : {} });
+  store.say(`${qid} \u2192 ${to}${id ? ` about ${id}` : ""}${o.fyi ? "" : id ? ` (blocks ${id} until answered)` : ""}`);
+  if (o.escalation || to === "executive") notify(store, "escalation", id ?? null, `${qid}: ${text2}`, qid);
+  return qid;
+}
+function escalate(store, ref, text2) {
+  return ask(store, ref, store.policy.policy.escalation.to, text2, { escalation: true });
+}
+function answer(store, qid, text2, o = {}) {
+  store.require();
+  const q = questions(store.ledger.events()).find((x) => x.id === qid.toLowerCase().replace(/^q-/, "Q-")) ?? fail(`No question ${qid}.`);
+  if (q.answer) fail(`${q.id} was already answered by ${q.answer.by}: ${q.answer.text}`);
+  if (!text2.trim()) fail("Give the answer.");
+  if ((q.escalation || q.to === "executive") && !o.approvedBy) {
+    fail(`${q.id} is an escalation to the ${q.to}: a human answers it with \`crew.mjs answer ${q.id} "\u2026" --approved-by <name>\` (agents can't).`);
+  }
+  const who = store.ledger.who;
+  if (!o.approvedBy && who.run === q.run) fail(`${q.id} was asked by this run; the ${q.to} answers it, not the asker.`);
+  if (!o.approvedBy && who.role !== q.to) {
+    fail(`${q.id} is for the ${q.to} role; this run is ${who.role ? `the ${who.role} role` : "in no role"} (CREW_ROLE). A human can answer for the role with --approved-by <name>.`);
+  }
+  store.ledger.record("answer", q.ref, { qid: q.id, text: text2, ...o.approvedBy ? { approved_by: o.approvedBy } : {} });
+  store.say(`${q.id} answered${q.ref ? ` \u2014 ${q.ref} is unblocked` : ""}`);
+  if (o.decision) {
+    learn(store, "decision", text2, { why: `Answer to ${q.id} (${q.to}): ${q.text}`, scope: o.scope, source: q.ref ?? void 0 });
+  }
+}
+function listQuestions(store, o = {}) {
+  store.require();
+  const qs = questions(store.ledger.events()).filter((q) => (o.all || !q.answer) && (!o.to || q.to === o.to) && (!o.ref || q.ref === o.ref.toUpperCase()));
+  if (o.json) {
+    for (const q of qs) store.say(JSON.stringify(q));
+    return;
+  }
+  if (!qs.length) store.say(o.all ? "No questions." : "No open questions.");
+  for (const q of qs) {
+    store.say(`${q.id}  ${q.escalation ? "ESCALATION " : ""}${q.by} \u2192 ${q.to}${q.ref ? ` about ${q.ref}` : ""}: ${q.text}` + (q.answer ? `  \u2014 answered by ${q.answer.by}: ${q.answer.text}` : q.blocking && q.ref ? "  (blocking)" : ""));
+  }
+}
+
+// src/commands/liveness.ts
+var HOUR = 36e5;
+var ACTIVITY = /* @__PURE__ */ new Set(["claim", "checkpoint", "move", "log"]);
+function staleClaims(store, events = store.ledger.events(), now = Date.now()) {
+  const limit = store.policy.policy.limits.stale_claim_hours;
+  if (limit === null) return [];
+  return [...store.ledger.claims(events).values()].flatMap((c) => {
+    const last = events.filter((e) => e.ref === c.ref && e.run === c.run && ACTIVITY.has(e.type)).at(-1)?.ts ?? c.ts;
+    const hours = (now - Date.parse(last)) / HOUR;
+    return hours >= limit ? [{ ref: c.ref, actor: c.actor, run: c.run, hours: Math.floor(hours) }] : [];
+  });
+}
+function paused(events) {
+  const last = events.filter((e) => e.type === "pause" || e.type === "resume").at(-1);
+  return last?.type === "pause" ? last : null;
+}
+function refuseWhilePaused(store, what) {
+  const p = paused(store.ledger.events());
+  if (p) fail(`The team is paused (${p.reason ?? "no reason given"}, by ${p.actor} ${p.ts.slice(0, 16).replace("T", " ")}): no ${what}. \`resume\` first.`);
+}
+function mayPause(store) {
+  const role = store.ledger.who.role;
+  if (role && role !== "executive" && role !== "director") fail(`Only the executive or the director pauses or resumes the team; this run is the ${role} role.`);
+}
+function pauseTeam(store, reason) {
+  store.require();
+  mayPause(store);
+  if (paused(store.ledger.events())) fail("The team is already paused.");
+  store.ledger.record("pause", null, reason ? { reason } : {});
+  notify(store, "paused", null, `team paused by ${store.ledger.who.actor}${reason ? `: ${reason}` : ""}`, (/* @__PURE__ */ new Date()).toISOString());
+  store.say(`Team paused${reason ? `: ${reason}` : ""}. Runs in flight finish their current step and hand off; \`staff\` and \`start\` refuse until \`resume\`.`);
+}
+function resumeTeam(store, note) {
+  store.require();
+  mayPause(store);
+  if (!paused(store.ledger.events())) fail("The team isn't paused.");
+  store.ledger.record("resume", null, note ? { note } : {});
+  store.say("Team resumed.");
+}
+function escalateLimit(store, ref, count, limit, what) {
+  if (limit === null || count !== limit + 1) return;
+  if (openQuestions(store.ledger.events(), ref).some((x) => x.to === "director")) return;
+  ask(store, ref, "director", `${ref} ${what} ${count} times (limit ${limit}): decide \u2014 re-spec it, reassign it, split it or drop it.`);
+}
+var bounces = (events, ref) => events.filter((e) => e.type === "move" && e.ref === ref && e.from === "in-review" && e.to === "in-progress").length;
+var attempts = (events, ref) => events.filter((e) => e.type === "checkpoint" && e.ref === ref && e.attempt).length;
+function livenessHints(store) {
+  const events = store.ledger.events(), p = paused(events);
+  return [
+    ...p ? [`team paused by ${p.actor} (${p.reason ?? "no reason given"}) \u2014 \`resume\` to staff and start again`] : [],
+    ...staleClaims(store, events).map((s2) => `${s2.ref}: claim by ${s2.actor} (${s2.run}) is stale \u2014 no activity for ${s2.hours}h (limits.stale_claim_hours); the director may \`reassign ${s2.ref}\``)
+  ];
+}
+
+// src/commands/execution.ts
+var OUTPUT_LINES = 15;
+var OUTPUT_CHARS = 2e3;
+var RUN_TIMEOUT_MS = 10 * 6e4;
+var acPrint = (text2) => createHash2("sha1").update(text2.replace(/\s*(?:[—–-]\s*)?\bevidence:.*$/i, "").replace(/\s+/g, " ").trim().toLowerCase()).digest("hex").slice(0, 10);
+function criteria(plan) {
+  const list = plan.checklist("Acceptance criteria").map(([, c]) => c);
+  return list.length ? list : plan.bullets("Acceptance criteria");
+}
+function implementers(events, planId) {
+  return new Set(events.filter((e) => e.ref === planId && (e.type === "claim" || e.type === "move" && e.to === "in-progress" && !e.via)).map((e) => e.run));
+}
+var checkpoints = (events, planId) => events.filter((e) => e.type === "checkpoint" && e.ref === planId);
+function evidence(store, plan) {
+  const events = store.ledger.events(), impl = implementers(events, plan.id), only = store.policy.policy.evidence.role;
+  return criteria(plan).map((ac, i) => {
+    let found = null;
+    const print = acPrint(ac);
+    for (const e of checkpoints(events, plan.id)) {
+      for (const v of e.verify ?? []) {
+        if (v.ac_text ? v.ac_text.includes(print) : v.ac.includes(i + 1)) found = { verify: v, by: e.run, role: e.role };
+      }
+    }
+    return {
+      ac,
+      verify: found?.verify ?? null,
+      by: found?.by ?? null,
+      role: found?.role ?? null,
+      independent: !!found && !impl.has(found.by) && (!only || found.role === only)
+    };
+  });
+}
+function evidenceProblems(store, plan, approvedBy) {
+  const problems = [];
+  const me = store.ledger.who.run;
+  if (implementers(store.ledger.events(), plan.id).has(me) && !approvedBy) {
+    problems.push(`this run (${me}) implemented ${plan.id}; another run \u2014 QA \u2014 verifies it and moves it to done`);
+  }
+  evidence(store, plan).forEach((e, i) => {
+    if (approvedBy && /\bevidence:/i.test(e.ac)) return;
+    if (!e.verify) problems.push(`AC${i + 1} has no evidence: \`checkpoint ${plan.id} --run "<check>" --ac ${i + 1}\` \u2014 ${e.ac}`);
+    else if (!e.verify.ok) problems.push(`AC${i + 1}: its latest check failed (${e.verify.cmd})`);
+    else if (!e.independent) {
+      const only = store.policy.policy.evidence.role;
+      problems.push(only && e.role !== only ? `AC${i + 1}: checked by the ${e.role ?? "no"} role; only the ${only} role's checks count (evidence.role)` : `AC${i + 1}: only verified by the implementer (${e.by}); verify it from another run`);
+    }
+  });
+  return problems;
+}
+function snapshot() {
+  const sha = git(["rev-parse", "HEAD"])?.trim() || null;
+  const status2 = git(["status", "--porcelain"]) ?? "";
+  const dirty = status2.split("\n").filter(Boolean).map((l) => l.slice(3)).filter((p) => !p.startsWith(".crew/drafts/"));
+  const diff = git(["diff", "HEAD"]) ?? "";
+  return { sha, dirty, fingerprint: createHash2("sha1").update(`${sha}
+${status2}
+${diff}`).digest("hex").slice(0, 12) };
+}
+function planFromBranch(store, id) {
+  const pid = id?.toUpperCase() ?? /^plan\/(P-\d+)/.exec(currentBranch() ?? "")?.[1];
+  if (pid?.startsWith("G-")) return store.find(store.checkRef(pid, "goal"));
+  return pid ? store.plans(true).get(pid) ?? fail(`No plan ${pid}.`) : null;
+}
+function tail(text2, extra) {
+  const lines = text2.trimEnd().split("\n").slice(-OUTPUT_LINES).join("\n").slice(-OUTPUT_CHARS);
+  return secretsIn(lines, extra).length ? "(output withheld: it looked like it contained a secret)" : lines;
+}
+function checkpoint(store, id, o = {}) {
+  store.require();
+  const plan = planFromBranch(store, id);
+  if (!plan) {
+    if (o.auto) return 0;
+    fail("Not on a plan branch: name the plan (`checkpoint P-###`).");
+  }
+  const snap = snapshot();
+  const last = checkpoints(store.ledger.events(), plan.id).at(-1);
+  if (o.auto && last?.fingerprint === snap.fingerprint) return 0;
+  const acs = parseAc(o.ac, criteria(plan).length);
+  const prints = acs.map((n2) => acPrint(criteria(plan)[n2 - 1]));
+  const verify = [];
+  if (o.run) {
+    const r = spawnSync3(o.run, { shell: true, cwd: store.ws.root, encoding: "utf8", timeout: RUN_TIMEOUT_MS, maxBuffer: 32 << 20 });
+    verify.push({ cmd: o.run, ok: r.status === 0, ac: acs, ac_text: prints, output: tail(`${r.stdout ?? ""}${r.stderr ?? ""}`, store.policy.policy.secrets.patterns), observed: true });
+  }
+  if (o.verify) {
+    if (o.result !== "pass" && o.result !== "fail") fail("--verify needs --result pass|fail.");
+    verify.push({ cmd: o.verify, ok: o.result === "pass", ac: acs, ac_text: prints, ...o.output ? { output: tail(o.output, store.policy.policy.secrets.patterns) } : {}, observed: false });
+  }
+  if (o.attempt && !o.why) fail("--attempt needs --why: what made it fail, so the next run doesn't retry it.");
+  const goal = plan.id.startsWith("G-");
+  if (goal && !verify.length) fail(`A goal's checkpoint records evidence: \`checkpoint ${plan.id} --verify "<how>" --result pass|fail --ac n\`.`);
+  const step = goal ? "goal" : o.step ?? plan.tasks().find(([done]) => !done)?.[1].split(":")[0] ?? "done";
+  store.ledger.record("checkpoint", plan.id, {
+    step,
+    sha: snap.sha,
+    dirty: snap.dirty.slice(0, 50),
+    fingerprint: snap.fingerprint,
+    ...verify.length ? { verify } : {},
+    ...o.attempt ? { attempt: { what: o.attempt, why: o.why } } : {},
+    ...o.note ? { note: o.note } : {},
+    ...o.auto ? { auto: true } : {}
+  });
+  if (o.attempt) escalateLimit(store, plan.id, attempts(store.ledger.events(), plan.id), store.policy.policy.limits.max_attempts, "has failed attempts recorded");
+  if (!o.auto) {
+    store.say(`${plan.id}: checkpoint at ${step}${snap.sha ? ` (${snap.sha.slice(0, 7)})` : ""}` + verify.map((v) => ` \u2014 ${v.ok ? "\u2713" : "\u2717"} ${v.cmd}`).join(""));
+  }
+  return verify.some((v) => !v.ok) ? 1 : 0;
+}
+function parseAc(spec, n2) {
+  if (!spec) return [];
+  if (spec === "all") return Array.from({ length: n2 }, (_, i) => i + 1);
+  const nums = spec.split(",").map((x) => Number(x.trim().replace(/^AC/i, "")));
+  const bad = nums.filter((x) => !Number.isInteger(x) || x < 1 || x > n2);
+  if (bad.length) fail(`--ac: the plan has acceptance criteria 1\u2013${n2} (or "all").`);
+  return nums;
+}
+function recovery(store, plan) {
+  const events = store.ledger.events();
+  const cps = checkpoints(events, plan.id);
+  const last = cps.at(-1);
+  const owner2 = store.ledger.claims(events).get(plan.id);
+  const tasks = plan.tasks();
+  const out = [`${plan.id}: ${plan.get("title")} [${plan.get("status")}] tasks ${tasks.filter(([d]) => d).length}/${tasks.length}` + (owner2 ? ` \u2014 claimed by ${owner2.actor} (${owner2.run})` : "")];
+  if (last) {
+    const here = currentBranch() === plan.get("branch");
+    const now = here ? snapshot() : null;
+    const ahead = here && last.sha && now?.sha ? Number(git(["rev-list", "--count", `${last.sha}..HEAD`])?.trim() || 0) : 0;
+    out.push(`last checkpoint ${String(last.ts).slice(0, 16).replace("T", " ")} at ${last.step} (${String(last.sha ?? "?").slice(0, 7)}) by ${last.actor}` + (now ? `; since then ${ahead} commit(s), ${now.dirty.length} uncommitted file(s)${now.dirty.length ? `: ${now.dirty.slice(0, 8).join(", ")}` : ""}` : ""));
+  } else out.push("no checkpoint yet");
+  const latest = /* @__PURE__ */ new Map();
+  for (const e of cps) for (const v of e.verify ?? []) latest.set(v.cmd, { ...v, ts: e.ts });
+  for (const v of latest.values()) {
+    out.push(`${v.ok ? "\u2713" : "\u2717"} ${v.cmd}${v.ac.length ? ` (AC ${v.ac.join(",")})` : ""}${v.observed ? "" : " (reported)"}` + (!v.ok && v.output ? ` \u2014 ${v.output.split("\n").filter(Boolean).at(-1)}` : ""));
+  }
+  for (const e of cps.filter((c) => c.attempt)) {
+    const a = e.attempt;
+    out.push(`don't retry: ${a.what} \u2014 ${a.why}`);
+  }
+  const nxt = tasks.find(([d]) => !d)?.[1];
+  if (nxt) out.push(`next: ${nxt}`);
+  const ev = evidence(store, plan);
+  if (ev.length) {
+    out.push(`evidence: ${ev.map((e, i) => `AC${i + 1} ${!e.verify ? "\u2014" : !e.verify.ok ? "\u2717" : e.independent ? "\u2713" : "\u2713 (self)"}`).join(", ")}`);
+  }
+  return out;
+}
+function resume(store, id, json = false) {
+  store.require();
+  const plan = planFromBranch(store, id) ?? fail("Not on a plan branch: name the plan (`resume P-###`).");
+  if (json) store.say(JSON.stringify({ plan: plan.id, lines: recovery(store, plan) }));
+  else for (const line2 of recovery(store, plan)) store.say(line2);
+}
+function writeHandoff(store, plan) {
+  const logs = stripComments(plan.section("Progress log")).split("\n").filter((l) => l.trim().startsWith("- ")).slice(-3);
+  plan.replaceSection("Handoff", [
+    `_Generated ${today()} by \`crew.mjs handoff\` from the ledger._`,
+    "",
+    ...recovery(store, plan).map((l) => `- ${l}`),
+    ...logs.length ? ["", "Latest log:", ...logs] : []
+  ].join("\n"));
+}
+function handoff(store, id) {
+  store.require();
+  const plan = planFromBranch(store, id) ?? fail("Not on a plan branch: name the plan (`handoff P-###`).");
+  if (plan.source !== "worktree") fail(`${plan.id} lives on ${plan.source}; write its handoff there.`);
+  writeHandoff(store, plan);
+  plan.save();
+  store.say(`${plan.id}: handoff written`);
+}
+
+// src/commands/team.ts
+var ACTIVE2 = /* @__PURE__ */ new Set(["in-progress", "blocked", "in-review"]);
+function assign(store, planId, to, team, note, approvedBy) {
+  store.require();
+  const doc = store.find(store.checkRef(planId, "plan"));
+  const { roles, teams } = store.policy;
+  if (!roles.includes(to)) fail(`'${to}' is not a role (${roles.join(", ")}).`);
+  if (team && !Object.hasOwn(teams, team)) fail(`team '${team}' is not defined under teams: in .crew/policy.yaml.`);
+  if (doc.get("status") !== "ready") fail(`${doc.id} is '${doc.get("status")}': only a ready plan is assigned (\`move ${doc.id} ready\` first).`);
+  authorize(store, doc.id, "plan.assigned", approvedBy, void 0, `assign ${doc.id} --to ${to}`);
+  doc.set("assignee", team ? `${to} (team ${team})` : to);
+  doc.appendLog(`assigned to the ${to} role${team ? `, team ${team}` : ""}${note ? ` \u2014 ${note}` : ""}`, "Progress log");
+  doc.save();
+  store.ledger.record("assign", doc.id, {
+    to,
+    ...team ? { team } : {},
+    ...note ? { note } : {},
+    ...approvedBy ? { approved_by: approvedBy } : {}
+  });
+  store.say(`${doc.id}: assigned to the ${to} role${team ? `, team ${team}` : ""}`);
+}
+function reassign(store, planId, to, note, force = false, approvedBy) {
+  store.require();
+  const id = store.checkRef(planId, "plan");
+  store.find(id);
+  const events = store.ledger.events(), claim = store.ledger.claims(events).get(id), was = store.ledger.assignments(events).get(id);
+  const target = to ?? was?.to ?? "developer";
+  if (!store.policy.roles.includes(target)) fail(`'${target}' is not a role (${store.policy.roles.join(", ")}).`);
+  if (!claim && !was) fail(`${id} is neither claimed nor assigned: \`assign\` it instead.`);
+  authorize(store, id, "plan.reassigned", approvedBy, void 0, `reassign ${id}`);
+  if (claim && !force && !staleClaims(store, events).some((s2) => s2.ref === id)) {
+    fail(`${id} is held by ${claim.actor} (${claim.run}) and not stale (limits.stale_claim_hours). Reassign stale work, or --force.`);
+  }
+  if (claim) store.ledger.record("release", id, { reason: "reassigned", from_run: claim.run });
+  store.ledger.record("assign", id, { to: target, reassigned: true, ...note ? { note } : {}, ...approvedBy ? { approved_by: approvedBy } : {} });
+  store.say(`${id}: reassigned to the ${target} role${claim ? ` (released ${claim.actor}, ${claim.run})` : ""} \u2014 the next ${target} takes it over with \`start ${id}\`, which resumes its branch`);
+}
+function teamFor(plan, teams) {
+  const touches = plan.touches();
+  const score = (scope) => touches.filter((t) => scope.some((s2) => globsOverlap(t, s2))).length;
+  const best = Object.entries(teams).filter(([, s2]) => s2.length && score(s2) > 0).sort(byKey(([n2, s2]) => [-score(s2), n2]))[0];
+  return best?.[0] ?? null;
+}
+function staffing(store) {
+  const plans2 = store.plans(true), items2 = store.items(), goals2 = store.goals(), focus = store.focus();
+  const events = store.ledger.events(), assigned = store.ledger.assignments(events);
+  const holders = new Set([...store.ledger.claims(events).values()].map((c) => c.run));
+  const max = store.policy.policy.budgets.max_agents;
+  const free = max === null ? null : Math.max(0, max - holders.size);
+  const order = new Map(ranked(items2, goals2, focus).map((it, i) => [it.id, i]));
+  const rank = (p) => Math.min(...planItems(p, items2).map((it) => order.get(it.id) ?? Infinity), Infinity);
+  const moved = store.ledger.lastStatus(events), claims = store.ledger.claims(events);
+  const st = (p) => claims.has(p.id) ? "in-progress" : moved.get(p.id) ?? p.get("status") ?? "";
+  const ready = [...plans2.values()].filter((p) => st(p) === "ready").sort(byKey((p) => [!onFocus(p, items2, focus), rank(p), p.id]));
+  const busy = [...plans2.values()].filter((p) => ACTIVE2.has(st(p)));
+  const out = { free, start: [], waiting: [] };
+  const clash = (p, others) => others.find((o) => p.touches().some((t) => o.touches().some((u) => globsOverlap(t, u))));
+  for (const p of ready) {
+    const deps = unmetDeps(p, plans2), blocked2 = openQuestions(events, p.id).filter((x) => x.blocking);
+    const hit = clash(p, [...busy, ...out.start.map((s2) => plans2.get(s2.id))]);
+    const why = deps.length ? `depends on ${deps.join(", ")}` : blocked2.length ? `waits for an answer (${blocked2.map((x) => x.id).join(", ")})` : hit ? `overlaps ${hit.id} on its touches` : free !== null && out.start.length >= free ? "no free agent (budgets.max_agents)" : "";
+    if (why) out.waiting.push({ id: p.id, why });
+    else out.start.push({ id: p.id, title: p.get("title") ?? "", team: teamFor(p, store.policy.teams), assigned: assigned.get(p.id)?.to ?? null });
+  }
+  return out;
+}
+function staff(store, json = false) {
+  store.require();
+  refuseWhilePaused(store, "new staffing");
+  const s2 = staffing(store);
+  if (json) {
+    store.say(JSON.stringify(s2, null, 2));
+    return;
+  }
+  store.say(s2.free === null ? "Staffing (no max_agents):" : `Staffing: ${s2.free} agent${s2.free === 1 ? "" : "s"} free (budgets.max_agents).`);
+  for (const p of s2.start) {
+    const team = p.team ? ` --team ${p.team}` : "";
+    store.say(`  START  ${p.id}: ${p.title}${p.team ? ` [team ${p.team}]` : ""} \u2192 ` + (p.assigned ? `assigned to ${p.assigned}: hand it to a ${p.assigned} agent` : `PM: assign ${p.id} --to developer${team}`));
+  }
+  for (const w of s2.waiting) store.say(`  WAIT   ${w.id}: ${w.why}`);
+  if (!s2.start.length && !s2.waiting.length) store.say("  nothing ready to start \u2014 the PM ranks, the Architect specs the next plans");
+}
+
+// src/commands/release.ts
+function mergeOrder(store) {
+  const base = store.baseBranch(), plans2 = store.plans(true), events = store.ledger.events(), moved = store.ledger.lastStatus(events);
+  const doneAt = new Map(events.filter((e) => e.type === "move" && e.to === "done").map((e) => [e.ref, e.ts]));
+  const branches = new Set(planBranches());
+  const status2 = (p) => moved.get(p.id) ?? p.get("status") ?? "";
+  const isMerged = (b) => git(["merge-base", "--is-ancestor", b, base]) !== null;
+  const out = { base, merge: [], waiting: [], merged: [] };
+  const done = [...plans2.values()].filter((p) => status2(p) === "done" && branches.has(p.get("branch") ?? "")).sort(byKey((p) => [doneAt.get(p.id) ?? p.get("completed") ?? "", p.id]));
+  const pending = /* @__PURE__ */ new Set();
+  for (const p of done) {
+    if (isMerged(p.get("branch"))) out.merged.push({ id: p.id, branch: p.get("branch") });
+    else pending.add(p.id);
+  }
+  const unmergedDep = (p) => p.dependsOn().filter((d) => {
+    const dep = plans2.get(d), b = dep?.get("branch") ?? "";
+    return dep && status2(dep) !== "dropped" && (pending.has(d) || branches.has(b) && !isMerged(b) || status2(dep) !== "done");
+  });
+  const placed = /* @__PURE__ */ new Set();
+  for (let progress = true; progress; ) {
+    progress = false;
+    for (const p of done.filter((x) => pending.has(x.id) && !placed.has(x.id))) {
+      if (unmergedDep(p).every((d) => placed.has(d))) {
+        out.merge.push({ id: p.id, title: p.get("title") ?? "", branch: p.get("branch") });
+        placed.add(p.id);
+        progress = true;
+      }
+    }
+  }
+  for (const p of done.filter((x) => pending.has(x.id) && !placed.has(x.id))) {
+    out.waiting.push({ id: p.id, why: `depends on ${unmergedDep(p).filter((d) => !placed.has(d)).join(", ")}, not merged yet` });
+  }
+  return out;
+}
+function mergeOrderCmd(store, json = false) {
+  store.require();
+  const m = mergeOrder(store);
+  if (json) return store.say(JSON.stringify(m, null, 2));
+  if (!m.merge.length && !m.waiting.length) store.say(`Nothing to merge into ${m.base}.`);
+  m.merge.forEach((p, i) => store.say(`${String(i + 1).padStart(2)}. ${p.id}: ${p.title} \u2014 merge ${p.branch} into ${m.base}`));
+  for (const w of m.waiting) store.say(`WAIT ${w.id}: ${w.why}`);
+  for (const p of m.merged) store.say(`merged: ${p.id} (${p.branch}) \u2014 delete the branch`);
+}
+
+// src/commands/roles.ts
+var View = class {
+  constructor(store) {
+    this.store = store;
+    this.plans = store.plans(true);
+    this.items = store.items();
+    this.goals = store.goals();
+    this.focus = store.focus();
+    this.events = store.ledger.events();
+  }
+  store;
+  plans;
+  items;
+  goals;
+  focus;
+  events;
+  status(st) {
+    return [...this.plans.values()].filter((p) => p.get("status") === st).sort(byKey((p) => [!onFocus(p, this.items, this.focus), p.id]));
+  }
+  get assigned() {
+    return this.store.ledger.assignments(this.events);
+  }
+  gate(step) {
+    return this.store.policy.policy.role_gates[step];
+  }
+  ranked(st) {
+    return ranked(this.items, this.goals, this.focus).filter((i) => itemStatus(i, this.plans) === st);
+  }
+};
+var RULES = {
+  executive: [
+    (v) => openQuestions(v.events).filter((x) => x.escalation).map((x) => `answer ${x.id} (${x.by}${x.ref ? ` about ${x.ref}` : ""}): ${x.text}`),
+    (v) => v.status("in-review").filter((p) => approvalReason(v.store.policy.policy, "plan.done") && evidence(v.store, p).every((e) => e.verify?.ok && e.independent)).map((p) => `approve ${p.id}: ${p.get("title")} \u2014 evidence complete \u2192 move ${p.id} done --approved-by <you>`),
+    (v) => ["exploring", "researching", "proposed"].includes(v.store.idea()?.get("status") ?? "") ? ["decide the idea (go / pivot / kill)"] : []
+  ],
+  director: [
+    (v) => openQuestions(v.events).filter((x) => x.escalation).map((x) => `waiting on the executive: ${x.id} \u2014 ${x.text}`),
+    (v) => budgetProblems(v.store).map((b) => `over budget: ${b}`),
+    (v) => paused(v.events) ? ["the team is paused: no staffing or starts until the executive or you `resume`"] : [],
+    (v) => staleClaims(v.store, v.events).map((s2) => `stale: ${s2.ref} held by ${s2.actor} with no activity for ${s2.hours}h \u2192 reassign ${s2.ref}`),
+    (v) => v.status("blocked").map((p) => `unblock ${p.id}: ${p.get("title")}`),
+    (v) => {
+      if (paused(v.events)) return [];
+      const n2 = staffing(v.store).start.length;
+      return n2 ? [`staff ${n2} ready plan${n2 > 1 ? "s" : ""}: \`staff\` \u2192 the PM assigns, developers start`] : [];
+    },
+    (v) => [...v.plans.values()].filter((p) => p.get("status") === "in-progress").flatMap((p) => overlapping(p, v.plans).map((o) => `${p.id} and ${o.id} overlap on ${o.globs.join(", ")} \u2014 sequence them or split the work`)),
+    (v) => {
+      const g = v.goals.get(v.focus);
+      if (!v.focus) return v.goals.size ? ["set the focus goal: focus G-###"] : [];
+      const open = goalPlans(v.focus, v.plans, v.items).filter((p) => !["done", "dropped"].includes(p.get("status") ?? ""));
+      return g && !open.length && !goalItems(v.focus, v.items).some((i) => itemStatus(i, v.plans) !== "done") ? [`${v.focus} has nothing open: confirm its acceptance criteria, move it done, and focus the next goal`] : [];
+    }
+  ],
+  pm: [
+    (v) => v.ranked("new").filter((i) => i.id.startsWith("BUG-")).slice(0, 3).map((i) => `triage bug ${i.id}: ${i.get("title")}`),
+    (v) => v.ranked("new").filter((i) => !i.id.startsWith("BUG-")).slice(0, 3).map((i) => `triage ${i.id}: ${i.get("title")}`),
+    (v) => [...v.goals.values()].filter((g) => ["proposed", "active"].includes(g.get("status") ?? "") && !goalItems(g.id, v.items).some((i) => itemStatus(i, v.plans) !== "done")).map((g) => `break ${g.id} down: it has no open items`),
+    (v) => (v.gate("plan.assigned") === "pm" ? v.status("ready").filter((p) => !v.assigned.has(p.id)) : []).map((p) => `open ${p.id}: ${p.get("title")} \u2192 assign ${p.id} --to developer (\`staff\` shows what can run now)`),
+    (v) => (v.gate("plan.done") === "pm" ? v.status("in-review") : []).filter((p) => complete(v, p) && !reviewProblems(v.store, p).length).map((p) => `complete ${p.id}: ${p.get("title")} \u2014 QA's evidence and the review are in \u2192 move ${p.id} done`)
+  ],
+  architect: [
+    (v) => (v.gate("plan.reviewed") === "architect" ? v.status("in-review") : []).filter((p) => reviewProblems(v.store, p).length && !implementers(v.events, p.id).has(v.store.ledger.who.run)).map((p) => `review ${p.id}: ${p.get("title")} \u2014 its diff against the spec \u2192 review ${p.id} --approve | --changes "\u2026"`),
+    (v) => v.status("draft").map((p) => `refine ${p.id}: ${p.get("title")} to the Definition of Ready`),
+    (v) => v.ranked("triaged").slice(0, 2).map((i) => `write a plan for ${i.id}: ${i.get("title")} (${i.get("priority")})`),
+    (v) => v.status("ready").flatMap((p) => overlapping(p, v.plans).map((o) => `${p.id} overlaps ${o.id} (${o.globs.join(", ")}): add depends_on or narrow touches`))
+  ],
+  developer: [
+    (v) => [...v.plans.values()].filter((p) => ["in-progress", "blocked"].includes(p.get("status") ?? "") && v.store.ledger.claims(v.events).get(p.id)?.run === v.store.ledger.who.run).map((p) => `continue ${p.id}: ${p.get("title")} \u2192 resume ${p.id}`),
+    (v) => v.status("ready").filter((p) => (v.assigned.has(p.id) ? v.assigned.get(p.id).to === v.store.ledger.who.role : !v.gate("plan.assigned")) && !unmetDeps(p, v.plans).length && !v.store.ledger.claims(v.events).has(p.id) && !openQuestions(v.events, p.id).some((x) => x.blocking)).slice(0, 1).map((p) => `start ${p.id}: ${p.get("title")} \u2192 start ${p.id}`)
+  ],
+  qa: [
+    (v) => v.status("in-review").filter((p) => !implementers(v.events, p.id).has(v.store.ledger.who.run)).map((p) => {
+      const missing = evidence(v.store, p).flatMap((e, i) => e.verify?.ok && e.independent ? [] : [`AC${i + 1}`]);
+      const closer = v.gate("plan.done");
+      return missing.length ? `verify ${p.id}: ${missing.join(", ")} \u2192 checkpoint ${p.id} --run "<check>" --ac \u2026` : closer && closer !== "qa" ? `${p.id}: evidence complete \u2192 report to the ${closer}, who completes it` : `${p.id}: evidence complete \u2192 move ${p.id} done`;
+    }),
+    (v) => v.ranked("new").filter((i) => i.id.startsWith("BUG-")).slice(0, 2).map((i) => `reproduce ${i.id}: ${i.get("title")}`)
+  ],
+  release: [
+    (v) => mergeOrder(v.store).merge.slice(0, 1).map((p) => `ship ${p.id}: merge ${p.branch} (first in \`merge-order\`), follow its Rollout & rollback, then delete the branch`),
+    (v) => v.status("in-review").filter((p) => !fastLane(v.store, p) && p.hasContent("Rollout & rollback") && !/^\s*n\/a\b/i.test(stripComments(p.section("Rollout & rollback")))).map((p) => `prepare the rollout of ${p.id}: ${p.get("title")} (see its Rollout & rollback)`)
+  ]
+};
+var complete = (v, p) => evidence(v.store, p).every((e) => e.verify?.ok && e.independent);
+function roleLines(store, role) {
+  const roles = store.policy.roles;
+  if (!roles.includes(role)) fail(`Unknown role '${role}'. Roles: ${roles.join(", ")}.`);
+  const v = new View(store);
+  const asked = openQuestions(v.events).filter((x) => x.to === role && !(role === "executive" && x.escalation)).map((x) => `QUESTION     ${x.id} from ${x.by}${x.ref ? ` about ${x.ref}` : ""}: ${x.text} \u2192 answer ${x.id} "\u2026"`);
+  const work = (RULES[role] ?? []).flatMap((r) => r(v));
+  return [
+    ...asked,
+    ...work.map((w, i) => `${i ? "THEN" : "NEXT"}         ${w}`).slice(0, 8),
+    ...asked.length || work.length ? [] : [`NEXT         nothing for the ${role} role right now`]
+  ];
+}
+
+// src/commands/advisor.ts
+function current(store) {
+  if (!store.ws.isDir(store.dir)) return;
+  const focus = store.focus();
+  if (focus) store.say(`crew hub \u2014 focus ${focus}: ${store.goals().get(focus)?.get("title") ?? "(missing goal)"}`);
+  const branch = currentBranch() ?? "";
+  const m = /^plan\/(P-\d+)/.exec(branch);
+  if (!m) {
+    const active = [...store.plans(true).values()].filter((p) => ACTIVE.has(p.get("status") ?? ""));
+    if (active.length) {
+      store.say("crew hub \u2014 active plans: " + active.map((p) => `${p.id} (${p.get("status")})`).join(", "));
+    }
+    return;
+  }
+  const doc = store.plans().get(m[1]);
+  if (!doc) {
+    store.say(`crew hub: branch ${branch} has no matching plan file.`);
+    return;
+  }
+  const tasks = doc.tasks();
+  const nxt = tasks.find(([d]) => !d)?.[1];
+  store.say(`crew hub \u2014 current plan ${doc.id}: ${doc.get("title")} [${doc.get("status")}] tasks ${tasks.filter(([d]) => d).length}/${tasks.length}` + (nxt ? ` \u2014 next: ${nxt}` : "") + ` \u2014 file: ${doc.path ? store.rel(doc.path) : ""}`);
+}
+function nextStep(store, role) {
+  store.require();
+  for (const line2 of role ? roleLines(store, role) : nextLines(store)) store.say(line2);
+}
+function nextLines(store) {
+  const ctx = new Context(store);
+  for (const p of ctx.active) ctx.lines.push(`IN PROGRESS  ${p.id}: ${p.get("title")} [${p.get("status")}]`);
+  for (const rule of [ctx.expedite, ctx.wipFull, ctx.startReady, ctx.refineDraft, ctx.triage, ctx.planItem, ctx.idea, ctx.goal]) {
+    const line2 = rule.call(ctx);
+    if (line2) return [...ctx.lines, `NEXT         ${line2}`];
+  }
+  return [...ctx.lines, "NEXT         nothing planned \u2014 write a goal for the next outcome, or capture items"];
+}
+var Context = class {
+  constructor(store) {
+    this.store = store;
+    this.goals = store.goals();
+    this.items = store.items();
+    this.plans = store.plans(true);
+    this.focus = store.focus();
+    this.active = [...this.plans.values()].filter((p) => ACTIVE.has(p.get("status") ?? "")).sort(byKey((p) => this.key(p)));
+  }
+  store;
+  goals;
+  items;
+  plans;
+  focus;
+  active;
+  lines = [];
+  /** Focus work first, then goal order, then ID. */
+  key(p) {
+    const eorder = goalOrder(this.goals);
+    return [!onFocus(p, this.items, this.focus), eorder.get(planGoal(p, this.items)) ?? eorder.size, p.id];
+  }
+  withStatus(status2) {
+    return [...this.plans.values()].filter((p) => p.get("status") === status2).sort(byKey((p) => this.key(p)));
+  }
+  ranked(status2) {
+    return ranked(this.items, this.goals, this.focus).filter((i) => itemStatus(i, this.plans) === status2);
+  }
+  expedite() {
+    const bugs = [...this.items.values()].filter((i) => i.id.startsWith("BUG-") && i.get("priority") === "P0" && ["new", "triaged"].includes(itemStatus(i, this.plans))).map((i) => i.id).sort();
+    if (!bugs.length) return null;
+    const b = this.items.get(bugs[0]);
+    return `expedite ${b.id}: ${b.get("title")} (P0) \u2192 write a fix plan: new-plan \u2026 --items ${b.id}`;
+  }
+  wipFull() {
+    const limit = this.store.settings().wip_limit;
+    const wip = this.active.filter((p) => p.get("status") === "in-progress");
+    return wip.length >= limit ? `finish ${wip[0].id} (WIP limit ${limit})` : null;
+  }
+  startReady() {
+    const ready = this.withStatus("ready");
+    const startable = ready.filter((p2) => !unmetDeps(p2, this.plans).length);
+    for (const p2 of ready) {
+      if (!startable.includes(p2)) {
+        this.lines.push(`WAITING      ${p2.id}: ${p2.get("title")} \u2014 needs ${unmetDeps(p2, this.plans).join(", ")}`);
+      }
+    }
+    if (!startable.length) return null;
+    const p = startable[0];
+    const off = onFocus(p, this.items, this.focus) ? "" : ` (off focus ${this.focus})`;
+    return `${p.id}: ${p.get("title")} \u2192 crew.mjs start ${p.id}${off}`;
+  }
+  refineDraft() {
+    const [d] = this.withStatus("draft");
+    return d ? `refine draft ${d.id}: ${d.get("title")} to meet the Definition of Ready, then move it to ready` : null;
+  }
+  triage() {
+    const fresh = this.ranked("new");
+    return fresh.length ? `triage ${fresh.length} item(s), starting with ${fresh[0].id}: ${fresh[0].get("title")}` : null;
+  }
+  planItem() {
+    const [i] = this.ranked("triaged");
+    if (!i) return null;
+    return `write a plan for ${i.id}: ${i.get("title")} (${i.get("priority")})` + (i.get("goal") ? ` \u2014 goal ${i.get("goal")}` : "");
+  }
+  idea() {
+    const idea2 = this.store.idea();
+    if (!idea2) return "write the idea (problem, outcome, success criteria) \u2192 new-idea TITLE --from DRAFT";
+    const st = idea2.get("status");
+    return st === "decided" || st === "killed" ? null : `take the idea from ${st} to a decision (go / pivot / kill)`;
+  }
+  goal() {
+    const ids = [...this.goals.keys()].sort(byKey((e) => [e !== this.focus, this.goals.get(e).get("status") !== "active", e]));
+    const gid = ids.find((e) => ["active", "proposed"].includes(this.goals.get(e).get("status") ?? ""));
+    return gid ? `break ${gid} down further, or close it once its acceptance criteria are verified` : null;
+  }
+};
+
+// src/commands/backlog.ts
+function createItem(store, prefix, title, body2, fields) {
+  const iid = store.nextId(prefix, "item");
+  const doc = store.build(`item-${ITEM_TYPES[prefix]}.md`, body2, { id: iid, title, type: ITEM_TYPES[prefix], ...fields });
+  return store.writeNew(doc, `${store.dirs.item}/${iid}-${slugify(title)}.md`);
+}
+function checkSeverity(severity) {
+  const s2 = (severity ?? "").toUpperCase();
+  if (s2 && !Object.hasOwn(SEVERITY_PRIORITY, s2)) fail(`Severity must be one of ${Object.keys(SEVERITY_PRIORITY).join(", ")}.`);
+  return s2;
+}
+function newItem(store, typ, title, draftPath, why, o = {}) {
+  store.require();
+  const prefix = typ.toUpperCase();
+  if (!Object.hasOwn(ITEM_TYPES, prefix)) fail(`Unknown item type '${typ}'. Use feat, bug, chore or spike.`);
+  if (Boolean(draftPath) === Boolean(why)) fail("Give exactly one of --from DRAFT or --why TEXT.");
+  const [draftFile, body2] = draftPath ? store.readDraft(draftPath, "item") : [null, `## Summary
+${why}
+`];
+  const severity = checkSeverity(o.severity);
+  if (severity && prefix !== "BUG") fail("--severity applies to bugs only.");
+  const fields = {
+    goal: store.checkRef(o.goal, "goal"),
+    priority: Store.checkPriority(o.priority) || (SEVERITY_PRIORITY[severity] ?? ""),
+    severity
+  };
+  const probe = store.build(`item-${ITEM_TYPES[prefix]}.md`, body2, { id: "X", title, ...fields });
+  if (!splitSections(probe.text)[1].some(([h]) => probe.hasContent(h))) fail("The item has no content. Nothing was created.");
+  const it = createItem(store, prefix, title, body2, fields);
+  if (draftFile) store.consume(draftFile, o.keep);
+  if (o.priority || severity) {
+    const problems = triageProblems(it);
+    const human = approvalReason(store.policy.policy, "item.triaged");
+    if (problems.length) store.say(`note: ${it.id} stays new until triaged \u2014 ${problems.join("; ")}`);
+    else if (human) store.say(`note: ${it.id} stays new \u2014 triage is ${human}: \`triage ${it.id} --approved-by <name>\``);
+    else move(store, it.id, "triaged", summary(it));
+  }
+}
+var summary = (it) => ["priority", "severity"].filter((k) => it.get(k)).map((k) => `${k} ${it.get(k)}`).join(", ");
+function triage(store, itemId, o = {}) {
+  store.require();
+  const item = store.find(itemId);
+  if (!item.get("type")) fail("triage works on FEAT/BUG/CHORE/SPIKE items.");
+  if (o.reject) {
+    if (!o.note) fail("--reject needs --note (why, or which item it duplicates).");
+    move(store, itemId, o.reject, o.note, false, o.approvedBy);
+    return;
+  }
+  let priority = o.priority;
+  const severity = checkSeverity(o.severity);
+  if (severity) {
+    item.set("severity", severity);
+    if (!priority && !item.get("priority")) priority = SEVERITY_PRIORITY[severity];
+  }
+  const updates = [["priority", Store.checkPriority(priority)], ["goal", store.checkRef(o.goal, "goal")]];
+  for (const [key, value] of updates) if (value) item.set(key, value);
+  const problems = triageProblems(item);
+  if (problems.length) fail(`${item.id} can't be triaged:
+  - ${problems.join("\n  - ")}
+Nothing was changed.`);
+  if (item.get("status") === "triaged") {
+    item.appendLog(`re-triaged: ${summary(item)}`, "Notes");
+    item.save();
+    store.say(`${item.id}: updated`);
+    return;
+  }
+  item.save();
+  move(store, item.id, "triaged", summary(item), false, o.approvedBy);
+}
+
 // src/commands/design.ts
 var import_yaml3 = __toESM(require_dist(), 1);
-import { dirname as dirname4, join as join7 } from "node:path";
+import { dirname as dirname4, join as join8 } from "node:path";
 var FRONT = /^---\n([\s\S]*?)\n---\n/;
 function designPath(store) {
-  const cfg = store.ws.read(join7(store.dir, "config.yaml")) ?? "";
-  return join7(store.ws.root, yamlBlock(cfg, "design").file ?? "docs/design/DESIGN.md");
+  const cfg = store.ws.read(join8(store.dir, "config.yaml")) ?? "";
+  return join8(store.ws.root, yamlBlock(cfg, "design").file ?? "docs/design/DESIGN.md");
 }
-var studioPath = (store) => join7(dirname4(designPath(store)), "studio.json");
+var studioPath = (store) => join8(dirname4(designPath(store)), "studio.json");
 function readDesign(store) {
   const path = designPath(store);
   const text2 = store.ws.read(path);
@@ -9675,7 +10259,11 @@ function status(store, write) {
   store.require();
   const goals2 = store.goals(), items2 = store.items(), plans2 = store.plans(true), focus = store.focus();
   const lines = [`# Status \u2014 ${today()}`, "", "_Generated by `crew.mjs status`. Do not edit by hand._", ""];
+  const halt = paused(store.ledger.events());
+  if (halt) lines.push(`**Team paused** by ${halt.actor} since ${halt.ts.slice(0, 16).replace("T", " ")}: ${halt.reason ?? "no reason given"}`, "");
   lines.push("## Idea and focus", "", ...ideaLines(store, goals2, plans2, items2, focus), "");
+  const stale = staleClaims(store);
+  if (stale.length) lines.push("## Stale claims", "", ...stale.map((s2) => `- ${s2.ref} \u2014 ${s2.actor} (${s2.run}), no activity for ${s2.hours}h`), "");
   const claims = store.ledger.claims();
   lines.push("## Now", "", ...planTable(byStatus(plans2, ["in-progress", "in-review"]), plans2, items2, claims), "");
   lines.push("## Blocked", "", ...blocked(plans2), "");
@@ -9788,10 +10376,13 @@ function planSections(store, plan, role) {
     lines: plan.tasks().filter(([d]) => !d).map(([, t]) => t)
   };
   const waits = unmetDeps(plan, plans2), asks = openQuestions(store.ledger.events(), plan.id);
-  const over = overlapping(plan, plans2), outside = drift(plan) ?? [];
+  const over = overlapping(plan, plans2), outside = drift(plan, store.baseBranch()) ?? [];
+  const questions2 = { title: "Open questions", more: "crew.mjs questions", lines: [
+    ...asks.map((x) => `${x.blocking ? "blocking: " : ""}${x.id} ${x.by} \u2192 ${x.to}: ${x.text}`),
+    ...openQuestions(store.ledger.events()).filter((x) => x.to === role && x.ref !== plan.id).map((x) => `for you: ${x.id} from ${x.by}${x.ref ? ` about ${x.ref}` : ""}: ${x.text}`)
+  ] };
   const blockers = { title: "Blockers & coordination", more: "crew.mjs questions", lines: [
     ...waits.map((d) => `waits for ${d} (${plans2.get(d)?.get("status")})`),
-    ...asks.map((x) => `${x.blocking ? "blocking " : ""}question ${x.id} \u2192 ${x.to}: ${x.text}`),
     ...over.map((o) => `overlaps ${o.id} (${plans2.get(o.id)?.get("status")}) on ${o.globs.join(", ")}`),
     ...outside.length ? [`changes outside touches: ${outside.slice(0, 6).join(", ")}${outside.length > 6 ? " \u2026" : ""}`] : []
   ] };
@@ -9807,13 +10398,13 @@ function planSections(store, plan, role) {
   const bugs = { title: "Open bugs in this goal", more: "crew.mjs status", lines: [...items2.values()].filter((i) => i.id.startsWith("BUG-") && goal && i.get("goal")?.toUpperCase() === goal.id && !["done", "wontfix", "duplicate"].includes(itemStatus(i, plans2))).map((i) => `${i.id} ${i.get("severity") ?? ""} ${i.get("title")} [${itemStatus(i, plans2)}]`) };
   switch (role) {
     case "qa":
-      return [why, ac, sect("Test plan", "Test plan"), recover, bugs, memory, blockers];
+      return [questions2, why, ac, sect("Test plan", "Test plan"), recover, bugs, memory, blockers];
     case "architect":
-      return [why, sect("Approach", "Approach"), sect("Risks & open questions", "Risks & open questions"), blockers, memory, ac];
+      return [questions2, why, sect("Approach", "Approach"), sect("Risks & open questions", "Risks & open questions"), blockers, memory, ac];
     case "release":
-      return [why, sect("Rollout & rollback", "Rollout & rollback"), blockers, ac, memory];
+      return [questions2, why, sect("Rollout & rollback", "Rollout & rollback"), blockers, ac, memory];
     default:
-      return [recover, why, ac, tasks, blockers, memory, handoff2];
+      return [recover, questions2, why, ac, tasks, blockers, memory, handoff2];
   }
 }
 var line = (e) => `${e.id} [${e.type}${e.origin === "playbook" ? ", playbook" : ""}] ${e.title}`;
@@ -9870,7 +10461,8 @@ function assemble2(header, sections2, budget) {
 function context(store, o = {}) {
   store.require();
   const role = o.role ?? store.ledger.who.role ?? "any";
-  if (role !== "any" && !ROLES.includes(role)) fail(`Unknown role '${role}'. Roles: ${ROLES.join(", ")}.`);
+  const roles = store.policy.roles;
+  if (role !== "any" && !roles.includes(role)) fail(`Unknown role '${role}'. Roles: ${roles.join(", ")}.`);
   const budget = o.budget ?? DEFAULT_BUDGET;
   if (budget < 200) fail("--budget must be at least 200 characters.");
   const pid = o.id?.toUpperCase() ?? /^plan\/(P-\d+)/.exec(currentBranch() ?? "")?.[1];
@@ -9888,11 +10480,17 @@ var DETAIL = {
   move: (e) => `${e.from} \u2192 ${e.to}${e.note ? ` \u2014 ${e.note}` : ""}`,
   log: (e) => String(e.text ?? ""),
   learn: (e) => `${e.kind}: ${e.title}${e.supersedes ? ` (supersedes ${e.supersedes})` : ""}`,
-  checkpoint: (e) => `at ${e.step}${e.sha ? ` (${String(e.sha).slice(0, 7)})` : ""}` + (e.verify ?? []).map((v) => ` ${v.ok ? "\u2713" : "\u2717"} ${v.cmd}`).join("") + (e.attempt ? ` \u2014 tried: ${e.attempt.what}` : ""),
+  checkpoint: (e) => e.workflow ? `${e.workflow}: ${e.step} ${e.state}` : `at ${e.step}${e.sha ? ` (${String(e.sha).slice(0, 7)})` : ""}` + (e.verify ?? []).map((v) => ` ${v.ok ? "\u2713" : "\u2717"} ${v.cmd}`).join("") + (e.attempt ? ` \u2014 tried: ${e.attempt.what}` : ""),
   ask: (e) => `${e.qid} \u2192 ${e.to}${e.escalation ? " (escalation)" : ""}: ${e.text}`,
   answer: (e) => `${e.qid}: ${e.text}${e.approved_by ? ` (by ${e.approved_by})` : ""}`,
+  assign: (e) => `to the ${e.to} role${e.team ? `, team ${e.team}` : ""}${e.note ? ` \u2014 ${e.note}` : ""}`,
+  review: (e) => `${e.verdict === "approve" ? "approved" : `changes: ${e.text}`}${e.sha ? ` (${String(e.sha).slice(0, 7)})` : ""}`,
+  notify: (e) => `${e.kind}: ${e.text}`,
+  pause: (e) => String(e.reason ?? "paused"),
+  resume: (e) => String(e.note ?? "resumed"),
   usage: (e) => `${e.tokens_in} in / ${e.tokens_out} out tokens, $${Number(e.cost ?? 0).toFixed(2)}${e.model ? ` (${e.model})` : ""}`
 };
+var EVENT_TYPES = Object.keys(DETAIL);
 function showLedger(store, o = {}) {
   store.require();
   if (o.type && !DETAIL[o.type]) fail(`Unknown event type '${o.type}'. Valid: ${Object.keys(DETAIL).join(", ")}`);
@@ -9928,9 +10526,53 @@ function setFocus(store, goalId) {
   if (goal.get("status") === "proposed") store.say(`note: ${gid} is still proposed \u2014 \`move ${gid} active\` when its first plan starts`);
 }
 
+// src/commands/runs.ts
+var WORKFLOWS = {
+  kickoff: ["preflight", "discover", "design", "guidelines", "hub", "git", "graph", "idea-and-plan"],
+  onboard: ["preflight", "map", "discover", "design", "guidelines", "hub", "git", "graph"]
+};
+var steps = (name) => WORKFLOWS[name] ?? fail(`Unknown workflow '${name}'. Workflows: ${Object.keys(WORKFLOWS).join(", ")}.`);
+function recordStep(store, workflow, step, o = {}) {
+  store.require();
+  const all = steps(workflow);
+  if (!step) fail(`Name the step: --step ${all.join("|")}.`);
+  if (!all.includes(step)) fail(`${workflow} has no step '${step}'. Steps: ${all.join(", ")}.`);
+  const state = o.skip ? "skipped" : "done";
+  store.ledger.record("checkpoint", null, { workflow, step, state, ...o.note ? { note: o.note } : {} });
+  store.say(`${workflow}: ${step} ${state}`);
+}
+function workflowState(events, workflow) {
+  const last = /* @__PURE__ */ new Map();
+  for (const e of events) if (e.type === "checkpoint" && e.workflow === workflow) last.set(String(e.step), e);
+  return steps(workflow).map((step) => ({ step, event: last.get(step) ?? null }));
+}
+function resumeWorkflow(store, workflow, json = false) {
+  store.require();
+  const state = workflowState(store.ledger.events(), workflow);
+  const next = state.find((s2) => !s2.event)?.step ?? null;
+  if (json) {
+    store.say(JSON.stringify({ workflow, next, steps: state.map(({ step, event }) => ({ step, state: event ? event.state : "pending", by: event?.actor ?? null, role: event?.role ?? null, ts: event?.ts ?? null })) }));
+    return;
+  }
+  if (!state.some((s2) => s2.event)) store.say(`${workflow}: not started \u2014 begin with ${state[0].step}`);
+  for (const { step, event } of state) {
+    store.say(`  ${(event ? String(event.state) : "pending").padEnd(8)} ${step}` + (event ? `  (${event.actor}${event.role ? `, ${event.role}` : ""}, ${event.ts.slice(0, 16).replace("T", " ")})${event.note ? ` \u2014 ${event.note}` : ""}` : ""));
+  }
+  store.say(next ? `next: ${next}` : `${workflow}: every step is done or skipped`);
+}
+
 // src/mcp.ts
 var text = (description) => ({ type: "string", description });
-var obj = (properties = {}, required = []) => ({ type: "object", properties, ...required.length ? { required } : {}, additionalProperties: false });
+var obj = (properties = {}, required = []) => ({
+  type: "object",
+  properties: {
+    ...properties,
+    as: { type: "string", description: "your role (set by the guard for agents)" },
+    run_id: { type: "string", description: "your run id (set by the guard for agents)" }
+  },
+  ...required.length ? { required } : {},
+  additionalProperties: false
+});
 var s = (a, k) => typeof a[k] === "string" && a[k] ? a[k] : void 0;
 var up4 = (a, k) => s(a, k).toUpperCase();
 var num = (description) => ({ type: "number", description });
@@ -9939,14 +10581,14 @@ var ITEM_FIELDS = { priority: text("P0\u2013P3"), severity: text("bugs only: S1\
 var TOOLS = {
   next: {
     description: "The single best next step (`crew.mjs next`); with a role, that role's own queue, questions to it first.",
-    input: obj({ role: { type: "string", enum: [...ROLES] } }),
-    run: (st, a) => nextStep(st, s(a, "role"))
+    input: obj({ role: text("a role: executive, director, pm, architect, developer, qa, release, or one the policy defines") }),
+    run: (st, a) => nextStep(st, s(a, "role") ?? st.ledger.who.role ?? void 0)
   },
   context: {
     description: "What you need right now (`crew.mjs context`): for a plan, where the work stands, its goal, criteria with evidence, tasks, blockers and questions, knowledge in scope; without one, the idea, focus, your next steps and the team. Sliced for your role and kept within a budget. Call it at the start of every session.",
     input: obj({
       plan: text("e.g. P-004; default: the plan of this branch"),
-      role: { type: "string", enum: [...ROLES] },
+      role: text("a role: executive, director, pm, architect, developer, qa, release, or one the policy defines"),
       budget: num("characters, default 6000")
     }),
     run: (st, a) => context(st, { id: s(a, "plan"), role: s(a, "role"), budget: n(a, "budget") })
@@ -9955,7 +10597,7 @@ var TOOLS = {
     description: "Ask another role a question (`crew.mjs ask`), recorded so it isn't lost. It blocks the document it is about from moving forward until answered (fyi: true doesn't block).",
     input: obj({
       ref: text("the document it is about, e.g. P-004"),
-      to: { type: "string", enum: [...ROLES] },
+      to: text("a role: executive, director, pm, architect, developer, qa, release, or one the policy defines"),
       text: text("the question"),
       fyi: { type: "boolean" }
     }, ["to", "text"]),
@@ -9980,7 +10622,7 @@ var TOOLS = {
   },
   questions: {
     description: "Open questions between roles (`crew.mjs questions --json`).",
-    input: obj({ to: { type: "string", enum: [...ROLES] }, ref: text("only about this document"), all: { type: "boolean" } }),
+    input: obj({ to: text("a role: executive, director, pm, architect, developer, qa, release, or one the policy defines"), ref: text("only about this document"), all: { type: "boolean" } }),
     run: (st, a) => listQuestions(st, { to: s(a, "to"), ref: s(a, "ref"), all: a.all === true, json: true })
   },
   current: {
@@ -10043,6 +10685,35 @@ var TOOLS = {
     run: (st, a) => {
       move(st, s(a, "id"), s(a, "status"), s(a, "note"));
     }
+  },
+  assign: {
+    description: "Open a ready plan for a role (`crew.mjs assign`): records who implements it; `start` then needs the assignment. Under the lifecycle preset only the PM assigns.",
+    input: obj({
+      id: text("e.g. P-004"),
+      to: text("the role that implements it, usually developer"),
+      team: text("optional team from the policy"),
+      note: text("optional note")
+    }, ["id", "to"]),
+    run: (st, a) => {
+      assign(st, s(a, "id"), s(a, "to"), s(a, "team"), s(a, "note"));
+    }
+  },
+  staff: {
+    description: "What can run in parallel now (`crew.mjs staff`): ready plans whose dependencies are done, that overlap nothing in progress or each other, within budgets.max_agents, each routed to a team; and why the others wait.",
+    input: obj({ json: { type: "boolean" } }),
+    run: (st, a) => staff(st, a.json === true)
+  },
+  reassign: {
+    description: "Move stuck work to another run (`crew.mjs reassign`): releases a stale claim (limits.stale_claim_hours) and assigns the plan again; the next agent takes it over with start, which resumes its branch. Under the lifecycle preset, the Director's.",
+    input: obj({ id: text("e.g. P-004"), to: text("role, default: the current assignment"), note: text("why") }, ["id"]),
+    run: (st, a) => {
+      reassign(st, s(a, "id"), s(a, "to"), s(a, "note"));
+    }
+  },
+  pause: {
+    description: "Pause the team (`crew.mjs pause`), or resume it with resume: true: while paused, staff and start refuse. The executive's or the Director's call.",
+    input: obj({ reason: text("why (pause) or a note (resume)"), resume: { type: "boolean" } }),
+    run: (st, a) => a.resume === true ? resumeTeam(st, s(a, "reason")) : pauseTeam(st, s(a, "reason"))
   },
   log: {
     description: "Append a dated line to a document's log (`crew.mjs log`).",
@@ -10125,9 +10796,11 @@ var TOOLS = {
       output: text("the end of its output"),
       attempt: text("an approach that failed"),
       why: text("why it failed"),
-      note: text("anything else")
+      note: text("anything else"),
+      workflow: text("instead of a plan: a workflow run (kickoff, onboard) whose step just finished"),
+      skip: { type: "boolean" }
     }),
-    run: (st, a) => checkpoint(st, s(a, "plan"), {
+    run: (st, a) => s(a, "workflow") ? recordStep(st, s(a, "workflow"), s(a, "step"), { skip: a.skip === true, note: s(a, "note") }) : checkpoint(st, s(a, "plan"), {
       step: s(a, "step"),
       verify: s(a, "verify"),
       result: s(a, "result"),
@@ -10140,8 +10813,20 @@ var TOOLS = {
   },
   resume: {
     description: "Where a plan's work stopped (`crew.mjs resume`): last checkpoint vs git now, check results, approaches not to retry, the next task and each criterion's evidence. Call it first when picking work up.",
-    input: obj({ plan: text("e.g. P-004; default: the plan of this branch") }),
-    run: (st, a) => resume(st, s(a, "plan"))
+    input: obj({ plan: text("e.g. P-004; default: the plan of this branch"), workflow: text("instead: a workflow run (kickoff, onboard)") }),
+    run: (st, a) => s(a, "workflow") ? resumeWorkflow(st, s(a, "workflow")) : resume(st, s(a, "plan"))
+  },
+  merge_order: {
+    description: "What Release merges next (`crew.mjs merge-order`): done plans with unmerged branches, dependencies first; plans waiting on an unmerged dependency; merged branches to delete.",
+    input: obj({ json: { type: "boolean" } }),
+    run: (st, a) => mergeOrderCmd(st, a.json === true)
+  },
+  review: {
+    description: "Code review of a plan in review (`crew.mjs review`): approve, or request changes, which sends it back to the developer. Never by the plan's implementer; under the lifecycle preset the Architect's, and done needs an approval of the current code.",
+    input: obj({ id: text("e.g. P-004"), approve: { type: "boolean" }, changes: text("what must change") }, ["id"]),
+    run: (st, a) => {
+      review(st, s(a, "id"), { approve: a.approve === true, changes: s(a, "changes") });
+    }
   },
   handoff: {
     description: "Write the resume view into the plan's Handoff section (`crew.mjs handoff`), before ending a session.",
@@ -10157,7 +10842,7 @@ var TOOLS = {
     description: "Recent events from the shared ledger and the live claims (`crew.mjs ledger --json`).",
     input: obj({
       ref: text("only events about this ID"),
-      type: { type: "string", enum: ["claim", "release", "move", "log", "usage", "learn", "checkpoint", "ask", "answer"] },
+      type: { type: "string", enum: EVENT_TYPES },
       limit: num("how many, newest last (default 20)")
     }),
     run: (st, a) => showLedger(st, { ref: s(a, "ref"), type: s(a, "type"), limit: n(a, "limit"), json: true })
@@ -10169,12 +10854,26 @@ function callTool(open, name, args = {}) {
   if (!tool) return result([`Unknown tool '${name}'.`], true);
   const missing = (tool.input.required ?? []).filter((k) => args[k] === void 0 || args[k] === "");
   if (missing.length) return result([`missing ${missing.join(", ")}`], true);
+  const saved = { role: process.env.CREW_ROLE, run: process.env.CREW_RUN };
+  if (typeof args.as === "string" && args.as) process.env.CREW_ROLE = args.as;
+  if (typeof args.run_id === "string" && args.run_id) process.env.CREW_RUN = args.run_id;
+  try {
+    return runTool(open, tool, args, result);
+  } finally {
+    for (const [k, v] of [["CREW_ROLE", saved.role], ["CREW_RUN", saved.run]]) {
+      if (v === void 0) delete process.env[k];
+      else process.env[k] = v;
+    }
+  }
+}
+function runTool(open, tool, args, result) {
   const store = open();
   try {
     const code = tool.run(store, args) ?? 0;
     store.ws.flush();
     return result(store.ws.output, code !== 0);
   } catch (e) {
+    store.ws.abort();
     if (!(e instanceof HubError)) throw e;
     return result([...store.ws.output, e.message], true);
   }

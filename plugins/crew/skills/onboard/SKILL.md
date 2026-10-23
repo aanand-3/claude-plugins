@@ -16,6 +16,9 @@ branch: chore/crew-onboard
 modules: {graphify: false}
 steps: {preflight: done, map: pending, discover: pending, design: pending, guidelines: pending, hub: pending, git: pending, graph: pending}
 ```
+**With the hub, the ledger tracks the run instead** (no `onboard.yaml`): after each step,
+`node .crew/bin/crew.mjs checkpoint --workflow onboard --step <step>` (`--skip` for a skipped one), recording the steps
+done before the hub existed right after `init`; on start, `node .crew/bin/crew.mjs resume --workflow onboard`.
 On start, if it exists, switch to its branch, show what's done and continue from the first `pending` step. The graph step is `skipped` without graphify.
 
 ## Steps
@@ -52,7 +55,7 @@ On start, if it exists, switch to its branch, show what's done and continue from
    - The same goes for `.claude/settings.json` (merge the keys), the README (keep the content, add the *Where to find things* map and link instead of copying) and `.env.example`.
 
 5. **Hub**: `node "${CLAUDE_PLUGIN_ROOT}/skills/hub/dist/crew.mjs" init`.
-   - **Mode** (one AskUserQuestion): who approves what from here on. *AI-assisted (Recommended)*: agents do the work, a human approves each plan before it starts and before it's done. *AI-native*: agents run everything after the idea is decided; humans answer escalations. *Human-led*: humans drive and also approve triage. Write `.crew/policy.yaml` with `mode: <choice>` and, if the user names any, budgets (`budgets: {max_agents: N, run: {max_cost: USD}}`). Run `crew.mjs policy check`. Reserved decisions (deciding or killing the idea, production deploys, publishing, spending, deleting data, policy changes) always need the user, whatever the mode.
+   - **Mode** (one AskUserQuestion): who approves what from here on. *AI-assisted (Recommended)*: agents do the work, a human approves each plan before it starts and before it's done. *AI-native*: agents run everything after the idea is decided; humans answer escalations. *Human-led*: humans drive and also approve triage. *Agent team*: the crew agents run the build loop (`/crew:team`), each step owned by one role; the user approves the goal set and every reserved decision — write `preset: lifecycle` instead of a mode. Write `.crew/policy.yaml` with `mode: <choice>` (or the preset) and, if the user names any, budgets (`budgets: {max_agents: N, run: {max_cost: USD}}`). Run `crew.mjs policy check`. Reserved decisions (deciding or killing the idea, production deploys, publishing, spending, deleting data, policy changes) always need the user, whatever the mode.
    Then offer, one question with multiSelect and nothing forced:
    - the idea (`new-idea`), from the brief: what the project is for and the success criteria the user agrees to;
    - a goal for the work currently in progress, set as the focus (`focus G-001`);

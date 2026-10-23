@@ -4,7 +4,6 @@ import type { Doc } from "../core/doc.js";
 import { drift, overlapping } from "../core/footprint.js";
 import * as git from "../core/git.js";
 import { type Entry, recall } from "../core/knowledge.js";
-import { ROLES } from "../core/model.js";
 import * as q from "../core/queries.js";
 import type { Store } from "../core/store.js";
 import { fail, firstParagraph, stripComments } from "../core/text.js";
@@ -37,10 +36,13 @@ function planSections(store: Store, plan: Doc, role: string): Section[] {
   const tasks: Section = { title: "Remaining tasks", more: plan.path ? store.rel(plan.path) : plan.id,
     lines: plan.tasks().filter(([d]) => !d).map(([, t]) => t) };
   const waits = q.unmetDeps(plan, plans), asks = openQuestions(store.ledger.events(), plan.id);
-  const over = overlapping(plan, plans), outside = drift(plan) ?? [];
+  const over = overlapping(plan, plans), outside = drift(plan, store.baseBranch()) ?? [];
+  const questions: Section = { title: "Open questions", more: "crew.mjs questions", lines: [
+    ...asks.map((x) => `${x.blocking ? "blocking: " : ""}${x.id} ${x.by} → ${x.to}: ${x.text}`),
+    ...openQuestions(store.ledger.events()).filter((x) => x.to === role && x.ref !== plan.id)
+      .map((x) => `for you: ${x.id} from ${x.by}${x.ref ? ` about ${x.ref}` : ""}: ${x.text}`)] };
   const blockers: Section = { title: "Blockers & coordination", more: "crew.mjs questions", lines: [
     ...waits.map((d) => `waits for ${d} (${plans.get(d)?.get("status")})`),
-    ...asks.map((x) => `${x.blocking ? "blocking " : ""}question ${x.id} → ${x.to}: ${x.text}`),
     ...over.map((o) => `overlaps ${o.id} (${plans.get(o.id)?.get("status")}) on ${o.globs.join(", ")}`),
     ...(outside.length ? [`changes outside touches: ${outside.slice(0, 6).join(", ")}${outside.length > 6 ? " …" : ""}`] : [])] };
   const order = TYPES[role] ?? TYPES.developer;
@@ -54,10 +56,10 @@ function planSections(store: Store, plan: Doc, role: string): Section[] {
     .filter((i) => i.id.startsWith("BUG-") && goal && i.get("goal")?.toUpperCase() === goal.id && !["done", "wontfix", "duplicate"].includes(q.itemStatus(i, plans)))
     .map((i) => `${i.id} ${i.get("severity") ?? ""} ${i.get("title")} [${q.itemStatus(i, plans)}]`) };
   switch (role) {
-    case "qa": return [why, ac, sect("Test plan", "Test plan"), recover, bugs, memory, blockers];
-    case "architect": return [why, sect("Approach", "Approach"), sect("Risks & open questions", "Risks & open questions"), blockers, memory, ac];
-    case "release": return [why, sect("Rollout & rollback", "Rollout & rollback"), blockers, ac, memory];
-    default: return [recover, why, ac, tasks, blockers, memory, handoff];
+    case "qa": return [questions, why, ac, sect("Test plan", "Test plan"), recover, bugs, memory, blockers];
+    case "architect": return [questions, why, sect("Approach", "Approach"), sect("Risks & open questions", "Risks & open questions"), blockers, memory, ac];
+    case "release": return [questions, why, sect("Rollout & rollback", "Rollout & rollback"), blockers, ac, memory];
+    default: return [recover, questions, why, ac, tasks, blockers, memory, handoff];
   }
 }
 
@@ -115,7 +117,8 @@ export function assemble(header: string, sections: Section[], budget: number): s
 export function context(store: Store, o: { id?: string; role?: string; budget?: number; json?: boolean } = {}): void {
   store.require();
   const role = o.role ?? store.ledger.who.role ?? "any";
-  if (role !== "any" && !(ROLES as readonly string[]).includes(role)) fail(`Unknown role '${role}'. Roles: ${ROLES.join(", ")}.`);
+  const roles = store.policy.roles;
+  if (role !== "any" && !roles.includes(role)) fail(`Unknown role '${role}'. Roles: ${roles.join(", ")}.`);
   const budget = o.budget ?? DEFAULT_BUDGET;
   if (budget < 200) fail("--budget must be at least 200 characters.");
   const pid = o.id?.toUpperCase() ?? /^plan\/(P-\d+)/.exec(git.currentBranch() ?? "")?.[1];

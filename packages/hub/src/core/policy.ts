@@ -7,8 +7,13 @@ import { join, resolve } from "node:path";
 import { parse } from "yaml";
 import * as git from "./git.js";
 import { FLOWS, type Kind, ROLES } from "./model.js";
+import { PRESETS } from "./presets.js";
 
 export const MODES = ["ai-native", "ai-assisted", "human-led"] as const;
+/** Gated steps that aren't status changes: `<kind>.<action>`, usable in human_gates and role_gates. */
+/** What `notify.command` can be told about (docs/vision.md → Workstream T, autonomy). */
+export const NOTIFY_ON = ["escalation", "budget", "stale", "goal-done", "paused"];
+export const ACTIONS = new Set(["plan.assigned", "plan.reassigned", "plan.reviewed"]);
 /** Transitions (`<kind>.<status>`) that need a human, by mode, until the project sets `human_gates`. */
 export const MODE_GATES: Record<string, string[]> = {
   "ai-native": [],
@@ -18,7 +23,9 @@ export const MODE_GATES: Record<string, string[]> = {
 const BUILT_IN: Raw = {
   mode: "ai-assisted",
   reserved: ["idea.decided", "idea.killed", "policy.change", "deploy.production", "publish", "spend", "delete-data"],
-  paths: { protected: [".crew/policy.yaml"] },
+  // the guard's own files: no agent may remove the hook, rewrite its definition, loosen the policy or swap the CLI
+  paths: { protected: [".crew/policy.yaml", ".crew/bin/**", ".claude/settings.json", ".claude/settings.local.json", ".claude/agents/**",
+    ".crew/templates/agents/**"] },
   budgets: { max_agents: 4 },
   git: { protected_branches: ["main"], force_push: false, no_verify: false },
   secrets: { files: [".env", "**/.env", "**/*.pem", "**/*.key"] },
@@ -33,13 +40,16 @@ const SCOPED: Record<string, Shape> = {
   tools: { allow: "list", deny: "list" },
   paths: { protected: "list", write: "list" },
   budgets: { run: { max_cost: "num", max_tokens: "num" } },
+  limits: { max_turns: "num" },
 };
 const GLOBAL: Record<string, Shape> = {
-  mode: "str", human_gates: "list", role_gates: "map", reserved: "list", ...SCOPED,
+  mode: "str", preset: "str", human_gates: "list", role_gates: "map", reserved: "list", ...SCOPED,
   budgets: { max_agents: "num", run: { max_cost: "num", max_tokens: "num" }, project: { max_cost: "num", max_tokens: "num" } },
   git: { protected_branches: "list", force_push: "bool", no_verify: "bool" },
   secrets: { files: "list", patterns: "list" },
-  escalation: { to: "str" },
+  escalation: { to: "str" }, evidence: { role: "str" }, notify: { command: "str", on: "list" },
+  fast_lane: { types: "list", max_tasks: "num" },
+  limits: { max_turns: "num", stale_claim_hours: "num", max_bounces: "num", max_attempts: "num" },
 };
 const UNION = new Set(["reserved", "secrets.files", "secrets.patterns", "git.protected_branches", "paths.protected", "tools.deny"]);
 const TIGHTEN = new Set(["git.force_push", "git.no_verify"]);
@@ -53,13 +63,22 @@ export interface Effective {
   budgets: { max_agents: number | null; run: { max_cost: number | null; max_tokens: number | null };
     project: { max_cost: number | null; max_tokens: number | null } };
   git: { protected_branches: string[]; force_push: boolean; no_verify: boolean };
-  secrets: { files: string[]; patterns: string[] }; escalation: { to: string };
+  secrets: { files: string[]; patterns: string[] }; escalation: { to: string }; evidence: { role: string | null };
+  notify: { command: string | null; on: string[] }; fast_lane: { types: string[]; max_tasks: number | null };
+  limits: { max_turns: number | null; stale_claim_hours: number | null; max_bounces: number | null; max_attempts: number | null };
 }
-export interface Resolved { policy: Effective; sources: Map<string, string>; errors: string[]; hints: string[]; role: string | null; team: string | null }
+export interface Resolved {
+  policy: Effective; sources: Map<string, string>; errors: string[]; hints: string[]; role: string | null; team: string | null;
+  roles: string[];                  // the built-in roles plus the project's own (`roles.<name>` with a charter)
+  charters: Record<string, string>; // roles.<name>.charter from the project policy
+  teams: Record<string, string[]>;  // teams.<name>.scope: the paths each team works on
+}
 
 /** Read the layers that apply to a role and team. Unreadable files become errors, not crashes. */
-export function loadLayers(root: string, crewDir: string, role: string | null, team: string | null): { layers: Layer[]; errors: string[]; hints: string[] } {
-  const errors: string[] = [], hints: string[] = [];
+export function loadLayers(root: string, crewDir: string, role: string | null, team: string | null):
+  { layers: Layer[]; errors: string[]; hints: string[]; custom: string[]; charters: Record<string, string>; teams: Record<string, string[]> } {
+  const errors: string[] = [], hints: string[] = [], custom: string[] = [], charters: Record<string, string> = {};
+  const teamScopes: Record<string, string[]> = {};
   const read = (label: string, text: string | null): Raw | null => {
     if (text === null) return null;
     try {
@@ -81,18 +100,33 @@ export function loadLayers(root: string, crewDir: string, role: string | null, t
     if (r) layers.push({ name: `org role ${role}`, org: true, raw: r });
   }
   const projectPath = join(crewDir, "policy.yaml");
+  if (team && !existsSync(projectPath)) errors.push(`team '${team}' (CREW_TEAM) is set, but there is no .crew/policy.yaml defining teams`);
   const project = read(".crew/policy.yaml", existsSync(projectPath) ? readFileSync(projectPath, "utf8") : null);
   if (project) {
-    const { roles, teams, ...global } = project;
+    const { roles, teams, preset, ...global } = project;
+    const p = typeof preset === "string" ? PRESETS[preset] : undefined;
+    if (preset !== undefined && !p) errors.push(`preset: '${String(preset)}' is not a preset (${Object.keys(PRESETS).join(", ")})`);
+    if (p) layers.push({ name: `preset ${preset}`, org: false, raw: p.global });
+    if (p && role && p.roles[role]) layers.push({ name: `preset ${preset} role ${role}`, org: false, raw: p.roles[role] });
     layers.push({ name: "project", org: false, raw: global });
     const pick = (m: unknown, key: string | null) => (key && m && typeof m === "object" ? (m as Raw)[key] as Raw | undefined : undefined);
     const r = pick(roles, role), t = pick(teams, team);
+    if (team && !t) errors.push(`team '${team}' (CREW_TEAM) is not defined under teams: in .crew/policy.yaml`);
     if (r) layers.push({ name: `project role ${role}`, org: false, raw: r });
     if (t) layers.push({ name: `project team ${team}`, org: false, raw: t });
-    for (const [name, section] of Object.entries({ ...(roles as Raw ?? {}) })) validate(section, SCOPED, `roles.${name}`, errors);
+    for (const [name, section] of Object.entries({ ...(roles as Raw ?? {}) })) {
+      validate(section, { ...SCOPED, charter: "str" }, `roles.${name}`, errors);
+      if (typeof (section as Raw | null)?.charter === "string") charters[name] = (section as Raw).charter as string;
+      if (!(ROLES as readonly string[]).includes(name)) {
+        custom.push(name);
+        if (!/^[a-z][a-z0-9-]*$/.test(name)) errors.push(`roles.${name}: a role name is lower-case letters, digits and dashes`);
+        if (typeof (section as Raw | null)?.charter !== "string") errors.push(`roles.${name}: a new role needs a charter (what it owns and never does)`);
+      }
+    }
     for (const [name, section] of Object.entries({ ...(teams as Raw ?? {}) })) {
       const { scope, ...rest } = (section ?? {}) as Raw;
       if (scope !== undefined && !isList(scope)) errors.push(`teams.${name}.scope: expected a list of path globs`);
+      else teamScopes[name] = (scope as string[] | undefined) ?? [];
       validate(rest, SCOPED, `teams.${name}`, errors);
     }
   }
@@ -100,7 +134,7 @@ export function loadLayers(root: string, crewDir: string, role: string | null, t
     if (l.name === "org" || l.name === "project") validate(l.raw, GLOBAL, l.name === "org" ? "org" : "", errors);
     else if (l.name.startsWith("org role")) validate(l.raw, SCOPED, l.name, errors);
   }
-  return { layers, errors, hints };
+  return { layers, errors, hints, custom, charters, teams: teamScopes };
 }
 
 export interface Playbook { read: ((rel: string) => string | null) | null; list?: (dir: string) => string[]; hint?: string }
@@ -162,7 +196,7 @@ function flatten(raw: Raw, prefix = ""): [string, unknown][] {
 }
 
 /** Merge the layers into the effective policy, remembering where each value came from. */
-export function resolveLayers(layers: Layer[]): { policy: Effective; sources: Map<string, string>; errors: string[] } {
+export function resolveLayers(layers: Layer[], roles: readonly string[] = ROLES): { policy: Effective; sources: Map<string, string>; errors: string[] } {
   const values = new Map<string, unknown>(), sources = new Map<string, string>(), ceilings = new Map<string, [number, string]>();
   const errors: string[] = [];
   for (const layer of layers) {
@@ -184,9 +218,10 @@ export function resolveLayers(layers: Layer[]): { policy: Effective; sources: Ma
         values.set(path, v);
         sources.set(path, layer.name);
       } else if (path === "human_gates") {
-        values.set(path, v);
-        sources.set(path, layer.name);
-        if (layer.org) values.set("human_gates.org", [...new Set([...((values.get("human_gates.org") as string[]) ?? []), ...(v as string[])])]);
+        // the org's gates are a floor added on top; only a project layer replaces the mode's default gates
+        const key = layer.org ? "human_gates.org" : path;
+        values.set(key, layer.org ? [...new Set([...((values.get(key) as string[]) ?? []), ...(v as string[])])] : v);
+        sources.set(key, layer.name);
       } else {
         values.set(path, v);
         sources.set(path, layer.name);
@@ -196,13 +231,24 @@ export function resolveLayers(layers: Layer[]): { policy: Effective; sources: Ma
   const get = <T>(p: string, d: T) => (values.has(p) ? values.get(p) as T : d);
   const mode = get("mode", "ai-assisted");
   if (!(MODES as readonly string[]).includes(mode)) errors.push(`mode: '${mode}' is not one of ${MODES.join(", ")}`);
-  if (!values.has("human_gates")) sources.set("human_gates", `built-in: mode ${mode}`);
+  const floor = sources.get("human_gates.org");
+  sources.set("human_gates", `${values.has("human_gates") ? sources.get("human_gates") : `built-in: mode ${mode}`}${floor ? ` + ${floor} floor` : ""}`);
   const gates = [...new Set([...get<string[]>("human_gates", MODE_GATES[mode] ?? []), ...get<string[]>("human_gates.org", [])])];
   const role_gates = Object.fromEntries([...values].filter(([p]) => p.startsWith("role_gates[")).map(([p, v]) => [p.slice(11, -1), String(v)]));
   for (const t of [...gates, ...Object.keys(role_gates), ...get<string[]>("reserved", [])]) errors.push(...transitionProblem(t));
-  for (const [t, r] of Object.entries(role_gates)) if (!(ROLES as readonly string[]).includes(r)) errors.push(`role_gates ${t}: '${r}' is not a role (${ROLES.join(", ")})`);
+  for (const [t, r] of Object.entries(role_gates)) if (!roles.includes(r)) errors.push(`role_gates ${t}: '${r}' is not a role (${roles.join(", ")})`);
+  for (const p of get<string[]>("secrets.patterns", [])) {
+    try {
+      new RegExp(p);
+    } catch {
+      errors.push(`secrets.patterns: '${p}' is not a valid JavaScript regular expression (no inline flags like (?i))`);
+    }
+  }
   const to = get<string>("escalation.to", "executive");
-  if (!(ROLES as readonly string[]).includes(to)) errors.push(`escalation.to: '${to}' is not a role (${ROLES.join(", ")})`);
+  if (!roles.includes(to)) errors.push(`escalation.to: '${to}' is not a role (${roles.join(", ")})`);
+  const ev = get<string | null>("evidence.role", null);
+  if (ev !== null && !roles.includes(ev)) errors.push(`evidence.role: '${ev}' is not a role (${roles.join(", ")})`);
+  for (const o of get<string[]>("notify.on", []).filter((x) => !NOTIFY_ON.includes(x))) errors.push(`notify.on: '${o}' is not one of ${NOTIFY_ON.join(", ")}`);
   const deny = get<string[]>("tools.deny", []);
   const allow = get<string[]>("tools.allow", []);
   for (const t of allow.filter((a) => deny.includes(a))) errors.push(`tools.allow: '${t}' is denied by ${sources.get("tools.deny")} (deny wins)`);
@@ -214,22 +260,31 @@ export function resolveLayers(layers: Layer[]): { policy: Effective; sources: Ma
     budgets: { max_agents: num("budgets.max_agents"), run: { max_cost: num("budgets.run.max_cost"), max_tokens: num("budgets.run.max_tokens") },
       project: { max_cost: num("budgets.project.max_cost"), max_tokens: num("budgets.project.max_tokens") } },
     git: { protected_branches: get("git.protected_branches", []), force_push: get("git.force_push", false), no_verify: get("git.no_verify", false) },
-    secrets: { files: get("secrets.files", []), patterns: get("secrets.patterns", []) }, escalation: { to: get("escalation.to", "executive") },
+    secrets: { files: get("secrets.files", []), patterns: get("secrets.patterns", []) }, escalation: { to: get("escalation.to", "executive") }, evidence: { role: ev },
+    notify: { command: get("notify.command", null), on: get("notify.on", []) },
+    fast_lane: { types: get<string[]>("fast_lane.types", []).map((t) => t.toUpperCase()), max_tasks: num("fast_lane.max_tasks") },
+    limits: { max_turns: num("limits.max_turns"), stale_claim_hours: num("limits.stale_claim_hours"),
+      max_bounces: num("limits.max_bounces"), max_attempts: num("limits.max_attempts") },
   };
   return { policy, sources, errors };
 }
 
-/** A gate names a hub transition `<kind>.<status>`; other reserved entries (deploy.production, publish…) are free-form. */
+/** A gate names a hub transition `<kind>.<status>`, one edge `<kind>.<from>><to>`, or an action (ACTIONS); other
+ * reserved entries (deploy.production, publish…) are free-form. */
 function transitionProblem(t: string): string[] {
-  const [kind, status] = t.split(".");
-  if (!Object.hasOwn(FLOWS, kind)) return [];
-  return Object.hasOwn(FLOWS[kind as Kind], status ?? "") ? [] : [`'${t}': ${kind} has no status '${status}'`];
+  const [kind, step] = t.split(".");
+  if (!Object.hasOwn(FLOWS, kind) || ACTIONS.has(t)) return [];
+  const flow = FLOWS[kind as Kind], [from, to] = (step ?? "").split(">");
+  if (to === undefined) return Object.hasOwn(flow, from) ? [] : [`'${t}': ${kind} has no status '${from}'`];
+  return (flow[from] ?? []).includes(to) ? [] : [`'${t}': ${kind} can't go from '${from}' to '${to}'`];
 }
 
 export function resolvePolicy(root: string, crewDir: string, role: string | null = null, team: string | null = null): Resolved {
-  const { layers, errors, hints } = loadLayers(root, crewDir, role, team);
-  const r = resolveLayers(layers);
-  return { policy: r.policy, sources: r.sources, errors: [...errors, ...r.errors], hints, role, team };
+  const { layers, errors, hints, custom, charters, teams } = loadLayers(root, crewDir, role, team);
+  const roles = [...ROLES, ...custom];
+  const r = resolveLayers(layers, roles);
+  if (role && !roles.includes(role)) errors.push(`role '${role}' is not a role (${roles.join(", ")})`);
+  return { policy: r.policy, sources: r.sources, errors: [...errors, ...r.errors], hints, role, team, roles, charters, teams };
 }
 
 /** Why a transition needs a named human approval, or null. */

@@ -24,3 +24,4 @@ Slice of G-003 (Agent team): Developer agent — resume, checkpoint, learn, hand
 
 ## Notes
 - 2026-10-23: triaged from G-003 breakdown
+- 2026-10-23: T5: developer.md (assigned-only start, takeover, commit per task, fixes from review/QA) (branch feat/team-dev-qa)

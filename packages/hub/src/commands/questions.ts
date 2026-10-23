@@ -2,10 +2,10 @@
  * An open, blocking question on a document stops that document moving forward — nothing else. */
 import { randomBytes } from "node:crypto";
 import type { LedgerEvent } from "../core/ledger.js";
-import { ROLES } from "../core/model.js";
 import type { Store } from "../core/store.js";
 import { fail, kindOf } from "../core/text.js";
 import { learn } from "./knowledge.js";
+import { notify } from "./autonomy.js";
 
 export interface Question { id: string; ref: string | null; to: string; text: string; by: string; run: string; ts: string;
   blocking: boolean; escalation: boolean; answer: { text: string; by: string; ts: string } | null }
@@ -37,11 +37,13 @@ export function ask(store: Store, ref: string | undefined, to: string, text: str
     if (!kindOf(id)) fail(`Unrecognised ID '${id}'.`);
     store.find(id);
   }
-  if (!(ROLES as readonly string[]).includes(to)) fail(`--to must be one of ${ROLES.join(", ")}.`);
+  const roles = store.policy.roles;
+  if (!roles.includes(to)) fail(`--to must be one of ${roles.join(", ")}.`);
   if (!text.trim()) fail("Ask a question.");
   const qid = `Q-${randomBytes(3).toString("hex")}`;
   store.ledger.record("ask", id ?? null, { qid, to, text, ...(o.fyi ? { blocking: false } : {}), ...(o.escalation ? { escalation: true } : {}) });
   store.say(`${qid} → ${to}${id ? ` about ${id}` : ""}${o.fyi ? "" : id ? ` (blocks ${id} until answered)` : ""}`);
+  if (o.escalation || to === "executive") notify(store, "escalation", id ?? null, `${qid}: ${text}`, qid);
   return qid;
 }
 
@@ -61,6 +63,12 @@ export function answer(store: Store, qid: string, text: string, o: AnswerOptions
   if (!text.trim()) fail("Give the answer.");
   if ((q.escalation || q.to === "executive") && !o.approvedBy) {
     fail(`${q.id} is an escalation to the ${q.to}: a human answers it with \`crew.mjs answer ${q.id} "…" --approved-by <name>\` (agents can't).`);
+  }
+  const who = store.ledger.who;
+  if (!o.approvedBy && who.run === q.run) fail(`${q.id} was asked by this run; the ${q.to} answers it, not the asker.`);
+  if (!o.approvedBy && who.role !== q.to) {
+    fail(`${q.id} is for the ${q.to} role; this run is ${who.role ? `the ${who.role} role` : "in no role"} (CREW_ROLE). `
+      + "A human can answer for the role with --approved-by <name>.");
   }
   store.ledger.record("answer", q.ref, { qid: q.id, text, ...(o.approvedBy ? { approved_by: o.approvedBy } : {}) });
   store.say(`${q.id} answered${q.ref ? ` — ${q.ref} is unblocked` : ""}`);

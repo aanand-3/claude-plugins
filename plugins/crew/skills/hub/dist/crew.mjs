@@ -98,13 +98,13 @@ var require_identity = __commonJS({
 var require_visit = __commonJS({
   "node_modules/yaml/dist/visit.js"(exports) {
     "use strict";
-    var identity = require_identity();
+    var identity2 = require_identity();
     var BREAK = /* @__PURE__ */ Symbol("break visit");
     var SKIP = /* @__PURE__ */ Symbol("skip children");
     var REMOVE = /* @__PURE__ */ Symbol("remove node");
     function visit(node, visitor) {
       const visitor_ = initVisitor(visitor);
-      if (identity.isDocument(node)) {
+      if (identity2.isDocument(node)) {
         const cd = visit_(null, node.contents, visitor_, Object.freeze([node]));
         if (cd === REMOVE)
           node.contents = null;
@@ -116,12 +116,12 @@ var require_visit = __commonJS({
     visit.REMOVE = REMOVE;
     function visit_(key, node, visitor, path) {
       const ctrl = callVisitor(key, node, visitor, path);
-      if (identity.isNode(ctrl) || identity.isPair(ctrl)) {
+      if (identity2.isNode(ctrl) || identity2.isPair(ctrl)) {
         replaceNode(key, path, ctrl);
         return visit_(key, ctrl, visitor, path);
       }
       if (typeof ctrl !== "symbol") {
-        if (identity.isCollection(node)) {
+        if (identity2.isCollection(node)) {
           path = Object.freeze(path.concat(node));
           for (let i = 0; i < node.items.length; ++i) {
             const ci = visit_(i, node.items[i], visitor, path);
@@ -134,7 +134,7 @@ var require_visit = __commonJS({
               i -= 1;
             }
           }
-        } else if (identity.isPair(node)) {
+        } else if (identity2.isPair(node)) {
           path = Object.freeze(path.concat(node));
           const ck = visit_("key", node.key, visitor, path);
           if (ck === BREAK)
@@ -152,7 +152,7 @@ var require_visit = __commonJS({
     }
     async function visitAsync(node, visitor) {
       const visitor_ = initVisitor(visitor);
-      if (identity.isDocument(node)) {
+      if (identity2.isDocument(node)) {
         const cd = await visitAsync_(null, node.contents, visitor_, Object.freeze([node]));
         if (cd === REMOVE)
           node.contents = null;
@@ -164,12 +164,12 @@ var require_visit = __commonJS({
     visitAsync.REMOVE = REMOVE;
     async function visitAsync_(key, node, visitor, path) {
       const ctrl = await callVisitor(key, node, visitor, path);
-      if (identity.isNode(ctrl) || identity.isPair(ctrl)) {
+      if (identity2.isNode(ctrl) || identity2.isPair(ctrl)) {
         replaceNode(key, path, ctrl);
         return visitAsync_(key, ctrl, visitor, path);
       }
       if (typeof ctrl !== "symbol") {
-        if (identity.isCollection(node)) {
+        if (identity2.isCollection(node)) {
           path = Object.freeze(path.concat(node));
           for (let i = 0; i < node.items.length; ++i) {
             const ci = await visitAsync_(i, node.items[i], visitor, path);
@@ -182,7 +182,7 @@ var require_visit = __commonJS({
               i -= 1;
             }
           }
-        } else if (identity.isPair(node)) {
+        } else if (identity2.isPair(node)) {
           path = Object.freeze(path.concat(node));
           const ck = await visitAsync_("key", node.key, visitor, path);
           if (ck === BREAK)
@@ -219,31 +219,31 @@ var require_visit = __commonJS({
     function callVisitor(key, node, visitor, path) {
       if (typeof visitor === "function")
         return visitor(key, node, path);
-      if (identity.isMap(node))
+      if (identity2.isMap(node))
         return visitor.Map?.(key, node, path);
-      if (identity.isSeq(node))
+      if (identity2.isSeq(node))
         return visitor.Seq?.(key, node, path);
-      if (identity.isPair(node))
+      if (identity2.isPair(node))
         return visitor.Pair?.(key, node, path);
-      if (identity.isScalar(node))
+      if (identity2.isScalar(node))
         return visitor.Scalar?.(key, node, path);
-      if (identity.isAlias(node))
+      if (identity2.isAlias(node))
         return visitor.Alias?.(key, node, path);
       return void 0;
     }
     function replaceNode(key, path, node) {
       const parent = path[path.length - 1];
-      if (identity.isCollection(parent)) {
+      if (identity2.isCollection(parent)) {
         parent.items[key] = node;
-      } else if (identity.isPair(parent)) {
+      } else if (identity2.isPair(parent)) {
         if (key === "key")
           parent.key = node;
         else
           parent.value = node;
-      } else if (identity.isDocument(parent)) {
+      } else if (identity2.isDocument(parent)) {
         parent.contents = node;
       } else {
-        const pt = identity.isAlias(parent) ? "alias" : "scalar";
+        const pt = identity2.isAlias(parent) ? "alias" : "scalar";
         throw new Error(`Cannot replace node with ${pt} parent`);
       }
     }
@@ -256,7 +256,7 @@ var require_visit = __commonJS({
 var require_directives = __commonJS({
   "node_modules/yaml/dist/doc/directives.js"(exports) {
     "use strict";
-    var identity = require_identity();
+    var identity2 = require_identity();
     var visit = require_visit();
     var escapeChars = {
       "!": "%21",
@@ -399,10 +399,10 @@ var require_directives = __commonJS({
         const lines = this.yaml.explicit ? [`%YAML ${this.yaml.version || "1.2"}`] : [];
         const tagEntries = Object.entries(this.tags);
         let tagNames;
-        if (doc && tagEntries.length > 0 && identity.isNode(doc.contents)) {
+        if (doc && tagEntries.length > 0 && identity2.isNode(doc.contents)) {
           const tags = {};
           visit.visit(doc.contents, (_key, node) => {
-            if (identity.isNode(node) && node.tag)
+            if (identity2.isNode(node) && node.tag)
               tags[node.tag] = true;
           });
           tagNames = Object.keys(tags);
@@ -427,7 +427,7 @@ var require_directives = __commonJS({
 var require_anchors = __commonJS({
   "node_modules/yaml/dist/doc/anchors.js"(exports) {
     "use strict";
-    var identity = require_identity();
+    var identity2 = require_identity();
     var visit = require_visit();
     function anchorIsValid(anchor) {
       if (/[\x00-\x19\s,[\]{}]/.test(anchor)) {
@@ -474,7 +474,7 @@ var require_anchors = __commonJS({
         setAnchors: () => {
           for (const source of aliasObjects) {
             const ref = sourceObjects.get(source);
-            if (typeof ref === "object" && ref.anchor && (identity.isScalar(ref.node) || identity.isCollection(ref.node))) {
+            if (typeof ref === "object" && ref.anchor && (identity2.isScalar(ref.node) || identity2.isCollection(ref.node))) {
               ref.node.anchor = ref.anchor;
             } else {
               const error = new Error("Failed to resolve repeated object (this should not happen)");
@@ -547,12 +547,12 @@ var require_applyReviver = __commonJS({
 var require_toJS = __commonJS({
   "node_modules/yaml/dist/nodes/toJS.js"(exports) {
     "use strict";
-    var identity = require_identity();
+    var identity2 = require_identity();
     function toJS(value, arg, ctx) {
       if (Array.isArray(value))
         return value.map((v, i) => toJS(v, String(i), ctx));
       if (value && typeof value.toJSON === "function") {
-        if (!ctx || !identity.hasAnchor(value))
+        if (!ctx || !identity2.hasAnchor(value))
           return value.toJSON(arg, ctx);
         const data = { aliasCount: 0, count: 1, res: void 0 };
         ctx.anchors.set(value, data);
@@ -578,11 +578,11 @@ var require_Node = __commonJS({
   "node_modules/yaml/dist/nodes/Node.js"(exports) {
     "use strict";
     var applyReviver = require_applyReviver();
-    var identity = require_identity();
+    var identity2 = require_identity();
     var toJS = require_toJS();
     var NodeBase = class {
       constructor(type) {
-        Object.defineProperty(this, identity.NODE_TYPE, { value: type });
+        Object.defineProperty(this, identity2.NODE_TYPE, { value: type });
       }
       /** Create a copy of this node.  */
       clone() {
@@ -593,7 +593,7 @@ var require_Node = __commonJS({
       }
       /** A plain JavaScript representation of this node. */
       toJS(doc, { mapAsMap, maxAliasCount, onAnchor, reviver } = {}) {
-        if (!identity.isDocument(doc))
+        if (!identity2.isDocument(doc))
           throw new TypeError("A document argument is required");
         const ctx = {
           anchors: /* @__PURE__ */ new Map(),
@@ -620,12 +620,12 @@ var require_Alias = __commonJS({
     "use strict";
     var anchors = require_anchors();
     var visit = require_visit();
-    var identity = require_identity();
+    var identity2 = require_identity();
     var Node = require_Node();
     var toJS = require_toJS();
     var Alias = class extends Node.NodeBase {
       constructor(source) {
-        super(identity.ALIAS);
+        super(identity2.ALIAS);
         this.source = source;
         Object.defineProperty(this, "tag", {
           set() {
@@ -647,7 +647,7 @@ var require_Alias = __commonJS({
           nodes = [];
           visit.visit(doc, {
             Node: (_key, node) => {
-              if (identity.isAlias(node) || identity.hasAnchor(node))
+              if (identity2.isAlias(node) || identity2.hasAnchor(node))
                 nodes.push(node);
             }
           });
@@ -707,11 +707,11 @@ var require_Alias = __commonJS({
       }
     };
     function getAliasCount(doc, node, anchors2) {
-      if (identity.isAlias(node)) {
+      if (identity2.isAlias(node)) {
         const source = node.resolve(doc);
         const anchor = anchors2 && source && anchors2.get(source);
         return anchor ? anchor.count * anchor.aliasCount : 0;
-      } else if (identity.isCollection(node)) {
+      } else if (identity2.isCollection(node)) {
         let count = 0;
         for (const item of node.items) {
           const c = getAliasCount(doc, item, anchors2);
@@ -719,7 +719,7 @@ var require_Alias = __commonJS({
             count = c;
         }
         return count;
-      } else if (identity.isPair(node)) {
+      } else if (identity2.isPair(node)) {
         const kc = getAliasCount(doc, node.key, anchors2);
         const vc = getAliasCount(doc, node.value, anchors2);
         return Math.max(kc, vc);
@@ -734,13 +734,13 @@ var require_Alias = __commonJS({
 var require_Scalar = __commonJS({
   "node_modules/yaml/dist/nodes/Scalar.js"(exports) {
     "use strict";
-    var identity = require_identity();
+    var identity2 = require_identity();
     var Node = require_Node();
     var toJS = require_toJS();
     var isScalarValue = (value) => !value || typeof value !== "function" && typeof value !== "object";
     var Scalar = class extends Node.NodeBase {
       constructor(value) {
-        super(identity.SCALAR);
+        super(identity2.SCALAR);
         this.value = value;
       }
       toJSON(arg, ctx) {
@@ -765,7 +765,7 @@ var require_createNode = __commonJS({
   "node_modules/yaml/dist/doc/createNode.js"(exports) {
     "use strict";
     var Alias = require_Alias();
-    var identity = require_identity();
+    var identity2 = require_identity();
     var Scalar = require_Scalar();
     var defaultTagPrefix = "tag:yaml.org,2002:";
     function findTagObject(value, tagName, tags) {
@@ -779,12 +779,12 @@ var require_createNode = __commonJS({
       return tags.find((t) => t.identify?.(value) && !t.format);
     }
     function createNode(value, tagName, ctx) {
-      if (identity.isDocument(value))
+      if (identity2.isDocument(value))
         value = value.contents;
-      if (identity.isNode(value))
+      if (identity2.isNode(value))
         return value;
-      if (identity.isPair(value)) {
-        const map = ctx.schema[identity.MAP].createNode?.(ctx.schema, null, ctx);
+      if (identity2.isPair(value)) {
+        const map = ctx.schema[identity2.MAP].createNode?.(ctx.schema, null, ctx);
         map.items.push(value);
         return map;
       }
@@ -816,7 +816,7 @@ var require_createNode = __commonJS({
             ref.node = node2;
           return node2;
         }
-        tagObj = value instanceof Map ? schema[identity.MAP] : Symbol.iterator in Object(value) ? schema[identity.SEQ] : schema[identity.MAP];
+        tagObj = value instanceof Map ? schema[identity2.MAP] : Symbol.iterator in Object(value) ? schema[identity2.SEQ] : schema[identity2.MAP];
       }
       if (onTagObj) {
         onTagObj(tagObj);
@@ -840,7 +840,7 @@ var require_Collection = __commonJS({
   "node_modules/yaml/dist/nodes/Collection.js"(exports) {
     "use strict";
     var createNode = require_createNode();
-    var identity = require_identity();
+    var identity2 = require_identity();
     var Node = require_Node();
     function collectionFromPath(schema, path, value) {
       let v = value;
@@ -884,7 +884,7 @@ var require_Collection = __commonJS({
         const copy = Object.create(Object.getPrototypeOf(this), Object.getOwnPropertyDescriptors(this));
         if (schema)
           copy.schema = schema;
-        copy.items = copy.items.map((it) => identity.isNode(it) || identity.isPair(it) ? it.clone(schema) : it);
+        copy.items = copy.items.map((it) => identity2.isNode(it) || identity2.isPair(it) ? it.clone(schema) : it);
         if (this.range)
           copy.range = this.range.slice();
         return copy;
@@ -900,7 +900,7 @@ var require_Collection = __commonJS({
         else {
           const [key, ...rest] = path;
           const node = this.get(key, true);
-          if (identity.isCollection(node))
+          if (identity2.isCollection(node))
             node.addIn(rest, value);
           else if (node === void 0 && this.schema)
             this.set(key, collectionFromPath(this.schema, rest, value));
@@ -917,7 +917,7 @@ var require_Collection = __commonJS({
         if (rest.length === 0)
           return this.delete(key);
         const node = this.get(key, true);
-        if (identity.isCollection(node))
+        if (identity2.isCollection(node))
           return node.deleteIn(rest);
         else
           throw new Error(`Expected YAML collection at ${key}. Remaining path: ${rest}`);
@@ -931,16 +931,16 @@ var require_Collection = __commonJS({
         const [key, ...rest] = path;
         const node = this.get(key, true);
         if (rest.length === 0)
-          return !keepScalar && identity.isScalar(node) ? node.value : node;
+          return !keepScalar && identity2.isScalar(node) ? node.value : node;
         else
-          return identity.isCollection(node) ? node.getIn(rest, keepScalar) : void 0;
+          return identity2.isCollection(node) ? node.getIn(rest, keepScalar) : void 0;
       }
       hasAllNullValues(allowScalar) {
         return this.items.every((node) => {
-          if (!identity.isPair(node))
+          if (!identity2.isPair(node))
             return false;
           const n = node.value;
-          return n == null || allowScalar && identity.isScalar(n) && n.value == null && !n.commentBefore && !n.comment && !n.tag;
+          return n == null || allowScalar && identity2.isScalar(n) && n.value == null && !n.commentBefore && !n.comment && !n.tag;
         });
       }
       /**
@@ -951,7 +951,7 @@ var require_Collection = __commonJS({
         if (rest.length === 0)
           return this.has(key);
         const node = this.get(key, true);
-        return identity.isCollection(node) ? node.hasIn(rest) : false;
+        return identity2.isCollection(node) ? node.hasIn(rest) : false;
       }
       /**
        * Sets a value in this collection. For `!!set`, `value` needs to be a
@@ -963,7 +963,7 @@ var require_Collection = __commonJS({
           this.set(key, value);
         } else {
           const node = this.get(key, true);
-          if (identity.isCollection(node))
+          if (identity2.isCollection(node))
             node.setIn(rest, value);
           else if (node === void 0 && this.schema)
             this.set(key, collectionFromPath(this.schema, rest, value));
@@ -1419,7 +1419,7 @@ var require_stringify = __commonJS({
   "node_modules/yaml/dist/stringify/stringify.js"(exports) {
     "use strict";
     var anchors = require_anchors();
-    var identity = require_identity();
+    var identity2 = require_identity();
     var stringifyComment = require_stringifyComment();
     var stringifyString = require_stringifyString();
     function createStringifyContext(doc, options) {
@@ -1472,7 +1472,7 @@ var require_stringify = __commonJS({
       }
       let tagObj = void 0;
       let obj;
-      if (identity.isScalar(item)) {
+      if (identity2.isScalar(item)) {
         obj = item.value;
         let match = tags.filter((t) => t.identify?.(obj));
         if (match.length > 1) {
@@ -1495,7 +1495,7 @@ var require_stringify = __commonJS({
       if (!doc.directives)
         return "";
       const props = [];
-      const anchor = (identity.isScalar(node) || identity.isCollection(node)) && node.anchor;
+      const anchor = (identity2.isScalar(node) || identity2.isCollection(node)) && node.anchor;
       if (anchor && anchors.anchorIsValid(anchor)) {
         anchors$1.add(anchor);
         props.push(`&${anchor}`);
@@ -1506,9 +1506,9 @@ var require_stringify = __commonJS({
       return props.join(" ");
     }
     function stringify2(item, ctx, onComment, onChompKeep) {
-      if (identity.isPair(item))
+      if (identity2.isPair(item))
         return item.toString(ctx, onComment, onChompKeep);
-      if (identity.isAlias(item)) {
+      if (identity2.isAlias(item)) {
         if (ctx.doc.directives)
           return item.toString(ctx);
         if (ctx.resolvedAliases?.has(item)) {
@@ -1522,15 +1522,15 @@ var require_stringify = __commonJS({
         }
       }
       let tagObj = void 0;
-      const node = identity.isNode(item) ? item : ctx.doc.createNode(item, { onTagObj: (o) => tagObj = o });
+      const node = identity2.isNode(item) ? item : ctx.doc.createNode(item, { onTagObj: (o) => tagObj = o });
       tagObj ?? (tagObj = getTagObject(ctx.doc.schema.tags, node));
       const props = stringifyProps(node, tagObj, ctx);
       if (props.length > 0)
         ctx.indentAtStart = (ctx.indentAtStart ?? 0) + props.length + 1;
-      const str3 = typeof tagObj.stringify === "function" ? tagObj.stringify(node, ctx, onComment, onChompKeep) : identity.isScalar(node) ? stringifyString.stringifyString(node, ctx, onComment, onChompKeep) : node.toString(ctx, onComment, onChompKeep);
+      const str3 = typeof tagObj.stringify === "function" ? tagObj.stringify(node, ctx, onComment, onChompKeep) : identity2.isScalar(node) ? stringifyString.stringifyString(node, ctx, onComment, onChompKeep) : node.toString(ctx, onComment, onChompKeep);
       if (!props)
         return str3;
-      return identity.isScalar(node) || str3[0] === "{" || str3[0] === "[" ? `${props} ${str3}` : `${props}
+      return identity2.isScalar(node) || str3[0] === "{" || str3[0] === "[" ? `${props} ${str3}` : `${props}
 ${ctx.indent}${str3}`;
     }
     exports.createStringifyContext = createStringifyContext;
@@ -1542,23 +1542,23 @@ ${ctx.indent}${str3}`;
 var require_stringifyPair = __commonJS({
   "node_modules/yaml/dist/stringify/stringifyPair.js"(exports) {
     "use strict";
-    var identity = require_identity();
+    var identity2 = require_identity();
     var Scalar = require_Scalar();
     var stringify2 = require_stringify();
     var stringifyComment = require_stringifyComment();
     function stringifyPair({ key, value }, ctx, onComment, onChompKeep) {
       const { allNullValues, doc, indent, indentStep, options: { commentString, indentSeq, simpleKeys } } = ctx;
-      let keyComment = identity.isNode(key) && key.comment || null;
+      let keyComment = identity2.isNode(key) && key.comment || null;
       if (simpleKeys) {
         if (keyComment) {
           throw new Error("With simple keys, key nodes cannot have comments");
         }
-        if (identity.isCollection(key) || !identity.isNode(key) && typeof key === "object") {
+        if (identity2.isCollection(key) || !identity2.isNode(key) && typeof key === "object") {
           const msg = "With simple keys, collection cannot be used as a key value";
           throw new Error(msg);
         }
       }
-      let explicitKey = !simpleKeys && (!key || keyComment && value == null && !ctx.inFlow || identity.isCollection(key) || (identity.isScalar(key) ? key.type === Scalar.Scalar.BLOCK_FOLDED || key.type === Scalar.Scalar.BLOCK_LITERAL : typeof key === "object"));
+      let explicitKey = !simpleKeys && (!key || keyComment && value == null && !ctx.inFlow || identity2.isCollection(key) || (identity2.isScalar(key) ? key.type === Scalar.Scalar.BLOCK_FOLDED || key.type === Scalar.Scalar.BLOCK_LITERAL : typeof key === "object"));
       ctx = Object.assign({}, ctx, {
         allNullValues: false,
         implicitKey: !explicitKey && (simpleKeys || !allNullValues),
@@ -1599,7 +1599,7 @@ ${indent}:`;
           str3 += stringifyComment.lineComment(str3, ctx.indent, commentString(keyComment));
       }
       let vsb, vcb, valueComment;
-      if (identity.isNode(value)) {
+      if (identity2.isNode(value)) {
         vsb = !!value.spaceBefore;
         vcb = value.commentBefore;
         valueComment = value.comment;
@@ -1611,10 +1611,10 @@ ${indent}:`;
           value = doc.createNode(value);
       }
       ctx.implicitKey = false;
-      if (!explicitKey && !keyComment && identity.isScalar(value))
+      if (!explicitKey && !keyComment && identity2.isScalar(value))
         ctx.indentAtStart = str3.length + 1;
       chompKeep = false;
-      if (!indentSeq && indentStep.length >= 2 && !ctx.inFlow && !explicitKey && identity.isSeq(value) && !value.flow && !value.tag && !value.anchor) {
+      if (!indentSeq && indentStep.length >= 2 && !ctx.inFlow && !explicitKey && identity2.isSeq(value) && !value.flow && !value.tag && !value.anchor) {
         ctx.indent = ctx.indent.substring(2);
       }
       let valueCommentDone = false;
@@ -1634,7 +1634,7 @@ ${stringifyComment.indentComment(cs, ctx.indent)}`;
           ws += `
 ${ctx.indent}`;
         }
-      } else if (!explicitKey && identity.isCollection(value)) {
+      } else if (!explicitKey && identity2.isCollection(value)) {
         const vs0 = valueStr[0];
         const nl0 = valueStr.indexOf("\n");
         const hasNewline = nl0 !== -1;
@@ -1697,7 +1697,7 @@ var require_log = __commonJS({
 var require_merge = __commonJS({
   "node_modules/yaml/dist/schema/yaml-1.1/merge.js"(exports) {
     "use strict";
-    var identity = require_identity();
+    var identity2 = require_identity();
     var Scalar = require_Scalar();
     var MERGE_KEY = "<<";
     var merge = {
@@ -1710,10 +1710,10 @@ var require_merge = __commonJS({
       }),
       stringify: () => MERGE_KEY
     };
-    var isMergeKey = (ctx, key) => (merge.identify(key) || identity.isScalar(key) && (!key.type || key.type === Scalar.Scalar.PLAIN) && merge.identify(key.value)) && ctx?.doc.schema.tags.some((tag) => tag.tag === merge.tag && tag.default);
+    var isMergeKey = (ctx, key) => (merge.identify(key) || identity2.isScalar(key) && (!key.type || key.type === Scalar.Scalar.PLAIN) && merge.identify(key.value)) && ctx?.doc.schema.tags.some((tag) => tag.tag === merge.tag && tag.default);
     function addMergeToJSMap(ctx, map, value) {
       const source = resolveAliasValue(ctx, value);
-      if (identity.isSeq(source))
+      if (identity2.isSeq(source))
         for (const it of source.items)
           mergeValue(ctx, map, it);
       else if (Array.isArray(source))
@@ -1724,7 +1724,7 @@ var require_merge = __commonJS({
     }
     function mergeValue(ctx, map, value) {
       const source = resolveAliasValue(ctx, value);
-      if (!identity.isMap(source))
+      if (!identity2.isMap(source))
         throw new Error("Merge sources must be maps or map aliases");
       const srcMap = source.toJSON(null, ctx, Map);
       for (const [key, value2] of srcMap) {
@@ -1745,7 +1745,7 @@ var require_merge = __commonJS({
       return map;
     }
     function resolveAliasValue(ctx, value) {
-      return ctx && identity.isAlias(value) ? value.resolve(ctx.doc, ctx) : value;
+      return ctx && identity2.isAlias(value) ? value.resolve(ctx.doc, ctx) : value;
     }
     exports.addMergeToJSMap = addMergeToJSMap;
     exports.isMergeKey = isMergeKey;
@@ -1760,10 +1760,10 @@ var require_addPairToJSMap = __commonJS({
     var log2 = require_log();
     var merge = require_merge();
     var stringify2 = require_stringify();
-    var identity = require_identity();
+    var identity2 = require_identity();
     var toJS = require_toJS();
     function addPairToJSMap(ctx, map, { key, value }) {
-      if (identity.isNode(key) && key.addToJSMap)
+      if (identity2.isNode(key) && key.addToJSMap)
         key.addToJSMap(ctx, map, value);
       else if (merge.isMergeKey(ctx, key))
         merge.addMergeToJSMap(ctx, map, value);
@@ -1794,7 +1794,7 @@ var require_addPairToJSMap = __commonJS({
         return "";
       if (typeof jsKey !== "object")
         return String(jsKey);
-      if (identity.isNode(key) && ctx?.doc) {
+      if (identity2.isNode(key) && ctx?.doc) {
         const strCtx = stringify2.createStringifyContext(ctx.doc, {});
         strCtx.anchors = /* @__PURE__ */ new Set();
         for (const node of ctx.anchors.keys())
@@ -1824,7 +1824,7 @@ var require_Pair = __commonJS({
     var createNode = require_createNode();
     var stringifyPair = require_stringifyPair();
     var addPairToJSMap = require_addPairToJSMap();
-    var identity = require_identity();
+    var identity2 = require_identity();
     function createPair(key, value, ctx) {
       const k = createNode.createNode(key, void 0, ctx);
       const v = createNode.createNode(value, void 0, ctx);
@@ -1832,15 +1832,15 @@ var require_Pair = __commonJS({
     }
     var Pair = class _Pair {
       constructor(key, value = null) {
-        Object.defineProperty(this, identity.NODE_TYPE, { value: identity.PAIR });
+        Object.defineProperty(this, identity2.NODE_TYPE, { value: identity2.PAIR });
         this.key = key;
         this.value = value;
       }
       clone(schema) {
         let { key, value } = this;
-        if (identity.isNode(key))
+        if (identity2.isNode(key))
           key = key.clone(schema);
-        if (identity.isNode(value))
+        if (identity2.isNode(value))
           value = value.clone(schema);
         return new _Pair(key, value);
       }
@@ -1861,7 +1861,7 @@ var require_Pair = __commonJS({
 var require_stringifyCollection = __commonJS({
   "node_modules/yaml/dist/stringify/stringifyCollection.js"(exports) {
     "use strict";
-    var identity = require_identity();
+    var identity2 = require_identity();
     var stringify2 = require_stringify();
     var stringifyComment = require_stringifyComment();
     function stringifyCollection(collection, ctx, options) {
@@ -1877,14 +1877,14 @@ var require_stringifyCollection = __commonJS({
       for (let i = 0; i < items2.length; ++i) {
         const item = items2[i];
         let comment2 = null;
-        if (identity.isNode(item)) {
+        if (identity2.isNode(item)) {
           if (!chompKeep && item.spaceBefore)
             lines.push("");
           addCommentBefore(ctx, lines, item.commentBefore, chompKeep);
           if (item.comment)
             comment2 = item.comment;
-        } else if (identity.isPair(item)) {
-          const ik = identity.isNode(item.key) ? item.key : null;
+        } else if (identity2.isPair(item)) {
+          const ik = identity2.isNode(item.key) ? item.key : null;
           if (ik) {
             if (!chompKeep && ik.spaceBefore)
               lines.push("");
@@ -1932,14 +1932,14 @@ ${indent}${line2}` : "\n";
       for (let i = 0; i < items2.length; ++i) {
         const item = items2[i];
         let comment = null;
-        if (identity.isNode(item)) {
+        if (identity2.isNode(item)) {
           if (item.spaceBefore)
             lines.push("");
           addCommentBefore(ctx, lines, item.commentBefore, false);
           if (item.comment)
             comment = item.comment;
-        } else if (identity.isPair(item)) {
-          const ik = identity.isNode(item.key) ? item.key : null;
+        } else if (identity2.isPair(item)) {
+          const ik = identity2.isNode(item.key) ? item.key : null;
           if (ik) {
             if (ik.spaceBefore)
               lines.push("");
@@ -1947,7 +1947,7 @@ ${indent}${line2}` : "\n";
             if (ik.comment)
               reqNewline = true;
           }
-          const iv = identity.isNode(item.value) ? item.value : null;
+          const iv = identity2.isNode(item.value) ? item.value : null;
           if (iv) {
             if (iv.comment)
               comment = iv.comment;
@@ -2015,16 +2015,16 @@ var require_YAMLMap = __commonJS({
     var stringifyCollection = require_stringifyCollection();
     var addPairToJSMap = require_addPairToJSMap();
     var Collection = require_Collection();
-    var identity = require_identity();
+    var identity2 = require_identity();
     var Pair = require_Pair();
     var Scalar = require_Scalar();
     function findPair(items2, key) {
-      const k = identity.isScalar(key) ? key.value : key;
+      const k = identity2.isScalar(key) ? key.value : key;
       for (const it of items2) {
-        if (identity.isPair(it)) {
+        if (identity2.isPair(it)) {
           if (it.key === key || it.key === k)
             return it;
-          if (identity.isScalar(it.key) && it.key.value === k)
+          if (identity2.isScalar(it.key) && it.key.value === k)
             return it;
         }
       }
@@ -2035,7 +2035,7 @@ var require_YAMLMap = __commonJS({
         return "tag:yaml.org,2002:map";
       }
       constructor(schema) {
-        super(identity.MAP, schema);
+        super(identity2.MAP, schema);
         this.items = [];
       }
       /**
@@ -2073,7 +2073,7 @@ var require_YAMLMap = __commonJS({
        */
       add(pair, overwrite) {
         let _pair;
-        if (identity.isPair(pair))
+        if (identity2.isPair(pair))
           _pair = pair;
         else if (!pair || typeof pair !== "object" || !("key" in pair)) {
           _pair = new Pair.Pair(pair, pair?.value);
@@ -2084,7 +2084,7 @@ var require_YAMLMap = __commonJS({
         if (prev) {
           if (!overwrite)
             throw new Error(`Key ${_pair.key} already set`);
-          if (identity.isScalar(prev.value) && Scalar.isScalarValue(_pair.value))
+          if (identity2.isScalar(prev.value) && Scalar.isScalarValue(_pair.value))
             prev.value.value = _pair.value;
           else
             prev.value = _pair.value;
@@ -2108,7 +2108,7 @@ var require_YAMLMap = __commonJS({
       get(key, keepScalar) {
         const it = findPair(this.items, key);
         const node = it?.value;
-        return (!keepScalar && identity.isScalar(node) ? node.value : node) ?? void 0;
+        return (!keepScalar && identity2.isScalar(node) ? node.value : node) ?? void 0;
       }
       has(key) {
         return !!findPair(this.items, key);
@@ -2133,7 +2133,7 @@ var require_YAMLMap = __commonJS({
         if (!ctx)
           return JSON.stringify(this);
         for (const item of this.items) {
-          if (!identity.isPair(item))
+          if (!identity2.isPair(item))
             throw new Error(`Map items must all be pairs; found ${JSON.stringify(item)} instead`);
         }
         if (!ctx.allNullValues && this.hasAllNullValues(false))
@@ -2156,7 +2156,7 @@ var require_YAMLMap = __commonJS({
 var require_map = __commonJS({
   "node_modules/yaml/dist/schema/common/map.js"(exports) {
     "use strict";
-    var identity = require_identity();
+    var identity2 = require_identity();
     var YAMLMap = require_YAMLMap();
     var map = {
       collection: "map",
@@ -2164,7 +2164,7 @@ var require_map = __commonJS({
       nodeClass: YAMLMap.YAMLMap,
       tag: "tag:yaml.org,2002:map",
       resolve(map2, onError) {
-        if (!identity.isMap(map2))
+        if (!identity2.isMap(map2))
           onError("Expected a mapping for this tag");
         return map2;
       },
@@ -2181,7 +2181,7 @@ var require_YAMLSeq = __commonJS({
     var createNode = require_createNode();
     var stringifyCollection = require_stringifyCollection();
     var Collection = require_Collection();
-    var identity = require_identity();
+    var identity2 = require_identity();
     var Scalar = require_Scalar();
     var toJS = require_toJS();
     var YAMLSeq = class extends Collection.Collection {
@@ -2189,7 +2189,7 @@ var require_YAMLSeq = __commonJS({
         return "tag:yaml.org,2002:seq";
       }
       constructor(schema) {
-        super(identity.SEQ, schema);
+        super(identity2.SEQ, schema);
         this.items = [];
       }
       add(value) {
@@ -2215,7 +2215,7 @@ var require_YAMLSeq = __commonJS({
         if (typeof idx !== "number")
           return void 0;
         const it = this.items[idx];
-        return !keepScalar && identity.isScalar(it) ? it.value : it;
+        return !keepScalar && identity2.isScalar(it) ? it.value : it;
       }
       /**
        * Checks if the collection includes a value with the key `key`.
@@ -2239,7 +2239,7 @@ var require_YAMLSeq = __commonJS({
         if (typeof idx !== "number")
           throw new Error(`Expected a valid index, not ${key}.`);
         const prev = this.items[idx];
-        if (identity.isScalar(prev) && Scalar.isScalarValue(value))
+        if (identity2.isScalar(prev) && Scalar.isScalarValue(value))
           prev.value = value;
         else
           this.items[idx] = value;
@@ -2281,7 +2281,7 @@ var require_YAMLSeq = __commonJS({
       }
     };
     function asItemIndex(key) {
-      let idx = identity.isScalar(key) ? key.value : key;
+      let idx = identity2.isScalar(key) ? key.value : key;
       if (idx && typeof idx === "string")
         idx = Number(idx);
       return typeof idx === "number" && Number.isInteger(idx) && idx >= 0 ? idx : null;
@@ -2294,7 +2294,7 @@ var require_YAMLSeq = __commonJS({
 var require_seq = __commonJS({
   "node_modules/yaml/dist/schema/common/seq.js"(exports) {
     "use strict";
-    var identity = require_identity();
+    var identity2 = require_identity();
     var YAMLSeq = require_YAMLSeq();
     var seq = {
       collection: "seq",
@@ -2302,7 +2302,7 @@ var require_seq = __commonJS({
       nodeClass: YAMLSeq.YAMLSeq,
       tag: "tag:yaml.org,2002:seq",
       resolve(seq2, onError) {
-        if (!identity.isSeq(seq2))
+        if (!identity2.isSeq(seq2))
           onError("Expected a sequence for this tag");
         return seq2;
       },
@@ -2656,17 +2656,17 @@ var require_binary = __commonJS({
 var require_pairs = __commonJS({
   "node_modules/yaml/dist/schema/yaml-1.1/pairs.js"(exports) {
     "use strict";
-    var identity = require_identity();
+    var identity2 = require_identity();
     var Pair = require_Pair();
     var Scalar = require_Scalar();
     var YAMLSeq = require_YAMLSeq();
     function resolvePairs(seq, onError) {
-      if (identity.isSeq(seq)) {
+      if (identity2.isSeq(seq)) {
         for (let i = 0; i < seq.items.length; ++i) {
           let item = seq.items[i];
-          if (identity.isPair(item))
+          if (identity2.isPair(item))
             continue;
-          else if (identity.isMap(item)) {
+          else if (identity2.isMap(item)) {
             if (item.items.length > 1)
               onError("Each pair must have its own sequence indicator");
             const pair = item.items[0] || new Pair.Pair(new Scalar.Scalar(null));
@@ -2680,7 +2680,7 @@ ${cn.comment}` : item.comment;
             }
             item = pair;
           }
-          seq.items[i] = identity.isPair(item) ? item : new Pair.Pair(item);
+          seq.items[i] = identity2.isPair(item) ? item : new Pair.Pair(item);
         }
       } else
         onError("Expected a sequence for this tag");
@@ -2734,7 +2734,7 @@ ${cn.comment}` : item.comment;
 var require_omap = __commonJS({
   "node_modules/yaml/dist/schema/yaml-1.1/omap.js"(exports) {
     "use strict";
-    var identity = require_identity();
+    var identity2 = require_identity();
     var toJS = require_toJS();
     var YAMLMap = require_YAMLMap();
     var YAMLSeq = require_YAMLSeq();
@@ -2761,7 +2761,7 @@ var require_omap = __commonJS({
           ctx.onCreate(map);
         for (const pair of this.items) {
           let key, value;
-          if (identity.isPair(pair)) {
+          if (identity2.isPair(pair)) {
             key = toJS.toJS(pair.key, "", ctx);
             value = toJS.toJS(pair.value, key, ctx);
           } else {
@@ -2791,7 +2791,7 @@ var require_omap = __commonJS({
         const pairs$1 = pairs.resolvePairs(seq, onError);
         const seenKeys = [];
         for (const { key } of pairs$1.items) {
-          if (identity.isScalar(key)) {
+          if (identity2.isScalar(key)) {
             if (seenKeys.includes(key.value)) {
               onError(`Ordered maps must not include duplicate keys: ${key.value}`);
             } else {
@@ -2972,7 +2972,7 @@ var require_int2 = __commonJS({
 var require_set = __commonJS({
   "node_modules/yaml/dist/schema/yaml-1.1/set.js"(exports) {
     "use strict";
-    var identity = require_identity();
+    var identity2 = require_identity();
     var Pair = require_Pair();
     var YAMLMap = require_YAMLMap();
     var YAMLSet = class _YAMLSet extends YAMLMap.YAMLMap {
@@ -2982,7 +2982,7 @@ var require_set = __commonJS({
       }
       add(key) {
         let pair;
-        if (identity.isPair(key))
+        if (identity2.isPair(key))
           pair = key;
         else if (key && typeof key === "object" && "key" in key && "value" in key && key.value === null)
           pair = new Pair.Pair(key.key, null);
@@ -2998,7 +2998,7 @@ var require_set = __commonJS({
        */
       get(key, keepPair) {
         const pair = YAMLMap.findPair(this.items, key);
-        return !keepPair && identity.isPair(pair) ? identity.isScalar(pair.key) ? pair.key.value : pair.key : pair;
+        return !keepPair && identity2.isPair(pair) ? identity2.isScalar(pair.key) ? pair.key.value : pair.key : pair;
       }
       set(key, value) {
         if (typeof value !== "boolean")
@@ -3042,7 +3042,7 @@ var require_set = __commonJS({
       tag: "tag:yaml.org,2002:set",
       createNode: (schema, iterable, ctx) => YAMLSet.from(schema, iterable, ctx),
       resolve(map, onError) {
-        if (identity.isMap(map)) {
+        if (identity2.isMap(map)) {
           if (map.hasAllNullValues(true))
             return Object.assign(new YAMLSet(), map);
           else
@@ -3287,7 +3287,7 @@ var require_tags = __commonJS({
 var require_Schema = __commonJS({
   "node_modules/yaml/dist/schema/Schema.js"(exports) {
     "use strict";
-    var identity = require_identity();
+    var identity2 = require_identity();
     var map = require_map();
     var seq = require_seq();
     var string = require_string();
@@ -3300,9 +3300,9 @@ var require_Schema = __commonJS({
         this.knownTags = resolveKnownTags ? tags.coreKnownTags : {};
         this.tags = tags.getTags(customTags, this.name, merge);
         this.toStringOptions = toStringDefaults ?? null;
-        Object.defineProperty(this, identity.MAP, { value: map.map });
-        Object.defineProperty(this, identity.SCALAR, { value: string.string });
-        Object.defineProperty(this, identity.SEQ, { value: seq.seq });
+        Object.defineProperty(this, identity2.MAP, { value: map.map });
+        Object.defineProperty(this, identity2.SCALAR, { value: string.string });
+        Object.defineProperty(this, identity2.SEQ, { value: seq.seq });
         this.sortMapEntries = typeof sortMapEntries === "function" ? sortMapEntries : sortMapEntries === true ? sortMapEntriesByKey : null;
       }
       clone() {
@@ -3319,7 +3319,7 @@ var require_Schema = __commonJS({
 var require_stringifyDocument = __commonJS({
   "node_modules/yaml/dist/stringify/stringifyDocument.js"(exports) {
     "use strict";
-    var identity = require_identity();
+    var identity2 = require_identity();
     var stringify2 = require_stringify();
     var stringifyComment = require_stringifyComment();
     function stringifyDocument(doc, options) {
@@ -3346,7 +3346,7 @@ var require_stringifyDocument = __commonJS({
       let chompKeep = false;
       let contentComment = null;
       if (doc.contents) {
-        if (identity.isNode(doc.contents)) {
+        if (identity2.isNode(doc.contents)) {
           if (doc.contents.spaceBefore && hasDirectives)
             lines.push("");
           if (doc.contents.commentBefore) {
@@ -3401,7 +3401,7 @@ var require_Document = __commonJS({
     "use strict";
     var Alias = require_Alias();
     var Collection = require_Collection();
-    var identity = require_identity();
+    var identity2 = require_identity();
     var Pair = require_Pair();
     var toJS = require_toJS();
     var Schema = require_Schema();
@@ -3416,7 +3416,7 @@ var require_Document = __commonJS({
         this.comment = null;
         this.errors = [];
         this.warnings = [];
-        Object.defineProperty(this, identity.NODE_TYPE, { value: identity.DOC });
+        Object.defineProperty(this, identity2.NODE_TYPE, { value: identity2.DOC });
         let _replacer = null;
         if (typeof replacer === "function" || Array.isArray(replacer)) {
           _replacer = replacer;
@@ -3452,7 +3452,7 @@ var require_Document = __commonJS({
        */
       clone() {
         const copy = Object.create(_Document.prototype, {
-          [identity.NODE_TYPE]: { value: identity.DOC }
+          [identity2.NODE_TYPE]: { value: identity2.DOC }
         });
         copy.commentBefore = this.commentBefore;
         copy.comment = this.comment;
@@ -3462,7 +3462,7 @@ var require_Document = __commonJS({
         if (this.directives)
           copy.directives = this.directives.clone();
         copy.schema = this.schema.clone();
-        copy.contents = identity.isNode(this.contents) ? this.contents.clone(copy.schema) : this.contents;
+        copy.contents = identity2.isNode(this.contents) ? this.contents.clone(copy.schema) : this.contents;
         if (this.range)
           copy.range = this.range.slice();
         return copy;
@@ -3525,7 +3525,7 @@ var require_Document = __commonJS({
           sourceObjects
         };
         const node = createNode.createNode(value, tag, ctx);
-        if (flow && identity.isCollection(node))
+        if (flow && identity2.isCollection(node))
           node.flow = true;
         setAnchors();
         return node;
@@ -3565,7 +3565,7 @@ var require_Document = __commonJS({
        * `true` (collections are always returned intact).
        */
       get(key, keepScalar) {
-        return identity.isCollection(this.contents) ? this.contents.get(key, keepScalar) : void 0;
+        return identity2.isCollection(this.contents) ? this.contents.get(key, keepScalar) : void 0;
       }
       /**
        * Returns item at `path`, or `undefined` if not found. By default unwraps
@@ -3574,14 +3574,14 @@ var require_Document = __commonJS({
        */
       getIn(path, keepScalar) {
         if (Collection.isEmptyPath(path))
-          return !keepScalar && identity.isScalar(this.contents) ? this.contents.value : this.contents;
-        return identity.isCollection(this.contents) ? this.contents.getIn(path, keepScalar) : void 0;
+          return !keepScalar && identity2.isScalar(this.contents) ? this.contents.value : this.contents;
+        return identity2.isCollection(this.contents) ? this.contents.getIn(path, keepScalar) : void 0;
       }
       /**
        * Checks if the document includes a value with the key `key`.
        */
       has(key) {
-        return identity.isCollection(this.contents) ? this.contents.has(key) : false;
+        return identity2.isCollection(this.contents) ? this.contents.has(key) : false;
       }
       /**
        * Checks if the document includes a value at `path`.
@@ -3589,7 +3589,7 @@ var require_Document = __commonJS({
       hasIn(path) {
         if (Collection.isEmptyPath(path))
           return this.contents !== void 0;
-        return identity.isCollection(this.contents) ? this.contents.hasIn(path) : false;
+        return identity2.isCollection(this.contents) ? this.contents.hasIn(path) : false;
       }
       /**
        * Sets a value in this document. For `!!set`, `value` needs to be a
@@ -3696,7 +3696,7 @@ var require_Document = __commonJS({
       }
     };
     function assertCollection(contents) {
-      if (identity.isCollection(contents))
+      if (identity2.isCollection(contents))
         return true;
       throw new Error("Expected a YAML collection as document contents");
     }
@@ -3967,12 +3967,12 @@ var require_util_flow_indent_check = __commonJS({
 var require_util_map_includes = __commonJS({
   "node_modules/yaml/dist/compose/util-map-includes.js"(exports) {
     "use strict";
-    var identity = require_identity();
+    var identity2 = require_identity();
     function mapIncludes(ctx, items2, search) {
       const { uniqueKeys } = ctx.options;
       if (uniqueKeys === false)
         return false;
-      const isEqual = typeof uniqueKeys === "function" ? uniqueKeys : (a, b) => a === b || identity.isScalar(a) && identity.isScalar(b) && a.value === b.value;
+      const isEqual = typeof uniqueKeys === "function" ? uniqueKeys : (a, b) => a === b || identity2.isScalar(a) && identity2.isScalar(b) && a.value === b.value;
       return items2.some((pair) => isEqual(pair.key, search));
     }
     exports.mapIncludes = mapIncludes;
@@ -4185,7 +4185,7 @@ var require_resolve_end = __commonJS({
 var require_resolve_flow_collection = __commonJS({
   "node_modules/yaml/dist/compose/resolve-flow-collection.js"(exports) {
     "use strict";
-    var identity = require_identity();
+    var identity2 = require_identity();
     var Pair = require_Pair();
     var YAMLMap = require_YAMLMap();
     var YAMLSeq = require_YAMLSeq();
@@ -4264,7 +4264,7 @@ var require_resolve_flow_collection = __commonJS({
             }
             if (prevItemComment) {
               let prev = coll.items[coll.items.length - 1];
-              if (identity.isPair(prev))
+              if (identity2.isPair(prev))
                 prev = prev.value ?? prev.key;
               if (prev.comment)
                 prev.comment += "\n" + prevItemComment;
@@ -4379,7 +4379,7 @@ var require_resolve_flow_collection = __commonJS({
 var require_compose_collection = __commonJS({
   "node_modules/yaml/dist/compose/compose-collection.js"(exports) {
     "use strict";
-    var identity = require_identity();
+    var identity2 = require_identity();
     var Scalar = require_Scalar();
     var YAMLMap = require_YAMLMap();
     var YAMLSeq = require_YAMLSeq();
@@ -4429,7 +4429,7 @@ var require_compose_collection = __commonJS({
       }
       const coll = resolveCollection(CN, ctx, token, onError, tagName, tag);
       const res = tag.resolve?.(coll, (msg) => onError(tagToken, "TAG_RESOLVE_FAILED", msg), ctx.options) ?? coll;
-      const node = identity.isNode(res) ? res : new Scalar.Scalar(res);
+      const node = identity2.isNode(res) ? res : new Scalar.Scalar(res);
       node.range = coll.range;
       node.tag = tagName;
       if (tag?.format)
@@ -4445,13 +4445,13 @@ var require_resolve_block_scalar = __commonJS({
   "node_modules/yaml/dist/compose/resolve-block-scalar.js"(exports) {
     "use strict";
     var Scalar = require_Scalar();
-    function resolveBlockScalar(ctx, scalar, onError) {
-      const start2 = scalar.offset;
-      const header = parseBlockScalarHeader(scalar, ctx.options.strict, onError);
+    function resolveBlockScalar(ctx, scalar2, onError) {
+      const start2 = scalar2.offset;
+      const header = parseBlockScalarHeader(scalar2, ctx.options.strict, onError);
       if (!header)
         return { value: "", type: null, comment: "", range: [start2, start2, start2] };
       const type = header.mode === ">" ? Scalar.Scalar.BLOCK_FOLDED : Scalar.Scalar.BLOCK_LITERAL;
-      const lines = scalar.source ? splitLines(scalar.source) : [];
+      const lines = scalar2.source ? splitLines(scalar2.source) : [];
       let chompStart = lines.length;
       for (let i = lines.length - 1; i >= 0; --i) {
         const content = lines[i][1];
@@ -4463,12 +4463,12 @@ var require_resolve_block_scalar = __commonJS({
       if (chompStart === 0) {
         const value2 = header.chomp === "+" && lines.length > 0 ? "\n".repeat(Math.max(1, lines.length - 1)) : "";
         let end2 = start2 + header.length;
-        if (scalar.source)
-          end2 += scalar.source.length;
+        if (scalar2.source)
+          end2 += scalar2.source.length;
         return { value: value2, type, comment: header.comment, range: [start2, end2, end2] };
       }
-      let trimIndent = scalar.indent + header.indent;
-      let offset = scalar.offset + header.length;
+      let trimIndent = scalar2.indent + header.indent;
+      let offset = scalar2.offset + header.length;
       let contentStart = 0;
       for (let i = 0; i < chompStart; ++i) {
         const [indent, content] = lines[i];
@@ -4546,7 +4546,7 @@ var require_resolve_block_scalar = __commonJS({
         default:
           value += "\n";
       }
-      const end = start2 + header.length + scalar.source.length;
+      const end = start2 + header.length + scalar2.source.length;
       return { value, type, comment: header.comment, range: [start2, end, end] };
     }
     function parseBlockScalarHeader({ offset, props }, strict, onError) {
@@ -4629,8 +4629,8 @@ var require_resolve_flow_scalar = __commonJS({
     "use strict";
     var Scalar = require_Scalar();
     var resolveEnd = require_resolve_end();
-    function resolveFlowScalar(scalar, strict, onError) {
-      const { offset, type, source, end } = scalar;
+    function resolveFlowScalar(scalar2, strict, onError) {
+      const { offset, type, source, end } = scalar2;
       let _type;
       let value;
       const _onError = (rel, code, msg) => onError(offset + rel, code, msg);
@@ -4649,7 +4649,7 @@ var require_resolve_flow_scalar = __commonJS({
           break;
         /* istanbul ignore next should not happen */
         default:
-          onError(scalar, "UNEXPECTED_TOKEN", `Expected a flow scalar value, but found: ${type}`);
+          onError(scalar2, "UNEXPECTED_TOKEN", `Expected a flow scalar value, but found: ${type}`);
           return {
             value: "",
             type: null,
@@ -4847,7 +4847,7 @@ var require_resolve_flow_scalar = __commonJS({
 var require_compose_scalar = __commonJS({
   "node_modules/yaml/dist/compose/compose-scalar.js"(exports) {
     "use strict";
-    var identity = require_identity();
+    var identity2 = require_identity();
     var Scalar = require_Scalar();
     var resolveBlockScalar = require_resolve_block_scalar();
     var resolveFlowScalar = require_resolve_flow_scalar();
@@ -4856,37 +4856,37 @@ var require_compose_scalar = __commonJS({
       const tagName = tagToken ? ctx.directives.tagName(tagToken.source, (msg) => onError(tagToken, "TAG_RESOLVE_FAILED", msg)) : null;
       let tag;
       if (ctx.options.stringKeys && ctx.atKey) {
-        tag = ctx.schema[identity.SCALAR];
+        tag = ctx.schema[identity2.SCALAR];
       } else if (tagName)
         tag = findScalarTagByName(ctx.schema, value, tagName, tagToken, onError);
       else if (token.type === "scalar")
         tag = findScalarTagByTest(ctx, value, token, onError);
       else
-        tag = ctx.schema[identity.SCALAR];
-      let scalar;
+        tag = ctx.schema[identity2.SCALAR];
+      let scalar2;
       try {
         const res = tag.resolve(value, (msg) => onError(tagToken ?? token, "TAG_RESOLVE_FAILED", msg), ctx.options);
-        scalar = identity.isScalar(res) ? res : new Scalar.Scalar(res);
+        scalar2 = identity2.isScalar(res) ? res : new Scalar.Scalar(res);
       } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
         onError(tagToken ?? token, "TAG_RESOLVE_FAILED", msg);
-        scalar = new Scalar.Scalar(value);
+        scalar2 = new Scalar.Scalar(value);
       }
-      scalar.range = range;
-      scalar.source = value;
+      scalar2.range = range;
+      scalar2.source = value;
       if (type)
-        scalar.type = type;
+        scalar2.type = type;
       if (tagName)
-        scalar.tag = tagName;
+        scalar2.tag = tagName;
       if (tag.format)
-        scalar.format = tag.format;
+        scalar2.format = tag.format;
       if (comment)
-        scalar.comment = comment;
-      return scalar;
+        scalar2.comment = comment;
+      return scalar2;
     }
     function findScalarTagByName(schema, value, tagName, tagToken, onError) {
       if (tagName === "!")
-        return schema[identity.SCALAR];
+        return schema[identity2.SCALAR];
       const matchWithTest = [];
       for (const tag of schema.tags) {
         if (!tag.collection && tag.tag === tagName) {
@@ -4905,12 +4905,12 @@ var require_compose_scalar = __commonJS({
         return kt;
       }
       onError(tagToken, "TAG_RESOLVE_FAILED", `Unresolved tag: ${tagName}`, tagName !== "tag:yaml.org,2002:str");
-      return schema[identity.SCALAR];
+      return schema[identity2.SCALAR];
     }
     function findScalarTagByTest({ atKey, directives, schema }, value, token, onError) {
-      const tag = schema.tags.find((tag2) => (tag2.default === true || atKey && tag2.default === "key") && tag2.test?.test(value)) || schema[identity.SCALAR];
+      const tag = schema.tags.find((tag2) => (tag2.default === true || atKey && tag2.default === "key") && tag2.test?.test(value)) || schema[identity2.SCALAR];
       if (schema.compat) {
-        const compat = schema.compat.find((tag2) => tag2.default && tag2.test?.test(value)) ?? schema[identity.SCALAR];
+        const compat = schema.compat.find((tag2) => tag2.default && tag2.test?.test(value)) ?? schema[identity2.SCALAR];
         if (tag.tag !== compat.tag) {
           const ts = directives.tagString(tag.tag);
           const cs = directives.tagString(compat.tag);
@@ -4959,7 +4959,7 @@ var require_compose_node = __commonJS({
   "node_modules/yaml/dist/compose/compose-node.js"(exports) {
     "use strict";
     var Alias = require_Alias();
-    var identity = require_identity();
+    var identity2 = require_identity();
     var composeCollection = require_compose_collection();
     var composeScalar = require_compose_scalar();
     var resolveEnd = require_resolve_end();
@@ -5005,7 +5005,7 @@ var require_compose_node = __commonJS({
       node ?? (node = composeEmptyNode(ctx, token.offset, void 0, null, props, onError));
       if (anchor && node.anchor === "")
         onError(anchor, "BAD_ALIAS", "Anchor cannot be an empty string");
-      if (atKey && ctx.options.stringKeys && (!identity.isScalar(node) || typeof node.value !== "string" || node.tag && node.tag !== "tag:yaml.org,2002:str")) {
+      if (atKey && ctx.options.stringKeys && (!identity2.isScalar(node) || typeof node.value !== "string" || node.tag && node.tag !== "tag:yaml.org,2002:str")) {
         const msg = "With stringKeys, all keys must be strings";
         onError(tag ?? token, "NON_STRING_KEY", msg);
       }
@@ -5111,7 +5111,7 @@ var require_composer = __commonJS({
     var directives = require_directives();
     var Document = require_Document();
     var errors = require_errors();
-    var identity = require_identity();
+    var identity2 = require_identity();
     var composeDoc = require_compose_doc();
     var resolveEnd = require_resolve_end();
     function getErrorPos(src) {
@@ -5173,9 +5173,9 @@ var require_composer = __commonJS({
 ${comment}` : comment;
           } else if (afterEmptyLine || doc.directives.docStart || !dc) {
             doc.commentBefore = comment;
-          } else if (identity.isCollection(dc) && !dc.flow && dc.items.length > 0) {
+          } else if (identity2.isCollection(dc) && !dc.flow && dc.items.length > 0) {
             let it = dc.items[0];
-            if (identity.isPair(it))
+            if (identity2.isPair(it))
               it = it.key;
             const cb = it.commentBefore;
             it.commentBefore = cb ? `${comment}
@@ -6710,37 +6710,37 @@ var require_parser = __commonJS({
           };
         }
       }
-      *scalar(scalar) {
+      *scalar(scalar2) {
         if (this.type === "map-value-ind") {
           const prev = getPrevProps(this.peek(2));
           const start2 = getFirstKeyStartProps(prev);
           let sep2;
-          if (scalar.end) {
-            sep2 = scalar.end;
+          if (scalar2.end) {
+            sep2 = scalar2.end;
             sep2.push(this.sourceToken);
-            delete scalar.end;
+            delete scalar2.end;
           } else
             sep2 = [this.sourceToken];
           const map = {
             type: "block-map",
-            offset: scalar.offset,
-            indent: scalar.indent,
-            items: [{ start: start2, key: scalar, sep: sep2 }]
+            offset: scalar2.offset,
+            indent: scalar2.indent,
+            items: [{ start: start2, key: scalar2, sep: sep2 }]
           };
           this.onKeyLine = true;
           this.stack[this.stack.length - 1] = map;
         } else
-          yield* this.lineEnd(scalar);
+          yield* this.lineEnd(scalar2);
       }
-      *blockScalar(scalar) {
+      *blockScalar(scalar2) {
         switch (this.type) {
           case "space":
           case "comment":
           case "newline":
-            scalar.props.push(this.sourceToken);
+            scalar2.props.push(this.sourceToken);
             return;
           case "scalar":
-            scalar.source = this.source;
+            scalar2.source = this.source;
             this.atNewLine = true;
             this.indent = 0;
             if (this.onNewLine) {
@@ -7223,7 +7223,7 @@ var require_public_api = __commonJS({
     var Document = require_Document();
     var errors = require_errors();
     var log2 = require_log();
-    var identity = require_identity();
+    var identity2 = require_identity();
     var lineCounter = require_line_counter();
     var parser = require_parser();
     function parseOptions(options) {
@@ -7301,7 +7301,7 @@ var require_public_api = __commonJS({
         if (!keepUndefined)
           return void 0;
       }
-      if (identity.isDocument(value) && !_replacer)
+      if (identity2.isDocument(value) && !_replacer)
         return value.toString(options);
       return new Document.Document(value, _replacer, options).toString(options);
     }
@@ -7321,7 +7321,7 @@ var require_dist = __commonJS({
     var Schema = require_Schema();
     var errors = require_errors();
     var Alias = require_Alias();
-    var identity = require_identity();
+    var identity2 = require_identity();
     var Pair = require_Pair();
     var Scalar = require_Scalar();
     var YAMLMap = require_YAMLMap();
@@ -7339,14 +7339,14 @@ var require_dist = __commonJS({
     exports.YAMLParseError = errors.YAMLParseError;
     exports.YAMLWarning = errors.YAMLWarning;
     exports.Alias = Alias.Alias;
-    exports.isAlias = identity.isAlias;
-    exports.isCollection = identity.isCollection;
-    exports.isDocument = identity.isDocument;
-    exports.isMap = identity.isMap;
-    exports.isNode = identity.isNode;
-    exports.isPair = identity.isPair;
-    exports.isScalar = identity.isScalar;
-    exports.isSeq = identity.isSeq;
+    exports.isAlias = identity2.isAlias;
+    exports.isCollection = identity2.isCollection;
+    exports.isDocument = identity2.isDocument;
+    exports.isMap = identity2.isMap;
+    exports.isNode = identity2.isNode;
+    exports.isPair = identity2.isPair;
+    exports.isScalar = identity2.isScalar;
+    exports.isSeq = identity2.isSeq;
     exports.Pair = Pair.Pair;
     exports.Scalar = Scalar.Scalar;
     exports.YAMLMap = YAMLMap.YAMLMap;
@@ -7489,13 +7489,13 @@ function norm(name) {
   return SECTION_ALIASES[n] ?? n;
 }
 function slugify(title) {
-  const words2 = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").split("-").filter(Boolean);
+  const words3 = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").split("-").filter(Boolean);
   const out = [];
-  for (const w of words2) {
+  for (const w of words3) {
     if ([...out, w].join("-").length > 40) break;
     out.push(w);
   }
-  while (out.length < words2.length && out.length && SLUG_STOPWORDS.has(out[out.length - 1])) out.pop();
+  while (out.length < words3.length && out.length && SLUG_STOPWORDS.has(out[out.length - 1])) out.pop();
   return out.join("-") || "untitled";
 }
 function stripComments(text) {
@@ -7534,8 +7534,12 @@ function byKey(key) {
 }
 
 // src/core/git.ts
+var ROOT = null;
+function useRoot(root) {
+  ROOT = root;
+}
 function git(args, check2 = false) {
-  const r = spawnSync("git", args, { encoding: "utf8" });
+  const r = spawnSync("git", ROOT && args[0] !== "-C" ? ["-C", ROOT, ...args] : args, { encoding: "utf8" });
   if (r.status !== 0) {
     if (check2) fail(`git ${args.join(" ")} failed: ${(r.stderr ?? "").trim()}`);
     return null;
@@ -7710,8 +7714,8 @@ ${block}`;
 `);
   }
 };
-function fill(template, fields) {
-  return template.replace(/\{(\w+)\}/g, (_, k) => fields[k] ?? "");
+function fill(template2, fields) {
+  return template2.replace(/\{(\w+)\}/g, (_, k) => fields[k] ?? "");
 }
 function splitSections(text) {
   const parts = text.split(/^## (.+?)\s*$/m);
@@ -7719,8 +7723,8 @@ function splitSections(text) {
   for (let i = 1; i < parts.length; i += 2) sections2.push([parts[i].trim(), parts[i + 1] ?? ""]);
   return [parts[0], sections2];
 }
-function assemble(template, draft) {
-  const [pre, tmplSections] = splitSections(template);
+function assemble(template2, draft) {
+  const [pre, tmplSections] = splitSections(template2);
   let remaining = splitSections(draft)[1];
   const take = (name) => {
     const i = remaining.findIndex(([h]) => norm(name).startsWith(norm(h)) || norm(h).startsWith(norm(name)));
@@ -7753,8 +7757,8 @@ ${body2.trim()}
 }
 
 // src/core/ledger.ts
-import { createHash } from "node:crypto";
-import { appendFileSync, closeSync, existsSync, mkdirSync, openSync, readFileSync, statSync, unlinkSync } from "node:fs";
+import { createHash, randomBytes } from "node:crypto";
+import { appendFileSync, existsSync, linkSync, mkdirSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 var LOCK_WAIT_MS = 5e3;
 var LOCK_STALE_MS = 3e4;
@@ -7764,6 +7768,7 @@ function whoAmI(root) {
     run: process.env.CREW_RUN || `wt:${basename(root)}-${hash}`,
     actor: process.env.CREW_ACTOR || userName() || "unknown",
     role: process.env.CREW_ROLE || null,
+    team: process.env.CREW_TEAM || null,
     worktree: root
   };
 }
@@ -7806,6 +7811,12 @@ var Ledger = class _Ledger {
     }
     return live;
   }
+  /** plan → its current assignment (the last `assign` event: `to` a role, optionally a `team`). */
+  assignments(events = this.events()) {
+    const out = /* @__PURE__ */ new Map();
+    for (const ev of events) if (ev.type === "assign" && ev.ref) out.set(ev.ref, ev);
+    return out;
+  }
   /** ref → the status its last `move` event set. */
   lastStatus(events = this.events()) {
     const out = /* @__PURE__ */ new Map();
@@ -7839,36 +7850,63 @@ var Ledger = class _Ledger {
     if (!this.staged.length) return;
     mkdirSync(dirname(this.path), { recursive: true });
     const lock = `${this.path}.lock`;
-    acquire(lock);
+    const token = acquireLock(lock);
     try {
       const live = this.claims(this.onDisk());
       for (const ev of this.staged.filter((e) => e.type === "claim" && e.ref && !e.force)) {
         const held = live.get(ev.ref);
         if (held && held.run !== ev.run) fail(`${ev.ref} was just claimed by ${held.actor} (${held.run}). Nothing was changed.`);
       }
-      appendFileSync(this.path, this.staged.map((e) => `${JSON.stringify(e)}
+      const torn = existsSync(this.path) && statSync(this.path).size > 0 && !readFileSync(this.path, "utf8").endsWith("\n");
+      appendFileSync(this.path, (torn ? "\n" : "") + this.staged.map((e) => `${JSON.stringify(e)}
 `).join(""));
       this.staged = [];
     } finally {
-      unlinkSync(lock);
+      releaseLock(lock, token);
     }
   }
 };
-function acquire(lock) {
-  const deadline = Date.now() + LOCK_WAIT_MS;
+function acquireLock(lock, waitMs = LOCK_WAIT_MS, staleMs = LOCK_STALE_MS) {
+  const token = `${process.pid}-${randomBytes(6).toString("hex")}`;
+  const deadline = Date.now() + waitMs;
   for (; ; ) {
     try {
-      closeSync(openSync(lock, "wx"));
-      return;
+      writeFileSync(lock, token, { flag: "wx" });
+      return token;
     } catch (e) {
       if (e.code !== "EEXIST") throw e;
-      try {
-        if (Date.now() - statSync(lock).mtimeMs > LOCK_STALE_MS) unlinkSync(lock);
-      } catch {
-      }
+      takeOverIfStale(lock, staleMs, token);
       if (Date.now() > deadline) fail(`The ledger is locked (${lock}). Another crew command is writing; retry.`);
       Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 20);
     }
+  }
+}
+function takeOverIfStale(lock, staleMs, token) {
+  let seen;
+  try {
+    if (Date.now() - statSync(lock).mtimeMs <= staleMs) return;
+    seen = readFileSync(lock, "utf8");
+  } catch {
+    return;
+  }
+  const aside = `${lock}.stale-${token}`;
+  try {
+    renameSync(lock, aside);
+  } catch {
+    return;
+  }
+  if (readFileSync(aside, "utf8") !== seen) {
+    try {
+      linkSync(aside, lock);
+    } catch {
+    }
+  }
+  unlinkSync(aside);
+}
+function releaseLock(lock, token) {
+  try {
+    if (readFileSync(lock, "utf8") === token) unlinkSync(lock);
+  } catch {
   }
 }
 
@@ -7938,14 +7976,14 @@ function linkSupersession(entries) {
   return entries;
 }
 function recall(entries, q) {
-  const words2 = (q.topic ?? "").toLowerCase().split(/\s+/).filter(Boolean);
+  const words3 = (q.topic ?? "").toLowerCase().split(/\s+/).filter(Boolean);
   return entries.filter((e) => {
     if (!q.all && e.supersededBy) return false;
     if (q.type && e.type !== q.type) return false;
-    if (words2.length) {
+    if (words3.length) {
       const text = `${e.title}
 ${stripComments(e.doc.text)}`.toLowerCase();
-      if (!words2.every((w) => text.includes(w))) return false;
+      if (!words3.every((w) => text.includes(w))) return false;
     }
     if (!q.paths?.length && !q.globs?.length) return true;
     if (!e.scope.length) return true;
@@ -7984,7 +8022,48 @@ function knowledgeId(title, taken) {
 var import_yaml = __toESM(require_dist(), 1);
 import { existsSync as existsSync2, readdirSync, readFileSync as readFileSync2, statSync as statSync2 } from "node:fs";
 import { join as join2, resolve as resolve2 } from "node:path";
+
+// src/core/presets.ts
+var DRAFTS = { paths: { write: [".crew/drafts/**"] } };
+var PRESETS = {
+  lifecycle: {
+    global: {
+      mode: "ai-native",
+      human_gates: ["goal.active"],
+      role_gates: {
+        "item.triaged": "pm",
+        // only the PM triages and ranks
+        "plan.ready": "architect",
+        // only the Architect makes a spec ready
+        "plan.assigned": "pm",
+        // the PM opens a plan for a developer; `start` then needs that assignment
+        "plan.in-progress": "developer",
+        // only the assigned developer implements (and fixes what comes back)
+        "plan.in-review": "developer",
+        // … and hands over to test
+        "plan.done": "pm",
+        // the PM completes, against QA's evidence
+        "plan.dropped": "pm",
+        "goal.done": "director",
+        // the Director closes a goal the PM has verified
+        "plan.reassigned": "director",
+        // … and moves stuck work to someone else
+        "plan.reviewed": "architect"
+        // code review against the spec; done needs an approval of the current code
+      },
+      // liveness: a claim quiet for a day is stale; a third bounce or a sixth failed attempt goes to the Director
+      limits: { stale_claim_hours: 24, max_bounces: 2, max_attempts: 5 },
+      evidence: { role: "qa" }
+      // only QA's checks count toward done
+    },
+    roles: { director: DRAFTS, pm: DRAFTS, qa: DRAFTS, release: DRAFTS }
+  }
+};
+
+// src/core/policy.ts
 var MODES = ["ai-native", "ai-assisted", "human-led"];
+var NOTIFY_ON = ["escalation", "budget", "stale", "goal-done", "paused"];
+var ACTIONS = /* @__PURE__ */ new Set(["plan.assigned", "plan.reassigned", "plan.reviewed"]);
 var MODE_GATES = {
   "ai-native": [],
   "ai-assisted": ["plan.ready", "plan.done", "goal.done"],
@@ -7993,7 +8072,15 @@ var MODE_GATES = {
 var BUILT_IN = {
   mode: "ai-assisted",
   reserved: ["idea.decided", "idea.killed", "policy.change", "deploy.production", "publish", "spend", "delete-data"],
-  paths: { protected: [".crew/policy.yaml"] },
+  // the guard's own files: no agent may remove the hook, rewrite its definition, loosen the policy or swap the CLI
+  paths: { protected: [
+    ".crew/policy.yaml",
+    ".crew/bin/**",
+    ".claude/settings.json",
+    ".claude/settings.local.json",
+    ".claude/agents/**",
+    ".crew/templates/agents/**"
+  ] },
   budgets: { max_agents: 4 },
   git: { protected_branches: ["main"], force_push: false, no_verify: false },
   secrets: { files: [".env", "**/.env", "**/*.pem", "**/*.key"] },
@@ -8003,10 +8090,12 @@ var SCOPED = {
   models: { default: "str", fallback: "str" },
   tools: { allow: "list", deny: "list" },
   paths: { protected: "list", write: "list" },
-  budgets: { run: { max_cost: "num", max_tokens: "num" } }
+  budgets: { run: { max_cost: "num", max_tokens: "num" } },
+  limits: { max_turns: "num" }
 };
 var GLOBAL = {
   mode: "str",
+  preset: "str",
   human_gates: "list",
   role_gates: "map",
   reserved: "list",
@@ -8014,13 +8103,18 @@ var GLOBAL = {
   budgets: { max_agents: "num", run: { max_cost: "num", max_tokens: "num" }, project: { max_cost: "num", max_tokens: "num" } },
   git: { protected_branches: "list", force_push: "bool", no_verify: "bool" },
   secrets: { files: "list", patterns: "list" },
-  escalation: { to: "str" }
+  escalation: { to: "str" },
+  evidence: { role: "str" },
+  notify: { command: "str", on: "list" },
+  fast_lane: { types: "list", max_tasks: "num" },
+  limits: { max_turns: "num", stale_claim_hours: "num", max_bounces: "num", max_attempts: "num" }
 };
 var UNION = /* @__PURE__ */ new Set(["reserved", "secrets.files", "secrets.patterns", "git.protected_branches", "paths.protected", "tools.deny"]);
 var TIGHTEN = /* @__PURE__ */ new Set(["git.force_push", "git.no_verify"]);
 var CEILING = /^budgets\./;
 function loadLayers(root, crewDir, role, team) {
-  const errors = [], hints = [];
+  const errors = [], hints = [], custom = [], charters = {};
+  const teamScopes = {};
   const read = (label, text) => {
     if (text === null) return null;
     try {
@@ -8042,18 +8136,33 @@ function loadLayers(root, crewDir, role, team) {
     if (r) layers.push({ name: `org role ${role}`, org: true, raw: r });
   }
   const projectPath = join2(crewDir, "policy.yaml");
+  if (team && !existsSync2(projectPath)) errors.push(`team '${team}' (CREW_TEAM) is set, but there is no .crew/policy.yaml defining teams`);
   const project = read(".crew/policy.yaml", existsSync2(projectPath) ? readFileSync2(projectPath, "utf8") : null);
   if (project) {
-    const { roles, teams, ...global } = project;
+    const { roles, teams, preset, ...global } = project;
+    const p = typeof preset === "string" ? PRESETS[preset] : void 0;
+    if (preset !== void 0 && !p) errors.push(`preset: '${String(preset)}' is not a preset (${Object.keys(PRESETS).join(", ")})`);
+    if (p) layers.push({ name: `preset ${preset}`, org: false, raw: p.global });
+    if (p && role && p.roles[role]) layers.push({ name: `preset ${preset} role ${role}`, org: false, raw: p.roles[role] });
     layers.push({ name: "project", org: false, raw: global });
     const pick = (m, key) => key && m && typeof m === "object" ? m[key] : void 0;
     const r = pick(roles, role), t = pick(teams, team);
+    if (team && !t) errors.push(`team '${team}' (CREW_TEAM) is not defined under teams: in .crew/policy.yaml`);
     if (r) layers.push({ name: `project role ${role}`, org: false, raw: r });
     if (t) layers.push({ name: `project team ${team}`, org: false, raw: t });
-    for (const [name, section] of Object.entries({ ...roles ?? {} })) validate(section, SCOPED, `roles.${name}`, errors);
+    for (const [name, section] of Object.entries({ ...roles ?? {} })) {
+      validate(section, { ...SCOPED, charter: "str" }, `roles.${name}`, errors);
+      if (typeof section?.charter === "string") charters[name] = section.charter;
+      if (!ROLES.includes(name)) {
+        custom.push(name);
+        if (!/^[a-z][a-z0-9-]*$/.test(name)) errors.push(`roles.${name}: a role name is lower-case letters, digits and dashes`);
+        if (typeof section?.charter !== "string") errors.push(`roles.${name}: a new role needs a charter (what it owns and never does)`);
+      }
+    }
     for (const [name, section] of Object.entries({ ...teams ?? {} })) {
       const { scope, ...rest } = section ?? {};
       if (scope !== void 0 && !isList(scope)) errors.push(`teams.${name}.scope: expected a list of path globs`);
+      else teamScopes[name] = scope ?? [];
       validate(rest, SCOPED, `teams.${name}`, errors);
     }
   }
@@ -8061,7 +8170,7 @@ function loadLayers(root, crewDir, role, team) {
     if (l.name === "org" || l.name === "project") validate(l.raw, GLOBAL, l.name === "org" ? "org" : "", errors);
     else if (l.name.startsWith("org role")) validate(l.raw, SCOPED, l.name, errors);
   }
-  return { layers, errors, hints };
+  return { layers, errors, hints, custom, charters, teams: teamScopes };
 }
 function playbook(root, crewDir) {
   const cfgPath = join2(crewDir, "config.yaml");
@@ -8116,7 +8225,7 @@ function flatten(raw, prefix = "") {
     return v && typeof v === "object" && !Array.isArray(v) ? flatten(v, path) : [[path, v]];
   });
 }
-function resolveLayers(layers) {
+function resolveLayers(layers, roles = ROLES) {
   const values = /* @__PURE__ */ new Map(), sources = /* @__PURE__ */ new Map(), ceilings = /* @__PURE__ */ new Map();
   const errors = [];
   for (const layer of layers) {
@@ -8141,9 +8250,9 @@ function resolveLayers(layers) {
         values.set(path, v);
         sources.set(path, layer.name);
       } else if (path === "human_gates") {
-        values.set(path, v);
-        sources.set(path, layer.name);
-        if (layer.org) values.set("human_gates.org", [.../* @__PURE__ */ new Set([...values.get("human_gates.org") ?? [], ...v])]);
+        const key = layer.org ? "human_gates.org" : path;
+        values.set(key, layer.org ? [.../* @__PURE__ */ new Set([...values.get(key) ?? [], ...v])] : v);
+        sources.set(key, layer.name);
       } else {
         values.set(path, v);
         sources.set(path, layer.name);
@@ -8153,13 +8262,24 @@ function resolveLayers(layers) {
   const get = (p, d) => values.has(p) ? values.get(p) : d;
   const mode = get("mode", "ai-assisted");
   if (!MODES.includes(mode)) errors.push(`mode: '${mode}' is not one of ${MODES.join(", ")}`);
-  if (!values.has("human_gates")) sources.set("human_gates", `built-in: mode ${mode}`);
+  const floor = sources.get("human_gates.org");
+  sources.set("human_gates", `${values.has("human_gates") ? sources.get("human_gates") : `built-in: mode ${mode}`}${floor ? ` + ${floor} floor` : ""}`);
   const gates = [.../* @__PURE__ */ new Set([...get("human_gates", MODE_GATES[mode] ?? []), ...get("human_gates.org", [])])];
   const role_gates = Object.fromEntries([...values].filter(([p]) => p.startsWith("role_gates[")).map(([p, v]) => [p.slice(11, -1), String(v)]));
   for (const t of [...gates, ...Object.keys(role_gates), ...get("reserved", [])]) errors.push(...transitionProblem(t));
-  for (const [t, r] of Object.entries(role_gates)) if (!ROLES.includes(r)) errors.push(`role_gates ${t}: '${r}' is not a role (${ROLES.join(", ")})`);
+  for (const [t, r] of Object.entries(role_gates)) if (!roles.includes(r)) errors.push(`role_gates ${t}: '${r}' is not a role (${roles.join(", ")})`);
+  for (const p of get("secrets.patterns", [])) {
+    try {
+      new RegExp(p);
+    } catch {
+      errors.push(`secrets.patterns: '${p}' is not a valid JavaScript regular expression (no inline flags like (?i))`);
+    }
+  }
   const to = get("escalation.to", "executive");
-  if (!ROLES.includes(to)) errors.push(`escalation.to: '${to}' is not a role (${ROLES.join(", ")})`);
+  if (!roles.includes(to)) errors.push(`escalation.to: '${to}' is not a role (${roles.join(", ")})`);
+  const ev = get("evidence.role", null);
+  if (ev !== null && !roles.includes(ev)) errors.push(`evidence.role: '${ev}' is not a role (${roles.join(", ")})`);
+  for (const o of get("notify.on", []).filter((x) => !NOTIFY_ON.includes(x))) errors.push(`notify.on: '${o}' is not one of ${NOTIFY_ON.join(", ")}`);
   const deny = get("tools.deny", []);
   const allow = get("tools.allow", []);
   for (const t of allow.filter((a) => deny.includes(a))) errors.push(`tools.allow: '${t}' is denied by ${sources.get("tools.deny")} (deny wins)`);
@@ -8179,19 +8299,32 @@ function resolveLayers(layers) {
     },
     git: { protected_branches: get("git.protected_branches", []), force_push: get("git.force_push", false), no_verify: get("git.no_verify", false) },
     secrets: { files: get("secrets.files", []), patterns: get("secrets.patterns", []) },
-    escalation: { to: get("escalation.to", "executive") }
+    escalation: { to: get("escalation.to", "executive") },
+    evidence: { role: ev },
+    notify: { command: get("notify.command", null), on: get("notify.on", []) },
+    fast_lane: { types: get("fast_lane.types", []).map((t) => t.toUpperCase()), max_tasks: num("fast_lane.max_tasks") },
+    limits: {
+      max_turns: num("limits.max_turns"),
+      stale_claim_hours: num("limits.stale_claim_hours"),
+      max_bounces: num("limits.max_bounces"),
+      max_attempts: num("limits.max_attempts")
+    }
   };
   return { policy, sources, errors };
 }
 function transitionProblem(t) {
-  const [kind, status2] = t.split(".");
-  if (!Object.hasOwn(FLOWS, kind)) return [];
-  return Object.hasOwn(FLOWS[kind], status2 ?? "") ? [] : [`'${t}': ${kind} has no status '${status2}'`];
+  const [kind, step] = t.split(".");
+  if (!Object.hasOwn(FLOWS, kind) || ACTIONS.has(t)) return [];
+  const flow = FLOWS[kind], [from, to] = (step ?? "").split(">");
+  if (to === void 0) return Object.hasOwn(flow, from) ? [] : [`'${t}': ${kind} has no status '${from}'`];
+  return (flow[from] ?? []).includes(to) ? [] : [`'${t}': ${kind} can't go from '${from}' to '${to}'`];
 }
 function resolvePolicy(root, crewDir, role = null, team = null) {
-  const { layers, errors, hints } = loadLayers(root, crewDir, role, team);
-  const r = resolveLayers(layers);
-  return { policy: r.policy, sources: r.sources, errors: [...errors, ...r.errors], hints, role, team };
+  const { layers, errors, hints, custom, charters, teams } = loadLayers(root, crewDir, role, team);
+  const roles = [...ROLES, ...custom];
+  const r = resolveLayers(layers, roles);
+  if (role && !roles.includes(role)) errors.push(`role '${role}' is not a role (${roles.join(", ")})`);
+  return { policy: r.policy, sources: r.sources, errors: [...errors, ...r.errors], hints, role, team, roles, charters, teams };
 }
 function approvalReason(p, transition) {
   if (p.reserved.includes(transition)) return "a reserved decision";
@@ -8200,7 +8333,7 @@ function approvalReason(p, transition) {
 }
 
 // src/core/workspace.ts
-import { chmodSync, existsSync as existsSync3, mkdirSync as mkdirSync2, readdirSync as readdirSync2, readFileSync as readFileSync3, rmSync, statSync as statSync3, writeFileSync } from "node:fs";
+import { chmodSync, copyFileSync, existsSync as existsSync3, mkdirSync as mkdirSync2, readdirSync as readdirSync2, readFileSync as readFileSync3, rmSync, statSync as statSync3, writeFileSync as writeFileSync2 } from "node:fs";
 import { dirname as dirname2, join as join3, relative, sep } from "node:path";
 var Workspace = class {
   constructor(root) {
@@ -8209,17 +8342,25 @@ var Workspace = class {
   root;
   pending = /* @__PURE__ */ new Map();
   hooks = [];
+  aborts = [];
   output = [];
   /** A line for stdout (shown even when the command later refuses). */
   say(line2) {
     this.output.push(line2);
   }
   read(path) {
-    if (this.pending.has(path)) return this.pending.get(path)?.text ?? null;
+    if (this.pending.has(path)) {
+      const p = this.pending.get(path);
+      return p === null || p === void 0 ? null : "from" in p ? readFileSync3(p.from, "utf8") : p.text;
+    }
     return this.isFileOnDisk(path) ? readFileSync3(path, "utf8") : null;
   }
   write(path, text, mode) {
     this.pending.set(path, { text, mode });
+  }
+  /** Stage a byte-for-byte copy (binary files must not go through a string). */
+  copy(from, to) {
+    this.pending.set(to, { from });
   }
   remove(path) {
     this.pending.set(path, null);
@@ -8252,15 +8393,35 @@ var Workspace = class {
   beforeFlush(fn) {
     this.hooks.push(fn);
   }
+  /** Undo a side effect that isn't staged (a git branch) if the command is refused after making it. */
+  onAbort(fn) {
+    this.aborts.push(fn);
+  }
+  /** The command was refused: drop the staged writes and undo unstaged side effects, newest first. */
+  abort() {
+    this.pending.clear();
+    this.hooks = [];
+    for (const fn of this.aborts.splice(0).reverse()) fn();
+  }
   flush() {
-    for (const hook of this.hooks.splice(0)) hook();
+    try {
+      for (const hook of this.hooks.splice(0)) hook();
+    } catch (e) {
+      this.abort();
+      throw e;
+    }
+    this.aborts = [];
     for (const [path, v] of this.pending) {
       if (v === null) {
         rmSync(path, { force: true, recursive: true });
         continue;
       }
       mkdirSync2(dirname2(path), { recursive: true });
-      writeFileSync(path, v.text);
+      if ("from" in v) {
+        copyFileSync(v.from, path);
+        continue;
+      }
+      writeFileSync2(path, v.text);
       if (v.mode !== void 0) chmodSync(path, v.mode);
     }
     this.pending.clear();
@@ -8289,6 +8450,7 @@ function yamlBlock(text, block) {
 var Store = class _Store {
   constructor(ws) {
     this.ws = ws;
+    useRoot(ws.root);
     this.dir = join4(ws.root, ".crew");
     this.dirs = Object.fromEntries(Object.entries(DIRS).map(([k, v]) => [k, join4(this.dir, v)]));
     this.ideaPath = join4(this.dir, "idea.md");
@@ -8308,9 +8470,9 @@ var Store = class _Store {
   get ledger() {
     return this.ledgerCache ??= Ledger.at(this.ws, this.dir);
   }
-  /** The effective policy for this run's role (see policy.ts). */
+  /** The effective policy for this run's role and team (CREW_ROLE, CREW_TEAM; see policy.ts). */
   get policy() {
-    return this.policyCache ??= resolvePolicy(this.ws.root, this.dir, this.ledger.who.role);
+    return this.policyCache ??= resolvePolicy(this.ws.root, this.dir, this.ledger.who.role, this.ledger.who.team);
   }
   rel(p) {
     return this.ws.rel(p);
@@ -8366,6 +8528,12 @@ var Store = class _Store {
       return d?.id ? [toEntry(d, "playbook")] : [];
     }) : [];
     return linkSupersession([...project, ...lessons]);
+  }
+  /** The branch plans start from: `git.default_branch` in .crew/config.yaml, else the policy's first protected branch. */
+  baseBranch() {
+    const text = this.ws.read(join4(this.dir, "config.yaml"));
+    const configured = text === null ? void 0 : yamlBlock(text, "git").default_branch;
+    return configured || this.policy.policy.git.protected_branches[0] || "main";
   }
   /** The project's idea (.crew/idea.md), if it has been written. */
   idea() {
@@ -8434,11 +8602,11 @@ var Store = class _Store {
     return [file, text];
   }
   consume(draftFile, keep = false) {
-    const real = (p) => existsSync4(p) ? realpathSync(p) : p;
-    if (!keep && real(draftFile).startsWith(real(resolve3(this.dir, "drafts")) + "/")) this.ws.remove(draftFile);
+    const real2 = (p) => existsSync4(p) ? realpathSync(p) : p;
+    if (!keep && real2(draftFile).startsWith(real2(resolve3(this.dir, "drafts")) + "/")) this.ws.remove(draftFile);
   }
-  build(template, draft, fields) {
-    const tmpl = fill(stripComments(this.template(template)), { date: today(), ...fields }).replace(/^(\w+): $/gm, "$1:");
+  build(template2, draft, fields) {
+    const tmpl = fill(stripComments(this.template(template2)), { date: today(), ...fields }).replace(/^(\w+): $/gm, "$1:");
     return Doc.parse(assemble(tmpl, draft));
   }
   writeNew(doc, path) {
@@ -8513,7 +8681,7 @@ function overlapping(plan, plans2) {
     return globs.length ? [{ id: p.id, globs }] : [];
   });
 }
-function drift(plan, base = "main") {
+function drift(plan, base) {
   if (currentBranch() !== plan.get("branch") || !plan.touches().length) return null;
   const fork = git(["merge-base", base, "HEAD"])?.trim();
   if (!fork) return null;
@@ -8526,217 +8694,11 @@ function drift(plan, base = "main") {
 }
 
 // src/commands/execution.ts
-import { spawnSync as spawnSync2 } from "node:child_process";
+import { spawnSync as spawnSync3 } from "node:child_process";
 import { createHash as createHash2 } from "node:crypto";
-var OUTPUT_LINES = 15;
-var OUTPUT_CHARS = 2e3;
-var RUN_TIMEOUT_MS = 10 * 6e4;
-function criteria(plan) {
-  const list = plan.checklist("Acceptance criteria").map(([, c]) => c);
-  return list.length ? list : plan.bullets("Acceptance criteria");
-}
-function implementer(events, planId) {
-  return [...events].reverse().find((e) => e.type === "claim" && e.ref === planId)?.run ?? null;
-}
-var checkpoints = (events, planId) => events.filter((e) => e.type === "checkpoint" && e.ref === planId);
-function evidence(store, plan) {
-  const events = store.ledger.events(), impl = implementer(events, plan.id);
-  return criteria(plan).map((ac, i) => {
-    let found = null;
-    for (const e of checkpoints(events, plan.id)) {
-      for (const v of e.verify ?? []) if (v.ac.includes(i + 1)) found = { verify: v, by: e.run };
-    }
-    return { ac, verify: found?.verify ?? null, by: found?.by ?? null, independent: !!found && (!impl || found.by !== impl) };
-  });
-}
-function evidenceProblems(store, plan, approvedBy) {
-  const problems = [];
-  const impl = implementer(store.ledger.events(), plan.id);
-  if (impl && impl === store.ledger.who.run && !approvedBy) {
-    problems.push(`this run (${impl}) implemented ${plan.id}; another run \u2014 QA \u2014 verifies it and moves it to done`);
-  }
-  evidence(store, plan).forEach((e, i) => {
-    if (approvedBy && /\bevidence:/i.test(e.ac)) return;
-    if (!e.verify) problems.push(`AC${i + 1} has no evidence: \`checkpoint ${plan.id} --run "<check>" --ac ${i + 1}\` \u2014 ${e.ac}`);
-    else if (!e.verify.ok) problems.push(`AC${i + 1}: its latest check failed (${e.verify.cmd})`);
-    else if (!e.independent) problems.push(`AC${i + 1}: only verified by the implementer (${e.by}); verify it from another run`);
-  });
-  return problems;
-}
-function snapshot() {
-  const sha = git(["rev-parse", "HEAD"])?.trim() || null;
-  const status2 = git(["status", "--porcelain"]) ?? "";
-  const dirty = status2.split("\n").filter(Boolean).map((l) => l.slice(3)).filter((p) => !p.startsWith(".crew/drafts/"));
-  const diff = git(["diff", "HEAD"]) ?? "";
-  return { sha, dirty, fingerprint: createHash2("sha1").update(`${sha}
-${status2}
-${diff}`).digest("hex").slice(0, 12) };
-}
-function planFromBranch(store, id) {
-  const pid = id?.toUpperCase() ?? /^plan\/(P-\d+)/.exec(currentBranch() ?? "")?.[1];
-  return pid ? store.plans(true).get(pid) ?? fail(`No plan ${pid}.`) : null;
-}
-function tail(text, extra) {
-  const lines = text.trimEnd().split("\n").slice(-OUTPUT_LINES).join("\n").slice(-OUTPUT_CHARS);
-  return secretsIn(lines, extra).length ? "(output withheld: it looked like it contained a secret)" : lines;
-}
-function checkpoint(store, id, o = {}) {
-  store.require();
-  const plan = planFromBranch(store, id);
-  if (!plan) {
-    if (o.auto) return 0;
-    fail("Not on a plan branch: name the plan (`checkpoint P-###`).");
-  }
-  const snap = snapshot();
-  const last = checkpoints(store.ledger.events(), plan.id).at(-1);
-  if (o.auto && last?.fingerprint === snap.fingerprint) return 0;
-  const acs = parseAc(o.ac, criteria(plan).length);
-  const verify = [];
-  if (o.run) {
-    const r = spawnSync2(o.run, { shell: true, cwd: store.ws.root, encoding: "utf8", timeout: RUN_TIMEOUT_MS, maxBuffer: 32 << 20 });
-    verify.push({ cmd: o.run, ok: r.status === 0, ac: acs, output: tail(`${r.stdout ?? ""}${r.stderr ?? ""}`, store.policy.policy.secrets.patterns), observed: true });
-  }
-  if (o.verify) {
-    if (o.result !== "pass" && o.result !== "fail") fail("--verify needs --result pass|fail.");
-    verify.push({ cmd: o.verify, ok: o.result === "pass", ac: acs, ...o.output ? { output: tail(o.output, store.policy.policy.secrets.patterns) } : {}, observed: false });
-  }
-  if (o.attempt && !o.why) fail("--attempt needs --why: what made it fail, so the next run doesn't retry it.");
-  const step = o.step ?? plan.tasks().find(([done]) => !done)?.[1].split(":")[0] ?? "done";
-  store.ledger.record("checkpoint", plan.id, {
-    step,
-    sha: snap.sha,
-    dirty: snap.dirty.slice(0, 50),
-    fingerprint: snap.fingerprint,
-    ...verify.length ? { verify } : {},
-    ...o.attempt ? { attempt: { what: o.attempt, why: o.why } } : {},
-    ...o.note ? { note: o.note } : {},
-    ...o.auto ? { auto: true } : {}
-  });
-  if (!o.auto) {
-    store.say(`${plan.id}: checkpoint at ${step}${snap.sha ? ` (${snap.sha.slice(0, 7)})` : ""}` + verify.map((v) => ` \u2014 ${v.ok ? "\u2713" : "\u2717"} ${v.cmd}`).join(""));
-  }
-  return verify.some((v) => !v.ok) ? 1 : 0;
-}
-function parseAc(spec, n) {
-  if (!spec) return [];
-  if (spec === "all") return Array.from({ length: n }, (_, i) => i + 1);
-  const nums = spec.split(",").map((x) => Number(x.trim().replace(/^AC/i, "")));
-  const bad = nums.filter((x) => !Number.isInteger(x) || x < 1 || x > n);
-  if (bad.length) fail(`--ac: the plan has acceptance criteria 1\u2013${n} (or "all").`);
-  return nums;
-}
-function recovery(store, plan) {
-  const events = store.ledger.events();
-  const cps = checkpoints(events, plan.id);
-  const last = cps.at(-1);
-  const owner2 = store.ledger.claims(events).get(plan.id);
-  const tasks = plan.tasks();
-  const out = [`${plan.id}: ${plan.get("title")} [${plan.get("status")}] tasks ${tasks.filter(([d]) => d).length}/${tasks.length}` + (owner2 ? ` \u2014 claimed by ${owner2.actor} (${owner2.run})` : "")];
-  if (last) {
-    const here = currentBranch() === plan.get("branch");
-    const now = here ? snapshot() : null;
-    const ahead = here && last.sha && now?.sha ? Number(git(["rev-list", "--count", `${last.sha}..HEAD`])?.trim() || 0) : 0;
-    out.push(`last checkpoint ${String(last.ts).slice(0, 16).replace("T", " ")} at ${last.step} (${String(last.sha ?? "?").slice(0, 7)}) by ${last.actor}` + (now ? `; since then ${ahead} commit(s), ${now.dirty.length} uncommitted file(s)${now.dirty.length ? `: ${now.dirty.slice(0, 8).join(", ")}` : ""}` : ""));
-  } else out.push("no checkpoint yet");
-  const latest = /* @__PURE__ */ new Map();
-  for (const e of cps) for (const v of e.verify ?? []) latest.set(v.cmd, { ...v, ts: e.ts });
-  for (const v of latest.values()) {
-    out.push(`${v.ok ? "\u2713" : "\u2717"} ${v.cmd}${v.ac.length ? ` (AC ${v.ac.join(",")})` : ""}${v.observed ? "" : " (reported)"}` + (!v.ok && v.output ? ` \u2014 ${v.output.split("\n").filter(Boolean).at(-1)}` : ""));
-  }
-  for (const e of cps.filter((c) => c.attempt)) {
-    const a = e.attempt;
-    out.push(`don't retry: ${a.what} \u2014 ${a.why}`);
-  }
-  const nxt = tasks.find(([d]) => !d)?.[1];
-  if (nxt) out.push(`next: ${nxt}`);
-  const ev = evidence(store, plan);
-  if (ev.length) {
-    out.push(`evidence: ${ev.map((e, i) => `AC${i + 1} ${!e.verify ? "\u2014" : !e.verify.ok ? "\u2717" : e.independent ? "\u2713" : "\u2713 (self)"}`).join(", ")}`);
-  }
-  return out;
-}
-function resume(store, id, json = false) {
-  store.require();
-  const plan = planFromBranch(store, id) ?? fail("Not on a plan branch: name the plan (`resume P-###`).");
-  if (json) store.say(JSON.stringify({ plan: plan.id, lines: recovery(store, plan) }));
-  else for (const line2 of recovery(store, plan)) store.say(line2);
-}
-function writeHandoff(store, plan) {
-  const logs = stripComments(plan.section("Progress log")).split("\n").filter((l) => l.trim().startsWith("- ")).slice(-3);
-  plan.replaceSection("Handoff", [
-    `_Generated ${today()} by \`crew.mjs handoff\` from the ledger._`,
-    "",
-    ...recovery(store, plan).map((l) => `- ${l}`),
-    ...logs.length ? ["", "Latest log:", ...logs] : []
-  ].join("\n"));
-}
-function handoff(store, id) {
-  store.require();
-  const plan = planFromBranch(store, id) ?? fail("Not on a plan branch: name the plan (`handoff P-###`).");
-  if (plan.source !== "worktree") fail(`${plan.id} lives on ${plan.source}; write its handoff there.`);
-  writeHandoff(store, plan);
-  plan.save();
-  store.say(`${plan.id}: handoff written`);
-}
-
-// src/core/gates.ts
-function triageProblems(item) {
-  const prefix = item.id.split("-")[0];
-  const problems = item.missing(TRIAGE_SECTIONS[prefix]).map((n) => `empty section: ${n}`);
-  if (!PRIORITIES.includes(item.get("priority") ?? "")) problems.push("no priority (P0\u2013P3)");
-  if (prefix === "BUG" && !Object.hasOwn(SEVERITY_PRIORITY, item.get("severity") ?? "")) problems.push("no severity (S1\u2013S4)");
-  return problems;
-}
-function readinessProblems(store, plan) {
-  return [
-    ...plan.missing(READY_SECTIONS).map((n) => `empty section: ${n}`),
-    ...plan.touches().length ? [] : ["no touches: (the paths this plan will change)"],
-    ...taskProblems(store, plan),
-    ...itemProblems(store, plan)
-  ];
-}
-function learningsProblems(plan, known) {
-  const m = /^\s*[-*]?\s*\**learnings?\**\s*:\**\s*(.*)$/im.exec(stripComments(plan.section("Outcome")));
-  if (!m) return ["Outcome has no `Learnings:` line \u2014 list the K-\u2026 entries captured with `learn`, or write `Learnings: none`"];
-  const ids = m[1].match(K_ID_RE) ?? [];
-  if (!ids.length && !/^none\b/i.test(m[1].trim())) return ["`Learnings:` must list K-\u2026 entries or say none"];
-  return ids.filter((i) => !known.has(i)).map((i) => `Learnings: ${i} does not exist`);
-}
-function decisionProblems(idea2) {
-  const problems = idea2.missing(DECIDED_SECTIONS).map((n) => `empty section: ${n}`);
-  if (idea2.hasContent("Success criteria") && !idea2.checklist("Success criteria").length) {
-    problems.push("Success criteria must be a checklist (`- [ ] \u2026`) so each one can be verified");
-  }
-  return problems;
-}
-function taskProblems(store, plan) {
-  const tasks = plan.tasks();
-  const max = store.settings().max_tasks;
-  const problems = tasks.length ? [] : ["no tasks"];
-  const noVerify = tasks.filter(([, t]) => !t.toLowerCase().includes("verify")).map(([, t]) => t.split("\u2192")[0].trim());
-  if (noVerify.length) problems.push(`tasks without '\u2192 verify:': ${noVerify.join("; ")}`);
-  if (tasks.length > max) problems.push(`${tasks.length} tasks (> max_tasks ${max}) \u2014 split the plan`);
-  return problems;
-}
-function itemProblems(store, plan) {
-  const items2 = store.items();
-  const linked = idList(plan.get("items"));
-  const problems = [];
-  for (const i of linked) {
-    if (!items2.has(i)) problems.push(`unknown item ${i}`);
-    else if (items2.get(i).get("status") === "new") problems.push(`item ${i} is not triaged`);
-  }
-  if (linked.some((i) => i.startsWith("BUG-"))) {
-    const text = (plan.section("Acceptance criteria") + plan.section("Tasks") + plan.section("Test plan")).toLowerCase();
-    if (!text.includes("regression")) {
-      problems.push("fixes a bug but names no regression test (acceptance criteria, tasks or test plan)");
-    }
-  }
-  return problems;
-}
 
 // src/commands/questions.ts
-import { randomBytes } from "node:crypto";
+import { randomBytes as randomBytes2 } from "node:crypto";
 
 // src/commands/knowledge.ts
 import { join as join5 } from "node:path";
@@ -8810,6 +8772,919 @@ function view(e, store) {
   };
 }
 
+// src/commands/autonomy.ts
+import { spawnSync as spawnSync2 } from "node:child_process";
+import { readFileSync as readFileSync5 } from "node:fs";
+
+// src/commands/guard.ts
+import { readFileSync as readFileSync4, realpathSync as realpathSync2 } from "node:fs";
+import { basename as basename2, dirname as dirname4, isAbsolute, join as join6, relative as relative2 } from "node:path";
+var HUB_MCP = /^mcp__(?:plugin_crew_)?hub__/;
+function real(p) {
+  try {
+    return realpathSync2(p);
+  } catch {
+    try {
+      return join6(realpathSync2(dirname4(p)), basename2(p));
+    } catch {
+      return p;
+    }
+  }
+}
+var CREW_CLI = /\bcrew\.mjs\b/;
+var EDITS = { Edit: "file_path", Write: "file_path", MultiEdit: "file_path", NotebookEdit: "notebook_path" };
+var WRITERS = /^(rm|mv|cp|ln|chmod|chown|truncate|tee|install|touch|mkdir)$/;
+function agentRole(root, agentType) {
+  if (!/^[\w-]+$/.test(agentType)) return null;
+  try {
+    return Doc.parse(readFileSync4(join6(root, ".claude", "agents", `${agentType}.md`), "utf8")).get("crew-role");
+  } catch {
+    return null;
+  }
+}
+var patternRe = (p) => new RegExp(`^${p.trim().replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*").replace(/\?/g, ".")}$`);
+var segments = (cmd) => cmd.split(/&&|\|\||;|\|/).map((c) => c.trim()).filter(Boolean);
+var words2 = (cmd) => cmd.split(/[\s"'=]+/).map((w) => w.replace(/^>+/, "").replace(/^\.\//, "")).filter(Boolean);
+function hubCommand(seg) {
+  const w = seg.split(/\s+/);
+  let i = w.findIndex((x) => CREW_CLI.test(x));
+  if (i < 0) return null;
+  for (i++; i < w.length && w[i].startsWith("-"); i++) if (!w[i].includes("=")) i++;
+  return w[i] ?? null;
+}
+function writeTargets(cmd) {
+  const out = [...cmd.matchAll(/(?<![0-9&])>{1,2}\s*([^\s;&|<>]+)/g)].map((m) => m[1]).filter((t) => !t.startsWith("&"));
+  for (const seg of segments(cmd)) {
+    const [head, ...args] = words2(seg);
+    const sub = args[0];
+    if (head && WRITERS.test(head) || head === "sed" && args.some((a) => a.startsWith("-i")) || head === "git" && /^(checkout|restore|rm|mv)$/.test(sub ?? "")) {
+      out.push(...(head === "git" ? args.slice(1) : args).filter((a) => !a.startsWith("-")));
+    }
+  }
+  return out.map((t) => t.replace(/^\.\//, ""));
+}
+function decide(store, h) {
+  if (!h.agent_type) return null;
+  const root = store.ws.root;
+  const role = agentRole(root, h.agent_type);
+  const run2 = role ? `${role}:${h.agent_id ?? "unknown"}` : null;
+  const { policy } = resolvePolicy(root, store.dir, role);
+  const top = real(h.cwd && git(["-C", h.cwd, "rev-parse", "--show-toplevel"])?.trim() || root);
+  const rel = (p) => (isAbsolute(p) ? relative2(top, real(p)) : p).replace(/^\.\//, "");
+  const hits = (globs, p) => globs.some((g) => globRe(g).test(rel(p)));
+  const input = h.tool_input ?? {};
+  const path = EDITS[h.tool_name] ? String(input[EDITS[h.tool_name]] ?? "") : "";
+  if (path && hits(policy.paths.protected, path)) return { deny: `${rel(path)} is protected by the crew policy (paths.protected)` };
+  if (h.tool_name === "Read" && hits(policy.secrets.files, String(input.file_path ?? ""))) {
+    return { deny: `${rel(String(input.file_path))} is a secret file (secrets.files); agents never read it` };
+  }
+  const cmd = h.tool_name === "Bash" ? String(input.command ?? "") : "";
+  if (cmd) {
+    const target = writeTargets(cmd).find((t) => hits(policy.paths.protected, t));
+    if (target) return { deny: `the command writes to ${rel(target)}, which the crew policy protects (paths.protected)` };
+    if (words2(cmd).some((w) => hits(policy.secrets.files, w))) return { deny: "the command touches a secret file (secrets.files)" };
+    if (CREW_CLI.test(cmd) && /--approved-by\b/.test(cmd)) return { deny: "only the human approves: agents never pass --approved-by" };
+    if (segments(cmd).some((c) => hubCommand(c) === "agents" && !/--check\b/.test(c))) {
+      return { deny: "`crew.mjs agents` rewrites the agent definitions, which only the human renders (paths.protected)" };
+    }
+  }
+  if (!role) return null;
+  for (const d of policy.tools.deny) {
+    const m = /^(\w+)\((.*)\)$/.exec(d);
+    if (m ? m[1] === h.tool_name && segments(cmd).some((c) => patternRe(m[2]).test(c)) : d === h.tool_name || d.endsWith("*") && h.tool_name.startsWith(d.slice(0, -1))) {
+      return { deny: `${d} is denied for the ${role} role (tools.deny)` };
+    }
+  }
+  if (path && policy.paths.write.length && !hits(policy.paths.write, path)) {
+    return { deny: `the ${role} role may only write ${policy.paths.write.join(", ")} (paths.write)` };
+  }
+  if (cmd && CREW_CLI.test(cmd)) {
+    const claimed = [...cmd.matchAll(/--as[=\s]+(\S+)/g)].map((m) => m[1]);
+    if (claimed.some((c) => c !== role)) return { deny: `you are the ${role} agent; don't pass --as for another role` };
+    if (/--run-id\b|\bCREW_(ROLE|RUN|ACTOR|TEAM)=/.test(cmd)) return { deny: "the guard sets your identity; don't pass --run-id or CREW_* variables" };
+    return { input: { ...input, command: cmd.replace(/(\bcrew\.mjs)(?=["'\s]|$)/g, `$1 --as ${role} --run-id ${run2}`) } };
+  }
+  if (HUB_MCP.test(h.tool_name)) {
+    if (input.as !== void 0 && input.as !== role) return { deny: `you are the ${role} agent; don't set as for another role` };
+    if (input.run_id !== void 0) return { deny: "the guard sets your run; don't pass run_id" };
+    return { input: { ...input, as: role, run_id: run2 } };
+  }
+  return null;
+}
+function guard(store) {
+  let h;
+  try {
+    h = JSON.parse(readFileSync4(0, "utf8"));
+  } catch {
+    return 0;
+  }
+  const d = decide(store, h);
+  if (!d) return 0;
+  const out = "deny" in d ? { hookEventName: "PreToolUse", permissionDecision: "deny", permissionDecisionReason: `crew guard: ${d.deny}` } : { hookEventName: "PreToolUse", updatedInput: d.input };
+  process.stdout.write(`${JSON.stringify({ hookSpecificOutput: out })}
+`);
+  return 0;
+}
+
+// src/core/gates.ts
+function triageProblems(item) {
+  const prefix = item.id.split("-")[0];
+  const problems = item.missing(TRIAGE_SECTIONS[prefix]).map((n) => `empty section: ${n}`);
+  if (!PRIORITIES.includes(item.get("priority") ?? "")) problems.push("no priority (P0\u2013P3)");
+  if (prefix === "BUG" && !Object.hasOwn(SEVERITY_PRIORITY, item.get("severity") ?? "")) problems.push("no severity (S1\u2013S4)");
+  return problems;
+}
+function fastLane(store, plan) {
+  const { types, max_tasks } = store.policy.policy.fast_lane;
+  const items2 = planItems(plan, store.items());
+  return types.length > 0 && items2.length > 0 && items2.every((i) => types.includes(i.id.split("-")[0])) && (max_tasks === null || plan.tasks().length <= max_tasks);
+}
+function readinessProblems(store, plan) {
+  return [
+    ...plan.missing(READY_SECTIONS).map((n) => `empty section: ${n}`),
+    ...plan.touches().length ? [] : ["no touches: (the paths this plan will change)"],
+    ...taskProblems(store, plan),
+    ...itemProblems(store, plan)
+  ];
+}
+function learningsProblems(plan, known) {
+  const m = /^\s*[-*]?\s*\**learnings?\**\s*:\**\s*(.*)$/im.exec(stripComments(plan.section("Outcome")));
+  if (!m) return ["Outcome has no `Learnings:` line \u2014 list the K-\u2026 entries captured with `learn`, or write `Learnings: none`"];
+  const ids = m[1].match(K_ID_RE) ?? [];
+  if (!ids.length && !/^none\b/i.test(m[1].trim())) return ["`Learnings:` must list K-\u2026 entries or say none"];
+  return ids.filter((i) => !known.has(i)).map((i) => `Learnings: ${i} does not exist`);
+}
+function decisionProblems(idea2) {
+  const problems = idea2.missing(DECIDED_SECTIONS).map((n) => `empty section: ${n}`);
+  if (idea2.hasContent("Success criteria") && !idea2.checklist("Success criteria").length) {
+    problems.push("Success criteria must be a checklist (`- [ ] \u2026`) so each one can be verified");
+  }
+  return problems;
+}
+function taskProblems(store, plan) {
+  const tasks = plan.tasks();
+  const max = store.settings().max_tasks;
+  const problems = tasks.length ? [] : ["no tasks"];
+  const noVerify = tasks.filter(([, t]) => !t.toLowerCase().includes("verify")).map(([, t]) => t.split("\u2192")[0].trim());
+  if (noVerify.length) problems.push(`tasks without '\u2192 verify:': ${noVerify.join("; ")}`);
+  if (tasks.length > max) problems.push(`${tasks.length} tasks (> max_tasks ${max}) \u2014 split the plan`);
+  return problems;
+}
+function itemProblems(store, plan) {
+  const items2 = store.items();
+  const linked = idList(plan.get("items"));
+  const problems = [];
+  for (const i of linked) {
+    if (!items2.has(i)) problems.push(`unknown item ${i}`);
+    else if (items2.get(i).get("status") === "new") problems.push(`item ${i} is not triaged`);
+  }
+  if (linked.some((i) => i.startsWith("BUG-"))) {
+    const text = (plan.section("Acceptance criteria") + plan.section("Tasks") + plan.section("Test plan")).toLowerCase();
+    if (!text.includes("regression")) {
+      problems.push("fixes a bug but names no regression test (acceptance criteria, tasks or test plan)");
+    }
+  }
+  return problems;
+}
+
+// src/commands/checks.ts
+import { join as join8 } from "node:path";
+
+// src/commands/agents.ts
+import { join as join7 } from "node:path";
+var HUMAN = "executive";
+var PLAIN = /^[\w-]+$/;
+var agentsDir = (store) => join7(store.ws.root, ".claude", "agents");
+var agentFile = (store, role) => join7(agentsDir(store), `crew-${role}.md`);
+function template(store, name) {
+  for (const d of [join7(store.dir, "templates", "agents"), join7(SKILL_DIR, "agents")]) {
+    const text = store.ws.read(join7(d, `${name}.md`));
+    if (text !== null) return text;
+  }
+  return fail(`Agent template ${name}.md not found. Re-run \`crew.mjs init\` from the plugin.`);
+}
+var scalar = (v) => /^["']/.test(v) || !/(: | #|^[\s\W])|\s$/.test(v) ? v : JSON.stringify(v);
+function renderAgent(store, role) {
+  const r = resolvePolicy(store.ws.root, store.dir, role);
+  const custom = !ROLES.includes(role);
+  let text = template(store, custom ? "generic" : role);
+  if (custom) text = text.replaceAll("{{role}}", role).replaceAll("{{charter}}", (r.charters[role] ?? "").replace(/\s+/g, " ").trim());
+  const m = /^---\n([\s\S]*?)\n---\n/.exec(text);
+  const meta = (m?.[1] ?? "").split("\n").filter((l) => /^[\w-]+:/.test(l)).map((l) => [l.slice(0, l.indexOf(":")), l.slice(l.indexOf(":") + 1).trim()]);
+  const p = r.policy, deny = p.tools.deny.filter((t) => PLAIN.test(t));
+  const derived = [
+    ["crew-role", role],
+    ["model", p.models.default],
+    ["tools", p.tools.allow.filter((t) => PLAIN.test(t)).join(", ") || null],
+    ["disallowedTools", deny.join(", ") || null],
+    ["isolation", role === "developer" ? "worktree" : null],
+    // parallel developers never share a checkout
+    ["maxTurns", p.limits.max_turns === null ? null : String(p.limits.max_turns)]
+  ];
+  const own = /* @__PURE__ */ new Set(["name", ...derived.map(([k]) => k)]);
+  const lines = [
+    ["name", `crew-${role}`],
+    ...meta.filter(([k]) => k === "description"),
+    ...derived.filter((d) => d[1] !== null),
+    ...meta.filter(([k]) => !own.has(k) && k !== "description")
+  ];
+  const body2 = m ? text.slice(m[0].length) : text;
+  return { text: `---
+${lines.map(([k, v]) => `${k}: ${scalar(v)}`).join("\n")}
+---
+${body2}`, errors: r.errors };
+}
+var agentRoles = (store) => resolvePolicy(store.ws.root, store.dir).roles.filter((r) => r !== HUMAN);
+function rendered(store) {
+  const out = /* @__PURE__ */ new Map();
+  for (const name of store.ws.list(agentsDir(store)).filter((n) => /^crew-.*\.md$/.test(n))) {
+    const role = Doc.parse(store.ws.read(join7(agentsDir(store), name)) ?? "").get("crew-role");
+    if (role) out.set(join7(agentsDir(store), name), role);
+  }
+  return out;
+}
+function agentProblems(store) {
+  const roles = agentRoles(store), problems = [];
+  for (const role of roles) {
+    const path = agentFile(store, role), now = store.ws.read(path);
+    if (now === null) problems.push({ path, problem: "missing" });
+    else if (now !== renderAgent(store, role).text) problems.push({ path, problem: "stale against the policy or its template" });
+  }
+  for (const [path, role] of rendered(store)) {
+    if (!roles.includes(role)) problems.push({ path, problem: `its role '${role}' is no longer defined` });
+  }
+  return problems;
+}
+function agentHints(store) {
+  if (!rendered(store).size) return [];
+  return agentProblems(store).map((p) => `agents: ${store.rel(p.path)} is ${p.problem} \u2014 run \`crew.mjs agents\``);
+}
+function agents(store, check2 = false) {
+  store.require();
+  if (check2) {
+    const problems = agentProblems(store);
+    for (const p of problems) store.say(`STALE  ${store.rel(p.path)}: ${p.problem}`);
+    if (!problems.length) store.say("Agents up to date.");
+    return problems.length ? 1 : 0;
+  }
+  const roles = agentRoles(store);
+  const out = roles.map((role) => ({ role, ...renderAgent(store, role) }));
+  const errors = [...new Set(out.flatMap((o) => o.errors))];
+  if (errors.length) fail(`Fix the policy first (\`crew.mjs policy check\`); no agent was written:
+  ${errors.join("\n  ")}`);
+  let changed = 0;
+  for (const { role, text } of out) {
+    const path = agentFile(store, role);
+    if (store.ws.read(path) === text) continue;
+    store.ws.write(path, text);
+    store.say(`wrote ${store.rel(path)}`);
+    changed++;
+  }
+  for (const [path, role] of rendered(store)) {
+    if (roles.includes(role)) continue;
+    store.ws.remove(path);
+    store.say(`removed ${store.rel(path)} (role '${role}' is no longer defined)`);
+    changed++;
+  }
+  if (!changed) store.say("Agents up to date.");
+  return 0;
+}
+
+// src/commands/policy.ts
+var import_yaml2 = __toESM(require_dist(), 1);
+var show2 = (v) => Array.isArray(v) ? v.length ? v.join(", ") : "\u2014" : v === null || v === void 0 ? "\u2014" : String(v);
+function policyShow(store, role, team, json = false) {
+  const r = resolvePolicy(store.ws.root, store.dir, role ?? store.ledger.who.role, team ?? store.ledger.who.team);
+  if (json) {
+    store.say(JSON.stringify({ role: r.role, team: r.team, policy: r.policy, sources: Object.fromEntries(r.sources), errors: r.errors }, null, 2));
+    return r.errors.length ? 1 : 0;
+  }
+  const p = r.policy;
+  const rows = [
+    ["mode", p.mode, "mode"],
+    ["human_gates", p.human_gates, "human_gates"],
+    ...Object.entries(p.role_gates).map(([t, role2]) => [`role_gates ${t}`, role2, `role_gates[${t}]`]),
+    ["reserved", p.reserved, "reserved"],
+    ["models.default", p.models.default, "models.default"],
+    ["models.fallback", p.models.fallback, "models.fallback"],
+    ["tools.allow", p.tools.allow, "tools.allow"],
+    ["tools.deny", p.tools.deny, "tools.deny"],
+    ["paths.write", p.paths.write, "paths.write"],
+    ["paths.protected", p.paths.protected, "paths.protected"],
+    ["budgets.max_agents", p.budgets.max_agents, "budgets.max_agents"],
+    ["budgets.run.max_cost", p.budgets.run.max_cost, "budgets.run.max_cost"],
+    ["budgets.run.max_tokens", p.budgets.run.max_tokens, "budgets.run.max_tokens"],
+    ["budgets.project.max_cost", p.budgets.project.max_cost, "budgets.project.max_cost"],
+    ["budgets.project.max_tokens", p.budgets.project.max_tokens, "budgets.project.max_tokens"],
+    ["git.protected_branches", p.git.protected_branches, "git.protected_branches"],
+    ["git.force_push", p.git.force_push, "git.force_push"],
+    ["git.no_verify", p.git.no_verify, "git.no_verify"],
+    ["secrets.files", p.secrets.files, "secrets.files"],
+    ["secrets.patterns", p.secrets.patterns, "secrets.patterns"],
+    ["escalation.to", p.escalation.to, "escalation.to"],
+    ["evidence.role", p.evidence.role, "evidence.role"],
+    ["notify.command", p.notify.command, "notify.command"],
+    ["notify.on", p.notify.on, "notify.on"],
+    ["fast_lane.types", p.fast_lane.types, "fast_lane.types"],
+    ["fast_lane.max_tasks", p.fast_lane.max_tasks, "fast_lane.max_tasks"],
+    ["limits.max_turns", p.limits.max_turns, "limits.max_turns"],
+    ...["stale_claim_hours", "max_bounces", "max_attempts"].map((k) => [`limits.${k}`, p.limits[k], `limits.${k}`])
+  ];
+  store.say(`Effective policy${r.role ? ` for role ${r.role}` : ""}${r.team ? `, team ${r.team}` : ""}:`);
+  const width = Math.max(...rows.map(([k]) => k.length));
+  for (const [key, value, source] of rows) store.say(`  ${key.padEnd(width)}  ${show2(value)}  (${r.sources.get(source) ?? "default"})`);
+  report(store, r.errors, r.hints);
+  return r.errors.length ? 1 : 0;
+}
+function policyCheck(store) {
+  const { errors, hints } = policyFindings(store);
+  report(store, errors, hints);
+  if (!errors.length && !hints.length) store.say("Policy OK.");
+  return errors.length ? 1 : 0;
+}
+function policyFindings(store) {
+  const base = resolvePolicy(store.ws.root, store.dir);
+  const errors = new Set(base.errors), hints = new Set(base.hints);
+  let raw = {};
+  try {
+    raw = (0, import_yaml2.parse)(store.ws.read(`${store.dir}/policy.yaml`) ?? "") ?? {};
+  } catch {
+  }
+  const named = (section) => Object.keys(raw[section] ?? {});
+  for (const role of named("roles")) for (const e of resolvePolicy(store.ws.root, store.dir, role).errors) errors.add(e);
+  for (const team of named("teams")) for (const e of resolvePolicy(store.ws.root, store.dir, null, team).errors) errors.add(e);
+  return { errors: [...errors].map((e) => `policy: ${e}`), hints: [...hints].map((h) => `policy: ${h}`) };
+}
+function report(store, errors, hints) {
+  for (const e of errors) store.say(`ERROR  ${e.startsWith("policy: ") ? e : `policy: ${e}`}`);
+  for (const h of hints) store.say(`HINT   ${h.startsWith("policy: ") ? h : `policy: ${h}`}`);
+}
+
+// src/commands/checks.ts
+var Snapshot = class {
+  constructor(store) {
+    this.store = store;
+    this.goals = store.goals();
+    this.items = store.items();
+    this.plans = store.plans();
+    this.allPlans = store.plans(true);
+    this.idea = store.idea();
+    this.focus = store.focus();
+  }
+  store;
+  goals;
+  items;
+  plans;
+  // this worktree
+  allPlans;
+  // plus live plan branches
+  idea;
+  focus;
+};
+var valid = (flow, st) => st !== null && Object.hasOwn(flow, st);
+var up2 = (s) => (s ?? "").toUpperCase();
+function findings(store) {
+  const s = new Snapshot(store), f = { errors: [], hints: [] };
+  for (const rule of [idea, plans, overlaps, items, goals, ledger, knowledge, hygiene]) rule(s, f);
+  const p = policyFindings(store);
+  return { errors: [...f.errors, ...p.errors], hints: [...f.hints, ...p.hints, ...agentHints(store), ...livenessHints(store)] };
+}
+function check(store) {
+  store.require();
+  const f = findings(store);
+  for (const e of f.errors) store.say(`ERROR  ${e}`);
+  for (const h of f.hints) store.say(`HINT   ${h}`);
+  if (!f.errors.length && !f.hints.length) store.say("Hub OK.");
+  return f.errors.length ? 1 : 0;
+}
+function idea(s, f) {
+  const i = s.idea;
+  if (!i) {
+    f.hints.push("no idea.md \u2014 write the problem, outcome and success criteria with `new-idea TITLE --from <draft>`");
+    return;
+  }
+  const st = i.get("status");
+  if (!valid(IDEA_FLOW, st)) f.errors.push(`IDEA: invalid status '${st}'`);
+  if (st === "decided") f.errors.push(...decisionProblems(i).map((p) => `IDEA: decided but ${p}`));
+  if (s.focus) {
+    const g = s.goals.get(s.focus);
+    if (!g) f.errors.push(`IDEA: focus ${s.focus} is not a goal`);
+    else if (CLOSED.has(g.get("status") ?? "")) f.hints.push(`focus ${s.focus} is ${g.get("status")} \u2014 set the next focus with \`focus G-###\``);
+  } else if ([...s.goals.values()].some((g) => !CLOSED.has(g.get("status") ?? ""))) {
+    f.hints.push("no focus goal \u2014 `focus G-###` so the team works toward one goal at a time");
+  }
+}
+function plans(s, f) {
+  const branches = new Set(planBranches());
+  const here = currentBranch();
+  for (const [pid, p] of s.plans) {
+    const st = p.get("status");
+    if (!valid(PLAN_FLOW, st)) f.errors.push(`${pid}: invalid status '${st}'`);
+    const missing = p.missing(REQUIRED_ON_CREATE.plan);
+    if (!CLOSED.has(st ?? "") && missing.length) {
+      f.errors.push(`${pid}: skeleton plan \u2014 empty ${missing.join(", ")} (write it or delete it; unscheduled ideas belong in backlog items)`);
+    }
+    const unknownDeps = p.dependsOn().filter((d) => !s.allPlans.has(d));
+    if (unknownDeps.length) f.errors.push(`${pid}: depends on unknown ${unknownDeps.join(", ")}`);
+    const unknownItems = idList(p.get("items")).filter((i) => !s.items.has(i));
+    if (unknownItems.length) f.errors.push(`${pid}: links unknown items ${unknownItems.join(", ")}`);
+    if (p.get("goal") && !s.goals.has(up2(p.get("goal")))) f.errors.push(`${pid}: references missing goal ${p.get("goal")}`);
+    if (st === "ready") f.errors.push(...readinessProblems(s.store, p).map((problem) => `${pid}: ready but ${problem}`));
+    if (st === "done") donePlan(pid, p, f);
+    if (ACTIVE.has(st ?? "")) activePlan(pid, p, s, f, branches, here);
+    const outside = drift(s.allPlans.get(pid) ?? p, s.store.baseBranch());
+    if (outside?.length) f.hints.push(`${pid}: changes outside its touches: ${outside.slice(0, 8).join(", ")} \u2014 widen touches (and log why) or move the work`);
+    if ((ACTIVE.has(st ?? "") || st === "ready") && !onFocus(p, s.items, s.focus)) {
+      f.hints.push(`${pid}: ${st} but does not serve the focus goal ${s.focus} (only bugs and chores may run off focus)`);
+    }
+  }
+}
+function overlaps(s, f) {
+  for (const [pid, p] of s.allPlans) {
+    if (!ACTIVE.has(p.get("status") ?? "")) continue;
+    for (const o of overlapping(p, s.allPlans).filter((x) => ACTIVE.has(s.allPlans.get(x.id)?.get("status") ?? "") && x.id > pid)) {
+      f.hints.push(`${pid} and ${o.id} are both active and overlap on ${o.globs.join(", ")} \u2014 sequence them (depends_on) or narrow touches`);
+    }
+  }
+}
+function donePlan(pid, p, f) {
+  if (p.tasks().some(([d]) => !d)) f.errors.push(`${pid}: done but has unchecked tasks`);
+  if (!stripComments(p.section("Outcome")).trim()) f.errors.push(`${pid}: done but Outcome section is empty`);
+}
+function activePlan(pid, p, s, f, branches, here) {
+  const st = p.get("status");
+  const waits = unmetDeps(p, s.allPlans);
+  if (waits.length) f.hints.push(`${pid}: ${st} while dependencies are unfinished: ${waits.join(", ")}`);
+  if (!p.tasks().length || !p.hasContent("Acceptance criteria")) f.errors.push(`${pid}: ${st} but has no tasks or acceptance criteria`);
+  const branch = p.get("branch");
+  if ((st === "in-progress" || st === "in-review") && !branches.has(branch ?? "") && here !== branch) {
+    f.hints.push(`${pid}: ${st} but branch ${branch} not found locally`);
+  }
+}
+function items(s, f) {
+  for (const [iid, it] of s.items) {
+    const st = it.get("status");
+    if (!valid(ITEM_FLOW, st)) f.errors.push(`${iid}: invalid status '${st}'`);
+    if (st === "triaged") {
+      const problems = triageProblems(it);
+      if (problems.length) f.errors.push(`${iid}: triaged but ${problems.join("; ")}`);
+    }
+    const owner2 = up2(it.get("plan"));
+    if (owner2 && !s.allPlans.has(owner2)) f.errors.push(`${iid}: linked to missing plan ${owner2}`);
+    if (s.allPlans.get(owner2)?.get("status") === "dropped") {
+      f.hints.push(`${iid}: its plan ${owner2} was dropped \u2014 clear \`plan:\` to return it to the backlog`);
+    }
+    if (it.get("goal") && !s.goals.has(up2(it.get("goal")))) f.errors.push(`${iid}: references missing goal ${it.get("goal")}`);
+    if (iid.startsWith("BUG-") && it.get("priority") === "P0" && ["new", "triaged"].includes(itemStatus(it, s.allPlans))) {
+      f.hints.push(`${iid}: P0 bug with no plan \u2014 expedite it`);
+    }
+  }
+  const untriaged = [...s.items.values()].filter((it) => it.get("status") === "new");
+  if (untriaged.length > 10) f.hints.push(`${untriaged.length} untriaged items \u2014 run a triage session`);
+}
+function goals(s, f) {
+  for (const [eid, e] of s.goals) {
+    const st = e.get("status");
+    if (!valid(GOAL_FLOW, st)) f.errors.push(`${eid}: invalid status '${st}'`);
+    const missing = e.missing(["Outcome", "Scope", "Acceptance criteria"]);
+    if (!CLOSED.has(st ?? "") && missing.length) f.errors.push(`${eid}: skeleton goal \u2014 empty ${missing.join(", ")}`);
+    const eps = goalPlans(eid, s.allPlans, s.items), eitems = goalItems(eid, s.items);
+    const openItems = eitems.filter((i) => itemStatus(i, s.allPlans) !== "done");
+    if (eps.length && eps.every((p) => CLOSED.has(p.get("status") ?? "")) && !openItems.length && st === "active") {
+      f.hints.push(`${eid}: all plans and items closed \u2014 verify acceptance criteria, then \`move ${eid} done\``);
+    }
+    if (st === "proposed" && eps.some((p) => ["in-progress", "in-review", "blocked", "done"].includes(p.get("status") ?? ""))) {
+      f.hints.push(`${eid}: has started plans but is still 'proposed' \u2014 \`move ${eid} active\` (on main)`);
+    }
+    if (!CLOSED.has(st ?? "") && !eps.length && !eitems.length) f.hints.push(`${eid}: no plans and no items \u2014 break the goal down`);
+  }
+}
+function knowledge(s, f) {
+  const entries = s.store.knowledge(false);
+  if (!entries.length) return;
+  const files2 = files(s.store.ws.root);
+  const ids = new Set(entries.map((e) => e.id));
+  const open = [s.idea, ...s.goals.values(), ...s.allPlans.values()].filter((d) => !!d && !CLOSED.has(d.get("status") ?? ""));
+  const cited = /* @__PURE__ */ new Map();
+  for (const d of open) for (const k of d.text.match(K_ID_RE) ?? []) cited.set(k, [...cited.get(k) ?? [], d.id]);
+  for (const e of entries) {
+    if (!KNOWLEDGE_TYPES.includes(e.type)) f.errors.push(`${e.id}: unknown type '${e.type}'`);
+    if (e.supersedes && !ids.has(e.supersedes)) f.errors.push(`${e.id}: supersedes missing ${e.supersedes}`);
+    const secrets = secretsIn(e.doc.text, s.store.policy.policy.secrets.patterns);
+    if (secrets.length) f.errors.push(`${e.id}: looks like it contains a secret (${secrets.join(", ")}) \u2014 remove it and rotate the secret`);
+    for (const glob of e.scope) {
+      if (!files2.some((p) => globRe(glob).test(p))) f.hints.push(`${e.id}: scope '${glob}' matches no file \u2014 update the scope or supersede the entry`);
+    }
+    if (e.supersededBy && cited.has(e.id)) {
+      f.hints.push(`${e.id}: superseded by ${e.supersededBy} but still cited in ${cited.get(e.id).join(", ")}`);
+    }
+    if (e.type === "risk" && !e.doc.get("owner") && !e.supersededBy) f.hints.push(`${e.id}: risk with no owner`);
+  }
+}
+function ledger(s, f) {
+  const events = s.store.ledger.events();
+  for (const [ref, claim] of s.store.ledger.claims(events)) {
+    const st = s.allPlans.get(ref)?.get("status");
+    if (st && CLOSED.has(st)) f.hints.push(`${ref}: ${st} but still claimed by ${claim.actor} \u2014 \`release ${ref}\``);
+  }
+  for (const [ref, last] of s.store.ledger.lastStatus(events)) {
+    const st = s.allPlans.get(ref)?.get("status");
+    if (st && st !== last) f.hints.push(`${ref}: the ledger last moved it to ${last}, but the plan says ${st} (edited by hand?)`);
+  }
+}
+function hygiene(s, f) {
+  const ahead = [...s.allPlans.values()].filter((p) => ["draft", "ready"].includes(p.get("status") ?? ""));
+  if (ahead.length > MAX_WRITTEN_AHEAD) {
+    f.hints.push(`${ahead.length} plans written ahead of the work (> ${MAX_WRITTEN_AHEAD}) \u2014 keep later work as backlog items so plans don't go stale`);
+  }
+  const leftovers = s.store.ws.list(join8(s.store.dir, "drafts")).filter((n) => n.endsWith(".md"));
+  if (leftovers.length) {
+    f.hints.push(`unconverted drafts in .crew/drafts/: ${leftovers.join(", ")} \u2014 create the document from them or delete`);
+  }
+  if (s.store.ws.isDir(join8(s.store.ws.root, ".project"))) {
+    f.hints.push("a .project/ directory from project-kit is still here \u2014 `crew.mjs migrate` moves it into .crew/");
+  }
+}
+
+// src/commands/goals.ts
+function goalEvidence(store, goal) {
+  const cps = store.ledger.events().filter((e) => e.type === "checkpoint" && e.ref === goal.id);
+  return criteria(goal).map((ac) => {
+    let found = null;
+    for (const e of cps) for (const v of e.verify ?? []) if (v.ac_text?.includes(acPrint(ac))) found = { verify: v, role: e.role };
+    return { ac, verify: found?.verify ?? null, role: found?.role ?? null };
+  });
+}
+function goalProblems(store, goal) {
+  const plans2 = store.plans(true), items2 = store.items();
+  const verifier = store.policy.policy.role_gates["goal.done"] ? "pm" : null;
+  const problems = goalEvidence(store, goal).flatMap((e, i) => {
+    const how = `\`checkpoint ${goal.id} --verify "<how you checked>" --result pass --ac ${i + 1}\``;
+    if (!e.verify) return [`AC${i + 1} is not verified: ${how}${verifier ? ` (the ${verifier})` : ""} \u2014 ${e.ac}`];
+    if (!e.verify.ok) return [`AC${i + 1}: its latest check failed (${e.verify.cmd})`];
+    if (verifier && e.role !== verifier) return [`AC${i + 1}: verified by the ${e.role ?? "no"} role; the ${verifier} verifies goals: ${how}`];
+    return [];
+  });
+  const gp = goalPlans(goal.id, plans2, items2);
+  for (const p of gp.filter((x) => !CLOSED.has(x.get("status") ?? ""))) problems.push(`${p.id} is ${p.get("status")}: complete or drop it`);
+  for (const i of goalItems(goal.id, items2).filter((x) => itemStatus(x, plans2) !== "done")) {
+    problems.push(`${i.id} is still open (${itemStatus(i, plans2)}): deliver it, or move it to another goal`);
+  }
+  const ids = new Set(gp.map((p) => p.id));
+  const { errors, hints } = findings(store);
+  for (const f of [...errors, ...hints].filter((x) => /outside its touches/.test(x) && ids.has(x.split(":")[0]))) problems.push(`drift: ${f}`);
+  return problems;
+}
+
+// src/commands/review.ts
+var lastCode = (branch) => git(["log", "-1", "--format=%H", branch, "--", ".", ":(exclude).crew"])?.trim() || null;
+function review(store, planId, o) {
+  store.require();
+  const plan = store.find(store.checkRef(planId, "plan"));
+  if (!!o.approve === !!o.changes) fail('Give one verdict: --approve, or --changes "<what to change>".');
+  if (plan.get("status") !== "in-review") fail(`${plan.id} is '${plan.get("status")}': only a plan in review is reviewed.`);
+  authorize(store, plan.id, "plan.reviewed", void 0, void 0, `review ${plan.id}`);
+  const me = store.ledger.who.run;
+  if (implementers(store.ledger.events(), plan.id).has(me)) fail(`This run (${me}) implemented ${plan.id}; another role reviews it.`);
+  const branch = plan.get("branch") ?? "";
+  const sha = branch && git(["rev-parse", "--verify", "-q", branch])?.trim() || null;
+  store.ledger.record("review", plan.id, { verdict: o.approve ? "approve" : "changes", sha, ...o.changes ? { text: o.changes } : {} });
+  if (o.changes) {
+    plan.appendLog(`review: changes requested \u2014 ${o.changes}`, "Progress log");
+    plan.save();
+    move(store, plan.id, "in-progress", `changes requested: ${o.changes}`, false, void 0, "plan.reviewed");
+  } else store.say(`${plan.id}: approved${sha ? ` at ${sha.slice(0, 7)}` : ""}`);
+}
+function reviewProblems(store, plan) {
+  if (!store.policy.policy.role_gates["plan.reviewed"]) return [];
+  const last = store.ledger.events().filter((e) => e.type === "review" && e.ref === plan.id).at(-1);
+  const how = `\`review ${plan.id} --approve\` by the ${store.policy.policy.role_gates["plan.reviewed"]}`;
+  if (!last) return [`no code review yet: ${how}`];
+  if (last.verdict !== "approve") return [`the last review asked for changes: ${last.text}`];
+  const code = lastCode(plan.get("branch") ?? "");
+  const dirty = (git(["status", "--porcelain"]) ?? "").split("\n").filter((l) => l.trim() && !l.slice(3).startsWith(".crew/"));
+  const covered = !code || !!last.sha && git(["merge-base", "--is-ancestor", code, String(last.sha)]) !== null;
+  return covered && !(currentBranch() === plan.get("branch") && dirty.length) ? [] : [`the code changed since the approving review (${String(last.sha ?? "?").slice(0, 7)}): ${how} again`];
+}
+
+// src/commands/workflow.ts
+var LOG_SECTION = { item: "Notes" };
+function move(store, docId, status2, note, force = false, approvedBy, via) {
+  store.require();
+  docId = docId.toUpperCase();
+  const kind = kindOf(docId);
+  const doc = store.find(docId);
+  const flow = FLOWS[kind];
+  const old = doc.get("status") ?? "";
+  if (!Object.hasOwn(flow, status2)) fail(`Unknown status '${status2}'. Valid: ${Object.keys(flow).join(", ")}`);
+  if (!(flow[old] ?? []).includes(status2) && !force) {
+    const allowed = [...flow[old] ?? []].sort().join(", ") || "none";
+    fail(`${docId}: ${old} \u2192 ${status2} not allowed (from ${old}: ${allowed}). Use --force to override.`);
+  }
+  if (!force) guard2(store, kind, doc, status2, approvedBy);
+  const waiting = FORWARD.has(status2) ? openQuestions(store.ledger.events(), doc.id).filter((x) => x.blocking) : [];
+  if (waiting.length && !force) {
+    fail(`${doc.id} waits for an answer before it moves on:
+  - ${waiting.map((x) => `${x.id} \u2192 ${x.to}: ${x.text}`).join("\n  - ")}
+(\`crew.mjs questions\`; --force to move anyway)`);
+  }
+  if (kind === "plan" && status2 === "in-progress" && !via) assignedHere(store, doc.id);
+  const lane = kind === "plan" && status2 === "ready" && fastLane(store, doc);
+  authorize(store, doc.id, via ?? `${kind}.${status2}`, approvedBy, via ? void 0 : old, void 0, lane ? ["pm"] : []);
+  if (kind === "plan" && status2 === "in-progress" && !via) claimFor(store, doc, force);
+  stamp(kind, doc, status2);
+  doc.set("status", status2);
+  if (kind === "plan" && status2 === "in-review" && doc.source === "worktree") writeHandoff(store, doc);
+  if (kind === "plan" && old === "in-review" && status2 === "in-progress") {
+    escalateLimit(store, doc.id, bounces(store.ledger.events(), doc.id) + 1, store.policy.policy.limits.max_bounces, "came back from review");
+  }
+  const approval = approvedBy ? ` (approved by ${approvedBy})` : "";
+  doc.appendLog(`status ${old} \u2192 ${status2}` + (note ? ` \u2014 ${note}` : "") + approval, LOG_SECTION[kind] ?? "Progress log");
+  doc.save();
+  store.ledger.record("move", doc.id, {
+    from: old,
+    to: status2,
+    ...note ? { note } : {},
+    ...approvedBy ? { approved_by: approvedBy } : {},
+    ...via ? { via } : {}
+  });
+  if (CLOSED.has(status2) && store.ledger.claims().has(doc.id)) store.ledger.record("release", doc.id, { reason: status2 });
+  if (kind === "goal" && status2 === "done") notify(store, "goal-done", doc.id, `${doc.id} is done: ${doc.get("title")}`);
+  store.say(`${doc.id}: ${old} \u2192 ${status2}`);
+  return doc;
+}
+function authorize(store, id, transition, approvedBy, from, cmd = `move ${id} ${transition.split(".")[1]}`, also = []) {
+  const { policy, errors } = store.policy;
+  if (errors.length) fail(`The policy is invalid, so nothing moves until it is fixed (\`crew.mjs policy check\`):
+  - ${errors.join("\n  - ")}`);
+  if (approvedBy !== void 0 && !approvedBy.trim()) fail("--approved-by needs the approving person's name.");
+  if (approvedBy) return;
+  const reason = approvalReason(policy, transition);
+  const [, status2] = transition.split(".");
+  if (reason) {
+    fail(`${id} \u2192 ${status2} is ${reason}: a human approves it with \`crew.mjs ${cmd} --approved-by <name>\` (agents over MCP can't). Ask the ${policy.escalation.to} first.`);
+  }
+  const [kind] = transition.split(".");
+  const role = (from ? policy.role_gates[`${kind}.${from}>${status2}`] : void 0) ?? policy.role_gates[transition];
+  const mine = store.ledger.who.role;
+  if (role && mine !== role && !also.includes(mine ?? "")) fail(`${id} \u2192 ${status2} is for the ${role} role; this run is ${mine ? `the ${mine} role` : "in no role"} (CREW_ROLE).`);
+}
+function claimFor(store, doc, force) {
+  const held = store.ledger.claims().get(doc.id);
+  if (held?.run === store.ledger.who.run) return;
+  if (held && !force) {
+    fail(`${doc.id} is claimed by ${held.actor} (${held.run}, ${held.worktree}) since ${held.ts.slice(0, 10)}. Coordinate with them, or \`release ${doc.id} --force\` if that run is gone.`);
+  }
+  store.ledger.record("claim", doc.id, { branch: doc.get("branch") ?? "", ...force ? { force: true } : {} });
+}
+function budgetProblems(store) {
+  const { budgets } = store.policy.policy;
+  const events = store.ledger.events(), me = store.ledger.who.run;
+  const mine = store.ledger.spend(events.filter((e) => e.run === me)), all = store.ledger.spend(events);
+  const over = (what, used, cap, unit = "") => cap !== null && used >= cap ? [`${what}: ${unit}${+used.toFixed(2)} used of ${unit}${cap}`] : [];
+  const holders = new Set([...store.ledger.claims(events).values()].map((c) => c.run));
+  const agents2 = budgets.max_agents !== null && !holders.has(me) && holders.size >= budgets.max_agents ? [`max_agents: ${holders.size} runs already hold work (limit ${budgets.max_agents})`] : [];
+  return [
+    ...over("run cost", mine.cost, budgets.run.max_cost, "$"),
+    ...over("run tokens", mine.tokensIn + mine.tokensOut, budgets.run.max_tokens),
+    ...over("project cost", all.cost, budgets.project.max_cost, "$"),
+    ...over("project tokens", all.tokensIn + all.tokensOut, budgets.project.max_tokens),
+    ...agents2
+  ];
+}
+function guard2(store, kind, doc, status2, approvedBy) {
+  let problems = [];
+  let label = "";
+  if (kind === "plan" && status2 === "ready") {
+    problems = readinessProblems(store, doc);
+    label = "is not ready (Definition of Ready)";
+  } else if (kind === "plan" && status2 === "in-review") {
+    problems = learningsProblems(doc, new Set(store.knowledge().map((e) => e.id)));
+    label = "can't go to review";
+  } else if (kind === "plan" && status2 === "done") {
+    problems = [
+      ...doc.tasks().filter(([done]) => !done).map(([, t]) => `unchecked task: ${t}`),
+      ...evidenceProblems(store, doc, approvedBy),
+      ...reviewProblems(store, doc)
+    ];
+    label = "can't be done";
+  } else if (kind === "goal" && status2 === "done") {
+    problems = goalProblems(store, doc);
+    label = "isn't reached";
+  } else if (kind === "goal" && status2 === "active") {
+    problems = doc.missing(["Outcome", "Acceptance criteria"]).map((n) => `empty section: ${n}`);
+    label = "can't be active";
+  } else if (kind === "item" && status2 === "triaged") {
+    problems = triageProblems(doc);
+    label = "can't be triaged";
+  } else if (kind === "idea" && status2 === "decided") {
+    problems = decisionProblems(doc);
+    label = "can't be decided";
+  }
+  if (problems.length) fail(`${doc.id} ${label}:
+  - ${problems.join("\n  - ")}
+(--force to override)`);
+}
+function stamp(kind, doc, status2) {
+  if (kind === "plan" && status2 === "in-progress" && !doc.get("started")) doc.set("started", today());
+  if (kind === "idea" && status2 === "decided") doc.set("decided", today());
+  if (kind === "item" && ITEM_CLOSED.has(status2)) doc.set("closed", today());
+  if (status2 === "done") doc.set("completed", today());
+}
+function start(store, planId, force = false, approvedBy) {
+  store.require();
+  refuseWhilePaused(store, "new starts");
+  let doc = store.find(planId);
+  const branch = doc.get("branch") || `plan/${doc.id}-${slugify(doc.get("title") ?? "")}`;
+  const takeover = planBranches().includes(branch) && !store.ledger.claims().has(doc.id) && ["in-progress", "blocked"].includes(store.ledger.lastStatus().get(doc.id) ?? doc.get("status") ?? "");
+  if (!force && !takeover) checkStartable(store, doc);
+  const over = budgetProblems(store);
+  if (over.length && !approvedBy) {
+    fail(`Over budget \u2014 no new work without a human's approval (\`start ${doc.id} --approved-by <name>\`):
+  - ${over.join("\n  - ")}`);
+  }
+  const held = store.ledger.claims().get(doc.id);
+  if (held && held.run !== store.ledger.who.run && !force) {
+    fail(`${doc.id} is claimed by ${held.actor} (${held.run}, ${held.worktree}) since ${held.ts.slice(0, 10)}. Coordinate with them, or \`release ${doc.id} --force\` if that run is gone.`);
+  }
+  const asked = openQuestions(store.ledger.events(), doc.id).filter((x) => x.blocking);
+  if (asked.length && !force) {
+    fail(`${doc.id} waits for an answer before it starts:
+  - ${asked.map((x) => `${x.id} \u2192 ${x.to}: ${x.text}`).join("\n  - ")}
+(\`crew.mjs questions\`; --force to start anyway)`);
+  }
+  assignedHere(store, doc.id);
+  authorize(store, doc.id, "plan.in-progress", approvedBy, "ready");
+  if (!treeIsClean()) fail("Working tree not clean. Commit or stash first.");
+  const focus = store.focus();
+  if (!onFocus(doc, store.items(), focus)) store.say(`note: ${planId} does not serve the focus goal ${focus}`);
+  for (const o of overlapping(doc, store.plans(true)).filter((x) => store.plans(true).get(x.id)?.get("status") !== "ready")) {
+    store.say(`warning: ${planId} overlaps ${o.id} (in progress) on ${o.globs.join(", ")} \u2014 expect conflicts; coordinate or add depends_on`);
+  }
+  const from = currentBranch(), sha = git(["rev-parse", "HEAD"])?.trim();
+  git(takeover ? ["switch", "--ignore-other-worktrees", branch] : ["switch", "-c", branch], true);
+  store.ws.onAbort(() => {
+    git(from ? ["switch", "-q", from] : ["switch", "-q", "--detach", sha ?? "HEAD"]);
+    if (!takeover) git(["branch", "-D", branch]);
+  });
+  doc = store.find(planId);
+  if (doc.get("status") === "draft" && force) {
+    doc.set("status", "ready");
+    doc.save();
+  }
+  store.ledger.record("claim", doc.id, { branch, ...force ? { force: true } : {}, ...takeover ? { takeover: true } : {} });
+  if (doc.get("status") !== "in-progress") move(store, planId, "in-progress", `branch ${branch}`, force, approvedBy);
+  else store.say(`${doc.id}: taken over where it stopped \u2014 \`resume ${doc.id}\``);
+  store.say(`Switched to ${branch} \u2014 claimed by ${store.ledger.who.actor} (${store.ledger.who.run})`);
+}
+function assignedHere(store, id) {
+  const a = store.ledger.assignments().get(id), me = store.ledger.who.role, by = store.policy.policy.role_gates["plan.assigned"];
+  if (!a && by) fail(`${id} isn't assigned yet: the ${by} opens it with \`assign ${id} --to developer\`.`);
+  if (a && a.to !== me) fail(`${id} is assigned to the ${a.to} role; this run is ${me ? `the ${me} role` : "in no role"}.`);
+}
+function checkStartable(store, doc) {
+  if (doc.get("status") !== "ready") {
+    fail(`${doc.id} is '${doc.get("status")}', not 'ready'. Refine it first or use --force.`);
+  }
+  const plans2 = store.plans(true);
+  const waiting = unmetDeps(doc, plans2);
+  if (waiting.length) fail(`${doc.id} depends on unfinished plans: ${waiting.join(", ")}. (--force to start anyway)`);
+  const limit = store.settings().wip_limit;
+  const wip = myWip(store, plans2);
+  if (wip.length >= limit) {
+    fail(`WIP limit (${limit}) reached: ${wip.join(", ")} in progress. Finish or block it first (--force to override).`);
+  }
+}
+function myWip(store, plans2) {
+  const claims = store.ledger.claims();
+  return [...plans2.values()].filter((p) => p.get("status") === "in-progress" && (claims.get(p.id)?.run ?? store.ledger.who.run) === store.ledger.who.run).map((p) => p.id);
+}
+function release(store, planId, note, force = false) {
+  store.require();
+  const id = planId.toUpperCase();
+  const held = store.ledger.claims().get(id) ?? fail(`${id} is not claimed.`);
+  if (held.run !== store.ledger.who.run && !force) {
+    fail(`${id} is claimed by ${held.actor} (${held.run}), not this run. Use --force to release it anyway.`);
+  }
+  store.ledger.record("release", id, { reason: note ?? "released", from_run: held.run });
+  store.say(`${id}: released (was ${held.actor}, ${held.run})`);
+}
+function usage(store, u) {
+  store.require();
+  if (u.tokensIn === void 0 && u.tokensOut === void 0 && u.cost === void 0) fail("Give --tokens-in, --tokens-out or --cost.");
+  if (u.cost !== void 0 && !(Number.isFinite(u.cost) && u.cost >= 0)) fail("--cost must be a number \u2265 0.");
+  for (const [flag, n] of [["--tokens-in", u.tokensIn], ["--tokens-out", u.tokensOut]]) {
+    if (n !== void 0 && !(Number.isInteger(n) && n >= 0)) fail(`${flag} must be a whole number \u2265 0.`);
+  }
+  store.ledger.record("usage", u.ref ? u.ref.toUpperCase() : null, {
+    tokens_in: u.tokensIn ?? 0,
+    tokens_out: u.tokensOut ?? 0,
+    cost: u.cost ?? 0,
+    ...u.model ? { model: u.model } : {}
+  });
+  store.say(`usage recorded for ${store.ledger.who.actor} (${store.ledger.who.run})`);
+  const over = budgetProblems(store);
+  if (over.length) store.say(`warning: over budget \u2014 new work needs a human's approval: ${over.join("; ")}`);
+}
+function log(store, docId, text) {
+  const doc = store.find(docId);
+  doc.appendLog(text, LOG_SECTION[kindOf(docId) ?? "plan"] ?? "Progress log");
+  doc.save();
+  store.ledger.record("log", doc.id, { text });
+}
+
+// src/commands/autonomy.ts
+function notify(store, kind, ref, text, key = "") {
+  const { command, on } = store.policy.policy.notify;
+  if (!command || !on.includes(kind)) return;
+  const sent = store.ledger.events().some((e) => e.type === "notify" && e.kind === kind && e.ref === ref && (e.key ?? "") === key);
+  if (sent) return;
+  store.ledger.record("notify", ref, { kind, text, ...key ? { key } : {} });
+  const event = { kind, ref, text, project: store.ws.root, by: store.ledger.who.actor, role: store.ledger.who.role, ts: (/* @__PURE__ */ new Date()).toISOString() };
+  store.ws.beforeFlush(() => {
+    const r = spawnSync2(command, { shell: true, input: JSON.stringify(event), encoding: "utf8", timeout: 3e4, cwd: store.ws.root });
+    if (r.status !== 0) store.say(`warning: notify.command failed (${r.status ?? r.signal}): ${(r.stderr ?? "").trim().split("\n")[0]}`);
+  });
+}
+function runState(store) {
+  const events = store.ledger.events(), reasons = [];
+  const escalations = openQuestions(events).filter((x) => x.escalation || x.to === "executive");
+  if (escalations.length) reasons.push(`waiting for the executive: ${escalations.map((x) => `${x.id} ${x.text}`).join("; ")}`);
+  const halt = paused(events);
+  if (halt) reasons.push(`paused by ${halt.actor}: ${halt.reason ?? "no reason given"}`);
+  const over = budgetProblems(store).filter((b) => b.startsWith("project"));
+  if (over.length) reasons.push(`budget: ${over.join("; ")}`);
+  const focus = store.focus(), goal = focus ? store.goals().get(focus) : void 0;
+  if (!goal) reasons.push("no focus goal: the executive or the director sets one (`focus G-###`)");
+  else if (goal.get("status") === "done") reasons.push(`${focus} is done: the executive validates it and sets the next goals`);
+  for (const s of staleClaims(store, events)) notify(store, "stale", s.ref, `${s.ref}: no activity for ${s.hours}h from ${s.actor}`, s.run);
+  for (const b of over) notify(store, "budget", null, b, b.split(":")[0]);
+  return { stop: reasons.length > 0, reasons };
+}
+var LOOP = `while node .crew/bin/crew.mjs run --check; do claude -p "/crew:team continue" || break; done`;
+function run(store, check2 = false, json = false) {
+  store.require();
+  const s = runState(store);
+  if (json) store.say(JSON.stringify(s));
+  else if (check2) store.say(s.stop ? `STOP  ${s.reasons.join("\nSTOP  ")}` : "GO    the team can continue");
+  else {
+    store.say('Run the team unattended (from the project root): each pass hands "continue" to the Director; the loop stops');
+    store.say("on an escalation, a pause, an exhausted budget or a done goal (`run --check` exits 1).");
+    store.say(`  ${LOOP}`);
+    store.say('Scheduled instead (cron, a CI schedule): `node .crew/bin/crew.mjs run --check && claude -p "/crew:team continue"`.');
+    store.say(s.stop ? `Now: stopped \u2014 ${s.reasons.join("; ")}` : "Now: the team can continue.");
+  }
+  return check2 && s.stop ? 1 : 0;
+}
+function transcriptUsage(text) {
+  const byMessage = /* @__PURE__ */ new Map();
+  text.split("\n").forEach((line2, i) => {
+    try {
+      const m = JSON.parse(line2).message;
+      if (m?.usage) byMessage.set(m.id ?? `line-${i}`, m);
+    } catch {
+    }
+  });
+  const sum = { tokensIn: 0, tokensOut: 0, cacheRead: 0, model: null };
+  for (const m of byMessage.values()) {
+    const u = m.usage;
+    sum.tokensIn += (u.input_tokens ?? 0) + (u.cache_creation_input_tokens ?? 0);
+    sum.tokensOut += u.output_tokens ?? 0;
+    sum.cacheRead += u.cache_read_input_tokens ?? 0;
+    sum.model = m.model ?? sum.model;
+  }
+  return sum;
+}
+function usageHook(store) {
+  let h;
+  try {
+    h = JSON.parse(readFileSync5(0, "utf8"));
+  } catch {
+    return 0;
+  }
+  const role = h.agent_type ? agentRole(store.ws.root, h.agent_type) : null;
+  if (!role || !h.agent_transcript_path) return 0;
+  let text;
+  try {
+    text = readFileSync5(h.agent_transcript_path, "utf8");
+  } catch {
+    return 0;
+  }
+  const u = transcriptUsage(text);
+  if (!u.tokensIn && !u.tokensOut) return 0;
+  Object.assign(store.ledger.who, { role, run: `${role}:${h.agent_id ?? "unknown"}` });
+  store.ledger.record("usage", null, {
+    tokens_in: u.tokensIn,
+    tokens_out: u.tokensOut,
+    cost: 0,
+    cache_read: u.cacheRead,
+    ...u.model ? { model: u.model } : {},
+    source: "transcript"
+  });
+  if (budgetProblems(store).some((b) => b.startsWith("project"))) notify(store, "budget", null, budgetProblems(store).join("; "), "project");
+  return 0;
+}
+
 // src/commands/questions.ts
 function questions(events) {
   const byId = /* @__PURE__ */ new Map();
@@ -8842,11 +9717,13 @@ function ask(store, ref, to, text, o = {}) {
     if (!kindOf(id)) fail(`Unrecognised ID '${id}'.`);
     store.find(id);
   }
-  if (!ROLES.includes(to)) fail(`--to must be one of ${ROLES.join(", ")}.`);
+  const roles = store.policy.roles;
+  if (!roles.includes(to)) fail(`--to must be one of ${roles.join(", ")}.`);
   if (!text.trim()) fail("Ask a question.");
-  const qid = `Q-${randomBytes(3).toString("hex")}`;
+  const qid = `Q-${randomBytes2(3).toString("hex")}`;
   store.ledger.record("ask", id ?? null, { qid, to, text, ...o.fyi ? { blocking: false } : {}, ...o.escalation ? { escalation: true } : {} });
   store.say(`${qid} \u2192 ${to}${id ? ` about ${id}` : ""}${o.fyi ? "" : id ? ` (blocks ${id} until answered)` : ""}`);
+  if (o.escalation || to === "executive") notify(store, "escalation", id ?? null, `${qid}: ${text}`, qid);
   return qid;
 }
 function escalate(store, ref, text) {
@@ -8859,6 +9736,11 @@ function answer(store, qid, text, o = {}) {
   if (!text.trim()) fail("Give the answer.");
   if ((q.escalation || q.to === "executive") && !o.approvedBy) {
     fail(`${q.id} is an escalation to the ${q.to}: a human answers it with \`crew.mjs answer ${q.id} "\u2026" --approved-by <name>\` (agents can't).`);
+  }
+  const who = store.ledger.who;
+  if (!o.approvedBy && who.run === q.run) fail(`${q.id} was asked by this run; the ${q.to} answers it, not the asker.`);
+  if (!o.approvedBy && who.role !== q.to) {
+    fail(`${q.id} is for the ${q.to} role; this run is ${who.role ? `the ${who.role} role` : "in no role"} (CREW_ROLE). A human can answer for the role with --approved-by <name>.`);
   }
   store.ledger.record("answer", q.ref, { qid: q.id, text, ...o.approvedBy ? { approved_by: o.approvedBy } : {} });
   store.say(`${q.id} answered${q.ref ? ` \u2014 ${q.ref} is unblocked` : ""}`);
@@ -8879,186 +9761,355 @@ function listQuestions(store, o = {}) {
   }
 }
 
-// src/commands/workflow.ts
-var LOG_SECTION = { item: "Notes" };
-function move(store, docId, status2, note, force = false, approvedBy) {
+// src/commands/liveness.ts
+var HOUR = 36e5;
+var ACTIVITY = /* @__PURE__ */ new Set(["claim", "checkpoint", "move", "log"]);
+function staleClaims(store, events = store.ledger.events(), now = Date.now()) {
+  const limit = store.policy.policy.limits.stale_claim_hours;
+  if (limit === null) return [];
+  return [...store.ledger.claims(events).values()].flatMap((c) => {
+    const last = events.filter((e) => e.ref === c.ref && e.run === c.run && ACTIVITY.has(e.type)).at(-1)?.ts ?? c.ts;
+    const hours = (now - Date.parse(last)) / HOUR;
+    return hours >= limit ? [{ ref: c.ref, actor: c.actor, run: c.run, hours: Math.floor(hours) }] : [];
+  });
+}
+function paused(events) {
+  const last = events.filter((e) => e.type === "pause" || e.type === "resume").at(-1);
+  return last?.type === "pause" ? last : null;
+}
+function refuseWhilePaused(store, what) {
+  const p = paused(store.ledger.events());
+  if (p) fail(`The team is paused (${p.reason ?? "no reason given"}, by ${p.actor} ${p.ts.slice(0, 16).replace("T", " ")}): no ${what}. \`resume\` first.`);
+}
+function mayPause(store) {
+  const role = store.ledger.who.role;
+  if (role && role !== "executive" && role !== "director") fail(`Only the executive or the director pauses or resumes the team; this run is the ${role} role.`);
+}
+function pauseTeam(store, reason) {
   store.require();
-  docId = docId.toUpperCase();
-  const kind = kindOf(docId);
-  const doc = store.find(docId);
-  const flow = FLOWS[kind];
-  const old = doc.get("status") ?? "";
-  if (!Object.hasOwn(flow, status2)) fail(`Unknown status '${status2}'. Valid: ${Object.keys(flow).join(", ")}`);
-  if (!(flow[old] ?? []).includes(status2) && !force) {
-    const allowed = [...flow[old] ?? []].sort().join(", ") || "none";
-    fail(`${docId}: ${old} \u2192 ${status2} not allowed (from ${old}: ${allowed}). Use --force to override.`);
-  }
-  if (!force) guard(store, kind, doc, status2, approvedBy);
-  const waiting = FORWARD.has(status2) ? openQuestions(store.ledger.events(), doc.id).filter((x) => x.blocking) : [];
-  if (waiting.length && !force) {
-    fail(`${doc.id} waits for an answer before it moves on:
-  - ${waiting.map((x) => `${x.id} \u2192 ${x.to}: ${x.text}`).join("\n  - ")}
-(\`crew.mjs questions\`; --force to move anyway)`);
-  }
-  authorize(store, doc.id, `${kind}.${status2}`, approvedBy);
-  stamp(kind, doc, status2);
-  doc.set("status", status2);
-  if (kind === "plan" && status2 === "in-review" && doc.source === "worktree") writeHandoff(store, doc);
-  const approval = approvedBy ? ` (approved by ${approvedBy})` : "";
-  doc.appendLog(`status ${old} \u2192 ${status2}` + (note ? ` \u2014 ${note}` : "") + approval, LOG_SECTION[kind] ?? "Progress log");
-  doc.save();
-  store.ledger.record("move", doc.id, { from: old, to: status2, ...note ? { note } : {}, ...approvedBy ? { approved_by: approvedBy } : {} });
-  if (CLOSED.has(status2) && store.ledger.claims().has(doc.id)) store.ledger.record("release", doc.id, { reason: status2 });
-  store.say(`${doc.id}: ${old} \u2192 ${status2}`);
-  return doc;
+  mayPause(store);
+  if (paused(store.ledger.events())) fail("The team is already paused.");
+  store.ledger.record("pause", null, reason ? { reason } : {});
+  notify(store, "paused", null, `team paused by ${store.ledger.who.actor}${reason ? `: ${reason}` : ""}`, (/* @__PURE__ */ new Date()).toISOString());
+  store.say(`Team paused${reason ? `: ${reason}` : ""}. Runs in flight finish their current step and hand off; \`staff\` and \`start\` refuse until \`resume\`.`);
 }
-function authorize(store, id, transition, approvedBy) {
-  const { policy, errors } = store.policy;
-  if (errors.length) fail(`The policy is invalid, so nothing moves until it is fixed (\`crew.mjs policy check\`):
-  - ${errors.join("\n  - ")}`);
-  if (approvedBy !== void 0 && !approvedBy.trim()) fail("--approved-by needs the approving person's name.");
-  if (approvedBy) return;
-  const reason = approvalReason(policy, transition);
-  const [, status2] = transition.split(".");
-  if (reason) {
-    fail(`${id} \u2192 ${status2} is ${reason}: a human approves it with \`crew.mjs move ${id} ${status2} --approved-by <name>\` (agents over MCP can't). Ask the ${policy.escalation.to} first.`);
-  }
-  const role = policy.role_gates[transition];
-  const mine = store.ledger.who.role;
-  if (role && mine !== role) fail(`${id} \u2192 ${status2} is for the ${role} role; this run is ${mine ? `the ${mine} role` : "in no role"} (CREW_ROLE).`);
+function resumeTeam(store, note) {
+  store.require();
+  mayPause(store);
+  if (!paused(store.ledger.events())) fail("The team isn't paused.");
+  store.ledger.record("resume", null, note ? { note } : {});
+  store.say("Team resumed.");
 }
-function budgetProblems(store) {
-  const { budgets } = store.policy.policy;
-  const events = store.ledger.events(), me = store.ledger.who.run;
-  const mine = store.ledger.spend(events.filter((e) => e.run === me)), all = store.ledger.spend(events);
-  const over = (what, used, cap, unit = "") => cap !== null && used >= cap ? [`${what}: ${unit}${+used.toFixed(2)} used of ${unit}${cap}`] : [];
-  const holders = new Set([...store.ledger.claims(events).values()].map((c) => c.run));
-  const agents = budgets.max_agents !== null && !holders.has(me) && holders.size >= budgets.max_agents ? [`max_agents: ${holders.size} runs already hold work (limit ${budgets.max_agents})`] : [];
+function escalateLimit(store, ref, count, limit, what) {
+  if (limit === null || count !== limit + 1) return;
+  if (openQuestions(store.ledger.events(), ref).some((x) => x.to === "director")) return;
+  ask(store, ref, "director", `${ref} ${what} ${count} times (limit ${limit}): decide \u2014 re-spec it, reassign it, split it or drop it.`);
+}
+var bounces = (events, ref) => events.filter((e) => e.type === "move" && e.ref === ref && e.from === "in-review" && e.to === "in-progress").length;
+var attempts = (events, ref) => events.filter((e) => e.type === "checkpoint" && e.ref === ref && e.attempt).length;
+function livenessHints(store) {
+  const events = store.ledger.events(), p = paused(events);
   return [
-    ...over("run cost", mine.cost, budgets.run.max_cost, "$"),
-    ...over("run tokens", mine.tokensIn + mine.tokensOut, budgets.run.max_tokens),
-    ...over("project cost", all.cost, budgets.project.max_cost, "$"),
-    ...over("project tokens", all.tokensIn + all.tokensOut, budgets.project.max_tokens),
-    ...agents
+    ...p ? [`team paused by ${p.actor} (${p.reason ?? "no reason given"}) \u2014 \`resume\` to staff and start again`] : [],
+    ...staleClaims(store, events).map((s) => `${s.ref}: claim by ${s.actor} (${s.run}) is stale \u2014 no activity for ${s.hours}h (limits.stale_claim_hours); the director may \`reassign ${s.ref}\``)
   ];
 }
-function guard(store, kind, doc, status2, approvedBy) {
-  let problems = [];
-  let label = "";
-  if (kind === "plan" && status2 === "ready") {
-    problems = readinessProblems(store, doc);
-    label = "is not ready (Definition of Ready)";
-  } else if (kind === "plan" && status2 === "in-review") {
-    problems = learningsProblems(doc, new Set(store.knowledge().map((e) => e.id)));
-    label = "can't go to review";
-  } else if (kind === "plan" && status2 === "done") {
-    problems = [
-      ...doc.tasks().filter(([done]) => !done).map(([, t]) => `unchecked task: ${t}`),
-      ...evidenceProblems(store, doc, approvedBy)
-    ];
-    label = "can't be done";
-  } else if (kind === "goal" && status2 === "active") {
-    problems = doc.missing(["Outcome", "Acceptance criteria"]).map((n) => `empty section: ${n}`);
-    label = "can't be active";
-  } else if (kind === "item" && status2 === "triaged") {
-    problems = triageProblems(doc);
-    label = "can't be triaged";
-  } else if (kind === "idea" && status2 === "decided") {
-    problems = decisionProblems(doc);
-    label = "can't be decided";
-  }
-  if (problems.length) fail(`${doc.id} ${label}:
-  - ${problems.join("\n  - ")}
-(--force to override)`);
+
+// src/commands/execution.ts
+var OUTPUT_LINES = 15;
+var OUTPUT_CHARS = 2e3;
+var RUN_TIMEOUT_MS = 10 * 6e4;
+var acPrint = (text) => createHash2("sha1").update(text.replace(/\s*(?:[—–-]\s*)?\bevidence:.*$/i, "").replace(/\s+/g, " ").trim().toLowerCase()).digest("hex").slice(0, 10);
+function criteria(plan) {
+  const list = plan.checklist("Acceptance criteria").map(([, c]) => c);
+  return list.length ? list : plan.bullets("Acceptance criteria");
 }
-function stamp(kind, doc, status2) {
-  if (kind === "plan" && status2 === "in-progress" && !doc.get("started")) doc.set("started", today());
-  if (kind === "idea" && status2 === "decided") doc.set("decided", today());
-  if (kind === "item" && ITEM_CLOSED.has(status2)) doc.set("closed", today());
-  if (status2 === "done") doc.set("completed", today());
+function implementers(events, planId) {
+  return new Set(events.filter((e) => e.ref === planId && (e.type === "claim" || e.type === "move" && e.to === "in-progress" && !e.via)).map((e) => e.run));
 }
-function start(store, planId, force = false, approvedBy) {
-  store.require();
-  let doc = store.find(planId);
-  if (!force) checkStartable(store, doc);
-  const over = budgetProblems(store);
-  if (over.length && !approvedBy) {
-    fail(`Over budget \u2014 no new work without a human's approval (\`start ${doc.id} --approved-by <name>\`):
-  - ${over.join("\n  - ")}`);
-  }
-  const held = store.ledger.claims().get(doc.id);
-  if (held && held.run !== store.ledger.who.run && !force) {
-    fail(`${doc.id} is claimed by ${held.actor} (${held.run}, ${held.worktree}) since ${held.ts.slice(0, 10)}. Coordinate with them, or \`release ${doc.id} --force\` if that run is gone.`);
-  }
-  const asked = openQuestions(store.ledger.events(), doc.id).filter((x) => x.blocking);
-  if (asked.length && !force) {
-    fail(`${doc.id} waits for an answer before it starts:
-  - ${asked.map((x) => `${x.id} \u2192 ${x.to}: ${x.text}`).join("\n  - ")}
-(\`crew.mjs questions\`; --force to start anyway)`);
-  }
-  if (!treeIsClean()) fail("Working tree not clean. Commit or stash first.");
-  const focus = store.focus();
-  if (!onFocus(doc, store.items(), focus)) store.say(`note: ${planId} does not serve the focus goal ${focus}`);
-  for (const o of overlapping(doc, store.plans(true)).filter((x) => store.plans(true).get(x.id)?.get("status") !== "ready")) {
-    store.say(`warning: ${planId} overlaps ${o.id} (in progress) on ${o.globs.join(", ")} \u2014 expect conflicts; coordinate or add depends_on`);
-  }
-  const branch = doc.get("branch") || `plan/${doc.id}-${slugify(doc.get("title") ?? "")}`;
-  git(["switch", "-c", branch], true);
-  doc = store.find(planId);
-  if (doc.get("status") === "draft" && force) {
-    doc.set("status", "ready");
-    doc.save();
-  }
-  store.ledger.record("claim", doc.id, { branch, ...force ? { force: true } : {} });
-  move(store, planId, "in-progress", `branch ${branch}`, force, approvedBy);
-  store.say(`Switched to ${branch} \u2014 claimed by ${store.ledger.who.actor} (${store.ledger.who.run})`);
-}
-function checkStartable(store, doc) {
-  if (doc.get("status") !== "ready") {
-    fail(`${doc.id} is '${doc.get("status")}', not 'ready'. Refine it first or use --force.`);
-  }
-  const plans2 = store.plans(true);
-  const waiting = unmetDeps(doc, plans2);
-  if (waiting.length) fail(`${doc.id} depends on unfinished plans: ${waiting.join(", ")}. (--force to start anyway)`);
-  const limit = store.settings().wip_limit;
-  const wip = myWip(store, plans2);
-  if (wip.length >= limit) {
-    fail(`WIP limit (${limit}) reached: ${wip.join(", ")} in progress. Finish or block it first (--force to override).`);
-  }
-}
-function myWip(store, plans2) {
-  const claims = store.ledger.claims();
-  return [...plans2.values()].filter((p) => p.get("status") === "in-progress" && (claims.get(p.id)?.run ?? store.ledger.who.run) === store.ledger.who.run).map((p) => p.id);
-}
-function release(store, planId, note, force = false) {
-  store.require();
-  const id = planId.toUpperCase();
-  const held = store.ledger.claims().get(id) ?? fail(`${id} is not claimed.`);
-  if (held.run !== store.ledger.who.run && !force) {
-    fail(`${id} is claimed by ${held.actor} (${held.run}), not this run. Use --force to release it anyway.`);
-  }
-  store.ledger.record("release", id, { reason: note ?? "released", from_run: held.run });
-  store.say(`${id}: released (was ${held.actor}, ${held.run})`);
-}
-function usage(store, u) {
-  store.require();
-  if (u.tokensIn === void 0 && u.tokensOut === void 0 && u.cost === void 0) fail("Give --tokens-in, --tokens-out or --cost.");
-  if (u.cost !== void 0 && !(u.cost >= 0)) fail("--cost must be a number \u2265 0.");
-  store.ledger.record("usage", u.ref ? u.ref.toUpperCase() : null, {
-    tokens_in: u.tokensIn ?? 0,
-    tokens_out: u.tokensOut ?? 0,
-    cost: u.cost ?? 0,
-    ...u.model ? { model: u.model } : {}
+var checkpoints = (events, planId) => events.filter((e) => e.type === "checkpoint" && e.ref === planId);
+function evidence(store, plan) {
+  const events = store.ledger.events(), impl = implementers(events, plan.id), only = store.policy.policy.evidence.role;
+  return criteria(plan).map((ac, i) => {
+    let found = null;
+    const print2 = acPrint(ac);
+    for (const e of checkpoints(events, plan.id)) {
+      for (const v of e.verify ?? []) {
+        if (v.ac_text ? v.ac_text.includes(print2) : v.ac.includes(i + 1)) found = { verify: v, by: e.run, role: e.role };
+      }
+    }
+    return {
+      ac,
+      verify: found?.verify ?? null,
+      by: found?.by ?? null,
+      role: found?.role ?? null,
+      independent: !!found && !impl.has(found.by) && (!only || found.role === only)
+    };
   });
-  store.say(`usage recorded for ${store.ledger.who.actor} (${store.ledger.who.run})`);
-  const over = budgetProblems(store);
-  if (over.length) store.say(`warning: over budget \u2014 new work needs a human's approval: ${over.join("; ")}`);
 }
-function log(store, docId, text) {
-  const doc = store.find(docId);
-  doc.appendLog(text, LOG_SECTION[kindOf(docId) ?? "plan"] ?? "Progress log");
+function evidenceProblems(store, plan, approvedBy) {
+  const problems = [];
+  const me = store.ledger.who.run;
+  if (implementers(store.ledger.events(), plan.id).has(me) && !approvedBy) {
+    problems.push(`this run (${me}) implemented ${plan.id}; another run \u2014 QA \u2014 verifies it and moves it to done`);
+  }
+  evidence(store, plan).forEach((e, i) => {
+    if (approvedBy && /\bevidence:/i.test(e.ac)) return;
+    if (!e.verify) problems.push(`AC${i + 1} has no evidence: \`checkpoint ${plan.id} --run "<check>" --ac ${i + 1}\` \u2014 ${e.ac}`);
+    else if (!e.verify.ok) problems.push(`AC${i + 1}: its latest check failed (${e.verify.cmd})`);
+    else if (!e.independent) {
+      const only = store.policy.policy.evidence.role;
+      problems.push(only && e.role !== only ? `AC${i + 1}: checked by the ${e.role ?? "no"} role; only the ${only} role's checks count (evidence.role)` : `AC${i + 1}: only verified by the implementer (${e.by}); verify it from another run`);
+    }
+  });
+  return problems;
+}
+function snapshot() {
+  const sha = git(["rev-parse", "HEAD"])?.trim() || null;
+  const status2 = git(["status", "--porcelain"]) ?? "";
+  const dirty = status2.split("\n").filter(Boolean).map((l) => l.slice(3)).filter((p) => !p.startsWith(".crew/drafts/"));
+  const diff = git(["diff", "HEAD"]) ?? "";
+  return { sha, dirty, fingerprint: createHash2("sha1").update(`${sha}
+${status2}
+${diff}`).digest("hex").slice(0, 12) };
+}
+function planFromBranch(store, id) {
+  const pid = id?.toUpperCase() ?? /^plan\/(P-\d+)/.exec(currentBranch() ?? "")?.[1];
+  if (pid?.startsWith("G-")) return store.find(store.checkRef(pid, "goal"));
+  return pid ? store.plans(true).get(pid) ?? fail(`No plan ${pid}.`) : null;
+}
+function tail(text, extra) {
+  const lines = text.trimEnd().split("\n").slice(-OUTPUT_LINES).join("\n").slice(-OUTPUT_CHARS);
+  return secretsIn(lines, extra).length ? "(output withheld: it looked like it contained a secret)" : lines;
+}
+function checkpoint(store, id, o = {}) {
+  store.require();
+  const plan = planFromBranch(store, id);
+  if (!plan) {
+    if (o.auto) return 0;
+    fail("Not on a plan branch: name the plan (`checkpoint P-###`).");
+  }
+  const snap = snapshot();
+  const last = checkpoints(store.ledger.events(), plan.id).at(-1);
+  if (o.auto && last?.fingerprint === snap.fingerprint) return 0;
+  const acs = parseAc(o.ac, criteria(plan).length);
+  const prints = acs.map((n) => acPrint(criteria(plan)[n - 1]));
+  const verify = [];
+  if (o.run) {
+    const r = spawnSync3(o.run, { shell: true, cwd: store.ws.root, encoding: "utf8", timeout: RUN_TIMEOUT_MS, maxBuffer: 32 << 20 });
+    verify.push({ cmd: o.run, ok: r.status === 0, ac: acs, ac_text: prints, output: tail(`${r.stdout ?? ""}${r.stderr ?? ""}`, store.policy.policy.secrets.patterns), observed: true });
+  }
+  if (o.verify) {
+    if (o.result !== "pass" && o.result !== "fail") fail("--verify needs --result pass|fail.");
+    verify.push({ cmd: o.verify, ok: o.result === "pass", ac: acs, ac_text: prints, ...o.output ? { output: tail(o.output, store.policy.policy.secrets.patterns) } : {}, observed: false });
+  }
+  if (o.attempt && !o.why) fail("--attempt needs --why: what made it fail, so the next run doesn't retry it.");
+  const goal = plan.id.startsWith("G-");
+  if (goal && !verify.length) fail(`A goal's checkpoint records evidence: \`checkpoint ${plan.id} --verify "<how>" --result pass|fail --ac n\`.`);
+  const step = goal ? "goal" : o.step ?? plan.tasks().find(([done]) => !done)?.[1].split(":")[0] ?? "done";
+  store.ledger.record("checkpoint", plan.id, {
+    step,
+    sha: snap.sha,
+    dirty: snap.dirty.slice(0, 50),
+    fingerprint: snap.fingerprint,
+    ...verify.length ? { verify } : {},
+    ...o.attempt ? { attempt: { what: o.attempt, why: o.why } } : {},
+    ...o.note ? { note: o.note } : {},
+    ...o.auto ? { auto: true } : {}
+  });
+  if (o.attempt) escalateLimit(store, plan.id, attempts(store.ledger.events(), plan.id), store.policy.policy.limits.max_attempts, "has failed attempts recorded");
+  if (!o.auto) {
+    store.say(`${plan.id}: checkpoint at ${step}${snap.sha ? ` (${snap.sha.slice(0, 7)})` : ""}` + verify.map((v) => ` \u2014 ${v.ok ? "\u2713" : "\u2717"} ${v.cmd}`).join(""));
+  }
+  return verify.some((v) => !v.ok) ? 1 : 0;
+}
+function parseAc(spec, n) {
+  if (!spec) return [];
+  if (spec === "all") return Array.from({ length: n }, (_, i) => i + 1);
+  const nums = spec.split(",").map((x) => Number(x.trim().replace(/^AC/i, "")));
+  const bad = nums.filter((x) => !Number.isInteger(x) || x < 1 || x > n);
+  if (bad.length) fail(`--ac: the plan has acceptance criteria 1\u2013${n} (or "all").`);
+  return nums;
+}
+function recovery(store, plan) {
+  const events = store.ledger.events();
+  const cps = checkpoints(events, plan.id);
+  const last = cps.at(-1);
+  const owner2 = store.ledger.claims(events).get(plan.id);
+  const tasks = plan.tasks();
+  const out = [`${plan.id}: ${plan.get("title")} [${plan.get("status")}] tasks ${tasks.filter(([d]) => d).length}/${tasks.length}` + (owner2 ? ` \u2014 claimed by ${owner2.actor} (${owner2.run})` : "")];
+  if (last) {
+    const here = currentBranch() === plan.get("branch");
+    const now = here ? snapshot() : null;
+    const ahead = here && last.sha && now?.sha ? Number(git(["rev-list", "--count", `${last.sha}..HEAD`])?.trim() || 0) : 0;
+    out.push(`last checkpoint ${String(last.ts).slice(0, 16).replace("T", " ")} at ${last.step} (${String(last.sha ?? "?").slice(0, 7)}) by ${last.actor}` + (now ? `; since then ${ahead} commit(s), ${now.dirty.length} uncommitted file(s)${now.dirty.length ? `: ${now.dirty.slice(0, 8).join(", ")}` : ""}` : ""));
+  } else out.push("no checkpoint yet");
+  const latest = /* @__PURE__ */ new Map();
+  for (const e of cps) for (const v of e.verify ?? []) latest.set(v.cmd, { ...v, ts: e.ts });
+  for (const v of latest.values()) {
+    out.push(`${v.ok ? "\u2713" : "\u2717"} ${v.cmd}${v.ac.length ? ` (AC ${v.ac.join(",")})` : ""}${v.observed ? "" : " (reported)"}` + (!v.ok && v.output ? ` \u2014 ${v.output.split("\n").filter(Boolean).at(-1)}` : ""));
+  }
+  for (const e of cps.filter((c) => c.attempt)) {
+    const a = e.attempt;
+    out.push(`don't retry: ${a.what} \u2014 ${a.why}`);
+  }
+  const nxt = tasks.find(([d]) => !d)?.[1];
+  if (nxt) out.push(`next: ${nxt}`);
+  const ev = evidence(store, plan);
+  if (ev.length) {
+    out.push(`evidence: ${ev.map((e, i) => `AC${i + 1} ${!e.verify ? "\u2014" : !e.verify.ok ? "\u2717" : e.independent ? "\u2713" : "\u2713 (self)"}`).join(", ")}`);
+  }
+  return out;
+}
+function resume(store, id, json = false) {
+  store.require();
+  const plan = planFromBranch(store, id) ?? fail("Not on a plan branch: name the plan (`resume P-###`).");
+  if (json) store.say(JSON.stringify({ plan: plan.id, lines: recovery(store, plan) }));
+  else for (const line2 of recovery(store, plan)) store.say(line2);
+}
+function writeHandoff(store, plan) {
+  const logs = stripComments(plan.section("Progress log")).split("\n").filter((l) => l.trim().startsWith("- ")).slice(-3);
+  plan.replaceSection("Handoff", [
+    `_Generated ${today()} by \`crew.mjs handoff\` from the ledger._`,
+    "",
+    ...recovery(store, plan).map((l) => `- ${l}`),
+    ...logs.length ? ["", "Latest log:", ...logs] : []
+  ].join("\n"));
+}
+function handoff(store, id) {
+  store.require();
+  const plan = planFromBranch(store, id) ?? fail("Not on a plan branch: name the plan (`handoff P-###`).");
+  if (plan.source !== "worktree") fail(`${plan.id} lives on ${plan.source}; write its handoff there.`);
+  writeHandoff(store, plan);
+  plan.save();
+  store.say(`${plan.id}: handoff written`);
+}
+
+// src/commands/team.ts
+var ACTIVE2 = /* @__PURE__ */ new Set(["in-progress", "blocked", "in-review"]);
+function assign(store, planId, to, team, note, approvedBy) {
+  store.require();
+  const doc = store.find(store.checkRef(planId, "plan"));
+  const { roles, teams } = store.policy;
+  if (!roles.includes(to)) fail(`'${to}' is not a role (${roles.join(", ")}).`);
+  if (team && !Object.hasOwn(teams, team)) fail(`team '${team}' is not defined under teams: in .crew/policy.yaml.`);
+  if (doc.get("status") !== "ready") fail(`${doc.id} is '${doc.get("status")}': only a ready plan is assigned (\`move ${doc.id} ready\` first).`);
+  authorize(store, doc.id, "plan.assigned", approvedBy, void 0, `assign ${doc.id} --to ${to}`);
+  doc.set("assignee", team ? `${to} (team ${team})` : to);
+  doc.appendLog(`assigned to the ${to} role${team ? `, team ${team}` : ""}${note ? ` \u2014 ${note}` : ""}`, "Progress log");
   doc.save();
-  store.ledger.record("log", doc.id, { text });
+  store.ledger.record("assign", doc.id, {
+    to,
+    ...team ? { team } : {},
+    ...note ? { note } : {},
+    ...approvedBy ? { approved_by: approvedBy } : {}
+  });
+  store.say(`${doc.id}: assigned to the ${to} role${team ? `, team ${team}` : ""}`);
+}
+function reassign(store, planId, to, note, force = false, approvedBy) {
+  store.require();
+  const id = store.checkRef(planId, "plan");
+  store.find(id);
+  const events = store.ledger.events(), claim = store.ledger.claims(events).get(id), was = store.ledger.assignments(events).get(id);
+  const target = to ?? was?.to ?? "developer";
+  if (!store.policy.roles.includes(target)) fail(`'${target}' is not a role (${store.policy.roles.join(", ")}).`);
+  if (!claim && !was) fail(`${id} is neither claimed nor assigned: \`assign\` it instead.`);
+  authorize(store, id, "plan.reassigned", approvedBy, void 0, `reassign ${id}`);
+  if (claim && !force && !staleClaims(store, events).some((s) => s.ref === id)) {
+    fail(`${id} is held by ${claim.actor} (${claim.run}) and not stale (limits.stale_claim_hours). Reassign stale work, or --force.`);
+  }
+  if (claim) store.ledger.record("release", id, { reason: "reassigned", from_run: claim.run });
+  store.ledger.record("assign", id, { to: target, reassigned: true, ...note ? { note } : {}, ...approvedBy ? { approved_by: approvedBy } : {} });
+  store.say(`${id}: reassigned to the ${target} role${claim ? ` (released ${claim.actor}, ${claim.run})` : ""} \u2014 the next ${target} takes it over with \`start ${id}\`, which resumes its branch`);
+}
+function teamFor(plan, teams) {
+  const touches = plan.touches();
+  const score = (scope) => touches.filter((t) => scope.some((s) => globsOverlap(t, s))).length;
+  const best = Object.entries(teams).filter(([, s]) => s.length && score(s) > 0).sort(byKey(([n, s]) => [-score(s), n]))[0];
+  return best?.[0] ?? null;
+}
+function staffing(store) {
+  const plans2 = store.plans(true), items2 = store.items(), goals2 = store.goals(), focus = store.focus();
+  const events = store.ledger.events(), assigned = store.ledger.assignments(events);
+  const holders = new Set([...store.ledger.claims(events).values()].map((c) => c.run));
+  const max = store.policy.policy.budgets.max_agents;
+  const free = max === null ? null : Math.max(0, max - holders.size);
+  const order = new Map(ranked(items2, goals2, focus).map((it, i) => [it.id, i]));
+  const rank = (p) => Math.min(...planItems(p, items2).map((it) => order.get(it.id) ?? Infinity), Infinity);
+  const moved = store.ledger.lastStatus(events), claims = store.ledger.claims(events);
+  const st = (p) => claims.has(p.id) ? "in-progress" : moved.get(p.id) ?? p.get("status") ?? "";
+  const ready = [...plans2.values()].filter((p) => st(p) === "ready").sort(byKey((p) => [!onFocus(p, items2, focus), rank(p), p.id]));
+  const busy = [...plans2.values()].filter((p) => ACTIVE2.has(st(p)));
+  const out = { free, start: [], waiting: [] };
+  const clash = (p, others) => others.find((o) => p.touches().some((t) => o.touches().some((u) => globsOverlap(t, u))));
+  for (const p of ready) {
+    const deps = unmetDeps(p, plans2), blocked2 = openQuestions(events, p.id).filter((x) => x.blocking);
+    const hit = clash(p, [...busy, ...out.start.map((s) => plans2.get(s.id))]);
+    const why = deps.length ? `depends on ${deps.join(", ")}` : blocked2.length ? `waits for an answer (${blocked2.map((x) => x.id).join(", ")})` : hit ? `overlaps ${hit.id} on its touches` : free !== null && out.start.length >= free ? "no free agent (budgets.max_agents)" : "";
+    if (why) out.waiting.push({ id: p.id, why });
+    else out.start.push({ id: p.id, title: p.get("title") ?? "", team: teamFor(p, store.policy.teams), assigned: assigned.get(p.id)?.to ?? null });
+  }
+  return out;
+}
+function staff(store, json = false) {
+  store.require();
+  refuseWhilePaused(store, "new staffing");
+  const s = staffing(store);
+  if (json) {
+    store.say(JSON.stringify(s, null, 2));
+    return;
+  }
+  store.say(s.free === null ? "Staffing (no max_agents):" : `Staffing: ${s.free} agent${s.free === 1 ? "" : "s"} free (budgets.max_agents).`);
+  for (const p of s.start) {
+    const team = p.team ? ` --team ${p.team}` : "";
+    store.say(`  START  ${p.id}: ${p.title}${p.team ? ` [team ${p.team}]` : ""} \u2192 ` + (p.assigned ? `assigned to ${p.assigned}: hand it to a ${p.assigned} agent` : `PM: assign ${p.id} --to developer${team}`));
+  }
+  for (const w of s.waiting) store.say(`  WAIT   ${w.id}: ${w.why}`);
+  if (!s.start.length && !s.waiting.length) store.say("  nothing ready to start \u2014 the PM ranks, the Architect specs the next plans");
+}
+
+// src/commands/release.ts
+function mergeOrder(store) {
+  const base = store.baseBranch(), plans2 = store.plans(true), events = store.ledger.events(), moved = store.ledger.lastStatus(events);
+  const doneAt = new Map(events.filter((e) => e.type === "move" && e.to === "done").map((e) => [e.ref, e.ts]));
+  const branches = new Set(planBranches());
+  const status2 = (p) => moved.get(p.id) ?? p.get("status") ?? "";
+  const isMerged = (b) => git(["merge-base", "--is-ancestor", b, base]) !== null;
+  const out = { base, merge: [], waiting: [], merged: [] };
+  const done = [...plans2.values()].filter((p) => status2(p) === "done" && branches.has(p.get("branch") ?? "")).sort(byKey((p) => [doneAt.get(p.id) ?? p.get("completed") ?? "", p.id]));
+  const pending = /* @__PURE__ */ new Set();
+  for (const p of done) {
+    if (isMerged(p.get("branch"))) out.merged.push({ id: p.id, branch: p.get("branch") });
+    else pending.add(p.id);
+  }
+  const unmergedDep = (p) => p.dependsOn().filter((d) => {
+    const dep = plans2.get(d), b = dep?.get("branch") ?? "";
+    return dep && status2(dep) !== "dropped" && (pending.has(d) || branches.has(b) && !isMerged(b) || status2(dep) !== "done");
+  });
+  const placed = /* @__PURE__ */ new Set();
+  for (let progress = true; progress; ) {
+    progress = false;
+    for (const p of done.filter((x) => pending.has(x.id) && !placed.has(x.id))) {
+      if (unmergedDep(p).every((d) => placed.has(d))) {
+        out.merge.push({ id: p.id, title: p.get("title") ?? "", branch: p.get("branch") });
+        placed.add(p.id);
+        progress = true;
+      }
+    }
+  }
+  for (const p of done.filter((x) => pending.has(x.id) && !placed.has(x.id))) {
+    out.waiting.push({ id: p.id, why: `depends on ${unmergedDep(p).filter((d) => !placed.has(d)).join(", ")}, not merged yet` });
+  }
+  return out;
+}
+function mergeOrderCmd(store, json = false) {
+  store.require();
+  const m = mergeOrder(store);
+  if (json) return store.say(JSON.stringify(m, null, 2));
+  if (!m.merge.length && !m.waiting.length) store.say(`Nothing to merge into ${m.base}.`);
+  m.merge.forEach((p, i) => store.say(`${String(i + 1).padStart(2)}. ${p.id}: ${p.title} \u2014 merge ${p.branch} into ${m.base}`));
+  for (const w of m.waiting) store.say(`WAIT ${w.id}: ${w.why}`);
+  for (const p of m.merged) store.say(`merged: ${p.id} (${p.branch}) \u2014 delete the branch`);
 }
 
 // src/commands/roles.ts
@@ -9080,6 +10131,12 @@ var View = class {
   status(st) {
     return [...this.plans.values()].filter((p) => p.get("status") === st).sort(byKey((p) => [!onFocus(p, this.items, this.focus), p.id]));
   }
+  get assigned() {
+    return this.store.ledger.assignments(this.events);
+  }
+  gate(step) {
+    return this.store.policy.policy.role_gates[step];
+  }
   ranked(st) {
     return ranked(this.items, this.goals, this.focus).filter((i) => itemStatus(i, this.plans) === st);
   }
@@ -9093,7 +10150,14 @@ var RULES = {
   director: [
     (v) => openQuestions(v.events).filter((x) => x.escalation).map((x) => `waiting on the executive: ${x.id} \u2014 ${x.text}`),
     (v) => budgetProblems(v.store).map((b) => `over budget: ${b}`),
+    (v) => paused(v.events) ? ["the team is paused: no staffing or starts until the executive or you `resume`"] : [],
+    (v) => staleClaims(v.store, v.events).map((s) => `stale: ${s.ref} held by ${s.actor} with no activity for ${s.hours}h \u2192 reassign ${s.ref}`),
     (v) => v.status("blocked").map((p) => `unblock ${p.id}: ${p.get("title")}`),
+    (v) => {
+      if (paused(v.events)) return [];
+      const n = staffing(v.store).start.length;
+      return n ? [`staff ${n} ready plan${n > 1 ? "s" : ""}: \`staff\` \u2192 the PM assigns, developers start`] : [];
+    },
     (v) => [...v.plans.values()].filter((p) => p.get("status") === "in-progress").flatMap((p) => overlapping(p, v.plans).map((o) => `${p.id} and ${o.id} overlap on ${o.globs.join(", ")} \u2014 sequence them or split the work`)),
     (v) => {
       const g = v.goals.get(v.focus);
@@ -9105,34 +10169,40 @@ var RULES = {
   pm: [
     (v) => v.ranked("new").filter((i) => i.id.startsWith("BUG-")).slice(0, 3).map((i) => `triage bug ${i.id}: ${i.get("title")}`),
     (v) => v.ranked("new").filter((i) => !i.id.startsWith("BUG-")).slice(0, 3).map((i) => `triage ${i.id}: ${i.get("title")}`),
-    (v) => [...v.goals.values()].filter((g) => ["proposed", "active"].includes(g.get("status") ?? "") && !goalItems(g.id, v.items).some((i) => itemStatus(i, v.plans) !== "done")).map((g) => `break ${g.id} down: it has no open items`)
+    (v) => [...v.goals.values()].filter((g) => ["proposed", "active"].includes(g.get("status") ?? "") && !goalItems(g.id, v.items).some((i) => itemStatus(i, v.plans) !== "done")).map((g) => `break ${g.id} down: it has no open items`),
+    (v) => (v.gate("plan.assigned") === "pm" ? v.status("ready").filter((p) => !v.assigned.has(p.id)) : []).map((p) => `open ${p.id}: ${p.get("title")} \u2192 assign ${p.id} --to developer (\`staff\` shows what can run now)`),
+    (v) => (v.gate("plan.done") === "pm" ? v.status("in-review") : []).filter((p) => complete(v, p) && !reviewProblems(v.store, p).length).map((p) => `complete ${p.id}: ${p.get("title")} \u2014 QA's evidence and the review are in \u2192 move ${p.id} done`)
   ],
   architect: [
+    (v) => (v.gate("plan.reviewed") === "architect" ? v.status("in-review") : []).filter((p) => reviewProblems(v.store, p).length && !implementers(v.events, p.id).has(v.store.ledger.who.run)).map((p) => `review ${p.id}: ${p.get("title")} \u2014 its diff against the spec \u2192 review ${p.id} --approve | --changes "\u2026"`),
     (v) => v.status("draft").map((p) => `refine ${p.id}: ${p.get("title")} to the Definition of Ready`),
     (v) => v.ranked("triaged").slice(0, 2).map((i) => `write a plan for ${i.id}: ${i.get("title")} (${i.get("priority")})`),
     (v) => v.status("ready").flatMap((p) => overlapping(p, v.plans).map((o) => `${p.id} overlaps ${o.id} (${o.globs.join(", ")}): add depends_on or narrow touches`))
   ],
   developer: [
     (v) => [...v.plans.values()].filter((p) => ["in-progress", "blocked"].includes(p.get("status") ?? "") && v.store.ledger.claims(v.events).get(p.id)?.run === v.store.ledger.who.run).map((p) => `continue ${p.id}: ${p.get("title")} \u2192 resume ${p.id}`),
-    (v) => v.status("ready").filter((p) => !unmetDeps(p, v.plans).length && !v.store.ledger.claims(v.events).has(p.id) && !openQuestions(v.events, p.id).some((x) => x.blocking)).slice(0, 1).map((p) => `start ${p.id}: ${p.get("title")} \u2192 start ${p.id}`)
+    (v) => v.status("ready").filter((p) => (v.assigned.has(p.id) ? v.assigned.get(p.id).to === v.store.ledger.who.role : !v.gate("plan.assigned")) && !unmetDeps(p, v.plans).length && !v.store.ledger.claims(v.events).has(p.id) && !openQuestions(v.events, p.id).some((x) => x.blocking)).slice(0, 1).map((p) => `start ${p.id}: ${p.get("title")} \u2192 start ${p.id}`)
   ],
   qa: [
-    (v) => v.status("in-review").filter((p) => implementer(v.events, p.id) !== v.store.ledger.who.run).map((p) => {
+    (v) => v.status("in-review").filter((p) => !implementers(v.events, p.id).has(v.store.ledger.who.run)).map((p) => {
       const missing = evidence(v.store, p).flatMap((e, i) => e.verify?.ok && e.independent ? [] : [`AC${i + 1}`]);
-      return missing.length ? `verify ${p.id}: ${missing.join(", ")} \u2192 checkpoint ${p.id} --run "<check>" --ac \u2026` : `${p.id}: evidence complete \u2192 move ${p.id} done`;
+      const closer = v.gate("plan.done");
+      return missing.length ? `verify ${p.id}: ${missing.join(", ")} \u2192 checkpoint ${p.id} --run "<check>" --ac \u2026` : closer && closer !== "qa" ? `${p.id}: evidence complete \u2192 report to the ${closer}, who completes it` : `${p.id}: evidence complete \u2192 move ${p.id} done`;
     }),
     (v) => v.ranked("new").filter((i) => i.id.startsWith("BUG-")).slice(0, 2).map((i) => `reproduce ${i.id}: ${i.get("title")}`)
   ],
   release: [
-    (v) => v.status("done").filter((p) => planBranches().includes(p.get("branch") ?? "")).map((p) => `ship ${p.id}: merge ${p.get("branch")}, follow its Rollout & rollback, then delete the branch`),
-    (v) => v.status("in-review").filter((p) => p.hasContent("Rollout & rollback") && !/^\s*n\/a\b/i.test(stripComments(p.section("Rollout & rollback")))).map((p) => `prepare the rollout of ${p.id}: ${p.get("title")} (see its Rollout & rollback)`)
+    (v) => mergeOrder(v.store).merge.slice(0, 1).map((p) => `ship ${p.id}: merge ${p.branch} (first in \`merge-order\`), follow its Rollout & rollback, then delete the branch`),
+    (v) => v.status("in-review").filter((p) => !fastLane(v.store, p) && p.hasContent("Rollout & rollback") && !/^\s*n\/a\b/i.test(stripComments(p.section("Rollout & rollback")))).map((p) => `prepare the rollout of ${p.id}: ${p.get("title")} (see its Rollout & rollback)`)
   ]
 };
+var complete = (v, p) => evidence(v.store, p).every((e) => e.verify?.ok && e.independent);
 function roleLines(store, role) {
-  if (!ROLES.includes(role)) fail(`Unknown role '${role}'. Roles: ${ROLES.join(", ")}.`);
+  const roles = store.policy.roles;
+  if (!roles.includes(role)) fail(`Unknown role '${role}'. Roles: ${roles.join(", ")}.`);
   const v = new View(store);
   const asked = openQuestions(v.events).filter((x) => x.to === role && !(role === "executive" && x.escalation)).map((x) => `QUESTION     ${x.id} from ${x.by}${x.ref ? ` about ${x.ref}` : ""}: ${x.text} \u2192 answer ${x.id} "\u2026"`);
-  const work = RULES[role].flatMap((r) => r(v));
+  const work = (RULES[role] ?? []).flatMap((r) => r(v));
   return [
     ...asked,
     ...work.map((w, i) => `${i ? "THEN" : "NEXT"}         ${w}`).slice(0, 8),
@@ -9360,271 +10430,19 @@ Slice of ${goal.id} (${goal.get("title")}): ${cand}
   return it;
 }
 
-// src/commands/checks.ts
-import { join as join6 } from "node:path";
-
-// src/commands/policy.ts
-var import_yaml2 = __toESM(require_dist(), 1);
-var show2 = (v) => Array.isArray(v) ? v.length ? v.join(", ") : "\u2014" : v === null || v === void 0 ? "\u2014" : String(v);
-function policyShow(store, role, team, json = false) {
-  const r = resolvePolicy(store.ws.root, store.dir, role ?? store.ledger.who.role, team ?? null);
-  if (json) {
-    store.say(JSON.stringify({ role: r.role, team: r.team, policy: r.policy, sources: Object.fromEntries(r.sources), errors: r.errors }, null, 2));
-    return r.errors.length ? 1 : 0;
-  }
-  const p = r.policy;
-  const rows = [
-    ["mode", p.mode, "mode"],
-    ["human_gates", p.human_gates, "human_gates"],
-    ...Object.entries(p.role_gates).map(([t, role2]) => [`role_gates ${t}`, role2, `role_gates[${t}]`]),
-    ["reserved", p.reserved, "reserved"],
-    ["models.default", p.models.default, "models.default"],
-    ["models.fallback", p.models.fallback, "models.fallback"],
-    ["tools.allow", p.tools.allow, "tools.allow"],
-    ["tools.deny", p.tools.deny, "tools.deny"],
-    ["paths.write", p.paths.write, "paths.write"],
-    ["paths.protected", p.paths.protected, "paths.protected"],
-    ["budgets.max_agents", p.budgets.max_agents, "budgets.max_agents"],
-    ["budgets.run.max_cost", p.budgets.run.max_cost, "budgets.run.max_cost"],
-    ["budgets.run.max_tokens", p.budgets.run.max_tokens, "budgets.run.max_tokens"],
-    ["budgets.project.max_cost", p.budgets.project.max_cost, "budgets.project.max_cost"],
-    ["budgets.project.max_tokens", p.budgets.project.max_tokens, "budgets.project.max_tokens"],
-    ["git.protected_branches", p.git.protected_branches, "git.protected_branches"],
-    ["git.force_push", p.git.force_push, "git.force_push"],
-    ["git.no_verify", p.git.no_verify, "git.no_verify"],
-    ["secrets.files", p.secrets.files, "secrets.files"],
-    ["secrets.patterns", p.secrets.patterns, "secrets.patterns"],
-    ["escalation.to", p.escalation.to, "escalation.to"]
-  ];
-  store.say(`Effective policy${r.role ? ` for role ${r.role}` : ""}${r.team ? `, team ${r.team}` : ""}:`);
-  const width = Math.max(...rows.map(([k]) => k.length));
-  for (const [key, value, source] of rows) store.say(`  ${key.padEnd(width)}  ${show2(value)}  (${r.sources.get(source) ?? "default"})`);
-  report(store, r.errors, r.hints);
-  return r.errors.length ? 1 : 0;
-}
-function policyCheck(store) {
-  const { errors, hints } = policyFindings(store);
-  report(store, errors, hints);
-  if (!errors.length && !hints.length) store.say("Policy OK.");
-  return errors.length ? 1 : 0;
-}
-function policyFindings(store) {
-  const base = resolvePolicy(store.ws.root, store.dir);
-  const errors = new Set(base.errors), hints = new Set(base.hints);
-  let raw = {};
-  try {
-    raw = (0, import_yaml2.parse)(store.ws.read(`${store.dir}/policy.yaml`) ?? "") ?? {};
-  } catch {
-  }
-  const named = (section) => Object.keys(raw[section] ?? {});
-  for (const role of named("roles")) for (const e of resolvePolicy(store.ws.root, store.dir, role).errors) errors.add(e);
-  for (const team of named("teams")) for (const e of resolvePolicy(store.ws.root, store.dir, null, team).errors) errors.add(e);
-  return { errors: [...errors].map((e) => `policy: ${e}`), hints: [...hints].map((h) => `policy: ${h}`) };
-}
-function report(store, errors, hints) {
-  for (const e of errors) store.say(`ERROR  ${e.startsWith("policy: ") ? e : `policy: ${e}`}`);
-  for (const h of hints) store.say(`HINT   ${h.startsWith("policy: ") ? h : `policy: ${h}`}`);
-}
-
-// src/commands/checks.ts
-var Snapshot = class {
-  constructor(store) {
-    this.store = store;
-    this.goals = store.goals();
-    this.items = store.items();
-    this.plans = store.plans();
-    this.allPlans = store.plans(true);
-    this.idea = store.idea();
-    this.focus = store.focus();
-  }
-  store;
-  goals;
-  items;
-  plans;
-  // this worktree
-  allPlans;
-  // plus live plan branches
-  idea;
-  focus;
-};
-var valid = (flow, st) => st !== null && Object.hasOwn(flow, st);
-var up2 = (s) => (s ?? "").toUpperCase();
-function findings(store) {
-  const s = new Snapshot(store), f = { errors: [], hints: [] };
-  for (const rule of [idea, plans, overlaps, items, goals, ledger, knowledge, hygiene]) rule(s, f);
-  const p = policyFindings(store);
-  return { errors: [...f.errors, ...p.errors], hints: [...f.hints, ...p.hints] };
-}
-function check(store) {
-  store.require();
-  const f = findings(store);
-  for (const e of f.errors) store.say(`ERROR  ${e}`);
-  for (const h of f.hints) store.say(`HINT   ${h}`);
-  if (!f.errors.length && !f.hints.length) store.say("Hub OK.");
-  return f.errors.length ? 1 : 0;
-}
-function idea(s, f) {
-  const i = s.idea;
-  if (!i) {
-    f.hints.push("no idea.md \u2014 write the problem, outcome and success criteria with `new-idea TITLE --from <draft>`");
-    return;
-  }
-  const st = i.get("status");
-  if (!valid(IDEA_FLOW, st)) f.errors.push(`IDEA: invalid status '${st}'`);
-  if (st === "decided") f.errors.push(...decisionProblems(i).map((p) => `IDEA: decided but ${p}`));
-  if (s.focus) {
-    const g = s.goals.get(s.focus);
-    if (!g) f.errors.push(`IDEA: focus ${s.focus} is not a goal`);
-    else if (CLOSED.has(g.get("status") ?? "")) f.hints.push(`focus ${s.focus} is ${g.get("status")} \u2014 set the next focus with \`focus G-###\``);
-  } else if ([...s.goals.values()].some((g) => !CLOSED.has(g.get("status") ?? ""))) {
-    f.hints.push("no focus goal \u2014 `focus G-###` so the team works toward one goal at a time");
-  }
-}
-function plans(s, f) {
-  const branches = new Set(planBranches());
-  const here = currentBranch();
-  for (const [pid, p] of s.plans) {
-    const st = p.get("status");
-    if (!valid(PLAN_FLOW, st)) f.errors.push(`${pid}: invalid status '${st}'`);
-    const missing = p.missing(REQUIRED_ON_CREATE.plan);
-    if (!CLOSED.has(st ?? "") && missing.length) {
-      f.errors.push(`${pid}: skeleton plan \u2014 empty ${missing.join(", ")} (write it or delete it; unscheduled ideas belong in backlog items)`);
-    }
-    const unknownDeps = p.dependsOn().filter((d) => !s.allPlans.has(d));
-    if (unknownDeps.length) f.errors.push(`${pid}: depends on unknown ${unknownDeps.join(", ")}`);
-    const unknownItems = idList(p.get("items")).filter((i) => !s.items.has(i));
-    if (unknownItems.length) f.errors.push(`${pid}: links unknown items ${unknownItems.join(", ")}`);
-    if (p.get("goal") && !s.goals.has(up2(p.get("goal")))) f.errors.push(`${pid}: references missing goal ${p.get("goal")}`);
-    if (st === "ready") f.errors.push(...readinessProblems(s.store, p).map((problem) => `${pid}: ready but ${problem}`));
-    if (st === "done") donePlan(pid, p, f);
-    if (ACTIVE.has(st ?? "")) activePlan(pid, p, s, f, branches, here);
-    const outside = drift(s.allPlans.get(pid) ?? p);
-    if (outside?.length) f.hints.push(`${pid}: changes outside its touches: ${outside.slice(0, 8).join(", ")} \u2014 widen touches (and log why) or move the work`);
-    if ((ACTIVE.has(st ?? "") || st === "ready") && !onFocus(p, s.items, s.focus)) {
-      f.hints.push(`${pid}: ${st} but does not serve the focus goal ${s.focus} (only bugs and chores may run off focus)`);
-    }
-  }
-}
-function overlaps(s, f) {
-  for (const [pid, p] of s.allPlans) {
-    if (!ACTIVE.has(p.get("status") ?? "")) continue;
-    for (const o of overlapping(p, s.allPlans).filter((x) => ACTIVE.has(s.allPlans.get(x.id)?.get("status") ?? "") && x.id > pid)) {
-      f.hints.push(`${pid} and ${o.id} are both active and overlap on ${o.globs.join(", ")} \u2014 sequence them (depends_on) or narrow touches`);
-    }
-  }
-}
-function donePlan(pid, p, f) {
-  if (p.tasks().some(([d]) => !d)) f.errors.push(`${pid}: done but has unchecked tasks`);
-  if (!stripComments(p.section("Outcome")).trim()) f.errors.push(`${pid}: done but Outcome section is empty`);
-}
-function activePlan(pid, p, s, f, branches, here) {
-  const st = p.get("status");
-  const waits = unmetDeps(p, s.allPlans);
-  if (waits.length) f.hints.push(`${pid}: ${st} while dependencies are unfinished: ${waits.join(", ")}`);
-  if (!p.tasks().length || !p.hasContent("Acceptance criteria")) f.errors.push(`${pid}: ${st} but has no tasks or acceptance criteria`);
-  const branch = p.get("branch");
-  if ((st === "in-progress" || st === "in-review") && !branches.has(branch ?? "") && here !== branch) {
-    f.hints.push(`${pid}: ${st} but branch ${branch} not found locally`);
-  }
-}
-function items(s, f) {
-  for (const [iid, it] of s.items) {
-    const st = it.get("status");
-    if (!valid(ITEM_FLOW, st)) f.errors.push(`${iid}: invalid status '${st}'`);
-    if (st === "triaged") {
-      const problems = triageProblems(it);
-      if (problems.length) f.errors.push(`${iid}: triaged but ${problems.join("; ")}`);
-    }
-    const owner2 = up2(it.get("plan"));
-    if (owner2 && !s.allPlans.has(owner2)) f.errors.push(`${iid}: linked to missing plan ${owner2}`);
-    if (s.allPlans.get(owner2)?.get("status") === "dropped") {
-      f.hints.push(`${iid}: its plan ${owner2} was dropped \u2014 clear \`plan:\` to return it to the backlog`);
-    }
-    if (it.get("goal") && !s.goals.has(up2(it.get("goal")))) f.errors.push(`${iid}: references missing goal ${it.get("goal")}`);
-    if (iid.startsWith("BUG-") && it.get("priority") === "P0" && ["new", "triaged"].includes(itemStatus(it, s.allPlans))) {
-      f.hints.push(`${iid}: P0 bug with no plan \u2014 expedite it`);
-    }
-  }
-  const untriaged = [...s.items.values()].filter((it) => it.get("status") === "new");
-  if (untriaged.length > 10) f.hints.push(`${untriaged.length} untriaged items \u2014 run a triage session`);
-}
-function goals(s, f) {
-  for (const [eid, e] of s.goals) {
-    const st = e.get("status");
-    if (!valid(GOAL_FLOW, st)) f.errors.push(`${eid}: invalid status '${st}'`);
-    const missing = e.missing(["Outcome", "Scope", "Acceptance criteria"]);
-    if (!CLOSED.has(st ?? "") && missing.length) f.errors.push(`${eid}: skeleton goal \u2014 empty ${missing.join(", ")}`);
-    const eps = goalPlans(eid, s.allPlans, s.items), eitems = goalItems(eid, s.items);
-    const openItems = eitems.filter((i) => itemStatus(i, s.allPlans) !== "done");
-    if (eps.length && eps.every((p) => CLOSED.has(p.get("status") ?? "")) && !openItems.length && st === "active") {
-      f.hints.push(`${eid}: all plans and items closed \u2014 verify acceptance criteria, then \`move ${eid} done\``);
-    }
-    if (st === "proposed" && eps.some((p) => ["in-progress", "in-review", "blocked", "done"].includes(p.get("status") ?? ""))) {
-      f.hints.push(`${eid}: has started plans but is still 'proposed' \u2014 \`move ${eid} active\` (on main)`);
-    }
-    if (!CLOSED.has(st ?? "") && !eps.length && !eitems.length) f.hints.push(`${eid}: no plans and no items \u2014 break the goal down`);
-  }
-}
-function knowledge(s, f) {
-  const entries = s.store.knowledge(false);
-  if (!entries.length) return;
-  const files2 = files(s.store.ws.root);
-  const ids = new Set(entries.map((e) => e.id));
-  const open = [s.idea, ...s.goals.values(), ...s.allPlans.values()].filter((d) => !!d && !CLOSED.has(d.get("status") ?? ""));
-  const cited = /* @__PURE__ */ new Map();
-  for (const d of open) for (const k of d.text.match(K_ID_RE) ?? []) cited.set(k, [...cited.get(k) ?? [], d.id]);
-  for (const e of entries) {
-    if (!KNOWLEDGE_TYPES.includes(e.type)) f.errors.push(`${e.id}: unknown type '${e.type}'`);
-    if (e.supersedes && !ids.has(e.supersedes)) f.errors.push(`${e.id}: supersedes missing ${e.supersedes}`);
-    const secrets = secretsIn(e.doc.text, s.store.policy.policy.secrets.patterns);
-    if (secrets.length) f.errors.push(`${e.id}: looks like it contains a secret (${secrets.join(", ")}) \u2014 remove it and rotate the secret`);
-    for (const glob of e.scope) {
-      if (!files2.some((p) => globRe(glob).test(p))) f.hints.push(`${e.id}: scope '${glob}' matches no file \u2014 update the scope or supersede the entry`);
-    }
-    if (e.supersededBy && cited.has(e.id)) {
-      f.hints.push(`${e.id}: superseded by ${e.supersededBy} but still cited in ${cited.get(e.id).join(", ")}`);
-    }
-    if (e.type === "risk" && !e.doc.get("owner") && !e.supersededBy) f.hints.push(`${e.id}: risk with no owner`);
-  }
-}
-function ledger(s, f) {
-  const events = s.store.ledger.events();
-  for (const [ref, claim] of s.store.ledger.claims(events)) {
-    const st = s.allPlans.get(ref)?.get("status");
-    if (st && CLOSED.has(st)) f.hints.push(`${ref}: ${st} but still claimed by ${claim.actor} \u2014 \`release ${ref}\``);
-  }
-  for (const [ref, last] of s.store.ledger.lastStatus(events)) {
-    const st = s.allPlans.get(ref)?.get("status");
-    if (st && st !== last) f.hints.push(`${ref}: the ledger last moved it to ${last}, but the plan says ${st} (edited by hand?)`);
-  }
-}
-function hygiene(s, f) {
-  const ahead = [...s.allPlans.values()].filter((p) => ["draft", "ready"].includes(p.get("status") ?? ""));
-  if (ahead.length > MAX_WRITTEN_AHEAD) {
-    f.hints.push(`${ahead.length} plans written ahead of the work (> ${MAX_WRITTEN_AHEAD}) \u2014 keep later work as backlog items so plans don't go stale`);
-  }
-  const leftovers = s.store.ws.list(join6(s.store.dir, "drafts")).filter((n) => n.endsWith(".md"));
-  if (leftovers.length) {
-    f.hints.push(`unconverted drafts in .crew/drafts/: ${leftovers.join(", ")} \u2014 create the document from them or delete`);
-  }
-  if (s.store.ws.isDir(join6(s.store.ws.root, ".project"))) {
-    f.hints.push("a .project/ directory from project-kit is still here \u2014 `crew.mjs migrate` moves it into .crew/");
-  }
-}
-
 // src/commands/migrate.ts
 import { existsSync as existsSync5, readdirSync as readdirSync3, statSync as statSync4 } from "node:fs";
-import { join as join9 } from "node:path";
+import { join as join11 } from "node:path";
 
 // src/commands/planning.ts
-import { readFileSync as readFileSync4 } from "node:fs";
-import { join as join8, resolve as resolve5 } from "node:path";
+import { readFileSync as readFileSync6 } from "node:fs";
+import { join as join10, resolve as resolve5 } from "node:path";
 
 // src/commands/export.ts
-import { join as join7, resolve as resolve4 } from "node:path";
+import { join as join9, resolve as resolve4 } from "node:path";
 
 // src/commands/graph.ts
-import { basename as basename2 } from "node:path";
+import { basename as basename3 } from "node:path";
 
 // src/graph-types.ts
 var SCHEMA_VERSION = 5;
@@ -9651,7 +10469,7 @@ function buildGraph(store) {
   return {
     schemaVersion: SCHEMA_VERSION,
     generatedAt: (/* @__PURE__ */ new Date()).toISOString(),
-    project: { name: basename2(store.ws.root), branch: currentBranch(), today: today() },
+    project: { name: basename3(store.ws.root), branch: currentBranch(), today: today() },
     settings: store.settings(),
     focus: all.focus || null,
     docs,
@@ -9777,14 +10595,14 @@ function embed(graph) {
   return JSON.stringify(graph).replace(/</g, "\\u003c");
 }
 function renderHtmlShell(store) {
-  const shell = store.ws.read(join7(SCRIPT_DIR, UI_FILE));
+  const shell = store.ws.read(join9(SCRIPT_DIR, UI_FILE));
   if (shell === null || !shell.includes(DATA_SLOT)) {
     fail(`The UI bundle (${UI_FILE}) is missing next to crew.mjs. Re-run \`crew.mjs init\` from the plugin.`);
   }
   return shell;
 }
 function renderStudioShell(store) {
-  const shell = store.ws.read(join7(SCRIPT_DIR, STUDIO_FILE));
+  const shell = store.ws.read(join9(SCRIPT_DIR, STUDIO_FILE));
   if (shell === null || !shell.includes(STUDIO_SLOT)) {
     fail(`The design studio (${STUDIO_FILE}) is missing next to crew.mjs. Re-run \`crew.mjs init\` from the plugin.`);
   }
@@ -9802,36 +10620,39 @@ function exportGraph(store, format, out) {
     store.ws.write(resolve4(out), text);
     return store.say(`Wrote ${store.rel(resolve4(out))}`);
   }
-  const path = out ? resolve4(out) : join7(store.dir, "view", "index.html");
-  if (!out) store.ws.write(join7(store.dir, "view", ".gitignore"), "# generated by `crew.mjs export`\n*\n");
+  const path = out ? resolve4(out) : join9(store.dir, "view", "index.html");
+  if (!out) store.ws.write(join9(store.dir, "view", ".gitignore"), "# generated by `crew.mjs export`\n*\n");
   store.ws.write(path, renderHtml(store, graph));
   store.say(`Wrote ${store.rel(path)} \u2014 open it in a browser (it works offline; re-run export to refresh)`);
 }
 
 // src/commands/planning.ts
 function init(store) {
-  for (const d of [...Object.values(store.dirs), store.knowledgeDir, join8(store.dir, "drafts")]) {
-    const keep = join8(d, ".gitkeep");
+  for (const d of [...Object.values(store.dirs), store.knowledgeDir, join10(store.dir, "drafts")]) {
+    const keep = join10(d, ".gitkeep");
     if (!store.ws.isFile(keep)) store.ws.write(keep, "");
   }
   vendor(store);
-  const readme = join8(store.dir, "README.md");
-  const model = store.ws.read(join8(SKILL_DIR, "references", "model.md"));
+  const readme = join10(store.dir, "README.md");
+  const model = store.ws.read(join10(SKILL_DIR, "references", "model.md"));
   if (!store.ws.isFile(readme) && model !== null) store.ws.write(readme, model);
   store.say(`Initialized ${store.rel(store.dir)}/`);
 }
 function vendor(store) {
-  const bin = join8(store.dir, "bin");
+  const bin = join10(store.dir, "bin");
   if (resolve5(SCRIPT_DIR) === resolve5(bin)) return;
-  store.ws.write(join8(bin, "crew.mjs"), readFileSync4(SCRIPT_FILE, "utf8"), 493);
-  const ui = store.ws.read(join8(SCRIPT_DIR, UI_FILE));
-  if (ui !== null) store.ws.write(join8(bin, UI_FILE), ui);
-  const studio = store.ws.read(join8(SCRIPT_DIR, STUDIO_FILE));
-  if (studio !== null) store.ws.write(join8(bin, STUDIO_FILE), studio);
-  const templates = join8(store.dir, "templates");
-  for (const name of [...TEMPLATE_NAMES]) store.ws.write(join8(templates, name), store.ws.read(join8(SKILL_DIR, "templates", name)));
-  const guide = store.ws.read(join8(SKILL_DIR, "references", "writing-guide.md"));
-  if (guide !== null) store.ws.write(join8(templates, "writing-guide.md"), guide);
+  store.ws.write(join10(bin, "crew.mjs"), readFileSync6(SCRIPT_FILE, "utf8"), 493);
+  const ui = store.ws.read(join10(SCRIPT_DIR, UI_FILE));
+  if (ui !== null) store.ws.write(join10(bin, UI_FILE), ui);
+  const studio = store.ws.read(join10(SCRIPT_DIR, STUDIO_FILE));
+  if (studio !== null) store.ws.write(join10(bin, STUDIO_FILE), studio);
+  const templates = join10(store.dir, "templates");
+  for (const name of [...TEMPLATE_NAMES]) store.ws.write(join10(templates, name), store.ws.read(join10(SKILL_DIR, "templates", name)));
+  for (const name of store.ws.list(join10(SKILL_DIR, "agents"))) {
+    store.ws.write(join10(templates, "agents", name), store.ws.read(join10(SKILL_DIR, "agents", name)));
+  }
+  const guide = store.ws.read(join10(SKILL_DIR, "references", "writing-guide.md"));
+  if (guide !== null) store.ws.write(join10(templates, "writing-guide.md"), guide);
 }
 function requireSections(doc, kind) {
   const missing = doc.missing(REQUIRED_ON_CREATE[kind]);
@@ -9867,7 +10688,7 @@ function newGoal(store, title, draftPath, priority, keep = false) {
   const eid = store.nextId("G", "goal");
   const doc = store.build("goal.md", draft, { id: eid, title, priority: Store.checkPriority(priority) || "P2" });
   requireSections(doc, "goal");
-  store.writeNew(doc, join8(store.dirs.goal, `${eid}-${slugify(title)}.md`));
+  store.writeNew(doc, join10(store.dirs.goal, `${eid}-${slugify(title)}.md`));
   breakdownToItems(store, doc);
   store.consume(draftFile, keep);
 }
@@ -9891,7 +10712,7 @@ function newPlan(store, title, draftPath, o = {}) {
     touches: touches.join(", ")
   });
   requireSections(doc, "plan");
-  store.writeNew(doc, join8(store.dirs.plan, `${pid}-${slug}.md`));
+  store.writeNew(doc, join10(store.dirs.plan, `${pid}-${slug}.md`));
   for (const i of linked) {
     items2.get(i).set("plan", pid);
     items2.get(i).save();
@@ -9927,6 +10748,7 @@ function hintUnplanned(store, goal, items2) {
 var DROPPED = /^(bin|templates|view)\/|^(ROADMAP|BACKLOG|STATUS|README)\.md$/;
 var ARCHIVED = /^(milestones|sprints|releases)\/|^(project-plan|raid)\.md$/;
 var DOCS = { epics: "goals", items: "items", plans: "plans" };
+var TEXT = /\.(md|ya?ml|txt|json|csv|html?|py|mjs|js|ts|sh|toml)$|(^|\/)[^./]+$/i;
 var RAID_TYPES = [["Decisions", "decision"], ["Assumptions", "decision"], ["Risks", "risk"]];
 var OLD_REFS = [
   "CLAUDE.md",
@@ -9939,7 +10761,7 @@ var OLD_REFS = [
   ".github/workflows/ci.yml"
 ];
 function walk(dir, prefix = "") {
-  return readdirSync3(dir, { withFileTypes: true }).flatMap((e) => e.isDirectory() ? walk(join9(dir, e.name), `${prefix}${e.name}/`) : [`${prefix}${e.name}`]);
+  return readdirSync3(dir, { withFileTypes: true }).flatMap((e) => e.isDirectory() ? walk(join11(dir, e.name), `${prefix}${e.name}/`) : [`${prefix}${e.name}`]);
 }
 function renamed(text) {
   return text.replace(/\bEP-(\d+)/g, "G-$1").replace(/\.project\//g, ".crew/").replace(/\btracker\.mjs\b/g, "crew.mjs").replace(/project-kit:tracker/g, "crew:hub");
@@ -9950,20 +10772,32 @@ function leanDoc(text, kind) {
   return t;
 }
 function migrate(store) {
-  const root = store.ws.root, old = join9(root, ".project");
+  const root = store.ws.root, old = join11(root, ".project");
   if (!existsSync5(old) || !statSync4(old).isDirectory()) fail("No .project/ directory to migrate.");
   if (existsSync5(store.dir)) fail(`${store.rel(store.dir)}/ already exists \u2014 move it aside first; nothing was changed.`);
   const files2 = walk(old);
-  const read = (rel) => store.ws.read(join9(old, rel)) ?? "";
+  const read = (rel) => store.ws.read(join11(old, rel)) ?? "";
   const exitCriteria = milestoneCriteria(files2.filter((f) => f.startsWith("milestones/")).map(read));
   let counts = { docs: 0, archived: 0, knowledge: 0, issues: 0, drafted: 0 };
+  const targets = /* @__PURE__ */ new Map();
+  const put = (rel, target) => {
+    const other = targets.get(target);
+    if (other) fail(`.project/${other} and .project/${rel} would both become ${store.rel(target)} \u2014 rename one; nothing was changed.`);
+    targets.set(target, rel);
+  };
   for (const rel of files2) {
     if (DROPPED.test(rel) || rel.endsWith(".gitkeep")) continue;
     const [dir, name] = [rel.split("/")[0], rel.split("/").pop()];
-    if (ARCHIVED.test(rel)) {
-      store.ws.write(join9(store.dir, "archive", rel), renamed(read(rel)));
+    const topLevelDoc = DOCS[dir] && name.endsWith(".md") && rel.split("/").length === 2;
+    if (!TEXT.test(rel)) {
+      const to = join11(store.dir, ARCHIVED.test(rel) ? "archive" : "", rel);
+      put(rel, to);
+      store.ws.copy(join11(old, rel), to);
+    } else if (ARCHIVED.test(rel)) {
+      put(rel, join11(store.dir, "archive", rel));
+      store.ws.write(join11(store.dir, "archive", rel), renamed(read(rel)));
       counts.archived++;
-    } else if (DOCS[dir] && name.endsWith(".md")) {
+    } else if (topLevelDoc) {
       const doc = Doc.parse(leanDoc(read(rel), dir));
       if (dir === "epics") addExitCriteria(doc, Doc.parse(read(rel)).get("milestone"), exitCriteria);
       if (dir === "plans" && doc.get("status") === "ready" && !doc.touches().length) {
@@ -9971,17 +10805,21 @@ function migrate(store) {
         doc.appendLog("status ready \u2192 draft \u2014 migrated to crew: declare `touches:` before moving it back to ready");
         counts.drafted++;
       }
-      store.ws.write(join9(store.dir, DOCS[dir], name.replace(/^EP-/, "G-")), `${doc.text.trimEnd()}
+      put(rel, join11(store.dir, DOCS[dir], name.replace(/^EP-/, "G-")));
+      store.ws.write(join11(store.dir, DOCS[dir], name.replace(/^EP-/, "G-")), `${doc.text.trimEnd()}
 `);
       counts.docs++;
     } else if (rel === "config.yaml") {
-      store.ws.write(join9(store.dir, rel), renamed(read(rel)).replace(/^[ \t]+tracker:.*\n/m, "").replace(/^modules:[ \t]*\n(?![ \t])/m, ""));
+      put(rel, join11(store.dir, rel));
+      store.ws.write(join11(store.dir, rel), renamed(read(rel)).replace(/^[ \t]+tracker:.*\n/m, "").replace(/^modules:[ \t]*\n(?![ \t])/m, ""));
     } else {
-      store.ws.write(join9(store.dir, rel), renamed(read(rel)));
+      const to = join11(store.dir, rel.replace(/^epics\//, "goals/"));
+      put(rel, to);
+      store.ws.write(to, renamed(read(rel)));
     }
   }
   if (files2.includes("project-plan.md")) {
-    const config = join9(store.dir, "config.yaml");
+    const config = join11(store.dir, "config.yaml");
     store.ws.write(config, hubSettings(store.ws.read(config) ?? "", read("project-plan.md")));
   }
   store.ws.remove(old);
@@ -9996,7 +10834,7 @@ function migrate(store) {
   if (branches.length) {
     store.say(`note: plan branches still hold .project/ (${branches.join(", ")}) \u2014 finish them on the old layout, or merge this commit into each and run \`crew.mjs migrate\` there too; until then their live status is not visible from main`);
   }
-  const stale = OLD_REFS.filter((f) => /\.project\/|tracker\.mjs/.test(store.ws.read(join9(root, f)) ?? ""));
+  const stale = OLD_REFS.filter((f) => /\.project\/|tracker\.mjs/.test(store.ws.read(join11(root, f)) ?? ""));
   if (stale.length) {
     store.say(`next: these still mention .project/ or tracker.mjs \u2014 re-render them (/crew:guidelines --refresh, /crew:git-setup): ${stale.join(", ")}`);
   }
@@ -10029,9 +10867,9 @@ function raid(store, text) {
       const title = row.decision || row.assumption || row.risk || Object.values(row).find((v) => v && !/^[A-Z]+-?\d+$/.test(v)) || "";
       if (!title) continue;
       const fields = Object.entries(row).filter(([, v]) => v).map(([k, v]) => `- **${k}:** ${v}`).join("\n");
-      const id = knowledgeId(title, (k) => store.ws.isFile(join9(store.knowledgeDir, `${k}.md`)));
+      const id = knowledgeId(title, (k) => store.ws.isFile(join11(store.knowledgeDir, `${k}.md`)));
       const level = (v) => (v ?? "").trim().slice(0, 1).toUpperCase();
-      store.ws.write(join9(store.knowledgeDir, `${id}.md`), entryText({
+      store.ws.write(join11(store.knowledgeDir, `${id}.md`), entryText({
         id,
         type,
         title,
@@ -10063,18 +10901,18 @@ ${details}
 
 // src/commands/design.ts
 var import_yaml3 = __toESM(require_dist(), 1);
-import { existsSync as existsSync6, readFileSync as readFileSync5 } from "node:fs";
-import { dirname as dirname4, join as join10 } from "node:path";
+import { existsSync as existsSync6, readFileSync as readFileSync7 } from "node:fs";
+import { dirname as dirname5, join as join12 } from "node:path";
 var HANDOFF_KINDS = ["finalise", "locked", "revision", "screen-change", "screens-done", "screens-skipped"];
 var STAGES = ["palette", "directions", "tune", "finalise", "screens", "done"];
 var STATE_KEYS = ["stage", "shortlist", "variants", "current", "reviews"];
 var REQUIRED_COLORS = ["background", "foreground", "primary", "primary-foreground"];
 var FRONT = /^---\n([\s\S]*?)\n---\n/;
 function designPath(store) {
-  const cfg = store.ws.read(join10(store.dir, "config.yaml")) ?? "";
-  return join10(store.ws.root, yamlBlock(cfg, "design").file ?? "docs/design/DESIGN.md");
+  const cfg = store.ws.read(join12(store.dir, "config.yaml")) ?? "";
+  return join12(store.ws.root, yamlBlock(cfg, "design").file ?? "docs/design/DESIGN.md");
 }
-var studioPath = (store) => join10(dirname4(designPath(store)), "studio.json");
+var studioPath = (store) => join12(dirname5(designPath(store)), "studio.json");
 function readDesign(store) {
   const path = designPath(store);
   const text = store.ws.read(path);
@@ -10228,7 +11066,7 @@ function designWait(store, timeoutSec) {
   const path = studioPath(store);
   const pending = () => {
     try {
-      return existsSync6(path) ? JSON.parse(readFileSync5(path, "utf8")).handoffs ?? [] : [];
+      return existsSync6(path) ? JSON.parse(readFileSync7(path, "utf8")).handoffs ?? [] : [];
     } catch {
       return [];
     }
@@ -10255,12 +11093,12 @@ Do each, then \`crew.mjs design done <id>\` (the page updates live) and run \`de
 
 // src/server.ts
 import { spawn } from "node:child_process";
-import { randomBytes as randomBytes2 } from "node:crypto";
+import { randomBytes as randomBytes3 } from "node:crypto";
 import { existsSync as existsSync7, watch } from "node:fs";
 import { createServer } from "node:http";
-import { dirname as dirname5, join as join11 } from "node:path";
+import { dirname as dirname6, join as join13 } from "node:path";
 var str = (b, k) => typeof b[k] === "string" && b[k] ? b[k] : void 0;
-var ACTIONS = {
+var ACTIONS2 = {
   move: (s, b) => {
     move(s, str(b, "id") ?? fail("id is required"), str(b, "status") ?? fail("status is required"), str(b, "note"));
   },
@@ -10275,7 +11113,7 @@ var ACTIONS = {
   "design-studio": (s, b) => updateStudio(s, b)
 };
 function runAction(open, name, body2) {
-  const action = ACTIONS[name];
+  const action = ACTIONS2[name];
   if (!action) return { status: 404, output: [], error: `Unknown action '${name}'.` };
   const store = open();
   try {
@@ -10283,13 +11121,14 @@ function runAction(open, name, body2) {
     store.ws.flush();
     return { status: 200, output: store.ws.output };
   } catch (e) {
+    store.ws.abort();
     if (!(e instanceof HubError)) throw e;
     return { status: 400, output: store.ws.output, error: e.message };
   }
 }
 function serve(store, o) {
   store.require();
-  const token = randomBytes2(18).toString("base64url");
+  const token = randomBytes3(18).toString("base64url");
   const open = () => Store.open(store.ws.root);
   const clients = /* @__PURE__ */ new Set();
   let hosts = /* @__PURE__ */ new Set();
@@ -10341,20 +11180,20 @@ function serve(store, o) {
       return readJson(req).then((body2) => {
         const r = runAction(open, m[1], body2);
         send(res, r.status, r);
-        if (r.status === 200) notify();
+        if (r.status === 200) notify2();
       }, (e) => send(res, 400, { error: e.message }));
     }
     send(res, 404, { error: "Not found." });
   }
   let timer = null;
-  function notify() {
+  function notify2() {
     if (timer) clearTimeout(timer);
     timer = setTimeout(() => {
       for (const c of clients) c.write("event: change\ndata: {}\n\n");
     }, 150);
   }
-  const watchers = [store.dir, dirname5(designPath(store)), join11(store.ws.root, ".git", "refs"), join11(store.ws.root, ".git", "HEAD")].filter((p) => existsSync7(p)).map((p) => watch(p, { recursive: !p.endsWith("HEAD") }, (_, file) => {
-    if (!String(file ?? "").startsWith("view")) notify();
+  const watchers = [store.dir, dirname6(designPath(store)), join13(store.ws.root, ".git", "refs"), join13(store.ws.root, ".git", "HEAD")].filter((p) => existsSync7(p)).map((p) => watch(p, { recursive: !p.endsWith("HEAD") }, (_, file) => {
+    if (!String(file ?? "").startsWith("view")) notify2();
   }));
   return new Promise((resolve6, reject) => {
     const listen = (port, tries) => {
@@ -10411,7 +11250,11 @@ function status(store, write) {
   store.require();
   const goals2 = store.goals(), items2 = store.items(), plans2 = store.plans(true), focus = store.focus();
   const lines = [`# Status \u2014 ${today()}`, "", "_Generated by `crew.mjs status`. Do not edit by hand._", ""];
+  const halt = paused(store.ledger.events());
+  if (halt) lines.push(`**Team paused** by ${halt.actor} since ${halt.ts.slice(0, 16).replace("T", " ")}: ${halt.reason ?? "no reason given"}`, "");
   lines.push("## Idea and focus", "", ...ideaLines(store, goals2, plans2, items2, focus), "");
+  const stale = staleClaims(store);
+  if (stale.length) lines.push("## Stale claims", "", ...stale.map((s) => `- ${s.ref} \u2014 ${s.actor} (${s.run}), no activity for ${s.hours}h`), "");
   const claims = store.ledger.claims();
   lines.push("## Now", "", ...planTable(byStatus(plans2, ["in-progress", "in-review"]), plans2, items2, claims), "");
   lines.push("## Blocked", "", ...blocked(plans2), "");
@@ -10524,10 +11367,13 @@ function planSections(store, plan, role) {
     lines: plan.tasks().filter(([d]) => !d).map(([, t]) => t)
   };
   const waits = unmetDeps(plan, plans2), asks = openQuestions(store.ledger.events(), plan.id);
-  const over = overlapping(plan, plans2), outside = drift(plan) ?? [];
+  const over = overlapping(plan, plans2), outside = drift(plan, store.baseBranch()) ?? [];
+  const questions2 = { title: "Open questions", more: "crew.mjs questions", lines: [
+    ...asks.map((x) => `${x.blocking ? "blocking: " : ""}${x.id} ${x.by} \u2192 ${x.to}: ${x.text}`),
+    ...openQuestions(store.ledger.events()).filter((x) => x.to === role && x.ref !== plan.id).map((x) => `for you: ${x.id} from ${x.by}${x.ref ? ` about ${x.ref}` : ""}: ${x.text}`)
+  ] };
   const blockers = { title: "Blockers & coordination", more: "crew.mjs questions", lines: [
     ...waits.map((d) => `waits for ${d} (${plans2.get(d)?.get("status")})`),
-    ...asks.map((x) => `${x.blocking ? "blocking " : ""}question ${x.id} \u2192 ${x.to}: ${x.text}`),
     ...over.map((o) => `overlaps ${o.id} (${plans2.get(o.id)?.get("status")}) on ${o.globs.join(", ")}`),
     ...outside.length ? [`changes outside touches: ${outside.slice(0, 6).join(", ")}${outside.length > 6 ? " \u2026" : ""}`] : []
   ] };
@@ -10543,13 +11389,13 @@ function planSections(store, plan, role) {
   const bugs = { title: "Open bugs in this goal", more: "crew.mjs status", lines: [...items2.values()].filter((i) => i.id.startsWith("BUG-") && goal && i.get("goal")?.toUpperCase() === goal.id && !["done", "wontfix", "duplicate"].includes(itemStatus(i, plans2))).map((i) => `${i.id} ${i.get("severity") ?? ""} ${i.get("title")} [${itemStatus(i, plans2)}]`) };
   switch (role) {
     case "qa":
-      return [why, ac, sect("Test plan", "Test plan"), recover, bugs, memory, blockers];
+      return [questions2, why, ac, sect("Test plan", "Test plan"), recover, bugs, memory, blockers];
     case "architect":
-      return [why, sect("Approach", "Approach"), sect("Risks & open questions", "Risks & open questions"), blockers, memory, ac];
+      return [questions2, why, sect("Approach", "Approach"), sect("Risks & open questions", "Risks & open questions"), blockers, memory, ac];
     case "release":
-      return [why, sect("Rollout & rollback", "Rollout & rollback"), blockers, ac, memory];
+      return [questions2, why, sect("Rollout & rollback", "Rollout & rollback"), blockers, ac, memory];
     default:
-      return [recover, why, ac, tasks, blockers, memory, handoff3];
+      return [recover, questions2, why, ac, tasks, blockers, memory, handoff3];
   }
 }
 var line = (e) => `${e.id} [${e.type}${e.origin === "playbook" ? ", playbook" : ""}] ${e.title}`;
@@ -10606,7 +11452,8 @@ function assemble2(header, sections2, budget) {
 function context(store, o = {}) {
   store.require();
   const role = o.role ?? store.ledger.who.role ?? "any";
-  if (role !== "any" && !ROLES.includes(role)) fail(`Unknown role '${role}'. Roles: ${ROLES.join(", ")}.`);
+  const roles = store.policy.roles;
+  if (role !== "any" && !roles.includes(role)) fail(`Unknown role '${role}'. Roles: ${roles.join(", ")}.`);
   const budget = o.budget ?? DEFAULT_BUDGET;
   if (budget < 200) fail("--budget must be at least 200 characters.");
   const pid = o.id?.toUpperCase() ?? /^plan\/(P-\d+)/.exec(currentBranch() ?? "")?.[1];
@@ -10617,6 +11464,41 @@ function context(store, o = {}) {
   else for (const l of lines) store.say(l);
 }
 
+// src/commands/runs.ts
+var WORKFLOWS = {
+  kickoff: ["preflight", "discover", "design", "guidelines", "hub", "git", "graph", "idea-and-plan"],
+  onboard: ["preflight", "map", "discover", "design", "guidelines", "hub", "git", "graph"]
+};
+var steps = (name) => WORKFLOWS[name] ?? fail(`Unknown workflow '${name}'. Workflows: ${Object.keys(WORKFLOWS).join(", ")}.`);
+function recordStep(store, workflow, step, o = {}) {
+  store.require();
+  const all = steps(workflow);
+  if (!step) fail(`Name the step: --step ${all.join("|")}.`);
+  if (!all.includes(step)) fail(`${workflow} has no step '${step}'. Steps: ${all.join(", ")}.`);
+  const state = o.skip ? "skipped" : "done";
+  store.ledger.record("checkpoint", null, { workflow, step, state, ...o.note ? { note: o.note } : {} });
+  store.say(`${workflow}: ${step} ${state}`);
+}
+function workflowState(events, workflow) {
+  const last = /* @__PURE__ */ new Map();
+  for (const e of events) if (e.type === "checkpoint" && e.workflow === workflow) last.set(String(e.step), e);
+  return steps(workflow).map((step) => ({ step, event: last.get(step) ?? null }));
+}
+function resumeWorkflow(store, workflow, json = false) {
+  store.require();
+  const state = workflowState(store.ledger.events(), workflow);
+  const next = state.find((s) => !s.event)?.step ?? null;
+  if (json) {
+    store.say(JSON.stringify({ workflow, next, steps: state.map(({ step, event }) => ({ step, state: event ? event.state : "pending", by: event?.actor ?? null, role: event?.role ?? null, ts: event?.ts ?? null })) }));
+    return;
+  }
+  if (!state.some((s) => s.event)) store.say(`${workflow}: not started \u2014 begin with ${state[0].step}`);
+  for (const { step, event } of state) {
+    store.say(`  ${(event ? String(event.state) : "pending").padEnd(8)} ${step}` + (event ? `  (${event.actor}${event.role ? `, ${event.role}` : ""}, ${event.ts.slice(0, 16).replace("T", " ")})${event.note ? ` \u2014 ${event.note}` : ""}` : ""));
+  }
+  store.say(next ? `next: ${next}` : `${workflow}: every step is done or skipped`);
+}
+
 // src/commands/ledger.ts
 var DETAIL = {
   claim: (e) => `branch ${e.branch ?? "?"}${e.force ? " (forced)" : ""}`,
@@ -10624,11 +11506,17 @@ var DETAIL = {
   move: (e) => `${e.from} \u2192 ${e.to}${e.note ? ` \u2014 ${e.note}` : ""}`,
   log: (e) => String(e.text ?? ""),
   learn: (e) => `${e.kind}: ${e.title}${e.supersedes ? ` (supersedes ${e.supersedes})` : ""}`,
-  checkpoint: (e) => `at ${e.step}${e.sha ? ` (${String(e.sha).slice(0, 7)})` : ""}` + (e.verify ?? []).map((v) => ` ${v.ok ? "\u2713" : "\u2717"} ${v.cmd}`).join("") + (e.attempt ? ` \u2014 tried: ${e.attempt.what}` : ""),
+  checkpoint: (e) => e.workflow ? `${e.workflow}: ${e.step} ${e.state}` : `at ${e.step}${e.sha ? ` (${String(e.sha).slice(0, 7)})` : ""}` + (e.verify ?? []).map((v) => ` ${v.ok ? "\u2713" : "\u2717"} ${v.cmd}`).join("") + (e.attempt ? ` \u2014 tried: ${e.attempt.what}` : ""),
   ask: (e) => `${e.qid} \u2192 ${e.to}${e.escalation ? " (escalation)" : ""}: ${e.text}`,
   answer: (e) => `${e.qid}: ${e.text}${e.approved_by ? ` (by ${e.approved_by})` : ""}`,
+  assign: (e) => `to the ${e.to} role${e.team ? `, team ${e.team}` : ""}${e.note ? ` \u2014 ${e.note}` : ""}`,
+  review: (e) => `${e.verdict === "approve" ? "approved" : `changes: ${e.text}`}${e.sha ? ` (${String(e.sha).slice(0, 7)})` : ""}`,
+  notify: (e) => `${e.kind}: ${e.text}`,
+  pause: (e) => String(e.reason ?? "paused"),
+  resume: (e) => String(e.note ?? "resumed"),
   usage: (e) => `${e.tokens_in} in / ${e.tokens_out} out tokens, $${Number(e.cost ?? 0).toFixed(2)}${e.model ? ` (${e.model})` : ""}`
 };
+var EVENT_TYPES = Object.keys(DETAIL);
 function showLedger(store, o = {}) {
   store.require();
   if (o.type && !DETAIL[o.type]) fail(`Unknown event type '${o.type}'. Valid: ${Object.keys(DETAIL).join(", ")}`);
@@ -10670,6 +11558,8 @@ Commands:
   policy show [--role R] [--team T] [--json] \xB7 policy check      the effective policy and where each value comes from
   release PLAN_ID [--note TXT] [--force]        give up a claim (another run's claim needs --force)
   usage [--tokens-in N] [--tokens-out N] [--cost USD] [--model M] [--ref ID]   record what a run used
+  usage --hook                                  SubagentStop hook: a crew agent's tokens from its transcript
+  run [--check] [--json]                        run the team unattended: the loop, and whether it may go on (exit 1: stop)
   ledger [--ref ID] [--type T] [--limit 20] [--json]   the shared event log (who/what/when) and live claims
   learn decision|learning|gotcha|convention|risk FACT (--why TEXT | --from DRAFT) [--scope "src/a/**, b.md"]
         [--source P-###] [--supersedes K-\u2026] [--candidate] [--likelihood H|M|L --impact H|M|L --owner WHO]
@@ -10677,8 +11567,18 @@ Commands:
   checkpoint [P-###] [--step T3] [--run CMD | --verify CMD --result pass|fail] [--ac 1,2|all] [--output TXT]
              [--attempt WHAT --why WHY] [--note TXT] [--auto]   record where the work is (the plan of this branch by default)
   resume [P-###] [--json] \xB7 handoff [P-###]     where the work stopped vs git now \xB7 write it into the plan's Handoff
+  checkpoint --workflow kickoff|onboard --step S [--skip] [--note] \xB7 resume --workflow W   a multi-step job's progress
+  review P-### --approve | --changes TXT        code review of a plan in review (never by its implementer)
+  merge-order [--json]                          done plans to merge, dependencies first (Release)
   context [P-###] [--role R] [--budget CHARS] [--json]   what you need right now, within a budget (default 6000 chars)
-  next [--role R] \xB7 current \xB7 check \xB7 status [--write]    (roles: executive, director, pm, architect, developer, qa, release)
+  next [--role R] \xB7 current \xB7 check \xB7 status [--write]    (roles: executive, director, pm, architect, developer, qa, release + the policy's)
+  --as ROLE \xB7 --run-id ID                       who is acting, on any command (wins over CREW_ROLE / CREW_RUN)
+  guard                                         PreToolUse hook: reads the hook JSON on stdin, prints the decision
+  assign PLAN_ID --to ROLE [--team T] [--note TXT]   open a ready plan for a role (start then needs it)
+  staff [--json]                                what can run in parallel now, within budgets.max_agents
+  reassign PLAN_ID [--to ROLE] [--note TXT] [--force]   release a stale claim and assign the plan again
+  pause [--reason TXT] \xB7 resume --team [--note TXT]     stop / restart staffing and starts (executive or director)
+  agents [--check]                              render the role agents (.claude/agents/crew-<role>.md) from the policy
   ask [ID] --to ROLE TEXT [--fyi] \xB7 escalate [ID] TEXT \xB7 answer Q-\u2026 TEXT [--decision [--scope GLOBS]] [--approved-by NAME]
   questions [--to ROLE] [--ref ID] [--all] [--json]       questions between roles; an open one blocks only its document
   export [--json] [--out FILE]                  interactive HTML view (.crew/view/index.html) or the graph as JSON
@@ -10789,10 +11689,10 @@ var COMMANDS = {
   checkpoint: {
     pos: [],
     rest: true,
-    str: ["step", "run", "verify", "result", "ac", "output", "attempt", "why", "note"],
-    flag: ["auto"],
+    str: ["step", "run", "verify", "result", "ac", "output", "attempt", "why", "note", "workflow"],
+    flag: ["auto", "skip"],
     choices: { result: ["pass", "fail"] },
-    run: (s, a) => checkpoint(s, a.pos[0], {
+    run: (s, a) => a.opt.workflow ? recordStep(s, str2(a, "workflow"), str2(a, "step"), { skip: !!a.opt.skip, note: str2(a, "note") }) : checkpoint(s, a.pos[0], {
       step: str2(a, "step"),
       run: str2(a, "run"),
       verify: str2(a, "verify"),
@@ -10805,8 +11705,37 @@ var COMMANDS = {
       auto: !!a.opt.auto
     })
   },
-  resume: { pos: [], rest: true, flag: ["json"], run: (s, a) => resume(s, a.pos[0], !!a.opt.json) },
+  resume: {
+    pos: [],
+    rest: true,
+    str: ["note", "workflow"],
+    flag: ["json", "team"],
+    run: (s, a) => a.opt.team ? resumeTeam(s, str2(a, "note")) : a.opt.workflow ? resumeWorkflow(s, str2(a, "workflow"), !!a.opt.json) : resume(s, a.pos[0], !!a.opt.json)
+  },
+  "merge-order": { pos: [], flag: ["json"], run: (s, a) => mergeOrderCmd(s, !!a.opt.json) },
+  review: {
+    pos: ["id"],
+    str: ["changes"],
+    flag: ["approve"],
+    run: (s, a) => review(s, a.pos[0], { approve: !!a.opt.approve, changes: str2(a, "changes") })
+  },
+  pause: { pos: [], str: ["reason"], run: (s, a) => pauseTeam(s, str2(a, "reason")) },
+  reassign: {
+    pos: ["id"],
+    str: ["to", "note", "approved-by"],
+    flag: ["force"],
+    run: (s, a) => reassign(s, a.pos[0], str2(a, "to"), str2(a, "note"), !!a.opt.force, str2(a, "approved-by"))
+  },
   handoff: { pos: [], rest: true, run: (s, a) => handoff(s, a.pos[0]) },
+  guard: { pos: [], run: (s) => guard(s) },
+  assign: {
+    pos: ["id"],
+    str: ["to", "team", "note", "approved-by"],
+    required: ["to"],
+    run: (s, a) => assign(s, a.pos[0], str2(a, "to"), str2(a, "team"), str2(a, "note"), str2(a, "approved-by"))
+  },
+  staff: { pos: [], flag: ["json"], run: (s, a) => staff(s, !!a.opt.json) },
+  agents: { pos: [], flag: ["check"], run: (s, a) => agents(s, !!a.opt.check) },
   policy: {
     pos: ["action"],
     str: ["role", "team"],
@@ -10820,7 +11749,8 @@ var COMMANDS = {
     pos: [],
     str: ["cost", "model", "ref"],
     int: ["tokens-in", "tokens-out"],
-    run: (s, a) => usage(s, {
+    flag: ["hook"],
+    run: (s, a) => a.opt.hook ? usageHook(s) : usage(s, {
       tokensIn: a.num["tokens-in"],
       tokensOut: a.num["tokens-out"],
       cost: str2(a, "cost") === void 0 ? void 0 : Number(str2(a, "cost")),
@@ -10828,6 +11758,7 @@ var COMMANDS = {
       ref: str2(a, "ref")
     })
   },
+  run: { pos: [], flag: ["check", "json"], run: (s, a) => run(s, !!a.opt.check, !!a.opt.json) },
   ledger: {
     pos: [],
     str: ["ref", "type"],
@@ -10836,7 +11767,7 @@ var COMMANDS = {
     run: (s, a) => showLedger(s, { ref: str2(a, "ref"), type: str2(a, "type"), limit: a.num.limit, json: !!a.opt.json })
   },
   current: { pos: [], run: (s) => current(s) },
-  next: { pos: [], str: ["role"], run: (s, a) => nextStep(s, str2(a, "role")) },
+  next: { pos: [], str: ["role"], run: (s, a) => nextStep(s, str2(a, "role") ?? s.ledger.who.role ?? void 0) },
   context: {
     pos: [],
     rest: true,
@@ -10948,7 +11879,21 @@ function parse4(argv) {
   }
   return { cmd, spec, args: { pos, opt, num } };
 }
+function identity(argv) {
+  const rest = [];
+  for (let i = 0; i < argv.length; i++) {
+    const m = /^--(as|run-id)(?:=(.*))?$/.exec(argv[i]);
+    if (!m) {
+      rest.push(argv[i]);
+      continue;
+    }
+    const value = m[2] ?? argv[++i];
+    if (value) process.env[m[1] === "as" ? "CREW_ROLE" : "CREW_RUN"] = value;
+  }
+  return rest;
+}
 function main(argv, open = () => Store.open()) {
+  argv = identity(argv);
   if (!argv.length || argv[0] === "--help" || argv[0] === "-h" || argv[0] === "help") {
     process.stdout.write(USAGE);
     return argv.length ? 0 : 2;
@@ -10968,6 +11913,7 @@ crew.mjs: error: ${e.message}
     code = parsed.spec.run(store, parsed.args) ?? 0;
     store.ws.flush();
   } catch (e) {
+    store.ws.abort();
     if (!(e instanceof HubError)) throw e;
     print(store.ws.output);
     process.stderr.write(`${e.message}

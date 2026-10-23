@@ -2,6 +2,7 @@
 import type { Doc } from "./doc.js";
 import { K_ID_RE } from "./knowledge.js";
 import { DECIDED_SECTIONS, PRIORITIES, READY_SECTIONS, SEVERITY_PRIORITY, TRIAGE_SECTIONS } from "./model.js";
+import { planItems } from "./queries.js";
 import type { Store } from "./store.js";
 import { idList, stripComments } from "./text.js";
 
@@ -11,6 +12,16 @@ export function triageProblems(item: Doc): string[] {
   if (!PRIORITIES.includes(item.get("priority") ?? "")) problems.push("no priority (P0–P3)");
   if (prefix === "BUG" && !Object.hasOwn(SEVERITY_PRIORITY, item.get("severity") ?? "")) problems.push("no severity (S1–S4)");
   return problems;
+}
+
+/** The fast lane: a small chore or bug fix the PM may spec and make ready without the Architect — every item it delivers is
+ * of a `fast_lane.types` type and it has at most `fast_lane.max_tasks` tasks. QA's evidence, the review and the PM's
+ * completion still apply; Release merges it without a rollout step. */
+export function fastLane(store: Store, plan: Doc): boolean {
+  const { types, max_tasks } = store.policy.policy.fast_lane;
+  const items = planItems(plan, store.items());
+  return types.length > 0 && items.length > 0 && items.every((i) => types.includes(i.id.split("-")[0]))
+    && (max_tasks === null || plan.tasks().length <= max_tasks);
 }
 
 /** Definition of Ready. */

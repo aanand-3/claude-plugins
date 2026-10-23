@@ -9,10 +9,17 @@ import { secretsIn } from "../core/knowledge.js";
 import type { LedgerEvent } from "../core/ledger.js";
 import type { Store } from "../core/store.js";
 import { fail, stripComments, today } from "../core/text.js";
+import { attempts, escalateLimit } from "./liveness.js";
 
 const OUTPUT_LINES = 15, OUTPUT_CHARS = 2000, RUN_TIMEOUT_MS = 10 * 60_000;
 
-export interface Verify { cmd: string; ok: boolean; ac: number[]; output?: string; observed: boolean }
+/** A check's result. `ac` numbers the criteria it covered when it ran; `ac_text` fingerprints their text, which is what
+ * evidence matches on, so inserting or reordering criteria never moves a pass onto a different criterion. */
+export interface Verify { cmd: string; ok: boolean; ac: number[]; ac_text?: string[]; output?: string; observed: boolean }
+
+/** Fingerprint of a criterion's text; whitespace, case and a trailing `evidence: …` note don't count. */
+export const acPrint = (text: string) => createHash("sha1")
+  .update(text.replace(/\s*(?:[—–-]\s*)?\bevidence:.*$/i, "").replace(/\s+/g, " ").trim().toLowerCase()).digest("hex").slice(0, 10);
 
 /** The plan's acceptance criteria, numbered from 1: checklist lines, else bullets. */
 export function criteria(plan: Doc): string[] {
@@ -20,22 +27,30 @@ export function criteria(plan: Doc): string[] {
   return list.length ? list : plan.bullets("Acceptance criteria");
 }
 
-/** The run that implemented a plan: the last one to claim it. */
-export function implementer(events: LedgerEvent[], planId: string): string | null {
-  return [...events].reverse().find((e) => e.type === "claim" && e.ref === planId)?.run ?? null;
+/** Every run that implemented a plan: each one that claimed it or moved it to in-progress (a reviewer sending it back
+ * doesn't, `via` its review). After a takeover the earlier implementer stays one, so its own checks never become
+ * "independent" evidence. */
+export function implementers(events: LedgerEvent[], planId: string): Set<string> {
+  return new Set(events.filter((e) => e.ref === planId && (e.type === "claim" || (e.type === "move" && e.to === "in-progress" && !e.via)))
+    .map((e) => e.run));
 }
 
 const checkpoints = (events: LedgerEvent[], planId: string) => events.filter((e) => e.type === "checkpoint" && e.ref === planId);
 
-/** Per criterion: the latest verify covering it, and whether it counts as independent evidence. */
-export function evidence(store: Store, plan: Doc): { ac: string; verify: Verify | null; by: string | null; independent: boolean }[] {
-  const events = store.ledger.events(), impl = implementer(events, plan.id);
+/** Per criterion: the latest verify covering it, and whether it counts as independent evidence: not from an implementer,
+ * and — when the policy names an `evidence.role` (the lifecycle preset: qa) — recorded by that role. */
+export function evidence(store: Store, plan: Doc): { ac: string; verify: Verify | null; by: string | null; role: string | null; independent: boolean }[] {
+  const events = store.ledger.events(), impl = implementers(events, plan.id), only = store.policy.policy.evidence.role;
   return criteria(plan).map((ac, i) => {
-    let found: { verify: Verify; by: string } | null = null;
+    let found: { verify: Verify; by: string; role: string | null } | null = null;
+    const print = acPrint(ac);
     for (const e of checkpoints(events, plan.id)) {
-      for (const v of (e.verify as Verify[] | undefined) ?? []) if (v.ac.includes(i + 1)) found = { verify: v, by: e.run };
+      for (const v of (e.verify as Verify[] | undefined) ?? []) {
+        if (v.ac_text ? v.ac_text.includes(print) : v.ac.includes(i + 1)) found = { verify: v, by: e.run, role: e.role };
+      }
     }
-    return { ac, verify: found?.verify ?? null, by: found?.by ?? null, independent: !!found && (!impl || found.by !== impl) };
+    return { ac, verify: found?.verify ?? null, by: found?.by ?? null, role: found?.role ?? null,
+      independent: !!found && !impl.has(found.by) && (!only || found.role === only) };
   });
 }
 
@@ -43,15 +58,19 @@ export function evidence(store: Store, plan: Doc): { ac: string; verify: Verify 
  * (or, with a human's --approved-by, an `evidence:` note on the criterion); the implementer can't mark its own plan done. */
 export function evidenceProblems(store: Store, plan: Doc, approvedBy?: string): string[] {
   const problems: string[] = [];
-  const impl = implementer(store.ledger.events(), plan.id);
-  if (impl && impl === store.ledger.who.run && !approvedBy) {
-    problems.push(`this run (${impl}) implemented ${plan.id}; another run — QA — verifies it and moves it to done`);
+  const me = store.ledger.who.run;
+  if (implementers(store.ledger.events(), plan.id).has(me) && !approvedBy) {
+    problems.push(`this run (${me}) implemented ${plan.id}; another run — QA — verifies it and moves it to done`);
   }
   evidence(store, plan).forEach((e, i) => {
     if (approvedBy && /\bevidence:/i.test(e.ac)) return;
     if (!e.verify) problems.push(`AC${i + 1} has no evidence: \`checkpoint ${plan.id} --run "<check>" --ac ${i + 1}\` — ${e.ac}`);
     else if (!e.verify.ok) problems.push(`AC${i + 1}: its latest check failed (${e.verify.cmd})`);
-    else if (!e.independent) problems.push(`AC${i + 1}: only verified by the implementer (${e.by}); verify it from another run`);
+    else if (!e.independent) {
+      const only = store.policy.policy.evidence.role;
+      problems.push(only && e.role !== only ? `AC${i + 1}: checked by the ${e.role ?? "no"} role; only the ${only} role's checks count (evidence.role)`
+        : `AC${i + 1}: only verified by the implementer (${e.by}); verify it from another run`);
+    }
   });
   return problems;
 }
@@ -67,6 +86,7 @@ function snapshot(): { sha: string | null; dirty: string[]; fingerprint: string 
 
 function planFromBranch(store: Store, id?: string): Doc | null {
   const pid = id?.toUpperCase() ?? /^plan\/(P-\d+)/.exec(git.currentBranch() ?? "")?.[1];
+  if (pid?.startsWith("G-")) return store.find(store.checkRef(pid, "goal")); // goal evidence (checkpoint only)
   return pid ? store.plans(true).get(pid) ?? fail(`No plan ${pid}.`) : null;
 }
 
@@ -91,20 +111,24 @@ export function checkpoint(store: Store, id: string | undefined, o: CheckpointOp
   const last = checkpoints(store.ledger.events(), plan.id).at(-1);
   if (o.auto && last?.fingerprint === snap.fingerprint) return 0;
   const acs = parseAc(o.ac, criteria(plan).length);
+  const prints = acs.map((n) => acPrint(criteria(plan)[n - 1]));
   const verify: Verify[] = [];
   if (o.run) {
     const r = spawnSync(o.run, { shell: true, cwd: store.ws.root, encoding: "utf8", timeout: RUN_TIMEOUT_MS, maxBuffer: 32 << 20 });
-    verify.push({ cmd: o.run, ok: r.status === 0, ac: acs, output: tail(`${r.stdout ?? ""}${r.stderr ?? ""}`, store.policy.policy.secrets.patterns), observed: true });
+    verify.push({ cmd: o.run, ok: r.status === 0, ac: acs, ac_text: prints, output: tail(`${r.stdout ?? ""}${r.stderr ?? ""}`, store.policy.policy.secrets.patterns), observed: true });
   }
   if (o.verify) {
     if (o.result !== "pass" && o.result !== "fail") fail("--verify needs --result pass|fail.");
-    verify.push({ cmd: o.verify, ok: o.result === "pass", ac: acs, ...(o.output ? { output: tail(o.output, store.policy.policy.secrets.patterns) } : {}), observed: false });
+    verify.push({ cmd: o.verify, ok: o.result === "pass", ac: acs, ac_text: prints, ...(o.output ? { output: tail(o.output, store.policy.policy.secrets.patterns) } : {}), observed: false });
   }
   if (o.attempt && !o.why) fail("--attempt needs --why: what made it fail, so the next run doesn't retry it.");
-  const step = o.step ?? plan.tasks().find(([done]) => !done)?.[1].split(":")[0] ?? "done";
+  const goal = plan.id.startsWith("G-");
+  if (goal && !verify.length) fail(`A goal's checkpoint records evidence: \`checkpoint ${plan.id} --verify "<how>" --result pass|fail --ac n\`.`);
+  const step = goal ? "goal" : o.step ?? plan.tasks().find(([done]) => !done)?.[1].split(":")[0] ?? "done";
   store.ledger.record("checkpoint", plan.id, { step, sha: snap.sha, dirty: snap.dirty.slice(0, 50), fingerprint: snap.fingerprint,
     ...(verify.length ? { verify } : {}), ...(o.attempt ? { attempt: { what: o.attempt, why: o.why } } : {}),
     ...(o.note ? { note: o.note } : {}), ...(o.auto ? { auto: true } : {}) });
+  if (o.attempt) escalateLimit(store, plan.id, attempts(store.ledger.events(), plan.id), store.policy.policy.limits.max_attempts, "has failed attempts recorded");
   if (!o.auto) {
     store.say(`${plan.id}: checkpoint at ${step}${snap.sha ? ` (${snap.sha.slice(0, 7)})` : ""}`
       + verify.map((v) => ` — ${v.ok ? "✓" : "✗"} ${v.cmd}`).join(""));

@@ -1175,8 +1175,10 @@ def test_an_ask_blocks_only_its_plan(repo: Repo):
     repo.commit("chore(P-002): start")
     repo.git("switch", "-q", "main")
     assert f"QUESTION     {qid}" in tr(repo, "next", "--role", "architect").stdout
+    repo.env["CREW_RUN"], repo.env["CREW_ROLE"] = "architect-run", "architect"  # the addressed role answers
     res = mcp_call(repo, "answer", {"id": qid, "text": "Postgres: one database to run", "decision": True, "scope": "src/**"})
     assert not res["isError"], res
+    del repo.env["CREW_ROLE"]
     assert any("title: Postgres: one database to run" in t and "source: P-001" in t for t in knowledge(repo).values())
     repo.commit("chore(hub): decision")  # the answer became a knowledge entry
     repo.env["CREW_RUN"] = "dev-1"
@@ -1241,3 +1243,442 @@ def test_session_start_hook_runs_context():
     assert "crew.mjs context" in start and "crew.mjs current" not in start
     for event in ("Stop", "PreCompact"):
         assert "checkpoint --auto" in settings["hooks"][event][0]["hooks"][0]["command"]
+
+
+# ------------------------------------------------------------------ review fixes (fix/hub-review)
+def test_moving_a_plan_in_progress_claims_it_so_it_cannot_approve_itself(repo: Repo):
+    init(repo, commit=True)
+    ready_plan(repo)
+    repo.env["CREW_RUN"] = "dev1"
+    assert tr(repo, "move", "P-001", "in-progress").returncode == 0  # not via start
+    assert events(repo, "--type", "claim")[-1]["run"] == "dev1"
+    p = plan_file(repo, "P-001")
+    p.write_text(p.read_text().replace("- [ ] T", "- [x] T").rstrip() + "\nShipped.\nLearnings: none\n")
+    tr(repo, "checkpoint", "P-001", "--verify", "trust me", "--result", "pass", "--ac", "all")
+    tr(repo, "move", "P-001", "in-review")
+    r = tr(repo, "move", "P-001", "done")
+    assert r.returncode != 0 and "this run (dev1) implemented P-001" in r.stderr and "only verified by the implementer" in r.stderr
+    repo.env["CREW_RUN"] = "dev2"  # a second run can't pick it up while dev1 holds it
+    r = tr(repo, "move", "P-001", "in-progress")
+    assert r.returncode != 0 and "claimed by" in r.stderr
+
+
+def test_a_takeover_keeps_the_first_implementer_dependent(repo: Repo):
+    started(repo)  # dev-run claimed it
+    tr(repo, "checkpoint", "--run", "true", "--ac", "all")  # dev-run's own check
+    repo.env["CREW_RUN"] = "dev-2"
+    assert tr(repo, "release", "P-001", "--force", "--note", "dev-run gone").returncode == 0
+    p = plan_file(repo, "P-001")
+    p.write_text(p.read_text().replace("- [ ] T", "- [x] T").rstrip() + "\nShipped.\nLearnings: none\n")
+    assert tr(repo, "move", "P-001", "in-review").returncode == 0
+    repo.env["CREW_RUN"] = "qa-run"
+    assert "AC1: only verified by the implementer (dev-run)" in tr(repo, "move", "P-001", "done").stderr
+
+
+def test_usage_rejects_negative_or_fractional_tokens(repo: Repo):
+    init(repo, commit=True)
+    repo.write(".crew/policy.yaml", "mode: ai-native\nbudgets:\n  run: { max_tokens: 1000 }\n")
+    tr(repo, "usage", "--tokens-in", "2000")
+    for bad in ("--tokens-in=-100000", "--tokens-out=-1"):
+        r = tr(repo, "usage", bad)
+        assert r.returncode != 0 and "must be a whole number ≥ 0" in r.stderr, bad
+    res = mcp_call(repo, "usage", {"tokens_in": -100000})
+    assert res["isError"] and "whole number" in res["content"][0]["text"]
+    assert mcp_call(repo, "usage", {"tokens_out": 1.5})["isError"]
+    assert mcp_call(repo, "usage", {"cost": -1})["isError"]
+    assert [e["tokens_in"] for e in events(repo, "--type", "usage")] == [2000]
+
+
+def test_a_refused_start_leaves_no_branch_and_can_be_retried(repo: Repo):
+    init(repo, commit=True, mode="")
+    repo.write(".crew/policy.yaml", "mode: ai-native\nrole_gates:\n  plan.in-progress: developer\n")
+    ready_plan(repo)
+    repo.commit("chore(hub): plan")
+    repo.env["CREW_ROLE"] = "qa"
+    r = tr(repo, "start", "P-001")
+    assert r.returncode != 0 and "for the developer role" in r.stderr
+    assert repo.git("branch", "--show-current").stdout.strip() == "main"
+    assert "plan/P-001" not in repo.git("branch").stdout
+    repo.env["CREW_ROLE"] = "developer"
+    assert tr(repo, "start", "P-001").returncode == 0
+
+
+def test_a_refusal_after_branching_rolls_the_branch_back(repo: Repo):
+    """Refused at flush, after the branch exists (here: another writer holds the ledger lock): no branch is left behind."""
+    init(repo, commit=True)
+    ready_plan(repo)
+    repo.commit("chore(hub): plan")
+    tr(repo, "log", "P-001", "creates the ledger")
+    repo.commit("chore(hub): log")
+    (repo.path / ".git/crew/ledger.jsonl.lock").write_text("")  # held by a live writer (fresh, so not stale)
+    r = tr(repo, "start", "P-001")
+    assert r.returncode != 0 and "The ledger is locked" in r.stderr
+    assert repo.git("branch", "--show-current").stdout.strip() == "main"
+    assert "plan/P-001" not in repo.git("branch").stdout
+    assert "status: ready" in plan_file(repo, "P-001").read_text()
+
+
+def test_a_torn_ledger_line_does_not_swallow_the_next_event(repo: Repo):
+    init(repo)
+    tr(repo, "usage", "--cost", "1")
+    with (repo.path / ".git/crew/ledger.jsonl").open("a") as f:
+        f.write('{"ts":"x","type":"us')  # a crash mid-write
+    tr(repo, "usage", "--cost", "2")
+    tr(repo, "usage", "--cost", "3")
+    assert [e["cost"] for e in events(repo, "--type", "usage")] == [1, 2, 3]
+
+
+def test_an_org_human_gates_floor_adds_to_the_mode_gates(repo: Repo):
+    init(repo, mode="human-led")
+    org_playbook(repo, "human_gates: [plan.blocked]\n")
+    out = json.loads(tr(repo, "policy", "show", "--json").stdout)
+    gates = set(out["policy"]["human_gates"])
+    assert {"plan.ready", "plan.done", "goal.done", "item.triaged", "plan.blocked"} <= gates
+    assert out["sources"]["human_gates"] == "built-in: mode human-led + org floor"
+
+
+def test_only_the_addressed_role_answers(repo: Repo):
+    init(repo, commit=True)
+    ready_plan(repo)
+    repo.env["CREW_RUN"], repo.env["CREW_ROLE"] = "dev", "developer"
+    qid = re.search(r"Q-[0-9a-f]{6}", tr(repo, "ask", "P-001", "--to", "architect", "Which DB?").stdout).group(0)
+    r = tr(repo, "answer", qid, "Postgres, I decided")
+    assert r.returncode != 0 and "asked by this run" in r.stderr
+    repo.env["CREW_RUN"] = "dev-2"
+    r = tr(repo, "answer", qid, "Postgres")
+    assert r.returncode != 0 and "is for the architect role; this run is the developer role" in r.stderr
+    repo.env["CREW_ROLE"] = "architect"
+    assert tr(repo, "answer", qid, "Postgres").returncode == 0
+    qid2 = re.search(r"Q-[0-9a-f]{6}", tr(repo, "ask", "P-001", "--to", "qa", "Coverage?").stdout).group(0)
+    assert tr(repo, "answer", qid2, "80%", "--approved-by", "Amit").returncode == 0  # a human can answer for a role
+
+
+def test_ids_are_not_reused_from_a_subdirectory(repo: Repo):
+    init(repo, commit=True)
+    repo.git("switch", "-q", "-c", "other")
+    tr(repo, "new-item", "chore", "A", "--why", "y")
+    repo.commit("a")
+    repo.git("switch", "-q", "main")
+    (repo.path / "sub").mkdir()
+    sub = Repo(repo.path / "sub")
+    sub.env = repo.env
+    out = sub.py(HUB, "new-item", "chore", "B", "--why", "y").stdout
+    assert "CHORE-002" in out, out
+
+
+def test_an_invalid_secret_pattern_fails_policy_check(repo: Repo):
+    init(repo, mode="")
+    repo.write(".crew/policy.yaml", "mode: ai-native\nsecrets:\n  patterns: [\"(?i)internal_token\"]\n")
+    r = tr(repo, "policy", "check")
+    assert r.returncode == 1 and "not a valid JavaScript regular expression" in r.stdout
+
+
+def test_migrate_keeps_subfolders_and_binary_files(repo: Repo):
+    import hashlib
+    old_project(repo)
+    repo.write(".project/items/archive/FEAT-001-signup.md", "---\nid: FEAT-009\ntitle: archived\n---\n# kept as is\n")
+    png = bytes(range(256)) * 4
+    (repo.path / ".project/plans/img").mkdir(parents=True)
+    (repo.path / ".project/plans/img/flow.png").write_bytes(png)
+    repo.commit("more old files")
+    r = tr(repo, "migrate")
+    assert r.returncode == 0, r.stderr
+    crew = repo.path / ".crew"
+    assert "id: FEAT-001" in (crew / "items/FEAT-001-signup.md").read_text()  # the top-level item is not overwritten
+    assert "# kept as is" in (crew / "items/archive/FEAT-001-signup.md").read_text()
+    assert hashlib.sha1((crew / "plans/img/flow.png").read_bytes()).digest() == hashlib.sha1(png).digest()
+
+
+def test_migrate_refuses_two_files_with_one_target(repo: Repo):
+    old_project(repo)
+    repo.write(".project/epics/G-001-accounts.md", "x\n")  # EP-001-accounts.md also becomes goals/G-001-accounts.md
+    repo.commit("clash")
+    r = tr(repo, "migrate")
+    assert r.returncode != 0 and "would both become .crew/goals/G-001-accounts.md" in r.stderr
+    assert (repo.path / ".project/raid.md").is_file() and not (repo.path / ".crew").exists()
+
+
+def test_context_puts_open_questions_first(repo: Repo):
+    started(repo)
+    tr(repo, "ask", "P-001", "--to", "architect", "Index on email?", "--fyi")
+    out = tr(repo, "context").stdout
+    assert section_order(out)[:2] == ["Where the work stands", "Open questions"] and "Index on email?" in out
+    assert section_order(tr(repo, "context", "P-001", "--role", "qa").stdout)[0] == "Open questions"
+
+
+def test_parallel_writers_take_over_a_stale_lock_once(repo: Repo):
+    init(repo, commit=True)
+    tr(repo, "usage", "--cost", "0")
+    lock = repo.path / ".git/crew/ledger.jsonl.lock"
+    lock.write_text("crashed-writer")
+    old = __import__("time").time() - 120
+    __import__("os").utime(lock, (old, old))
+    procs = [subprocess.Popen(["node", str(HUB), "usage", "--cost", "0.01"], cwd=repo.path, env=repo.env,
+                              stdout=subprocess.PIPE, stderr=subprocess.PIPE) for _ in range(20)]
+    assert all(p.wait(timeout=60) == 0 for p in procs)
+    assert len(events(repo, "--type", "usage")) == 21
+    assert not lock.exists() and not list(lock.parent.glob("*.stale-*"))
+
+
+def test_evidence_follows_the_criterion_not_its_position(repo: Repo):
+    started(repo)
+    p = plan_file(repo, "P-001")
+    p.write_text(p.read_text().replace("- [ ] T", "- [x] T").rstrip() + "\nShipped.\nLearnings: none\n")
+    tr(repo, "move", "P-001", "in-review")
+    repo.env["CREW_RUN"] = "qa-run"
+    assert tr(repo, "checkpoint", "P-001", "--run", "true", "--ac", "1").returncode == 0
+    # a new criterion inserted above the verified one: the pass must stay with its own criterion
+    p.write_text(p.read_text().replace("- [ ] 201 on valid input", "- [ ] rate limited to 5 tries a minute\n- [ ] 201 on valid input"))
+    r = tr(repo, "move", "P-001", "done")
+    assert r.returncode != 0 and "AC1 has no evidence" in r.stderr and "rate limited" in r.stderr and "AC2" not in r.stderr
+    p.write_text(p.read_text().replace("- [ ] 201 on valid input; 409 on duplicate email",
+                                       "- [ ] 201 on valid input; 409 on duplicate email — evidence: see the API test log"))
+    assert "AC2 ✓" in tr(repo, "resume", "P-001").stdout  # an evidence note doesn't change the criterion
+
+
+def test_the_team_policy_layer_is_enforced(repo: Repo):
+    init(repo, commit=True, mode="")
+    repo.write(".crew/policy.yaml", "mode: ai-native\nteams:\n  web:\n    scope: [web/**]\n    budgets:\n      run: { max_cost: 1 }\n")
+    ready_plan(repo)
+    repo.commit("chore(hub): plan")
+    repo.env["CREW_TEAM"] = "web"
+    tr(repo, "usage", "--cost", "2")
+    r = tr(repo, "start", "P-001")
+    assert r.returncode != 0 and "run cost: $2 used of $1" in r.stderr
+    assert "(project team web)" in next(ln for ln in tr(repo, "policy", "show").stdout.splitlines() if "budgets.run.max_cost" in ln)
+    repo.env["CREW_TEAM"] = "mobile"
+    r = tr(repo, "move", "P-001", "draft")
+    assert r.returncode != 0 and "team 'mobile' (CREW_TEAM) is not defined" in r.stderr
+    del repo.env["CREW_TEAM"]
+    assert tr(repo, "start", "P-001").returncode == 0  # no team: no team budget
+
+
+def test_drift_uses_the_configured_default_branch(repo: Repo):
+    repo.git("branch", "-m", "trunk")
+    init(repo, commit=True)
+    repo.write(".crew/config.yaml", "git:\n  default_branch: trunk\n")
+    new_plan(repo, "Login", PLAN_DRAFT, "--touches", "src/auth/**")
+    repo.write(".crew/policy.yaml", "mode: ai-native\ngit:\n  protected_branches: [trunk]\n")
+    tr(repo, "move", "P-001", "ready")
+    repo.commit("chore(hub): plan")
+    tr(repo, "start", "P-001")
+    repo.write("docs/notes.md", "outside\n")
+    repo.commit("feat(P-001): wip")
+    assert "P-001: changes outside its touches: docs/notes.md" in tr(repo, "check").stdout
+
+
+# ------------------------------------------------------------------ Workstream T1: identity and the guard
+def agent(repo: Repo, name: str, role: str | None) -> None:
+    repo.write(f".claude/agents/{name}.md", f"---\nname: {name}\n" + (f"crew-role: {role}\n" if role else "") + "---\nbody\n")
+
+
+def hook(repo: Repo, payload: dict) -> dict | None:
+    r = repo.run("node", HUB, "guard", input=json.dumps(payload))
+    assert r.returncode == 0, r.stderr
+    return json.loads(r.stdout)["hookSpecificOutput"] if r.stdout.strip() else None
+
+
+def bash(agent_type: str | None, command: str, agent_id: str = "a1") -> dict:
+    return {"tool_name": "Bash", "tool_input": {"command": command}, **({"agent_type": agent_type, "agent_id": agent_id} if agent_type else {})}
+
+
+def test_identity_flags_win_over_the_environment(repo: Repo):
+    init(repo)
+    repo.env["CREW_ROLE"], repo.env["CREW_RUN"] = "developer", "env-run"
+    tr(repo, "--as", "qa", "usage", "--cost", "1", "--run-id", "flag-run")
+    e = events(repo, "--type", "usage")[-1]
+    assert (e["role"], e["run"]) == ("qa", "flag-run")
+    assert "nothing for the qa role" in tr(repo, "next", "--as", "qa").stdout  # next follows the acting role
+    res = mcp_call(repo, "usage", {"cost": 1, "as": "pm", "run_id": "mcp-run"})
+    assert not res["isError"]
+    e = events(repo, "--type", "usage")[-1]
+    assert (e["role"], e["run"]) == ("pm", "mcp-run")
+
+
+def test_guard_leaves_the_main_session_alone(repo: Repo):
+    init(repo)
+    assert hook(repo, bash(None, "node .crew/bin/crew.mjs move P-001 done --approved-by Amit")) is None
+    assert hook(repo, {"tool_name": "Edit", "tool_input": {"file_path": ".crew/policy.yaml"}}) is None
+
+
+def test_guard_injects_identity_and_refuses_other_claims(repo: Repo):
+    init(repo)
+    agent(repo, "crew-qa", "qa")
+    out = hook(repo, bash("crew-qa", "node .crew/bin/crew.mjs next && node .crew/bin/crew.mjs checkpoint --run \"npm test > out.txt\""))
+    assert "permissionDecision" not in out  # never "allow": the normal permission flow stays
+    assert out["updatedInput"]["command"] == ("node .crew/bin/crew.mjs --as qa --run-id qa:a1 next && "
+                                              "node .crew/bin/crew.mjs --as qa --run-id qa:a1 checkpoint --run \"npm test > out.txt\"")
+    for cmd, why in (("node .crew/bin/crew.mjs next --as developer", "don't pass --as for another role"),
+                     ("node .crew/bin/crew.mjs next --run-id x", "don't pass --run-id"),
+                     ("CREW_ROLE=pm node .crew/bin/crew.mjs next", "CREW_* variables"),
+                     ("node .crew/bin/crew.mjs move P-001 done --approved-by Amit", "never pass --approved-by")):
+        out = hook(repo, bash("crew-qa", cmd))
+        assert out["permissionDecision"] == "deny" and why in out["permissionDecisionReason"], cmd
+    mcp = hook(repo, {"tool_name": "mcp__plugin_crew_hub__next", "agent_type": "crew-qa", "agent_id": "a1", "tool_input": {}})
+    assert mcp["updatedInput"] == {"as": "qa", "run_id": "qa:a1"}
+    assert hook(repo, {"tool_name": "mcp__hub__move", "agent_type": "crew-qa", "agent_id": "a1",
+                       "tool_input": {"id": "P-001", "status": "done", "as": "pm"}})["permissionDecision"] == "deny"
+    assert hook(repo, bash("crew-qa", "npm test")) is None  # not a hub call: untouched
+
+
+def test_injected_identity_reaches_the_ledger(repo: Repo):
+    init(repo)
+    agent(repo, "crew-qa", "qa")
+    cmd = hook(repo, bash("crew-qa", "node .crew/bin/crew.mjs usage --cost 1", agent_id="abc123"))["updatedInput"]["command"]
+    assert repo.run("sh", "-c", cmd).returncode == 0
+    e = events(repo, "--type", "usage")[-1]
+    assert (e["role"], e["run"]) == ("qa", "qa:abc123")
+
+
+def test_guard_protects_its_own_files_from_every_subagent(repo: Repo):
+    init(repo)
+    agent(repo, "crew-developer", "developer")
+    for path in (".crew/policy.yaml", ".claude/settings.json", ".claude/agents/crew-developer.md", ".crew/bin/crew.mjs",
+                 str(repo.path / ".claude/settings.local.json")):
+        for who in ("crew-developer", "Explore"):
+            out = hook(repo, {"tool_name": "Write", "agent_type": who, "agent_id": "a", "tool_input": {"file_path": path}})
+            assert out and out["permissionDecision"] == "deny" and "protected" in out["permissionDecisionReason"], (who, path)
+    for cmd in ("rm .claude/settings.json", "echo x > .crew/policy.yaml", "cp evil.mjs .crew/bin/crew.mjs",
+                "sed -i '' s/a/b/ .claude/agents/crew-developer.md", "git checkout -- .crew/policy.yaml"):
+        assert hook(repo, bash("Explore", cmd))["permissionDecision"] == "deny", cmd
+    assert hook(repo, bash("crew-developer", "cat .crew/policy.yaml")) is None  # reading the policy is fine
+    assert hook(repo, {"tool_name": "Read", "agent_type": "Explore", "agent_id": "a", "tool_input": {"file_path": ".env"}})["permissionDecision"] == "deny"
+    assert hook(repo, bash("Explore", "cat .env"))["permissionDecision"] == "deny"
+
+
+def test_guard_applies_the_roles_policy(repo: Repo):
+    init(repo, mode="")
+    repo.write(".crew/policy.yaml", "mode: ai-native\nroles:\n  developer:\n    tools: { deny: [\"Bash(git push *)\", WebFetch] }\n"
+               "    paths: { write: [\"src/**\", \"tests/**\"] }\n")
+    agent(repo, "crew-developer", "developer")
+    agent(repo, "crew-qa", "qa")
+    assert hook(repo, bash("crew-developer", "git add -A && git push origin main"))["permissionDecision"] == "deny"
+    assert hook(repo, bash("crew-developer", "git status")) is None
+    assert hook(repo, {"tool_name": "WebFetch", "agent_type": "crew-developer", "agent_id": "a", "tool_input": {}})["permissionDecision"] == "deny"
+    w = lambda who, p: hook(repo, {"tool_name": "Write", "agent_type": who, "agent_id": "a", "tool_input": {"file_path": p}})
+    assert w("crew-developer", "src/app.py") is None
+    assert "may only write src/**, tests/**" in w("crew-developer", "docs/notes.md")["permissionDecisionReason"]
+    assert w("crew-qa", "docs/notes.md") is None  # the qa role has no write scope of its own
+
+
+def test_projects_can_define_their_own_roles(repo: Repo):
+    init(repo, commit=True, mode="")
+    repo.write(".crew/policy.yaml", "mode: ai-native\nroles:\n  designer:\n    charter: owns the visual design; never writes backend code\n"
+               "role_gates:\n  plan.ready: designer\n")
+    assert tr(repo, "policy", "check").returncode == 0
+    ready = new_plan(repo)
+    assert ready.returncode == 0
+    r = tr(repo, "move", "P-001", "ready")
+    assert r.returncode != 0 and "for the designer role" in r.stderr
+    assert tr(repo, "--as", "designer", "move", "P-001", "ready").returncode == 0
+    assert tr(repo, "ask", "P-001", "--to", "designer", "Which palette?").returncode == 0
+    assert "QUESTION" in tr(repo, "next", "--as", "designer").stdout
+    repo.write(".crew/policy.yaml", "mode: ai-native\nroles:\n  Bad_Name: {}\n")
+    out = tr(repo, "policy", "check").stdout
+    assert "lower-case letters" in out and "needs a charter" in out
+    assert tr(repo, "--as", "wizard", "move", "P-001", "draft").returncode != 0  # an unknown acting role fails closed
+
+
+# ------------------------------------------------------------------ Workstream T2: agents rendered from the policy
+AGENT_TEMPLATES = HUB.parent.parent / "agents"
+BUILT_IN_AGENTS = ("director", "pm", "architect", "developer", "qa", "release")
+
+
+def frontmatter(path) -> dict:
+    import yaml
+    text = path.read_text()
+    assert text.startswith("---\n"), path
+    return yaml.safe_load(text.split("---\n", 2)[1])
+
+
+def test_agents_render_every_role_but_the_humans(repo: Repo):
+    init(repo)
+    assert (repo.path / ".crew/templates/agents/qa.md").is_file()  # init vendors the templates
+    r = tr(repo, "agents")
+    assert r.returncode == 0, r.stderr
+    files = sorted(p.name for p in (repo.path / ".claude/agents").iterdir())
+    assert files == sorted(f"crew-{role}.md" for role in BUILT_IN_AGENTS)  # no agent for the executive
+    for role in BUILT_IN_AGENTS:
+        fm = frontmatter(repo.path / f".claude/agents/crew-{role}.md")
+        assert fm["name"] == f"crew-{role}" and fm["crew-role"] == role and fm["description"]
+        assert fm.get("isolation") == ("worktree" if role == "developer" else None)
+    assert "Agents up to date." in tr(repo, "agents").stdout
+    assert tr(repo, "agents", "--check").returncode == 0
+
+
+def test_agent_frontmatter_follows_the_roles_policy(repo: Repo):
+    init(repo, mode="")
+    repo.write(".crew/policy.yaml", "mode: ai-native\nmodels: { default: sonnet }\nroles:\n  qa:\n    models: { default: haiku }\n"
+               "    tools: { allow: [Read, Grep, Glob, Bash], deny: [Edit, Write, \"Bash(git push *)\"] }\n    limits: { max_turns: 40 }\n")
+    assert tr(repo, "agents").returncode == 0
+    for role in BUILT_IN_AGENTS:  # the plan's T2 check: frontmatter matches `policy show --role R`
+        p = json.loads(tr(repo, "policy", "show", "--role", role, "--json").stdout)["policy"]
+        fm = frontmatter(repo.path / f".claude/agents/crew-{role}.md")
+        assert fm.get("model") == p["models"]["default"]
+        assert fm.get("tools", "") == ", ".join(t for t in p["tools"]["allow"] if "(" not in t)
+        assert fm.get("disallowedTools", "") == ", ".join(t for t in p["tools"]["deny"] if "(" not in t)
+        assert fm.get("maxTurns") == p["limits"]["max_turns"]
+    qa = frontmatter(repo.path / ".claude/agents/crew-qa.md")
+    assert (qa["model"], qa["tools"], qa["disallowedTools"], qa["maxTurns"]) == ("haiku", "Read, Grep, Glob, Bash", "Edit, Write", 40)
+    assert frontmatter(repo.path / ".claude/agents/crew-pm.md")["model"] == "sonnet"
+
+
+def test_a_project_role_renders_from_the_generic_template(repo: Repo):
+    init(repo, mode="")
+    repo.write(".crew/policy.yaml", "mode: ai-native\nroles:\n  designer:\n    charter: \"owns the visual design: tokens, layouts; never writes backend code\"\n")
+    assert tr(repo, "agents").returncode == 0
+    path = repo.path / ".claude/agents/crew-designer.md"
+    fm = frontmatter(path)  # the charter's colon is quoted, so the frontmatter stays valid YAML
+    assert fm["crew-role"] == "designer" and "owns the visual design: tokens" in fm["description"]
+    assert "Your charter: owns the visual design" in path.read_text() and "{{" not in path.read_text()
+    agent_out = hook(repo, bash("crew-designer", "node .crew/bin/crew.mjs next"))
+    assert "--as designer --run-id designer:a1" in agent_out["updatedInput"]["command"]  # the guard knows the rendered agent
+
+
+def test_agents_check_flags_policy_changes(repo: Repo):
+    init(repo, mode="")
+    repo.write(".crew/policy.yaml", "mode: ai-native\nroles:\n  designer:\n    charter: owns the visual design\n")
+    assert tr(repo, "agents").returncode == 0
+    assert "agents:" not in tr(repo, "check").stdout
+    repo.write(".crew/policy.yaml", "mode: ai-native\nroles:\n  qa:\n    models: { default: opus }\n")
+    r = tr(repo, "agents", "--check")
+    assert r.returncode == 1
+    assert "crew-qa.md: stale" in r.stdout and "crew-designer.md: its role 'designer' is no longer defined" in r.stdout
+    assert "HINT   agents: .claude/agents/crew-qa.md is stale" in tr(repo, "check").stdout
+    out = tr(repo, "agents").stdout
+    assert "wrote .claude/agents/crew-qa.md" in out and "removed .claude/agents/crew-designer.md" in out
+    assert not (repo.path / ".claude/agents/crew-designer.md").exists()
+    assert tr(repo, "agents", "--check").returncode == 0
+    repo.write(".crew/policy.yaml", "mode: ai-native\nroles:\n  qa:\n    models: { default: 3 }\n")
+    r = tr(repo, "agents")
+    assert r.returncode != 0 and "no agent was written" in r.stderr
+    assert frontmatter(repo.path / ".claude/agents/crew-qa.md")["model"] == "opus"  # refused: nothing changed
+
+
+def test_projects_without_agents_get_no_agent_hints(repo: Repo):
+    init(repo)
+    assert "agents:" not in tr(repo, "check").stdout
+
+
+def test_only_the_human_renders_agents(repo: Repo):
+    init(repo)
+    agent(repo, "crew-developer", "developer")
+    for cmd in ("node .crew/bin/crew.mjs agents", "node .crew/bin/crew.mjs --as developer agents"):
+        assert hook(repo, bash("crew-developer", cmd))["permissionDecision"] == "deny", cmd
+    assert hook(repo, bash("Explore", "node .crew/bin/crew.mjs agents"))["permissionDecision"] == "deny"
+    assert "permissionDecision" not in hook(repo, bash("crew-developer", "node .crew/bin/crew.mjs agents --check"))
+    out = hook(repo, {"tool_name": "Edit", "agent_type": "crew-developer", "agent_id": "a",
+                      "tool_input": {"file_path": ".crew/templates/agents/developer.md"}})
+    assert out["permissionDecision"] == "deny"  # nor rewrites the templates the next render reads
+
+
+def test_agent_templates_are_valid_and_name_real_commands(repo: Repo):
+    usage = tr(repo, "--help").stdout
+    commands = set(re.findall(r"(?:^ {2}|· )([a-z][a-z-]*)", usage, re.M))
+    assert {"checkpoint", "ask", "escalate", "answer", "agents", "next"} <= commands
+    for path in sorted(AGENT_TEMPLATES.glob("*.md")):
+        fm = frontmatter(path)
+        assert set(fm) >= {"name", "description"} and fm["name"].startswith("crew-"), path.name
+        for cmd in re.findall(r"crew\.mjs ([a-z][a-z-]*)", path.read_text()):
+            assert cmd in commands, f"{path.name}: crew.mjs {cmd} is not a hub command"
+    assert {p.stem for p in AGENT_TEMPLATES.glob("*.md")} == {*BUILT_IN_AGENTS, "generic"}

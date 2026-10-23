@@ -1,11 +1,15 @@
 /** Status changes: validated transitions, starting a plan, progress logs. */
 import * as git from "../core/git.js";
 import type { Doc } from "../core/doc.js";
-import { decisionProblems, learningsProblems, readinessProblems, triageProblems } from "../core/gates.js";
+import { decisionProblems, fastLane, learningsProblems, readinessProblems, triageProblems } from "../core/gates.js";
 import { overlapping } from "../core/footprint.js";
 import { approvalReason } from "../core/policy.js";
 import { evidenceProblems, writeHandoff } from "./execution.js";
 import { FORWARD, openQuestions } from "./questions.js";
+import { goalProblems } from "./goals.js";
+import { reviewProblems } from "./review.js";
+import { bounces, escalateLimit, refuseWhilePaused } from "./liveness.js";
+import { notify } from "./autonomy.js";
 import { CLOSED, FLOWS, ITEM_CLOSED, type Kind } from "../core/model.js";
 import * as q from "../core/queries.js";
 import type { Store } from "../core/store.js";
@@ -13,7 +17,8 @@ import { fail, kindOf, slugify, today } from "../core/text.js";
 
 const LOG_SECTION: Partial<Record<Kind, string>> = { item: "Notes" };
 
-export function move(store: Store, docId: string, status: string, note?: string, force = false, approvedBy?: string): Doc {
+/** `via`: the step that causes this move and whose gate applies instead (a review sending a plan back: `plan.reviewed`). */
+export function move(store: Store, docId: string, status: string, note?: string, force = false, approvedBy?: string, via?: string): Doc {
   store.require();
   docId = docId.toUpperCase();
   const kind = kindOf(docId);
@@ -31,22 +36,32 @@ export function move(store: Store, docId: string, status: string, note?: string,
     fail(`${doc.id} waits for an answer before it moves on:\n  - ${waiting.map((x) => `${x.id} → ${x.to}: ${x.text}`).join("\n  - ")}\n`
       + "(`crew.mjs questions`; --force to move anyway)");
   }
-  authorize(store, doc.id, `${kind}.${status}`, approvedBy);
+  if (kind === "plan" && status === "in-progress" && !via) assignedHere(store, doc.id);
+  const lane = kind === "plan" && status === "ready" && fastLane(store, doc); // the PM may make a small one ready too
+  authorize(store, doc.id, via ?? `${kind}.${status}`, approvedBy, via ? undefined : old, undefined, lane ? ["pm"] : []);
+  if (kind === "plan" && status === "in-progress" && !via) claimFor(store, doc, force); // the developer's claim stays
   stamp(kind!, doc, status);
   doc.set("status", status);
   if (kind === "plan" && status === "in-review" && doc.source === "worktree") writeHandoff(store, doc);
+  if (kind === "plan" && old === "in-review" && status === "in-progress") { // counted with this move: escalated once over the limit
+    escalateLimit(store, doc.id, bounces(store.ledger.events(), doc.id) + 1, store.policy.policy.limits.max_bounces, "came back from review");
+  }
   const approval = approvedBy ? ` (approved by ${approvedBy})` : "";
   doc.appendLog(`status ${old} → ${status}` + (note ? ` — ${note}` : "") + approval, LOG_SECTION[kind!] ?? "Progress log");
   doc.save();
-  store.ledger.record("move", doc.id, { from: old, to: status, ...(note ? { note } : {}), ...(approvedBy ? { approved_by: approvedBy } : {}) });
+  store.ledger.record("move", doc.id, { from: old, to: status, ...(note ? { note } : {}), ...(approvedBy ? { approved_by: approvedBy } : {}),
+    ...(via ? { via } : {}) });
   if (CLOSED.has(status) && store.ledger.claims().has(doc.id)) store.ledger.record("release", doc.id, { reason: status });
+  if (kind === "goal" && status === "done") notify(store, "goal-done", doc.id, `${doc.id} is done: ${doc.get("title")}`);
   store.say(`${doc.id}: ${old} → ${status}`);
   return doc;
 }
 
-/** Policy: human gates and reserved decisions need a named human (`--approved-by`, CLI only); role gates need the role.
+/** Policy: human gates and reserved decisions need a named human (`--approved-by`, CLI only); role gates need the role —
+ * the gate on this exact edge (`plan.in-review>in-progress`) if there is one, else on the target (`plan.in-progress`).
  * --force never bypasses these, and an invalid policy refuses every move until it is fixed. */
-function authorize(store: Store, id: string, transition: string, approvedBy?: string): void {
+export function authorize(store: Store, id: string, transition: string, approvedBy?: string, from?: string,
+  cmd = `move ${id} ${transition.split(".")[1]}`, also: string[] = []): void {
   const { policy, errors } = store.policy;
   if (errors.length) fail(`The policy is invalid, so nothing moves until it is fixed (\`crew.mjs policy check\`):\n  - ${errors.join("\n  - ")}`);
   if (approvedBy !== undefined && !approvedBy.trim()) fail("--approved-by needs the approving person's name.");
@@ -54,12 +69,24 @@ function authorize(store: Store, id: string, transition: string, approvedBy?: st
   const reason = approvalReason(policy, transition);
   const [, status] = transition.split(".");
   if (reason) {
-    fail(`${id} → ${status} is ${reason}: a human approves it with \`crew.mjs move ${id} ${status} --approved-by <name>\` `
+    fail(`${id} → ${status} is ${reason}: a human approves it with \`crew.mjs ${cmd} --approved-by <name>\` `
       + `(agents over MCP can't). Ask the ${policy.escalation.to} first.`);
   }
-  const role = policy.role_gates[transition];
+  const [kind] = transition.split(".");
+  const role = (from ? policy.role_gates[`${kind}.${from}>${status}`] : undefined) ?? policy.role_gates[transition];
   const mine = store.ledger.who.role;
-  if (role && mine !== role) fail(`${id} → ${status} is for the ${role} role; this run is ${mine ? `the ${mine} role` : "in no role"} (CREW_ROLE).`);
+  if (role && mine !== role && !also.includes(mine ?? "")) fail(`${id} → ${status} is for the ${role} role; this run is ${mine ? `the ${mine} role` : "in no role"} (CREW_ROLE).`);
+}
+
+/** Whoever moves a plan into in-progress holds it: record the claim (another run's live claim refuses, unless forced). */
+function claimFor(store: Store, doc: Doc, force: boolean): void {
+  const held = store.ledger.claims().get(doc.id);
+  if (held?.run === store.ledger.who.run) return;
+  if (held && !force) {
+    fail(`${doc.id} is claimed by ${held.actor} (${held.run}, ${held.worktree}) since ${held.ts.slice(0, 10)}. `
+      + `Coordinate with them, or \`release ${doc.id} --force\` if that run is gone.`);
+  }
+  store.ledger.record("claim", doc.id, { branch: doc.get("branch") ?? "", ...(force ? { force: true } : {}) });
 }
 
 /** Why this run may not take on new work (budgets in the policy), or none. */
@@ -89,8 +116,11 @@ function guard(store: Store, kind: Kind, doc: Doc, status: string, approvedBy?: 
     label = "can't go to review";
   } else if (kind === "plan" && status === "done") {
     problems = [...doc.tasks().filter(([done]) => !done).map(([, t]) => `unchecked task: ${t}`),
-      ...evidenceProblems(store, doc, approvedBy)];
+      ...evidenceProblems(store, doc, approvedBy), ...reviewProblems(store, doc)];
     label = "can't be done";
+  } else if (kind === "goal" && status === "done") {
+    problems = goalProblems(store, doc);
+    label = "isn't reached";
   } else if (kind === "goal" && status === "active") {
     problems = doc.missing(["Outcome", "Acceptance criteria"]).map((n) => `empty section: ${n}`);
     label = "can't be active";
@@ -113,8 +143,13 @@ function stamp(kind: Kind, doc: Doc, status: string): void {
 
 export function start(store: Store, planId: string, force = false, approvedBy?: string): void {
   store.require();
+  refuseWhilePaused(store, "new starts");
   let doc = store.find(planId);
-  if (!force) checkStartable(store, doc);
+  const branch = doc.get("branch") || `plan/${doc.id}-${slugify(doc.get("title") ?? "")}`;
+  // its branch exists and nobody holds it (released or reassigned): this run takes the work over where it stopped
+  const takeover = git.planBranches().includes(branch) && !store.ledger.claims().has(doc.id)
+    && ["in-progress", "blocked"].includes(store.ledger.lastStatus().get(doc.id) ?? doc.get("status") ?? "");
+  if (!force && !takeover) checkStartable(store, doc);
   const over = budgetProblems(store);
   if (over.length && !approvedBy) {
     fail(`Over budget — no new work without a human's approval (\`start ${doc.id} --approved-by <name>\`):\n  - ${over.join("\n  - ")}`);
@@ -129,22 +164,38 @@ export function start(store: Store, planId: string, force = false, approvedBy?: 
     fail(`${doc.id} waits for an answer before it starts:\n  - ${asked.map((x) => `${x.id} → ${x.to}: ${x.text}`).join("\n  - ")}\n`
       + "(`crew.mjs questions`; --force to start anyway)");
   }
+  assignedHere(store, doc.id);
+  authorize(store, doc.id, "plan.in-progress", approvedBy, "ready"); // every refusal that can happen now happens before the branch
   if (!git.treeIsClean()) fail("Working tree not clean. Commit or stash first.");
   const focus = store.focus();
   if (!q.onFocus(doc, store.items(), focus)) store.say(`note: ${planId} does not serve the focus goal ${focus}`);
   for (const o of overlapping(doc, store.plans(true)).filter((x) => store.plans(true).get(x.id)?.get("status") !== "ready")) {
     store.say(`warning: ${planId} overlaps ${o.id} (in progress) on ${o.globs.join(", ")} — expect conflicts; coordinate or add depends_on`);
   }
-  const branch = doc.get("branch") || `plan/${doc.id}-${slugify(doc.get("title") ?? "")}`;
-  git.git(["switch", "-c", branch], true);
+  const from = git.currentBranch(), sha = git.git(["rev-parse", "HEAD"])?.trim();
+  // a takeover may find the branch still checked out in the gone run's worktree
+  git.git(takeover ? ["switch", "--ignore-other-worktrees", branch] : ["switch", "-c", branch], true);
+  store.ws.onAbort(() => { // refused later (a gate on the branch, or a claim race at flush): leave no branch behind
+    git.git(from ? ["switch", "-q", from] : ["switch", "-q", "--detach", sha ?? "HEAD"]);
+    if (!takeover) git.git(["branch", "-D", branch]);
+  });
   doc = store.find(planId); // re-read on the new branch
   if (doc.get("status") === "draft" && force) {
     doc.set("status", "ready");
     doc.save();
   }
-  store.ledger.record("claim", doc.id, { branch, ...(force ? { force: true } : {}) });
-  move(store, planId, "in-progress", `branch ${branch}`, force, approvedBy);
+  store.ledger.record("claim", doc.id, { branch, ...(force ? { force: true } : {}), ...(takeover ? { takeover: true } : {}) });
+  if (doc.get("status") !== "in-progress") move(store, planId, "in-progress", `branch ${branch}`, force, approvedBy);
+  else store.say(`${doc.id}: taken over where it stopped — \`resume ${doc.id}\``);
   store.say(`Switched to ${branch} — claimed by ${store.ledger.who.actor} (${store.ledger.who.run})`);
+}
+
+/** A plan is started by the role it is assigned to; under a policy that gates assignment (`plan.assigned`), only once
+ * assigned. Ownership, so --force doesn't skip it. */
+export function assignedHere(store: Store, id: string): void {
+  const a = store.ledger.assignments().get(id), me = store.ledger.who.role, by = store.policy.policy.role_gates["plan.assigned"];
+  if (!a && by) fail(`${id} isn't assigned yet: the ${by} opens it with \`assign ${id} --to developer\`.`);
+  if (a && a.to !== me) fail(`${id} is assigned to the ${a.to} role; this run is ${me ? `the ${me} role` : "in no role"}.`);
 }
 
 function checkStartable(store: Store, doc: Doc): void {
@@ -185,7 +236,10 @@ export function release(store: Store, planId: string, note?: string, force = fal
 export function usage(store: Store, u: { tokensIn?: number; tokensOut?: number; cost?: number; model?: string; ref?: string }): void {
   store.require();
   if (u.tokensIn === undefined && u.tokensOut === undefined && u.cost === undefined) fail("Give --tokens-in, --tokens-out or --cost.");
-  if (u.cost !== undefined && !(u.cost >= 0)) fail("--cost must be a number ≥ 0.");
+  if (u.cost !== undefined && !(Number.isFinite(u.cost) && u.cost >= 0)) fail("--cost must be a number ≥ 0.");
+  for (const [flag, n] of [["--tokens-in", u.tokensIn], ["--tokens-out", u.tokensOut]] as const) {
+    if (n !== undefined && !(Number.isInteger(n) && n >= 0)) fail(`${flag} must be a whole number ≥ 0.`);
+  }
   store.ledger.record("usage", u.ref ? u.ref.toUpperCase() : null, {
     tokens_in: u.tokensIn ?? 0, tokens_out: u.tokensOut ?? 0, cost: u.cost ?? 0, ...(u.model ? { model: u.model } : {}) });
   store.say(`usage recorded for ${store.ledger.who.actor} (${store.ledger.who.run})`);

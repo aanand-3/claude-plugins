@@ -14,10 +14,14 @@ import { context } from "./commands/context.js";
 import { checkpoint, handoff, resume } from "./commands/execution.js";
 import { answer, ask, escalate, listQuestions } from "./commands/questions.js";
 import { learn, recallCmd } from "./commands/knowledge.js";
-import { showLedger } from "./commands/ledger.js";
+import { EVENT_TYPES, showLedger } from "./commands/ledger.js";
 import { setFocus } from "./commands/planning.js";
+import { assign, reassign, staff } from "./commands/team.js";
+import { pauseTeam, resumeTeam } from "./commands/liveness.js";
+import { review } from "./commands/review.js";
+import { mergeOrderCmd } from "./commands/release.js";
+import { recordStep, resumeWorkflow } from "./commands/runs.js";
 import { log, move, usage } from "./commands/workflow.js";
-import { ROLES } from "./core/model.js";
 import { Store } from "./core/store.js";
 import { HubError } from "./core/text.js";
 
@@ -28,8 +32,11 @@ type Schema = { type: "object"; properties: Record<string, unknown>; required?: 
 interface Tool { description: string; input: Schema; run: (s: Store, a: Args) => number | void }
 
 const text = (description: string) => ({ type: "string", description });
+/** Every tool takes `as` (role) and `run_id`: who is acting. The guard fills them in from the calling agent. */
 const obj = (properties: Record<string, unknown> = {}, required: string[] = []): Schema =>
-  ({ type: "object", properties, ...(required.length ? { required } : {}), additionalProperties: false });
+  ({ type: "object", properties: { ...properties, as: { type: "string", description: "your role (set by the guard for agents)" },
+    run_id: { type: "string", description: "your run id (set by the guard for agents)" } }, ...(required.length ? { required } : {}),
+  additionalProperties: false });
 const s = (a: Args, k: string) => (typeof a[k] === "string" && a[k] ? (a[k] as string) : undefined);
 const up = (a: Args, k: string) => s(a, k)!.toUpperCase();
 const num = (description: string) => ({ type: "number", description });
@@ -40,16 +47,16 @@ const ITEM_FIELDS = { priority: text("P0–P3"), severity: text("bugs only: S1�
 /** name → tool. Required arguments are checked against `input.required` before `run`. */
 export const TOOLS: Record<string, Tool> = {
   next: { description: "The single best next step (`crew.mjs next`); with a role, that role's own queue, questions to it first.",
-    input: obj({ role: { type: "string", enum: [...ROLES] } }), run: (st, a) => nextStep(st, s(a, "role")) },
+    input: obj({ role: text("a role: executive, director, pm, architect, developer, qa, release, or one the policy defines") }), run: (st, a) => nextStep(st, s(a, "role") ?? st.ledger.who.role ?? undefined) },
   context: { description: "What you need right now (`crew.mjs context`): for a plan, where the work stands, its goal, criteria with "
     + "evidence, tasks, blockers and questions, knowledge in scope; without one, the idea, focus, your next steps and the team. "
     + "Sliced for your role and kept within a budget. Call it at the start of every session.",
-    input: obj({ plan: text("e.g. P-004; default: the plan of this branch"), role: { type: "string", enum: [...ROLES] },
+    input: obj({ plan: text("e.g. P-004; default: the plan of this branch"), role: text("a role: executive, director, pm, architect, developer, qa, release, or one the policy defines"),
       budget: num("characters, default 6000") }),
     run: (st, a) => context(st, { id: s(a, "plan"), role: s(a, "role"), budget: n(a, "budget") }) },
   ask: { description: "Ask another role a question (`crew.mjs ask`), recorded so it isn't lost. It blocks the document it is about "
     + "from moving forward until answered (fyi: true doesn't block).",
-    input: obj({ ref: text("the document it is about, e.g. P-004"), to: { type: "string", enum: [...ROLES] }, text: text("the question"),
+    input: obj({ ref: text("the document it is about, e.g. P-004"), to: text("a role: executive, director, pm, architect, developer, qa, release, or one the policy defines"), text: text("the question"),
       fyi: { type: "boolean" } }, ["to", "text"]),
     run: (st, a) => { ask(st, s(a, "ref"), s(a, "to")!, s(a, "text")!, { fyi: a.fyi === true }); } },
   escalate: { description: "Escalate to the executive (`crew.mjs escalate`): reserved decisions, a goal at risk, anything only a human "
@@ -62,7 +69,7 @@ export const TOOLS: Record<string, Tool> = {
       ["id", "text"]),
     run: (st, a) => answer(st, s(a, "id")!, s(a, "text")!, { decision: a.decision === true, scope: s(a, "scope") }) },
   questions: { description: "Open questions between roles (`crew.mjs questions --json`).",
-    input: obj({ to: { type: "string", enum: [...ROLES] }, ref: text("only about this document"), all: { type: "boolean" } }),
+    input: obj({ to: text("a role: executive, director, pm, architect, developer, qa, release, or one the policy defines"), ref: text("only about this document"), all: { type: "boolean" } }),
     run: (st, a) => listQuestions(st, { to: s(a, "to"), ref: s(a, "ref"), all: a.all === true, json: true }) },
   current: { description: "Where work stands: the focus goal and the plan on the current branch (`crew.mjs current`).",
     input: obj(), run: (st) => current(st) },
@@ -85,6 +92,22 @@ export const TOOLS: Record<string, Tool> = {
   move: { description: "Move a document to a new status (`crew.mjs move`). Gates (Definition of Ready, WIP limit, policy role gates) apply; there is no force. Steps the policy reserves for a human (human gates, reserved decisions) are refused here: escalate to the human, who approves on the CLI with --approved-by.",
     input: obj({ id: text("e.g. P-004"), status: text("target status, e.g. ready, in-review, done"), note: text("optional note") }, ["id", "status"]),
     run: (st, a) => { move(st, s(a, "id")!, s(a, "status")!, s(a, "note")); } },
+  assign: { description: "Open a ready plan for a role (`crew.mjs assign`): records who implements it; `start` then needs the "
+    + "assignment. Under the lifecycle preset only the PM assigns.",
+    input: obj({ id: text("e.g. P-004"), to: text("the role that implements it, usually developer"), team: text("optional team from the policy"),
+      note: text("optional note") }, ["id", "to"]),
+    run: (st, a) => { assign(st, s(a, "id")!, s(a, "to")!, s(a, "team"), s(a, "note")); } },
+  staff: { description: "What can run in parallel now (`crew.mjs staff`): ready plans whose dependencies are done, that overlap "
+    + "nothing in progress or each other, within budgets.max_agents, each routed to a team; and why the others wait.",
+    input: obj({ json: { type: "boolean" } }), run: (st, a) => staff(st, a.json === true) },
+  reassign: { description: "Move stuck work to another run (`crew.mjs reassign`): releases a stale claim (limits.stale_claim_hours) "
+    + "and assigns the plan again; the next agent takes it over with start, which resumes its branch. Under the lifecycle preset, the Director's.",
+    input: obj({ id: text("e.g. P-004"), to: text("role, default: the current assignment"), note: text("why") }, ["id"]),
+    run: (st, a) => { reassign(st, s(a, "id")!, s(a, "to"), s(a, "note")); } },
+  pause: { description: "Pause the team (`crew.mjs pause`), or resume it with resume: true: while paused, staff and start refuse. "
+    + "The executive's or the Director's call.",
+    input: obj({ reason: text("why (pause) or a note (resume)"), resume: { type: "boolean" } }),
+    run: (st, a) => (a.resume === true ? resumeTeam(st, s(a, "reason")) : pauseTeam(st, s(a, "reason"))) },
   log: { description: "Append a dated line to a document's log (`crew.mjs log`).",
     input: obj({ id: text("e.g. P-004"), text: text("the log entry") }, ["id", "text"]), run: (st, a) => log(st, up(a, "id"), s(a, "text")!) },
   focus: { description: "Set the focus goal the team works toward now (`crew.mjs focus`).",
@@ -113,12 +136,21 @@ export const TOOLS: Record<string, Tool> = {
     + "task or check, and whenever an approach fails. A failed check returns an error result but is still recorded.",
     input: obj({ plan: text("e.g. P-004; default: the plan of this branch"), step: text("e.g. T3"), verify: text("the check you ran"),
       result: { type: "string", enum: ["pass", "fail"] }, ac: text("criteria it covers: 1,2 or all"), output: text("the end of its output"),
-      attempt: text("an approach that failed"), why: text("why it failed"), note: text("anything else") }),
-    run: (st, a) => checkpoint(st, s(a, "plan"), { step: s(a, "step"), verify: s(a, "verify"), result: s(a, "result"), ac: s(a, "ac"),
-      output: s(a, "output"), attempt: s(a, "attempt"), why: s(a, "why"), note: s(a, "note") }) },
+      attempt: text("an approach that failed"), why: text("why it failed"), note: text("anything else"),
+      workflow: text("instead of a plan: a workflow run (kickoff, onboard) whose step just finished"), skip: { type: "boolean" } }),
+    run: (st, a) => (s(a, "workflow") ? recordStep(st, s(a, "workflow")!, s(a, "step"), { skip: a.skip === true, note: s(a, "note") }) : checkpoint(st, s(a, "plan"), { step: s(a, "step"), verify: s(a, "verify"), result: s(a, "result"), ac: s(a, "ac"),
+      output: s(a, "output"), attempt: s(a, "attempt"), why: s(a, "why"), note: s(a, "note") })) },
   resume: { description: "Where a plan's work stopped (`crew.mjs resume`): last checkpoint vs git now, check results, approaches not to retry, "
     + "the next task and each criterion's evidence. Call it first when picking work up.",
-    input: obj({ plan: text("e.g. P-004; default: the plan of this branch") }), run: (st, a) => resume(st, s(a, "plan")) },
+    input: obj({ plan: text("e.g. P-004; default: the plan of this branch"), workflow: text("instead: a workflow run (kickoff, onboard)") }),
+    run: (st, a) => (s(a, "workflow") ? resumeWorkflow(st, s(a, "workflow")!) : resume(st, s(a, "plan"))) },
+  merge_order: { description: "What Release merges next (`crew.mjs merge-order`): done plans with unmerged branches, dependencies first; "
+    + "plans waiting on an unmerged dependency; merged branches to delete.",
+    input: obj({ json: { type: "boolean" } }), run: (st, a) => mergeOrderCmd(st, a.json === true) },
+  review: { description: "Code review of a plan in review (`crew.mjs review`): approve, or request changes, which sends it back to the "
+    + "developer. Never by the plan's implementer; under the lifecycle preset the Architect's, and done needs an approval of the current code.",
+    input: obj({ id: text("e.g. P-004"), approve: { type: "boolean" }, changes: text("what must change") }, ["id"]),
+    run: (st, a) => { review(st, s(a, "id")!, { approve: a.approve === true, changes: s(a, "changes") }); } },
   handoff: { description: "Write the resume view into the plan's Handoff section (`crew.mjs handoff`), before ending a session.",
     input: obj({ plan: text("e.g. P-004; default: the plan of this branch") }), run: (st, a) => handoff(st, s(a, "plan")) },
   design: { description: "The design studio's live state (`crew.mjs design show`): DESIGN.md's direction, status and revision, the "
@@ -126,7 +158,7 @@ export const TOOLS: Record<string, Tool> = {
     input: obj({ json: { type: "boolean", description: "the full DESIGN.md tokens and studio.json" }, done: text("a hand-off id (h3) or all") }),
     run: (st, a) => (s(a, "done") ? designDone(st, s(a, "done")!) : designShow(st, a.json === true)) },
   ledger: { description: "Recent events from the shared ledger and the live claims (`crew.mjs ledger --json`).",
-    input: obj({ ref: text("only events about this ID"), type: { type: "string", enum: ["claim", "release", "move", "log", "usage", "learn", "checkpoint", "ask", "answer"] },
+    input: obj({ ref: text("only events about this ID"), type: { type: "string", enum: EVENT_TYPES },
       limit: num("how many, newest last (default 20)") }),
     run: (st, a) => showLedger(st, { ref: s(a, "ref"), type: s(a, "type"), limit: n(a, "limit"), json: true }) },
 };
@@ -141,12 +173,26 @@ export function callTool(open: () => Store, name: string, args: Args = {}): Tool
   if (!tool) return result([`Unknown tool '${name}'.`], true);
   const missing = (tool.input.required ?? []).filter((k) => args[k] === undefined || args[k] === "");
   if (missing.length) return result([`missing ${missing.join(", ")}`], true);
+  const saved = { role: process.env.CREW_ROLE, run: process.env.CREW_RUN };
+  if (typeof args.as === "string" && args.as) process.env.CREW_ROLE = args.as; // this call only; restored below
+  if (typeof args.run_id === "string" && args.run_id) process.env.CREW_RUN = args.run_id;
+  try {
+    return runTool(open, tool, args, result);
+  } finally {
+    for (const [k, v] of [["CREW_ROLE", saved.role], ["CREW_RUN", saved.run]] as const) {
+      if (v === undefined) delete process.env[k]; else process.env[k] = v;
+    }
+  }
+}
+
+function runTool(open: () => Store, tool: Tool, args: Args, result: (lines: string[], isError: boolean) => ToolResult): ToolResult {
   const store = open();
   try {
     const code = tool.run(store, args) ?? 0;
     store.ws.flush();
     return result(store.ws.output, code !== 0);
   } catch (e) {
+    store.ws.abort();
     if (!(e instanceof HubError)) throw e;
     return result([...store.ws.output, e.message], true);
   }

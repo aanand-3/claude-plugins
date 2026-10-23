@@ -15,3 +15,4 @@ htmlcov/
 # Claude Code: personal files stay local
 CLAUDE.local.md
 .claude/settings.local.json
+.claude/worktrees/

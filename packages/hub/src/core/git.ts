@@ -3,8 +3,15 @@ import { spawnSync } from "node:child_process";
 import { resolve } from "node:path";
 import { fail } from "./text.js";
 
+let ROOT: string | null = null;
+
+/** Run every git command against the repository root, so the CLI behaves the same from any subdirectory. */
+export function useRoot(root: string): void {
+  ROOT = root;
+}
+
 export function git(args: string[], check = false): string | null {
-  const r = spawnSync("git", args, { encoding: "utf8" });
+  const r = spawnSync("git", ROOT && args[0] !== "-C" ? ["-C", ROOT, ...args] : args, { encoding: "utf8" });
   if (r.status !== 0) {
     if (check) fail(`git ${args.join(" ")} failed: ${(r.stderr ?? "").trim()}`);
     return null;

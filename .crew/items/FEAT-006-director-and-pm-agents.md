@@ -24,3 +24,5 @@ Slice of G-003 (Agent team): Director and PM agents — staffing from the ready 
 
 ## Notes
 - 2026-10-23: triaged from G-003 breakdown
+- 2026-10-23: T3a: assign/staff, the lifecycle preset, from→to role gates, team skill, director/pm templates (branch feat/team-director)
+- 2026-10-23: T3b: goal evidence + goal.done gate, stale claims/reassign/takeover, bounce and attempt escalation, pause/resume --team (branch feat/team-liveness)

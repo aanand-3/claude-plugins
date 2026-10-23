@@ -24,3 +24,4 @@ Slice of G-003 (Agent team): Claude Code policy adapter — render models, tools
 
 ## Notes
 - 2026-10-23: triaged from G-003 breakdown
+- 2026-10-23: T2: crew.mjs agents [--check] renders .claude/agents/crew-<role>.md from the role templates + effective policy (branch feat/team-agents)

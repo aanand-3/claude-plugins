@@ -1,14 +1,15 @@
 /** The ledger: an append-only event log every worktree and agent of the repository shares (in the git common dir).
  * It records who holds what, what moved and what it cost; live claims, WIP and spend are derived from it.
  * Events are staged like file writes and appended under a lock when the command flushes, so a refusal records nothing. */
-import { createHash } from "node:crypto";
-import { appendFileSync, closeSync, existsSync, mkdirSync, openSync, readFileSync, statSync, unlinkSync } from "node:fs";
+import { createHash, randomBytes } from "node:crypto";
+import { appendFileSync, existsSync, linkSync, mkdirSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import * as git from "./git.js";
 import { fail } from "./text.js";
 import type { Workspace } from "./workspace.js";
 
-export type EventType = "claim" | "release" | "move" | "log" | "usage" | "learn" | "checkpoint" | "ask" | "answer";
+export type EventType = "claim" | "release" | "move" | "log" | "usage" | "learn" | "checkpoint" | "ask" | "answer"
+  | "assign" | "pause" | "resume" | "review" | "notify";
 
 export interface LedgerEvent {
   ts: string;                       // ISO timestamp
@@ -17,23 +18,25 @@ export interface LedgerEvent {
   run: string;                      // the agent run or session that wrote it
   actor: string;                    // who: an agent or a person
   role: string | null;              // the role it acted in (CREW_ROLE), e.g. developer, qa
+  team: string | null;              // the team it acted for (CREW_TEAM), e.g. web
   worktree: string;                 // where it was written
   [field: string]: unknown;         // type-specific: branch, from/to/note, text, tokens_in/tokens_out/cost/model
 }
 
-export interface Who { run: string; actor: string; role: string | null; worktree: string }
+export interface Who { run: string; actor: string; role: string | null; team: string | null; worktree: string }
 export interface Spend { cost: number; tokensIn: number; tokensOut: number; byActor: Record<string, number> }
 
 const LOCK_WAIT_MS = 5_000;
 const LOCK_STALE_MS = 30_000;
 
-/** Who is writing: CREW_RUN / CREW_ACTOR / CREW_ROLE, else one run per worktree, the git author and no role. */
+/** Who is writing: CREW_RUN / CREW_ACTOR / CREW_ROLE / CREW_TEAM, else one run per worktree, the git author, no role, no team. */
 export function whoAmI(root: string): Who {
   const hash = createHash("sha1").update(root).digest("hex").slice(0, 8);
   return {
     run: process.env.CREW_RUN || `wt:${basename(root)}-${hash}`,
     actor: process.env.CREW_ACTOR || git.userName() || "unknown",
     role: process.env.CREW_ROLE || null,
+    team: process.env.CREW_TEAM || null,
     worktree: root,
   };
 }
@@ -76,6 +79,13 @@ export class Ledger {
     return live;
   }
 
+  /** plan → its current assignment (the last `assign` event: `to` a role, optionally a `team`). */
+  assignments(events = this.events()): Map<string, LedgerEvent> {
+    const out = new Map<string, LedgerEvent>();
+    for (const ev of events) if (ev.type === "assign" && ev.ref) out.set(ev.ref, ev);
+    return out;
+  }
+
   /** ref → the status its last `move` event set. */
   lastStatus(events = this.events()): Map<string, string> {
     const out = new Map<string, string>();
@@ -112,35 +122,68 @@ export class Ledger {
     if (!this.staged.length) return;
     mkdirSync(dirname(this.path), { recursive: true });
     const lock = `${this.path}.lock`;
-    acquire(lock);
+    const token = acquireLock(lock);
     try {
       const live = this.claims(this.onDisk());
       for (const ev of this.staged.filter((e) => e.type === "claim" && e.ref && !e.force)) {
         const held = live.get(ev.ref!);
         if (held && held.run !== ev.run) fail(`${ev.ref} was just claimed by ${held.actor} (${held.run}). Nothing was changed.`);
       }
-      appendFileSync(this.path, this.staged.map((e) => `${JSON.stringify(e)}\n`).join(""));
+      // a crash can leave a torn last line; start on a fresh line so this batch isn't glued to it and lost
+      const torn = existsSync(this.path) && statSync(this.path).size > 0 && !readFileSync(this.path, "utf8").endsWith("\n");
+      appendFileSync(this.path, (torn ? "\n" : "") + this.staged.map((e) => `${JSON.stringify(e)}\n`).join(""));
       this.staged = [];
     } finally {
-      unlinkSync(lock);
+      releaseLock(lock, token);
     }
   }
 }
 
-/** An exclusive lock file; one left behind by a crashed writer is taken over after LOCK_STALE_MS. */
-function acquire(lock: string): void {
-  const deadline = Date.now() + LOCK_WAIT_MS;
+/** An exclusive lock file holding a unique token; one left behind by a crashed writer is taken over after `staleMs`.
+ * Returns the token, which `releaseLock` needs: a holder only ever removes its own lock. */
+export function acquireLock(lock: string, waitMs = LOCK_WAIT_MS, staleMs = LOCK_STALE_MS): string {
+  const token = `${process.pid}-${randomBytes(6).toString("hex")}`;
+  const deadline = Date.now() + waitMs;
   for (;;) {
     try {
-      closeSync(openSync(lock, "wx"));
-      return;
+      writeFileSync(lock, token, { flag: "wx" });
+      return token;
     } catch (e) {
       if ((e as NodeJS.ErrnoException).code !== "EEXIST") throw e;
-      try {
-        if (Date.now() - statSync(lock).mtimeMs > LOCK_STALE_MS) unlinkSync(lock);
-      } catch { /* released meanwhile */ }
+      takeOverIfStale(lock, staleMs, token);
       if (Date.now() > deadline) fail(`The ledger is locked (${lock}). Another crew command is writing; retry.`);
       Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 20);
     }
   }
+}
+
+/** Move a stale lock aside atomically (rename), so two waiters can't both delete it and each think they hold the lock.
+ * If what was moved isn't the stale lock that was inspected (a new holder replaced it in between), put it back. */
+function takeOverIfStale(lock: string, staleMs: number, token: string): void {
+  let seen: string;
+  try {
+    if (Date.now() - statSync(lock).mtimeMs <= staleMs) return;
+    seen = readFileSync(lock, "utf8");
+  } catch {
+    return; // released meanwhile
+  }
+  const aside = `${lock}.stale-${token}`;
+  try {
+    renameSync(lock, aside);
+  } catch {
+    return; // another waiter moved it first
+  }
+  if (readFileSync(aside, "utf8") !== seen) {
+    try {
+      linkSync(aside, lock);
+    } catch { /* a third writer took the free slot: it holds the lock, as it should */ }
+  }
+  unlinkSync(aside);
+}
+
+/** Remove the lock only if it is still ours. */
+export function releaseLock(lock: string, token: string): void {
+  try {
+    if (readFileSync(lock, "utf8") === token) unlinkSync(lock);
+  } catch { /* already gone */ }
 }

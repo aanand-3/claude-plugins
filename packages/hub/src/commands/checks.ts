@@ -7,6 +7,8 @@ import { ACTIVE, CLOSED, GOAL_FLOW, IDEA_FLOW, ITEM_FLOW, MAX_WRITTEN_AHEAD, PLA
 import * as q from "../core/queries.js";
 import { drift, overlapping } from "../core/footprint.js";
 import { globRe, K_ID_RE, KNOWLEDGE_TYPES, secretsIn } from "../core/knowledge.js";
+import { agentHints } from "./agents.js";
+import { livenessHints } from "./liveness.js";
 import { policyFindings } from "./policy.js";
 import type { Docs, Store } from "../core/store.js";
 import { idList, stripComments } from "../core/text.js";
@@ -37,7 +39,7 @@ export function findings(store: Store): Findings {
   const s = new Snapshot(store), f: Findings = { errors: [], hints: [] };
   for (const rule of [idea, plans, overlaps, items, goals, ledger, knowledge, hygiene]) rule(s, f);
   const p = policyFindings(store);
-  return { errors: [...f.errors, ...p.errors], hints: [...f.hints, ...p.hints] };
+  return { errors: [...f.errors, ...p.errors], hints: [...f.hints, ...p.hints, ...agentHints(store), ...livenessHints(store)] };
 }
 
 /** Prints findings; returns the exit code (1 when there are errors). */
@@ -87,7 +89,7 @@ function plans(s: Snapshot, f: Findings): void {
     if (st === "ready") f.errors.push(...readinessProblems(s.store, p).map((problem) => `${pid}: ready but ${problem}`));
     if (st === "done") donePlan(pid, p, f);
     if (ACTIVE.has(st ?? "")) activePlan(pid, p, s, f, branches, here);
-    const outside = drift(s.allPlans.get(pid) ?? p);
+    const outside = drift(s.allPlans.get(pid) ?? p, s.store.baseBranch());
     if (outside?.length) f.hints.push(`${pid}: changes outside its touches: ${outside.slice(0, 8).join(", ")} — widen touches (and log why) or move the work`);
     if ((ACTIVE.has(st ?? "") || st === "ready") && !q.onFocus(p, s.items, s.focus)) {
       f.hints.push(`${pid}: ${st} but does not serve the focus goal ${s.focus} (only bugs and chores may run off focus)`);

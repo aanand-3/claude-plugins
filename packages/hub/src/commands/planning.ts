@@ -31,6 +31,9 @@ function vendor(store: Store): void {
   if (studio !== null) store.ws.write(join(bin, STUDIO_FILE), studio); // the design studio `ui` serves at /design
   const templates = join(store.dir, "templates");
   for (const name of [...TEMPLATE_NAMES]) store.ws.write(join(templates, name), store.ws.read(join(SKILL_DIR, "templates", name))!);
+  for (const name of store.ws.list(join(SKILL_DIR, "agents"))) { // role agent templates, rendered by `agents`
+    store.ws.write(join(templates, "agents", name), store.ws.read(join(SKILL_DIR, "agents", name))!);
+  }
   const guide = store.ws.read(join(SKILL_DIR, "references", "writing-guide.md"));
   if (guide !== null) store.ws.write(join(templates, "writing-guide.md"), guide); // quality bar, available without the plugin
 }
