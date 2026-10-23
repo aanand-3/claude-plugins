@@ -1,6 +1,6 @@
 ---
 name: onboard
-description: Bring crew into an existing codebase — map the repo (optionally with a graphify code graph), infer the stack, architecture and layout and confirm them, record them in .crew/config.yaml, the brief, the architecture doc and ADRs, then merge in CLAUDE.md, engineering rules and git guards, and optionally the hub. Works on a branch and merges into existing files instead of overwriting them. Use when the user wants to use crew, set up CLAUDE.md and guidelines, or "initialize/onboard/adopt" in a project that already has code, or resume an interrupted onboarding.
+description: Bring crew into an existing codebase — map the repo with a graphify code graph, infer the stack, architecture and layout and confirm them, record them in .crew/config.yaml, the brief, the architecture doc and ADRs, then merge in CLAUDE.md, engineering rules, git guards and the hub. Works on a branch and merges into existing files instead of overwriting them. Use when the user wants to use crew, set up CLAUDE.md and guidelines, or "initialize/onboard/adopt" in a project that already has code, or resume an interrupted onboarding.
 argument-hint: "[path, default: current directory]"
 ---
 
@@ -8,18 +8,12 @@ argument-hint: "[path, default: current directory]"
 
 The existing-code counterpart of `kickoff`. Kickoff interviews and creates; onboard **reads, infers, confirms and merges**. It sequences the same skills, so each step stays usable on its own. No application code changes, no dependency installs (the one exception is the graphify CLI, installed only with a yes).
 
-## Progress file
-`.crew/onboard.yaml`, written on the onboard branch, so an interrupted run resumes:
-```yaml
-started: YYYY-MM-DD
-branch: chore/crew-onboard
-modules: {graphify: false}
-steps: {preflight: done, map: pending, discover: pending, design: pending, guidelines: pending, hub: pending, git: pending, graph: pending}
-```
-**With the hub, the ledger tracks the run instead** (no `onboard.yaml`): after each step,
+## Progress
+The hub's ledger tracks the run, so an interrupted onboarding resumes. The steps are `preflight`, `map`, `discover`,
+`design`, `guidelines`, `hub`, `git` and `graph`. After each step,
 `node .crew/bin/crew.mjs checkpoint --workflow onboard --step <step>` (`--skip` for a skipped one), recording the steps
-done before the hub existed right after `init`; on start, `node .crew/bin/crew.mjs resume --workflow onboard`.
-On start, if it exists, switch to its branch, show what's done and continue from the first `pending` step. The graph step is `skipped` without graphify.
+done before the hub existed right after `init`. On start, if the `chore/crew-onboard` branch exists, switch to it and run
+`node .crew/bin/crew.mjs resume --workflow onboard` to see what's done and continue from the next step.
 
 ## Steps
 
@@ -32,10 +26,10 @@ On start, if it exists, switch to its branch, show what's done and continue from
      - CI (`.github/workflows/`, others), README, `docs/`, ADRs;
      - the default branch and remote.
    - **Tools:** `git`, `python3` ≥ 3.9, `node` ≥ 20 (the hub and the design studio).
-   - **Optional module** (one AskUserQuestion): *Code graph (graphify)*, which maps the codebase for this onboarding and for every later session. A project-kit `.project/` folder is migrated by the hub step (`crew.mjs migrate`).
+   - **Code graph:** graphify maps the codebase for this onboarding and for every later session. It's an external tool, installed in step 1 only with the user's yes. A project-kit `.project/` folder is migrated by the hub step (`crew.mjs migrate`).
 
 1. **Map** — gather evidence before asking anything.
-   - With graphify: follow the `codemap` skill (`${CLAUDE_PLUGIN_ROOT}/skills/codemap/SKILL.md`). Install the CLI if needed and **build** with `/graphify .`, but don't wire the hooks yet (step 7 does, once `.githooks` exists). `GRAPH_REPORT.md` (god nodes, communities) is the main input for the architecture and `structure:`.
+   - **Graph first:** follow the `codemap` skill (`${CLAUDE_PLUGIN_ROOT}/skills/codemap/SKILL.md`). Install the CLI if needed and **build** with `/graphify .`, but don't wire the hooks yet (step 7 does, once `.githooks` exists). `GRAPH_REPORT.md` (god nodes, communities) is the main input for the architecture and `structure:`. If the user declines the install, map from the files below alone and skip step 7.
    - Always read:
      - manifests and lockfiles (`pyproject.toml`, `uv.lock`, `package.json`, the pnpm/npm lock, `go.mod`, …);
      - `Dockerfile`/`compose.yaml`, migrations (`alembic/`, `prisma/`, `drizzle/`), env files (`.env.example` only, never `.env`), CI workflows;
@@ -43,7 +37,7 @@ On start, if it exists, switch to its branch, show what's done and continue from
    - From these, derive: project type, languages and versions, frameworks, ORM, database, cache/queue, containers, repo layout (single app or monorepo, and the backend/frontend dirs), the architecture style that best matches the code (layered, hexagonal or none), auth, deployment hints.
    - Note what isn't covered by a pack, e.g. Go or Django. Those get rules in `.claude/rules/project.md` and no pack. Never force a pack that doesn't fit.
 
-2. **Discover (inferred)** — follow the `discover` skill in **inferred mode** (its *Inferred mode* section). Output: `.crew/config.yaml` (with `modules:`), `docs/project-brief.md`, `docs/architecture.md` (as-is), `docs/adr/0001…` and `0002-onboard-crew`.
+2. **Discover (inferred)** — follow the `discover` skill in **inferred mode** (its *Inferred mode* section). Output: `.crew/config.yaml`, `docs/project-brief.md`, `docs/architecture.md` (as-is), `docs/adr/0001…` and `0002-onboard-crew`.
    - Pick `packs:` only where the code matches the pack. Ask before adding an arch pack whose rules the current code clearly breaks: adopting it means planned refactoring, recorded as an ADR and a CHORE item.
    - Existing docs win. If `docs/architecture.md` or ADRs exist, merge into them and show the diff rather than replacing them.
 
@@ -67,15 +61,15 @@ On start, if it exists, switch to its branch, show what's done and continue from
    - Existing `.gitignore`: only the missing sections are appended. Review them.
    - Commit on the onboard branch: `chore: onboard crew`. The main guard doesn't apply on a branch.
 
-7. **Graph** (only with `modules.graphify`): with `.githooks` active, run the `codemap` skill's *enable* steps 2–5 (hooks, ignore, CLAUDE.md section, config). Amend or add a commit, `chore: wire graphify code graph`.
+7. **Graph:** with `.githooks` active, run the `codemap` skill's *enable* steps 2–4 (hooks, ignore, CLAUDE.md section). Amend or add a commit, `chore: wire graphify code graph`.
 
 8. **Wrap-up**
-   - Mark the steps done in `onboard.yaml`.
-   - Show: the files added and merged (`git diff --stat main...HEAD`), the detected stack table with anything still `assumed`, the packs applied, the modules enabled, and existing hooks or CI left as they were.
+   - Record the last step (`checkpoint --workflow onboard --step graph`).
+   - Show: the files added and merged (`git diff --stat main...HEAD`), the detected stack table with anything still `assumed`, the packs applied, whether the code graph is set up, and existing hooks or CI left as they were.
    - Offer to push and open a PR (`gh pr create`) or, without a remote, to review the diff. Merging is the user's call.
    - Next actions:
      - triage the imported items, then `/crew:hub plan` for the next change;
-     - with graphify: `/graphify query "…"` before broad reads.
+     - once the graph exists: `/graphify query "…"` before broad reads.
 
 ## Rules
 - Infer first, ask second. Every question must name the evidence that left it open.

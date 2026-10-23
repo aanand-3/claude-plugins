@@ -3,7 +3,7 @@ id: P-001
 title: Nothing optional: graphify always on
 goal:
 items: CHORE-006
-touches: .crew/config.yaml, README.md, plugins/crew/.claude-plugin/plugin.json, plugins/crew/skills/{codemap, discover, git-setup, guidelines, kickoff, onboard}/**, packages/hub/src/commands/checks.ts, packages/hub/test/**, plugins/crew/skills/hub/dist/**, .crew/bin/crew.mjs, tests/crew/**
+touches: .crew/config.yaml, README.md, plugins/crew/.claude-plugin/plugin.json, plugins/crew/skills/codemap/**, plugins/crew/skills/discover/**, plugins/crew/skills/git-setup/**, plugins/crew/skills/guidelines/**, plugins/crew/skills/kickoff/**, plugins/crew/skills/onboard/**, packages/hub/src/commands/checks.ts, packages/hub/test/**, packages/hub/scripts/sample-project.mjs, plugins/crew/skills/hub/dist/**, .crew/bin/crew.mjs, tests/crew/**
 depends_on:
 status: in-progress
 branch: plan/P-001-nothing-optional-graphify-always-on
@@ -57,11 +57,11 @@ graphify stays an external tool: PyPI `graphifyy`, installed with uv, the one de
 - **Rebuild:** `npm run build` regenerates `plugins/crew/skills/hub/dist/`. Refresh the vendored `.crew/bin/crew.mjs` from dist.
 
 ## Tasks
-- [ ] T1: setup_git.py and compose_rules.py drop `modules:` and the renderer; graphify-out always ignored → verify: `uvx --with pyyaml pytest tests/crew/test_git_setup.py tests/crew/test_guidelines.py`
-- [ ] T2: CLAUDE.project.md is unconditional; the template-block test becomes "no `{{` in any template" → verify: `uvx --with pyyaml pytest tests/crew/test_plugin_contents.py`
-- [ ] T3: skills and docs (kickoff, onboard, codemap, discover, git-setup, guidelines, README, plugin.json) and the config template → verify: the git grep in AC1 is empty
-- [ ] T4: hub `check` code-graph hint with a vitest case; rebuild dist and the vendored copy → verify: `cd packages/hub && npm test && npm run build && git diff --stat ../../plugins/crew/skills/hub/dist`
-- [ ] T5: full suites → verify: `for s in tests/*/; do uvx --with pyyaml pytest "$s" -q; done && (cd packages/hub && npm test)`
+- [x] T1: setup_git.py and compose_rules.py drop `modules:` and the renderer; graphify-out always ignored → verify: `uvx --with pyyaml pytest tests/crew/test_git_setup.py tests/crew/test_guidelines.py`
+- [x] T2: CLAUDE.project.md is unconditional; the template-block test becomes "no `{{` in any template" → verify: `uvx --with pyyaml pytest tests/crew/test_plugin_contents.py`
+- [x] T3: skills and docs (kickoff, onboard, codemap, discover, git-setup, guidelines, README, plugin.json) and the config template → verify: the git grep in AC1 is empty
+- [x] T4: hub `check` code-graph hint with a vitest case; rebuild dist and the vendored copy → verify: `cd packages/hub && npm test && npm run build && git diff --stat ../../plugins/crew/skills/hub/dist`
+- [x] T5: full suites → verify: `for s in tests/*/; do uvx --with pyyaml pytest "$s" -q; done && (cd packages/hub && npm test)`
 
 ## Test plan
 - AC2: rewrite `test_graphify_module_ignores_graph_output` → `test_graph_output_always_ignored`, with config that has no `modules:`.
@@ -85,5 +85,26 @@ graphify stays an external tool: PyPI `graphifyy`, installed with uv, the one de
 - 2026-10-24: status draft → ready
 - 2026-10-24: assigned to the developer role
 - 2026-10-24: status ready → in-progress — branch plan/P-001-nothing-optional-graphify-always-on
+- 2026-10-24: touches: brace globs aren't supported, listed each skill dir; added scripts/sample-project.mjs (the sample now has graphify's hook, as every crew project does)
 
 ## Outcome
+- **What shipped:** graphify is always on.
+  - `modules:` is gone from the config template and this repo's config.
+  - `setup_git.py` and `compose_rules.py` lost `modules_from_config` and `render_blocks`. Templates are copied as-is, and `graphify-out/` is always ignored.
+  - The CLAUDE.md code-map line is unconditional.
+  - kickoff, onboard and codemap set up the graph every time. A declined install is not a failure.
+  - `crew.mjs check` hints until graphify's hook is in `.githooks/post-commit`.
+- **Beyond plan:**
+  - kickoff's and onboard's `kickoff.yaml`/`onboard.yaml` progress files were a hub-optional leftover. Both now track progress only in the ledger.
+  - The sample project now carries graphify's hook, as every crew project does.
+- **Deviations:** the hub-optional template blocks were already gone on `main` (Workstream T), so the work was graphify plus a few stale hub-off mentions (`git-setup` `--no-hub`, the README, `plugin.json`, the kickoff/onboard descriptions).
+- **Follow-ups:**
+  - CHORE-007, CHORE-008, CHORE-009.
+  - This repo itself has no graphify hook, so its own `check` shows the new hint until `/crew:codemap` runs here.
+- **Verified:**
+  - pytest: 166 + 3 passed.
+  - vitest: 48 passed, including `test/codegraph.test.ts`.
+  - `npm run build` is in sync with `dist/` and `.crew/bin/crew.mjs`.
+  - The AC1 grep is empty.
+
+Learnings: none

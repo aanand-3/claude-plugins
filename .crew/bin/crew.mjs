@@ -9304,6 +9304,9 @@ function hygiene(s, f) {
   if (s.store.ws.isDir(join8(s.store.ws.root, ".project"))) {
     f.hints.push("a .project/ directory from project-kit is still here \u2014 `crew.mjs migrate` moves it into .crew/");
   }
+  if (!s.store.ws.read(join8(s.store.ws.root, ".githooks", "post-commit"))?.includes("graphify")) {
+    f.hints.push("code graph not set up (no graphify hook in .githooks/post-commit) \u2014 `/crew:codemap` installs and wires it");
+  }
 }
 
 // src/commands/goals.ts

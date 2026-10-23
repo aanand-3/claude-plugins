@@ -81,9 +81,6 @@ research:
 
 packs: [base]           # guideline packs applied to .claude/rules/ (incl. exactly one arch-* pack for a backend)
 
-modules:                # optional parts of crew, chosen at kickoff/onboard
-  graphify: <true | false>   # code knowledge graph via graphify (graphify-out/, gitignored; /crew:codemap)
-
 playbook:               # optional: the org's shared playbook repo (org policy layer, role lessons)
   path: <none | ../agent-playbooks>
   ref: <none | a tag or commit to pin>

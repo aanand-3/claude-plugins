@@ -71,7 +71,7 @@ def test_existing_hooks_path_is_respected(repo: Repo):
     assert repo.git("config", "core.hooksPath").stdout.strip() == ".githooks"
 
 
-def test_graphify_module_ignores_graph_output(repo: Repo):
-    repo.write(".crew/config.yaml", "packs: [base]\nmodules:\n  hub: true\n  graphify: true\n")
+def test_graph_output_always_ignored(repo: Repo):
+    repo.write(".crew/config.yaml", "packs: [base]\n")  # no modules: key, graphify is always on
     repo.py(SETUP_GIT, "--root", ".")
     assert "graphify-out/" in (repo.path / ".gitignore").read_text()

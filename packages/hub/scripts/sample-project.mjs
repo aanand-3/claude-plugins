@@ -59,6 +59,8 @@ for (const src of ["src/auth/login.py", "src/auth/signup.py", "src/checkins/time
   mkdirSync(join(dir, src, ".."), { recursive: true });
   writeFileSync(join(dir, src), "# sample\n");
 }
+mkdirSync(join(dir, ".githooks"));  // graphify's rebuild hook, as /crew:codemap wires it (not active: hooksPath is unset)
+writeFileSync(join(dir, ".githooks/post-commit"), "#!/bin/sh\n# graphify-hook-start\ngraphify hook run || true\n");
 writeFileSync(join(dir, ".crew/policy.yaml"), "mode: ai-native   # agents run the work; the idea's decision stays with the executive\n"
   + "budgets:\n  max_agents: 3\n");
 

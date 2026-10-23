@@ -5,7 +5,7 @@ import tomllib
 
 import yaml
 
-from conftest import COMPOSE, INSTALL_GLOBAL, PLUGIN, ROOT, SETUP_GIT, SKILLS, Repo, load_script
+from conftest import INSTALL_GLOBAL, PLUGIN, ROOT, SKILLS, Repo
 
 PACKS = SKILLS / "guidelines" / "stacks"
 
@@ -75,16 +75,11 @@ def test_global_install_replaces_the_pre_rename_block(repo: Repo):
     assert text.count("crew:global:start") == 1 and "keep me" in text
 
 
-MODULE_VARIANTS = [{"graphify": True}, {"graphify": False}]
-
-
 def test_yaml_and_toml_templates_parse():
-    render = load_script(SETUP_GIT).render_blocks
     for f in [*SKILLS.rglob("*.yml"), *SKILLS.rglob("*.yaml"), *ROOT.glob(".github/workflows/*.yml")]:
         if f.name == "config.yaml":  # discover template contains <placeholders>
             continue
-        for flags in MODULE_VARIANTS:
-            assert yaml.safe_load(render(f.read_text(), flags)) is not None, (f, flags)
+        assert yaml.safe_load(f.read_text()) is not None, f
     for f in SKILLS.rglob("*.toml"):
         tomllib.loads(f.read_text())
 
@@ -99,14 +94,9 @@ def test_plugin_scripts_stay_small():
         assert n <= MAX_MODULE_LINES, f"{f.relative_to(PLUGIN)} has {n} lines — split it by responsibility"
 
 
-def test_module_blocks_render_cleanly_and_both_renderers_agree():
-    """Every {{#m}}/{{^m}} block is closed, leaves no marker behind, and the two script copies match."""
-    git_render, compose_render = load_script(SETUP_GIT).render_blocks, load_script(COMPOSE).render_blocks
-    templated = [f for f in SKILLS.rglob("*") if f.is_file() and f.suffix not in {".py", ".json", ".gif", ".png"}
-                 and re.search(r"\{\{[#^]\w+\}\}", f.read_text(errors="ignore"))]
-    assert len(templated) >= 2  # the graphify blocks: CLAUDE.md and the guidelines skill
-    for f in templated:
-        for flags in MODULE_VARIANTS:
-            out = git_render(f.read_text(), flags)
-            assert out == compose_render(f.read_text(), flags)
-            assert not re.search(r"\{\{[#^/]\w+\}\}", out), (f, flags)
+def test_templates_have_no_module_blocks():
+    """Nothing is optional: templates are copied as-is, so no module switch (a mustache-style block) is left in them."""
+    for f in SKILLS.rglob("*"):
+        if f.is_file() and f.suffix not in {".py", ".json", ".gif", ".png"} and "dist" not in f.parts:
+            assert not re.search(r"\{\{[#^/]\w+\}\}", f.read_text(errors="ignore")), f
+    assert "**Code map:**" in (SKILLS / "guidelines" / "templates" / "CLAUDE.project.md").read_text()

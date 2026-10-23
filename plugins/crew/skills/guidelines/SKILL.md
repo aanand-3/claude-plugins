@@ -24,9 +24,6 @@ Packs are versioned in `${CLAUDE_SKILL_DIR}/stacks/` and copied verbatim; **only
 ## Prerequisite
 `.crew/config.yaml` exists with `packs:` and (for monorepos) `architecture.backend_dir` / `frontend_dir`. If not, run `discover` first.
 
-## Modules
-Read `modules:` in config. A missing key means graphify off. The CLAUDE.md and README templates contain `{{#graphify}}…{{/graphify}}` and `{{^graphify}}…{{/graphify}}` blocks. Resolve them and leave no marker behind. `compose_rules.py` does the same for the tooling it copies.
-
 ## Steps
 
 1. **Read** `.crew/config.yaml`, `docs/project-brief.md`, `docs/architecture.md`.
