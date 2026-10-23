@@ -16,6 +16,7 @@ import { agents } from "./commands/agents.js";
 import { assign, reassign, staff } from "./commands/team.js";
 import { pauseTeam, resumeTeam } from "./commands/liveness.js";
 import { review } from "./commands/review.js";
+import { mergeOrderCmd } from "./commands/release.js";
 import { recordStep, resumeWorkflow } from "./commands/runs.js";
 import { checkpoint, handoff, resume } from "./commands/execution.js";
 import { answer, ask, escalate, listQuestions } from "./commands/questions.js";
@@ -53,6 +54,7 @@ Commands:
   resume [P-###] [--json] · handoff [P-###]     where the work stopped vs git now · write it into the plan's Handoff
   checkpoint --workflow kickoff|onboard --step S [--skip] [--note] · resume --workflow W   a multi-step job's progress
   review P-### --approve | --changes TXT        code review of a plan in review (never by its implementer)
+  merge-order [--json]                          done plans to merge, dependencies first (Release)
   context [P-###] [--role R] [--budget CHARS] [--json]   what you need right now, within a budget (default 6000 chars)
   next [--role R] · current · check · status [--write]    (roles: executive, director, pm, architect, developer, qa, release + the policy's)
   --as ROLE · --run-id ID                       who is acting, on any command (wins over CREW_ROLE / CREW_RUN)
@@ -122,6 +124,7 @@ const COMMANDS: Record<string, Spec> = {
   resume: { pos: [], rest: true, str: ["note", "workflow"], flag: ["json", "team"],
     run: (s, a) => (a.opt.team ? resumeTeam(s, str(a, "note")) : a.opt.workflow ? resumeWorkflow(s, str(a, "workflow")!, !!a.opt.json)
       : resume(s, a.pos[0], !!a.opt.json)) },
+  "merge-order": { pos: [], flag: ["json"], run: (s, a) => mergeOrderCmd(s, !!a.opt.json) },
   review: { pos: ["id"], str: ["changes"], flag: ["approve"],
     run: (s, a) => review(s, a.pos[0], { approve: !!a.opt.approve, changes: str(a, "changes") }) },
   pause: { pos: [], str: ["reason"], run: (s, a) => pauseTeam(s, str(a, "reason")) },

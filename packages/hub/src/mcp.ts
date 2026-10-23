@@ -18,6 +18,7 @@ import { setFocus } from "./commands/planning.js";
 import { assign, reassign, staff } from "./commands/team.js";
 import { pauseTeam, resumeTeam } from "./commands/liveness.js";
 import { review } from "./commands/review.js";
+import { mergeOrderCmd } from "./commands/release.js";
 import { recordStep, resumeWorkflow } from "./commands/runs.js";
 import { log, move, usage } from "./commands/workflow.js";
 import { Store } from "./core/store.js";
@@ -142,6 +143,9 @@ export const TOOLS: Record<string, Tool> = {
     + "the next task and each criterion's evidence. Call it first when picking work up.",
     input: obj({ plan: text("e.g. P-004; default: the plan of this branch"), workflow: text("instead: a workflow run (kickoff, onboard)") }),
     run: (st, a) => (s(a, "workflow") ? resumeWorkflow(st, s(a, "workflow")!) : resume(st, s(a, "plan"))) },
+  merge_order: { description: "What Release merges next (`crew.mjs merge-order`): done plans with unmerged branches, dependencies first; "
+    + "plans waiting on an unmerged dependency; merged branches to delete.",
+    input: obj({ json: { type: "boolean" } }), run: (st, a) => mergeOrderCmd(st, a.json === true) },
   review: { description: "Code review of a plan in review (`crew.mjs review`): approve, or request changes, which sends it back to the "
     + "developer. Never by the plan's implementer; under the lifecycle preset the Architect's, and done needs an approval of the current code.",
     input: obj({ id: text("e.g. P-004"), approve: { type: "boolean" }, changes: text("what must change") }, ["id"]),

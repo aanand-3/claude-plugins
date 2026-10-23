@@ -9681,6 +9681,50 @@ function staff(store, json = false) {
   if (!s2.start.length && !s2.waiting.length) store.say("  nothing ready to start \u2014 the PM ranks, the Architect specs the next plans");
 }
 
+// src/commands/release.ts
+function mergeOrder(store) {
+  const base = store.baseBranch(), plans2 = store.plans(true), events = store.ledger.events(), moved = store.ledger.lastStatus(events);
+  const doneAt = new Map(events.filter((e) => e.type === "move" && e.to === "done").map((e) => [e.ref, e.ts]));
+  const branches = new Set(planBranches());
+  const status2 = (p) => moved.get(p.id) ?? p.get("status") ?? "";
+  const isMerged = (b) => git(["merge-base", "--is-ancestor", b, base]) !== null;
+  const out = { base, merge: [], waiting: [], merged: [] };
+  const done = [...plans2.values()].filter((p) => status2(p) === "done" && branches.has(p.get("branch") ?? "")).sort(byKey((p) => [doneAt.get(p.id) ?? p.get("completed") ?? "", p.id]));
+  const pending = /* @__PURE__ */ new Set();
+  for (const p of done) {
+    if (isMerged(p.get("branch"))) out.merged.push({ id: p.id, branch: p.get("branch") });
+    else pending.add(p.id);
+  }
+  const unmergedDep = (p) => p.dependsOn().filter((d) => {
+    const dep = plans2.get(d), b = dep?.get("branch") ?? "";
+    return dep && status2(dep) !== "dropped" && (pending.has(d) || branches.has(b) && !isMerged(b) || status2(dep) !== "done");
+  });
+  const placed = /* @__PURE__ */ new Set();
+  for (let progress = true; progress; ) {
+    progress = false;
+    for (const p of done.filter((x) => pending.has(x.id) && !placed.has(x.id))) {
+      if (unmergedDep(p).every((d) => placed.has(d))) {
+        out.merge.push({ id: p.id, title: p.get("title") ?? "", branch: p.get("branch") });
+        placed.add(p.id);
+        progress = true;
+      }
+    }
+  }
+  for (const p of done.filter((x) => pending.has(x.id) && !placed.has(x.id))) {
+    out.waiting.push({ id: p.id, why: `depends on ${unmergedDep(p).filter((d) => !placed.has(d)).join(", ")}, not merged yet` });
+  }
+  return out;
+}
+function mergeOrderCmd(store, json = false) {
+  store.require();
+  const m = mergeOrder(store);
+  if (json) return store.say(JSON.stringify(m, null, 2));
+  if (!m.merge.length && !m.waiting.length) store.say(`Nothing to merge into ${m.base}.`);
+  m.merge.forEach((p, i) => store.say(`${String(i + 1).padStart(2)}. ${p.id}: ${p.title} \u2014 merge ${p.branch} into ${m.base}`));
+  for (const w of m.waiting) store.say(`WAIT ${w.id}: ${w.why}`);
+  for (const p of m.merged) store.say(`merged: ${p.id} (${p.branch}) \u2014 delete the branch`);
+}
+
 // src/commands/roles.ts
 var View = class {
   constructor(store) {
@@ -9761,7 +9805,7 @@ var RULES = {
     (v) => v.ranked("new").filter((i) => i.id.startsWith("BUG-")).slice(0, 2).map((i) => `reproduce ${i.id}: ${i.get("title")}`)
   ],
   release: [
-    (v) => v.status("done").filter((p) => planBranches().includes(p.get("branch") ?? "")).map((p) => `ship ${p.id}: merge ${p.get("branch")}, follow its Rollout & rollback, then delete the branch`),
+    (v) => mergeOrder(v.store).merge.slice(0, 1).map((p) => `ship ${p.id}: merge ${p.branch} (first in \`merge-order\`), follow its Rollout & rollback, then delete the branch`),
     (v) => v.status("in-review").filter((p) => p.hasContent("Rollout & rollback") && !/^\s*n\/a\b/i.test(stripComments(p.section("Rollout & rollback")))).map((p) => `prepare the rollout of ${p.id}: ${p.get("title")} (see its Rollout & rollback)`)
   ]
 };
@@ -10669,6 +10713,11 @@ var TOOLS = {
     description: "Where a plan's work stopped (`crew.mjs resume`): last checkpoint vs git now, check results, approaches not to retry, the next task and each criterion's evidence. Call it first when picking work up.",
     input: obj({ plan: text("e.g. P-004; default: the plan of this branch"), workflow: text("instead: a workflow run (kickoff, onboard)") }),
     run: (st, a) => s(a, "workflow") ? resumeWorkflow(st, s(a, "workflow")) : resume(st, s(a, "plan"))
+  },
+  merge_order: {
+    description: "What Release merges next (`crew.mjs merge-order`): done plans with unmerged branches, dependencies first; plans waiting on an unmerged dependency; merged branches to delete.",
+    input: obj({ json: { type: "boolean" } }),
+    run: (st, a) => mergeOrderCmd(st, a.json === true)
   },
   review: {
     description: "Code review of a plan in review (`crew.mjs review`): approve, or request changes, which sends it back to the developer. Never by the plan's implementer; under the lifecycle preset the Architect's, and done needs an approval of the current code.",

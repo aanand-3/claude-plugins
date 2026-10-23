@@ -9843,6 +9843,50 @@ function staff(store, json = false) {
   if (!s.start.length && !s.waiting.length) store.say("  nothing ready to start \u2014 the PM ranks, the Architect specs the next plans");
 }
 
+// src/commands/release.ts
+function mergeOrder(store) {
+  const base = store.baseBranch(), plans2 = store.plans(true), events = store.ledger.events(), moved = store.ledger.lastStatus(events);
+  const doneAt = new Map(events.filter((e) => e.type === "move" && e.to === "done").map((e) => [e.ref, e.ts]));
+  const branches = new Set(planBranches());
+  const status2 = (p) => moved.get(p.id) ?? p.get("status") ?? "";
+  const isMerged = (b) => git(["merge-base", "--is-ancestor", b, base]) !== null;
+  const out = { base, merge: [], waiting: [], merged: [] };
+  const done = [...plans2.values()].filter((p) => status2(p) === "done" && branches.has(p.get("branch") ?? "")).sort(byKey((p) => [doneAt.get(p.id) ?? p.get("completed") ?? "", p.id]));
+  const pending = /* @__PURE__ */ new Set();
+  for (const p of done) {
+    if (isMerged(p.get("branch"))) out.merged.push({ id: p.id, branch: p.get("branch") });
+    else pending.add(p.id);
+  }
+  const unmergedDep = (p) => p.dependsOn().filter((d) => {
+    const dep = plans2.get(d), b = dep?.get("branch") ?? "";
+    return dep && status2(dep) !== "dropped" && (pending.has(d) || branches.has(b) && !isMerged(b) || status2(dep) !== "done");
+  });
+  const placed = /* @__PURE__ */ new Set();
+  for (let progress = true; progress; ) {
+    progress = false;
+    for (const p of done.filter((x) => pending.has(x.id) && !placed.has(x.id))) {
+      if (unmergedDep(p).every((d) => placed.has(d))) {
+        out.merge.push({ id: p.id, title: p.get("title") ?? "", branch: p.get("branch") });
+        placed.add(p.id);
+        progress = true;
+      }
+    }
+  }
+  for (const p of done.filter((x) => pending.has(x.id) && !placed.has(x.id))) {
+    out.waiting.push({ id: p.id, why: `depends on ${unmergedDep(p).filter((d) => !placed.has(d)).join(", ")}, not merged yet` });
+  }
+  return out;
+}
+function mergeOrderCmd(store, json = false) {
+  store.require();
+  const m = mergeOrder(store);
+  if (json) return store.say(JSON.stringify(m, null, 2));
+  if (!m.merge.length && !m.waiting.length) store.say(`Nothing to merge into ${m.base}.`);
+  m.merge.forEach((p, i) => store.say(`${String(i + 1).padStart(2)}. ${p.id}: ${p.title} \u2014 merge ${p.branch} into ${m.base}`));
+  for (const w of m.waiting) store.say(`WAIT ${w.id}: ${w.why}`);
+  for (const p of m.merged) store.say(`merged: ${p.id} (${p.branch}) \u2014 delete the branch`);
+}
+
 // src/commands/roles.ts
 var View = class {
   constructor(store) {
@@ -9923,7 +9967,7 @@ var RULES = {
     (v) => v.ranked("new").filter((i) => i.id.startsWith("BUG-")).slice(0, 2).map((i) => `reproduce ${i.id}: ${i.get("title")}`)
   ],
   release: [
-    (v) => v.status("done").filter((p) => planBranches().includes(p.get("branch") ?? "")).map((p) => `ship ${p.id}: merge ${p.get("branch")}, follow its Rollout & rollback, then delete the branch`),
+    (v) => mergeOrder(v.store).merge.slice(0, 1).map((p) => `ship ${p.id}: merge ${p.branch} (first in \`merge-order\`), follow its Rollout & rollback, then delete the branch`),
     (v) => v.status("in-review").filter((p) => p.hasContent("Rollout & rollback") && !/^\s*n\/a\b/i.test(stripComments(p.section("Rollout & rollback")))).map((p) => `prepare the rollout of ${p.id}: ${p.get("title")} (see its Rollout & rollback)`)
   ]
 };
@@ -11189,6 +11233,7 @@ Commands:
   resume [P-###] [--json] \xB7 handoff [P-###]     where the work stopped vs git now \xB7 write it into the plan's Handoff
   checkpoint --workflow kickoff|onboard --step S [--skip] [--note] \xB7 resume --workflow W   a multi-step job's progress
   review P-### --approve | --changes TXT        code review of a plan in review (never by its implementer)
+  merge-order [--json]                          done plans to merge, dependencies first (Release)
   context [P-###] [--role R] [--budget CHARS] [--json]   what you need right now, within a budget (default 6000 chars)
   next [--role R] \xB7 current \xB7 check \xB7 status [--write]    (roles: executive, director, pm, architect, developer, qa, release + the policy's)
   --as ROLE \xB7 --run-id ID                       who is acting, on any command (wins over CREW_ROLE / CREW_RUN)
@@ -11327,6 +11372,7 @@ var COMMANDS = {
     flag: ["json", "team"],
     run: (s, a) => a.opt.team ? resumeTeam(s, str2(a, "note")) : a.opt.workflow ? resumeWorkflow(s, str2(a, "workflow"), !!a.opt.json) : resume(s, a.pos[0], !!a.opt.json)
   },
+  "merge-order": { pos: [], flag: ["json"], run: (s, a) => mergeOrderCmd(s, !!a.opt.json) },
   review: {
     pos: ["id"],
     str: ["changes"],

@@ -362,3 +362,57 @@ def test_raci_under_the_lifecycle(repo: Repo):
     agent(repo, "crew-developer", "developer")
     assert hook(repo, {"tool_name": "Write", "agent_type": "crew-developer", "agent_id": "a",
                        "tool_input": {"file_path": "src/auth/signup.py"}}) is None
+
+
+# ------------------------------------------------------------------ T6: Release and merge order
+def finish(repo: Repo, pid: str, *start: str) -> None:
+    """Start, commit and complete a plan on its branch, back on main afterwards (plain ai-native: no role gates)."""
+    assert tr(repo, "start", pid, *start).returncode == 0
+    p = plan_file(repo, pid)
+    p.write_text(p.read_text().replace("- [ ] T", "- [x] T").rstrip() + "\nShipped.\nLearnings: none\n")
+    repo.write(f"src/{pid}.txt", pid)
+    repo.commit(f"feat({pid}): work")
+    assert tr(repo, "move", pid, "in-review").returncode == 0
+    assert tr(repo, "move", pid, "done", "--force").returncode == 0
+    repo.commit(f"chore({pid}): done")
+    repo.git("switch", "-q", "main")
+
+
+def test_merge_order_puts_dependencies_first(repo: Repo):
+    init(repo, commit=True)
+    plan(repo, "Base", "src/P-001.txt")
+    plan(repo, "On top", "src/P-002.txt", "--depends", "P-001")
+    plan(repo, "Apart", "src/P-003.txt")
+    for p in ("P-001", "P-002", "P-003"):
+        tr(repo, "move", p, "ready")
+    repo.commit("chore(hub): plans")
+    finish(repo, "P-003")
+    repo.env["CREW_RUN"] = "two"
+    finish(repo, "P-001")
+    out = json.loads(tr(repo, "merge-order", "--json").stdout)
+    assert [p["id"] for p in out["merge"]] == ["P-003", "P-001"] and out["base"] == "main"
+    branch = lambda pid: next(p["branch"] for p in out["merge"] if p["id"] == pid)
+    repo.git("merge", "-q", "--no-ff", "-m", "merge P-001", branch("P-001"))
+    repo.env["CREW_RUN"] = "three"
+    finish(repo, "P-002")  # depends on P-001, which is merged now
+    out = json.loads(tr(repo, "merge-order", "--json").stdout)
+    assert [p["id"] for p in out["merge"]] == ["P-003", "P-002"]
+    assert [p["id"] for p in out["merged"]] == ["P-001"]
+    assert "merge-order" in tr(repo, "next", "--as", "release").stdout
+
+
+def test_a_plan_waits_for_its_unmerged_dependency(repo: Repo):
+    init(repo, commit=True)
+    plan(repo, "Base", "src/P-001.txt")
+    plan(repo, "On top", "src/P-002.txt", "--depends", "P-001")
+    for p in ("P-001", "P-002"):
+        tr(repo, "move", p, "ready")
+    repo.commit("chore(hub): plans")
+    assert tr(repo, "start", "P-001").returncode == 0  # still in progress
+    repo.commit("chore(P-001): start")
+    repo.git("switch", "-q", "main")
+    repo.env["CREW_RUN"] = "two"
+    finish(repo, "P-002", "--force")  # done out of order, by hand
+    out = json.loads(tr(repo, "merge-order", "--json").stdout)
+    assert out["merge"] == [] and out["waiting"] == [{"id": "P-002", "why": "depends on P-001, not merged yet"}]
+    assert "WAIT P-002: depends on P-001" in tr(repo, "merge-order").stdout

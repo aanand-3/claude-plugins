@@ -24,3 +24,4 @@ Slice of G-003 (Agent team): Release agent — merge order, rollout and rollback
 
 ## Notes
 - 2026-10-23: triaged from G-003 breakdown
+- 2026-10-23: T6: merge-order (done plans with unmerged branches, dependencies first), release.md (branch feat/team-release)

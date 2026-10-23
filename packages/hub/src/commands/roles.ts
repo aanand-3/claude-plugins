@@ -1,6 +1,5 @@
 /** `next --role R`: each role's own queue. Questions addressed to the role come first, then its work, most urgent first. */
 import type { Doc } from "../core/doc.js";
-import * as git from "../core/git.js";
 import { overlapping } from "../core/footprint.js";
 import { approvalReason } from "../core/policy.js";
 import * as q from "../core/queries.js";
@@ -11,6 +10,7 @@ import { budgetProblems } from "./workflow.js";
 import { openQuestions } from "./questions.js";
 import { staffing } from "./team.js";
 import { reviewProblems } from "./review.js";
+import { mergeOrder } from "./release.js";
 import { paused, staleClaims } from "./liveness.js";
 
 type Rule = (s: View) => string[];
@@ -109,8 +109,8 @@ const RULES: Record<string, Rule[]> = {
     (v) => v.ranked("new").filter((i) => i.id.startsWith("BUG-")).slice(0, 2).map((i) => `reproduce ${i.id}: ${i.get("title")}`),
   ],
   release: [
-    (v) => v.status("done").filter((p) => git.planBranches().includes(p.get("branch") ?? ""))
-      .map((p) => `ship ${p.id}: merge ${p.get("branch")}, follow its Rollout & rollback, then delete the branch`),
+    (v) => mergeOrder(v.store).merge.slice(0, 1)
+      .map((p) => `ship ${p.id}: merge ${p.branch} (first in \`merge-order\`), follow its Rollout & rollback, then delete the branch`),
     (v) => v.status("in-review").filter((p) => p.hasContent("Rollout & rollback")
       && !/^\s*n\/a\b/i.test(stripComments(p.section("Rollout & rollback"))))
       .map((p) => `prepare the rollout of ${p.id}: ${p.get("title")} (see its Rollout & rollback)`),
