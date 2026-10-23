@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { asDate, byKey, fixed, idList, kindOf, mdTable, pyRound, slugify } from "../src/core/text.js";
+import { asDate, byKey, firstParagraph, fixed, idList, kindOf, mdTable, pyRound, slugify } from "../src/core/text.js";
 
 describe("slugify", () => {
   it("keeps slugs short, readable and ASCII", () => {
@@ -41,5 +41,8 @@ describe("python parity helpers", () => {
   it("reads markdown tables by lower-cased header", () => {
     const t = "<!-- c -->\n| ID | Risk |\n|---|---|\n| R1 | Loss |\n|  |  |\n";
     expect(mdTable(t)).toEqual([{ id: "R1", risk: "Loss" }]);
+  });
+  it("joins a wrapped first paragraph into one line", () => {
+    expect(firstParagraph("<!-- guide -->\nUsers sign up\n  and verify.\n\nSecond paragraph.")).toBe("Users sign up and verify.");
   });
 });

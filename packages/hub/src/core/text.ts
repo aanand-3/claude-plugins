@@ -77,6 +77,11 @@ export function stripComments(text: string): string {
   return text.replace(/<!--[\s\S]*?-->/g, "");
 }
 
+/** The first paragraph of a section as one line (source lines are often wrapped), without template comments. */
+export function firstParagraph(text: string): string {
+  return stripComments(text).trim().split(/\n\s*\n/)[0].split("\n").map((l) => l.trim()).join(" ");
+}
+
 /** Rows of the first markdown table in text, keyed by lower-cased header. */
 export function mdTable(text: string): Record<string, string>[] {
   const rows = stripComments(text).split("\n").map((l) => l.trim()).filter((l) => l.startsWith("|"));

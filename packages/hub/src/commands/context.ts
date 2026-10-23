@@ -7,7 +7,7 @@ import { type Entry, recall } from "../core/knowledge.js";
 import { ROLES } from "../core/model.js";
 import * as q from "../core/queries.js";
 import type { Store } from "../core/store.js";
-import { fail, stripComments } from "../core/text.js";
+import { fail, firstParagraph, stripComments } from "../core/text.js";
 import { nextLines } from "./advisor.js";
 import { criteria, evidence, recovery } from "./execution.js";
 import { openQuestions } from "./questions.js";
@@ -28,8 +28,8 @@ function planSections(store: Store, plan: Doc, role: string): Section[] {
   const goal = goals.get(q.planGoal(plan, items));
   const idea = store.idea();
   const why: Section = { title: "Goal", more: plan.path ? store.rel(plan.path) : plan.id, lines: [
-    ...(idea ? [`Idea: ${idea.get("title")} — ${para(idea.section("Outcome"), 1)[0] ?? ""}`] : []),
-    ...(goal ? [`${goal.id}${goal.id === store.focus() ? " (focus)" : ""}: ${goal.get("title")} — ${para(goal.section("Outcome"), 1)[0] ?? ""}`] : []),
+    ...(idea ? [`Idea: ${idea.get("title")} — ${firstParagraph(idea.section("Outcome"))}`] : []),
+    ...(goal ? [`${goal.id}${goal.id === store.focus() ? " (focus)" : ""}: ${goal.get("title")} — ${firstParagraph(goal.section("Outcome"))}`] : []),
     ...para(plan.section("Context"), 4)] };
   const ev = evidence(store, plan);
   const ac: Section = { title: "Acceptance criteria", more: `crew.mjs resume ${plan.id}`, lines: criteria(plan).map((c, i) =>
@@ -68,7 +68,7 @@ function projectSections(store: Store, role: string): Section[] {
   const crit = idea?.checklist("Success criteria") ?? [];
   const head: Section = { title: "Idea & focus", more: "crew.mjs status", lines: [
     idea ? `Idea: ${idea.get("title")} [${idea.get("status")}]${crit.length ? ` — success criteria ${crit.filter(([d]) => d).length}/${crit.length}` : ""}` : "No idea written yet.",
-    focus ? `Focus ${focus.id}: ${focus.get("title")} — ${para(focus.section("Outcome"), 1)[0] ?? ""}` : "No focus goal."] };
+    focus ? `Focus ${focus.id}: ${focus.get("title")} — ${firstParagraph(focus.section("Outcome"))}` : "No focus goal."] };
   const next: Section = { title: role === "any" ? "Next" : `Next for ${role}`, more: `crew.mjs next${role === "any" ? "" : ` --role ${role}`}`,
     lines: role === "any" ? nextLines(store) : roleLines(store, role) };
   const events = store.ledger.events();

@@ -5,7 +5,7 @@ import { ITEM_CLOSED } from "../core/model.js";
 import * as q from "../core/queries.js";
 import { openQuestions } from "./questions.js";
 import type { Docs, Store } from "../core/store.js";
-import { byKey, stripComments, today } from "../core/text.js";
+import { byKey, firstParagraph, stripComments, today } from "../core/text.js";
 
 const TOP = 5;
 const PLAN_HEADER = ["| Plan | Title | Goal | Status | Tasks | Owner |", "|---|---|---|---|---|---|"];
@@ -56,7 +56,7 @@ function ideaLines(store: Store, goals: Docs, plans: Docs, items: Docs, focus: s
   if (!g) return [...out, "", "_No focus goal._"];
   const gp = q.goalPlans(focus, plans, items);
   const closed = gp.filter((p) => ["done", "dropped"].includes(p.get("status") ?? "")).length;
-  const outcome = stripComments(g.section("Outcome")).trim().split("\n")[0];
+  const outcome = firstParagraph(g.section("Outcome"));
   return [...out, "", `Focus **${focus}: ${g.get("title")}** — ${g.get("status")}, ${closed}/${gp.length} plans closed`,
     ...(outcome ? [`> ${outcome}`] : [])];
 }

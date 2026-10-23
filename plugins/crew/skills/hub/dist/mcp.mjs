@@ -7488,6 +7488,9 @@ function slugify(title) {
 function stripComments(text2) {
   return text2.replace(/<!--[\s\S]*?-->/g, "");
 }
+function firstParagraph(text2) {
+  return stripComments(text2).trim().split(/\n\s*\n/)[0].split("\n").map((l) => l.trim()).join(" ");
+}
 function mdTable(text2) {
   const rows = stripComments(text2).split("\n").map((l) => l.trim()).filter((l) => l.startsWith("|"));
   if (rows.length < 2) return [];
@@ -9640,7 +9643,7 @@ function ideaLines(store, goals2, plans2, items2, focus) {
   if (!g) return [...out, "", "_No focus goal._"];
   const gp = goalPlans(focus, plans2, items2);
   const closed = gp.filter((p) => ["done", "dropped"].includes(p.get("status") ?? "")).length;
-  const outcome = stripComments(g.section("Outcome")).trim().split("\n")[0];
+  const outcome = firstParagraph(g.section("Outcome"));
   return [
     ...out,
     "",
@@ -9704,8 +9707,8 @@ function planSections(store, plan, role) {
   const goal = goals2.get(planGoal(plan, items2));
   const idea2 = store.idea();
   const why = { title: "Goal", more: plan.path ? store.rel(plan.path) : plan.id, lines: [
-    ...idea2 ? [`Idea: ${idea2.get("title")} \u2014 ${para(idea2.section("Outcome"), 1)[0] ?? ""}`] : [],
-    ...goal ? [`${goal.id}${goal.id === store.focus() ? " (focus)" : ""}: ${goal.get("title")} \u2014 ${para(goal.section("Outcome"), 1)[0] ?? ""}`] : [],
+    ...idea2 ? [`Idea: ${idea2.get("title")} \u2014 ${firstParagraph(idea2.section("Outcome"))}`] : [],
+    ...goal ? [`${goal.id}${goal.id === store.focus() ? " (focus)" : ""}: ${goal.get("title")} \u2014 ${firstParagraph(goal.section("Outcome"))}`] : [],
     ...para(plan.section("Context"), 4)
   ] };
   const ev = evidence(store, plan);
@@ -9750,7 +9753,7 @@ function projectSections(store, role) {
   const crit = idea2?.checklist("Success criteria") ?? [];
   const head = { title: "Idea & focus", more: "crew.mjs status", lines: [
     idea2 ? `Idea: ${idea2.get("title")} [${idea2.get("status")}]${crit.length ? ` \u2014 success criteria ${crit.filter(([d]) => d).length}/${crit.length}` : ""}` : "No idea written yet.",
-    focus ? `Focus ${focus.id}: ${focus.get("title")} \u2014 ${para(focus.section("Outcome"), 1)[0] ?? ""}` : "No focus goal."
+    focus ? `Focus ${focus.id}: ${focus.get("title")} \u2014 ${firstParagraph(focus.section("Outcome"))}` : "No focus goal."
   ] };
   const next = {
     title: role === "any" ? "Next" : `Next for ${role}`,
