@@ -5,6 +5,7 @@ import type { Doc } from "../core/doc.js";
 import { decisionProblems, readinessProblems, triageProblems } from "../core/gates.js";
 import { ACTIVE, CLOSED, GOAL_FLOW, IDEA_FLOW, ITEM_FLOW, MAX_WRITTEN_AHEAD, PLAN_FLOW, REQUIRED_ON_CREATE } from "../core/model.js";
 import * as q from "../core/queries.js";
+import { drift, overlapping } from "../core/footprint.js";
 import { globRe, K_ID_RE, KNOWLEDGE_TYPES, secretsIn } from "../core/knowledge.js";
 import { policyFindings } from "./policy.js";
 import type { Docs, Store } from "../core/store.js";
@@ -34,7 +35,7 @@ const up = (s: string | null) => (s ?? "").toUpperCase();
 
 export function findings(store: Store): Findings {
   const s = new Snapshot(store), f: Findings = { errors: [], hints: [] };
-  for (const rule of [idea, plans, items, goals, ledger, knowledge, hygiene]) rule(s, f);
+  for (const rule of [idea, plans, overlaps, items, goals, ledger, knowledge, hygiene]) rule(s, f);
   const p = policyFindings(store);
   return { errors: [...f.errors, ...p.errors], hints: [...f.hints, ...p.hints] };
 }
@@ -86,8 +87,20 @@ function plans(s: Snapshot, f: Findings): void {
     if (st === "ready") f.errors.push(...readinessProblems(s.store, p).map((problem) => `${pid}: ready but ${problem}`));
     if (st === "done") donePlan(pid, p, f);
     if (ACTIVE.has(st ?? "")) activePlan(pid, p, s, f, branches, here);
+    const outside = drift(s.allPlans.get(pid) ?? p);
+    if (outside?.length) f.hints.push(`${pid}: changes outside its touches: ${outside.slice(0, 8).join(", ")} — widen touches (and log why) or move the work`);
     if ((ACTIVE.has(st ?? "") || st === "ready") && !q.onFocus(p, s.items, s.focus)) {
       f.hints.push(`${pid}: ${st} but does not serve the focus goal ${s.focus} (only bugs and chores may run off focus)`);
+    }
+  }
+}
+
+/** Live plans (from their branches) that are both active and can touch the same files. */
+function overlaps(s: Snapshot, f: Findings): void {
+  for (const [pid, p] of s.allPlans) {
+    if (!ACTIVE.has(p.get("status") ?? "")) continue;
+    for (const o of overlapping(p, s.allPlans).filter((x) => ACTIVE.has(s.allPlans.get(x.id)?.get("status") ?? "") && x.id > pid)) {
+      f.hints.push(`${pid} and ${o.id} are both active and overlap on ${o.globs.join(", ")} — sequence them (depends_on) or narrow touches`);
     }
   }
 }

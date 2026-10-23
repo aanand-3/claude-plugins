@@ -9,11 +9,14 @@ import { newItem, triage } from "./commands/backlog.js";
 import { check } from "./commands/checks.js";
 import { buildGraph } from "./commands/graph.js";
 import { status } from "./commands/reports.js";
+import { context } from "./commands/context.js";
 import { checkpoint, handoff, resume } from "./commands/execution.js";
+import { answer, ask, escalate, listQuestions } from "./commands/questions.js";
 import { learn, recallCmd } from "./commands/knowledge.js";
 import { showLedger } from "./commands/ledger.js";
 import { setFocus } from "./commands/planning.js";
 import { log, move, usage } from "./commands/workflow.js";
+import { ROLES } from "./core/model.js";
 import { Store } from "./core/store.js";
 import { HubError } from "./core/text.js";
 
@@ -35,8 +38,31 @@ const ITEM_FIELDS = { priority: text("P0–P3"), severity: text("bugs only: S1�
 
 /** name → tool. Required arguments are checked against `input.required` before `run`. */
 export const TOOLS: Record<string, Tool> = {
-  next: { description: "The single best next step for the project (same as `crew.mjs next`).", input: obj(),
-    run: (st) => nextStep(st) },
+  next: { description: "The single best next step (`crew.mjs next`); with a role, that role's own queue, questions to it first.",
+    input: obj({ role: { type: "string", enum: [...ROLES] } }), run: (st, a) => nextStep(st, s(a, "role")) },
+  context: { description: "What you need right now (`crew.mjs context`): for a plan, where the work stands, its goal, criteria with "
+    + "evidence, tasks, blockers and questions, knowledge in scope; without one, the idea, focus, your next steps and the team. "
+    + "Sliced for your role and kept within a budget. Call it at the start of every session.",
+    input: obj({ plan: text("e.g. P-004; default: the plan of this branch"), role: { type: "string", enum: [...ROLES] },
+      budget: num("characters, default 6000") }),
+    run: (st, a) => context(st, { id: s(a, "plan"), role: s(a, "role"), budget: n(a, "budget") }) },
+  ask: { description: "Ask another role a question (`crew.mjs ask`), recorded so it isn't lost. It blocks the document it is about "
+    + "from moving forward until answered (fyi: true doesn't block).",
+    input: obj({ ref: text("the document it is about, e.g. P-004"), to: { type: "string", enum: [...ROLES] }, text: text("the question"),
+      fyi: { type: "boolean" } }, ["to", "text"]),
+    run: (st, a) => { ask(st, s(a, "ref"), s(a, "to")!, s(a, "text")!, { fyi: a.fyi === true }); } },
+  escalate: { description: "Escalate to the executive (`crew.mjs escalate`): reserved decisions, a goal at risk, anything only a human "
+    + "can settle. Blocks the document until a human answers.",
+    input: obj({ ref: text("the document it is about"), text: text("what needs deciding, with the options") }, ["text"]),
+    run: (st, a) => { escalate(st, s(a, "ref"), s(a, "text")!); } },
+  answer: { description: "Answer a question addressed to your role (`crew.mjs answer`); decision: true also records it as a decision "
+    + "entry. Escalations can't be answered here — only a human, on the CLI.",
+    input: obj({ id: text("Q-…"), text: text("the answer"), decision: { type: "boolean" }, scope: text("globs for the decision entry") },
+      ["id", "text"]),
+    run: (st, a) => answer(st, s(a, "id")!, s(a, "text")!, { decision: a.decision === true, scope: s(a, "scope") }) },
+  questions: { description: "Open questions between roles (`crew.mjs questions --json`).",
+    input: obj({ to: { type: "string", enum: [...ROLES] }, ref: text("only about this document"), all: { type: "boolean" } }),
+    run: (st, a) => listQuestions(st, { to: s(a, "to"), ref: s(a, "ref"), all: a.all === true, json: true }) },
   current: { description: "Where work stands: the focus goal and the plan on the current branch (`crew.mjs current`).",
     input: obj(), run: (st) => current(st) },
   status: { description: "Status report for the project (`crew.mjs status`); write=true also saves it to .crew/status.md.",
@@ -95,7 +121,7 @@ export const TOOLS: Record<string, Tool> = {
   handoff: { description: "Write the resume view into the plan's Handoff section (`crew.mjs handoff`), before ending a session.",
     input: obj({ plan: text("e.g. P-004; default: the plan of this branch") }), run: (st, a) => handoff(st, s(a, "plan")) },
   ledger: { description: "Recent events from the shared ledger and the live claims (`crew.mjs ledger --json`).",
-    input: obj({ ref: text("only events about this ID"), type: { type: "string", enum: ["claim", "release", "move", "log", "usage", "learn", "checkpoint"] },
+    input: obj({ ref: text("only events about this ID"), type: { type: "string", enum: ["claim", "release", "move", "log", "usage", "learn", "checkpoint", "ask", "answer"] },
       limit: num("how many, newest last (default 20)") }),
     run: (st, a) => showLedger(st, { ref: s(a, "ref"), type: s(a, "type"), limit: n(a, "limit"), json: true }) },
 };

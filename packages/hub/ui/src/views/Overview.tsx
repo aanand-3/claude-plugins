@@ -19,6 +19,7 @@ export function Overview() {
   const serious = bugs.filter((d) => d.severity === "S1" || d.severity === "S2");
   const active = plans.filter((d) => ["in-progress", "in-review"].includes(d.status));
   const blocked = plans.filter((d) => d.status === "blocked");
+  const escalations = g.questions.filter((x) => x.escalation);
   const learned = docsOf(ix, "knowledge").filter((d) => d.status === "active")
     .sort((a, b) => (b.dates.created ?? "").localeCompare(a.dates.created ?? "")).slice(0, 5);
   const waiting = plans.filter((d) => d.waitsFor.length && !["done", "dropped"].includes(d.status));
@@ -36,6 +37,17 @@ export function Overview() {
         <Kpi value={blocked.length + serious.length} tone={blocked.length + serious.length ? "destructive" : "success"}
           caption="blocked plans + open S1/S2 bugs" />
       </div>
+
+      {escalations.length > 0 && (
+        <Card title={`Waiting on you — ${escalations.length} escalation${escalations.length === 1 ? "" : "s"}`}>
+          <ul className="rows">
+            {escalations.map((x) => (
+              <li key={x.id}><Chip tone="warning">{x.id}</Chip>{x.ref && <IdLink id={x.ref} />}<span>{x.text}</span>
+                <span className="muted">from {x.by} · <code>crew.mjs answer {x.id} "…" --approved-by &lt;you&gt;</code></span></li>
+            ))}
+          </ul>
+        </Card>
+      )}
 
       <div className="grid-2">
         <Card title="Focus" aside={focus && <IdLink id={focus.id} />}>

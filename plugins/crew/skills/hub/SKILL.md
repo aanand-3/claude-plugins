@@ -25,7 +25,7 @@ All state changes go through the script. Never hand-edit `status`, dates, IDs, `
 - In a project: `node .crew/bin/crew.mjs <cmd>` (vendored single-file copy — prefer this). Needs Node.js ≥ 20; nothing to install.
 - Not yet initialized: `node "${CLAUDE_SKILL_DIR}/dist/crew.mjs" init` at the repo root. If config has `modules.hub: false`, set it to `true` first, then refresh what was rendered without it: `/crew:guidelines --refresh` (CLAUDE.md, settings, tooling), and for `.githooks/pre-commit`, `commit-msg` and the PR template, show the user the diff against a fresh render (`setup_git.py` in a temp copy) and replace them only with a yes.
 - A project-kit project (`.project/`): `node "${CLAUDE_SKILL_DIR}/dist/crew.mjs" migrate` on a clean `main`, then follow the `next:` lines it prints, and commit `chore(hub): migrate to crew`.
-- **Tools first.** When the plugin's `hub` MCP tools are available (`next`, `current`, `status`, `check`, `graph`, `new_item`, `triage`, `move`, `log`, `focus`, `usage`, `learn`, `recall`, `checkpoint`, `resume`, `handoff`, `ledger`), call them instead of the matching commands. They run the same code with the same gates; a refusal comes back as a tool error with the CLI's text, and nothing is written. Everything else (`init`, `migrate`, `new-idea`, `new-goal`, `new-plan`, `start`, `release`, `export`, `ui`) and any `--force` stays in the CLI. Use the CLI too when the tools are missing.
+- **Tools first.** When the plugin's `hub` MCP tools are available (`next`, `context`, `ask`, `escalate`, `answer`, `questions`, `current`, `status`, `check`, `graph`, `new_item`, `triage`, `move`, `log`, `focus`, `usage`, `learn`, `recall`, `checkpoint`, `resume`, `handoff`, `ledger`), call them instead of the matching commands. They run the same code with the same gates; a refusal comes back as a tool error with the CLI's text, and nothing is written. Everything else (`init`, `migrate`, `new-idea`, `new-goal`, `new-plan`, `start`, `release`, `export`, `ui`) and any `--force` stays in the CLI. Use the CLI too when the tools are missing.
 
 | Command | Purpose |
 |---|---|
@@ -46,10 +46,16 @@ All state changes go through the script. Never hand-edit `status`, dates, IDs, `
 | `resume [P-###]` · `handoff [P-###]` | where the work stopped vs git now (checks, attempts not to retry, next task, evidence) · the same written into the plan's Handoff |
 | `learn decision\|learning\|gotcha\|convention\|risk FACT --why TEXT [--scope GLOBS] [--source ID] [--supersedes K-…]` | record one fact the team should remember (risks also take `--likelihood`, `--impact`, `--owner`) |
 | `recall [--plan P-###] [--paths a,b] [--topic WORDS] [--type T] [--all]` | the knowledge that applies to a plan's touches, some paths or a topic (project + playbook) |
-| `next` · `current` · `check` | single best next step · where am I · consistency (CI runs `check`) |
+| `context [P-###] [--role R] [--budget N]` | what you need right now, sliced for your role, within a budget (the SessionStart hook runs it) |
+| `next [--role R]` · `current` · `check` | the single best next step (or your role's queue, questions to you first) · where am I · consistency (CI runs `check`) |
+| `ask [ID] --to ROLE TEXT [--fyi]` · `escalate [ID] TEXT` · `answer Q-… TEXT [--decision]` · `questions` | questions between roles; an open one blocks only its document; escalations are answered by a human |
 | `status [--write]` | where the work stands: idea and focus, now, blocked, ready, top of the backlog, open bugs, recently done |
 | `migrate` | convert a project-kit `.project/` folder into `.crew/` |
 | `export [--json] [--out FILE]` · `ui [--port 8765] [--no-open]` | the interactive view: a self-contained page (`.crew/view/index.html`, gitignored) or a live local server; `--json` is the graph for scripts |
+
+**Roles and questions.** Set `CREW_ROLE` to your role (`director`, `pm`, `architect`, `developer`, `qa`, `release`; the human is the `executive`). `next --role` is your queue and `context --role` your brief. Don't guess across roles: `ask P-### --to architect "…"` records the question and blocks only that plan until it's answered; `answer Q-… "…" --decision` turns a durable answer into a decision entry. Reserved decisions, a goal at risk, or anything only a human can settle: `escalate`. Only a human answers an escalation.
+
+**Footprints.** `start` warns when another active plan's `touches:` overlaps yours; `check` flags overlapping active plans and changes on a plan branch outside its `touches:` (widen them and log why, or move the work).
 
 **Who you are and the ledger.** Every move, log, claim and usage record lands in the shared ledger (`<git common dir>/crew/ledger.jsonl`), so every worktree and agent sees the same claims. Set `CREW_RUN` (one per agent run or session) and `CREW_ACTOR` (your role or name) in the environment; without them the run is one per worktree and the actor is the git author. A plan someone else has claimed can't be started; `ledger` shows who holds what.
 
@@ -69,7 +75,7 @@ Replace an outdated entry with `--supersedes`, never by editing history. Never p
 **Nothing is created empty.** Write the content as a draft in `.crew/drafts/<slug>.md`, using the template's `## ` headings, then create the document from it. The draft is consumed. The only lightweight intake is `new-item … --why "<one line>"`; such an item stays `new` until it passes triage. Giving `--priority`/`--severity` at intake triages it right away when the gate passes.
 
 ## Workflows
-Start every workflow by checking where you are: `git branch --show-current`, `crew.mjs current`, `crew.mjs next`. All planning (idea, focus, goals, items, plan drafts) happens **on `main`**. On a plan branch, edit only that plan's file.
+Start every workflow by checking where you are: `crew.mjs context` (or `context --role <yours>`), then `crew.mjs next --role <yours>`. All planning (idea, focus, goals, items, plan drafts) happens **on `main`**. On a plan branch, edit only that plan's file.
 
 ### 1. Idea and goals
 1. **Idea.** Draft `idea.md` from the brief and any research (`docs/research/`): problem, outcome, success criteria as a checklist the executive can verify, direction and constraints. Create it with `new-idea`. Move it through `researching` and `proposed` as the work goes; only the executive (the user) decides: `move IDEA decided` (or `killed`). A pivot moves it back to `proposed`.

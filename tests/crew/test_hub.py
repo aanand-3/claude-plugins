@@ -1126,3 +1126,118 @@ def test_checkpoint_records_reported_results_and_hides_secrets(repo: Repo):
     assert tr(repo, "checkpoint", "--attempt", "x").returncode != 0  # needs --why
     assert tr(repo, "checkpoint", "--verify", "x").returncode != 0  # needs --result
     assert tr(repo, "checkpoint", "--run", "true", "--ac", "9").returncode != 0  # only AC 1
+
+
+# ------------------------------------------------------------------ context, roles and questions
+def section_order(text: str) -> list[str]:
+    return [ln[3:] for ln in text.splitlines() if ln.startswith("## ")]
+
+
+def test_context_stays_within_budget_in_role_order(repo: Repo):
+    started(repo)
+    tr(repo, "learn", "gotcha", "Signup needs the mail mock", "--why", "tests hang without it", "--scope", "src/auth/**")
+    tr(repo, "checkpoint", "--run", "true", "--ac", "1")
+    out = tr(repo, "context").stdout  # the plan of this branch, the default (developer) slice
+    assert out.startswith("crew context — P-001: Signup [in-progress]")
+    assert section_order(out) == ["Where the work stands", "Goal", "Acceptance criteria", "Remaining tasks", "Knowledge in scope",
+                                  "Handoff & log"]
+    assert "AC1 ✓ self 201 on valid input" in out and "Signup needs the mail mock" in out
+    qa = json.loads(tr(repo, "context", "P-001", "--role", "qa", "--json").stdout)["text"]
+    assert section_order(qa)[:3] == ["Goal", "Acceptance criteria", "Test plan"]
+    arch = tr(repo, "context", "P-001", "--role", "architect").stdout
+    assert section_order(arch)[:2] == ["Goal", "Approach"] or section_order(arch)[0] == "Goal"
+    for budget in (300, 600, 1000):
+        text = json.loads(tr(repo, "context", "P-001", "--role", "qa", "--budget", str(budget), "--json").stdout)["text"]
+        assert len(text) <= budget, (budget, len(text))
+    small = json.loads(tr(repo, "context", "P-001", "--budget", "400", "--json").stdout)["text"]
+    assert "(more: crew.mjs" in small or "… also:" in small  # what doesn't fit becomes a pointer
+    assert tr(repo, "context", "--budget", "50").returncode != 0
+    assert tr(repo, "context", "--role", "wizard").returncode != 0
+    repo.git("switch", "-q", "main")
+    project = tr(repo, "context", "--role", "director").stdout
+    assert section_order(project)[:2] == ["Idea & focus", "Next for director"] and "P-001 held by developer (dev-run)" in project
+
+
+def test_an_ask_blocks_only_its_plan(repo: Repo):
+    init(repo, commit=True)
+    ready_plan(repo, "One")
+    ready_plan(repo, "Two")
+    repo.commit("chore(hub): plans")
+    r = tr(repo, "ask", "P-001", "--to", "architect", "Postgres or SQLite for sessions?")
+    assert r.returncode == 0 and "blocks P-001 until answered" in r.stdout
+    qid = re.search(r"Q-[0-9a-f]{6}", r.stdout).group(0)
+    r = tr(repo, "start", "P-001")
+    assert r.returncode != 0 and f"P-001 waits for an answer" in r.stderr and qid in r.stderr
+    assert "plan/P-001-one" not in repo.git("branch").stdout  # refused before any branch was made
+    assert tr(repo, "ask", "P-002", "--to", "pm", "FYI: copy changes", "--fyi").returncode == 0
+    repo.env["CREW_RUN"] = "dev-2"
+    assert tr(repo, "start", "P-002").returncode == 0  # other plans move on (an fyi question doesn't block)
+    repo.commit("chore(P-002): start")
+    repo.git("switch", "-q", "main")
+    assert f"QUESTION     {qid}" in tr(repo, "next", "--role", "architect").stdout
+    res = mcp_call(repo, "answer", {"id": qid, "text": "Postgres: one database to run", "decision": True, "scope": "src/**"})
+    assert not res["isError"], res
+    assert any("title: Postgres: one database to run" in t and "source: P-001" in t for t in knowledge(repo).values())
+    repo.commit("chore(hub): decision")  # the answer became a knowledge entry
+    repo.env["CREW_RUN"] = "dev-1"
+    assert tr(repo, "start", "P-001").returncode == 0
+    assert tr(repo, "answer", qid, "again").returncode != 0  # already answered
+
+
+def test_escalations_need_a_human(repo: Repo):
+    init(repo, commit=True)
+    new_idea(repo)
+    r = tr(repo, "escalate", "IDEA", "Pilot slipped two weeks: cut reminders or move the date?")
+    qid = re.search(r"Q-[0-9a-f]{6}", r.stdout).group(0)
+    assert "→ executive" in r.stdout
+    assert f"answer {qid}" in tr(repo, "next", "--role", "executive").stdout
+    assert "waiting on the executive" in tr(repo, "next", "--role", "director").stdout
+    assert "**escalation**" in tr(repo, "status").stdout
+    assert mcp_call(repo, "answer", {"id": qid, "text": "cut reminders"})["isError"]
+    r = tr(repo, "answer", qid, "cut reminders")
+    assert r.returncode != 0 and "a human answers it" in r.stderr
+    assert tr(repo, "answer", qid, "cut reminders", "--approved-by", "Amit").returncode == 0
+    assert "No open questions." in tr(repo, "questions").stdout
+    assert "answered by Amit: cut reminders" in tr(repo, "questions", "--all").stdout
+    assert tr(repo, "ask", "--to", "wizard", "x").returncode != 0
+
+
+def test_overlapping_plans_warn_and_drift_is_flagged(repo: Repo):
+    init(repo, commit=True)
+    repo.write("src/auth/login.py", "x\n")
+    new_plan(repo, "Login", PLAN_DRAFT, "--touches", "src/auth/**")
+    new_plan(repo, "Sessions", PLAN_DRAFT, "--touches", "src/auth/session.py")
+    for pid in ("P-001", "P-002"):
+        tr(repo, "move", pid, "ready")
+    repo.commit("chore(hub): plans")
+    repo.env["CREW_RUN"] = "a"
+    tr(repo, "start", "P-001")
+    repo.write("docs/notes.md", "outside\n")
+    repo.commit("feat(P-001): wip")
+    assert "P-001: changes outside its touches: docs/notes.md" in tr(repo, "check").stdout
+    repo.git("switch", "-q", "main")
+    repo.env["CREW_RUN"] = "b"
+    r = tr(repo, "start", "P-002")
+    assert r.returncode == 0 and "warning: P-002 overlaps P-001 (in progress) on src/auth/**" in r.stdout
+    assert "P-001 and P-002 are both active and overlap on src/auth/session.py" in tr(repo, "check").stdout
+
+
+def test_role_queues(repo: Repo):
+    started(repo)
+    p = plan_file(repo, "P-001")
+    p.write_text(p.read_text().replace("- [ ] T", "- [x] T").rstrip() + "\nShipped.\nLearnings: none\n")
+    tr(repo, "move", "P-001", "in-review")
+    repo.env["CREW_RUN"] = "qa-run"
+    assert "verify P-001: AC1" in tr(repo, "next", "--role", "qa").stdout
+    tr(repo, "checkpoint", "P-001", "--run", "true", "--ac", "all")
+    assert "P-001: evidence complete → move P-001 done" in tr(repo, "next", "--role", "qa").stdout
+    assert tr(repo, "next", "--role", "wizard").returncode != 0
+    assert "nothing for the release role" in tr(repo, "next", "--role", "release").stdout
+
+
+def test_session_start_hook_runs_context():
+    settings = json.loads((HUB.parents[2] / "guidelines/templates/settings.json").read_text())
+    start = settings["hooks"]["SessionStart"][0]["hooks"][0]["command"]
+    assert "crew.mjs context" in start and "crew.mjs current" not in start
+    for event in ("Stop", "PreCompact"):
+        assert "checkpoint --auto" in settings["hooks"][event][0]["hooks"][0]["command"]

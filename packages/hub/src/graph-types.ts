@@ -1,7 +1,7 @@
 /** The hub graph: the JSON contract between the CLI (`export`), the local server and the UI.
  * Bump SCHEMA_VERSION on any breaking change; consumers check it. Types only, no runtime code. */
 
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 5;
 
 export type DocKind = "idea" | "goal" | "item" | "plan" | "knowledge";
 export type EdgeType = "serves" | "in-goal" | "delivers" | "depends-on" | "learned-in" | "supersedes" | "mentions";
@@ -45,6 +45,7 @@ export interface Graph {
   docs: GraphDoc[];
   edges: GraphEdge[];
   spend: { cost: number; tokensIn: number; tokensOut: number; byActor: Record<string, number> };  // ledger usage events
+  questions: { id: string; ref: string | null; to: string; text: string; by: string; ts: string; blocking: boolean; escalation: boolean }[];  // open ones
   next: string[];                   // the lines `crew.mjs next` prints
   check: { errors: string[]; hints: string[] };
 }

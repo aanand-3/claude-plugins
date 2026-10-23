@@ -2,8 +2,10 @@
 import * as git from "../core/git.js";
 import type { Doc } from "../core/doc.js";
 import { decisionProblems, learningsProblems, readinessProblems, triageProblems } from "../core/gates.js";
+import { overlapping } from "../core/footprint.js";
 import { approvalReason } from "../core/policy.js";
 import { evidenceProblems, writeHandoff } from "./execution.js";
+import { FORWARD, openQuestions } from "./questions.js";
 import { CLOSED, FLOWS, ITEM_CLOSED, type Kind } from "../core/model.js";
 import * as q from "../core/queries.js";
 import type { Store } from "../core/store.js";
@@ -24,6 +26,11 @@ export function move(store: Store, docId: string, status: string, note?: string,
     fail(`${docId}: ${old} → ${status} not allowed (from ${old}: ${allowed}). Use --force to override.`);
   }
   if (!force) guard(store, kind!, doc, status, approvedBy);
+  const waiting = FORWARD.has(status) ? openQuestions(store.ledger.events(), doc.id).filter((x) => x.blocking) : [];
+  if (waiting.length && !force) {
+    fail(`${doc.id} waits for an answer before it moves on:\n  - ${waiting.map((x) => `${x.id} → ${x.to}: ${x.text}`).join("\n  - ")}\n`
+      + "(`crew.mjs questions`; --force to move anyway)");
+  }
   authorize(store, doc.id, `${kind}.${status}`, approvedBy);
   stamp(kind!, doc, status);
   doc.set("status", status);
@@ -117,9 +124,17 @@ export function start(store: Store, planId: string, force = false, approvedBy?: 
     fail(`${doc.id} is claimed by ${held.actor} (${held.run}, ${held.worktree}) since ${held.ts.slice(0, 10)}. `
       + `Coordinate with them, or \`release ${doc.id} --force\` if that run is gone.`);
   }
+  const asked = openQuestions(store.ledger.events(), doc.id).filter((x) => x.blocking);
+  if (asked.length && !force) { // refuse before the branch exists, not after
+    fail(`${doc.id} waits for an answer before it starts:\n  - ${asked.map((x) => `${x.id} → ${x.to}: ${x.text}`).join("\n  - ")}\n`
+      + "(`crew.mjs questions`; --force to start anyway)");
+  }
   if (!git.treeIsClean()) fail("Working tree not clean. Commit or stash first.");
   const focus = store.focus();
   if (!q.onFocus(doc, store.items(), focus)) store.say(`note: ${planId} does not serve the focus goal ${focus}`);
+  for (const o of overlapping(doc, store.plans(true)).filter((x) => store.plans(true).get(x.id)?.get("status") !== "ready")) {
+    store.say(`warning: ${planId} overlaps ${o.id} (in progress) on ${o.globs.join(", ")} — expect conflicts; coordinate or add depends_on`);
+  }
   const branch = doc.get("branch") || `plan/${doc.id}-${slugify(doc.get("title") ?? "")}`;
   git.git(["switch", "-c", branch], true);
   doc = store.find(planId); // re-read on the new branch

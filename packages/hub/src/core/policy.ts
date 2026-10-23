@@ -6,7 +6,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { parse } from "yaml";
 import * as git from "./git.js";
-import { FLOWS, type Kind } from "./model.js";
+import { FLOWS, type Kind, ROLES } from "./model.js";
 
 export const MODES = ["ai-native", "ai-assisted", "human-led"] as const;
 /** Transitions (`<kind>.<status>`) that need a human, by mode, until the project sets `human_gates`. */
@@ -200,6 +200,9 @@ export function resolveLayers(layers: Layer[]): { policy: Effective; sources: Ma
   const gates = [...new Set([...get<string[]>("human_gates", MODE_GATES[mode] ?? []), ...get<string[]>("human_gates.org", [])])];
   const role_gates = Object.fromEntries([...values].filter(([p]) => p.startsWith("role_gates[")).map(([p, v]) => [p.slice(11, -1), String(v)]));
   for (const t of [...gates, ...Object.keys(role_gates), ...get<string[]>("reserved", [])]) errors.push(...transitionProblem(t));
+  for (const [t, r] of Object.entries(role_gates)) if (!(ROLES as readonly string[]).includes(r)) errors.push(`role_gates ${t}: '${r}' is not a role (${ROLES.join(", ")})`);
+  const to = get<string>("escalation.to", "executive");
+  if (!(ROLES as readonly string[]).includes(to)) errors.push(`escalation.to: '${to}' is not a role (${ROLES.join(", ")})`);
   const deny = get<string[]>("tools.deny", []);
   const allow = get<string[]>("tools.allow", []);
   for (const t of allow.filter((a) => deny.includes(a))) errors.push(`tools.allow: '${t}' is denied by ${sources.get("tools.deny")} (deny wins)`);

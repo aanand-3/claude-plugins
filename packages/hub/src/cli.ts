@@ -10,7 +10,9 @@ import { exportGraph } from "./commands/export.js";
 import { serve } from "./server.js";
 import { init, newGoal, newIdea, newPlan, setFocus } from "./commands/planning.js";
 import { status } from "./commands/reports.js";
+import { context } from "./commands/context.js";
 import { checkpoint, handoff, resume } from "./commands/execution.js";
+import { answer, ask, escalate, listQuestions } from "./commands/questions.js";
 import { learn, recallCmd } from "./commands/knowledge.js";
 import { showLedger } from "./commands/ledger.js";
 import { policyCheck, policyShow } from "./commands/policy.js";
@@ -43,7 +45,10 @@ Commands:
   checkpoint [P-###] [--step T3] [--run CMD | --verify CMD --result pass|fail] [--ac 1,2|all] [--output TXT]
              [--attempt WHAT --why WHY] [--note TXT] [--auto]   record where the work is (the plan of this branch by default)
   resume [P-###] [--json] · handoff [P-###]     where the work stopped vs git now · write it into the plan's Handoff
-  next · current · check · status [--write]
+  context [P-###] [--role R] [--budget CHARS] [--json]   what you need right now, within a budget (default 6000 chars)
+  next [--role R] · current · check · status [--write]    (roles: executive, director, pm, architect, developer, qa, release)
+  ask [ID] --to ROLE TEXT [--fyi] · escalate [ID] TEXT · answer Q-… TEXT [--decision [--scope GLOBS]] [--approved-by NAME]
+  questions [--to ROLE] [--ref ID] [--all] [--json]       questions between roles; an open one blocks only its document
   export [--json] [--out FILE]                  interactive HTML view (.crew/view/index.html) or the graph as JSON
   ui [--port 8765] [--no-open]                  serve the view live on 127.0.0.1 (updates as files change)
 `;
@@ -111,7 +116,18 @@ const COMMANDS: Record<string, Spec> = {
   ledger: { pos: [], str: ["ref", "type"], int: ["limit"], flag: ["json"],
     run: (s, a) => showLedger(s, { ref: str(a, "ref"), type: str(a, "type"), limit: a.num.limit, json: !!a.opt.json }) },
   current: { pos: [], run: (s) => current(s) },
-  next: { pos: [], run: (s) => nextStep(s) },
+  next: { pos: [], str: ["role"], run: (s, a) => nextStep(s, str(a, "role")) },
+  context: { pos: [], rest: true, str: ["role"], int: ["budget"], flag: ["json"],
+    run: (s, a) => context(s, { id: a.pos[0], role: str(a, "role"), budget: a.num.budget, json: !!a.opt.json }) },
+  ask: { pos: ["text"], rest: true, str: ["to"], flag: ["fyi"], required: ["to"],
+    run: (s, a) => { const [ref, text] = a.pos.length > 1 ? [a.pos[0], a.pos[1]] : [undefined, a.pos[0]];
+      ask(s, ref, str(a, "to")!, text, { fyi: !!a.opt.fyi }); } },
+  escalate: { pos: ["text"], rest: true,
+    run: (s, a) => { const [ref, text] = a.pos.length > 1 ? [a.pos[0], a.pos[1]] : [undefined, a.pos[0]]; escalate(s, ref, text); } },
+  answer: { pos: ["id", "text"], str: ["scope", "approved-by"], flag: ["decision"],
+    run: (s, a) => answer(s, a.pos[0], a.pos[1], { decision: !!a.opt.decision, scope: str(a, "scope"), approvedBy: str(a, "approved-by") }) },
+  questions: { pos: [], str: ["to", "ref"], flag: ["all", "json"],
+    run: (s, a) => listQuestions(s, { to: str(a, "to"), ref: str(a, "ref"), all: !!a.opt.all, json: !!a.opt.json }) },
   check: { pos: [], run: (s) => check(s) },
   status: { pos: [], flag: ["write"], run: (s, a) => status(s, !!a.opt.write) },
   export: { pos: [], str: ["out"], flag: ["json"],

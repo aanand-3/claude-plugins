@@ -264,6 +264,7 @@ Users need to set their timezone (BUG-002).
 - [ ] T2: form → verify: UI test
 `);
 tr("new-item", "feat", "Weekly summary email", "--why", "Three pilot users asked for a Sunday recap.");
+tr("escalate", "FEAT-008", "Reminders need Postmark's paid tier ($20/month): approve the spend, or ship push notifications later?");
 tr("status", "--write");
 commit("chore(hub): day 3 of the check-in loop");
 console.log(`sample project ready: ${dir}`);

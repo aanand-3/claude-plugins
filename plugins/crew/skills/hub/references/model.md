@@ -33,6 +33,15 @@ Every event carries `ts`, `ref`, `run` (`CREW_RUN`, else one per worktree), `act
 can't both claim a plan. Derived from it: live claims (owner in `status` and the view), each run's WIP, spend, and a `check`
 hint when a plan file disagrees with the ledger's last move or a closed plan is still claimed.
 
+## Roles, questions and context
+Roles: `executive` (the human), `director`, `pm`, `architect`, `developer`, `qa`, `release` (`CREW_ROLE`). Questions are
+ledger events (`ask` → `answer`): an open, blocking question on a document refuses its forward moves and its `start`, and
+nothing else. Escalations go to the policy's `escalation.to` and are answered only with `--approved-by`.
+`next --role` gives each role its queue (questions to it first). `context` assembles, in priority order and within a budget
+(default 6,000 characters): for a plan — where the work stands, the goal, criteria with evidence, tasks, blockers and
+questions, knowledge in scope, handoff and log (QA, architect and release get their own slices); without one — the idea and
+focus, next steps, who holds what, recent knowledge. What doesn't fit becomes a pointer to the full command.
+
 ## Execution state
 `checkpoint` events in the ledger record a plan's step, commit, dirty files, check results (command, pass/fail, the criteria
 it covers, the end of its output; `--run` executes the check, otherwise the result is *reported*) and failed attempts. The

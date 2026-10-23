@@ -3,6 +3,7 @@ import type { Doc } from "../core/doc.js";
 import type { LedgerEvent } from "../core/ledger.js";
 import { ITEM_CLOSED } from "../core/model.js";
 import * as q from "../core/queries.js";
+import { openQuestions } from "./questions.js";
 import type { Docs, Store } from "../core/store.js";
 import { byKey, stripComments, today } from "../core/text.js";
 
@@ -17,6 +18,11 @@ export function status(store: Store, write: boolean): void {
   const claims = store.ledger.claims();
   lines.push("## Now", "", ...planTable(byStatus(plans, ["in-progress", "in-review"]), plans, items, claims), "");
   lines.push("## Blocked", "", ...blocked(plans), "");
+  const asks = openQuestions(store.ledger.events());
+  if (asks.length) {
+    lines.push("## Open questions", "", ...asks.sort((a, b) => Number(b.escalation) - Number(a.escalation)).map((x) =>
+      `- ${x.escalation ? "**escalation** " : ""}${x.id} ${x.by} → ${x.to}${x.ref ? ` about ${x.ref}` : ""}: ${x.text}`), "");
+  }
   lines.push("## Ready to start", "", ...planTable(byStatus(plans, ["ready"]), plans, items, claims), "");
   lines.push("## Top of the backlog", "", ...backlogTop(q.ranked(items, goals, focus), plans), "");
   lines.push("## Open bugs", "", ...openBugs(items, plans), "");

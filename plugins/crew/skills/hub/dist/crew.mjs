@@ -304,13 +304,13 @@ var require_directives = __commonJS({
        * @param onError - May be called even if the action was successful
        * @returns `true` on success
        */
-      add(line, onError) {
+      add(line2, onError) {
         if (this.atNextDocument) {
           this.yaml = { explicit: _Directives.defaultYaml.explicit, version: "1.1" };
           this.tags = Object.assign({}, _Directives.defaultTags);
           this.atNextDocument = false;
         }
-        const parts = line.trim().split(/[ \t]+/);
+        const parts = line2.trim().split(/[ \t]+/);
         const name = parts.shift();
         switch (name) {
           case "%TAG": {
@@ -1905,9 +1905,9 @@ var require_stringifyCollection = __commonJS({
       } else {
         str3 = lines[0];
         for (let i = 1; i < lines.length; ++i) {
-          const line = lines[i];
-          str3 += line ? `
-${indent}${line}` : "\n";
+          const line2 = lines[i];
+          str3 += line2 ? `
+${indent}${line2}` : "\n";
         }
       }
       if (comment) {
@@ -1965,7 +1965,7 @@ ${indent}${line}` : "\n";
           str3 += ",";
         } else if (ctx.options.trailingComma) {
           if (ctx.options.lineWidth > 0) {
-            reqNewline || (reqNewline = lines.reduce((sum, line) => sum + line.length + 2, 2) + (str3.length + 2) > ctx.options.lineWidth);
+            reqNewline || (reqNewline = lines.reduce((sum, line2) => sum + line2.length + 2, 2) + (str3.length + 2) > ctx.options.lineWidth);
           }
           if (reqNewline) {
             str3 += ",";
@@ -1981,14 +1981,14 @@ ${indent}${line}` : "\n";
         return start2 + end;
       } else {
         if (!reqNewline) {
-          const len = lines.reduce((sum, line) => sum + line.length + 2, 2);
+          const len = lines.reduce((sum, line2) => sum + line2.length + 2, 2);
           reqNewline = ctx.options.lineWidth > 0 && len > ctx.options.lineWidth;
         }
         if (reqNewline) {
           let str3 = start2;
-          for (const line of lines)
-            str3 += line ? `
-${indentStep}${indent}${line}` : "\n";
+          for (const line2 of lines)
+            str3 += line2 ? `
+${indentStep}${indent}${line2}` : "\n";
           return `${str3}
 ${indent}${end}`;
         } else {
@@ -3731,10 +3731,10 @@ var require_errors = __commonJS({
       if (error.pos[0] === -1)
         return;
       error.linePos = error.pos.map((pos) => lc.linePos(pos));
-      const { line, col } = error.linePos[0];
-      error.message += ` at line ${line}, column ${col}`;
+      const { line: line2, col } = error.linePos[0];
+      error.message += ` at line ${line2}, column ${col}`;
       let ci = col - 1;
-      let lineStr = src.substring(lc.lineStarts[line - 1], lc.lineStarts[line]).replace(/[\n\r]+$/, "");
+      let lineStr = src.substring(lc.lineStarts[line2 - 1], lc.lineStarts[line2]).replace(/[\n\r]+$/, "");
       if (ci >= 60 && lineStr.length > 80) {
         const trimStart = Math.min(ci - 39, lineStr.length - 79);
         lineStr = "\u2026" + lineStr.substring(trimStart);
@@ -3742,8 +3742,8 @@ var require_errors = __commonJS({
       }
       if (lineStr.length > 80)
         lineStr = lineStr.substring(0, 79) + "\u2026";
-      if (line > 1 && /^ *$/.test(lineStr.substring(0, ci))) {
-        let prev = src.substring(lc.lineStarts[line - 2], lc.lineStarts[line - 1]);
+      if (line2 > 1 && /^ *$/.test(lineStr.substring(0, ci))) {
+        let prev = src.substring(lc.lineStarts[line2 - 2], lc.lineStarts[line2 - 1]);
         if (prev.length > 80)
           prev = prev.substring(0, 79) + "\u2026\n";
         lineStr = prev + lineStr;
@@ -3751,7 +3751,7 @@ var require_errors = __commonJS({
       if (/[^ ]/.test(lineStr)) {
         let count = 1;
         const end = error.linePos[1];
-        if (end?.line === line && end.col > col) {
+        if (end?.line === line2 && end.col > col) {
           count = Math.max(1, Math.min(end.col - col, 80 - ci));
         }
         const pointer = " ".repeat(ci) + "^".repeat(count);
@@ -4700,13 +4700,13 @@ var require_resolve_flow_scalar = __commonJS({
       return foldLines(source.slice(1, -1)).replace(/''/g, "'");
     }
     function foldLines(source) {
-      let first, line;
+      let first, line2;
       try {
         first = new RegExp("(.*?)(?<![ 	])[ 	]*\r?\n", "sy");
-        line = new RegExp("[ 	]*(.*?)(?:(?<![ 	])[ 	]*)?\r?\n", "sy");
+        line2 = new RegExp("[ 	]*(.*?)(?:(?<![ 	])[ 	]*)?\r?\n", "sy");
       } catch {
         first = /(.*?)[ \t]*\r?\n/sy;
-        line = /[ \t]*(.*?)[ \t]*\r?\n/sy;
+        line2 = /[ \t]*(.*?)[ \t]*\r?\n/sy;
       }
       let match = first.exec(source);
       if (!match)
@@ -4714,8 +4714,8 @@ var require_resolve_flow_scalar = __commonJS({
       let res = match[1];
       let sep2 = " ";
       let pos = first.lastIndex;
-      line.lastIndex = pos;
-      while (match = line.exec(source)) {
+      line2.lastIndex = pos;
+      while (match = line2.exec(source)) {
         if (match[1] === "") {
           if (sep2 === "\n")
             res += sep2;
@@ -4725,7 +4725,7 @@ var require_resolve_flow_scalar = __commonJS({
           res += sep2 + match[1];
           sep2 = " ";
         }
-        pos = line.lastIndex;
+        pos = line2.lastIndex;
       }
       const last = /[ \t]*(.*)/sy;
       last.lastIndex = pos;
@@ -5339,15 +5339,15 @@ var require_cst_scalar = __commonJS({
       }
       return null;
     }
-    function createScalarToken(value, context) {
-      const { implicitKey = false, indent, inFlow = false, offset = -1, type = "PLAIN" } = context;
+    function createScalarToken(value, context2) {
+      const { implicitKey = false, indent, inFlow = false, offset = -1, type = "PLAIN" } = context2;
       const source = stringifyString.stringifyString({ type, value }, {
         implicitKey,
         indent: indent > 0 ? " ".repeat(indent) : "",
         inFlow,
         options: { blockQuote: true, lineWidth: -1 }
       });
-      const end = context.end ?? [
+      const end = context2.end ?? [
         { type: "newline", offset: -1, indent, source: "\n" }
       ];
       switch (source[0]) {
@@ -5371,8 +5371,8 @@ var require_cst_scalar = __commonJS({
           return { type: "scalar", offset, indent, source, end };
       }
     }
-    function setScalarValue(token, value, context = {}) {
-      let { afterKey = false, implicitKey = false, inFlow = false, type } = context;
+    function setScalarValue(token, value, context2 = {}) {
+      let { afterKey = false, implicitKey = false, inFlow = false, type } = context2;
       let indent = "indent" in token ? token.indent : null;
       if (afterKey && typeof indent === "number")
         indent += 2;
@@ -5855,40 +5855,40 @@ var require_lexer = __commonJS({
         }
       }
       *parseStream() {
-        let line = this.getLine();
-        if (line === null)
+        let line2 = this.getLine();
+        if (line2 === null)
           return this.setNext("stream");
-        if (line[0] === cst.BOM) {
+        if (line2[0] === cst.BOM) {
           yield* this.pushCount(1);
-          line = line.substring(1);
+          line2 = line2.substring(1);
         }
-        if (line[0] === "%") {
-          let dirEnd = line.length;
-          let cs = line.indexOf("#");
+        if (line2[0] === "%") {
+          let dirEnd = line2.length;
+          let cs = line2.indexOf("#");
           while (cs !== -1) {
-            const ch = line[cs - 1];
+            const ch = line2[cs - 1];
             if (ch === " " || ch === "	") {
               dirEnd = cs - 1;
               break;
             } else {
-              cs = line.indexOf("#", cs + 1);
+              cs = line2.indexOf("#", cs + 1);
             }
           }
           while (true) {
-            const ch = line[dirEnd - 1];
+            const ch = line2[dirEnd - 1];
             if (ch === " " || ch === "	")
               dirEnd -= 1;
             else
               break;
           }
           const n = (yield* this.pushCount(dirEnd)) + (yield* this.pushSpaces(true));
-          yield* this.pushCount(line.length - n);
+          yield* this.pushCount(line2.length - n);
           this.pushNewline();
           return "stream";
         }
         if (this.atLineEnd()) {
           const sp = yield* this.pushSpaces(true);
-          yield* this.pushCount(line.length - sp);
+          yield* this.pushCount(line2.length - sp);
           yield* this.pushNewline();
           return "stream";
         }
@@ -5929,13 +5929,13 @@ var require_lexer = __commonJS({
       }
       *parseDocument() {
         yield* this.pushSpaces(true);
-        const line = this.getLine();
-        if (line === null)
+        const line2 = this.getLine();
+        if (line2 === null)
           return this.setNext("doc");
         let n = yield* this.pushIndicators();
-        switch (line[n]) {
+        switch (line2[n]) {
           case "#":
-            yield* this.pushCount(line.length - n);
+            yield* this.pushCount(line2.length - n);
           // fallthrough
           case void 0:
             yield* this.pushNewline();
@@ -5960,7 +5960,7 @@ var require_lexer = __commonJS({
           case ">":
             n += yield* this.parseBlockScalarHeader();
             n += yield* this.pushSpaces(true);
-            yield* this.pushCount(line.length - n);
+            yield* this.pushCount(line2.length - n);
             yield* this.pushNewline();
             return yield* this.parseBlockScalar();
           default:
@@ -5980,11 +5980,11 @@ var require_lexer = __commonJS({
           }
           sp += yield* this.pushSpaces(true);
         } while (nl + sp > 0);
-        const line = this.getLine();
-        if (line === null)
+        const line2 = this.getLine();
+        if (line2 === null)
           return this.setNext("flow");
-        if (indent !== -1 && indent < this.indentNext && line[0] !== "#" || indent === 0 && (line.startsWith("---") || line.startsWith("...")) && isEmpty(line[3])) {
-          const atFlowEndMarker = indent === this.indentNext - 1 && this.flowLevel === 1 && (line[0] === "]" || line[0] === "}");
+        if (indent !== -1 && indent < this.indentNext && line2[0] !== "#" || indent === 0 && (line2.startsWith("---") || line2.startsWith("...")) && isEmpty(line2[3])) {
+          const atFlowEndMarker = indent === this.indentNext - 1 && this.flowLevel === 1 && (line2[0] === "]" || line2[0] === "}");
           if (!atFlowEndMarker) {
             this.flowLevel = 0;
             yield cst.FLOW_END;
@@ -5992,17 +5992,17 @@ var require_lexer = __commonJS({
           }
         }
         let n = 0;
-        while (line[n] === ",") {
+        while (line2[n] === ",") {
           n += yield* this.pushCount(1);
           n += yield* this.pushSpaces(true);
           this.flowKey = false;
         }
         n += yield* this.pushIndicators();
-        switch (line[n]) {
+        switch (line2[n]) {
           case void 0:
             return "flow";
           case "#":
-            yield* this.pushCount(line.length - n);
+            yield* this.pushCount(line2.length - n);
             return "flow";
           case "{":
           case "[":
@@ -7438,6 +7438,7 @@ var KINDS = {
 var DIRS = { goal: "goals", plan: "plans", item: "items" };
 var FLOWS = { idea: IDEA_FLOW, goal: GOAL_FLOW, plan: PLAN_FLOW, item: ITEM_FLOW };
 var ITEM_TYPES = { FEAT: "feat", BUG: "bug", CHORE: "chore", SPIKE: "spike" };
+var ROLES = ["executive", "director", "pm", "architect", "developer", "qa", "release"];
 var OFF_FOCUS_OK = /* @__PURE__ */ new Set(["BUG", "CHORE"]);
 var TRIAGE_SECTIONS = {
   FEAT: ["Summary"],
@@ -7599,10 +7600,10 @@ var Doc = class _Doc {
     const meta = {};
     const m = /^---\n([\s\S]*?)\n---\n/.exec(text);
     if (m) {
-      for (const line of m[1].split("\n")) {
-        if (line.includes(":") && !line.startsWith(" ")) {
-          const i = line.indexOf(":");
-          meta[line.slice(0, i).trim()] = line.slice(i + 1).trim() || null;
+      for (const line2 of m[1].split("\n")) {
+        if (line2.includes(":") && !line2.startsWith(" ")) {
+          const i = line2.indexOf(":");
+          meta[line2.slice(0, i).trim()] = line2.slice(i + 1).trim() || null;
         }
       }
     }
@@ -7620,10 +7621,10 @@ var Doc = class _Doc {
     const at = this.text.indexOf("\n---\n");
     let head = at < 0 ? this.text : this.text.slice(0, at);
     const rest = at < 0 ? "" : this.text.slice(at);
-    const line = rstrip(`${key}: ${value ?? ""}`);
+    const line2 = rstrip(`${key}: ${value ?? ""}`);
     const re = new RegExp(`^${escapeRe(key)}:.*$`, "m");
-    head = re.test(head) ? head.replace(re, () => line) : `${head}
-${line}`;
+    head = re.test(head) ? head.replace(re, () => line2) : `${head}
+${line2}`;
     this.text = head + rest;
   }
   /** Paths (globs) a plan expects to change, as written: not upper-cased like IDs. */
@@ -7641,7 +7642,7 @@ ${line}`;
   hasContent(name) {
     const body2 = stripComments(this.section(name));
     if (mdTable(body2).length) return true;
-    return body2.split("\n").map((l) => l.trim()).some((line) => line && !EMPTY_LINES.has(line) && !line.startsWith("|") && !/^\*\*[^*]+:\*\*$/.test(line));
+    return body2.split("\n").map((l) => l.trim()).some((line2) => line2 && !EMPTY_LINES.has(line2) && !line2.startsWith("|") && !/^\*\*[^*]+:\*\*$/.test(line2));
   }
   missing(names) {
     return names.filter((n) => !this.hasContent(n));
@@ -7651,8 +7652,8 @@ ${line}`;
   }
   checklist(name) {
     const out = [];
-    for (const line of stripComments(this.section(name)).split("\n")) {
-      const m = TASK_RE.exec(line);
+    for (const line2 of stripComments(this.section(name)).split("\n")) {
+      const m = TASK_RE.exec(line2);
       const label = m?.[2].trim();
       if (m && label && label !== "T1: \u2026 \u2192 verify: \u2026") out.push([m[1] !== " ", label]);
     }
@@ -8153,6 +8154,9 @@ function resolveLayers(layers) {
   const gates = [.../* @__PURE__ */ new Set([...get("human_gates", MODE_GATES[mode] ?? []), ...get("human_gates.org", [])])];
   const role_gates = Object.fromEntries([...values].filter(([p]) => p.startsWith("role_gates[")).map(([p, v]) => [p.slice(11, -1), String(v)]));
   for (const t of [...gates, ...Object.keys(role_gates), ...get("reserved", [])]) errors.push(...transitionProblem(t));
+  for (const [t, r] of Object.entries(role_gates)) if (!ROLES.includes(r)) errors.push(`role_gates ${t}: '${r}' is not a role (${ROLES.join(", ")})`);
+  const to = get("escalation.to", "executive");
+  if (!ROLES.includes(to)) errors.push(`escalation.to: '${to}' is not a role (${ROLES.join(", ")})`);
   const deny = get("tools.deny", []);
   const allow = get("tools.allow", []);
   for (const t of allow.filter((a) => deny.includes(a))) errors.push(`tools.allow: '${t}' is denied by ${sources.get("tools.deny")} (deny wins)`);
@@ -8204,8 +8208,8 @@ var Workspace = class {
   hooks = [];
   output = [];
   /** A line for stdout (shown even when the command later refuses). */
-  say(line) {
-    this.output.push(line);
+  say(line2) {
+    this.output.push(line2);
   }
   read(path) {
     if (this.pending.has(path)) return this.pending.get(path)?.text ?? null;
@@ -8270,10 +8274,10 @@ var SKILL_DIR = dirname3(SCRIPT_DIR);
 function yamlBlock(text, block) {
   const out = {};
   let inside = false;
-  for (const line of text.split("\n")) {
-    if (/^\S/.test(line)) inside = line.replace(/#.*/, "").trim() === `${block}:`;
+  for (const line2 of text.split("\n")) {
+    if (/^\S/.test(line2)) inside = line2.replace(/#.*/, "").trim() === `${block}:`;
     else if (inside) {
-      const m = /^\s+([\w-]+):\s*([^#]*)/.exec(line);
+      const m = /^\s+([\w-]+):\s*([^#]*)/.exec(line2);
       if (m && m[2].trim()) out[m[1]] = m[2].trim().replace(/^["']|["']$/g, "");
     }
   }
@@ -8308,8 +8312,8 @@ var Store = class _Store {
   rel(p) {
     return this.ws.rel(p);
   }
-  say(line) {
-    this.ws.say(line);
+  say(line2) {
+    this.ws.say(line2);
   }
   require() {
     if (!this.ws.isDir(this.dir)) fail("No .crew/ directory. Run `crew.mjs init` first.");
@@ -8497,173 +8501,25 @@ function goalPlans(goalId, plans2, items2) {
   return [...plans2.values()].filter((p) => planGoal(p, items2) === goalId);
 }
 
-// src/commands/advisor.ts
-function current(store) {
-  if (!store.ws.isDir(store.dir)) return;
-  const focus = store.focus();
-  if (focus) store.say(`crew hub \u2014 focus ${focus}: ${store.goals().get(focus)?.get("title") ?? "(missing goal)"}`);
-  const branch = currentBranch() ?? "";
-  const m = /^plan\/(P-\d+)/.exec(branch);
-  if (!m) {
-    const active = [...store.plans(true).values()].filter((p) => ACTIVE.has(p.get("status") ?? ""));
-    if (active.length) {
-      store.say("crew hub \u2014 active plans: " + active.map((p) => `${p.id} (${p.get("status")})`).join(", "));
-    }
-    return;
-  }
-  const doc = store.plans().get(m[1]);
-  if (!doc) {
-    store.say(`crew hub: branch ${branch} has no matching plan file.`);
-    return;
-  }
-  const tasks = doc.tasks();
-  const nxt = tasks.find(([d]) => !d)?.[1];
-  store.say(`crew hub \u2014 current plan ${doc.id}: ${doc.get("title")} [${doc.get("status")}] tasks ${tasks.filter(([d]) => d).length}/${tasks.length}` + (nxt ? ` \u2014 next: ${nxt}` : "") + ` \u2014 file: ${doc.path ? store.rel(doc.path) : ""}`);
+// src/core/footprint.ts
+var LIVE = /* @__PURE__ */ new Set(["ready", "in-progress", "blocked", "in-review"]);
+function overlapping(plan, plans2) {
+  const mine = plan.touches();
+  return [...plans2.values()].filter((p) => p.id !== plan.id && LIVE.has(p.get("status") ?? "") && !p.dependsOn().includes(plan.id) && !plan.dependsOn().includes(p.id)).flatMap((p) => {
+    const globs = p.touches().filter((g) => mine.some((m) => globsOverlap(m, g)));
+    return globs.length ? [{ id: p.id, globs }] : [];
+  });
 }
-function nextStep(store) {
-  store.require();
-  for (const line of nextLines(store)) store.say(line);
-}
-function nextLines(store) {
-  const ctx = new Context(store);
-  for (const p of ctx.active) ctx.lines.push(`IN PROGRESS  ${p.id}: ${p.get("title")} [${p.get("status")}]`);
-  for (const rule of [ctx.expedite, ctx.wipFull, ctx.startReady, ctx.refineDraft, ctx.triage, ctx.planItem, ctx.idea, ctx.goal]) {
-    const line = rule.call(ctx);
-    if (line) return [...ctx.lines, `NEXT         ${line}`];
-  }
-  return [...ctx.lines, "NEXT         nothing planned \u2014 write a goal for the next outcome, or capture items"];
-}
-var Context = class {
-  constructor(store) {
-    this.store = store;
-    this.goals = store.goals();
-    this.items = store.items();
-    this.plans = store.plans(true);
-    this.focus = store.focus();
-    this.active = [...this.plans.values()].filter((p) => ACTIVE.has(p.get("status") ?? "")).sort(byKey((p) => this.key(p)));
-  }
-  store;
-  goals;
-  items;
-  plans;
-  focus;
-  active;
-  lines = [];
-  /** Focus work first, then goal order, then ID. */
-  key(p) {
-    const eorder = goalOrder(this.goals);
-    return [!onFocus(p, this.items, this.focus), eorder.get(planGoal(p, this.items)) ?? eorder.size, p.id];
-  }
-  withStatus(status2) {
-    return [...this.plans.values()].filter((p) => p.get("status") === status2).sort(byKey((p) => this.key(p)));
-  }
-  ranked(status2) {
-    return ranked(this.items, this.goals, this.focus).filter((i) => itemStatus(i, this.plans) === status2);
-  }
-  expedite() {
-    const bugs = [...this.items.values()].filter((i) => i.id.startsWith("BUG-") && i.get("priority") === "P0" && ["new", "triaged"].includes(itemStatus(i, this.plans))).map((i) => i.id).sort();
-    if (!bugs.length) return null;
-    const b = this.items.get(bugs[0]);
-    return `expedite ${b.id}: ${b.get("title")} (P0) \u2192 write a fix plan: new-plan \u2026 --items ${b.id}`;
-  }
-  wipFull() {
-    const limit = this.store.settings().wip_limit;
-    const wip = this.active.filter((p) => p.get("status") === "in-progress");
-    return wip.length >= limit ? `finish ${wip[0].id} (WIP limit ${limit})` : null;
-  }
-  startReady() {
-    const ready = this.withStatus("ready");
-    const startable = ready.filter((p2) => !unmetDeps(p2, this.plans).length);
-    for (const p2 of ready) {
-      if (!startable.includes(p2)) {
-        this.lines.push(`WAITING      ${p2.id}: ${p2.get("title")} \u2014 needs ${unmetDeps(p2, this.plans).join(", ")}`);
-      }
-    }
-    if (!startable.length) return null;
-    const p = startable[0];
-    const off = onFocus(p, this.items, this.focus) ? "" : ` (off focus ${this.focus})`;
-    return `${p.id}: ${p.get("title")} \u2192 crew.mjs start ${p.id}${off}`;
-  }
-  refineDraft() {
-    const [d] = this.withStatus("draft");
-    return d ? `refine draft ${d.id}: ${d.get("title")} to meet the Definition of Ready, then move it to ready` : null;
-  }
-  triage() {
-    const fresh = this.ranked("new");
-    return fresh.length ? `triage ${fresh.length} item(s), starting with ${fresh[0].id}: ${fresh[0].get("title")}` : null;
-  }
-  planItem() {
-    const [i] = this.ranked("triaged");
-    if (!i) return null;
-    return `write a plan for ${i.id}: ${i.get("title")} (${i.get("priority")})` + (i.get("goal") ? ` \u2014 goal ${i.get("goal")}` : "");
-  }
-  idea() {
-    const idea2 = this.store.idea();
-    if (!idea2) return "write the idea (problem, outcome, success criteria) \u2192 new-idea TITLE --from DRAFT";
-    const st = idea2.get("status");
-    return st === "decided" || st === "killed" ? null : `take the idea from ${st} to a decision (go / pivot / kill)`;
-  }
-  goal() {
-    const ids = [...this.goals.keys()].sort(byKey((e) => [e !== this.focus, this.goals.get(e).get("status") !== "active", e]));
-    const gid = ids.find((e) => ["active", "proposed"].includes(this.goals.get(e).get("status") ?? ""));
-    return gid ? `break ${gid} down further, or close it once its acceptance criteria are verified` : null;
-  }
-};
-
-// src/core/gates.ts
-function triageProblems(item) {
-  const prefix = item.id.split("-")[0];
-  const problems = item.missing(TRIAGE_SECTIONS[prefix]).map((n) => `empty section: ${n}`);
-  if (!PRIORITIES.includes(item.get("priority") ?? "")) problems.push("no priority (P0\u2013P3)");
-  if (prefix === "BUG" && !Object.hasOwn(SEVERITY_PRIORITY, item.get("severity") ?? "")) problems.push("no severity (S1\u2013S4)");
-  return problems;
-}
-function readinessProblems(store, plan) {
-  return [
-    ...plan.missing(READY_SECTIONS).map((n) => `empty section: ${n}`),
-    ...plan.touches().length ? [] : ["no touches: (the paths this plan will change)"],
-    ...taskProblems(store, plan),
-    ...itemProblems(store, plan)
-  ];
-}
-function learningsProblems(plan, known) {
-  const m = /^\s*[-*]?\s*\**learnings?\**\s*:\**\s*(.*)$/im.exec(stripComments(plan.section("Outcome")));
-  if (!m) return ["Outcome has no `Learnings:` line \u2014 list the K-\u2026 entries captured with `learn`, or write `Learnings: none`"];
-  const ids = m[1].match(K_ID_RE) ?? [];
-  if (!ids.length && !/^none\b/i.test(m[1].trim())) return ["`Learnings:` must list K-\u2026 entries or say none"];
-  return ids.filter((i) => !known.has(i)).map((i) => `Learnings: ${i} does not exist`);
-}
-function decisionProblems(idea2) {
-  const problems = idea2.missing(DECIDED_SECTIONS).map((n) => `empty section: ${n}`);
-  if (idea2.hasContent("Success criteria") && !idea2.checklist("Success criteria").length) {
-    problems.push("Success criteria must be a checklist (`- [ ] \u2026`) so each one can be verified");
-  }
-  return problems;
-}
-function taskProblems(store, plan) {
-  const tasks = plan.tasks();
-  const max = store.settings().max_tasks;
-  const problems = tasks.length ? [] : ["no tasks"];
-  const noVerify = tasks.filter(([, t]) => !t.toLowerCase().includes("verify")).map(([, t]) => t.split("\u2192")[0].trim());
-  if (noVerify.length) problems.push(`tasks without '\u2192 verify:': ${noVerify.join("; ")}`);
-  if (tasks.length > max) problems.push(`${tasks.length} tasks (> max_tasks ${max}) \u2014 split the plan`);
-  return problems;
-}
-function itemProblems(store, plan) {
-  const items2 = store.items();
-  const linked = idList(plan.get("items"));
-  const problems = [];
-  for (const i of linked) {
-    if (!items2.has(i)) problems.push(`unknown item ${i}`);
-    else if (items2.get(i).get("status") === "new") problems.push(`item ${i} is not triaged`);
-  }
-  if (linked.some((i) => i.startsWith("BUG-"))) {
-    const text = (plan.section("Acceptance criteria") + plan.section("Tasks") + plan.section("Test plan")).toLowerCase();
-    if (!text.includes("regression")) {
-      problems.push("fixes a bug but names no regression test (acceptance criteria, tasks or test plan)");
-    }
-  }
-  return problems;
+function drift(plan, base = "main") {
+  if (currentBranch() !== plan.get("branch") || !plan.touches().length) return null;
+  const fork = git(["merge-base", base, "HEAD"])?.trim();
+  if (!fork) return null;
+  const changed = new Set([
+    ...git(["diff", "--name-only", fork])?.split("\n") ?? [],
+    ...git(["ls-files", "--others", "--exclude-standard"])?.split("\n") ?? []
+  ].filter(Boolean));
+  const globs = plan.touches().map(globRe);
+  return [...changed].filter((f) => !f.startsWith(".crew/") && !globs.some((g) => g.test(f))).sort();
 }
 
 // src/commands/execution.ts
@@ -8800,7 +8656,7 @@ function resume(store, id, json = false) {
   store.require();
   const plan = planFromBranch(store, id) ?? fail("Not on a plan branch: name the plan (`resume P-###`).");
   if (json) store.say(JSON.stringify({ plan: plan.id, lines: recovery(store, plan) }));
-  else for (const line of recovery(store, plan)) store.say(line);
+  else for (const line2 of recovery(store, plan)) store.say(line2);
 }
 function writeHandoff(store, plan) {
   const logs = stripComments(plan.section("Progress log")).split("\n").filter((l) => l.trim().startsWith("- ")).slice(-3);
@@ -8820,6 +8676,206 @@ function handoff(store, id) {
   store.say(`${plan.id}: handoff written`);
 }
 
+// src/core/gates.ts
+function triageProblems(item) {
+  const prefix = item.id.split("-")[0];
+  const problems = item.missing(TRIAGE_SECTIONS[prefix]).map((n) => `empty section: ${n}`);
+  if (!PRIORITIES.includes(item.get("priority") ?? "")) problems.push("no priority (P0\u2013P3)");
+  if (prefix === "BUG" && !Object.hasOwn(SEVERITY_PRIORITY, item.get("severity") ?? "")) problems.push("no severity (S1\u2013S4)");
+  return problems;
+}
+function readinessProblems(store, plan) {
+  return [
+    ...plan.missing(READY_SECTIONS).map((n) => `empty section: ${n}`),
+    ...plan.touches().length ? [] : ["no touches: (the paths this plan will change)"],
+    ...taskProblems(store, plan),
+    ...itemProblems(store, plan)
+  ];
+}
+function learningsProblems(plan, known) {
+  const m = /^\s*[-*]?\s*\**learnings?\**\s*:\**\s*(.*)$/im.exec(stripComments(plan.section("Outcome")));
+  if (!m) return ["Outcome has no `Learnings:` line \u2014 list the K-\u2026 entries captured with `learn`, or write `Learnings: none`"];
+  const ids = m[1].match(K_ID_RE) ?? [];
+  if (!ids.length && !/^none\b/i.test(m[1].trim())) return ["`Learnings:` must list K-\u2026 entries or say none"];
+  return ids.filter((i) => !known.has(i)).map((i) => `Learnings: ${i} does not exist`);
+}
+function decisionProblems(idea2) {
+  const problems = idea2.missing(DECIDED_SECTIONS).map((n) => `empty section: ${n}`);
+  if (idea2.hasContent("Success criteria") && !idea2.checklist("Success criteria").length) {
+    problems.push("Success criteria must be a checklist (`- [ ] \u2026`) so each one can be verified");
+  }
+  return problems;
+}
+function taskProblems(store, plan) {
+  const tasks = plan.tasks();
+  const max = store.settings().max_tasks;
+  const problems = tasks.length ? [] : ["no tasks"];
+  const noVerify = tasks.filter(([, t]) => !t.toLowerCase().includes("verify")).map(([, t]) => t.split("\u2192")[0].trim());
+  if (noVerify.length) problems.push(`tasks without '\u2192 verify:': ${noVerify.join("; ")}`);
+  if (tasks.length > max) problems.push(`${tasks.length} tasks (> max_tasks ${max}) \u2014 split the plan`);
+  return problems;
+}
+function itemProblems(store, plan) {
+  const items2 = store.items();
+  const linked = idList(plan.get("items"));
+  const problems = [];
+  for (const i of linked) {
+    if (!items2.has(i)) problems.push(`unknown item ${i}`);
+    else if (items2.get(i).get("status") === "new") problems.push(`item ${i} is not triaged`);
+  }
+  if (linked.some((i) => i.startsWith("BUG-"))) {
+    const text = (plan.section("Acceptance criteria") + plan.section("Tasks") + plan.section("Test plan")).toLowerCase();
+    if (!text.includes("regression")) {
+      problems.push("fixes a bug but names no regression test (acceptance criteria, tasks or test plan)");
+    }
+  }
+  return problems;
+}
+
+// src/commands/questions.ts
+import { randomBytes } from "node:crypto";
+
+// src/commands/knowledge.ts
+import { join as join5 } from "node:path";
+function learn(store, type, title, o = {}) {
+  store.require();
+  if (!KNOWLEDGE_TYPES.includes(type)) fail(`Unknown type '${type}'. Use ${KNOWLEDGE_TYPES.join(", ")}.`);
+  if (Boolean(o.why) === Boolean(o.from)) fail("Give exactly one of --why TEXT or --from DRAFT: the reason or evidence behind the fact.");
+  const [draftFile, why] = o.from ? store.readDraft(o.from, "knowledge entry") : [null, o.why];
+  if (!stripComments(why).trim()) fail("The entry has no content. Nothing was written.");
+  const found = secretsIn(`${title}
+${why}`, store.policy.policy.secrets.patterns);
+  if (found.length) fail(`Refused: the entry looks like it contains a secret (${found.join(", ")}). Knowledge is committed; describe it instead.`);
+  const entries = store.knowledge(false);
+  const supersedes = (o.supersedes ?? "").trim();
+  if (supersedes && !entries.some((e) => e.id === supersedes)) fail(`--supersedes ${supersedes}: no such entry.`);
+  const risk = type === "risk" ? { likelihood: o.likelihood?.toUpperCase(), impact: o.impact?.toUpperCase(), owner: o.owner } : void 0;
+  if (risk && (!RISK_LEVELS.includes(risk.likelihood ?? "") || !RISK_LEVELS.includes(risk.impact ?? ""))) {
+    fail("A risk needs --likelihood and --impact (H, M or L).");
+  }
+  const id = knowledgeId(title, (k) => store.ws.isFile(join5(store.knowledgeDir, `${k}.md`)));
+  const branch = /^plan\/(P-\d+)/.exec(currentBranch() ?? "")?.[1];
+  const text = entryText({
+    id,
+    type,
+    title,
+    why,
+    risk,
+    supersedes,
+    tier: o.candidate ? TIERS[1] : TIERS[0],
+    scope: (o.scope ?? "").split(",").map((s) => s.trim()).filter(Boolean),
+    source: o.source?.toUpperCase() ?? branch ?? ""
+  });
+  store.ws.write(join5(store.knowledgeDir, `${id}.md`), text);
+  if (draftFile) store.consume(draftFile, o.keep);
+  store.ledger.record("learn", id, { kind: type, title, ...supersedes ? { supersedes } : {} });
+  store.say(store.rel(join5(store.knowledgeDir, `${id}.md`)));
+  return id;
+}
+function recallCmd(store, o = {}) {
+  store.require();
+  let globs = [];
+  if (o.plan) {
+    const plan = store.plans(true).get(o.plan.toUpperCase()) ?? fail(`No plan ${o.plan.toUpperCase()}.`);
+    globs = plan.touches();
+    if (!globs.length) store.say(`note: ${plan.id} declares no touches: \u2014 showing everything`);
+  }
+  const paths = (o.paths ?? "").split(",").map((p) => p.trim()).filter(Boolean);
+  const hits = recall(store.knowledge(), { paths, globs, topic: o.topic, type: o.type, all: o.all });
+  if (o.json) {
+    for (const e of hits) store.say(JSON.stringify(view(e, store)));
+    return;
+  }
+  if (!hits.length) store.say("Nothing recalled.");
+  for (const e of hits) {
+    const where = e.scope.length ? e.scope.join(", ") : "everywhere";
+    store.say(`${e.id}  [${e.type}${e.origin === "playbook" ? ", playbook" : ""}${e.supersededBy ? `, superseded by ${e.supersededBy}` : ""}]  ${e.title}  (${where})`);
+  }
+}
+function view(e, store) {
+  return {
+    id: e.id,
+    type: e.type,
+    title: e.title,
+    scope: e.scope,
+    source: e.source,
+    tier: e.tier,
+    origin: e.origin,
+    supersededBy: e.supersededBy,
+    path: e.doc.path ? store.rel(e.doc.path) : null,
+    body: stripComments(e.doc.text.replace(/^---\n[\s\S]*?\n---\n/, "")).replace(/^# .*\n/m, "").trim()
+  };
+}
+
+// src/commands/questions.ts
+function questions(events) {
+  const byId = /* @__PURE__ */ new Map();
+  for (const e of events) {
+    if (e.type === "ask") {
+      byId.set(String(e.qid), {
+        id: String(e.qid),
+        ref: e.ref,
+        to: String(e.to),
+        text: String(e.text),
+        by: e.actor,
+        run: e.run,
+        ts: e.ts,
+        blocking: e.blocking !== false,
+        escalation: e.escalation === true,
+        answer: null
+      });
+    } else if (e.type === "answer" && byId.has(String(e.qid))) {
+      byId.get(String(e.qid)).answer = { text: String(e.text), by: String(e.approved_by ?? e.actor), ts: e.ts };
+    }
+  }
+  return [...byId.values()];
+}
+var openQuestions = (events, ref) => questions(events).filter((q) => !q.answer && (!ref || q.ref === ref));
+var FORWARD = /* @__PURE__ */ new Set(["ready", "in-progress", "in-review", "done", "active", "decided", "triaged"]);
+function ask(store, ref, to, text, o = {}) {
+  store.require();
+  const id = ref?.toUpperCase();
+  if (id) {
+    if (!kindOf(id)) fail(`Unrecognised ID '${id}'.`);
+    store.find(id);
+  }
+  if (!ROLES.includes(to)) fail(`--to must be one of ${ROLES.join(", ")}.`);
+  if (!text.trim()) fail("Ask a question.");
+  const qid = `Q-${randomBytes(3).toString("hex")}`;
+  store.ledger.record("ask", id ?? null, { qid, to, text, ...o.fyi ? { blocking: false } : {}, ...o.escalation ? { escalation: true } : {} });
+  store.say(`${qid} \u2192 ${to}${id ? ` about ${id}` : ""}${o.fyi ? "" : id ? ` (blocks ${id} until answered)` : ""}`);
+  return qid;
+}
+function escalate(store, ref, text) {
+  return ask(store, ref, store.policy.policy.escalation.to, text, { escalation: true });
+}
+function answer(store, qid, text, o = {}) {
+  store.require();
+  const q = questions(store.ledger.events()).find((x) => x.id === qid.toLowerCase().replace(/^q-/, "Q-")) ?? fail(`No question ${qid}.`);
+  if (q.answer) fail(`${q.id} was already answered by ${q.answer.by}: ${q.answer.text}`);
+  if (!text.trim()) fail("Give the answer.");
+  if ((q.escalation || q.to === "executive") && !o.approvedBy) {
+    fail(`${q.id} is an escalation to the ${q.to}: a human answers it with \`crew.mjs answer ${q.id} "\u2026" --approved-by <name>\` (agents can't).`);
+  }
+  store.ledger.record("answer", q.ref, { qid: q.id, text, ...o.approvedBy ? { approved_by: o.approvedBy } : {} });
+  store.say(`${q.id} answered${q.ref ? ` \u2014 ${q.ref} is unblocked` : ""}`);
+  if (o.decision) {
+    learn(store, "decision", text, { why: `Answer to ${q.id} (${q.to}): ${q.text}`, scope: o.scope, source: q.ref ?? void 0 });
+  }
+}
+function listQuestions(store, o = {}) {
+  store.require();
+  const qs = questions(store.ledger.events()).filter((q) => (o.all || !q.answer) && (!o.to || q.to === o.to) && (!o.ref || q.ref === o.ref.toUpperCase()));
+  if (o.json) {
+    for (const q of qs) store.say(JSON.stringify(q));
+    return;
+  }
+  if (!qs.length) store.say(o.all ? "No questions." : "No open questions.");
+  for (const q of qs) {
+    store.say(`${q.id}  ${q.escalation ? "ESCALATION " : ""}${q.by} \u2192 ${q.to}${q.ref ? ` about ${q.ref}` : ""}: ${q.text}` + (q.answer ? `  \u2014 answered by ${q.answer.by}: ${q.answer.text}` : q.blocking && q.ref ? "  (blocking)" : ""));
+  }
+}
+
 // src/commands/workflow.ts
 var LOG_SECTION = { item: "Notes" };
 function move(store, docId, status2, note, force = false, approvedBy) {
@@ -8835,6 +8891,12 @@ function move(store, docId, status2, note, force = false, approvedBy) {
     fail(`${docId}: ${old} \u2192 ${status2} not allowed (from ${old}: ${allowed}). Use --force to override.`);
   }
   if (!force) guard(store, kind, doc, status2, approvedBy);
+  const waiting = FORWARD.has(status2) ? openQuestions(store.ledger.events(), doc.id).filter((x) => x.blocking) : [];
+  if (waiting.length && !force) {
+    fail(`${doc.id} waits for an answer before it moves on:
+  - ${waiting.map((x) => `${x.id} \u2192 ${x.to}: ${x.text}`).join("\n  - ")}
+(\`crew.mjs questions\`; --force to move anyway)`);
+  }
   authorize(store, doc.id, `${kind}.${status2}`, approvedBy);
   stamp(kind, doc, status2);
   doc.set("status", status2);
@@ -8925,9 +8987,18 @@ function start(store, planId, force = false, approvedBy) {
   if (held && held.run !== store.ledger.who.run && !force) {
     fail(`${doc.id} is claimed by ${held.actor} (${held.run}, ${held.worktree}) since ${held.ts.slice(0, 10)}. Coordinate with them, or \`release ${doc.id} --force\` if that run is gone.`);
   }
+  const asked = openQuestions(store.ledger.events(), doc.id).filter((x) => x.blocking);
+  if (asked.length && !force) {
+    fail(`${doc.id} waits for an answer before it starts:
+  - ${asked.map((x) => `${x.id} \u2192 ${x.to}: ${x.text}`).join("\n  - ")}
+(\`crew.mjs questions\`; --force to start anyway)`);
+  }
   if (!treeIsClean()) fail("Working tree not clean. Commit or stash first.");
   const focus = store.focus();
   if (!onFocus(doc, store.items(), focus)) store.say(`note: ${planId} does not serve the focus goal ${focus}`);
+  for (const o of overlapping(doc, store.plans(true)).filter((x) => store.plans(true).get(x.id)?.get("status") !== "ready")) {
+    store.say(`warning: ${planId} overlaps ${o.id} (in progress) on ${o.globs.join(", ")} \u2014 expect conflicts; coordinate or add depends_on`);
+  }
   const branch = doc.get("branch") || `plan/${doc.id}-${slugify(doc.get("title") ?? "")}`;
   git(["switch", "-c", branch], true);
   doc = store.find(planId);
@@ -8986,6 +9057,198 @@ function log(store, docId, text) {
   doc.save();
   store.ledger.record("log", doc.id, { text });
 }
+
+// src/commands/roles.ts
+var View = class {
+  constructor(store) {
+    this.store = store;
+    this.plans = store.plans(true);
+    this.items = store.items();
+    this.goals = store.goals();
+    this.focus = store.focus();
+    this.events = store.ledger.events();
+  }
+  store;
+  plans;
+  items;
+  goals;
+  focus;
+  events;
+  status(st) {
+    return [...this.plans.values()].filter((p) => p.get("status") === st).sort(byKey((p) => [!onFocus(p, this.items, this.focus), p.id]));
+  }
+  ranked(st) {
+    return ranked(this.items, this.goals, this.focus).filter((i) => itemStatus(i, this.plans) === st);
+  }
+};
+var RULES = {
+  executive: [
+    (v) => openQuestions(v.events).filter((x) => x.escalation).map((x) => `answer ${x.id} (${x.by}${x.ref ? ` about ${x.ref}` : ""}): ${x.text}`),
+    (v) => v.status("in-review").filter((p) => approvalReason(v.store.policy.policy, "plan.done") && evidence(v.store, p).every((e) => e.verify?.ok && e.independent)).map((p) => `approve ${p.id}: ${p.get("title")} \u2014 evidence complete \u2192 move ${p.id} done --approved-by <you>`),
+    (v) => ["exploring", "researching", "proposed"].includes(v.store.idea()?.get("status") ?? "") ? ["decide the idea (go / pivot / kill)"] : []
+  ],
+  director: [
+    (v) => openQuestions(v.events).filter((x) => x.escalation).map((x) => `waiting on the executive: ${x.id} \u2014 ${x.text}`),
+    (v) => budgetProblems(v.store).map((b) => `over budget: ${b}`),
+    (v) => v.status("blocked").map((p) => `unblock ${p.id}: ${p.get("title")}`),
+    (v) => [...v.plans.values()].filter((p) => p.get("status") === "in-progress").flatMap((p) => overlapping(p, v.plans).map((o) => `${p.id} and ${o.id} overlap on ${o.globs.join(", ")} \u2014 sequence them or split the work`)),
+    (v) => {
+      const g = v.goals.get(v.focus);
+      if (!v.focus) return v.goals.size ? ["set the focus goal: focus G-###"] : [];
+      const open = goalPlans(v.focus, v.plans, v.items).filter((p) => !["done", "dropped"].includes(p.get("status") ?? ""));
+      return g && !open.length && !goalItems(v.focus, v.items).some((i) => itemStatus(i, v.plans) !== "done") ? [`${v.focus} has nothing open: confirm its acceptance criteria, move it done, and focus the next goal`] : [];
+    }
+  ],
+  pm: [
+    (v) => v.ranked("new").filter((i) => i.id.startsWith("BUG-")).slice(0, 3).map((i) => `triage bug ${i.id}: ${i.get("title")}`),
+    (v) => v.ranked("new").filter((i) => !i.id.startsWith("BUG-")).slice(0, 3).map((i) => `triage ${i.id}: ${i.get("title")}`),
+    (v) => [...v.goals.values()].filter((g) => ["proposed", "active"].includes(g.get("status") ?? "") && !goalItems(g.id, v.items).some((i) => itemStatus(i, v.plans) !== "done")).map((g) => `break ${g.id} down: it has no open items`)
+  ],
+  architect: [
+    (v) => v.status("draft").map((p) => `refine ${p.id}: ${p.get("title")} to the Definition of Ready`),
+    (v) => v.ranked("triaged").slice(0, 2).map((i) => `write a plan for ${i.id}: ${i.get("title")} (${i.get("priority")})`),
+    (v) => v.status("ready").flatMap((p) => overlapping(p, v.plans).map((o) => `${p.id} overlaps ${o.id} (${o.globs.join(", ")}): add depends_on or narrow touches`))
+  ],
+  developer: [
+    (v) => [...v.plans.values()].filter((p) => ["in-progress", "blocked"].includes(p.get("status") ?? "") && v.store.ledger.claims(v.events).get(p.id)?.run === v.store.ledger.who.run).map((p) => `continue ${p.id}: ${p.get("title")} \u2192 resume ${p.id}`),
+    (v) => v.status("ready").filter((p) => !unmetDeps(p, v.plans).length && !v.store.ledger.claims(v.events).has(p.id) && !openQuestions(v.events, p.id).some((x) => x.blocking)).slice(0, 1).map((p) => `start ${p.id}: ${p.get("title")} \u2192 start ${p.id}`)
+  ],
+  qa: [
+    (v) => v.status("in-review").filter((p) => implementer(v.events, p.id) !== v.store.ledger.who.run).map((p) => {
+      const missing = evidence(v.store, p).flatMap((e, i) => e.verify?.ok && e.independent ? [] : [`AC${i + 1}`]);
+      return missing.length ? `verify ${p.id}: ${missing.join(", ")} \u2192 checkpoint ${p.id} --run "<check>" --ac \u2026` : `${p.id}: evidence complete \u2192 move ${p.id} done`;
+    }),
+    (v) => v.ranked("new").filter((i) => i.id.startsWith("BUG-")).slice(0, 2).map((i) => `reproduce ${i.id}: ${i.get("title")}`)
+  ],
+  release: [
+    (v) => v.status("done").filter((p) => planBranches().includes(p.get("branch") ?? "")).map((p) => `ship ${p.id}: merge ${p.get("branch")}, follow its Rollout & rollback, then delete the branch`),
+    (v) => v.status("in-review").filter((p) => p.hasContent("Rollout & rollback") && !/^\s*n\/a\b/i.test(stripComments(p.section("Rollout & rollback")))).map((p) => `prepare the rollout of ${p.id}: ${p.get("title")} (see its Rollout & rollback)`)
+  ]
+};
+function roleLines(store, role) {
+  if (!ROLES.includes(role)) fail(`Unknown role '${role}'. Roles: ${ROLES.join(", ")}.`);
+  const v = new View(store);
+  const asked = openQuestions(v.events).filter((x) => x.to === role && !(role === "executive" && x.escalation)).map((x) => `QUESTION     ${x.id} from ${x.by}${x.ref ? ` about ${x.ref}` : ""}: ${x.text} \u2192 answer ${x.id} "\u2026"`);
+  const work = RULES[role].flatMap((r) => r(v));
+  return [
+    ...asked,
+    ...work.map((w, i) => `${i ? "THEN" : "NEXT"}         ${w}`).slice(0, 8),
+    ...asked.length || work.length ? [] : [`NEXT         nothing for the ${role} role right now`]
+  ];
+}
+
+// src/commands/advisor.ts
+function current(store) {
+  if (!store.ws.isDir(store.dir)) return;
+  const focus = store.focus();
+  if (focus) store.say(`crew hub \u2014 focus ${focus}: ${store.goals().get(focus)?.get("title") ?? "(missing goal)"}`);
+  const branch = currentBranch() ?? "";
+  const m = /^plan\/(P-\d+)/.exec(branch);
+  if (!m) {
+    const active = [...store.plans(true).values()].filter((p) => ACTIVE.has(p.get("status") ?? ""));
+    if (active.length) {
+      store.say("crew hub \u2014 active plans: " + active.map((p) => `${p.id} (${p.get("status")})`).join(", "));
+    }
+    return;
+  }
+  const doc = store.plans().get(m[1]);
+  if (!doc) {
+    store.say(`crew hub: branch ${branch} has no matching plan file.`);
+    return;
+  }
+  const tasks = doc.tasks();
+  const nxt = tasks.find(([d]) => !d)?.[1];
+  store.say(`crew hub \u2014 current plan ${doc.id}: ${doc.get("title")} [${doc.get("status")}] tasks ${tasks.filter(([d]) => d).length}/${tasks.length}` + (nxt ? ` \u2014 next: ${nxt}` : "") + ` \u2014 file: ${doc.path ? store.rel(doc.path) : ""}`);
+}
+function nextStep(store, role) {
+  store.require();
+  for (const line2 of role ? roleLines(store, role) : nextLines(store)) store.say(line2);
+}
+function nextLines(store) {
+  const ctx = new Context(store);
+  for (const p of ctx.active) ctx.lines.push(`IN PROGRESS  ${p.id}: ${p.get("title")} [${p.get("status")}]`);
+  for (const rule of [ctx.expedite, ctx.wipFull, ctx.startReady, ctx.refineDraft, ctx.triage, ctx.planItem, ctx.idea, ctx.goal]) {
+    const line2 = rule.call(ctx);
+    if (line2) return [...ctx.lines, `NEXT         ${line2}`];
+  }
+  return [...ctx.lines, "NEXT         nothing planned \u2014 write a goal for the next outcome, or capture items"];
+}
+var Context = class {
+  constructor(store) {
+    this.store = store;
+    this.goals = store.goals();
+    this.items = store.items();
+    this.plans = store.plans(true);
+    this.focus = store.focus();
+    this.active = [...this.plans.values()].filter((p) => ACTIVE.has(p.get("status") ?? "")).sort(byKey((p) => this.key(p)));
+  }
+  store;
+  goals;
+  items;
+  plans;
+  focus;
+  active;
+  lines = [];
+  /** Focus work first, then goal order, then ID. */
+  key(p) {
+    const eorder = goalOrder(this.goals);
+    return [!onFocus(p, this.items, this.focus), eorder.get(planGoal(p, this.items)) ?? eorder.size, p.id];
+  }
+  withStatus(status2) {
+    return [...this.plans.values()].filter((p) => p.get("status") === status2).sort(byKey((p) => this.key(p)));
+  }
+  ranked(status2) {
+    return ranked(this.items, this.goals, this.focus).filter((i) => itemStatus(i, this.plans) === status2);
+  }
+  expedite() {
+    const bugs = [...this.items.values()].filter((i) => i.id.startsWith("BUG-") && i.get("priority") === "P0" && ["new", "triaged"].includes(itemStatus(i, this.plans))).map((i) => i.id).sort();
+    if (!bugs.length) return null;
+    const b = this.items.get(bugs[0]);
+    return `expedite ${b.id}: ${b.get("title")} (P0) \u2192 write a fix plan: new-plan \u2026 --items ${b.id}`;
+  }
+  wipFull() {
+    const limit = this.store.settings().wip_limit;
+    const wip = this.active.filter((p) => p.get("status") === "in-progress");
+    return wip.length >= limit ? `finish ${wip[0].id} (WIP limit ${limit})` : null;
+  }
+  startReady() {
+    const ready = this.withStatus("ready");
+    const startable = ready.filter((p2) => !unmetDeps(p2, this.plans).length);
+    for (const p2 of ready) {
+      if (!startable.includes(p2)) {
+        this.lines.push(`WAITING      ${p2.id}: ${p2.get("title")} \u2014 needs ${unmetDeps(p2, this.plans).join(", ")}`);
+      }
+    }
+    if (!startable.length) return null;
+    const p = startable[0];
+    const off = onFocus(p, this.items, this.focus) ? "" : ` (off focus ${this.focus})`;
+    return `${p.id}: ${p.get("title")} \u2192 crew.mjs start ${p.id}${off}`;
+  }
+  refineDraft() {
+    const [d] = this.withStatus("draft");
+    return d ? `refine draft ${d.id}: ${d.get("title")} to meet the Definition of Ready, then move it to ready` : null;
+  }
+  triage() {
+    const fresh = this.ranked("new");
+    return fresh.length ? `triage ${fresh.length} item(s), starting with ${fresh[0].id}: ${fresh[0].get("title")}` : null;
+  }
+  planItem() {
+    const [i] = this.ranked("triaged");
+    if (!i) return null;
+    return `write a plan for ${i.id}: ${i.get("title")} (${i.get("priority")})` + (i.get("goal") ? ` \u2014 goal ${i.get("goal")}` : "");
+  }
+  idea() {
+    const idea2 = this.store.idea();
+    if (!idea2) return "write the idea (problem, outcome, success criteria) \u2192 new-idea TITLE --from DRAFT";
+    const st = idea2.get("status");
+    return st === "decided" || st === "killed" ? null : `take the idea from ${st} to a decision (go / pivot / kill)`;
+  }
+  goal() {
+    const ids = [...this.goals.keys()].sort(byKey((e) => [e !== this.focus, this.goals.get(e).get("status") !== "active", e]));
+    const gid = ids.find((e) => ["active", "proposed"].includes(this.goals.get(e).get("status") ?? ""));
+    return gid ? `break ${gid} down further, or close it once its acceptance criteria are verified` : null;
+  }
+};
 
 // src/commands/backlog.ts
 function createItem(store, prefix, title, body2, fields) {
@@ -9095,7 +9358,7 @@ Slice of ${goal.id} (${goal.get("title")}): ${cand}
 }
 
 // src/commands/checks.ts
-import { join as join5 } from "node:path";
+import { join as join6 } from "node:path";
 
 // src/commands/policy.ts
 var import_yaml2 = __toESM(require_dist(), 1);
@@ -9185,7 +9448,7 @@ var valid = (flow, st) => st !== null && Object.hasOwn(flow, st);
 var up2 = (s) => (s ?? "").toUpperCase();
 function findings(store) {
   const s = new Snapshot(store), f = { errors: [], hints: [] };
-  for (const rule of [idea, plans, items, goals, ledger, knowledge, hygiene]) rule(s, f);
+  for (const rule of [idea, plans, overlaps, items, goals, ledger, knowledge, hygiene]) rule(s, f);
   const p = policyFindings(store);
   return { errors: [...f.errors, ...p.errors], hints: [...f.hints, ...p.hints] };
 }
@@ -9232,8 +9495,18 @@ function plans(s, f) {
     if (st === "ready") f.errors.push(...readinessProblems(s.store, p).map((problem) => `${pid}: ready but ${problem}`));
     if (st === "done") donePlan(pid, p, f);
     if (ACTIVE.has(st ?? "")) activePlan(pid, p, s, f, branches, here);
+    const outside = drift(s.allPlans.get(pid) ?? p);
+    if (outside?.length) f.hints.push(`${pid}: changes outside its touches: ${outside.slice(0, 8).join(", ")} \u2014 widen touches (and log why) or move the work`);
     if ((ACTIVE.has(st ?? "") || st === "ready") && !onFocus(p, s.items, s.focus)) {
       f.hints.push(`${pid}: ${st} but does not serve the focus goal ${s.focus} (only bugs and chores may run off focus)`);
+    }
+  }
+}
+function overlaps(s, f) {
+  for (const [pid, p] of s.allPlans) {
+    if (!ACTIVE.has(p.get("status") ?? "")) continue;
+    for (const o of overlapping(p, s.allPlans).filter((x) => ACTIVE.has(s.allPlans.get(x.id)?.get("status") ?? "") && x.id > pid)) {
+      f.hints.push(`${pid} and ${o.id} are both active and overlap on ${o.globs.join(", ")} \u2014 sequence them (depends_on) or narrow touches`);
     }
   }
 }
@@ -9327,31 +9600,31 @@ function hygiene(s, f) {
   if (ahead.length > MAX_WRITTEN_AHEAD) {
     f.hints.push(`${ahead.length} plans written ahead of the work (> ${MAX_WRITTEN_AHEAD}) \u2014 keep later work as backlog items so plans don't go stale`);
   }
-  const leftovers = s.store.ws.list(join5(s.store.dir, "drafts")).filter((n) => n.endsWith(".md"));
+  const leftovers = s.store.ws.list(join6(s.store.dir, "drafts")).filter((n) => n.endsWith(".md"));
   if (leftovers.length) {
     f.hints.push(`unconverted drafts in .crew/drafts/: ${leftovers.join(", ")} \u2014 create the document from them or delete`);
   }
-  if (s.store.ws.isDir(join5(s.store.ws.root, ".project"))) {
+  if (s.store.ws.isDir(join6(s.store.ws.root, ".project"))) {
     f.hints.push("a .project/ directory from project-kit is still here \u2014 `crew.mjs migrate` moves it into .crew/");
   }
 }
 
 // src/commands/migrate.ts
 import { existsSync as existsSync5, readdirSync as readdirSync3, statSync as statSync4 } from "node:fs";
-import { join as join8 } from "node:path";
+import { join as join9 } from "node:path";
 
 // src/commands/planning.ts
 import { readFileSync as readFileSync4 } from "node:fs";
-import { join as join7, resolve as resolve5 } from "node:path";
+import { join as join8, resolve as resolve5 } from "node:path";
 
 // src/commands/export.ts
-import { join as join6, resolve as resolve4 } from "node:path";
+import { join as join7, resolve as resolve4 } from "node:path";
 
 // src/commands/graph.ts
 import { basename as basename2 } from "node:path";
 
 // src/graph-types.ts
-var SCHEMA_VERSION = 4;
+var SCHEMA_VERSION = 5;
 
 // src/commands/graph.ts
 var ID_RE = /\b(?:IDEA|(?:G|P|FEAT|BUG|CHORE|SPIKE)-\d+|K-\d{4}-\d{2}-\d{2}-[a-z0-9-]+)\b/g;
@@ -9381,6 +9654,7 @@ function buildGraph(store) {
     docs,
     edges: edges(docs),
     spend: store.ledger.spend(),
+    questions: openQuestions(store.ledger.events()).map(({ answer: _, run: __, ...rest }) => rest),
     next: nextLines(store),
     check: findings(store)
   };
@@ -9498,7 +9772,7 @@ function embed(graph) {
   return JSON.stringify(graph).replace(/</g, "\\u003c");
 }
 function renderHtmlShell(store) {
-  const shell = store.ws.read(join6(SCRIPT_DIR, UI_FILE));
+  const shell = store.ws.read(join7(SCRIPT_DIR, UI_FILE));
   if (shell === null || !shell.includes(DATA_SLOT)) {
     fail(`The UI bundle (${UI_FILE}) is missing next to crew.mjs. Re-run \`crew.mjs init\` from the plugin.`);
   }
@@ -9516,34 +9790,34 @@ function exportGraph(store, format, out) {
     store.ws.write(resolve4(out), text);
     return store.say(`Wrote ${store.rel(resolve4(out))}`);
   }
-  const path = out ? resolve4(out) : join6(store.dir, "view", "index.html");
-  if (!out) store.ws.write(join6(store.dir, "view", ".gitignore"), "# generated by `crew.mjs export`\n*\n");
+  const path = out ? resolve4(out) : join7(store.dir, "view", "index.html");
+  if (!out) store.ws.write(join7(store.dir, "view", ".gitignore"), "# generated by `crew.mjs export`\n*\n");
   store.ws.write(path, renderHtml(store, graph));
   store.say(`Wrote ${store.rel(path)} \u2014 open it in a browser (it works offline; re-run export to refresh)`);
 }
 
 // src/commands/planning.ts
 function init(store) {
-  for (const d of [...Object.values(store.dirs), store.knowledgeDir, join7(store.dir, "drafts")]) {
-    const keep = join7(d, ".gitkeep");
+  for (const d of [...Object.values(store.dirs), store.knowledgeDir, join8(store.dir, "drafts")]) {
+    const keep = join8(d, ".gitkeep");
     if (!store.ws.isFile(keep)) store.ws.write(keep, "");
   }
   vendor(store);
-  const readme = join7(store.dir, "README.md");
-  const model = store.ws.read(join7(SKILL_DIR, "references", "model.md"));
+  const readme = join8(store.dir, "README.md");
+  const model = store.ws.read(join8(SKILL_DIR, "references", "model.md"));
   if (!store.ws.isFile(readme) && model !== null) store.ws.write(readme, model);
   store.say(`Initialized ${store.rel(store.dir)}/`);
 }
 function vendor(store) {
-  const bin = join7(store.dir, "bin");
+  const bin = join8(store.dir, "bin");
   if (resolve5(SCRIPT_DIR) === resolve5(bin)) return;
-  store.ws.write(join7(bin, "crew.mjs"), readFileSync4(SCRIPT_FILE, "utf8"), 493);
-  const ui = store.ws.read(join7(SCRIPT_DIR, UI_FILE));
-  if (ui !== null) store.ws.write(join7(bin, UI_FILE), ui);
-  const templates = join7(store.dir, "templates");
-  for (const name of [...TEMPLATE_NAMES]) store.ws.write(join7(templates, name), store.ws.read(join7(SKILL_DIR, "templates", name)));
-  const guide = store.ws.read(join7(SKILL_DIR, "references", "writing-guide.md"));
-  if (guide !== null) store.ws.write(join7(templates, "writing-guide.md"), guide);
+  store.ws.write(join8(bin, "crew.mjs"), readFileSync4(SCRIPT_FILE, "utf8"), 493);
+  const ui = store.ws.read(join8(SCRIPT_DIR, UI_FILE));
+  if (ui !== null) store.ws.write(join8(bin, UI_FILE), ui);
+  const templates = join8(store.dir, "templates");
+  for (const name of [...TEMPLATE_NAMES]) store.ws.write(join8(templates, name), store.ws.read(join8(SKILL_DIR, "templates", name)));
+  const guide = store.ws.read(join8(SKILL_DIR, "references", "writing-guide.md"));
+  if (guide !== null) store.ws.write(join8(templates, "writing-guide.md"), guide);
 }
 function requireSections(doc, kind) {
   const missing = doc.missing(REQUIRED_ON_CREATE[kind]);
@@ -9579,7 +9853,7 @@ function newGoal(store, title, draftPath, priority, keep = false) {
   const eid = store.nextId("G", "goal");
   const doc = store.build("goal.md", draft, { id: eid, title, priority: Store.checkPriority(priority) || "P2" });
   requireSections(doc, "goal");
-  store.writeNew(doc, join7(store.dirs.goal, `${eid}-${slugify(title)}.md`));
+  store.writeNew(doc, join8(store.dirs.goal, `${eid}-${slugify(title)}.md`));
   breakdownToItems(store, doc);
   store.consume(draftFile, keep);
 }
@@ -9603,7 +9877,7 @@ function newPlan(store, title, draftPath, o = {}) {
     touches: touches.join(", ")
   });
   requireSections(doc, "plan");
-  store.writeNew(doc, join7(store.dirs.plan, `${pid}-${slug}.md`));
+  store.writeNew(doc, join8(store.dirs.plan, `${pid}-${slug}.md`));
   for (const i of linked) {
     items2.get(i).set("plan", pid);
     items2.get(i).save();
@@ -9651,7 +9925,7 @@ var OLD_REFS = [
   ".github/workflows/ci.yml"
 ];
 function walk(dir, prefix = "") {
-  return readdirSync3(dir, { withFileTypes: true }).flatMap((e) => e.isDirectory() ? walk(join8(dir, e.name), `${prefix}${e.name}/`) : [`${prefix}${e.name}`]);
+  return readdirSync3(dir, { withFileTypes: true }).flatMap((e) => e.isDirectory() ? walk(join9(dir, e.name), `${prefix}${e.name}/`) : [`${prefix}${e.name}`]);
 }
 function renamed(text) {
   return text.replace(/\bEP-(\d+)/g, "G-$1").replace(/\.project\//g, ".crew/").replace(/\btracker\.mjs\b/g, "crew.mjs").replace(/project-kit:tracker/g, "crew:hub");
@@ -9662,18 +9936,18 @@ function leanDoc(text, kind) {
   return t;
 }
 function migrate(store) {
-  const root = store.ws.root, old = join8(root, ".project");
+  const root = store.ws.root, old = join9(root, ".project");
   if (!existsSync5(old) || !statSync4(old).isDirectory()) fail("No .project/ directory to migrate.");
   if (existsSync5(store.dir)) fail(`${store.rel(store.dir)}/ already exists \u2014 move it aside first; nothing was changed.`);
   const files2 = walk(old);
-  const read = (rel) => store.ws.read(join8(old, rel)) ?? "";
+  const read = (rel) => store.ws.read(join9(old, rel)) ?? "";
   const exitCriteria = milestoneCriteria(files2.filter((f) => f.startsWith("milestones/")).map(read));
   let counts = { docs: 0, archived: 0, knowledge: 0, issues: 0, drafted: 0 };
   for (const rel of files2) {
     if (DROPPED.test(rel) || rel.endsWith(".gitkeep")) continue;
     const [dir, name] = [rel.split("/")[0], rel.split("/").pop()];
     if (ARCHIVED.test(rel)) {
-      store.ws.write(join8(store.dir, "archive", rel), renamed(read(rel)));
+      store.ws.write(join9(store.dir, "archive", rel), renamed(read(rel)));
       counts.archived++;
     } else if (DOCS[dir] && name.endsWith(".md")) {
       const doc = Doc.parse(leanDoc(read(rel), dir));
@@ -9683,17 +9957,17 @@ function migrate(store) {
         doc.appendLog("status ready \u2192 draft \u2014 migrated to crew: declare `touches:` before moving it back to ready");
         counts.drafted++;
       }
-      store.ws.write(join8(store.dir, DOCS[dir], name.replace(/^EP-/, "G-")), `${doc.text.trimEnd()}
+      store.ws.write(join9(store.dir, DOCS[dir], name.replace(/^EP-/, "G-")), `${doc.text.trimEnd()}
 `);
       counts.docs++;
     } else if (rel === "config.yaml") {
-      store.ws.write(join8(store.dir, rel), renamed(read(rel)).replace(/^(\s+)tracker:/m, "$1hub:"));
+      store.ws.write(join9(store.dir, rel), renamed(read(rel)).replace(/^(\s+)tracker:/m, "$1hub:"));
     } else {
-      store.ws.write(join8(store.dir, rel), renamed(read(rel)));
+      store.ws.write(join9(store.dir, rel), renamed(read(rel)));
     }
   }
   if (files2.includes("project-plan.md")) {
-    const config = join8(store.dir, "config.yaml");
+    const config = join9(store.dir, "config.yaml");
     store.ws.write(config, hubSettings(store.ws.read(config) ?? "", read("project-plan.md")));
   }
   store.ws.remove(old);
@@ -9708,7 +9982,7 @@ function migrate(store) {
   if (branches.length) {
     store.say(`note: plan branches still hold .project/ (${branches.join(", ")}) \u2014 finish them on the old layout, or merge this commit into each and run \`crew.mjs migrate\` there too; until then their live status is not visible from main`);
   }
-  const stale = OLD_REFS.filter((f) => /\.project\/|tracker\.mjs/.test(store.ws.read(join8(root, f)) ?? ""));
+  const stale = OLD_REFS.filter((f) => /\.project\/|tracker\.mjs/.test(store.ws.read(join9(root, f)) ?? ""));
   if (stale.length) {
     store.say(`next: these still mention .project/ or tracker.mjs \u2014 re-render them (/crew:guidelines --refresh, /crew:git-setup): ${stale.join(", ")}`);
   }
@@ -9741,9 +10015,9 @@ function raid(store, text) {
       const title = row.decision || row.assumption || row.risk || Object.values(row).find((v) => v && !/^[A-Z]+-?\d+$/.test(v)) || "";
       if (!title) continue;
       const fields = Object.entries(row).filter(([, v]) => v).map(([k, v]) => `- **${k}:** ${v}`).join("\n");
-      const id = knowledgeId(title, (k) => store.ws.isFile(join8(store.knowledgeDir, `${k}.md`)));
+      const id = knowledgeId(title, (k) => store.ws.isFile(join9(store.knowledgeDir, `${k}.md`)));
       const level = (v) => (v ?? "").trim().slice(0, 1).toUpperCase();
-      store.ws.write(join8(store.knowledgeDir, `${id}.md`), entryText({
+      store.ws.write(join9(store.knowledgeDir, `${id}.md`), entryText({
         id,
         type,
         title,
@@ -9775,10 +10049,10 @@ ${details}
 
 // src/server.ts
 import { spawn } from "node:child_process";
-import { randomBytes } from "node:crypto";
+import { randomBytes as randomBytes2 } from "node:crypto";
 import { existsSync as existsSync6, watch } from "node:fs";
 import { createServer } from "node:http";
-import { join as join9 } from "node:path";
+import { join as join10 } from "node:path";
 var str = (b, k) => typeof b[k] === "string" && b[k] ? b[k] : void 0;
 var ACTIONS = {
   move: (s, b) => {
@@ -9807,7 +10081,7 @@ function runAction(open, name, body2) {
 }
 function serve(store, o) {
   store.require();
-  const token = randomBytes(18).toString("base64url");
+  const token = randomBytes2(18).toString("base64url");
   const open = () => Store.open(store.ws.root);
   const clients = /* @__PURE__ */ new Set();
   let hosts = /* @__PURE__ */ new Set();
@@ -9858,7 +10132,7 @@ function serve(store, o) {
       for (const c of clients) c.write("event: change\ndata: {}\n\n");
     }, 150);
   }
-  const watchers = [store.dir, join9(store.ws.root, ".git", "refs"), join9(store.ws.root, ".git", "HEAD")].filter((p) => existsSync6(p)).map((p) => watch(p, { recursive: !p.endsWith("HEAD") }, (_, file) => {
+  const watchers = [store.dir, join10(store.ws.root, ".git", "refs"), join10(store.ws.root, ".git", "HEAD")].filter((p) => existsSync6(p)).map((p) => watch(p, { recursive: !p.endsWith("HEAD") }, (_, file) => {
     if (!String(file ?? "").startsWith("view")) notify();
   }));
   return new Promise((resolve6, reject) => {
@@ -9920,6 +10194,10 @@ function status(store, write) {
   const claims = store.ledger.claims();
   lines.push("## Now", "", ...planTable(byStatus(plans2, ["in-progress", "in-review"]), plans2, items2, claims), "");
   lines.push("## Blocked", "", ...blocked(plans2), "");
+  const asks = openQuestions(store.ledger.events());
+  if (asks.length) {
+    lines.push("## Open questions", "", ...asks.sort((a, b) => Number(b.escalation) - Number(a.escalation)).map((x) => `- ${x.escalation ? "**escalation** " : ""}${x.id} ${x.by} \u2192 ${x.to}${x.ref ? ` about ${x.ref}` : ""}: ${x.text}`), "");
+  }
   lines.push("## Ready to start", "", ...planTable(byStatus(plans2, ["ready"]), plans2, items2, claims), "");
   lines.push("## Top of the backlog", "", ...backlogTop(ranked(items2, goals2, focus), plans2), "");
   lines.push("## Open bugs", "", ...openBugs(items2, plans2), "");
@@ -9999,76 +10277,123 @@ function recentlyDone(plans2) {
   return done.length ? done.map((p) => `- ${p.get("completed") || "?"} \u2014 ${p.id}: ${p.get("title")}` + (p.get("pr") ? ` \u2014 ${p.get("pr")}` : "")) : ["_None._"];
 }
 
-// src/commands/knowledge.ts
-import { join as join10 } from "node:path";
-function learn(store, type, title, o = {}) {
-  store.require();
-  if (!KNOWLEDGE_TYPES.includes(type)) fail(`Unknown type '${type}'. Use ${KNOWLEDGE_TYPES.join(", ")}.`);
-  if (Boolean(o.why) === Boolean(o.from)) fail("Give exactly one of --why TEXT or --from DRAFT: the reason or evidence behind the fact.");
-  const [draftFile, why] = o.from ? store.readDraft(o.from, "knowledge entry") : [null, o.why];
-  if (!stripComments(why).trim()) fail("The entry has no content. Nothing was written.");
-  const found = secretsIn(`${title}
-${why}`, store.policy.policy.secrets.patterns);
-  if (found.length) fail(`Refused: the entry looks like it contains a secret (${found.join(", ")}). Knowledge is committed; describe it instead.`);
-  const entries = store.knowledge(false);
-  const supersedes = (o.supersedes ?? "").trim();
-  if (supersedes && !entries.some((e) => e.id === supersedes)) fail(`--supersedes ${supersedes}: no such entry.`);
-  const risk = type === "risk" ? { likelihood: o.likelihood?.toUpperCase(), impact: o.impact?.toUpperCase(), owner: o.owner } : void 0;
-  if (risk && (!RISK_LEVELS.includes(risk.likelihood ?? "") || !RISK_LEVELS.includes(risk.impact ?? ""))) {
-    fail("A risk needs --likelihood and --impact (H, M or L).");
-  }
-  const id = knowledgeId(title, (k) => store.ws.isFile(join10(store.knowledgeDir, `${k}.md`)));
-  const branch = /^plan\/(P-\d+)/.exec(currentBranch() ?? "")?.[1];
-  const text = entryText({
-    id,
-    type,
-    title,
-    why,
-    risk,
-    supersedes,
-    tier: o.candidate ? TIERS[1] : TIERS[0],
-    scope: (o.scope ?? "").split(",").map((s) => s.trim()).filter(Boolean),
-    source: o.source?.toUpperCase() ?? branch ?? ""
-  });
-  store.ws.write(join10(store.knowledgeDir, `${id}.md`), text);
-  if (draftFile) store.consume(draftFile, o.keep);
-  store.ledger.record("learn", id, { kind: type, title, ...supersedes ? { supersedes } : {} });
-  store.say(store.rel(join10(store.knowledgeDir, `${id}.md`)));
-  return id;
-}
-function recallCmd(store, o = {}) {
-  store.require();
-  let globs = [];
-  if (o.plan) {
-    const plan = store.plans(true).get(o.plan.toUpperCase()) ?? fail(`No plan ${o.plan.toUpperCase()}.`);
-    globs = plan.touches();
-    if (!globs.length) store.say(`note: ${plan.id} declares no touches: \u2014 showing everything`);
-  }
-  const paths = (o.paths ?? "").split(",").map((p) => p.trim()).filter(Boolean);
-  const hits = recall(store.knowledge(), { paths, globs, topic: o.topic, type: o.type, all: o.all });
-  if (o.json) {
-    for (const e of hits) store.say(JSON.stringify(view(e, store)));
-    return;
-  }
-  if (!hits.length) store.say("Nothing recalled.");
-  for (const e of hits) {
-    const where = e.scope.length ? e.scope.join(", ") : "everywhere";
-    store.say(`${e.id}  [${e.type}${e.origin === "playbook" ? ", playbook" : ""}${e.supersededBy ? `, superseded by ${e.supersededBy}` : ""}]  ${e.title}  (${where})`);
-  }
-}
-function view(e, store) {
-  return {
-    id: e.id,
-    type: e.type,
-    title: e.title,
-    scope: e.scope,
-    source: e.source,
-    tier: e.tier,
-    origin: e.origin,
-    supersededBy: e.supersededBy,
-    path: e.doc.path ? store.rel(e.doc.path) : null,
-    body: stripComments(e.doc.text.replace(/^---\n[\s\S]*?\n---\n/, "")).replace(/^# .*\n/m, "").trim()
+// src/commands/context.ts
+var DEFAULT_BUDGET = 6e3;
+var para = (text, n = 3) => stripComments(text).split("\n").map((l) => l.trim()).filter(Boolean).slice(0, n);
+var TYPES = {
+  developer: ["gotcha", "convention", "decision", "learning", "risk"],
+  qa: ["gotcha", "risk", "learning", "decision", "convention"],
+  architect: ["decision", "convention", "risk", "gotcha", "learning"],
+  release: ["risk", "decision", "gotcha", "convention", "learning"]
+};
+function planSections(store, plan, role) {
+  const items2 = store.items(), plans2 = store.plans(true), goals2 = store.goals();
+  const goal = goals2.get(planGoal(plan, items2));
+  const idea2 = store.idea();
+  const why = { title: "Goal", more: plan.path ? store.rel(plan.path) : plan.id, lines: [
+    ...idea2 ? [`Idea: ${idea2.get("title")} \u2014 ${para(idea2.section("Outcome"), 1)[0] ?? ""}`] : [],
+    ...goal ? [`${goal.id}${goal.id === store.focus() ? " (focus)" : ""}: ${goal.get("title")} \u2014 ${para(goal.section("Outcome"), 1)[0] ?? ""}`] : [],
+    ...para(plan.section("Context"), 4)
+  ] };
+  const ev = evidence(store, plan);
+  const ac = { title: "Acceptance criteria", more: `crew.mjs resume ${plan.id}`, lines: criteria(plan).map((c, i) => `AC${i + 1} ${!ev[i]?.verify ? "\xB7" : !ev[i].verify.ok ? "\u2717" : ev[i].independent ? "\u2713" : "\u2713 self"} ${c}`) };
+  const tasks = {
+    title: "Remaining tasks",
+    more: plan.path ? store.rel(plan.path) : plan.id,
+    lines: plan.tasks().filter(([d]) => !d).map(([, t]) => t)
   };
+  const waits = unmetDeps(plan, plans2), asks = openQuestions(store.ledger.events(), plan.id);
+  const over = overlapping(plan, plans2), outside = drift(plan) ?? [];
+  const blockers = { title: "Blockers & coordination", more: "crew.mjs questions", lines: [
+    ...waits.map((d) => `waits for ${d} (${plans2.get(d)?.get("status")})`),
+    ...asks.map((x) => `${x.blocking ? "blocking " : ""}question ${x.id} \u2192 ${x.to}: ${x.text}`),
+    ...over.map((o) => `overlaps ${o.id} (${plans2.get(o.id)?.get("status")}) on ${o.globs.join(", ")}`),
+    ...outside.length ? [`changes outside touches: ${outside.slice(0, 6).join(", ")}${outside.length > 6 ? " \u2026" : ""}`] : []
+  ] };
+  const order = TYPES[role] ?? TYPES.developer;
+  const known = recall(store.knowledge(), { globs: plan.touches() }).sort((a, b) => order.indexOf(a.type) - order.indexOf(b.type));
+  const memory = { title: "Knowledge in scope", more: `crew.mjs recall --plan ${plan.id}`, lines: known.map(line) };
+  const recover = { title: "Where the work stands", more: `crew.mjs resume ${plan.id}`, lines: recovery(store, plan) };
+  const handoff2 = { title: "Handoff & log", more: `crew.mjs ledger --ref ${plan.id}`, lines: [
+    ...para(plan.section("Handoff"), 6),
+    ...para(plan.section("Progress log"), 99).slice(-3)
+  ] };
+  const sect = (title, name) => ({ title, more: plan.path ? store.rel(plan.path) : plan.id, lines: para(plan.section(name), 8) });
+  const bugs = { title: "Open bugs in this goal", more: "crew.mjs status", lines: [...items2.values()].filter((i) => i.id.startsWith("BUG-") && goal && i.get("goal")?.toUpperCase() === goal.id && !["done", "wontfix", "duplicate"].includes(itemStatus(i, plans2))).map((i) => `${i.id} ${i.get("severity") ?? ""} ${i.get("title")} [${itemStatus(i, plans2)}]`) };
+  switch (role) {
+    case "qa":
+      return [why, ac, sect("Test plan", "Test plan"), recover, bugs, memory, blockers];
+    case "architect":
+      return [why, sect("Approach", "Approach"), sect("Risks & open questions", "Risks & open questions"), blockers, memory, ac];
+    case "release":
+      return [why, sect("Rollout & rollback", "Rollout & rollback"), blockers, ac, memory];
+    default:
+      return [recover, why, ac, tasks, blockers, memory, handoff2];
+  }
+}
+var line = (e) => `${e.id} [${e.type}${e.origin === "playbook" ? ", playbook" : ""}] ${e.title}`;
+function projectSections(store, role) {
+  const idea2 = store.idea(), focus = store.goals().get(store.focus());
+  const crit = idea2?.checklist("Success criteria") ?? [];
+  const head = { title: "Idea & focus", more: "crew.mjs status", lines: [
+    idea2 ? `Idea: ${idea2.get("title")} [${idea2.get("status")}]${crit.length ? ` \u2014 success criteria ${crit.filter(([d]) => d).length}/${crit.length}` : ""}` : "No idea written yet.",
+    focus ? `Focus ${focus.id}: ${focus.get("title")} \u2014 ${para(focus.section("Outcome"), 1)[0] ?? ""}` : "No focus goal."
+  ] };
+  const next = {
+    title: role === "any" ? "Next" : `Next for ${role}`,
+    more: `crew.mjs next${role === "any" ? "" : ` --role ${role}`}`,
+    lines: role === "any" ? nextLines(store) : roleLines(store, role)
+  };
+  const events = store.ledger.events();
+  const team = { title: "Team", more: "crew.mjs ledger", lines: [
+    ...[...store.ledger.claims(events).values()].map((c) => `${c.ref} held by ${c.actor} (${c.run})`),
+    ...openQuestions(events).filter((x) => x.escalation).map((x) => `escalation ${x.id} waits for the ${x.to}: ${x.text}`)
+  ] };
+  const spend = store.ledger.spend(events);
+  if (spend.cost) team.lines.push(`spend so far $${spend.cost.toFixed(2)}`);
+  const memory = { title: "Recent knowledge", more: "crew.mjs recall", lines: store.knowledge(false).filter((e) => !e.supersededBy).sort((a, b) => (b.doc.get("created") ?? "").localeCompare(a.doc.get("created") ?? "")).slice(0, 5).map(line) };
+  return [head, next, team, memory];
+}
+function assemble2(header, sections2, budget) {
+  const out = [header];
+  let used = header.length + 1;
+  const push = (l) => {
+    if (used + l.length + 1 > budget) return false;
+    out.push(l);
+    used += l.length + 1;
+    return true;
+  };
+  for (const [n, s] of sections2.filter((x) => x.lines.length).entries()) {
+    const pointer = `(more: ${s.more})`;
+    if (!push(`## ${s.title}`)) {
+      const rest = `\u2026 also: ${sections2.filter((x) => x.lines.length).slice(n).map((x) => `${x.title} (${x.more})`).join(" \xB7 ")}`;
+      const room = budget - used - 1;
+      if (room >= 40) push(rest.length <= room ? rest : `${rest.slice(0, room - 1)}\u2026`);
+      break;
+    }
+    for (const [i, l] of s.lines.entries()) {
+      const room = budget - used - 1 - (i < s.lines.length - 1 ? pointer.length + 1 : 0);
+      if (l.length + 1 > room) {
+        push(pointer);
+        break;
+      }
+      push(`- ${l}`.slice(0, room));
+    }
+  }
+  return out;
+}
+function context(store, o = {}) {
+  store.require();
+  const role = o.role ?? store.ledger.who.role ?? "any";
+  if (role !== "any" && !ROLES.includes(role)) fail(`Unknown role '${role}'. Roles: ${ROLES.join(", ")}.`);
+  const budget = o.budget ?? DEFAULT_BUDGET;
+  if (budget < 200) fail("--budget must be at least 200 characters.");
+  const pid = o.id?.toUpperCase() ?? /^plan\/(P-\d+)/.exec(currentBranch() ?? "")?.[1];
+  const plan = pid ? store.plans(true).get(pid) ?? fail(`No plan ${pid}.`) : null;
+  const header = `crew context${role === "any" ? "" : ` \u2014 ${role}`}${plan ? ` \u2014 ${plan.id}: ${plan.get("title")} [${plan.get("status")}]` : ""}`;
+  const lines = assemble2(header, plan ? planSections(store, plan, role) : projectSections(store, role), budget);
+  if (o.json) store.say(JSON.stringify({ plan: plan?.id ?? null, role, budget, text: lines.join("\n") }));
+  else for (const l of lines) store.say(l);
 }
 
 // src/commands/ledger.ts
@@ -10079,6 +10404,8 @@ var DETAIL = {
   log: (e) => String(e.text ?? ""),
   learn: (e) => `${e.kind}: ${e.title}${e.supersedes ? ` (supersedes ${e.supersedes})` : ""}`,
   checkpoint: (e) => `at ${e.step}${e.sha ? ` (${String(e.sha).slice(0, 7)})` : ""}` + (e.verify ?? []).map((v) => ` ${v.ok ? "\u2713" : "\u2717"} ${v.cmd}`).join("") + (e.attempt ? ` \u2014 tried: ${e.attempt.what}` : ""),
+  ask: (e) => `${e.qid} \u2192 ${e.to}${e.escalation ? " (escalation)" : ""}: ${e.text}`,
+  answer: (e) => `${e.qid}: ${e.text}${e.approved_by ? ` (by ${e.approved_by})` : ""}`,
   usage: (e) => `${e.tokens_in} in / ${e.tokens_out} out tokens, $${Number(e.cost ?? 0).toFixed(2)}${e.model ? ` (${e.model})` : ""}`
 };
 function showLedger(store, o = {}) {
@@ -10129,7 +10456,10 @@ Commands:
   checkpoint [P-###] [--step T3] [--run CMD | --verify CMD --result pass|fail] [--ac 1,2|all] [--output TXT]
              [--attempt WHAT --why WHY] [--note TXT] [--auto]   record where the work is (the plan of this branch by default)
   resume [P-###] [--json] \xB7 handoff [P-###]     where the work stopped vs git now \xB7 write it into the plan's Handoff
-  next \xB7 current \xB7 check \xB7 status [--write]
+  context [P-###] [--role R] [--budget CHARS] [--json]   what you need right now, within a budget (default 6000 chars)
+  next [--role R] \xB7 current \xB7 check \xB7 status [--write]    (roles: executive, director, pm, architect, developer, qa, release)
+  ask [ID] --to ROLE TEXT [--fyi] \xB7 escalate [ID] TEXT \xB7 answer Q-\u2026 TEXT [--decision [--scope GLOBS]] [--approved-by NAME]
+  questions [--to ROLE] [--ref ID] [--all] [--json]       questions between roles; an open one blocks only its document
   export [--json] [--out FILE]                  interactive HTML view (.crew/view/index.html) or the graph as JSON
   ui [--port 8765] [--no-open]                  serve the view live on 127.0.0.1 (updates as files change)
 `;
@@ -10281,7 +10611,46 @@ var COMMANDS = {
     run: (s, a) => showLedger(s, { ref: str2(a, "ref"), type: str2(a, "type"), limit: a.num.limit, json: !!a.opt.json })
   },
   current: { pos: [], run: (s) => current(s) },
-  next: { pos: [], run: (s) => nextStep(s) },
+  next: { pos: [], str: ["role"], run: (s, a) => nextStep(s, str2(a, "role")) },
+  context: {
+    pos: [],
+    rest: true,
+    str: ["role"],
+    int: ["budget"],
+    flag: ["json"],
+    run: (s, a) => context(s, { id: a.pos[0], role: str2(a, "role"), budget: a.num.budget, json: !!a.opt.json })
+  },
+  ask: {
+    pos: ["text"],
+    rest: true,
+    str: ["to"],
+    flag: ["fyi"],
+    required: ["to"],
+    run: (s, a) => {
+      const [ref, text] = a.pos.length > 1 ? [a.pos[0], a.pos[1]] : [void 0, a.pos[0]];
+      ask(s, ref, str2(a, "to"), text, { fyi: !!a.opt.fyi });
+    }
+  },
+  escalate: {
+    pos: ["text"],
+    rest: true,
+    run: (s, a) => {
+      const [ref, text] = a.pos.length > 1 ? [a.pos[0], a.pos[1]] : [void 0, a.pos[0]];
+      escalate(s, ref, text);
+    }
+  },
+  answer: {
+    pos: ["id", "text"],
+    str: ["scope", "approved-by"],
+    flag: ["decision"],
+    run: (s, a) => answer(s, a.pos[0], a.pos[1], { decision: !!a.opt.decision, scope: str2(a, "scope"), approvedBy: str2(a, "approved-by") })
+  },
+  questions: {
+    pos: [],
+    str: ["to", "ref"],
+    flag: ["all", "json"],
+    run: (s, a) => listQuestions(s, { to: str2(a, "to"), ref: str2(a, "ref"), all: !!a.opt.all, json: !!a.opt.json })
+  },
   check: { pos: [], run: (s) => check(s) },
   status: { pos: [], flag: ["write"], run: (s, a) => status(s, !!a.opt.write) },
   export: {

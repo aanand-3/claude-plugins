@@ -21,7 +21,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd \"$CLAUDE_PROJECT_DIR\" || exit 0; [ -d .githooks ] && [ \"$(git config core.hooksPath)\" != \".githooks\" ] && git config core.hooksPath .githooks && echo \"crew: activated .githooks\"; [ -f .crew/bin/crew.mjs ] && node .crew/bin/crew.mjs current; [ -f .crew/bin/track_plan_draft.py ] && python3 .crew/bin/track_plan_draft.py --session; true"
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" || exit 0; [ -d .githooks ] && [ \"$(git config core.hooksPath)\" != \".githooks\" ] && git config core.hooksPath .githooks && echo \"crew: activated .githooks\"; [ -f .crew/bin/crew.mjs ] && node .crew/bin/crew.mjs context; [ -f .crew/bin/track_plan_draft.py ] && python3 .crew/bin/track_plan_draft.py --session; true"
           }
         ]
       }

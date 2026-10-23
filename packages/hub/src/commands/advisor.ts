@@ -3,6 +3,7 @@ import * as git from "../core/git.js";
 import type { Doc } from "../core/doc.js";
 import { ACTIVE } from "../core/model.js";
 import * as q from "../core/queries.js";
+import { roleLines } from "./roles.js";
 import type { Docs, Store } from "../core/store.js";
 import { byKey, type SortKey } from "../core/text.js";
 
@@ -33,9 +34,9 @@ export function current(store: Store): void {
 }
 
 /** In-progress work, then exactly one NEXT line, in priority order. */
-export function nextStep(store: Store): void {
+export function nextStep(store: Store, role?: string): void {
   store.require();
-  for (const line of nextLines(store)) store.say(line);
+  for (const line of role ? roleLines(store, role) : nextLines(store)) store.say(line);
 }
 
 /** The lines `next` prints (also shown on the UI's overview). */

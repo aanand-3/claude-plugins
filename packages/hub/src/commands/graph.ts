@@ -13,6 +13,7 @@ import { stripComments, today } from "../core/text.js";
 import { type Graph, type GraphDoc, type GraphEdge, SCHEMA_VERSION } from "../graph-types.js";
 import { nextLines } from "./advisor.js";
 import { findings } from "./checks.js";
+import { openQuestions } from "./questions.js";
 
 const ID_RE = /\b(?:IDEA|(?:G|P|FEAT|BUG|CHORE|SPIKE)-\d+|K-\d{4}-\d{2}-\d{2}-[a-z0-9-]+)\b/g;
 const DATE_KEYS = ["created", "started", "completed", "decided", "closed"];
@@ -39,6 +40,7 @@ export function buildGraph(store: Store): Graph {
     docs,
     edges: edges(docs),
     spend: store.ledger.spend(),
+    questions: openQuestions(store.ledger.events()).map(({ answer: _, run: __, ...rest }) => rest),
     next: nextLines(store),
     check: findings(store),
   };

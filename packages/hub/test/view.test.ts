@@ -24,7 +24,7 @@ describe("graph", () => {
     expect(new Set(graph.docs.map((d) => d.kind))).toEqual(new Set(["idea", "goal", "item", "plan", "knowledge"]));
     expect(new Set(graph.edges.map((e) => e.type))).toEqual(
       new Set(["serves", "in-goal", "delivers", "depends-on", "learned-in", "mentions"]));
-    expect(graph.schemaVersion).toBe(4);
+    expect(graph.schemaVersion).toBe(5);
     const gotcha = graph.docs.find((d) => d.kind === "knowledge" && d.type === "gotcha")!;
     expect(gotcha).toMatchObject({ status: "active", touches: ["src/auth/**"], source: "P-004" });
     expect(graph.edges).toContainEqual({ from: gotcha.id, to: "P-004", type: "learned-in" });
@@ -58,7 +58,9 @@ describe("graph", () => {
   it("matches the CLI", () => {
     expect(graph.settings).toEqual({ wip_limit: 2, max_tasks: 10 });
     expect(graph.next.at(-1)).toMatch(/^NEXT {9}refine draft P-009/);
-    expect(graph.check).toEqual({ errors: [], hints: [] });
+    expect(graph.check).toEqual({ errors: [], hints: [
+      "P-006 and P-008 are both active and overlap on src/checkins/time.py — sequence them (depends_on) or narrow touches"] });
+    expect(graph.questions).toMatchObject([{ ref: "FEAT-008", to: "executive", escalation: true, blocking: true }]);
     expect(doc("P-009").sections.find((s) => s.heading === "Risks & open questions")!.markdown).toBe(""); // empty template bullet dropped
   });
 });
@@ -99,7 +101,7 @@ describe("ui server", () => {
   it("serves the page without data (the page fetches it) and the graph as JSON", async () => {
     const page = await (await fetch(url)).text();
     expect(page).toContain('<script id="graph" type="application/json">null</script>');
-    expect((await (await fetch(`${url}api/graph`)).json()).schemaVersion).toBe(4);
+    expect((await (await fetch(`${url}api/graph`)).json()).schemaVersion).toBe(5);
   });
 
   it("refuses commands without the page's token, from another origin, or for another host", async () => {
