@@ -46,6 +46,15 @@ const patternRe = (p: string) => new RegExp(`^${p.trim().replace(/[.+^${}()|[\]\
 const segments = (cmd: string) => cmd.split(/&&|\|\||;|\|/).map((c) => c.trim()).filter(Boolean);
 const words = (cmd: string) => cmd.split(/[\s"'=]+/).map((w) => w.replace(/^>+/, "").replace(/^\.\//, "")).filter(Boolean);
 
+/** The hub command a shell segment runs (`crew.mjs [--as R] [--run-id X] <command> …`), or null. */
+function hubCommand(seg: string): string | null {
+  const w = seg.split(/\s+/);
+  let i = w.findIndex((x) => CREW_CLI.test(x));
+  if (i < 0) return null;
+  for (i++; i < w.length && w[i].startsWith("-"); i++) if (!w[i].includes("=")) i++; // --as R, --run-id X
+  return w[i] ?? null;
+}
+
 /** Paths a shell command writes to (best effort): redirection targets and the operands of common writing commands. */
 export function writeTargets(cmd: string): string[] {
   const out = [...cmd.matchAll(/(?<![0-9&])>{1,2}\s*([^\s;&|<>]+)/g)].map((m) => m[1]).filter((t) => !t.startsWith("&"));
@@ -83,6 +92,9 @@ export function decide(store: Store, h: HookInput): Decision {
     if (target) return { deny: `the command writes to ${rel(target)}, which the crew policy protects (paths.protected)` };
     if (words(cmd).some((w) => hits(policy.secrets.files, w))) return { deny: "the command touches a secret file (secrets.files)" };
     if (CREW_CLI.test(cmd) && /--approved-by\b/.test(cmd)) return { deny: "only the human approves: agents never pass --approved-by" };
+    if (segments(cmd).some((c) => hubCommand(c) === "agents" && !/--check\b/.test(c))) {
+      return { deny: "`crew.mjs agents` rewrites the agent definitions, which only the human renders (paths.protected)" };
+    }
   }
   if (!role) return null;
 

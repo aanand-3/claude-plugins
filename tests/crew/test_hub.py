@@ -1577,3 +1577,108 @@ def test_projects_can_define_their_own_roles(repo: Repo):
     out = tr(repo, "policy", "check").stdout
     assert "lower-case letters" in out and "needs a charter" in out
     assert tr(repo, "--as", "wizard", "move", "P-001", "draft").returncode != 0  # an unknown acting role fails closed
+
+
+# ------------------------------------------------------------------ Workstream T2: agents rendered from the policy
+AGENT_TEMPLATES = HUB.parent.parent / "agents"
+BUILT_IN_AGENTS = ("director", "pm", "architect", "developer", "qa", "release")
+
+
+def frontmatter(path) -> dict:
+    import yaml
+    text = path.read_text()
+    assert text.startswith("---\n"), path
+    return yaml.safe_load(text.split("---\n", 2)[1])
+
+
+def test_agents_render_every_role_but_the_humans(repo: Repo):
+    init(repo)
+    assert (repo.path / ".crew/templates/agents/qa.md").is_file()  # init vendors the templates
+    r = tr(repo, "agents")
+    assert r.returncode == 0, r.stderr
+    files = sorted(p.name for p in (repo.path / ".claude/agents").iterdir())
+    assert files == sorted(f"crew-{role}.md" for role in BUILT_IN_AGENTS)  # no agent for the executive
+    for role in BUILT_IN_AGENTS:
+        fm = frontmatter(repo.path / f".claude/agents/crew-{role}.md")
+        assert fm["name"] == f"crew-{role}" and fm["crew-role"] == role and fm["description"]
+        assert fm.get("isolation") == ("worktree" if role == "developer" else None)
+    assert "Agents up to date." in tr(repo, "agents").stdout
+    assert tr(repo, "agents", "--check").returncode == 0
+
+
+def test_agent_frontmatter_follows_the_roles_policy(repo: Repo):
+    init(repo, mode="")
+    repo.write(".crew/policy.yaml", "mode: ai-native\nmodels: { default: sonnet }\nroles:\n  qa:\n    models: { default: haiku }\n"
+               "    tools: { allow: [Read, Grep, Glob, Bash], deny: [Edit, Write, \"Bash(git push *)\"] }\n    limits: { max_turns: 40 }\n")
+    assert tr(repo, "agents").returncode == 0
+    for role in BUILT_IN_AGENTS:  # the plan's T2 check: frontmatter matches `policy show --role R`
+        p = json.loads(tr(repo, "policy", "show", "--role", role, "--json").stdout)["policy"]
+        fm = frontmatter(repo.path / f".claude/agents/crew-{role}.md")
+        assert fm.get("model") == p["models"]["default"]
+        assert fm.get("tools", "") == ", ".join(t for t in p["tools"]["allow"] if "(" not in t)
+        assert fm.get("disallowedTools", "") == ", ".join(t for t in p["tools"]["deny"] if "(" not in t)
+        assert fm.get("maxTurns") == p["limits"]["max_turns"]
+    qa = frontmatter(repo.path / ".claude/agents/crew-qa.md")
+    assert (qa["model"], qa["tools"], qa["disallowedTools"], qa["maxTurns"]) == ("haiku", "Read, Grep, Glob, Bash", "Edit, Write", 40)
+    assert frontmatter(repo.path / ".claude/agents/crew-pm.md")["model"] == "sonnet"
+
+
+def test_a_project_role_renders_from_the_generic_template(repo: Repo):
+    init(repo, mode="")
+    repo.write(".crew/policy.yaml", "mode: ai-native\nroles:\n  designer:\n    charter: \"owns the visual design: tokens, layouts; never writes backend code\"\n")
+    assert tr(repo, "agents").returncode == 0
+    path = repo.path / ".claude/agents/crew-designer.md"
+    fm = frontmatter(path)  # the charter's colon is quoted, so the frontmatter stays valid YAML
+    assert fm["crew-role"] == "designer" and "owns the visual design: tokens" in fm["description"]
+    assert "Your charter: owns the visual design" in path.read_text() and "{{" not in path.read_text()
+    agent_out = hook(repo, bash("crew-designer", "node .crew/bin/crew.mjs next"))
+    assert "--as designer --run-id designer:a1" in agent_out["updatedInput"]["command"]  # the guard knows the rendered agent
+
+
+def test_agents_check_flags_policy_changes(repo: Repo):
+    init(repo, mode="")
+    repo.write(".crew/policy.yaml", "mode: ai-native\nroles:\n  designer:\n    charter: owns the visual design\n")
+    assert tr(repo, "agents").returncode == 0
+    assert "agents:" not in tr(repo, "check").stdout
+    repo.write(".crew/policy.yaml", "mode: ai-native\nroles:\n  qa:\n    models: { default: opus }\n")
+    r = tr(repo, "agents", "--check")
+    assert r.returncode == 1
+    assert "crew-qa.md: stale" in r.stdout and "crew-designer.md: its role 'designer' is no longer defined" in r.stdout
+    assert "HINT   agents: .claude/agents/crew-qa.md is stale" in tr(repo, "check").stdout
+    out = tr(repo, "agents").stdout
+    assert "wrote .claude/agents/crew-qa.md" in out and "removed .claude/agents/crew-designer.md" in out
+    assert not (repo.path / ".claude/agents/crew-designer.md").exists()
+    assert tr(repo, "agents", "--check").returncode == 0
+    repo.write(".crew/policy.yaml", "mode: ai-native\nroles:\n  qa:\n    models: { default: 3 }\n")
+    r = tr(repo, "agents")
+    assert r.returncode != 0 and "no agent was written" in r.stderr
+    assert frontmatter(repo.path / ".claude/agents/crew-qa.md")["model"] == "opus"  # refused: nothing changed
+
+
+def test_projects_without_agents_get_no_agent_hints(repo: Repo):
+    init(repo)
+    assert "agents:" not in tr(repo, "check").stdout
+
+
+def test_only_the_human_renders_agents(repo: Repo):
+    init(repo)
+    agent(repo, "crew-developer", "developer")
+    for cmd in ("node .crew/bin/crew.mjs agents", "node .crew/bin/crew.mjs --as developer agents"):
+        assert hook(repo, bash("crew-developer", cmd))["permissionDecision"] == "deny", cmd
+    assert hook(repo, bash("Explore", "node .crew/bin/crew.mjs agents"))["permissionDecision"] == "deny"
+    assert "permissionDecision" not in hook(repo, bash("crew-developer", "node .crew/bin/crew.mjs agents --check"))
+    out = hook(repo, {"tool_name": "Edit", "agent_type": "crew-developer", "agent_id": "a",
+                      "tool_input": {"file_path": ".crew/templates/agents/developer.md"}})
+    assert out["permissionDecision"] == "deny"  # nor rewrites the templates the next render reads
+
+
+def test_agent_templates_are_valid_and_name_real_commands(repo: Repo):
+    usage = tr(repo, "--help").stdout
+    commands = set(re.findall(r"(?:^ {2}|· )([a-z][a-z-]*)", usage, re.M))
+    assert {"checkpoint", "ask", "escalate", "answer", "agents", "next"} <= commands
+    for path in sorted(AGENT_TEMPLATES.glob("*.md")):
+        fm = frontmatter(path)
+        assert set(fm) >= {"name", "description"} and fm["name"].startswith("crew-"), path.name
+        for cmd in re.findall(r"crew\.mjs ([a-z][a-z-]*)", path.read_text()):
+            assert cmd in commands, f"{path.name}: crew.mjs {cmd} is not a hub command"
+    assert {p.stem for p in AGENT_TEMPLATES.glob("*.md")} == {*BUILT_IN_AGENTS, "generic"}

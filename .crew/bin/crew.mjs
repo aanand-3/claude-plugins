@@ -37,9 +37,9 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
   mod
 ));
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/nodes/identity.js
+// node_modules/yaml/dist/nodes/identity.js
 var require_identity = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/nodes/identity.js"(exports) {
+  "node_modules/yaml/dist/nodes/identity.js"(exports) {
     "use strict";
     var ALIAS = /* @__PURE__ */ Symbol.for("yaml.alias");
     var DOC = /* @__PURE__ */ Symbol.for("yaml.document");
@@ -94,9 +94,9 @@ var require_identity = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/visit.js
+// node_modules/yaml/dist/visit.js
 var require_visit = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/visit.js"(exports) {
+  "node_modules/yaml/dist/visit.js"(exports) {
     "use strict";
     var identity2 = require_identity();
     var BREAK = /* @__PURE__ */ Symbol("break visit");
@@ -252,9 +252,9 @@ var require_visit = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/doc/directives.js
+// node_modules/yaml/dist/doc/directives.js
 var require_directives = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/doc/directives.js"(exports) {
+  "node_modules/yaml/dist/doc/directives.js"(exports) {
     "use strict";
     var identity2 = require_identity();
     var visit = require_visit();
@@ -423,9 +423,9 @@ var require_directives = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/doc/anchors.js
+// node_modules/yaml/dist/doc/anchors.js
 var require_anchors = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/doc/anchors.js"(exports) {
+  "node_modules/yaml/dist/doc/anchors.js"(exports) {
     "use strict";
     var identity2 = require_identity();
     var visit = require_visit();
@@ -493,9 +493,9 @@ var require_anchors = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/doc/applyReviver.js
+// node_modules/yaml/dist/doc/applyReviver.js
 var require_applyReviver = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/doc/applyReviver.js"(exports) {
+  "node_modules/yaml/dist/doc/applyReviver.js"(exports) {
     "use strict";
     function applyReviver(reviver, obj, key, val) {
       if (val && typeof val === "object") {
@@ -543,9 +543,9 @@ var require_applyReviver = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/nodes/toJS.js
+// node_modules/yaml/dist/nodes/toJS.js
 var require_toJS = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/nodes/toJS.js"(exports) {
+  "node_modules/yaml/dist/nodes/toJS.js"(exports) {
     "use strict";
     var identity2 = require_identity();
     function toJS(value, arg, ctx) {
@@ -573,9 +573,9 @@ var require_toJS = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/nodes/Node.js
+// node_modules/yaml/dist/nodes/Node.js
 var require_Node = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/nodes/Node.js"(exports) {
+  "node_modules/yaml/dist/nodes/Node.js"(exports) {
     "use strict";
     var applyReviver = require_applyReviver();
     var identity2 = require_identity();
@@ -614,9 +614,9 @@ var require_Node = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/nodes/Alias.js
+// node_modules/yaml/dist/nodes/Alias.js
 var require_Alias = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/nodes/Alias.js"(exports) {
+  "node_modules/yaml/dist/nodes/Alias.js"(exports) {
     "use strict";
     var anchors = require_anchors();
     var visit = require_visit();
@@ -730,9 +730,9 @@ var require_Alias = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/nodes/Scalar.js
+// node_modules/yaml/dist/nodes/Scalar.js
 var require_Scalar = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/nodes/Scalar.js"(exports) {
+  "node_modules/yaml/dist/nodes/Scalar.js"(exports) {
     "use strict";
     var identity2 = require_identity();
     var Node = require_Node();
@@ -760,9 +760,9 @@ var require_Scalar = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/doc/createNode.js
+// node_modules/yaml/dist/doc/createNode.js
 var require_createNode = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/doc/createNode.js"(exports) {
+  "node_modules/yaml/dist/doc/createNode.js"(exports) {
     "use strict";
     var Alias = require_Alias();
     var identity2 = require_identity();
@@ -835,9 +835,9 @@ var require_createNode = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/nodes/Collection.js
+// node_modules/yaml/dist/nodes/Collection.js
 var require_Collection = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/nodes/Collection.js"(exports) {
+  "node_modules/yaml/dist/nodes/Collection.js"(exports) {
     "use strict";
     var createNode = require_createNode();
     var identity2 = require_identity();
@@ -978,9 +978,9 @@ var require_Collection = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/stringify/stringifyComment.js
+// node_modules/yaml/dist/stringify/stringifyComment.js
 var require_stringifyComment = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/stringify/stringifyComment.js"(exports) {
+  "node_modules/yaml/dist/stringify/stringifyComment.js"(exports) {
     "use strict";
     var stringifyComment = (str3) => str3.replace(/^(?!$)(?: $)?/gm, "#");
     function indentComment(comment, indent) {
@@ -995,9 +995,9 @@ var require_stringifyComment = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/stringify/foldFlowLines.js
+// node_modules/yaml/dist/stringify/foldFlowLines.js
 var require_foldFlowLines = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/stringify/foldFlowLines.js"(exports) {
+  "node_modules/yaml/dist/stringify/foldFlowLines.js"(exports) {
     "use strict";
     var FOLD_FLOW = "flow";
     var FOLD_BLOCK = "block";
@@ -1131,9 +1131,9 @@ ${indent}${text.slice(fold + 1, end2)}`;
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/stringify/stringifyString.js
+// node_modules/yaml/dist/stringify/stringifyString.js
 var require_stringifyString = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/stringify/stringifyString.js"(exports) {
+  "node_modules/yaml/dist/stringify/stringifyString.js"(exports) {
     "use strict";
     var Scalar = require_Scalar();
     var foldFlowLines = require_foldFlowLines();
@@ -1414,9 +1414,9 @@ ${indent}`);
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/stringify/stringify.js
+// node_modules/yaml/dist/stringify/stringify.js
 var require_stringify = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/stringify/stringify.js"(exports) {
+  "node_modules/yaml/dist/stringify/stringify.js"(exports) {
     "use strict";
     var anchors = require_anchors();
     var identity2 = require_identity();
@@ -1538,9 +1538,9 @@ ${ctx.indent}${str3}`;
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/stringify/stringifyPair.js
+// node_modules/yaml/dist/stringify/stringifyPair.js
 var require_stringifyPair = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/stringify/stringifyPair.js"(exports) {
+  "node_modules/yaml/dist/stringify/stringifyPair.js"(exports) {
     "use strict";
     var identity2 = require_identity();
     var Scalar = require_Scalar();
@@ -1671,9 +1671,9 @@ ${ctx.indent}`;
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/log.js
+// node_modules/yaml/dist/log.js
 var require_log = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/log.js"(exports) {
+  "node_modules/yaml/dist/log.js"(exports) {
     "use strict";
     var node_process = __require("process");
     function debug(logLevel, ...messages) {
@@ -1693,9 +1693,9 @@ var require_log = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/schema/yaml-1.1/merge.js
+// node_modules/yaml/dist/schema/yaml-1.1/merge.js
 var require_merge = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/schema/yaml-1.1/merge.js"(exports) {
+  "node_modules/yaml/dist/schema/yaml-1.1/merge.js"(exports) {
     "use strict";
     var identity2 = require_identity();
     var Scalar = require_Scalar();
@@ -1753,9 +1753,9 @@ var require_merge = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/nodes/addPairToJSMap.js
+// node_modules/yaml/dist/nodes/addPairToJSMap.js
 var require_addPairToJSMap = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/nodes/addPairToJSMap.js"(exports) {
+  "node_modules/yaml/dist/nodes/addPairToJSMap.js"(exports) {
     "use strict";
     var log2 = require_log();
     var merge = require_merge();
@@ -1817,9 +1817,9 @@ var require_addPairToJSMap = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/nodes/Pair.js
+// node_modules/yaml/dist/nodes/Pair.js
 var require_Pair = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/nodes/Pair.js"(exports) {
+  "node_modules/yaml/dist/nodes/Pair.js"(exports) {
     "use strict";
     var createNode = require_createNode();
     var stringifyPair = require_stringifyPair();
@@ -1857,9 +1857,9 @@ var require_Pair = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/stringify/stringifyCollection.js
+// node_modules/yaml/dist/stringify/stringifyCollection.js
 var require_stringifyCollection = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/stringify/stringifyCollection.js"(exports) {
+  "node_modules/yaml/dist/stringify/stringifyCollection.js"(exports) {
     "use strict";
     var identity2 = require_identity();
     var stringify = require_stringify();
@@ -2008,9 +2008,9 @@ ${indent}${end}`;
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/nodes/YAMLMap.js
+// node_modules/yaml/dist/nodes/YAMLMap.js
 var require_YAMLMap = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/nodes/YAMLMap.js"(exports) {
+  "node_modules/yaml/dist/nodes/YAMLMap.js"(exports) {
     "use strict";
     var stringifyCollection = require_stringifyCollection();
     var addPairToJSMap = require_addPairToJSMap();
@@ -2152,9 +2152,9 @@ var require_YAMLMap = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/schema/common/map.js
+// node_modules/yaml/dist/schema/common/map.js
 var require_map = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/schema/common/map.js"(exports) {
+  "node_modules/yaml/dist/schema/common/map.js"(exports) {
     "use strict";
     var identity2 = require_identity();
     var YAMLMap = require_YAMLMap();
@@ -2174,9 +2174,9 @@ var require_map = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/nodes/YAMLSeq.js
+// node_modules/yaml/dist/nodes/YAMLSeq.js
 var require_YAMLSeq = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/nodes/YAMLSeq.js"(exports) {
+  "node_modules/yaml/dist/nodes/YAMLSeq.js"(exports) {
     "use strict";
     var createNode = require_createNode();
     var stringifyCollection = require_stringifyCollection();
@@ -2290,9 +2290,9 @@ var require_YAMLSeq = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/schema/common/seq.js
+// node_modules/yaml/dist/schema/common/seq.js
 var require_seq = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/schema/common/seq.js"(exports) {
+  "node_modules/yaml/dist/schema/common/seq.js"(exports) {
     "use strict";
     var identity2 = require_identity();
     var YAMLSeq = require_YAMLSeq();
@@ -2312,9 +2312,9 @@ var require_seq = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/schema/common/string.js
+// node_modules/yaml/dist/schema/common/string.js
 var require_string = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/schema/common/string.js"(exports) {
+  "node_modules/yaml/dist/schema/common/string.js"(exports) {
     "use strict";
     var stringifyString = require_stringifyString();
     var string = {
@@ -2331,9 +2331,9 @@ var require_string = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/schema/common/null.js
+// node_modules/yaml/dist/schema/common/null.js
 var require_null = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/schema/common/null.js"(exports) {
+  "node_modules/yaml/dist/schema/common/null.js"(exports) {
     "use strict";
     var Scalar = require_Scalar();
     var nullTag = {
@@ -2349,9 +2349,9 @@ var require_null = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/schema/core/bool.js
+// node_modules/yaml/dist/schema/core/bool.js
 var require_bool = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/schema/core/bool.js"(exports) {
+  "node_modules/yaml/dist/schema/core/bool.js"(exports) {
     "use strict";
     var Scalar = require_Scalar();
     var boolTag = {
@@ -2373,9 +2373,9 @@ var require_bool = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/stringify/stringifyNumber.js
+// node_modules/yaml/dist/stringify/stringifyNumber.js
 var require_stringifyNumber = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/stringify/stringifyNumber.js"(exports) {
+  "node_modules/yaml/dist/stringify/stringifyNumber.js"(exports) {
     "use strict";
     function stringifyNumber({ format, minFractionDigits, tag, value }) {
       if (typeof value === "bigint")
@@ -2400,9 +2400,9 @@ var require_stringifyNumber = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/schema/core/float.js
+// node_modules/yaml/dist/schema/core/float.js
 var require_float = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/schema/core/float.js"(exports) {
+  "node_modules/yaml/dist/schema/core/float.js"(exports) {
     "use strict";
     var Scalar = require_Scalar();
     var stringifyNumber = require_stringifyNumber();
@@ -2446,9 +2446,9 @@ var require_float = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/schema/core/int.js
+// node_modules/yaml/dist/schema/core/int.js
 var require_int = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/schema/core/int.js"(exports) {
+  "node_modules/yaml/dist/schema/core/int.js"(exports) {
     "use strict";
     var stringifyNumber = require_stringifyNumber();
     var intIdentify = (value) => typeof value === "bigint" || Number.isInteger(value);
@@ -2491,9 +2491,9 @@ var require_int = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/schema/core/schema.js
+// node_modules/yaml/dist/schema/core/schema.js
 var require_schema = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/schema/core/schema.js"(exports) {
+  "node_modules/yaml/dist/schema/core/schema.js"(exports) {
     "use strict";
     var map = require_map();
     var _null = require_null();
@@ -2519,9 +2519,9 @@ var require_schema = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/schema/json/schema.js
+// node_modules/yaml/dist/schema/json/schema.js
 var require_schema2 = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/schema/json/schema.js"(exports) {
+  "node_modules/yaml/dist/schema/json/schema.js"(exports) {
     "use strict";
     var Scalar = require_Scalar();
     var map = require_map();
@@ -2586,9 +2586,9 @@ var require_schema2 = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/schema/yaml-1.1/binary.js
+// node_modules/yaml/dist/schema/yaml-1.1/binary.js
 var require_binary = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/schema/yaml-1.1/binary.js"(exports) {
+  "node_modules/yaml/dist/schema/yaml-1.1/binary.js"(exports) {
     "use strict";
     var node_buffer = __require("buffer");
     var Scalar = require_Scalar();
@@ -2652,9 +2652,9 @@ var require_binary = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/schema/yaml-1.1/pairs.js
+// node_modules/yaml/dist/schema/yaml-1.1/pairs.js
 var require_pairs = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/schema/yaml-1.1/pairs.js"(exports) {
+  "node_modules/yaml/dist/schema/yaml-1.1/pairs.js"(exports) {
     "use strict";
     var identity2 = require_identity();
     var Pair = require_Pair();
@@ -2730,9 +2730,9 @@ ${cn.comment}` : item.comment;
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/schema/yaml-1.1/omap.js
+// node_modules/yaml/dist/schema/yaml-1.1/omap.js
 var require_omap = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/schema/yaml-1.1/omap.js"(exports) {
+  "node_modules/yaml/dist/schema/yaml-1.1/omap.js"(exports) {
     "use strict";
     var identity2 = require_identity();
     var toJS = require_toJS();
@@ -2808,9 +2808,9 @@ var require_omap = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/schema/yaml-1.1/bool.js
+// node_modules/yaml/dist/schema/yaml-1.1/bool.js
 var require_bool2 = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/schema/yaml-1.1/bool.js"(exports) {
+  "node_modules/yaml/dist/schema/yaml-1.1/bool.js"(exports) {
     "use strict";
     var Scalar = require_Scalar();
     function boolStringify({ value, source }, ctx) {
@@ -2840,9 +2840,9 @@ var require_bool2 = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/schema/yaml-1.1/float.js
+// node_modules/yaml/dist/schema/yaml-1.1/float.js
 var require_float2 = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/schema/yaml-1.1/float.js"(exports) {
+  "node_modules/yaml/dist/schema/yaml-1.1/float.js"(exports) {
     "use strict";
     var Scalar = require_Scalar();
     var stringifyNumber = require_stringifyNumber();
@@ -2889,9 +2889,9 @@ var require_float2 = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/schema/yaml-1.1/int.js
+// node_modules/yaml/dist/schema/yaml-1.1/int.js
 var require_int2 = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/schema/yaml-1.1/int.js"(exports) {
+  "node_modules/yaml/dist/schema/yaml-1.1/int.js"(exports) {
     "use strict";
     var stringifyNumber = require_stringifyNumber();
     var intIdentify = (value) => typeof value === "bigint" || Number.isInteger(value);
@@ -2968,9 +2968,9 @@ var require_int2 = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/schema/yaml-1.1/set.js
+// node_modules/yaml/dist/schema/yaml-1.1/set.js
 var require_set = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/schema/yaml-1.1/set.js"(exports) {
+  "node_modules/yaml/dist/schema/yaml-1.1/set.js"(exports) {
     "use strict";
     var identity2 = require_identity();
     var Pair = require_Pair();
@@ -3057,9 +3057,9 @@ var require_set = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/schema/yaml-1.1/timestamp.js
+// node_modules/yaml/dist/schema/yaml-1.1/timestamp.js
 var require_timestamp = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/schema/yaml-1.1/timestamp.js"(exports) {
+  "node_modules/yaml/dist/schema/yaml-1.1/timestamp.js"(exports) {
     "use strict";
     var stringifyNumber = require_stringifyNumber();
     function parseSexagesimal(str3, asBigInt) {
@@ -3145,9 +3145,9 @@ var require_timestamp = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/schema/yaml-1.1/schema.js
+// node_modules/yaml/dist/schema/yaml-1.1/schema.js
 var require_schema3 = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/schema/yaml-1.1/schema.js"(exports) {
+  "node_modules/yaml/dist/schema/yaml-1.1/schema.js"(exports) {
     "use strict";
     var map = require_map();
     var _null = require_null();
@@ -3189,9 +3189,9 @@ var require_schema3 = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/schema/tags.js
+// node_modules/yaml/dist/schema/tags.js
 var require_tags = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/schema/tags.js"(exports) {
+  "node_modules/yaml/dist/schema/tags.js"(exports) {
     "use strict";
     var map = require_map();
     var _null = require_null();
@@ -3283,9 +3283,9 @@ var require_tags = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/schema/Schema.js
+// node_modules/yaml/dist/schema/Schema.js
 var require_Schema = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/schema/Schema.js"(exports) {
+  "node_modules/yaml/dist/schema/Schema.js"(exports) {
     "use strict";
     var identity2 = require_identity();
     var map = require_map();
@@ -3315,9 +3315,9 @@ var require_Schema = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/stringify/stringifyDocument.js
+// node_modules/yaml/dist/stringify/stringifyDocument.js
 var require_stringifyDocument = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/stringify/stringifyDocument.js"(exports) {
+  "node_modules/yaml/dist/stringify/stringifyDocument.js"(exports) {
     "use strict";
     var identity2 = require_identity();
     var stringify = require_stringify();
@@ -3395,9 +3395,9 @@ var require_stringifyDocument = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/doc/Document.js
+// node_modules/yaml/dist/doc/Document.js
 var require_Document = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/doc/Document.js"(exports) {
+  "node_modules/yaml/dist/doc/Document.js"(exports) {
     "use strict";
     var Alias = require_Alias();
     var Collection = require_Collection();
@@ -3704,9 +3704,9 @@ var require_Document = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/errors.js
+// node_modules/yaml/dist/errors.js
 var require_errors = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/errors.js"(exports) {
+  "node_modules/yaml/dist/errors.js"(exports) {
     "use strict";
     var YAMLError = class extends Error {
       constructor(name, pos, code, message) {
@@ -3769,9 +3769,9 @@ ${pointer}
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/compose/resolve-props.js
+// node_modules/yaml/dist/compose/resolve-props.js
 var require_resolve_props = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/compose/resolve-props.js"(exports) {
+  "node_modules/yaml/dist/compose/resolve-props.js"(exports) {
     "use strict";
     function resolveProps(tokens, { flow, indicator, next, offset, onError, parentIndent, startOnNewline }) {
       let spaceBefore = false;
@@ -3903,9 +3903,9 @@ var require_resolve_props = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/compose/util-contains-newline.js
+// node_modules/yaml/dist/compose/util-contains-newline.js
 var require_util_contains_newline = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/compose/util-contains-newline.js"(exports) {
+  "node_modules/yaml/dist/compose/util-contains-newline.js"(exports) {
     "use strict";
     function containsNewline(key) {
       if (!key)
@@ -3945,9 +3945,9 @@ var require_util_contains_newline = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/compose/util-flow-indent-check.js
+// node_modules/yaml/dist/compose/util-flow-indent-check.js
 var require_util_flow_indent_check = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/compose/util-flow-indent-check.js"(exports) {
+  "node_modules/yaml/dist/compose/util-flow-indent-check.js"(exports) {
     "use strict";
     var utilContainsNewline = require_util_contains_newline();
     function flowIndentCheck(indent, fc, onError) {
@@ -3963,9 +3963,9 @@ var require_util_flow_indent_check = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/compose/util-map-includes.js
+// node_modules/yaml/dist/compose/util-map-includes.js
 var require_util_map_includes = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/compose/util-map-includes.js"(exports) {
+  "node_modules/yaml/dist/compose/util-map-includes.js"(exports) {
     "use strict";
     var identity2 = require_identity();
     function mapIncludes(ctx, items2, search) {
@@ -3979,9 +3979,9 @@ var require_util_map_includes = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/compose/resolve-block-map.js
+// node_modules/yaml/dist/compose/resolve-block-map.js
 var require_resolve_block_map = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/compose/resolve-block-map.js"(exports) {
+  "node_modules/yaml/dist/compose/resolve-block-map.js"(exports) {
     "use strict";
     var Pair = require_Pair();
     var YAMLMap = require_YAMLMap();
@@ -4087,9 +4087,9 @@ var require_resolve_block_map = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/compose/resolve-block-seq.js
+// node_modules/yaml/dist/compose/resolve-block-seq.js
 var require_resolve_block_seq = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/compose/resolve-block-seq.js"(exports) {
+  "node_modules/yaml/dist/compose/resolve-block-seq.js"(exports) {
     "use strict";
     var YAMLSeq = require_YAMLSeq();
     var resolveProps = require_resolve_props();
@@ -4138,9 +4138,9 @@ var require_resolve_block_seq = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/compose/resolve-end.js
+// node_modules/yaml/dist/compose/resolve-end.js
 var require_resolve_end = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/compose/resolve-end.js"(exports) {
+  "node_modules/yaml/dist/compose/resolve-end.js"(exports) {
     "use strict";
     function resolveEnd(end, offset, reqSpace, onError) {
       let comment = "";
@@ -4181,9 +4181,9 @@ var require_resolve_end = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/compose/resolve-flow-collection.js
+// node_modules/yaml/dist/compose/resolve-flow-collection.js
 var require_resolve_flow_collection = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/compose/resolve-flow-collection.js"(exports) {
+  "node_modules/yaml/dist/compose/resolve-flow-collection.js"(exports) {
     "use strict";
     var identity2 = require_identity();
     var Pair = require_Pair();
@@ -4375,9 +4375,9 @@ var require_resolve_flow_collection = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/compose/compose-collection.js
+// node_modules/yaml/dist/compose/compose-collection.js
 var require_compose_collection = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/compose/compose-collection.js"(exports) {
+  "node_modules/yaml/dist/compose/compose-collection.js"(exports) {
     "use strict";
     var identity2 = require_identity();
     var Scalar = require_Scalar();
@@ -4440,18 +4440,18 @@ var require_compose_collection = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/compose/resolve-block-scalar.js
+// node_modules/yaml/dist/compose/resolve-block-scalar.js
 var require_resolve_block_scalar = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/compose/resolve-block-scalar.js"(exports) {
+  "node_modules/yaml/dist/compose/resolve-block-scalar.js"(exports) {
     "use strict";
     var Scalar = require_Scalar();
-    function resolveBlockScalar(ctx, scalar, onError) {
-      const start2 = scalar.offset;
-      const header = parseBlockScalarHeader(scalar, ctx.options.strict, onError);
+    function resolveBlockScalar(ctx, scalar2, onError) {
+      const start2 = scalar2.offset;
+      const header = parseBlockScalarHeader(scalar2, ctx.options.strict, onError);
       if (!header)
         return { value: "", type: null, comment: "", range: [start2, start2, start2] };
       const type = header.mode === ">" ? Scalar.Scalar.BLOCK_FOLDED : Scalar.Scalar.BLOCK_LITERAL;
-      const lines = scalar.source ? splitLines(scalar.source) : [];
+      const lines = scalar2.source ? splitLines(scalar2.source) : [];
       let chompStart = lines.length;
       for (let i = lines.length - 1; i >= 0; --i) {
         const content = lines[i][1];
@@ -4463,12 +4463,12 @@ var require_resolve_block_scalar = __commonJS({
       if (chompStart === 0) {
         const value2 = header.chomp === "+" && lines.length > 0 ? "\n".repeat(Math.max(1, lines.length - 1)) : "";
         let end2 = start2 + header.length;
-        if (scalar.source)
-          end2 += scalar.source.length;
+        if (scalar2.source)
+          end2 += scalar2.source.length;
         return { value: value2, type, comment: header.comment, range: [start2, end2, end2] };
       }
-      let trimIndent = scalar.indent + header.indent;
-      let offset = scalar.offset + header.length;
+      let trimIndent = scalar2.indent + header.indent;
+      let offset = scalar2.offset + header.length;
       let contentStart = 0;
       for (let i = 0; i < chompStart; ++i) {
         const [indent, content] = lines[i];
@@ -4546,7 +4546,7 @@ var require_resolve_block_scalar = __commonJS({
         default:
           value += "\n";
       }
-      const end = start2 + header.length + scalar.source.length;
+      const end = start2 + header.length + scalar2.source.length;
       return { value, type, comment: header.comment, range: [start2, end, end] };
     }
     function parseBlockScalarHeader({ offset, props }, strict, onError) {
@@ -4623,14 +4623,14 @@ var require_resolve_block_scalar = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/compose/resolve-flow-scalar.js
+// node_modules/yaml/dist/compose/resolve-flow-scalar.js
 var require_resolve_flow_scalar = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/compose/resolve-flow-scalar.js"(exports) {
+  "node_modules/yaml/dist/compose/resolve-flow-scalar.js"(exports) {
     "use strict";
     var Scalar = require_Scalar();
     var resolveEnd = require_resolve_end();
-    function resolveFlowScalar(scalar, strict, onError) {
-      const { offset, type, source, end } = scalar;
+    function resolveFlowScalar(scalar2, strict, onError) {
+      const { offset, type, source, end } = scalar2;
       let _type;
       let value;
       const _onError = (rel, code, msg) => onError(offset + rel, code, msg);
@@ -4649,7 +4649,7 @@ var require_resolve_flow_scalar = __commonJS({
           break;
         /* istanbul ignore next should not happen */
         default:
-          onError(scalar, "UNEXPECTED_TOKEN", `Expected a flow scalar value, but found: ${type}`);
+          onError(scalar2, "UNEXPECTED_TOKEN", `Expected a flow scalar value, but found: ${type}`);
           return {
             value: "",
             type: null,
@@ -4843,9 +4843,9 @@ var require_resolve_flow_scalar = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/compose/compose-scalar.js
+// node_modules/yaml/dist/compose/compose-scalar.js
 var require_compose_scalar = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/compose/compose-scalar.js"(exports) {
+  "node_modules/yaml/dist/compose/compose-scalar.js"(exports) {
     "use strict";
     var identity2 = require_identity();
     var Scalar = require_Scalar();
@@ -4863,26 +4863,26 @@ var require_compose_scalar = __commonJS({
         tag = findScalarTagByTest(ctx, value, token, onError);
       else
         tag = ctx.schema[identity2.SCALAR];
-      let scalar;
+      let scalar2;
       try {
         const res = tag.resolve(value, (msg) => onError(tagToken ?? token, "TAG_RESOLVE_FAILED", msg), ctx.options);
-        scalar = identity2.isScalar(res) ? res : new Scalar.Scalar(res);
+        scalar2 = identity2.isScalar(res) ? res : new Scalar.Scalar(res);
       } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
         onError(tagToken ?? token, "TAG_RESOLVE_FAILED", msg);
-        scalar = new Scalar.Scalar(value);
+        scalar2 = new Scalar.Scalar(value);
       }
-      scalar.range = range;
-      scalar.source = value;
+      scalar2.range = range;
+      scalar2.source = value;
       if (type)
-        scalar.type = type;
+        scalar2.type = type;
       if (tagName)
-        scalar.tag = tagName;
+        scalar2.tag = tagName;
       if (tag.format)
-        scalar.format = tag.format;
+        scalar2.format = tag.format;
       if (comment)
-        scalar.comment = comment;
-      return scalar;
+        scalar2.comment = comment;
+      return scalar2;
     }
     function findScalarTagByName(schema, value, tagName, tagToken, onError) {
       if (tagName === "!")
@@ -4924,9 +4924,9 @@ var require_compose_scalar = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/compose/util-empty-scalar-position.js
+// node_modules/yaml/dist/compose/util-empty-scalar-position.js
 var require_util_empty_scalar_position = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/compose/util-empty-scalar-position.js"(exports) {
+  "node_modules/yaml/dist/compose/util-empty-scalar-position.js"(exports) {
     "use strict";
     function emptyScalarPosition(offset, before, pos) {
       if (before) {
@@ -4954,9 +4954,9 @@ var require_util_empty_scalar_position = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/compose/compose-node.js
+// node_modules/yaml/dist/compose/compose-node.js
 var require_compose_node = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/compose/compose-node.js"(exports) {
+  "node_modules/yaml/dist/compose/compose-node.js"(exports) {
     "use strict";
     var Alias = require_Alias();
     var identity2 = require_identity();
@@ -5060,9 +5060,9 @@ var require_compose_node = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/compose/compose-doc.js
+// node_modules/yaml/dist/compose/compose-doc.js
 var require_compose_doc = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/compose/compose-doc.js"(exports) {
+  "node_modules/yaml/dist/compose/compose-doc.js"(exports) {
     "use strict";
     var Document = require_Document();
     var composeNode = require_compose_node();
@@ -5103,9 +5103,9 @@ var require_compose_doc = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/compose/composer.js
+// node_modules/yaml/dist/compose/composer.js
 var require_composer = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/compose/composer.js"(exports) {
+  "node_modules/yaml/dist/compose/composer.js"(exports) {
     "use strict";
     var node_process = __require("process");
     var directives = require_directives();
@@ -5311,9 +5311,9 @@ ${end.comment}` : end.comment;
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/parse/cst-scalar.js
+// node_modules/yaml/dist/parse/cst-scalar.js
 var require_cst_scalar = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/parse/cst-scalar.js"(exports) {
+  "node_modules/yaml/dist/parse/cst-scalar.js"(exports) {
     "use strict";
     var resolveBlockScalar = require_resolve_block_scalar();
     var resolveFlowScalar = require_resolve_flow_scalar();
@@ -5496,9 +5496,9 @@ var require_cst_scalar = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/parse/cst-stringify.js
+// node_modules/yaml/dist/parse/cst-stringify.js
 var require_cst_stringify = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/parse/cst-stringify.js"(exports) {
+  "node_modules/yaml/dist/parse/cst-stringify.js"(exports) {
     "use strict";
     var stringify = (cst) => "type" in cst ? stringifyToken(cst) : stringifyItem(cst);
     function stringifyToken(token) {
@@ -5557,9 +5557,9 @@ var require_cst_stringify = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/parse/cst-visit.js
+// node_modules/yaml/dist/parse/cst-visit.js
 var require_cst_visit = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/parse/cst-visit.js"(exports) {
+  "node_modules/yaml/dist/parse/cst-visit.js"(exports) {
     "use strict";
     var BREAK = /* @__PURE__ */ Symbol("break visit");
     var SKIP = /* @__PURE__ */ Symbol("skip children");
@@ -5619,9 +5619,9 @@ var require_cst_visit = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/parse/cst.js
+// node_modules/yaml/dist/parse/cst.js
 var require_cst = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/parse/cst.js"(exports) {
+  "node_modules/yaml/dist/parse/cst.js"(exports) {
     "use strict";
     var cstScalar = require_cst_scalar();
     var cstStringify = require_cst_stringify();
@@ -5721,9 +5721,9 @@ var require_cst = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/parse/lexer.js
+// node_modules/yaml/dist/parse/lexer.js
 var require_lexer = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/parse/lexer.js"(exports) {
+  "node_modules/yaml/dist/parse/lexer.js"(exports) {
     "use strict";
     var cst = require_cst();
     function isEmpty(ch) {
@@ -6310,9 +6310,9 @@ var require_lexer = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/parse/line-counter.js
+// node_modules/yaml/dist/parse/line-counter.js
 var require_line_counter = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/parse/line-counter.js"(exports) {
+  "node_modules/yaml/dist/parse/line-counter.js"(exports) {
     "use strict";
     var LineCounter = class {
       constructor() {
@@ -6341,9 +6341,9 @@ var require_line_counter = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/parse/parser.js
+// node_modules/yaml/dist/parse/parser.js
 var require_parser = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/parse/parser.js"(exports) {
+  "node_modules/yaml/dist/parse/parser.js"(exports) {
     "use strict";
     var node_process = __require("process");
     var cst = require_cst();
@@ -6710,37 +6710,37 @@ var require_parser = __commonJS({
           };
         }
       }
-      *scalar(scalar) {
+      *scalar(scalar2) {
         if (this.type === "map-value-ind") {
           const prev = getPrevProps(this.peek(2));
           const start2 = getFirstKeyStartProps(prev);
           let sep2;
-          if (scalar.end) {
-            sep2 = scalar.end;
+          if (scalar2.end) {
+            sep2 = scalar2.end;
             sep2.push(this.sourceToken);
-            delete scalar.end;
+            delete scalar2.end;
           } else
             sep2 = [this.sourceToken];
           const map = {
             type: "block-map",
-            offset: scalar.offset,
-            indent: scalar.indent,
-            items: [{ start: start2, key: scalar, sep: sep2 }]
+            offset: scalar2.offset,
+            indent: scalar2.indent,
+            items: [{ start: start2, key: scalar2, sep: sep2 }]
           };
           this.onKeyLine = true;
           this.stack[this.stack.length - 1] = map;
         } else
-          yield* this.lineEnd(scalar);
+          yield* this.lineEnd(scalar2);
       }
-      *blockScalar(scalar) {
+      *blockScalar(scalar2) {
         switch (this.type) {
           case "space":
           case "comment":
           case "newline":
-            scalar.props.push(this.sourceToken);
+            scalar2.props.push(this.sourceToken);
             return;
           case "scalar":
-            scalar.source = this.source;
+            scalar2.source = this.source;
             this.atNewLine = true;
             this.indent = 0;
             if (this.onNewLine) {
@@ -7215,9 +7215,9 @@ var require_parser = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/public-api.js
+// node_modules/yaml/dist/public-api.js
 var require_public_api = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/public-api.js"(exports) {
+  "node_modules/yaml/dist/public-api.js"(exports) {
     "use strict";
     var composer = require_composer();
     var Document = require_Document();
@@ -7312,9 +7312,9 @@ var require_public_api = __commonJS({
   }
 });
 
-// ../../../claude-plugins/packages/hub/node_modules/yaml/dist/index.js
+// node_modules/yaml/dist/index.js
 var require_dist = __commonJS({
-  "../../../claude-plugins/packages/hub/node_modules/yaml/dist/index.js"(exports) {
+  "node_modules/yaml/dist/index.js"(exports) {
     "use strict";
     var composer = require_composer();
     var Document = require_Document();
@@ -7714,8 +7714,8 @@ ${block}`;
 `);
   }
 };
-function fill(template, fields) {
-  return template.replace(/\{(\w+)\}/g, (_, k) => fields[k] ?? "");
+function fill(template2, fields) {
+  return template2.replace(/\{(\w+)\}/g, (_, k) => fields[k] ?? "");
 }
 function splitSections(text) {
   const parts = text.split(/^## (.+?)\s*$/m);
@@ -7723,8 +7723,8 @@ function splitSections(text) {
   for (let i = 1; i < parts.length; i += 2) sections2.push([parts[i].trim(), parts[i + 1] ?? ""]);
   return [parts[0], sections2];
 }
-function assemble(template, draft) {
-  const [pre, tmplSections] = splitSections(template);
+function assemble(template2, draft) {
+  const [pre, tmplSections] = splitSections(template2);
   let remaining = splitSections(draft)[1];
   const take = (name) => {
     const i = remaining.findIndex(([h]) => norm(name).startsWith(norm(h)) || norm(h).startsWith(norm(name)));
@@ -8026,7 +8026,14 @@ var BUILT_IN = {
   mode: "ai-assisted",
   reserved: ["idea.decided", "idea.killed", "policy.change", "deploy.production", "publish", "spend", "delete-data"],
   // the guard's own files: no agent may remove the hook, rewrite its definition, loosen the policy or swap the CLI
-  paths: { protected: [".crew/policy.yaml", ".crew/bin/**", ".claude/settings.json", ".claude/settings.local.json", ".claude/agents/**"] },
+  paths: { protected: [
+    ".crew/policy.yaml",
+    ".crew/bin/**",
+    ".claude/settings.json",
+    ".claude/settings.local.json",
+    ".claude/agents/**",
+    ".crew/templates/agents/**"
+  ] },
   budgets: { max_agents: 4 },
   git: { protected_branches: ["main"], force_push: false, no_verify: false },
   secrets: { files: [".env", "**/.env", "**/*.pem", "**/*.key"] },
@@ -8036,7 +8043,8 @@ var SCOPED = {
   models: { default: "str", fallback: "str" },
   tools: { allow: "list", deny: "list" },
   paths: { protected: "list", write: "list" },
-  budgets: { run: { max_cost: "num", max_tokens: "num" } }
+  budgets: { run: { max_cost: "num", max_tokens: "num" } },
+  limits: { max_turns: "num" }
 };
 var GLOBAL = {
   mode: "str",
@@ -8053,7 +8061,7 @@ var UNION = /* @__PURE__ */ new Set(["reserved", "secrets.files", "secrets.patte
 var TIGHTEN = /* @__PURE__ */ new Set(["git.force_push", "git.no_verify"]);
 var CEILING = /^budgets\./;
 function loadLayers(root, crewDir, role, team) {
-  const errors = [], hints = [], custom = [];
+  const errors = [], hints = [], custom = [], charters = {};
   const read = (label, text) => {
     if (text === null) return null;
     try {
@@ -8087,6 +8095,7 @@ function loadLayers(root, crewDir, role, team) {
     if (t) layers.push({ name: `project team ${team}`, org: false, raw: t });
     for (const [name, section] of Object.entries({ ...roles ?? {} })) {
       validate(section, { ...SCOPED, charter: "str" }, `roles.${name}`, errors);
+      if (typeof section?.charter === "string") charters[name] = section.charter;
       if (!ROLES.includes(name)) {
         custom.push(name);
         if (!/^[a-z][a-z0-9-]*$/.test(name)) errors.push(`roles.${name}: a role name is lower-case letters, digits and dashes`);
@@ -8103,7 +8112,7 @@ function loadLayers(root, crewDir, role, team) {
     if (l.name === "org" || l.name === "project") validate(l.raw, GLOBAL, l.name === "org" ? "org" : "", errors);
     else if (l.name.startsWith("org role")) validate(l.raw, SCOPED, l.name, errors);
   }
-  return { layers, errors, hints, custom };
+  return { layers, errors, hints, custom, charters };
 }
 function playbook(root, crewDir) {
   const cfgPath = join2(crewDir, "config.yaml");
@@ -8229,7 +8238,8 @@ function resolveLayers(layers, roles = ROLES) {
     },
     git: { protected_branches: get("git.protected_branches", []), force_push: get("git.force_push", false), no_verify: get("git.no_verify", false) },
     secrets: { files: get("secrets.files", []), patterns: get("secrets.patterns", []) },
-    escalation: { to: get("escalation.to", "executive") }
+    escalation: { to: get("escalation.to", "executive") },
+    limits: { max_turns: num("limits.max_turns") }
   };
   return { policy, sources, errors };
 }
@@ -8239,11 +8249,11 @@ function transitionProblem(t) {
   return Object.hasOwn(FLOWS[kind], status2 ?? "") ? [] : [`'${t}': ${kind} has no status '${status2}'`];
 }
 function resolvePolicy(root, crewDir, role = null, team = null) {
-  const { layers, errors, hints, custom } = loadLayers(root, crewDir, role, team);
+  const { layers, errors, hints, custom, charters } = loadLayers(root, crewDir, role, team);
   const roles = [...ROLES, ...custom];
   const r = resolveLayers(layers, roles);
   if (role && !roles.includes(role)) errors.push(`role '${role}' is not a role (${roles.join(", ")})`);
-  return { policy: r.policy, sources: r.sources, errors: [...errors, ...r.errors], hints, role, team, roles };
+  return { policy: r.policy, sources: r.sources, errors: [...errors, ...r.errors], hints, role, team, roles, charters };
 }
 function approvalReason(p, transition) {
   if (p.reserved.includes(transition)) return "a reserved decision";
@@ -8524,8 +8534,8 @@ var Store = class _Store {
     const real2 = (p) => existsSync4(p) ? realpathSync(p) : p;
     if (!keep && real2(draftFile).startsWith(real2(resolve3(this.dir, "drafts")) + "/")) this.ws.remove(draftFile);
   }
-  build(template, draft, fields) {
-    const tmpl = fill(stripComments(this.template(template)), { date: today(), ...fields }).replace(/^(\w+): $/gm, "$1:");
+  build(template2, draft, fields) {
+    const tmpl = fill(stripComments(this.template(template2)), { date: today(), ...fields }).replace(/^(\w+): $/gm, "$1:");
     return Doc.parse(assemble(tmpl, draft));
   }
   writeNew(doc, path) {
@@ -9040,13 +9050,13 @@ function budgetProblems(store) {
   const mine = store.ledger.spend(events.filter((e) => e.run === me)), all = store.ledger.spend(events);
   const over = (what, used, cap, unit = "") => cap !== null && used >= cap ? [`${what}: ${unit}${+used.toFixed(2)} used of ${unit}${cap}`] : [];
   const holders = new Set([...store.ledger.claims(events).values()].map((c) => c.run));
-  const agents = budgets.max_agents !== null && !holders.has(me) && holders.size >= budgets.max_agents ? [`max_agents: ${holders.size} runs already hold work (limit ${budgets.max_agents})`] : [];
+  const agents2 = budgets.max_agents !== null && !holders.has(me) && holders.size >= budgets.max_agents ? [`max_agents: ${holders.size} runs already hold work (limit ${budgets.max_agents})`] : [];
   return [
     ...over("run cost", mine.cost, budgets.run.max_cost, "$"),
     ...over("run tokens", mine.tokensIn + mine.tokensOut, budgets.run.max_tokens),
     ...over("project cost", all.cost, budgets.project.max_cost, "$"),
     ...over("project tokens", all.tokensIn + all.tokensOut, budgets.project.max_tokens),
-    ...agents
+    ...agents2
   ];
 }
 function guard(store, kind, doc, status2, approvedBy) {
@@ -9478,7 +9488,107 @@ Slice of ${goal.id} (${goal.get("title")}): ${cand}
 }
 
 // src/commands/checks.ts
+import { join as join7 } from "node:path";
+
+// src/commands/agents.ts
 import { join as join6 } from "node:path";
+var HUMAN = "executive";
+var PLAIN = /^[\w-]+$/;
+var agentsDir = (store) => join6(store.ws.root, ".claude", "agents");
+var agentFile = (store, role) => join6(agentsDir(store), `crew-${role}.md`);
+function template(store, name) {
+  for (const d of [join6(store.dir, "templates", "agents"), join6(SKILL_DIR, "agents")]) {
+    const text = store.ws.read(join6(d, `${name}.md`));
+    if (text !== null) return text;
+  }
+  return fail(`Agent template ${name}.md not found. Re-run \`crew.mjs init\` from the plugin.`);
+}
+var scalar = (v) => /^["']/.test(v) || !/(: | #|^[\s\W])|\s$/.test(v) ? v : JSON.stringify(v);
+function renderAgent(store, role) {
+  const r = resolvePolicy(store.ws.root, store.dir, role);
+  const custom = !ROLES.includes(role);
+  let text = template(store, custom ? "generic" : role);
+  if (custom) text = text.replaceAll("{{role}}", role).replaceAll("{{charter}}", (r.charters[role] ?? "").replace(/\s+/g, " ").trim());
+  const m = /^---\n([\s\S]*?)\n---\n/.exec(text);
+  const meta = (m?.[1] ?? "").split("\n").filter((l) => /^[\w-]+:/.test(l)).map((l) => [l.slice(0, l.indexOf(":")), l.slice(l.indexOf(":") + 1).trim()]);
+  const p = r.policy, deny = p.tools.deny.filter((t) => PLAIN.test(t));
+  const derived = [
+    ["crew-role", role],
+    ["model", p.models.default],
+    ["tools", p.tools.allow.filter((t) => PLAIN.test(t)).join(", ") || null],
+    ["disallowedTools", deny.join(", ") || null],
+    ["isolation", role === "developer" ? "worktree" : null],
+    // parallel developers never share a checkout
+    ["maxTurns", p.limits.max_turns === null ? null : String(p.limits.max_turns)]
+  ];
+  const own = /* @__PURE__ */ new Set(["name", ...derived.map(([k]) => k)]);
+  const lines = [
+    ["name", `crew-${role}`],
+    ...meta.filter(([k]) => k === "description"),
+    ...derived.filter((d) => d[1] !== null),
+    ...meta.filter(([k]) => !own.has(k) && k !== "description")
+  ];
+  const body2 = m ? text.slice(m[0].length) : text;
+  return { text: `---
+${lines.map(([k, v]) => `${k}: ${scalar(v)}`).join("\n")}
+---
+${body2}`, errors: r.errors };
+}
+var agentRoles = (store) => resolvePolicy(store.ws.root, store.dir).roles.filter((r) => r !== HUMAN);
+function rendered(store) {
+  const out = /* @__PURE__ */ new Map();
+  for (const name of store.ws.list(agentsDir(store)).filter((n) => /^crew-.*\.md$/.test(n))) {
+    const role = Doc.parse(store.ws.read(join6(agentsDir(store), name)) ?? "").get("crew-role");
+    if (role) out.set(join6(agentsDir(store), name), role);
+  }
+  return out;
+}
+function agentProblems(store) {
+  const roles = agentRoles(store), problems = [];
+  for (const role of roles) {
+    const path = agentFile(store, role), now = store.ws.read(path);
+    if (now === null) problems.push({ path, problem: "missing" });
+    else if (now !== renderAgent(store, role).text) problems.push({ path, problem: "stale against the policy or its template" });
+  }
+  for (const [path, role] of rendered(store)) {
+    if (!roles.includes(role)) problems.push({ path, problem: `its role '${role}' is no longer defined` });
+  }
+  return problems;
+}
+function agentHints(store) {
+  if (!rendered(store).size) return [];
+  return agentProblems(store).map((p) => `agents: ${store.rel(p.path)} is ${p.problem} \u2014 run \`crew.mjs agents\``);
+}
+function agents(store, check2 = false) {
+  store.require();
+  if (check2) {
+    const problems = agentProblems(store);
+    for (const p of problems) store.say(`STALE  ${store.rel(p.path)}: ${p.problem}`);
+    if (!problems.length) store.say("Agents up to date.");
+    return problems.length ? 1 : 0;
+  }
+  const roles = agentRoles(store);
+  const out = roles.map((role) => ({ role, ...renderAgent(store, role) }));
+  const errors = [...new Set(out.flatMap((o) => o.errors))];
+  if (errors.length) fail(`Fix the policy first (\`crew.mjs policy check\`); no agent was written:
+  ${errors.join("\n  ")}`);
+  let changed = 0;
+  for (const { role, text } of out) {
+    const path = agentFile(store, role);
+    if (store.ws.read(path) === text) continue;
+    store.ws.write(path, text);
+    store.say(`wrote ${store.rel(path)}`);
+    changed++;
+  }
+  for (const [path, role] of rendered(store)) {
+    if (roles.includes(role)) continue;
+    store.ws.remove(path);
+    store.say(`removed ${store.rel(path)} (role '${role}' is no longer defined)`);
+    changed++;
+  }
+  if (!changed) store.say("Agents up to date.");
+  return 0;
+}
 
 // src/commands/policy.ts
 var import_yaml2 = __toESM(require_dist(), 1);
@@ -9511,7 +9621,8 @@ function policyShow(store, role, team, json = false) {
     ["git.no_verify", p.git.no_verify, "git.no_verify"],
     ["secrets.files", p.secrets.files, "secrets.files"],
     ["secrets.patterns", p.secrets.patterns, "secrets.patterns"],
-    ["escalation.to", p.escalation.to, "escalation.to"]
+    ["escalation.to", p.escalation.to, "escalation.to"],
+    ["limits.max_turns", p.limits.max_turns, "limits.max_turns"]
   ];
   store.say(`Effective policy${r.role ? ` for role ${r.role}` : ""}${r.team ? `, team ${r.team}` : ""}:`);
   const width = Math.max(...rows.map(([k]) => k.length));
@@ -9570,7 +9681,7 @@ function findings(store) {
   const s = new Snapshot(store), f = { errors: [], hints: [] };
   for (const rule of [idea, plans, overlaps, items, goals, ledger, knowledge, hygiene]) rule(s, f);
   const p = policyFindings(store);
-  return { errors: [...f.errors, ...p.errors], hints: [...f.hints, ...p.hints] };
+  return { errors: [...f.errors, ...p.errors], hints: [...f.hints, ...p.hints, ...agentHints(store)] };
 }
 function check(store) {
   store.require();
@@ -9720,25 +9831,25 @@ function hygiene(s, f) {
   if (ahead.length > MAX_WRITTEN_AHEAD) {
     f.hints.push(`${ahead.length} plans written ahead of the work (> ${MAX_WRITTEN_AHEAD}) \u2014 keep later work as backlog items so plans don't go stale`);
   }
-  const leftovers = s.store.ws.list(join6(s.store.dir, "drafts")).filter((n) => n.endsWith(".md"));
+  const leftovers = s.store.ws.list(join7(s.store.dir, "drafts")).filter((n) => n.endsWith(".md"));
   if (leftovers.length) {
     f.hints.push(`unconverted drafts in .crew/drafts/: ${leftovers.join(", ")} \u2014 create the document from them or delete`);
   }
-  if (s.store.ws.isDir(join6(s.store.ws.root, ".project"))) {
+  if (s.store.ws.isDir(join7(s.store.ws.root, ".project"))) {
     f.hints.push("a .project/ directory from project-kit is still here \u2014 `crew.mjs migrate` moves it into .crew/");
   }
 }
 
 // src/commands/migrate.ts
 import { existsSync as existsSync5, readdirSync as readdirSync3, statSync as statSync4 } from "node:fs";
-import { join as join9 } from "node:path";
+import { join as join10 } from "node:path";
 
 // src/commands/planning.ts
 import { readFileSync as readFileSync4 } from "node:fs";
-import { join as join8, resolve as resolve5 } from "node:path";
+import { join as join9, resolve as resolve5 } from "node:path";
 
 // src/commands/export.ts
-import { join as join7, resolve as resolve4 } from "node:path";
+import { join as join8, resolve as resolve4 } from "node:path";
 
 // src/commands/graph.ts
 import { basename as basename2 } from "node:path";
@@ -9892,7 +10003,7 @@ function embed(graph) {
   return JSON.stringify(graph).replace(/</g, "\\u003c");
 }
 function renderHtmlShell(store) {
-  const shell = store.ws.read(join7(SCRIPT_DIR, UI_FILE));
+  const shell = store.ws.read(join8(SCRIPT_DIR, UI_FILE));
   if (shell === null || !shell.includes(DATA_SLOT)) {
     fail(`The UI bundle (${UI_FILE}) is missing next to crew.mjs. Re-run \`crew.mjs init\` from the plugin.`);
   }
@@ -9910,34 +10021,37 @@ function exportGraph(store, format, out) {
     store.ws.write(resolve4(out), text);
     return store.say(`Wrote ${store.rel(resolve4(out))}`);
   }
-  const path = out ? resolve4(out) : join7(store.dir, "view", "index.html");
-  if (!out) store.ws.write(join7(store.dir, "view", ".gitignore"), "# generated by `crew.mjs export`\n*\n");
+  const path = out ? resolve4(out) : join8(store.dir, "view", "index.html");
+  if (!out) store.ws.write(join8(store.dir, "view", ".gitignore"), "# generated by `crew.mjs export`\n*\n");
   store.ws.write(path, renderHtml(store, graph));
   store.say(`Wrote ${store.rel(path)} \u2014 open it in a browser (it works offline; re-run export to refresh)`);
 }
 
 // src/commands/planning.ts
 function init(store) {
-  for (const d of [...Object.values(store.dirs), store.knowledgeDir, join8(store.dir, "drafts")]) {
-    const keep = join8(d, ".gitkeep");
+  for (const d of [...Object.values(store.dirs), store.knowledgeDir, join9(store.dir, "drafts")]) {
+    const keep = join9(d, ".gitkeep");
     if (!store.ws.isFile(keep)) store.ws.write(keep, "");
   }
   vendor(store);
-  const readme = join8(store.dir, "README.md");
-  const model = store.ws.read(join8(SKILL_DIR, "references", "model.md"));
+  const readme = join9(store.dir, "README.md");
+  const model = store.ws.read(join9(SKILL_DIR, "references", "model.md"));
   if (!store.ws.isFile(readme) && model !== null) store.ws.write(readme, model);
   store.say(`Initialized ${store.rel(store.dir)}/`);
 }
 function vendor(store) {
-  const bin = join8(store.dir, "bin");
+  const bin = join9(store.dir, "bin");
   if (resolve5(SCRIPT_DIR) === resolve5(bin)) return;
-  store.ws.write(join8(bin, "crew.mjs"), readFileSync4(SCRIPT_FILE, "utf8"), 493);
-  const ui = store.ws.read(join8(SCRIPT_DIR, UI_FILE));
-  if (ui !== null) store.ws.write(join8(bin, UI_FILE), ui);
-  const templates = join8(store.dir, "templates");
-  for (const name of [...TEMPLATE_NAMES]) store.ws.write(join8(templates, name), store.ws.read(join8(SKILL_DIR, "templates", name)));
-  const guide = store.ws.read(join8(SKILL_DIR, "references", "writing-guide.md"));
-  if (guide !== null) store.ws.write(join8(templates, "writing-guide.md"), guide);
+  store.ws.write(join9(bin, "crew.mjs"), readFileSync4(SCRIPT_FILE, "utf8"), 493);
+  const ui = store.ws.read(join9(SCRIPT_DIR, UI_FILE));
+  if (ui !== null) store.ws.write(join9(bin, UI_FILE), ui);
+  const templates = join9(store.dir, "templates");
+  for (const name of [...TEMPLATE_NAMES]) store.ws.write(join9(templates, name), store.ws.read(join9(SKILL_DIR, "templates", name)));
+  for (const name of store.ws.list(join9(SKILL_DIR, "agents"))) {
+    store.ws.write(join9(templates, "agents", name), store.ws.read(join9(SKILL_DIR, "agents", name)));
+  }
+  const guide = store.ws.read(join9(SKILL_DIR, "references", "writing-guide.md"));
+  if (guide !== null) store.ws.write(join9(templates, "writing-guide.md"), guide);
 }
 function requireSections(doc, kind) {
   const missing = doc.missing(REQUIRED_ON_CREATE[kind]);
@@ -9973,7 +10087,7 @@ function newGoal(store, title, draftPath, priority, keep = false) {
   const eid = store.nextId("G", "goal");
   const doc = store.build("goal.md", draft, { id: eid, title, priority: Store.checkPriority(priority) || "P2" });
   requireSections(doc, "goal");
-  store.writeNew(doc, join8(store.dirs.goal, `${eid}-${slugify(title)}.md`));
+  store.writeNew(doc, join9(store.dirs.goal, `${eid}-${slugify(title)}.md`));
   breakdownToItems(store, doc);
   store.consume(draftFile, keep);
 }
@@ -9997,7 +10111,7 @@ function newPlan(store, title, draftPath, o = {}) {
     touches: touches.join(", ")
   });
   requireSections(doc, "plan");
-  store.writeNew(doc, join8(store.dirs.plan, `${pid}-${slug}.md`));
+  store.writeNew(doc, join9(store.dirs.plan, `${pid}-${slug}.md`));
   for (const i of linked) {
     items2.get(i).set("plan", pid);
     items2.get(i).save();
@@ -10046,7 +10160,7 @@ var OLD_REFS = [
   ".github/workflows/ci.yml"
 ];
 function walk(dir, prefix = "") {
-  return readdirSync3(dir, { withFileTypes: true }).flatMap((e) => e.isDirectory() ? walk(join9(dir, e.name), `${prefix}${e.name}/`) : [`${prefix}${e.name}`]);
+  return readdirSync3(dir, { withFileTypes: true }).flatMap((e) => e.isDirectory() ? walk(join10(dir, e.name), `${prefix}${e.name}/`) : [`${prefix}${e.name}`]);
 }
 function renamed(text) {
   return text.replace(/\bEP-(\d+)/g, "G-$1").replace(/\.project\//g, ".crew/").replace(/\btracker\.mjs\b/g, "crew.mjs").replace(/project-kit:tracker/g, "crew:hub");
@@ -10057,11 +10171,11 @@ function leanDoc(text, kind) {
   return t;
 }
 function migrate(store) {
-  const root = store.ws.root, old = join9(root, ".project");
+  const root = store.ws.root, old = join10(root, ".project");
   if (!existsSync5(old) || !statSync4(old).isDirectory()) fail("No .project/ directory to migrate.");
   if (existsSync5(store.dir)) fail(`${store.rel(store.dir)}/ already exists \u2014 move it aside first; nothing was changed.`);
   const files2 = walk(old);
-  const read = (rel) => store.ws.read(join9(old, rel)) ?? "";
+  const read = (rel) => store.ws.read(join10(old, rel)) ?? "";
   const exitCriteria = milestoneCriteria(files2.filter((f) => f.startsWith("milestones/")).map(read));
   let counts = { docs: 0, archived: 0, knowledge: 0, issues: 0, drafted: 0 };
   const targets = /* @__PURE__ */ new Map();
@@ -10075,12 +10189,12 @@ function migrate(store) {
     const [dir, name] = [rel.split("/")[0], rel.split("/").pop()];
     const topLevelDoc = DOCS[dir] && name.endsWith(".md") && rel.split("/").length === 2;
     if (!TEXT.test(rel)) {
-      const to = join9(store.dir, ARCHIVED.test(rel) ? "archive" : "", rel);
+      const to = join10(store.dir, ARCHIVED.test(rel) ? "archive" : "", rel);
       put(rel, to);
-      store.ws.copy(join9(old, rel), to);
+      store.ws.copy(join10(old, rel), to);
     } else if (ARCHIVED.test(rel)) {
-      put(rel, join9(store.dir, "archive", rel));
-      store.ws.write(join9(store.dir, "archive", rel), renamed(read(rel)));
+      put(rel, join10(store.dir, "archive", rel));
+      store.ws.write(join10(store.dir, "archive", rel), renamed(read(rel)));
       counts.archived++;
     } else if (topLevelDoc) {
       const doc = Doc.parse(leanDoc(read(rel), dir));
@@ -10090,21 +10204,21 @@ function migrate(store) {
         doc.appendLog("status ready \u2192 draft \u2014 migrated to crew: declare `touches:` before moving it back to ready");
         counts.drafted++;
       }
-      put(rel, join9(store.dir, DOCS[dir], name.replace(/^EP-/, "G-")));
-      store.ws.write(join9(store.dir, DOCS[dir], name.replace(/^EP-/, "G-")), `${doc.text.trimEnd()}
+      put(rel, join10(store.dir, DOCS[dir], name.replace(/^EP-/, "G-")));
+      store.ws.write(join10(store.dir, DOCS[dir], name.replace(/^EP-/, "G-")), `${doc.text.trimEnd()}
 `);
       counts.docs++;
     } else if (rel === "config.yaml") {
-      put(rel, join9(store.dir, rel));
-      store.ws.write(join9(store.dir, rel), renamed(read(rel)).replace(/^(\s+)tracker:/m, "$1hub:"));
+      put(rel, join10(store.dir, rel));
+      store.ws.write(join10(store.dir, rel), renamed(read(rel)).replace(/^(\s+)tracker:/m, "$1hub:"));
     } else {
-      const to = join9(store.dir, rel.replace(/^epics\//, "goals/"));
+      const to = join10(store.dir, rel.replace(/^epics\//, "goals/"));
       put(rel, to);
       store.ws.write(to, renamed(read(rel)));
     }
   }
   if (files2.includes("project-plan.md")) {
-    const config = join9(store.dir, "config.yaml");
+    const config = join10(store.dir, "config.yaml");
     store.ws.write(config, hubSettings(store.ws.read(config) ?? "", read("project-plan.md")));
   }
   store.ws.remove(old);
@@ -10119,7 +10233,7 @@ function migrate(store) {
   if (branches.length) {
     store.say(`note: plan branches still hold .project/ (${branches.join(", ")}) \u2014 finish them on the old layout, or merge this commit into each and run \`crew.mjs migrate\` there too; until then their live status is not visible from main`);
   }
-  const stale = OLD_REFS.filter((f) => /\.project\/|tracker\.mjs/.test(store.ws.read(join9(root, f)) ?? ""));
+  const stale = OLD_REFS.filter((f) => /\.project\/|tracker\.mjs/.test(store.ws.read(join10(root, f)) ?? ""));
   if (stale.length) {
     store.say(`next: these still mention .project/ or tracker.mjs \u2014 re-render them (/crew:guidelines --refresh, /crew:git-setup): ${stale.join(", ")}`);
   }
@@ -10152,9 +10266,9 @@ function raid(store, text) {
       const title = row.decision || row.assumption || row.risk || Object.values(row).find((v) => v && !/^[A-Z]+-?\d+$/.test(v)) || "";
       if (!title) continue;
       const fields = Object.entries(row).filter(([, v]) => v).map(([k, v]) => `- **${k}:** ${v}`).join("\n");
-      const id = knowledgeId(title, (k) => store.ws.isFile(join9(store.knowledgeDir, `${k}.md`)));
+      const id = knowledgeId(title, (k) => store.ws.isFile(join10(store.knowledgeDir, `${k}.md`)));
       const level = (v) => (v ?? "").trim().slice(0, 1).toUpperCase();
-      store.ws.write(join9(store.knowledgeDir, `${id}.md`), entryText({
+      store.ws.write(join10(store.knowledgeDir, `${id}.md`), entryText({
         id,
         type,
         title,
@@ -10189,7 +10303,7 @@ import { spawn } from "node:child_process";
 import { randomBytes as randomBytes3 } from "node:crypto";
 import { existsSync as existsSync6, watch } from "node:fs";
 import { createServer } from "node:http";
-import { join as join10 } from "node:path";
+import { join as join11 } from "node:path";
 var str = (b, k) => typeof b[k] === "string" && b[k] ? b[k] : void 0;
 var ACTIONS = {
   move: (s, b) => {
@@ -10270,7 +10384,7 @@ function serve(store, o) {
       for (const c of clients) c.write("event: change\ndata: {}\n\n");
     }, 150);
   }
-  const watchers = [store.dir, join10(store.ws.root, ".git", "refs"), join10(store.ws.root, ".git", "HEAD")].filter((p) => existsSync6(p)).map((p) => watch(p, { recursive: !p.endsWith("HEAD") }, (_, file) => {
+  const watchers = [store.dir, join11(store.ws.root, ".git", "refs"), join11(store.ws.root, ".git", "HEAD")].filter((p) => existsSync6(p)).map((p) => watch(p, { recursive: !p.endsWith("HEAD") }, (_, file) => {
     if (!String(file ?? "").startsWith("view")) notify();
   }));
   return new Promise((resolve6, reject) => {
@@ -10540,14 +10654,14 @@ function context(store, o = {}) {
 
 // src/commands/guard.ts
 import { readFileSync as readFileSync5, realpathSync as realpathSync2 } from "node:fs";
-import { basename as basename3, dirname as dirname4, isAbsolute, join as join11, relative as relative2 } from "node:path";
+import { basename as basename3, dirname as dirname4, isAbsolute, join as join12, relative as relative2 } from "node:path";
 var HUB_MCP = /^mcp__(?:plugin_crew_)?hub__/;
 function real(p) {
   try {
     return realpathSync2(p);
   } catch {
     try {
-      return join11(realpathSync2(dirname4(p)), basename3(p));
+      return join12(realpathSync2(dirname4(p)), basename3(p));
     } catch {
       return p;
     }
@@ -10559,7 +10673,7 @@ var WRITERS = /^(rm|mv|cp|ln|chmod|chown|truncate|tee|install|touch|mkdir)$/;
 function agentRole(root, agentType) {
   if (!/^[\w-]+$/.test(agentType)) return null;
   try {
-    return Doc.parse(readFileSync5(join11(root, ".claude", "agents", `${agentType}.md`), "utf8")).get("crew-role");
+    return Doc.parse(readFileSync5(join12(root, ".claude", "agents", `${agentType}.md`), "utf8")).get("crew-role");
   } catch {
     return null;
   }
@@ -10567,6 +10681,13 @@ function agentRole(root, agentType) {
 var patternRe = (p) => new RegExp(`^${p.trim().replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*").replace(/\?/g, ".")}$`);
 var segments = (cmd) => cmd.split(/&&|\|\||;|\|/).map((c) => c.trim()).filter(Boolean);
 var words2 = (cmd) => cmd.split(/[\s"'=]+/).map((w) => w.replace(/^>+/, "").replace(/^\.\//, "")).filter(Boolean);
+function hubCommand(seg) {
+  const w = seg.split(/\s+/);
+  let i = w.findIndex((x) => CREW_CLI.test(x));
+  if (i < 0) return null;
+  for (i++; i < w.length && w[i].startsWith("-"); i++) if (!w[i].includes("=")) i++;
+  return w[i] ?? null;
+}
 function writeTargets(cmd) {
   const out = [...cmd.matchAll(/(?<![0-9&])>{1,2}\s*([^\s;&|<>]+)/g)].map((m) => m[1]).filter((t) => !t.startsWith("&"));
   for (const seg of segments(cmd)) {
@@ -10599,6 +10720,9 @@ function decide(store, h) {
     if (target) return { deny: `the command writes to ${rel(target)}, which the crew policy protects (paths.protected)` };
     if (words2(cmd).some((w) => hits(policy.secrets.files, w))) return { deny: "the command touches a secret file (secrets.files)" };
     if (CREW_CLI.test(cmd) && /--approved-by\b/.test(cmd)) return { deny: "only the human approves: agents never pass --approved-by" };
+    if (segments(cmd).some((c) => hubCommand(c) === "agents" && !/--check\b/.test(c))) {
+      return { deny: "`crew.mjs agents` rewrites the agent definitions, which only the human renders (paths.protected)" };
+    }
   }
   if (!role) return null;
   for (const d of policy.tools.deny) {
@@ -10702,6 +10826,7 @@ Commands:
   next [--role R] \xB7 current \xB7 check \xB7 status [--write]    (roles: executive, director, pm, architect, developer, qa, release + the policy's)
   --as ROLE \xB7 --run-id ID                       who is acting, on any command (wins over CREW_ROLE / CREW_RUN)
   guard                                         PreToolUse hook: reads the hook JSON on stdin, prints the decision
+  agents [--check]                              render the role agents (.claude/agents/crew-<role>.md) from the policy
   ask [ID] --to ROLE TEXT [--fyi] \xB7 escalate [ID] TEXT \xB7 answer Q-\u2026 TEXT [--decision [--scope GLOBS]] [--approved-by NAME]
   questions [--to ROLE] [--ref ID] [--all] [--json]       questions between roles; an open one blocks only its document
   export [--json] [--out FILE]                  interactive HTML view (.crew/view/index.html) or the graph as JSON
@@ -10827,6 +10952,7 @@ var COMMANDS = {
   resume: { pos: [], rest: true, flag: ["json"], run: (s, a) => resume(s, a.pos[0], !!a.opt.json) },
   handoff: { pos: [], rest: true, run: (s, a) => handoff(s, a.pos[0]) },
   guard: { pos: [], run: (s) => guard2(s) },
+  agents: { pos: [], flag: ["check"], run: (s, a) => agents(s, !!a.opt.check) },
   policy: {
     pos: ["action"],
     str: ["role", "team"],

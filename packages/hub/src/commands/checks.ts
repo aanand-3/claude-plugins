@@ -7,6 +7,7 @@ import { ACTIVE, CLOSED, GOAL_FLOW, IDEA_FLOW, ITEM_FLOW, MAX_WRITTEN_AHEAD, PLA
 import * as q from "../core/queries.js";
 import { drift, overlapping } from "../core/footprint.js";
 import { globRe, K_ID_RE, KNOWLEDGE_TYPES, secretsIn } from "../core/knowledge.js";
+import { agentHints } from "./agents.js";
 import { policyFindings } from "./policy.js";
 import type { Docs, Store } from "../core/store.js";
 import { idList, stripComments } from "../core/text.js";
@@ -37,7 +38,7 @@ export function findings(store: Store): Findings {
   const s = new Snapshot(store), f: Findings = { errors: [], hints: [] };
   for (const rule of [idea, plans, overlaps, items, goals, ledger, knowledge, hygiene]) rule(s, f);
   const p = policyFindings(store);
-  return { errors: [...f.errors, ...p.errors], hints: [...f.hints, ...p.hints] };
+  return { errors: [...f.errors, ...p.errors], hints: [...f.hints, ...p.hints, ...agentHints(store)] };
 }
 
 /** Prints findings; returns the exit code (1 when there are errors). */

@@ -19,7 +19,8 @@ const BUILT_IN: Raw = {
   mode: "ai-assisted",
   reserved: ["idea.decided", "idea.killed", "policy.change", "deploy.production", "publish", "spend", "delete-data"],
   // the guard's own files: no agent may remove the hook, rewrite its definition, loosen the policy or swap the CLI
-  paths: { protected: [".crew/policy.yaml", ".crew/bin/**", ".claude/settings.json", ".claude/settings.local.json", ".claude/agents/**"] },
+  paths: { protected: [".crew/policy.yaml", ".crew/bin/**", ".claude/settings.json", ".claude/settings.local.json", ".claude/agents/**",
+    ".crew/templates/agents/**"] },
   budgets: { max_agents: 4 },
   git: { protected_branches: ["main"], force_push: false, no_verify: false },
   secrets: { files: [".env", "**/.env", "**/*.pem", "**/*.key"] },
@@ -34,6 +35,7 @@ const SCOPED: Record<string, Shape> = {
   tools: { allow: "list", deny: "list" },
   paths: { protected: "list", write: "list" },
   budgets: { run: { max_cost: "num", max_tokens: "num" } },
+  limits: { max_turns: "num" },
 };
 const GLOBAL: Record<string, Shape> = {
   mode: "str", human_gates: "list", role_gates: "map", reserved: "list", ...SCOPED,
@@ -54,17 +56,18 @@ export interface Effective {
   budgets: { max_agents: number | null; run: { max_cost: number | null; max_tokens: number | null };
     project: { max_cost: number | null; max_tokens: number | null } };
   git: { protected_branches: string[]; force_push: boolean; no_verify: boolean };
-  secrets: { files: string[]; patterns: string[] }; escalation: { to: string };
+  secrets: { files: string[]; patterns: string[] }; escalation: { to: string }; limits: { max_turns: number | null };
 }
 export interface Resolved {
   policy: Effective; sources: Map<string, string>; errors: string[]; hints: string[]; role: string | null; team: string | null;
   roles: string[];                  // the built-in roles plus the project's own (`roles.<name>` with a charter)
+  charters: Record<string, string>; // roles.<name>.charter from the project policy
 }
 
 /** Read the layers that apply to a role and team. Unreadable files become errors, not crashes. */
 export function loadLayers(root: string, crewDir: string, role: string | null, team: string | null):
-  { layers: Layer[]; errors: string[]; hints: string[]; custom: string[] } {
-  const errors: string[] = [], hints: string[] = [], custom: string[] = [];
+  { layers: Layer[]; errors: string[]; hints: string[]; custom: string[]; charters: Record<string, string> } {
+  const errors: string[] = [], hints: string[] = [], custom: string[] = [], charters: Record<string, string> = {};
   const read = (label: string, text: string | null): Raw | null => {
     if (text === null) return null;
     try {
@@ -98,6 +101,7 @@ export function loadLayers(root: string, crewDir: string, role: string | null, t
     if (t) layers.push({ name: `project team ${team}`, org: false, raw: t });
     for (const [name, section] of Object.entries({ ...(roles as Raw ?? {}) })) {
       validate(section, { ...SCOPED, charter: "str" }, `roles.${name}`, errors);
+      if (typeof (section as Raw | null)?.charter === "string") charters[name] = (section as Raw).charter as string;
       if (!(ROLES as readonly string[]).includes(name)) {
         custom.push(name);
         if (!/^[a-z][a-z0-9-]*$/.test(name)) errors.push(`roles.${name}: a role name is lower-case letters, digits and dashes`);
@@ -114,7 +118,7 @@ export function loadLayers(root: string, crewDir: string, role: string | null, t
     if (l.name === "org" || l.name === "project") validate(l.raw, GLOBAL, l.name === "org" ? "org" : "", errors);
     else if (l.name.startsWith("org role")) validate(l.raw, SCOPED, l.name, errors);
   }
-  return { layers, errors, hints, custom };
+  return { layers, errors, hints, custom, charters };
 }
 
 export interface Playbook { read: ((rel: string) => string | null) | null; list?: (dir: string) => string[]; hint?: string }
@@ -238,6 +242,7 @@ export function resolveLayers(layers: Layer[], roles: readonly string[] = ROLES)
       project: { max_cost: num("budgets.project.max_cost"), max_tokens: num("budgets.project.max_tokens") } },
     git: { protected_branches: get("git.protected_branches", []), force_push: get("git.force_push", false), no_verify: get("git.no_verify", false) },
     secrets: { files: get("secrets.files", []), patterns: get("secrets.patterns", []) }, escalation: { to: get("escalation.to", "executive") },
+    limits: { max_turns: num("limits.max_turns") },
   };
   return { policy, sources, errors };
 }
@@ -250,11 +255,11 @@ function transitionProblem(t: string): string[] {
 }
 
 export function resolvePolicy(root: string, crewDir: string, role: string | null = null, team: string | null = null): Resolved {
-  const { layers, errors, hints, custom } = loadLayers(root, crewDir, role, team);
+  const { layers, errors, hints, custom, charters } = loadLayers(root, crewDir, role, team);
   const roles = [...ROLES, ...custom];
   const r = resolveLayers(layers, roles);
   if (role && !roles.includes(role)) errors.push(`role '${role}' is not a role (${roles.join(", ")})`);
-  return { policy: r.policy, sources: r.sources, errors: [...errors, ...r.errors], hints, role, team, roles };
+  return { policy: r.policy, sources: r.sources, errors: [...errors, ...r.errors], hints, role, team, roles, charters };
 }
 
 /** Why a transition needs a named human approval, or null. */

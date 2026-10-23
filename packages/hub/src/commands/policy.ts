@@ -27,7 +27,7 @@ export function policyShow(store: Store, role?: string, team?: string, json = fa
     ["git.protected_branches", p.git.protected_branches, "git.protected_branches"],
     ["git.force_push", p.git.force_push, "git.force_push"], ["git.no_verify", p.git.no_verify, "git.no_verify"],
     ["secrets.files", p.secrets.files, "secrets.files"], ["secrets.patterns", p.secrets.patterns, "secrets.patterns"],
-    ["escalation.to", p.escalation.to, "escalation.to"],
+    ["escalation.to", p.escalation.to, "escalation.to"], ["limits.max_turns", p.limits.max_turns, "limits.max_turns"],
   ];
   store.say(`Effective policy${r.role ? ` for role ${r.role}` : ""}${r.team ? `, team ${r.team}` : ""}:`);
   const width = Math.max(...rows.map(([k]) => k.length));
