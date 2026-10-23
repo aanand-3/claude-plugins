@@ -8,7 +8,8 @@ import * as git from "./git.js";
 import { fail } from "./text.js";
 import type { Workspace } from "./workspace.js";
 
-export type EventType = "claim" | "release" | "move" | "log" | "usage" | "learn" | "checkpoint" | "ask" | "answer";
+export type EventType = "claim" | "release" | "move" | "log" | "usage" | "learn" | "checkpoint" | "ask" | "answer"
+  | "assign";
 
 export interface LedgerEvent {
   ts: string;                       // ISO timestamp
@@ -76,6 +77,13 @@ export class Ledger {
       else if (ev.type === "release") live.delete(ev.ref);
     }
     return live;
+  }
+
+  /** plan → its current assignment (the last `assign` event: `to` a role, optionally a `team`). */
+  assignments(events = this.events()): Map<string, LedgerEvent> {
+    const out = new Map<string, LedgerEvent>();
+    for (const ev of events) if (ev.type === "assign" && ev.ref) out.set(ev.ref, ev);
+    return out;
   }
 
   /** ref → the status its last `move` event set. */

@@ -13,6 +13,7 @@ import { status } from "./commands/reports.js";
 import { context } from "./commands/context.js";
 import { guard } from "./commands/guard.js";
 import { agents } from "./commands/agents.js";
+import { assign, staff } from "./commands/team.js";
 import { checkpoint, handoff, resume } from "./commands/execution.js";
 import { answer, ask, escalate, listQuestions } from "./commands/questions.js";
 import { learn, recallCmd } from "./commands/knowledge.js";
@@ -51,6 +52,8 @@ Commands:
   next [--role R] · current · check · status [--write]    (roles: executive, director, pm, architect, developer, qa, release + the policy's)
   --as ROLE · --run-id ID                       who is acting, on any command (wins over CREW_ROLE / CREW_RUN)
   guard                                         PreToolUse hook: reads the hook JSON on stdin, prints the decision
+  assign PLAN_ID --to ROLE [--team T] [--note TXT]   open a ready plan for a role (start then needs it)
+  staff [--json]                                what can run in parallel now, within budgets.max_agents
   agents [--check]                              render the role agents (.claude/agents/crew-<role>.md) from the policy
   ask [ID] --to ROLE TEXT [--fyi] · escalate [ID] TEXT · answer Q-… TEXT [--decision [--scope GLOBS]] [--approved-by NAME]
   questions [--to ROLE] [--ref ID] [--all] [--json]       questions between roles; an open one blocks only its document
@@ -112,6 +115,9 @@ const COMMANDS: Record<string, Spec> = {
   resume: { pos: [], rest: true, flag: ["json"], run: (s, a) => resume(s, a.pos[0], !!a.opt.json) },
   handoff: { pos: [], rest: true, run: (s, a) => handoff(s, a.pos[0]) },
   guard: { pos: [], run: (s) => guard(s) },
+  assign: { pos: ["id"], str: ["to", "team", "note", "approved-by"], required: ["to"],
+    run: (s, a) => assign(s, a.pos[0], str(a, "to")!, str(a, "team"), str(a, "note"), str(a, "approved-by")) },
+  staff: { pos: [], flag: ["json"], run: (s, a) => staff(s, !!a.opt.json) },
   agents: { pos: [], flag: ["check"], run: (s, a) => agents(s, !!a.opt.check) },
   policy: { pos: ["action"], str: ["role", "team"], flag: ["json"], choices: { action: ["show", "check"] },
     run: (s, a) => (a.pos[0] === "show" ? policyShow(s, str(a, "role"), str(a, "team"), !!a.opt.json) : policyCheck(s)) },

@@ -14,6 +14,8 @@ pass `--as`, `--run-id` or `--approved-by`.
      with the template's sections first).
    - **Triage and rank**: `crew.mjs triage <ID> --priority P1 [--goal G-###]`, or `--reject wontfix|duplicate --note "…"`.
    - **Goals**: `crew.mjs new-goal "<title>" --from <draft>`; the human approves the goal set.
+   - **Open a plan**: `crew.mjs assign P-### --to developer [--team T]` for a ready plan the Director staffed
+     (`crew.mjs staff` shows which can run now); the developer can only start what you assigned.
    - **Complete a plan**: only when every acceptance criterion has passing evidence from QA (`crew.mjs resume P-###`
      shows it) — then `crew.mjs move P-### done`.
 3. `crew.mjs check` before you report.

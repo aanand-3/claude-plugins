@@ -13,8 +13,9 @@ import { context } from "./commands/context.js";
 import { checkpoint, handoff, resume } from "./commands/execution.js";
 import { answer, ask, escalate, listQuestions } from "./commands/questions.js";
 import { learn, recallCmd } from "./commands/knowledge.js";
-import { showLedger } from "./commands/ledger.js";
+import { EVENT_TYPES, showLedger } from "./commands/ledger.js";
 import { setFocus } from "./commands/planning.js";
+import { assign, staff } from "./commands/team.js";
 import { log, move, usage } from "./commands/workflow.js";
 import { Store } from "./core/store.js";
 import { HubError } from "./core/text.js";
@@ -86,6 +87,14 @@ export const TOOLS: Record<string, Tool> = {
   move: { description: "Move a document to a new status (`crew.mjs move`). Gates (Definition of Ready, WIP limit, policy role gates) apply; there is no force. Steps the policy reserves for a human (human gates, reserved decisions) are refused here: escalate to the human, who approves on the CLI with --approved-by.",
     input: obj({ id: text("e.g. P-004"), status: text("target status, e.g. ready, in-review, done"), note: text("optional note") }, ["id", "status"]),
     run: (st, a) => { move(st, s(a, "id")!, s(a, "status")!, s(a, "note")); } },
+  assign: { description: "Open a ready plan for a role (`crew.mjs assign`): records who implements it; `start` then needs the "
+    + "assignment. Under the lifecycle preset only the PM assigns.",
+    input: obj({ id: text("e.g. P-004"), to: text("the role that implements it, usually developer"), team: text("optional team from the policy"),
+      note: text("optional note") }, ["id", "to"]),
+    run: (st, a) => { assign(st, s(a, "id")!, s(a, "to")!, s(a, "team"), s(a, "note")); } },
+  staff: { description: "What can run in parallel now (`crew.mjs staff`): ready plans whose dependencies are done, that overlap "
+    + "nothing in progress or each other, within budgets.max_agents, each routed to a team; and why the others wait.",
+    input: obj({ json: { type: "boolean" } }), run: (st, a) => staff(st, a.json === true) },
   log: { description: "Append a dated line to a document's log (`crew.mjs log`).",
     input: obj({ id: text("e.g. P-004"), text: text("the log entry") }, ["id", "text"]), run: (st, a) => log(st, up(a, "id"), s(a, "text")!) },
   focus: { description: "Set the focus goal the team works toward now (`crew.mjs focus`).",
@@ -123,7 +132,7 @@ export const TOOLS: Record<string, Tool> = {
   handoff: { description: "Write the resume view into the plan's Handoff section (`crew.mjs handoff`), before ending a session.",
     input: obj({ plan: text("e.g. P-004; default: the plan of this branch") }), run: (st, a) => handoff(st, s(a, "plan")) },
   ledger: { description: "Recent events from the shared ledger and the live claims (`crew.mjs ledger --json`).",
-    input: obj({ ref: text("only events about this ID"), type: { type: "string", enum: ["claim", "release", "move", "log", "usage", "learn", "checkpoint", "ask", "answer"] },
+    input: obj({ ref: text("only events about this ID"), type: { type: "string", enum: EVENT_TYPES },
       limit: num("how many, newest last (default 20)") }),
     run: (st, a) => showLedger(st, { ref: s(a, "ref"), type: s(a, "type"), limit: n(a, "limit"), json: true }) },
 };

@@ -7,8 +7,11 @@ import { join, resolve } from "node:path";
 import { parse } from "yaml";
 import * as git from "./git.js";
 import { FLOWS, type Kind, ROLES } from "./model.js";
+import { PRESETS } from "./presets.js";
 
 export const MODES = ["ai-native", "ai-assisted", "human-led"] as const;
+/** Gated steps that aren't status changes: `<kind>.<action>`, usable in human_gates and role_gates. */
+export const ACTIONS = new Set(["plan.assigned"]);
 /** Transitions (`<kind>.<status>`) that need a human, by mode, until the project sets `human_gates`. */
 export const MODE_GATES: Record<string, string[]> = {
   "ai-native": [],
@@ -38,7 +41,7 @@ const SCOPED: Record<string, Shape> = {
   limits: { max_turns: "num" },
 };
 const GLOBAL: Record<string, Shape> = {
-  mode: "str", human_gates: "list", role_gates: "map", reserved: "list", ...SCOPED,
+  mode: "str", preset: "str", human_gates: "list", role_gates: "map", reserved: "list", ...SCOPED,
   budgets: { max_agents: "num", run: { max_cost: "num", max_tokens: "num" }, project: { max_cost: "num", max_tokens: "num" } },
   git: { protected_branches: "list", force_push: "bool", no_verify: "bool" },
   secrets: { files: "list", patterns: "list" },
@@ -62,12 +65,14 @@ export interface Resolved {
   policy: Effective; sources: Map<string, string>; errors: string[]; hints: string[]; role: string | null; team: string | null;
   roles: string[];                  // the built-in roles plus the project's own (`roles.<name>` with a charter)
   charters: Record<string, string>; // roles.<name>.charter from the project policy
+  teams: Record<string, string[]>;  // teams.<name>.scope: the paths each team works on
 }
 
 /** Read the layers that apply to a role and team. Unreadable files become errors, not crashes. */
 export function loadLayers(root: string, crewDir: string, role: string | null, team: string | null):
-  { layers: Layer[]; errors: string[]; hints: string[]; custom: string[]; charters: Record<string, string> } {
+  { layers: Layer[]; errors: string[]; hints: string[]; custom: string[]; charters: Record<string, string>; teams: Record<string, string[]> } {
   const errors: string[] = [], hints: string[] = [], custom: string[] = [], charters: Record<string, string> = {};
+  const teamScopes: Record<string, string[]> = {};
   const read = (label: string, text: string | null): Raw | null => {
     if (text === null) return null;
     try {
@@ -92,7 +97,11 @@ export function loadLayers(root: string, crewDir: string, role: string | null, t
   if (team && !existsSync(projectPath)) errors.push(`team '${team}' (CREW_TEAM) is set, but there is no .crew/policy.yaml defining teams`);
   const project = read(".crew/policy.yaml", existsSync(projectPath) ? readFileSync(projectPath, "utf8") : null);
   if (project) {
-    const { roles, teams, ...global } = project;
+    const { roles, teams, preset, ...global } = project;
+    const p = typeof preset === "string" ? PRESETS[preset] : undefined;
+    if (preset !== undefined && !p) errors.push(`preset: '${String(preset)}' is not a preset (${Object.keys(PRESETS).join(", ")})`);
+    if (p) layers.push({ name: `preset ${preset}`, org: false, raw: p.global });
+    if (p && role && p.roles[role]) layers.push({ name: `preset ${preset} role ${role}`, org: false, raw: p.roles[role] });
     layers.push({ name: "project", org: false, raw: global });
     const pick = (m: unknown, key: string | null) => (key && m && typeof m === "object" ? (m as Raw)[key] as Raw | undefined : undefined);
     const r = pick(roles, role), t = pick(teams, team);
@@ -111,6 +120,7 @@ export function loadLayers(root: string, crewDir: string, role: string | null, t
     for (const [name, section] of Object.entries({ ...(teams as Raw ?? {}) })) {
       const { scope, ...rest } = (section ?? {}) as Raw;
       if (scope !== undefined && !isList(scope)) errors.push(`teams.${name}.scope: expected a list of path globs`);
+      else teamScopes[name] = (scope as string[] | undefined) ?? [];
       validate(rest, SCOPED, `teams.${name}`, errors);
     }
   }
@@ -118,7 +128,7 @@ export function loadLayers(root: string, crewDir: string, role: string | null, t
     if (l.name === "org" || l.name === "project") validate(l.raw, GLOBAL, l.name === "org" ? "org" : "", errors);
     else if (l.name.startsWith("org role")) validate(l.raw, SCOPED, l.name, errors);
   }
-  return { layers, errors, hints, custom, charters };
+  return { layers, errors, hints, custom, charters, teams: teamScopes };
 }
 
 export interface Playbook { read: ((rel: string) => string | null) | null; list?: (dir: string) => string[]; hint?: string }
@@ -247,19 +257,22 @@ export function resolveLayers(layers: Layer[], roles: readonly string[] = ROLES)
   return { policy, sources, errors };
 }
 
-/** A gate names a hub transition `<kind>.<status>`; other reserved entries (deploy.production, publish…) are free-form. */
+/** A gate names a hub transition `<kind>.<status>`, one edge `<kind>.<from>><to>`, or an action (ACTIONS); other
+ * reserved entries (deploy.production, publish…) are free-form. */
 function transitionProblem(t: string): string[] {
-  const [kind, status] = t.split(".");
-  if (!Object.hasOwn(FLOWS, kind)) return [];
-  return Object.hasOwn(FLOWS[kind as Kind], status ?? "") ? [] : [`'${t}': ${kind} has no status '${status}'`];
+  const [kind, step] = t.split(".");
+  if (!Object.hasOwn(FLOWS, kind) || ACTIONS.has(t)) return [];
+  const flow = FLOWS[kind as Kind], [from, to] = (step ?? "").split(">");
+  if (to === undefined) return Object.hasOwn(flow, from) ? [] : [`'${t}': ${kind} has no status '${from}'`];
+  return (flow[from] ?? []).includes(to) ? [] : [`'${t}': ${kind} can't go from '${from}' to '${to}'`];
 }
 
 export function resolvePolicy(root: string, crewDir: string, role: string | null = null, team: string | null = null): Resolved {
-  const { layers, errors, hints, custom, charters } = loadLayers(root, crewDir, role, team);
+  const { layers, errors, hints, custom, charters, teams } = loadLayers(root, crewDir, role, team);
   const roles = [...ROLES, ...custom];
   const r = resolveLayers(layers, roles);
   if (role && !roles.includes(role)) errors.push(`role '${role}' is not a role (${roles.join(", ")})`);
-  return { policy: r.policy, sources: r.sources, errors: [...errors, ...r.errors], hints, role, team, roles, charters };
+  return { policy: r.policy, sources: r.sources, errors: [...errors, ...r.errors], hints, role, team, roles, charters, teams };
 }
 
 /** Why a transition needs a named human approval, or null. */

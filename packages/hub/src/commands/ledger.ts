@@ -14,8 +14,11 @@ const DETAIL: Record<string, (e: LedgerEvent) => string> = {
     + (e.attempt ? ` — tried: ${(e.attempt as { what: string }).what}` : ""),
   ask: (e) => `${e.qid} → ${e.to}${e.escalation ? " (escalation)" : ""}: ${e.text}`,
   answer: (e) => `${e.qid}: ${e.text}${e.approved_by ? ` (by ${e.approved_by})` : ""}`,
+  assign: (e) => `to the ${e.to} role${e.team ? `, team ${e.team}` : ""}${e.note ? ` — ${e.note}` : ""}`,
   usage: (e) => `${e.tokens_in} in / ${e.tokens_out} out tokens, $${Number(e.cost ?? 0).toFixed(2)}${e.model ? ` (${e.model})` : ""}`,
 };
+
+export const EVENT_TYPES = Object.keys(DETAIL);
 
 export interface LedgerQuery { ref?: string; type?: string; limit?: number; json?: boolean }
 

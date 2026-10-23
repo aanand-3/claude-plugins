@@ -31,7 +31,8 @@ export function move(store: Store, docId: string, status: string, note?: string,
     fail(`${doc.id} waits for an answer before it moves on:\n  - ${waiting.map((x) => `${x.id} → ${x.to}: ${x.text}`).join("\n  - ")}\n`
       + "(`crew.mjs questions`; --force to move anyway)");
   }
-  authorize(store, doc.id, `${kind}.${status}`, approvedBy);
+  if (kind === "plan" && status === "in-progress") assignedHere(store, doc.id);
+  authorize(store, doc.id, `${kind}.${status}`, approvedBy, old);
   if (kind === "plan" && status === "in-progress") claimFor(store, doc, force);
   stamp(kind!, doc, status);
   doc.set("status", status);
@@ -45,9 +46,11 @@ export function move(store: Store, docId: string, status: string, note?: string,
   return doc;
 }
 
-/** Policy: human gates and reserved decisions need a named human (`--approved-by`, CLI only); role gates need the role.
+/** Policy: human gates and reserved decisions need a named human (`--approved-by`, CLI only); role gates need the role —
+ * the gate on this exact edge (`plan.in-review>in-progress`) if there is one, else on the target (`plan.in-progress`).
  * --force never bypasses these, and an invalid policy refuses every move until it is fixed. */
-function authorize(store: Store, id: string, transition: string, approvedBy?: string): void {
+export function authorize(store: Store, id: string, transition: string, approvedBy?: string, from?: string,
+  cmd = `move ${id} ${transition.split(".")[1]}`): void {
   const { policy, errors } = store.policy;
   if (errors.length) fail(`The policy is invalid, so nothing moves until it is fixed (\`crew.mjs policy check\`):\n  - ${errors.join("\n  - ")}`);
   if (approvedBy !== undefined && !approvedBy.trim()) fail("--approved-by needs the approving person's name.");
@@ -55,10 +58,11 @@ function authorize(store: Store, id: string, transition: string, approvedBy?: st
   const reason = approvalReason(policy, transition);
   const [, status] = transition.split(".");
   if (reason) {
-    fail(`${id} → ${status} is ${reason}: a human approves it with \`crew.mjs move ${id} ${status} --approved-by <name>\` `
+    fail(`${id} → ${status} is ${reason}: a human approves it with \`crew.mjs ${cmd} --approved-by <name>\` `
       + `(agents over MCP can't). Ask the ${policy.escalation.to} first.`);
   }
-  const role = policy.role_gates[transition];
+  const [kind] = transition.split(".");
+  const role = (from ? policy.role_gates[`${kind}.${from}>${status}`] : undefined) ?? policy.role_gates[transition];
   const mine = store.ledger.who.role;
   if (role && mine !== role) fail(`${id} → ${status} is for the ${role} role; this run is ${mine ? `the ${mine} role` : "in no role"} (CREW_ROLE).`);
 }
@@ -141,7 +145,8 @@ export function start(store: Store, planId: string, force = false, approvedBy?: 
     fail(`${doc.id} waits for an answer before it starts:\n  - ${asked.map((x) => `${x.id} → ${x.to}: ${x.text}`).join("\n  - ")}\n`
       + "(`crew.mjs questions`; --force to start anyway)");
   }
-  authorize(store, doc.id, "plan.in-progress", approvedBy); // every refusal that can happen now happens before the branch
+  assignedHere(store, doc.id);
+  authorize(store, doc.id, "plan.in-progress", approvedBy, "ready"); // every refusal that can happen now happens before the branch
   if (!git.treeIsClean()) fail("Working tree not clean. Commit or stash first.");
   const focus = store.focus();
   if (!q.onFocus(doc, store.items(), focus)) store.say(`note: ${planId} does not serve the focus goal ${focus}`);
@@ -163,6 +168,14 @@ export function start(store: Store, planId: string, force = false, approvedBy?: 
   store.ledger.record("claim", doc.id, { branch, ...(force ? { force: true } : {}) });
   move(store, planId, "in-progress", `branch ${branch}`, force, approvedBy);
   store.say(`Switched to ${branch} — claimed by ${store.ledger.who.actor} (${store.ledger.who.run})`);
+}
+
+/** A plan is started by the role it is assigned to; under a policy that gates assignment (`plan.assigned`), only once
+ * assigned. Ownership, so --force doesn't skip it. */
+export function assignedHere(store: Store, id: string): void {
+  const a = store.ledger.assignments().get(id), me = store.ledger.who.role, by = store.policy.policy.role_gates["plan.assigned"];
+  if (!a && by) fail(`${id} isn't assigned yet: the ${by} opens it with \`assign ${id} --to developer\`.`);
+  if (a && a.to !== me) fail(`${id} is assigned to the ${a.to} role; this run is ${me ? `the ${me} role` : "in no role"}.`);
 }
 
 function checkStartable(store: Store, doc: Doc): void {

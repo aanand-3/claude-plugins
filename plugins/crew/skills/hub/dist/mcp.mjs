@@ -7740,7 +7740,39 @@ function drift(plan, base) {
 var import_yaml = __toESM(require_dist(), 1);
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, resolve as resolve2 } from "node:path";
+
+// src/core/presets.ts
+var DRAFTS = { paths: { write: [".crew/drafts/**"] } };
+var PRESETS = {
+  lifecycle: {
+    global: {
+      mode: "ai-native",
+      human_gates: ["goal.active"],
+      role_gates: {
+        "item.triaged": "pm",
+        // only the PM triages and ranks
+        "plan.ready": "architect",
+        // only the Architect makes a spec ready
+        "plan.assigned": "pm",
+        // the PM opens a plan for a developer; `start` then needs that assignment
+        "plan.in-progress": "developer",
+        // only the assigned developer implements (and fixes what comes back)
+        "plan.in-review": "developer",
+        // … and hands over to test
+        "plan.done": "pm",
+        // the PM completes, against QA's evidence
+        "plan.dropped": "pm",
+        "goal.done": "director"
+        // the Director closes a goal the PM has verified
+      }
+    },
+    roles: { director: DRAFTS, pm: DRAFTS, qa: DRAFTS, release: DRAFTS }
+  }
+};
+
+// src/core/policy.ts
 var MODES = ["ai-native", "ai-assisted", "human-led"];
+var ACTIONS = /* @__PURE__ */ new Set(["plan.assigned"]);
 var MODE_GATES = {
   "ai-native": [],
   "ai-assisted": ["plan.ready", "plan.done", "goal.done"],
@@ -7772,6 +7804,7 @@ var SCOPED = {
 };
 var GLOBAL = {
   mode: "str",
+  preset: "str",
   human_gates: "list",
   role_gates: "map",
   reserved: "list",
@@ -7786,6 +7819,7 @@ var TIGHTEN = /* @__PURE__ */ new Set(["git.force_push", "git.no_verify"]);
 var CEILING = /^budgets\./;
 function loadLayers(root, crewDir, role, team) {
   const errors = [], hints = [], custom = [], charters = {};
+  const teamScopes = {};
   const read = (label, text2) => {
     if (text2 === null) return null;
     try {
@@ -7810,7 +7844,11 @@ function loadLayers(root, crewDir, role, team) {
   if (team && !existsSync(projectPath)) errors.push(`team '${team}' (CREW_TEAM) is set, but there is no .crew/policy.yaml defining teams`);
   const project = read(".crew/policy.yaml", existsSync(projectPath) ? readFileSync(projectPath, "utf8") : null);
   if (project) {
-    const { roles, teams, ...global } = project;
+    const { roles, teams, preset, ...global } = project;
+    const p = typeof preset === "string" ? PRESETS[preset] : void 0;
+    if (preset !== void 0 && !p) errors.push(`preset: '${String(preset)}' is not a preset (${Object.keys(PRESETS).join(", ")})`);
+    if (p) layers.push({ name: `preset ${preset}`, org: false, raw: p.global });
+    if (p && role && p.roles[role]) layers.push({ name: `preset ${preset} role ${role}`, org: false, raw: p.roles[role] });
     layers.push({ name: "project", org: false, raw: global });
     const pick = (m, key) => key && m && typeof m === "object" ? m[key] : void 0;
     const r = pick(roles, role), t = pick(teams, team);
@@ -7829,6 +7867,7 @@ function loadLayers(root, crewDir, role, team) {
     for (const [name, section] of Object.entries({ ...teams ?? {} })) {
       const { scope, ...rest } = section ?? {};
       if (scope !== void 0 && !isList(scope)) errors.push(`teams.${name}.scope: expected a list of path globs`);
+      else teamScopes[name] = scope ?? [];
       validate(rest, SCOPED, `teams.${name}`, errors);
     }
   }
@@ -7836,7 +7875,7 @@ function loadLayers(root, crewDir, role, team) {
     if (l.name === "org" || l.name === "project") validate(l.raw, GLOBAL, l.name === "org" ? "org" : "", errors);
     else if (l.name.startsWith("org role")) validate(l.raw, SCOPED, l.name, errors);
   }
-  return { layers, errors, hints, custom, charters };
+  return { layers, errors, hints, custom, charters, teams: teamScopes };
 }
 function playbook(root, crewDir) {
   const cfgPath = join(crewDir, "config.yaml");
@@ -7968,16 +8007,18 @@ function resolveLayers(layers, roles = ROLES) {
   return { policy, sources, errors };
 }
 function transitionProblem(t) {
-  const [kind, status2] = t.split(".");
-  if (!Object.hasOwn(FLOWS, kind)) return [];
-  return Object.hasOwn(FLOWS[kind], status2 ?? "") ? [] : [`'${t}': ${kind} has no status '${status2}'`];
+  const [kind, step] = t.split(".");
+  if (!Object.hasOwn(FLOWS, kind) || ACTIONS.has(t)) return [];
+  const flow = FLOWS[kind], [from, to] = (step ?? "").split(">");
+  if (to === void 0) return Object.hasOwn(flow, from) ? [] : [`'${t}': ${kind} has no status '${from}'`];
+  return (flow[from] ?? []).includes(to) ? [] : [`'${t}': ${kind} can't go from '${from}' to '${to}'`];
 }
 function resolvePolicy(root, crewDir, role = null, team = null) {
-  const { layers, errors, hints, custom, charters } = loadLayers(root, crewDir, role, team);
+  const { layers, errors, hints, custom, charters, teams } = loadLayers(root, crewDir, role, team);
   const roles = [...ROLES, ...custom];
   const r = resolveLayers(layers, roles);
   if (role && !roles.includes(role)) errors.push(`role '${role}' is not a role (${roles.join(", ")})`);
-  return { policy: r.policy, sources: r.sources, errors: [...errors, ...r.errors], hints, role, team, roles, charters };
+  return { policy: r.policy, sources: r.sources, errors: [...errors, ...r.errors], hints, role, team, roles, charters, teams };
 }
 function approvalReason(p, transition) {
   if (p.reserved.includes(transition)) return "a reserved decision";
@@ -8371,7 +8412,8 @@ function move(store, docId, status2, note, force = false, approvedBy) {
   - ${waiting.map((x) => `${x.id} \u2192 ${x.to}: ${x.text}`).join("\n  - ")}
 (\`crew.mjs questions\`; --force to move anyway)`);
   }
-  authorize(store, doc.id, `${kind}.${status2}`, approvedBy);
+  if (kind === "plan" && status2 === "in-progress") assignedHere(store, doc.id);
+  authorize(store, doc.id, `${kind}.${status2}`, approvedBy, old);
   if (kind === "plan" && status2 === "in-progress") claimFor(store, doc, force);
   stamp(kind, doc, status2);
   doc.set("status", status2);
@@ -8384,7 +8426,7 @@ function move(store, docId, status2, note, force = false, approvedBy) {
   store.say(`${doc.id}: ${old} \u2192 ${status2}`);
   return doc;
 }
-function authorize(store, id, transition, approvedBy) {
+function authorize(store, id, transition, approvedBy, from, cmd = `move ${id} ${transition.split(".")[1]}`) {
   const { policy, errors } = store.policy;
   if (errors.length) fail(`The policy is invalid, so nothing moves until it is fixed (\`crew.mjs policy check\`):
   - ${errors.join("\n  - ")}`);
@@ -8393,9 +8435,10 @@ function authorize(store, id, transition, approvedBy) {
   const reason = approvalReason(policy, transition);
   const [, status2] = transition.split(".");
   if (reason) {
-    fail(`${id} \u2192 ${status2} is ${reason}: a human approves it with \`crew.mjs move ${id} ${status2} --approved-by <name>\` (agents over MCP can't). Ask the ${policy.escalation.to} first.`);
+    fail(`${id} \u2192 ${status2} is ${reason}: a human approves it with \`crew.mjs ${cmd} --approved-by <name>\` (agents over MCP can't). Ask the ${policy.escalation.to} first.`);
   }
-  const role = policy.role_gates[transition];
+  const [kind] = transition.split(".");
+  const role = (from ? policy.role_gates[`${kind}.${from}>${status2}`] : void 0) ?? policy.role_gates[transition];
   const mine = store.ledger.who.role;
   if (role && mine !== role) fail(`${id} \u2192 ${status2} is for the ${role} role; this run is ${mine ? `the ${mine} role` : "in no role"} (CREW_ROLE).`);
 }
@@ -8457,6 +8500,11 @@ function stamp(kind, doc, status2) {
   if (kind === "item" && ITEM_CLOSED.has(status2)) doc.set("closed", today());
   if (status2 === "done") doc.set("completed", today());
 }
+function assignedHere(store, id) {
+  const a = store.ledger.assignments().get(id), me = store.ledger.who.role, by = store.policy.policy.role_gates["plan.assigned"];
+  if (!a && by) fail(`${id} isn't assigned yet: the ${by} opens it with \`assign ${id} --to developer\`.`);
+  if (a && a.to !== me) fail(`${id} is assigned to the ${a.to} role; this run is ${me ? `the ${me} role` : "in no role"}.`);
+}
 function usage(store, u) {
   store.require();
   if (u.tokensIn === void 0 && u.tokensOut === void 0 && u.cost === void 0) fail("Give --tokens-in, --tokens-out or --cost.");
@@ -8481,6 +8529,72 @@ function log(store, docId, text2) {
   store.ledger.record("log", doc.id, { text: text2 });
 }
 
+// src/commands/team.ts
+var ACTIVE2 = /* @__PURE__ */ new Set(["in-progress", "blocked", "in-review"]);
+function assign(store, planId, to, team, note, approvedBy) {
+  store.require();
+  const doc = store.find(store.checkRef(planId, "plan"));
+  const { roles, teams } = store.policy;
+  if (!roles.includes(to)) fail(`'${to}' is not a role (${roles.join(", ")}).`);
+  if (team && !Object.hasOwn(teams, team)) fail(`team '${team}' is not defined under teams: in .crew/policy.yaml.`);
+  if (doc.get("status") !== "ready") fail(`${doc.id} is '${doc.get("status")}': only a ready plan is assigned (\`move ${doc.id} ready\` first).`);
+  authorize(store, doc.id, "plan.assigned", approvedBy, void 0, `assign ${doc.id} --to ${to}`);
+  doc.set("assignee", team ? `${to} (team ${team})` : to);
+  doc.appendLog(`assigned to the ${to} role${team ? `, team ${team}` : ""}${note ? ` \u2014 ${note}` : ""}`, "Progress log");
+  doc.save();
+  store.ledger.record("assign", doc.id, {
+    to,
+    ...team ? { team } : {},
+    ...note ? { note } : {},
+    ...approvedBy ? { approved_by: approvedBy } : {}
+  });
+  store.say(`${doc.id}: assigned to the ${to} role${team ? `, team ${team}` : ""}`);
+}
+function teamFor(plan, teams) {
+  const touches = plan.touches();
+  const score = (scope) => touches.filter((t) => scope.some((s2) => globsOverlap(t, s2))).length;
+  const best = Object.entries(teams).filter(([, s2]) => s2.length && score(s2) > 0).sort(byKey(([n2, s2]) => [-score(s2), n2]))[0];
+  return best?.[0] ?? null;
+}
+function staffing(store) {
+  const plans2 = store.plans(true), items2 = store.items(), goals2 = store.goals(), focus = store.focus();
+  const events = store.ledger.events(), assigned = store.ledger.assignments(events);
+  const holders = new Set([...store.ledger.claims(events).values()].map((c) => c.run));
+  const max = store.policy.policy.budgets.max_agents;
+  const free = max === null ? null : Math.max(0, max - holders.size);
+  const order = new Map(ranked(items2, goals2, focus).map((it, i) => [it.id, i]));
+  const rank = (p) => Math.min(...planItems(p, items2).map((it) => order.get(it.id) ?? Infinity), Infinity);
+  const moved = store.ledger.lastStatus(events), claims = store.ledger.claims(events);
+  const st = (p) => claims.has(p.id) ? "in-progress" : moved.get(p.id) ?? p.get("status") ?? "";
+  const ready = [...plans2.values()].filter((p) => st(p) === "ready").sort(byKey((p) => [!onFocus(p, items2, focus), rank(p), p.id]));
+  const busy = [...plans2.values()].filter((p) => ACTIVE2.has(st(p)));
+  const out = { free, start: [], waiting: [] };
+  const clash = (p, others) => others.find((o) => p.touches().some((t) => o.touches().some((u) => globsOverlap(t, u))));
+  for (const p of ready) {
+    const deps = unmetDeps(p, plans2), blocked2 = openQuestions(events, p.id).filter((x) => x.blocking);
+    const hit = clash(p, [...busy, ...out.start.map((s2) => plans2.get(s2.id))]);
+    const why = deps.length ? `depends on ${deps.join(", ")}` : blocked2.length ? `waits for an answer (${blocked2.map((x) => x.id).join(", ")})` : hit ? `overlaps ${hit.id} on its touches` : free !== null && out.start.length >= free ? "no free agent (budgets.max_agents)" : "";
+    if (why) out.waiting.push({ id: p.id, why });
+    else out.start.push({ id: p.id, title: p.get("title") ?? "", team: teamFor(p, store.policy.teams), assigned: assigned.get(p.id)?.to ?? null });
+  }
+  return out;
+}
+function staff(store, json = false) {
+  store.require();
+  const s2 = staffing(store);
+  if (json) {
+    store.say(JSON.stringify(s2, null, 2));
+    return;
+  }
+  store.say(s2.free === null ? "Staffing (no max_agents):" : `Staffing: ${s2.free} agent${s2.free === 1 ? "" : "s"} free (budgets.max_agents).`);
+  for (const p of s2.start) {
+    const team = p.team ? ` --team ${p.team}` : "";
+    store.say(`  START  ${p.id}: ${p.title}${p.team ? ` [team ${p.team}]` : ""} \u2192 ` + (p.assigned ? `assigned to ${p.assigned}: hand it to a ${p.assigned} agent` : `PM: assign ${p.id} --to developer${team}`));
+  }
+  for (const w of s2.waiting) store.say(`  WAIT   ${w.id}: ${w.why}`);
+  if (!s2.start.length && !s2.waiting.length) store.say("  nothing ready to start \u2014 the PM ranks, the Architect specs the next plans");
+}
+
 // src/commands/roles.ts
 var View = class {
   constructor(store) {
@@ -8500,6 +8614,12 @@ var View = class {
   status(st) {
     return [...this.plans.values()].filter((p) => p.get("status") === st).sort(byKey((p) => [!onFocus(p, this.items, this.focus), p.id]));
   }
+  get assigned() {
+    return this.store.ledger.assignments(this.events);
+  }
+  gate(step) {
+    return this.store.policy.policy.role_gates[step];
+  }
   ranked(st) {
     return ranked(this.items, this.goals, this.focus).filter((i) => itemStatus(i, this.plans) === st);
   }
@@ -8514,6 +8634,10 @@ var RULES = {
     (v) => openQuestions(v.events).filter((x) => x.escalation).map((x) => `waiting on the executive: ${x.id} \u2014 ${x.text}`),
     (v) => budgetProblems(v.store).map((b) => `over budget: ${b}`),
     (v) => v.status("blocked").map((p) => `unblock ${p.id}: ${p.get("title")}`),
+    (v) => {
+      const n2 = staffing(v.store).start.length;
+      return n2 ? [`staff ${n2} ready plan${n2 > 1 ? "s" : ""}: \`staff\` \u2192 the PM assigns, developers start`] : [];
+    },
     (v) => [...v.plans.values()].filter((p) => p.get("status") === "in-progress").flatMap((p) => overlapping(p, v.plans).map((o) => `${p.id} and ${o.id} overlap on ${o.globs.join(", ")} \u2014 sequence them or split the work`)),
     (v) => {
       const g = v.goals.get(v.focus);
@@ -8525,7 +8649,9 @@ var RULES = {
   pm: [
     (v) => v.ranked("new").filter((i) => i.id.startsWith("BUG-")).slice(0, 3).map((i) => `triage bug ${i.id}: ${i.get("title")}`),
     (v) => v.ranked("new").filter((i) => !i.id.startsWith("BUG-")).slice(0, 3).map((i) => `triage ${i.id}: ${i.get("title")}`),
-    (v) => [...v.goals.values()].filter((g) => ["proposed", "active"].includes(g.get("status") ?? "") && !goalItems(g.id, v.items).some((i) => itemStatus(i, v.plans) !== "done")).map((g) => `break ${g.id} down: it has no open items`)
+    (v) => [...v.goals.values()].filter((g) => ["proposed", "active"].includes(g.get("status") ?? "") && !goalItems(g.id, v.items).some((i) => itemStatus(i, v.plans) !== "done")).map((g) => `break ${g.id} down: it has no open items`),
+    (v) => (v.gate("plan.assigned") === "pm" ? v.status("ready").filter((p) => !v.assigned.has(p.id)) : []).map((p) => `open ${p.id}: ${p.get("title")} \u2192 assign ${p.id} --to developer (\`staff\` shows what can run now)`),
+    (v) => (v.gate("plan.done") === "pm" ? v.status("in-review") : []).filter((p) => complete(v, p)).map((p) => `complete ${p.id}: ${p.get("title")} \u2014 QA's evidence is complete \u2192 move ${p.id} done`)
   ],
   architect: [
     (v) => v.status("draft").map((p) => `refine ${p.id}: ${p.get("title")} to the Definition of Ready`),
@@ -8534,12 +8660,13 @@ var RULES = {
   ],
   developer: [
     (v) => [...v.plans.values()].filter((p) => ["in-progress", "blocked"].includes(p.get("status") ?? "") && v.store.ledger.claims(v.events).get(p.id)?.run === v.store.ledger.who.run).map((p) => `continue ${p.id}: ${p.get("title")} \u2192 resume ${p.id}`),
-    (v) => v.status("ready").filter((p) => !unmetDeps(p, v.plans).length && !v.store.ledger.claims(v.events).has(p.id) && !openQuestions(v.events, p.id).some((x) => x.blocking)).slice(0, 1).map((p) => `start ${p.id}: ${p.get("title")} \u2192 start ${p.id}`)
+    (v) => v.status("ready").filter((p) => (v.assigned.has(p.id) ? v.assigned.get(p.id).to === v.store.ledger.who.role : !v.gate("plan.assigned")) && !unmetDeps(p, v.plans).length && !v.store.ledger.claims(v.events).has(p.id) && !openQuestions(v.events, p.id).some((x) => x.blocking)).slice(0, 1).map((p) => `start ${p.id}: ${p.get("title")} \u2192 start ${p.id}`)
   ],
   qa: [
     (v) => v.status("in-review").filter((p) => !implementers(v.events, p.id).has(v.store.ledger.who.run)).map((p) => {
       const missing = evidence(v.store, p).flatMap((e, i) => e.verify?.ok && e.independent ? [] : [`AC${i + 1}`]);
-      return missing.length ? `verify ${p.id}: ${missing.join(", ")} \u2192 checkpoint ${p.id} --run "<check>" --ac \u2026` : `${p.id}: evidence complete \u2192 move ${p.id} done`;
+      const closer = v.gate("plan.done");
+      return missing.length ? `verify ${p.id}: ${missing.join(", ")} \u2192 checkpoint ${p.id} --run "<check>" --ac \u2026` : closer && closer !== "qa" ? `${p.id}: evidence complete \u2192 report to the ${closer}, who completes it` : `${p.id}: evidence complete \u2192 move ${p.id} done`;
     }),
     (v) => v.ranked("new").filter((i) => i.id.startsWith("BUG-")).slice(0, 2).map((i) => `reproduce ${i.id}: ${i.get("title")}`)
   ],
@@ -8548,6 +8675,7 @@ var RULES = {
     (v) => v.status("in-review").filter((p) => p.hasContent("Rollout & rollback") && !/^\s*n\/a\b/i.test(stripComments(p.section("Rollout & rollback")))).map((p) => `prepare the rollout of ${p.id}: ${p.get("title")} (see its Rollout & rollback)`)
   ]
 };
+var complete = (v, p) => evidence(v.store, p).every((e) => e.verify?.ok && e.independent);
 function roleLines(store, role) {
   const roles = store.policy.roles;
   if (!roles.includes(role)) fail(`Unknown role '${role}'. Roles: ${roles.join(", ")}.`);
@@ -8908,6 +9036,12 @@ var Ledger = class _Ledger {
       else if (ev.type === "release") live.delete(ev.ref);
     }
     return live;
+  }
+  /** plan → its current assignment (the last `assign` event: `to` a role, optionally a `team`). */
+  assignments(events = this.events()) {
+    const out = /* @__PURE__ */ new Map();
+    for (const ev of events) if (ev.type === "assign" && ev.ref) out.set(ev.ref, ev);
+    return out;
   }
   /** ref → the status its last `move` event set. */
   lastStatus(events = this.events()) {
@@ -10017,8 +10151,10 @@ var DETAIL = {
   checkpoint: (e) => `at ${e.step}${e.sha ? ` (${String(e.sha).slice(0, 7)})` : ""}` + (e.verify ?? []).map((v) => ` ${v.ok ? "\u2713" : "\u2717"} ${v.cmd}`).join("") + (e.attempt ? ` \u2014 tried: ${e.attempt.what}` : ""),
   ask: (e) => `${e.qid} \u2192 ${e.to}${e.escalation ? " (escalation)" : ""}: ${e.text}`,
   answer: (e) => `${e.qid}: ${e.text}${e.approved_by ? ` (by ${e.approved_by})` : ""}`,
+  assign: (e) => `to the ${e.to} role${e.team ? `, team ${e.team}` : ""}${e.note ? ` \u2014 ${e.note}` : ""}`,
   usage: (e) => `${e.tokens_in} in / ${e.tokens_out} out tokens, $${Number(e.cost ?? 0).toFixed(2)}${e.model ? ` (${e.model})` : ""}`
 };
+var EVENT_TYPES = Object.keys(DETAIL);
 function showLedger(store, o = {}) {
   store.require();
   if (o.type && !DETAIL[o.type]) fail(`Unknown event type '${o.type}'. Valid: ${Object.keys(DETAIL).join(", ")}`);
@@ -10179,6 +10315,23 @@ var TOOLS = {
       move(st, s(a, "id"), s(a, "status"), s(a, "note"));
     }
   },
+  assign: {
+    description: "Open a ready plan for a role (`crew.mjs assign`): records who implements it; `start` then needs the assignment. Under the lifecycle preset only the PM assigns.",
+    input: obj({
+      id: text("e.g. P-004"),
+      to: text("the role that implements it, usually developer"),
+      team: text("optional team from the policy"),
+      note: text("optional note")
+    }, ["id", "to"]),
+    run: (st, a) => {
+      assign(st, s(a, "id"), s(a, "to"), s(a, "team"), s(a, "note"));
+    }
+  },
+  staff: {
+    description: "What can run in parallel now (`crew.mjs staff`): ready plans whose dependencies are done, that overlap nothing in progress or each other, within budgets.max_agents, each routed to a team; and why the others wait.",
+    input: obj({ json: { type: "boolean" } }),
+    run: (st, a) => staff(st, a.json === true)
+  },
   log: {
     description: "Append a dated line to a document's log (`crew.mjs log`).",
     input: obj({ id: text("e.g. P-004"), text: text("the log entry") }, ["id", "text"]),
@@ -10287,7 +10440,7 @@ var TOOLS = {
     description: "Recent events from the shared ledger and the live claims (`crew.mjs ledger --json`).",
     input: obj({
       ref: text("only events about this ID"),
-      type: { type: "string", enum: ["claim", "release", "move", "log", "usage", "learn", "checkpoint", "ask", "answer"] },
+      type: { type: "string", enum: EVENT_TYPES },
       limit: num("how many, newest last (default 20)")
     }),
     run: (st, a) => showLedger(st, { ref: s(a, "ref"), type: s(a, "type"), limit: n(a, "limit"), json: true })
