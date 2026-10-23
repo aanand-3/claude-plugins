@@ -5,11 +5,11 @@ goal:
 items: CHORE-006
 touches: .crew/config.yaml, README.md, plugins/crew/.claude-plugin/plugin.json, plugins/crew/skills/{codemap, discover, git-setup, guidelines, kickoff, onboard}/**, packages/hub/src/commands/checks.ts, packages/hub/test/**, plugins/crew/skills/hub/dist/**, .crew/bin/crew.mjs, tests/crew/**
 depends_on:
-status: ready
+status: in-progress
 branch: plan/P-001-nothing-optional-graphify-always-on
 pr:
 created: 2026-10-24
-started:
+started: 2026-10-24
 completed:
 assignee: developer
 ---
@@ -84,5 +84,6 @@ graphify stays an external tool: PyPI `graphifyy`, installed with uv, the one de
 
 - 2026-10-24: status draft → ready
 - 2026-10-24: assigned to the developer role
+- 2026-10-24: status ready → in-progress — branch plan/P-001-nothing-optional-graphify-always-on
 
 ## Outcome
