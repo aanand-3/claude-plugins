@@ -1,7 +1,7 @@
 /** The hub graph: the JSON contract between the CLI (`export`), the local server and the UI.
  * Bump SCHEMA_VERSION on any breaking change; consumers check it. Types only, no runtime code. */
 
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 export type DocKind = "idea" | "goal" | "item" | "plan";
 export type EdgeType = "serves" | "in-goal" | "delivers" | "depends-on" | "mentions";
@@ -23,6 +23,7 @@ export interface GraphDoc {
   waitsFor: string[];               // unfinished dependencies of an open plan
   touches: string[];                // paths (globs) a plan expects to change
   onFocus: boolean;                 // plans: serves the focus goal (or only bugs/chores)
+  owner: { actor: string; run: string; since: string } | null;   // the live claim on a plan (from the ledger)
   branch: string | null;
   pr: string | null;
   dates: Record<string, string>;    // created, started, completed, decided, closed
@@ -43,6 +44,7 @@ export interface Graph {
   focus: string | null;             // the focus goal
   docs: GraphDoc[];
   edges: GraphEdge[];
+  spend: { cost: number; tokensIn: number; tokensOut: number; byActor: Record<string, number> };  // ledger usage events
   next: string[];                   // the lines `crew.mjs next` prints
   check: { errors: string[]; hints: string[] };
 }

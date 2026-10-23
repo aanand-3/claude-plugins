@@ -4,6 +4,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as git from "./git.js";
 import { assemble, Doc, fill } from "./doc.js";
+import { Ledger } from "./ledger.js";
 import { CLOSED, DEFAULT_SETTINGS, DIRS, type Kind, PRIORITIES } from "./model.js";
 import { fail, kindOf, stripComments, today } from "./text.js";
 import { Workspace } from "./workspace.js";
@@ -38,6 +39,7 @@ export class Store {
   readonly dir: string;
   readonly dirs: Record<DirKind, string>;
   readonly ideaPath: string;
+  private ledgerCache: Ledger | null = null;
 
   constructor(readonly ws: Workspace) {
     this.dir = join(ws.root, ".crew");
@@ -47,6 +49,11 @@ export class Store {
 
   static open(root = git.repoRoot()): Store {
     return new Store(new Workspace(root));
+  }
+
+  /** The shared event log (claims, moves, logs, usage); see ledger.ts. */
+  get ledger(): Ledger {
+    return (this.ledgerCache ??= Ledger.at(this.ws, this.dir));
   }
 
   rel(p: string): string {

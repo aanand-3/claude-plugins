@@ -32,7 +32,7 @@ const up = (s: string | null) => (s ?? "").toUpperCase();
 
 export function findings(store: Store): Findings {
   const s = new Snapshot(store), f: Findings = { errors: [], hints: [] };
-  for (const rule of [idea, plans, items, goals, hygiene]) rule(s, f);
+  for (const rule of [idea, plans, items, goals, ledger, hygiene]) rule(s, f);
   return f;
 }
 
@@ -142,6 +142,19 @@ function goals(s: Snapshot, f: Findings): void {
       f.hints.push(`${eid}: has started plans but is still 'proposed' — \`move ${eid} active\` (on main)`);
     }
     if (!CLOSED.has(st ?? "") && !eps.length && !eitems.length) f.hints.push(`${eid}: no plans and no items — break the goal down`);
+  }
+}
+
+/** The ledger and the documents must tell the same story. */
+function ledger(s: Snapshot, f: Findings): void {
+  const events = s.store.ledger.events();
+  for (const [ref, claim] of s.store.ledger.claims(events)) {
+    const st = s.allPlans.get(ref)?.get("status");
+    if (st && CLOSED.has(st)) f.hints.push(`${ref}: ${st} but still claimed by ${claim.actor} — \`release ${ref}\``);
+  }
+  for (const [ref, last] of s.store.ledger.lastStatus(events)) {
+    const st = s.allPlans.get(ref)?.get("status");
+    if (st && st !== last) f.hints.push(`${ref}: the ledger last moved it to ${last}, but the plan says ${st} (edited by hand?)`);
   }
 }
 

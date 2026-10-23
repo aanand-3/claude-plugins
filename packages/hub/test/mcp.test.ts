@@ -45,7 +45,7 @@ afterAll(() => server?.kill());
 it("lists the hub tools with input schemas", async () => {
   const { tools } = await rpc<{ tools: { name: string; inputSchema: { type: string; required?: string[] } }[] }>("tools/list");
   expect(tools.map((t) => t.name)).toEqual(
-    ["next", "current", "status", "check", "graph", "new_item", "triage", "move", "log", "focus"]);
+    ["next", "current", "status", "check", "graph", "new_item", "triage", "move", "log", "focus", "usage", "ledger"]);
   expect(tools.every((t) => t.inputSchema.type === "object")).toBe(true);
   expect(tools.find((t) => t.name === "move")!.inputSchema.required).toEqual(["id", "status"]);
 });
@@ -55,7 +55,7 @@ it("answers like the CLI", async () => {
   expect(r.isError).toBe(false);
   expect(r.content[0].text).toBe(tr("next").trimEnd());
   const graph = JSON.parse((await call("graph")).content[0].text);
-  expect(graph.schemaVersion).toBe(2);
+  expect(graph.schemaVersion).toBe(3);
 });
 
 it("captures an item, writing it to .crew/", async () => {

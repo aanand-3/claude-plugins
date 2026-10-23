@@ -23,7 +23,7 @@ describe("graph", () => {
   it("has every document kind and every edge type", () => {
     expect(new Set(graph.docs.map((d) => d.kind))).toEqual(new Set(["idea", "goal", "item", "plan"]));
     expect(new Set(graph.edges.map((e) => e.type))).toEqual(new Set(["serves", "in-goal", "delivers", "depends-on", "mentions"]));
-    expect(graph.schemaVersion).toBe(2);
+    expect(graph.schemaVersion).toBe(3);
     expect(graph.focus).toBe("G-002");
   });
 
@@ -31,6 +31,8 @@ describe("graph", () => {
     expect(doc("FEAT-006")).toMatchObject({ status: "in-progress", plan: "P-006", goal: "G-002" });
     expect(doc("P-006")).toMatchObject({ status: "in-progress", source: "plan/P-006-daily-check-in", tasks: { done: 2, total: 4 },
       goal: "G-002", onFocus: true, touches: ["src/checkins/**", "web/home/**"] });
+    expect(doc("P-006").owner).toMatchObject({ actor: "Sample" });  // the ledger's live claim
+    expect(doc("P-001").owner).toBeNull();                          // released when it was done
     expect(doc("P-001")).toMatchObject({ goal: "G-001", onFocus: false });
     expect(doc("IDEA")).toMatchObject({ status: "decided", tasks: { done: 0, total: 3 }, gate: null });
     expect(graph.edges).toContainEqual({ from: "G-001", to: "IDEA", type: "serves" });
@@ -93,7 +95,7 @@ describe("ui server", () => {
   it("serves the page without data (the page fetches it) and the graph as JSON", async () => {
     const page = await (await fetch(url)).text();
     expect(page).toContain('<script id="graph" type="application/json">null</script>');
-    expect((await (await fetch(`${url}api/graph`)).json()).schemaVersion).toBe(2);
+    expect((await (await fetch(`${url}api/graph`)).json()).schemaVersion).toBe(3);
   });
 
   it("refuses commands without the page's token, from another origin, or for another host", async () => {

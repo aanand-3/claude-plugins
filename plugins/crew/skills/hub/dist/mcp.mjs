@@ -7,6 +7,7 @@ import { pathToFileURL } from "node:url";
 
 // src/core/git.ts
 import { spawnSync } from "node:child_process";
+import { resolve } from "node:path";
 
 // src/core/model.ts
 var IDEA_ID = "IDEA";
@@ -95,8 +96,8 @@ function today() {
   const d = /* @__PURE__ */ new Date();
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
-function pad(n) {
-  return String(n).padStart(2, "0");
+function pad(n2) {
+  return String(n2).padStart(2, "0");
 }
 function idList(s2) {
   return (s2 ?? "").split(/[,\s]+/).map((x) => x.trim().toUpperCase()).filter(Boolean);
@@ -107,8 +108,8 @@ function kindOf(docId) {
   return m && KINDS[m[1]] || null;
 }
 function norm(name) {
-  const n = name.toLowerCase().replace(/[^a-z]/g, "");
-  return SECTION_ALIASES[n] ?? n;
+  const n2 = name.toLowerCase().replace(/[^a-z]/g, "");
+  return SECTION_ALIASES[n2] ?? n2;
 }
 function slugify(title) {
   const words2 = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").split("-").filter(Boolean);
@@ -163,6 +164,13 @@ function git(args, check2 = false) {
 }
 function repoRoot() {
   return git(["rev-parse", "--show-toplevel"])?.trim() || process.cwd();
+}
+function commonDir(root) {
+  const out = git(["-C", root, "rev-parse", "--git-common-dir"])?.trim();
+  return out ? resolve(root, out) : null;
+}
+function userName() {
+  return /^(.*?) </.exec(git(["var", "GIT_AUTHOR_IDENT"]) ?? "")?.[1].trim() || null;
 }
 function currentBranch() {
   return git(["branch", "--show-current"])?.trim() || null;
@@ -409,7 +417,7 @@ ${line}`;
     return body2.split("\n").map((l) => l.trim()).some((line) => line && !EMPTY_LINES.has(line) && !line.startsWith("|") && !/^\*\*[^*]+:\*\*$/.test(line));
   }
   missing(names) {
-    return names.filter((n) => !this.hasContent(n));
+    return names.filter((n2) => !this.hasContent(n2));
   }
   bullets(name) {
     return stripComments(this.section(name)).split("\n").map((l) => l.trim()).filter((l) => l.startsWith("- ") && l !== "-").map((l) => l.slice(2).trim());
@@ -497,21 +505,21 @@ ${body2.trim()}
 // src/core/gates.ts
 function triageProblems(item) {
   const prefix = item.id.split("-")[0];
-  const problems = item.missing(TRIAGE_SECTIONS[prefix]).map((n) => `empty section: ${n}`);
+  const problems = item.missing(TRIAGE_SECTIONS[prefix]).map((n2) => `empty section: ${n2}`);
   if (!PRIORITIES.includes(item.get("priority") ?? "")) problems.push("no priority (P0\u2013P3)");
   if (prefix === "BUG" && !Object.hasOwn(SEVERITY_PRIORITY, item.get("severity") ?? "")) problems.push("no severity (S1\u2013S4)");
   return problems;
 }
 function readinessProblems(store, plan) {
   return [
-    ...plan.missing(READY_SECTIONS).map((n) => `empty section: ${n}`),
+    ...plan.missing(READY_SECTIONS).map((n2) => `empty section: ${n2}`),
     ...plan.touches().length ? [] : ["no touches: (the paths this plan will change)"],
     ...taskProblems(store, plan),
     ...itemProblems(store, plan)
   ];
 }
 function decisionProblems(idea2) {
-  const problems = idea2.missing(DECIDED_SECTIONS).map((n) => `empty section: ${n}`);
+  const problems = idea2.missing(DECIDED_SECTIONS).map((n2) => `empty section: ${n2}`);
   if (idea2.hasContent("Success criteria") && !idea2.checklist("Success criteria").length) {
     problems.push("Success criteria must be a checklist (`- [ ] \u2026`) so each one can be verified");
   }
@@ -544,19 +552,139 @@ function itemProblems(store, plan) {
 }
 
 // src/core/store.ts
-import { existsSync as existsSync2, realpathSync } from "node:fs";
-import { dirname as dirname2, join as join2, resolve } from "node:path";
+import { existsSync as existsSync3, realpathSync } from "node:fs";
+import { dirname as dirname3, join as join3, resolve as resolve2 } from "node:path";
 import { fileURLToPath } from "node:url";
 
+// src/core/ledger.ts
+import { createHash } from "node:crypto";
+import { appendFileSync, closeSync, existsSync, mkdirSync, openSync, readFileSync, statSync, unlinkSync } from "node:fs";
+import { basename, dirname, join } from "node:path";
+var LOCK_WAIT_MS = 5e3;
+var LOCK_STALE_MS = 3e4;
+function whoAmI(root) {
+  const hash = createHash("sha1").update(root).digest("hex").slice(0, 8);
+  return {
+    run: process.env.CREW_RUN || `wt:${basename(root)}-${hash}`,
+    actor: process.env.CREW_ACTOR || userName() || "unknown",
+    worktree: root
+  };
+}
+var Ledger = class _Ledger {
+  constructor(ws, path, who) {
+    this.ws = ws;
+    this.path = path;
+    this.who = who;
+  }
+  ws;
+  path;
+  who;
+  staged = [];
+  hooked = false;
+  /** `<git common dir>/crew/ledger.jsonl`; `.crew/ledger.jsonl` outside git. */
+  static at(ws, crewDir) {
+    const common = commonDir(ws.root);
+    return new _Ledger(ws, common ? join(common, "crew", "ledger.jsonl") : join(crewDir, "ledger.jsonl"), whoAmI(ws.root));
+  }
+  /** Every event on disk, then the ones this command has staged. */
+  events() {
+    return [...this.onDisk(), ...this.staged];
+  }
+  record(type, ref, fields = {}) {
+    const ev = { ts: (/* @__PURE__ */ new Date()).toISOString(), type, ref, ...this.who, ...fields };
+    this.staged.push(ev);
+    if (!this.hooked) {
+      this.hooked = true;
+      this.ws.beforeFlush(() => this.commit());
+    }
+    return ev;
+  }
+  /** ref → its live claim (a claim not followed by a release of the same ref). */
+  claims(events = this.events()) {
+    const live = /* @__PURE__ */ new Map();
+    for (const ev of events) {
+      if (!ev.ref) continue;
+      if (ev.type === "claim") live.set(ev.ref, ev);
+      else if (ev.type === "release") live.delete(ev.ref);
+    }
+    return live;
+  }
+  /** ref → the status its last `move` event set. */
+  lastStatus(events = this.events()) {
+    const out = /* @__PURE__ */ new Map();
+    for (const ev of events) if (ev.type === "move" && ev.ref) out.set(ev.ref, String(ev.to));
+    return out;
+  }
+  spend(events = this.events()) {
+    const s2 = { cost: 0, tokensIn: 0, tokensOut: 0, byActor: {} };
+    for (const ev of events) {
+      if (ev.type !== "usage") continue;
+      const cost = Number(ev.cost) || 0;
+      s2.cost += cost;
+      s2.tokensIn += Number(ev.tokens_in) || 0;
+      s2.tokensOut += Number(ev.tokens_out) || 0;
+      s2.byActor[ev.actor] = (s2.byActor[ev.actor] ?? 0) + cost;
+    }
+    return s2;
+  }
+  onDisk() {
+    if (!existsSync(this.path)) return [];
+    return readFileSync(this.path, "utf8").split("\n").filter((l) => l.trim()).flatMap((l) => {
+      try {
+        return [JSON.parse(l)];
+      } catch {
+        return [];
+      }
+    });
+  }
+  /** Under the lock: re-check staged claims against what other runs wrote meanwhile, then append. */
+  commit() {
+    if (!this.staged.length) return;
+    mkdirSync(dirname(this.path), { recursive: true });
+    const lock = `${this.path}.lock`;
+    acquire(lock);
+    try {
+      const live = this.claims(this.onDisk());
+      for (const ev of this.staged.filter((e) => e.type === "claim" && e.ref && !e.force)) {
+        const held = live.get(ev.ref);
+        if (held && held.run !== ev.run) fail(`${ev.ref} was just claimed by ${held.actor} (${held.run}). Nothing was changed.`);
+      }
+      appendFileSync(this.path, this.staged.map((e) => `${JSON.stringify(e)}
+`).join(""));
+      this.staged = [];
+    } finally {
+      unlinkSync(lock);
+    }
+  }
+};
+function acquire(lock) {
+  const deadline = Date.now() + LOCK_WAIT_MS;
+  for (; ; ) {
+    try {
+      closeSync(openSync(lock, "wx"));
+      return;
+    } catch (e) {
+      if (e.code !== "EEXIST") throw e;
+      try {
+        if (Date.now() - statSync(lock).mtimeMs > LOCK_STALE_MS) unlinkSync(lock);
+      } catch {
+      }
+      if (Date.now() > deadline) fail(`The ledger is locked (${lock}). Another crew command is writing; retry.`);
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 20);
+    }
+  }
+}
+
 // src/core/workspace.ts
-import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
-import { dirname, join, relative, sep } from "node:path";
+import { chmodSync, existsSync as existsSync2, mkdirSync as mkdirSync2, readdirSync, readFileSync as readFileSync2, rmSync, statSync as statSync2, writeFileSync } from "node:fs";
+import { dirname as dirname2, join as join2, relative, sep } from "node:path";
 var Workspace = class {
   constructor(root) {
     this.root = root;
   }
   root;
   pending = /* @__PURE__ */ new Map();
+  hooks = [];
   output = [];
   /** A line for stdout (shown even when the command later refuses). */
   say(line) {
@@ -564,7 +692,7 @@ var Workspace = class {
   }
   read(path) {
     if (this.pending.has(path)) return this.pending.get(path)?.text ?? null;
-    return this.isFileOnDisk(path) ? readFileSync(path, "utf8") : null;
+    return this.isFileOnDisk(path) ? readFileSync2(path, "utf8") : null;
   }
   write(path, text2, mode) {
     this.pending.set(path, { text: text2, mode });
@@ -576,14 +704,14 @@ var Workspace = class {
     return this.pending.has(path) ? this.pending.get(path) !== null : this.isFileOnDisk(path);
   }
   isDir(path) {
-    if (existsSync(path) && statSync(path).isDirectory()) return true;
+    if (existsSync2(path) && statSync2(path).isDirectory()) return true;
     return [...this.pending].some(([p, v]) => v !== null && p.startsWith(path + sep));
   }
   /** File names directly inside dir (staged files included, staged removals excluded), sorted. */
   list(dir) {
-    const names = new Set(existsSync(dir) && statSync(dir).isDirectory() ? readdirSync(dir, { withFileTypes: true }).filter((e) => e.isFile()).map((e) => e.name) : []);
+    const names = new Set(existsSync2(dir) && statSync2(dir).isDirectory() ? readdirSync(dir, { withFileTypes: true }).filter((e) => e.isFile()).map((e) => e.name) : []);
     for (const [p, v] of this.pending) {
-      if (dirname(p) !== dir) continue;
+      if (dirname2(p) !== dir) continue;
       const name = p.slice(dir.length + 1);
       if (v === null) names.delete(name);
       else names.add(name);
@@ -594,29 +722,34 @@ var Workspace = class {
     return relative(this.root, path).split(sep).join("/");
   }
   join(...parts) {
-    return join(...parts);
+    return join2(...parts);
+  }
+  /** Run fn at the start of flush(), before any file is written; a HubError there aborts the whole flush. */
+  beforeFlush(fn) {
+    this.hooks.push(fn);
   }
   flush() {
+    for (const hook of this.hooks.splice(0)) hook();
     for (const [path, v] of this.pending) {
       if (v === null) {
         rmSync(path, { force: true, recursive: true });
         continue;
       }
-      mkdirSync(dirname(path), { recursive: true });
+      mkdirSync2(dirname2(path), { recursive: true });
       writeFileSync(path, v.text);
       if (v.mode !== void 0) chmodSync(path, v.mode);
     }
     this.pending.clear();
   }
   isFileOnDisk(path) {
-    return existsSync(path) && statSync(path).isFile();
+    return existsSync2(path) && statSync2(path).isFile();
   }
 };
 
 // src/core/store.ts
 var SCRIPT_FILE = fileURLToPath(import.meta.url);
-var SCRIPT_DIR = dirname2(SCRIPT_FILE);
-var SKILL_DIR = dirname2(SCRIPT_DIR);
+var SCRIPT_DIR = dirname3(SCRIPT_FILE);
+var SKILL_DIR = dirname3(SCRIPT_DIR);
 function yamlBlock(text2, block) {
   const out = {};
   let inside = false;
@@ -632,16 +765,21 @@ function yamlBlock(text2, block) {
 var Store = class _Store {
   constructor(ws) {
     this.ws = ws;
-    this.dir = join2(ws.root, ".crew");
-    this.dirs = Object.fromEntries(Object.entries(DIRS).map(([k, v]) => [k, join2(this.dir, v)]));
-    this.ideaPath = join2(this.dir, "idea.md");
+    this.dir = join3(ws.root, ".crew");
+    this.dirs = Object.fromEntries(Object.entries(DIRS).map(([k, v]) => [k, join3(this.dir, v)]));
+    this.ideaPath = join3(this.dir, "idea.md");
   }
   ws;
   dir;
   dirs;
   ideaPath;
+  ledgerCache = null;
   static open(root = repoRoot()) {
     return new _Store(new Workspace(root));
+  }
+  /** The shared event log (claims, moves, logs, usage); see ledger.ts. */
+  get ledger() {
+    return this.ledgerCache ??= Ledger.at(this.ws, this.dir);
   }
   rel(p) {
     return this.ws.rel(p);
@@ -654,15 +792,15 @@ var Store = class _Store {
   }
   /** Project copy wins (so a cloned repo works without the plugin); fall back to the skill's. */
   template(name) {
-    for (const d of [join2(this.dir, "templates"), join2(SKILL_DIR, "templates")]) {
-      const text2 = this.ws.read(join2(d, name));
+    for (const d of [join3(this.dir, "templates"), join3(SKILL_DIR, "templates")]) {
+      const text2 = this.ws.read(join3(d, name));
       if (text2 !== null) return text2;
     }
     return fail(`Template ${name} not found.`);
   }
   /** Hub settings from the `hub:` block of .crew/config.yaml, with defaults. */
   settings() {
-    const text2 = this.ws.read(join2(this.dir, "config.yaml"));
+    const text2 = this.ws.read(join3(this.dir, "config.yaml"));
     const s2 = { ...DEFAULT_SETTINGS, ...text2 === null ? {} : yamlBlock(text2, "hub") };
     const int = (k) => /^\d+$/.test(s2[k]) ? parseInt(s2[k], 10) : parseInt(DEFAULT_SETTINGS[k], 10);
     return { wip_limit: int("wip_limit"), max_tasks: int("max_tasks") };
@@ -674,8 +812,8 @@ var Store = class _Store {
   }
   loadDir(d) {
     const docs = /* @__PURE__ */ new Map();
-    for (const name of this.ws.list(d).filter((n) => n.endsWith(".md"))) {
-      const path = join2(d, name);
+    for (const name of this.ws.list(d).filter((n2) => n2.endsWith(".md"))) {
+      const path = join3(d, name);
       const doc = this.attach(Doc.parse(this.ws.read(path), path));
       if (doc.id) docs.set(doc.id, doc);
     }
@@ -740,13 +878,13 @@ var Store = class _Store {
     const width = 3;
     const names = this.ws.list(d);
     const rel = `${this.rel(d)}/`;
-    for (const ref of allRefs()) names.push(...lsTree(ref, rel).map((n) => n.split("/").pop()));
-    const nums = names.map((n) => new RegExp(`^${prefix}-(\\d+)`).exec(n)).filter((m) => m).map((m) => parseInt(m[1], 10));
+    for (const ref of allRefs()) names.push(...lsTree(ref, rel).map((n2) => n2.split("/").pop()));
+    const nums = names.map((n2) => new RegExp(`^${prefix}-(\\d+)`).exec(n2)).filter((m) => m).map((m) => parseInt(m[1], 10));
     return `${prefix}-${String(Math.max(0, ...nums) + 1).padStart(width, "0")}`;
   }
   // -- creating documents from drafts
   readDraft(draftPath, what) {
-    const file = resolve(draftPath);
+    const file = resolve2(draftPath);
     const text2 = this.ws.read(file);
     if (text2 === null) {
       fail(`Draft ${draftPath} not found. Write the ${what}'s sections there first (see .crew/templates/ and the writing guide).`);
@@ -754,8 +892,8 @@ var Store = class _Store {
     return [file, text2];
   }
   consume(draftFile, keep = false) {
-    const real = (p) => existsSync2(p) ? realpathSync(p) : p;
-    if (!keep && real(draftFile).startsWith(real(resolve(this.dir, "drafts")) + "/")) this.ws.remove(draftFile);
+    const real = (p) => existsSync3(p) ? realpathSync(p) : p;
+    if (!keep && real(draftFile).startsWith(real(resolve2(this.dir, "drafts")) + "/")) this.ws.remove(draftFile);
   }
   build(template, draft, fields) {
     const tmpl = fill(stripComments(this.template(template)), { date: today(), ...fields }).replace(/^(\w+): $/gm, "$1:");
@@ -801,6 +939,8 @@ function move(store, docId, status2, note, force = false) {
   doc.set("status", status2);
   doc.appendLog(`status ${old} \u2192 ${status2}` + (note ? ` \u2014 ${note}` : ""), LOG_SECTION[kind] ?? "Progress log");
   doc.save();
+  store.ledger.record("move", doc.id, { from: old, to: status2, ...note ? { note } : {} });
+  if (CLOSED.has(status2) && store.ledger.claims().has(doc.id)) store.ledger.record("release", doc.id, { reason: status2 });
   store.say(`${doc.id}: ${old} \u2192 ${status2}`);
   return doc;
 }
@@ -814,7 +954,7 @@ function guard(store, kind, doc, status2) {
     problems = doc.tasks().filter(([done]) => !done).map(([, t]) => `unchecked task: ${t}`);
     label = "can't be done";
   } else if (kind === "goal" && status2 === "active") {
-    problems = doc.missing(["Outcome", "Acceptance criteria"]).map((n) => `empty section: ${n}`);
+    problems = doc.missing(["Outcome", "Acceptance criteria"]).map((n2) => `empty section: ${n2}`);
     label = "can't be active";
   } else if (kind === "item" && status2 === "triaged") {
     problems = triageProblems(doc);
@@ -833,10 +973,23 @@ function stamp(kind, doc, status2) {
   if (kind === "item" && ITEM_CLOSED.has(status2)) doc.set("closed", today());
   if (status2 === "done") doc.set("completed", today());
 }
+function usage(store, u) {
+  store.require();
+  if (u.tokensIn === void 0 && u.tokensOut === void 0 && u.cost === void 0) fail("Give --tokens-in, --tokens-out or --cost.");
+  if (u.cost !== void 0 && !(u.cost >= 0)) fail("--cost must be a number \u2265 0.");
+  store.ledger.record("usage", u.ref ? u.ref.toUpperCase() : null, {
+    tokens_in: u.tokensIn ?? 0,
+    tokens_out: u.tokensOut ?? 0,
+    cost: u.cost ?? 0,
+    ...u.model ? { model: u.model } : {}
+  });
+  store.say(`usage recorded for ${store.ledger.who.actor} (${store.ledger.who.run})`);
+}
 function log(store, docId, text2) {
   const doc = store.find(docId);
   doc.appendLog(text2, LOG_SECTION[kindOf(docId) ?? "plan"] ?? "Progress log");
   doc.save();
+  store.ledger.record("log", doc.id, { text: text2 });
 }
 
 // src/commands/backlog.ts
@@ -908,7 +1061,7 @@ Nothing was changed.`);
 }
 
 // src/commands/checks.ts
-import { join as join3 } from "node:path";
+import { join as join4 } from "node:path";
 var Snapshot = class {
   constructor(store) {
     this.store = store;
@@ -933,7 +1086,7 @@ var valid = (flow, st) => st !== null && Object.hasOwn(flow, st);
 var up2 = (s2) => (s2 ?? "").toUpperCase();
 function findings(store) {
   const s2 = new Snapshot(store), f = { errors: [], hints: [] };
-  for (const rule of [idea, plans, items, goals, hygiene]) rule(s2, f);
+  for (const rule of [idea, plans, items, goals, ledger, hygiene]) rule(s2, f);
   return f;
 }
 function check(store) {
@@ -1006,10 +1159,10 @@ function items(s2, f) {
       const problems = triageProblems(it);
       if (problems.length) f.errors.push(`${iid}: triaged but ${problems.join("; ")}`);
     }
-    const owner = up2(it.get("plan"));
-    if (owner && !s2.allPlans.has(owner)) f.errors.push(`${iid}: linked to missing plan ${owner}`);
-    if (s2.allPlans.get(owner)?.get("status") === "dropped") {
-      f.hints.push(`${iid}: its plan ${owner} was dropped \u2014 clear \`plan:\` to return it to the backlog`);
+    const owner2 = up2(it.get("plan"));
+    if (owner2 && !s2.allPlans.has(owner2)) f.errors.push(`${iid}: linked to missing plan ${owner2}`);
+    if (s2.allPlans.get(owner2)?.get("status") === "dropped") {
+      f.hints.push(`${iid}: its plan ${owner2} was dropped \u2014 clear \`plan:\` to return it to the backlog`);
     }
     if (it.get("goal") && !s2.goals.has(up2(it.get("goal")))) f.errors.push(`${iid}: references missing goal ${it.get("goal")}`);
     if (iid.startsWith("BUG-") && it.get("priority") === "P0" && ["new", "triaged"].includes(itemStatus(it, s2.allPlans))) {
@@ -1036,25 +1189,36 @@ function goals(s2, f) {
     if (!CLOSED.has(st ?? "") && !eps.length && !eitems.length) f.hints.push(`${eid}: no plans and no items \u2014 break the goal down`);
   }
 }
+function ledger(s2, f) {
+  const events = s2.store.ledger.events();
+  for (const [ref, claim] of s2.store.ledger.claims(events)) {
+    const st = s2.allPlans.get(ref)?.get("status");
+    if (st && CLOSED.has(st)) f.hints.push(`${ref}: ${st} but still claimed by ${claim.actor} \u2014 \`release ${ref}\``);
+  }
+  for (const [ref, last] of s2.store.ledger.lastStatus(events)) {
+    const st = s2.allPlans.get(ref)?.get("status");
+    if (st && st !== last) f.hints.push(`${ref}: the ledger last moved it to ${last}, but the plan says ${st} (edited by hand?)`);
+  }
+}
 function hygiene(s2, f) {
   const ahead = [...s2.allPlans.values()].filter((p) => ["draft", "ready"].includes(p.get("status") ?? ""));
   if (ahead.length > MAX_WRITTEN_AHEAD) {
     f.hints.push(`${ahead.length} plans written ahead of the work (> ${MAX_WRITTEN_AHEAD}) \u2014 keep later work as backlog items so plans don't go stale`);
   }
-  const leftovers = s2.store.ws.list(join3(s2.store.dir, "drafts")).filter((n) => n.endsWith(".md"));
+  const leftovers = s2.store.ws.list(join4(s2.store.dir, "drafts")).filter((n2) => n2.endsWith(".md"));
   if (leftovers.length) {
     f.hints.push(`unconverted drafts in .crew/drafts/: ${leftovers.join(", ")} \u2014 create the document from them or delete`);
   }
-  if (s2.store.ws.isDir(join3(s2.store.ws.root, ".project"))) {
+  if (s2.store.ws.isDir(join4(s2.store.ws.root, ".project"))) {
     f.hints.push("a .project/ directory from project-kit is still here \u2014 `crew.mjs migrate` moves it into .crew/");
   }
 }
 
 // src/commands/graph.ts
-import { basename } from "node:path";
+import { basename as basename2 } from "node:path";
 
 // src/graph-types.ts
-var SCHEMA_VERSION = 2;
+var SCHEMA_VERSION = 3;
 
 // src/commands/graph.ts
 var ID_RE = /\b(?:IDEA|(?:G|P|FEAT|BUG|CHORE|SPIKE)-\d+)\b/g;
@@ -1062,7 +1226,13 @@ var DATE_KEYS = ["created", "started", "completed", "decided", "closed"];
 var up3 = (s2) => s2 ? s2.toUpperCase() : null;
 function buildGraph(store) {
   store.require();
-  const all = { goals: store.goals(), items: store.items(), plans: store.plans(true), focus: store.focus() };
+  const all = {
+    goals: store.goals(),
+    items: store.items(),
+    plans: store.plans(true),
+    focus: store.focus(),
+    claims: store.ledger.claims()
+  };
   const docs = [];
   const idea2 = store.idea();
   if (idea2) docs.push(toDoc(store, idea2, "idea", all));
@@ -1071,11 +1241,12 @@ function buildGraph(store) {
   return {
     schemaVersion: SCHEMA_VERSION,
     generatedAt: (/* @__PURE__ */ new Date()).toISOString(),
-    project: { name: basename(store.ws.root), branch: currentBranch(), today: today() },
+    project: { name: basename2(store.ws.root), branch: currentBranch(), today: today() },
     settings: store.settings(),
     focus: all.focus || null,
     docs,
     edges: edges(docs),
+    spend: store.ledger.spend(),
     next: nextLines(store),
     check: findings(store)
   };
@@ -1098,6 +1269,7 @@ function toDoc(store, d, kind, all) {
     waitsFor: kind === "plan" && !CLOSED.has(status2) ? unmetDeps(d, all.plans) : [],
     touches: kind === "plan" ? d.touches() : [],
     onFocus: kind === "plan" ? onFocus(d, all.items, all.focus) : kind === "goal" ? d.id === all.focus : false,
+    owner: owner(all.claims.get(d.id)),
     branch: d.get("branch"),
     pr: d.get("pr"),
     dates: Object.fromEntries(DATE_KEYS.filter((k) => d.get(k)).map((k) => [k, d.get(k)])),
@@ -1107,6 +1279,9 @@ function toDoc(store, d, kind, all) {
     path: d.path ? store.rel(d.path) : null,
     sections: sections(d.text)
   };
+}
+function owner(c) {
+  return c ? { actor: c.actor, run: c.run, since: c.ts } : null;
 }
 function gate(store, d, kind, status2) {
   if (kind === "plan" && (status2 === "draft" || status2 === "ready")) return readinessProblems(store, d);
@@ -1151,18 +1326,23 @@ function edges(docs) {
 
 // src/commands/reports.ts
 var TOP = 5;
-var PLAN_HEADER = ["| Plan | Title | Goal | Status | Tasks |", "|---|---|---|---|---|"];
+var PLAN_HEADER = ["| Plan | Title | Goal | Status | Tasks | Owner |", "|---|---|---|---|---|---|"];
 function status(store, write) {
   store.require();
   const goals2 = store.goals(), items2 = store.items(), plans2 = store.plans(true), focus = store.focus();
   const lines = [`# Status \u2014 ${today()}`, "", "_Generated by `crew.mjs status`. Do not edit by hand._", ""];
   lines.push("## Idea and focus", "", ...ideaLines(store, goals2, plans2, items2, focus), "");
-  lines.push("## Now", "", ...planTable(byStatus(plans2, ["in-progress", "in-review"]), plans2, items2), "");
+  const claims = store.ledger.claims();
+  lines.push("## Now", "", ...planTable(byStatus(plans2, ["in-progress", "in-review"]), plans2, items2, claims), "");
   lines.push("## Blocked", "", ...blocked(plans2), "");
-  lines.push("## Ready to start", "", ...planTable(byStatus(plans2, ["ready"]), plans2, items2), "");
+  lines.push("## Ready to start", "", ...planTable(byStatus(plans2, ["ready"]), plans2, items2, claims), "");
   lines.push("## Top of the backlog", "", ...backlogTop(ranked(items2, goals2, focus), plans2), "");
   lines.push("## Open bugs", "", ...openBugs(items2, plans2), "");
   lines.push("## Recently done", "", ...recentlyDone(plans2));
+  const spend = store.ledger.spend();
+  if (spend.cost || spend.tokensIn || spend.tokensOut) {
+    lines.push("", "## Spend", "", `$${spend.cost.toFixed(2)} \xB7 ${spend.tokensIn + spend.tokensOut} tokens \u2014 ` + Object.entries(spend.byActor).sort(([, a], [, b]) => b - a).map(([who, c]) => `${who} $${c.toFixed(2)}`).join(", "));
+  }
   const untriaged = [...items2.values()].filter((i) => i.get("status") === "new").map((i) => i.id);
   if (untriaged.length) lines.push("", `**Untriaged items:** ${untriaged.join(", ")}`);
   const text2 = `${lines.join("\n").trimEnd()}
@@ -1191,13 +1371,13 @@ function ideaLines(store, goals2, plans2, items2, focus) {
 function byStatus(plans2, statuses) {
   return [...plans2.values()].filter((p) => statuses.includes(p.get("status") ?? "")).sort(byKey((p) => [p.id]));
 }
-function planTable(sel, plans2, items2) {
+function planTable(sel, plans2, items2, claims) {
   if (!sel.length) return ["_None._"];
   return [...PLAN_HEADER, ...sel.map((p) => {
     const t = p.tasks();
     const waits = unmetDeps(p, plans2);
     const src = p.source === "worktree" ? "" : ` (live on \`${p.source}\`)`;
-    return `| ${p.id} | ${p.get("title")} | ${planGoal(p, items2) || "\u2014"} | ${p.get("status")}${src}` + (waits.length ? ` (waits for ${waits.join(", ")})` : "") + ` | ${t.length ? `${t.filter(([d]) => d).length}/${t.length}` : "\u2013"} |`;
+    return `| ${p.id} | ${p.get("title")} | ${planGoal(p, items2) || "\u2014"} | ${p.get("status")}${src}` + (waits.length ? ` (waits for ${waits.join(", ")})` : "") + ` | ${t.length ? `${t.filter(([d]) => d).length}/${t.length}` : "\u2013"} | ${claims.get(p.id)?.actor ?? "\u2014"} |`;
   })];
 }
 function blocked(plans2) {
@@ -1213,7 +1393,7 @@ function backlogTop(ranked2, plans2) {
   return [
     "| # | Item | Title | Pri | Goal |",
     "|---|---|---|---|---|",
-    ...top.map((i, n) => `| ${n + 1} | ${i.id} | ${i.get("title")} | ${i.get("priority") || "\u2014"} | ${i.get("goal") || "\u2014"} |`)
+    ...top.map((i, n2) => `| ${n2 + 1} | ${i.id} | ${i.get("title")} | ${i.get("priority") || "\u2014"} | ${i.get("goal") || "\u2014"} |`)
   ];
 }
 function openBugs(items2, plans2) {
@@ -1228,6 +1408,34 @@ function openBugs(items2, plans2) {
 function recentlyDone(plans2) {
   const done = byStatus(plans2, ["done"]).sort((a, b) => byKey((p) => [p.get("completed") ?? "", p.id])(b, a)).slice(0, TOP);
   return done.length ? done.map((p) => `- ${p.get("completed") || "?"} \u2014 ${p.id}: ${p.get("title")}` + (p.get("pr") ? ` \u2014 ${p.get("pr")}` : "")) : ["_None._"];
+}
+
+// src/commands/ledger.ts
+var DETAIL = {
+  claim: (e) => `branch ${e.branch ?? "?"}${e.force ? " (forced)" : ""}`,
+  release: (e) => String(e.reason ?? ""),
+  move: (e) => `${e.from} \u2192 ${e.to}${e.note ? ` \u2014 ${e.note}` : ""}`,
+  log: (e) => String(e.text ?? ""),
+  usage: (e) => `${e.tokens_in} in / ${e.tokens_out} out tokens, $${Number(e.cost ?? 0).toFixed(2)}${e.model ? ` (${e.model})` : ""}`
+};
+function showLedger(store, o = {}) {
+  store.require();
+  if (o.type && !DETAIL[o.type]) fail(`Unknown event type '${o.type}'. Valid: ${Object.keys(DETAIL).join(", ")}`);
+  const ref = o.ref?.toUpperCase();
+  const all = store.ledger.events();
+  const events = all.filter((e) => (!ref || e.ref === ref) && (!o.type || e.type === o.type)).slice(-(o.limit ?? 20));
+  if (o.json) {
+    for (const e of events) store.say(JSON.stringify(e));
+    return;
+  }
+  if (!events.length) store.say(`No events${ref ? ` for ${ref}` : ""} in ${store.ledger.path}.`);
+  for (const e of events) {
+    store.say(`${e.ts.slice(0, 16).replace("T", " ")}  ${e.type.padEnd(7)}  ${(e.ref ?? "\u2014").padEnd(9)}  ${e.actor} (${e.run})  ${DETAIL[e.type](e)}`);
+  }
+  const claims = [...store.ledger.claims(all).values()];
+  if (!ref && !o.type && claims.length) {
+    store.say(`claims: ${claims.map((c) => `${c.ref} ${c.actor}`).join(", ")}`);
+  }
 }
 
 // src/commands/planning.ts
@@ -1250,6 +1458,8 @@ var text = (description) => ({ type: "string", description });
 var obj = (properties = {}, required = []) => ({ type: "object", properties, ...required.length ? { required } : {}, additionalProperties: false });
 var s = (a, k) => typeof a[k] === "string" && a[k] ? a[k] : void 0;
 var up4 = (a, k) => s(a, k).toUpperCase();
+var num = (description) => ({ type: "number", description });
+var n = (a, k) => typeof a[k] === "number" ? a[k] : void 0;
 var ITEM_FIELDS = { priority: text("P0\u2013P3"), severity: text("bugs only: S1\u2013S4"), goal: text("e.g. G-002") };
 var TOOLS = {
   next: {
@@ -1327,6 +1537,32 @@ var TOOLS = {
     description: "Set the focus goal the team works toward now (`crew.mjs focus`).",
     input: obj({ goal: text("e.g. G-002") }, ["goal"]),
     run: (st, a) => setFocus(st, s(a, "goal"))
+  },
+  usage: {
+    description: "Record tokens and cost this run used (`crew.mjs usage`); feeds budgets and the executive view.",
+    input: obj({
+      tokens_in: num("input tokens"),
+      tokens_out: num("output tokens"),
+      cost: num("USD"),
+      model: text("model id"),
+      ref: text("the document the work was for, e.g. P-004")
+    }),
+    run: (st, a) => usage(st, {
+      tokensIn: n(a, "tokens_in"),
+      tokensOut: n(a, "tokens_out"),
+      cost: n(a, "cost"),
+      model: s(a, "model"),
+      ref: s(a, "ref")
+    })
+  },
+  ledger: {
+    description: "Recent events from the shared ledger and the live claims (`crew.mjs ledger --json`).",
+    input: obj({
+      ref: text("only events about this ID"),
+      type: { type: "string", enum: ["claim", "release", "move", "log", "usage"] },
+      limit: num("how many, newest last (default 20)")
+    }),
+    run: (st, a) => showLedger(st, { ref: s(a, "ref"), type: s(a, "type"), limit: n(a, "limit"), json: true })
   }
 };
 function callTool(open, name, args = {}) {

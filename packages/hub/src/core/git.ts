@@ -1,5 +1,6 @@
 /** The hub's only access to git. */
 import { spawnSync } from "node:child_process";
+import { resolve } from "node:path";
 import { fail } from "./text.js";
 
 export function git(args: string[], check = false): string | null {
@@ -13,6 +14,17 @@ export function git(args: string[], check = false): string | null {
 
 export function repoRoot(): string {
   return git(["rev-parse", "--show-toplevel"])?.trim() || process.cwd();
+}
+
+/** The directory every worktree of this repository shares (where the ledger lives), or null outside git. */
+export function commonDir(root: string): string | null {
+  const out = git(["-C", root, "rev-parse", "--git-common-dir"])?.trim();
+  return out ? resolve(root, out) : null;
+}
+
+/** The author name git would commit with (GIT_AUTHOR_NAME or user.name). */
+export function userName(): string | null {
+  return /^(.*?) </.exec(git(["var", "GIT_AUTHOR_IDENT"]) ?? "")?.[1].trim() || null;
 }
 
 export function currentBranch(): string | null {

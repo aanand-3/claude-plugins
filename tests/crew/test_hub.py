@@ -1,4 +1,6 @@
+import json
 import re
+import subprocess
 
 from conftest import HUB, Repo
 
@@ -672,3 +674,114 @@ def test_check_points_at_migrate_while_project_folder_remains(repo: Repo):
     init(repo)
     repo.write(".project/raid.md", OLD_RAID)
     assert "crew.mjs migrate" in tr(repo, "check").stdout
+
+
+# ------------------------------------------------------------------ the ledger (shared by every worktree)
+
+
+def events(repo: Repo, *args: str) -> list[dict]:
+    r = tr(repo, "ledger", "--json", "--limit", "1000", *args)
+    assert r.returncode == 0, r.stderr
+    return [json.loads(line) for line in r.stdout.splitlines() if line.strip()]
+
+
+def ready_plan(repo: Repo, title: str = "Signup") -> None:
+    new_plan(repo, title)
+    pid = re.search(r"P-\d+", plan_file_names(repo)[-1]).group(0)
+    assert tr(repo, "move", pid, "ready").returncode == 0
+
+
+def plan_file_names(repo: Repo) -> list[str]:
+    return sorted(p.name for p in (repo.path / ".crew/plans").glob("P-*.md"))
+
+
+def test_ledger_lives_in_the_git_common_dir_and_records_moves_and_logs(repo: Repo):
+    init(repo, commit=True)
+    ready_plan(repo)
+    assert tr(repo, "log", "P-001", "picked the email provider").returncode == 0
+    ledger = repo.path / ".git/crew/ledger.jsonl"
+    assert ledger.is_file() and not list((repo.path / ".crew").rglob("ledger*"))
+    evs = events(repo, "--ref", "P-001")
+    assert [(e["type"], e.get("to"), e.get("text")) for e in evs] == [
+        ("move", "ready", None), ("log", None, "picked the email provider")]
+    assert evs[0]["from"] == "draft" and evs[0]["actor"] == "Test" and evs[0]["run"].startswith("wt:")
+    assert "move" in tr(repo, "ledger").stdout and "draft → ready" in tr(repo, "ledger").stdout
+
+
+def test_refused_command_records_no_event(repo: Repo):
+    init(repo, commit=True)
+    new_plan(repo, "Signup", PLAN_DRAFT, "--touches", "")
+    assert tr(repo, "move", "P-001", "ready").returncode != 0  # no touches → refused
+    assert events(repo) == []
+
+
+def test_claim_is_visible_and_refused_from_another_worktree(repo: Repo):
+    init(repo, commit=True)
+    ready_plan(repo)
+    repo.commit("chore(hub): plan")
+    other = repo.path.parent / f"{repo.path.name}-wt2"
+    repo.git("worktree", "add", "-q", "--detach", str(other))
+    r = tr(repo, "start", "P-001")
+    assert r.returncode == 0 and "claimed by Test" in r.stdout
+    wt2 = Repo(other)
+    wt2.env = repo.env
+    r = wt2.py(HUB, "start", "P-001")
+    assert r.returncode != 0 and "P-001 is claimed by Test" in r.stderr
+    assert "P-001 Test" in wt2.py(HUB, "ledger").stdout  # same ledger from either worktree
+    assert wt2.py(HUB, "release", "P-001").returncode != 0  # not this run's claim
+    r = wt2.py(HUB, "release", "P-001", "--force", "--note", "agent crashed")
+    assert r.returncode == 0 and "released" in r.stdout
+    assert not [e for e in events(repo) if e["type"] == "claim" and e["ref"] == "P-001"][-1].get("force")
+    assert events(repo, "--type", "release")[-1]["reason"] == "agent crashed"
+
+
+def test_done_releases_the_claim_and_check_compares_ledger_with_files(repo: Repo):
+    init(repo, commit=True)
+    ready_plan(repo)
+    repo.commit("chore(hub): plan")
+    tr(repo, "start", "P-001")
+    finish(repo, "P-001")
+    assert [e["type"] for e in events(repo, "--ref", "P-001")][-2:] == ["move", "release"]
+    assert "claims:" not in tr(repo, "ledger").stdout  # nothing held any more
+    p = plan_file(repo, "P-001")
+    p.write_text(p.read_text().replace("status: done", "status: in-review"))  # a hand edit
+    assert "P-001: the ledger last moved it to done, but the plan says in-review" in tr(repo, "check").stdout
+
+
+def test_wip_limit_is_per_run(repo: Repo):
+    init(repo, commit=True)
+    ready_plan(repo, "One")
+    ready_plan(repo, "Two")
+    repo.commit("chore(hub): plans")
+    repo.env["CREW_RUN"], repo.env["CREW_ACTOR"] = "agent-a", "developer-1"
+    assert tr(repo, "start", "P-001").returncode == 0
+    repo.commit("chore(P-001): start")
+    r = tr(repo, "start", "P-002")
+    assert r.returncode != 0 and "WIP limit (1) reached: P-001" in r.stderr  # same run
+    repo.git("switch", "-q", "main")
+    repo.env["CREW_RUN"], repo.env["CREW_ACTOR"] = "agent-b", "developer-2"
+    assert tr(repo, "start", "P-002").returncode == 0  # another agent has its own WIP
+    owners = {e["ref"]: e["actor"] for e in events(repo, "--type", "claim")}
+    assert owners == {"P-001": "developer-1", "P-002": "developer-2"}
+    assert "| P-002 | Two | — | in-progress | 0/2 | developer-2 |" in tr(repo, "status").stdout
+
+
+def test_parallel_writers_lose_no_events(repo: Repo):
+    init(repo, commit=True)
+    procs = [subprocess.Popen(["node", str(HUB), "usage", "--cost", "0.01", "--tokens-in", "100", "--ref", "P-001"],
+                              cwd=repo.path, env={**repo.env, "CREW_ACTOR": f"agent-{n % 3}"},
+                              stdout=subprocess.PIPE, stderr=subprocess.PIPE) for n in range(20)]
+    assert all(p.wait(timeout=60) == 0 for p in procs)
+    usage = events(repo, "--type", "usage")
+    assert len(usage) == 20
+    assert not (repo.path / ".git/crew/ledger.jsonl.lock").exists()
+    out = tr(repo, "status").stdout
+    assert "## Spend" in out and "$0.20 · 2000 tokens" in out
+
+
+def test_usage_needs_numbers(repo: Repo):
+    init(repo)
+    assert tr(repo, "usage").returncode != 0
+    assert tr(repo, "usage", "--cost", "abc").returncode != 0
+    assert tr(repo, "usage", "--tokens-in", "x").returncode == 2
+    assert events(repo) == []

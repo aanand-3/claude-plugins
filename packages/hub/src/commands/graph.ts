@@ -3,6 +3,7 @@
 import { basename } from "node:path";
 import * as git from "../core/git.js";
 import { type Doc, splitSections } from "../core/doc.js";
+import type { LedgerEvent } from "../core/ledger.js";
 import { decisionProblems, readinessProblems, triageProblems } from "../core/gates.js";
 import { CLOSED, IDEA_ID, type Kind } from "../core/model.js";
 import * as q from "../core/queries.js";
@@ -16,11 +17,12 @@ const ID_RE = /\b(?:IDEA|(?:G|P|FEAT|BUG|CHORE|SPIKE)-\d+)\b/g;
 const DATE_KEYS = ["created", "started", "completed", "decided", "closed"];
 const up = (s: string | null) => (s ? s.toUpperCase() : null);
 
-interface Loaded { goals: Docs; items: Docs; plans: Docs; focus: string }
+interface Loaded { goals: Docs; items: Docs; plans: Docs; focus: string; claims: Map<string, LedgerEvent> }
 
 export function buildGraph(store: Store): Graph {
   store.require();
-  const all: Loaded = { goals: store.goals(), items: store.items(), plans: store.plans(true), focus: store.focus() };
+  const all: Loaded = { goals: store.goals(), items: store.items(), plans: store.plans(true), focus: store.focus(),
+    claims: store.ledger.claims() };
   const docs: GraphDoc[] = [];
   const idea = store.idea();
   if (idea) docs.push(toDoc(store, idea, "idea", all));
@@ -34,6 +36,7 @@ export function buildGraph(store: Store): Graph {
     focus: all.focus || null,
     docs,
     edges: edges(docs),
+    spend: store.ledger.spend(),
     next: nextLines(store),
     check: findings(store),
   };
@@ -57,6 +60,7 @@ function toDoc(store: Store, d: Doc, kind: Kind, all: Loaded): GraphDoc {
     waitsFor: kind === "plan" && !CLOSED.has(status) ? q.unmetDeps(d, all.plans) : [],
     touches: kind === "plan" ? d.touches() : [],
     onFocus: kind === "plan" ? q.onFocus(d, all.items, all.focus) : kind === "goal" ? d.id === all.focus : false,
+    owner: owner(all.claims.get(d.id)),
     branch: d.get("branch"),
     pr: d.get("pr"),
     dates: Object.fromEntries(DATE_KEYS.filter((k) => d.get(k)).map((k) => [k, d.get(k)!])),
@@ -66,6 +70,10 @@ function toDoc(store: Store, d: Doc, kind: Kind, all: Loaded): GraphDoc {
     path: d.path ? store.rel(d.path) : null,
     sections: sections(d.text),
   };
+}
+
+function owner(c: LedgerEvent | undefined): GraphDoc["owner"] {
+  return c ? { actor: c.actor, run: c.run, since: c.ts } : null;
 }
 
 function gate(store: Store, d: Doc, kind: Kind, status: string): string[] | null {

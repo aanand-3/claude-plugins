@@ -39,6 +39,7 @@ function Facts({ doc }: { doc: GraphDoc }) {
     ["Goal", doc.goal && <IdLink id={doc.goal} withTitle />],
     ["Plan", doc.plan && <IdLink id={doc.plan} withTitle />],
     ["Touches", doc.touches.length > 0 && <code>{doc.touches.join(", ")}</code>],
+    ["Owner", doc.owner && <span title={`${doc.owner.run} · since ${doc.owner.since}`}>{doc.owner.actor}</span>],
     ["Branch", doc.branch && <code>{doc.branch}</code>],
     ["Pull request", doc.pr && <a href={doc.pr} target="_blank" rel="noreferrer">{doc.pr}</a>],
     ...Object.entries(doc.dates).map(([k, v]) => [k[0].toUpperCase() + k.slice(1), fmtDate(v)] as [string, string]),

@@ -10,7 +10,8 @@ import { exportGraph } from "./commands/export.js";
 import { serve } from "./server.js";
 import { init, newGoal, newIdea, newPlan, setFocus } from "./commands/planning.js";
 import { status } from "./commands/reports.js";
-import { log, move, start } from "./commands/workflow.js";
+import { showLedger } from "./commands/ledger.js";
+import { log, move, release, start, usage } from "./commands/workflow.js";
 
 export const USAGE = `crew hub: the team's shared context — the idea, goals, backlog items, plans and tasks.
 
@@ -28,6 +29,9 @@ Commands:
   triage ID --reject wontfix|duplicate --note TXT
   new-plan TITLE --from DRAFT [--goal] [--items FEAT-001,BUG-002] [--touches "src/a/**, docs/b.md"] [--depends P-002]
   start PLAN_ID · move ID STATUS [--note] · log ID TEXT      (ID: IDEA, G-###, P-###, FEAT/BUG/CHORE/SPIKE-###)
+  release PLAN_ID [--note TXT] [--force]        give up a claim (another run's claim needs --force)
+  usage [--tokens-in N] [--tokens-out N] [--cost USD] [--model M] [--ref ID]   record what a run used
+  ledger [--ref ID] [--type T] [--limit 20] [--json]   the shared event log (who/what/when) and live claims
   next · current · check · status [--write]
   export [--json] [--out FILE]                  interactive HTML view (.crew/view/index.html) or the graph as JSON
   ui [--port 8765] [--no-open]                  serve the view live on 127.0.0.1 (updates as files change)
@@ -72,6 +76,12 @@ const COMMANDS: Record<string, Spec> = {
   move: { pos: ["id", "status"], str: ["note"], flag: ["force"],
     run: (s, a) => { move(s, a.pos[0], a.pos[1], str(a, "note"), !!a.opt.force); } },
   log: { pos: ["id", "text"], run: (s, a) => log(s, a.pos[0].toUpperCase(), a.pos[1]) },
+  release: { pos: ["id"], str: ["note"], flag: ["force"], run: (s, a) => release(s, a.pos[0], str(a, "note"), !!a.opt.force) },
+  usage: { pos: [], str: ["cost", "model", "ref"], int: ["tokens-in", "tokens-out"],
+    run: (s, a) => usage(s, { tokensIn: a.num["tokens-in"], tokensOut: a.num["tokens-out"],
+      cost: str(a, "cost") === undefined ? undefined : Number(str(a, "cost")), model: str(a, "model"), ref: str(a, "ref") }) },
+  ledger: { pos: [], str: ["ref", "type"], int: ["limit"], flag: ["json"],
+    run: (s, a) => showLedger(s, { ref: str(a, "ref"), type: str(a, "type"), limit: a.num.limit, json: !!a.opt.json }) },
   current: { pos: [], run: (s) => current(s) },
   next: { pos: [], run: (s) => nextStep(s) },
   check: { pos: [], run: (s) => check(s) },

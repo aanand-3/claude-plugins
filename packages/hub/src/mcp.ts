@@ -9,8 +9,9 @@ import { newItem, triage } from "./commands/backlog.js";
 import { check } from "./commands/checks.js";
 import { buildGraph } from "./commands/graph.js";
 import { status } from "./commands/reports.js";
+import { showLedger } from "./commands/ledger.js";
 import { setFocus } from "./commands/planning.js";
-import { log, move } from "./commands/workflow.js";
+import { log, move, usage } from "./commands/workflow.js";
 import { Store } from "./core/store.js";
 import { HubError } from "./core/text.js";
 
@@ -25,6 +26,8 @@ const obj = (properties: Record<string, unknown> = {}, required: string[] = []):
   ({ type: "object", properties, ...(required.length ? { required } : {}), additionalProperties: false });
 const s = (a: Args, k: string) => (typeof a[k] === "string" && a[k] ? (a[k] as string) : undefined);
 const up = (a: Args, k: string) => s(a, k)!.toUpperCase();
+const num = (description: string) => ({ type: "number", description });
+const n = (a: Args, k: string) => (typeof a[k] === "number" ? (a[k] as number) : undefined);
 
 const ITEM_FIELDS = { priority: text("P0–P3"), severity: text("bugs only: S1–S4"), goal: text("e.g. G-002") };
 
@@ -57,6 +60,15 @@ export const TOOLS: Record<string, Tool> = {
     input: obj({ id: text("e.g. P-004"), text: text("the log entry") }, ["id", "text"]), run: (st, a) => log(st, up(a, "id"), s(a, "text")!) },
   focus: { description: "Set the focus goal the team works toward now (`crew.mjs focus`).",
     input: obj({ goal: text("e.g. G-002") }, ["goal"]), run: (st, a) => setFocus(st, s(a, "goal")!) },
+  usage: { description: "Record tokens and cost this run used (`crew.mjs usage`); feeds budgets and the executive view.",
+    input: obj({ tokens_in: num("input tokens"), tokens_out: num("output tokens"), cost: num("USD"), model: text("model id"),
+      ref: text("the document the work was for, e.g. P-004") }),
+    run: (st, a) => usage(st, { tokensIn: n(a, "tokens_in"), tokensOut: n(a, "tokens_out"), cost: n(a, "cost"), model: s(a, "model"),
+      ref: s(a, "ref") }) },
+  ledger: { description: "Recent events from the shared ledger and the live claims (`crew.mjs ledger --json`).",
+    input: obj({ ref: text("only events about this ID"), type: { type: "string", enum: ["claim", "release", "move", "log", "usage"] },
+      limit: num("how many, newest last (default 20)") }),
+    run: (st, a) => showLedger(st, { ref: s(a, "ref"), type: s(a, "type"), limit: n(a, "limit"), json: true }) },
 };
 
 export interface ToolResult { content: { type: "text"; text: string }[]; isError: boolean }

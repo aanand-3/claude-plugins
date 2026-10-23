@@ -29,6 +29,7 @@ export function Overview() {
         <Kpi value={focus ? `${focusItems.filter((i) => i.status === "done").length} / ${focusItems.length}` : "—"}
           caption={focus ? `items done · focus ${focus.id}` : "no focus goal"} />
         <Kpi value={active.length} caption="plans in progress or review" />
+        <Kpi value={`$${g.spend.cost.toFixed(2)}`} caption={`spent · ${(g.spend.tokensIn + g.spend.tokensOut).toLocaleString()} tokens`} />
         <Kpi value={blocked.length + serious.length} tone={blocked.length + serious.length ? "destructive" : "success"}
           caption="blocked plans + open S1/S2 bugs" />
       </div>

@@ -16,6 +16,23 @@ Also in `.crew/`: `knowledge/` (decisions, learnings, risks; written by `migrate
 (what `migrate` carried over from project-kit), `drafts/`, `templates/`, `bin/` (the vendored CLI). Generated, never
 hand-edited: `STATUS.md` (`status --write`) and `view/` (`export`, gitignored).
 
+## Ledger
+Documents hold the *content* (reviewed in git); the ledger holds *what is happening*. It is an append-only JSON-lines log at
+`<git common dir>/crew/ledger.jsonl`, shared live by every worktree and agent on the machine, never committed.
+
+| Event | Written by | Fields |
+|---|---|---|
+| `claim` | `start` | `branch` (and `force` when overriding) |
+| `release` | `done`/`dropped`, `release` | `reason` |
+| `move` | every status change | `from`, `to`, `note` |
+| `log` | `log` | `text` |
+| `usage` | `usage` | `tokens_in`, `tokens_out`, `cost`, `model` |
+
+Every event carries `ts`, `ref`, `run` (`CREW_RUN`, else one per worktree), `actor` (`CREW_ACTOR`, else the git author) and
+`worktree`. Events are written only when the command succeeds, under a lock, and claims are re-checked inside it, so two runs
+can't both claim a plan. Derived from it: live claims (owner in `status` and the view), each run's WIP, spend, and a `check`
+hint when a plan file disagrees with the ledger's last move or a closed plan is still claimed.
+
 ## Focus
 `focus G-###` records one goal on the idea. Everything orients to it:
 - `next` and the backlog ranking put focus work first;
@@ -84,7 +101,7 @@ draft ──► ready ──► in-progress ──► in-review ──► done
 - Size a plan by its tasks: more than `max_tasks`, or work in unrelated areas, means split it. Parallel work comes from splitting
   into plans with separate `touches:`, not from more people on one plan.
 - `depends_on: P-002, P-005` in the plan frontmatter. `start` refuses while a dependency isn't `done`; `status` shows `waits for …`.
-- `start` refuses when `wip_limit` plans are already in progress. Finish before starting.
+- `start` refuses when *this run* already holds `wip_limit` plans in progress (in-progress plans with no claim count for every run). Finish before starting. Parallel agents each have their own WIP.
 - Prefer ordering slices so that dependencies are rare. A long chain is a sign the slices are split by layer rather than vertically.
 
 ## Git mapping

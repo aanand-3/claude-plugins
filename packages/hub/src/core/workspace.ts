@@ -7,6 +7,7 @@ type Pending = { text: string; mode?: number } | null;
 
 export class Workspace {
   private pending = new Map<string, Pending>();
+  private hooks: (() => void)[] = [];
   readonly output: string[] = [];
 
   constructor(readonly root: string) {}
@@ -58,7 +59,13 @@ export class Workspace {
     return join(...parts);
   }
 
+  /** Run fn at the start of flush(), before any file is written; a HubError there aborts the whole flush. */
+  beforeFlush(fn: () => void): void {
+    this.hooks.push(fn);
+  }
+
   flush(): void {
+    for (const hook of this.hooks.splice(0)) hook();
     for (const [path, v] of this.pending) {
       if (v === null) {
         rmSync(path, { force: true, recursive: true });

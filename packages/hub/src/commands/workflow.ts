@@ -2,7 +2,7 @@
 import * as git from "../core/git.js";
 import type { Doc } from "../core/doc.js";
 import { decisionProblems, readinessProblems, triageProblems } from "../core/gates.js";
-import { FLOWS, ITEM_CLOSED, type Kind } from "../core/model.js";
+import { CLOSED, FLOWS, ITEM_CLOSED, type Kind } from "../core/model.js";
 import * as q from "../core/queries.js";
 import type { Store } from "../core/store.js";
 import { fail, kindOf, slugify, today } from "../core/text.js";
@@ -26,6 +26,8 @@ export function move(store: Store, docId: string, status: string, note?: string,
   doc.set("status", status);
   doc.appendLog(`status ${old} → ${status}` + (note ? ` — ${note}` : ""), LOG_SECTION[kind!] ?? "Progress log");
   doc.save();
+  store.ledger.record("move", doc.id, { from: old, to: status, ...(note ? { note } : {}) });
+  if (CLOSED.has(status) && store.ledger.claims().has(doc.id)) store.ledger.record("release", doc.id, { reason: status });
   store.say(`${doc.id}: ${old} → ${status}`);
   return doc;
 }
@@ -64,6 +66,11 @@ export function start(store: Store, planId: string, force = false): void {
   store.require();
   let doc = store.find(planId);
   if (!force) checkStartable(store, doc);
+  const held = store.ledger.claims().get(doc.id);
+  if (held && held.run !== store.ledger.who.run && !force) {
+    fail(`${doc.id} is claimed by ${held.actor} (${held.run}, ${held.worktree}) since ${held.ts.slice(0, 10)}. `
+      + `Coordinate with them, or \`release ${doc.id} --force\` if that run is gone.`);
+  }
   if (!git.treeIsClean()) fail("Working tree not clean. Commit or stash first.");
   const focus = store.focus();
   if (!q.onFocus(doc, store.items(), focus)) store.say(`note: ${planId} does not serve the focus goal ${focus}`);
@@ -74,8 +81,9 @@ export function start(store: Store, planId: string, force = false): void {
     doc.set("status", "ready");
     doc.save();
   }
+  store.ledger.record("claim", doc.id, { branch, ...(force ? { force: true } : {}) });
   move(store, planId, "in-progress", `branch ${branch}`, force);
-  store.say(`Switched to ${branch}`);
+  store.say(`Switched to ${branch} — claimed by ${store.ledger.who.actor} (${store.ledger.who.run})`);
 }
 
 function checkStartable(store: Store, doc: Doc): void {
@@ -86,14 +94,45 @@ function checkStartable(store: Store, doc: Doc): void {
   const waiting = q.unmetDeps(doc, plans);
   if (waiting.length) fail(`${doc.id} depends on unfinished plans: ${waiting.join(", ")}. (--force to start anyway)`);
   const limit = store.settings().wip_limit;
-  const wip = [...plans.values()].filter((p) => p.get("status") === "in-progress").map((p) => p.id);
+  const wip = myWip(store, plans);
   if (wip.length >= limit) {
     fail(`WIP limit (${limit}) reached: ${wip.join(", ")} in progress. Finish or block it first (--force to override).`);
   }
+}
+
+/** In-progress plans this run holds. WIP is per run (agent or session); unclaimed in-progress plans, from before
+ * the ledger, count against every run until someone claims them. */
+function myWip(store: Store, plans: Map<string, Doc>): string[] {
+  const claims = store.ledger.claims();
+  return [...plans.values()].filter((p) => p.get("status") === "in-progress"
+    && (claims.get(p.id)?.run ?? store.ledger.who.run) === store.ledger.who.run).map((p) => p.id);
+}
+
+/** Give up a claim: the run is gone or the work is handed over. Another run's claim needs --force. */
+export function release(store: Store, planId: string, note?: string, force = false): void {
+  store.require();
+  const id = planId.toUpperCase();
+  const held = store.ledger.claims().get(id) ?? fail(`${id} is not claimed.`);
+  if (held.run !== store.ledger.who.run && !force) {
+    fail(`${id} is claimed by ${held.actor} (${held.run}), not this run. Use --force to release it anyway.`);
+  }
+  store.ledger.record("release", id, { reason: note ?? "released", from_run: held.run });
+  store.say(`${id}: released (was ${held.actor}, ${held.run})`);
+}
+
+/** Token and cost use of a run, for budgets and the executive view. */
+export function usage(store: Store, u: { tokensIn?: number; tokensOut?: number; cost?: number; model?: string; ref?: string }): void {
+  store.require();
+  if (u.tokensIn === undefined && u.tokensOut === undefined && u.cost === undefined) fail("Give --tokens-in, --tokens-out or --cost.");
+  if (u.cost !== undefined && !(u.cost >= 0)) fail("--cost must be a number ≥ 0.");
+  store.ledger.record("usage", u.ref ? u.ref.toUpperCase() : null, {
+    tokens_in: u.tokensIn ?? 0, tokens_out: u.tokensOut ?? 0, cost: u.cost ?? 0, ...(u.model ? { model: u.model } : {}) });
+  store.say(`usage recorded for ${store.ledger.who.actor} (${store.ledger.who.run})`);
 }
 
 export function log(store: Store, docId: string, text: string): void {
   const doc = store.find(docId);
   doc.appendLog(text, LOG_SECTION[kindOf(docId) ?? "plan"] ?? "Progress log");
   doc.save();
+  store.ledger.record("log", doc.id, { text });
 }
