@@ -9,8 +9,8 @@ In a monorepo, `architecture.backend_dir` / `architecture.frontend_dir` in confi
 the globs of backend-/frontend-scoped packs, so React rules never load for backend files
 and Python rules never load for frontend files.
 
-Tooling templates are rendered for `modules:` in config: {{#hub}}…{{/hub}} keeps a
-block when the hub is on, {{^hub}}…{{/hub}} when it's off.
+Tooling templates are rendered for `modules:` in config: {{#graphify}}…{{/graphify}} keeps
+a block when graphify is on, {{^graphify}}…{{/graphify}} when it's off.
 
 Usage: compose_rules.py [--root DIR] [--packs a,b] [--dry-run] [--force] [--prune]
 """
@@ -67,8 +67,8 @@ def scope_dirs(root: Path) -> dict[str, str]:
 
 
 def modules_from_config(root: Path) -> dict[str, bool]:
-    """`modules:` switches; a missing key keeps the pre-modules default (hub on, graphify off)."""
-    flags = {"hub": True, "graphify": False}
+    """`modules:` switches; a missing key means off."""
+    flags = {"graphify": False}
     m = re.search(r"^modules:[ \t]*\n((?:[ \t]+.*\n?)*)", config_text(root), re.M)
     for key, value in re.findall(r"^[ \t]+(\w+):[ \t]*(\w+)", m.group(1) if m else "", re.M):
         flags[key] = value.lower() == "true"
@@ -143,8 +143,6 @@ def vendor(root: Path, packs: list[str]) -> None:
     here = Path(__file__).resolve().parent
     flags = modules_from_config(root)
     for name in VENDORED:
-        if name == "track_plan_draft.py" and not flags["hub"]:  # plan-draft hook only serves the hub
-            continue
         copy_if_changed(here / name, root / ".crew" / "bin" / name, root, executable=True)
     for pack, src in VENDORED_FOR.items():
         if pack in packs:

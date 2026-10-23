@@ -8,7 +8,9 @@ dark theme repeats them with a `dark-` prefix.
 
 Checks:
   lint  — required color roles exist, `{colors.x}` references resolve, WCAG contrast of the
-          text/background pairs (AA 4.5:1 for text, 3:1 for primary on background).
+          text/background pairs (AA 4.5:1 for text, 3:1 for primary on background), status/revision.
+  lock  — a `final` DESIGN.md changes only as `revision` + 1 with an ADR mentioning
+          `DESIGN.md revision <n>`; on --staged this always blocks (/crew:design refresh).
   scan  — frontend source drifting off the tokens: raw hex/rgb/hsl colors outside token
           definitions, Tailwind arbitrary values (bg-[#123], text-[13px]), raw palette classes
           (bg-blue-500), gradient text, emoji used as icons, fonts not declared in DESIGN.md.
@@ -137,6 +139,31 @@ def lint(tokens: dict) -> list[str]:
                 out.append(f"contrast {prefix}{fg} on {prefix}{bg} is {ratio}:1 (needs {minimum}:1)")
     if not any(isinstance(t, dict) and t.get("fontFamily") for t in (tokens.get("typography") or {}).values()):
         out.append("typography declares no fontFamily")
+    if (status := tokens.get("status", "draft")) not in ("draft", "final"):
+        out.append(f"status is '{status}' (use draft or final)")
+    if status == "final" and revision(tokens) < 1:
+        out.append("a final design needs `revision: <n>` (1 for the first locked version)")
+    return out
+
+
+# ---- lock: a final design changes only through a recorded revision
+def revision(tokens: dict) -> int:
+    return int(v) if (v := str(tokens.get("revision", "0"))).isdigit() else 0
+
+
+def lock_problems(root: Path, rel: str, old_text: str | None, new_text: str) -> list[str]:
+    old, new = front_matter(old_text or ""), front_matter(new_text)
+    n, was_final = revision(new), old.get("status") == "final"
+    strip = lambda t: {k: v for k, v in t.items() if k not in ("status", "revision")}  # noqa: E731
+    out = []
+    if was_final and new.get("status") != "final":
+        out.append(f"{rel} is final; it can't go back to `{new.get('status', 'draft')}` — revise it instead (/crew:design refresh)")
+    if was_final and strip(old) != strip(new) and n != revision(old) + 1:
+        out.append(f"{rel} is final at revision {revision(old)}: token changes need `revision: {revision(old) + 1}` (/crew:design refresh)")
+    needle = re.compile(rf"DESIGN\.md revision {n}\b")
+    if new.get("status") == "final" and n > (revision(old) if was_final else 0) and not any(
+            needle.search(a.read_text(errors="replace")) for a in (root / "docs" / "adr").glob("*.md")):
+        out.append(f"{rel} revision {n} has no ADR in docs/adr/ mentioning `DESIGN.md revision {n}`")
     return out
 
 
@@ -170,11 +197,17 @@ def export_tailwind(tokens: dict) -> str:
     colors = tokens.get("colors") or {}
     light = {k: resolve(tokens, v) for k, v in colors.items() if not k.startswith("dark-")}
     dark = {k[5:]: resolve(tokens, v) for k, v in colors.items() if k.startswith("dark-")}
-    rounded = {k: resolve(tokens, v) for k, v in (tokens.get("rounded") or {}).items()}
-    lines = [":root {", *(f"  --{k}: {v};" for k, v in light.items()), "}"]
+    rounded = {k: resolve(tokens, v) for k, v in (tokens.get("rounded") or {}).items() if k != "preset"}
+    shadows = {k: v for k, v in (tokens.get("elevation") or {}).items() if k != "preset"}
+    extra = {f"duration-{k}" if k != "easing" else "easing": v for k, v in (tokens.get("motion") or {}).items() if k != "preset"}
+    extra.update({k: v for k, v in (tokens.get("density") or {}).items() if k != "preset"})
+    lines = [":root {", *(f"  --{k}: {v};" for k, v in {**light, **extra}.items()), "}"]
     if dark:
         lines += [".dark {", *(f"  --{k}: {v};" for k, v in dark.items()), "}"]
-    lines += ["@theme inline {", *(f"  --color-{k}: var(--{k});" for k in light), *(f"  --radius-{k}: {v};" for k, v in rounded.items())]
+    lines += ["@theme inline {", *(f"  --color-{k}: var(--{k});" for k in light), *(f"  --radius-{k}: {v};" for k, v in rounded.items()),
+              *(f"  --shadow-{k}: {v};" for k, v in shadows.items())]
+    if "easing" in extra:
+        lines.append("  --ease-standard: var(--easing);")
     for role, typo in (tokens.get("typography") or {}).items():
         if isinstance(typo, dict) and typo.get("fontFamily") and role in ("body", "display", "mono", "body-md", "headline"):
             slot = {"body": "sans", "body-md": "sans", "headline": "display"}.get(role, role)
@@ -234,9 +267,17 @@ def main() -> None:
     files = [f for f in listing.splitlines() if f and Path(f).suffix in SCANNED
              and (not frontend or f.startswith(frontend + "/")) and not f.startswith(("docs/", ".crew/"))
              and "/test" not in f and ".test." not in f and ".stories." not in f]
-    problems = lint(tokens) if args.all or design.relative_to(root).as_posix() in listing.splitlines() else []
+    rel = design.relative_to(root).as_posix()
+    touched = args.all or rel in listing.splitlines()
+    problems = lint(tokens) if touched else []
+    locked = lock_problems(root, rel, git(root, "show", f"HEAD:{rel}") or None,  # no HEAD or not in git: nothing was final
+                           (args.staged and git(root, "show", f":{rel}")) or design.read_text()) if touched else []
     allowed = fonts(tokens)
     findings = [hit for f in files if (root / f).is_file() for hit in scan_text(f, (root / f).read_text(errors="replace"), allowed)]
+    if locked:
+        print(f"✋ crew design lock ({rel}):\n" + "\n".join(f"   {p}" for p in locked), file=sys.stderr)
+        if args.staged or args.strict:
+            sys.exit(1)
     if not problems and not findings:
         return
     blocking = args.strict or setting(cfg, r"^design_check:\s*(\w+)", "warn") == "block"

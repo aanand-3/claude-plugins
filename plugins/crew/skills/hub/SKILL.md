@@ -23,9 +23,9 @@ Idea (IDEA: problem, outcome, success criteria; holds the focus)
 ## Script
 All state changes go through the script. Never hand-edit `status`, dates, IDs, `plan:`, `focus:` or the generated `STATUS.md`.
 - In a project: `node .crew/bin/crew.mjs <cmd>` (vendored single-file copy — prefer this). Needs Node.js ≥ 20; nothing to install.
-- Not yet initialized: `node "${CLAUDE_SKILL_DIR}/dist/crew.mjs" init` at the repo root. If config has `modules.hub: false`, set it to `true` first, then refresh what was rendered without it: `/crew:guidelines --refresh` (CLAUDE.md, settings, tooling), and for `.githooks/pre-commit`, `commit-msg` and the PR template, show the user the diff against a fresh render (`setup_git.py` in a temp copy) and replace them only with a yes.
+- Not yet initialized: `node "${CLAUDE_SKILL_DIR}/dist/crew.mjs" init` at the repo root.
 - A project-kit project (`.project/`): `node "${CLAUDE_SKILL_DIR}/dist/crew.mjs" migrate` on a clean `main`, then follow the `next:` lines it prints, and commit `chore(hub): migrate to crew`.
-- **Tools first.** When the plugin's `hub` MCP tools are available (`next`, `context`, `ask`, `escalate`, `answer`, `questions`, `current`, `status`, `check`, `graph`, `new_item`, `triage`, `move`, `log`, `focus`, `usage`, `learn`, `recall`, `checkpoint`, `resume`, `handoff`, `ledger`), call them instead of the matching commands. They run the same code with the same gates; a refusal comes back as a tool error with the CLI's text, and nothing is written. Everything else (`init`, `migrate`, `new-idea`, `new-goal`, `new-plan`, `start`, `release`, `export`, `ui`) and any `--force` stays in the CLI. Use the CLI too when the tools are missing.
+- **Tools first.** When the plugin's `hub` MCP tools are available (`next`, `context`, `ask`, `escalate`, `answer`, `questions`, `current`, `status`, `check`, `graph`, `new_item`, `triage`, `move`, `log`, `focus`, `usage`, `learn`, `recall`, `checkpoint`, `resume`, `handoff`, `ledger`, `design`), call them instead of the matching commands. They run the same code with the same gates; a refusal comes back as a tool error with the CLI's text, and nothing is written. Everything else (`init`, `migrate`, `new-idea`, `new-goal`, `new-plan`, `start`, `release`, `export`, `ui`) and any `--force` stays in the CLI. Use the CLI too when the tools are missing.
 
 | Command | Purpose |
 |---|---|
@@ -51,7 +51,8 @@ All state changes go through the script. Never hand-edit `status`, dates, IDs, `
 | `ask [ID] --to ROLE TEXT [--fyi]` · `escalate [ID] TEXT` · `answer Q-… TEXT [--decision]` · `questions` | questions between roles; an open one blocks only its document; escalations are answered by a human |
 | `status [--write]` | where the work stands: idea and focus, now, blocked, ready, top of the backlog, open bugs, recently done |
 | `migrate` | convert a project-kit `.project/` folder into `.crew/` |
-| `export [--json] [--out FILE]` · `ui [--port 8765] [--no-open]` | the interactive view: a self-contained page (`.crew/view/index.html`, gitignored) or a live local server; `--json` is the graph for scripts |
+| `export [--json] [--out FILE]` · `ui [--port 8765] [--no-open] [--design]` | the interactive view: a self-contained page (`.crew/view/index.html`, gitignored) or a live local server; `--json` is the graph for scripts; `--design` opens the design studio (`/design`) |
+| `design show [--json]` · `design wait [--timeout 1800]` · `design done ID\|all` | the design studio's state, and its hand-offs to Claude (see the design skill) |
 
 **Roles and questions.** Set `CREW_ROLE` to your role (`director`, `pm`, `architect`, `developer`, `qa`, `release`; the human is the `executive`). `next --role` is your queue and `context --role` your brief. Don't guess across roles: `ask P-### --to architect "…"` records the question and blocks only that plan until it's answered; `answer Q-… "…" --decision` turns a durable answer into a decision entry. Reserved decisions, a goal at risk, or anything only a human can settle: `escalate`. Only a human answers an escalation.
 
@@ -148,7 +149,7 @@ Start every workflow by checking where you are: `crew.mjs context` (or `context 
 - For "where are we", run `status`: idea and focus progress, what's in progress, blocked work, top of the backlog, open bugs and what recently shipped. Summarize it in five lines.
 - **To let the user see it:** after planning or a status question, offer the view instead of pasting long tables:
   - `export` writes `.crew/view/index.html`, one offline page with the executive overview (idea, success criteria, focus progress, what's next, blockers), board, hierarchy, dependency graph and a page per document with its relations. Tell the user the path; re-run `export` to refresh it.
-  - `ui` serves the same page on 127.0.0.1 and updates it live as files change. It can move statuses, triage, set the focus and log notes, through the same gates. Run it in the background and give the user the URL. Starting a plan (branch) and creating documents stay in the CLI.
+  - `ui` serves the same page on 127.0.0.1 and updates it live as files change. It can move statuses, triage, set the focus and log notes, through the same gates. It also serves the design studio at `/design`, which saves DESIGN.md and studio.json (the design skill drives it). Run it in the background and give the user the URL. Starting a plan (branch) and creating documents stay in the CLI.
 - Only write the generated `STATUS.md` on main.
 
 ## Rules

@@ -18,10 +18,10 @@ Start a new Claude Code session to load it. To pick up later releases, run `clau
 | Skill | Invoke | Purpose |
 |---|---|---|
 | research | `/crew:research <idea>` | Standalone, before or after kickoff. Finds competitors, open-source prior art and user complaints, lists features worth adopting, gives a rough bottom-up market estimate, and recommends **go / pivot / kill**. Every claim cites evidence that a script has fetched and checked. Writes `docs/research/` |
-| kickoff | `/crew:kickoff <idea>` | New projects. Asks which optional modules you want (hub, code graph), then runs discover, design, guidelines, hub, git, graph and the idea, goals and first plan in order, and can resume after an interruption |
+| kickoff | `/crew:kickoff <idea>` | New projects. Asks whether you want the optional code graph, then runs discover, design, guidelines, hub, git, graph and the idea, goals and first plan in order, and can resume after an interruption |
 | onboard | `/crew:onboard` | Existing projects. Maps the repo (with graphify if chosen), infers the stack and layout and confirms them with you, then merges config, docs, CLAUDE.md, rules and git guards into what's there, on a `chore/crew-onboard` branch. Leaves existing hooks and CI alone unless you say otherwise |
 | discover | `/crew:discover` | Interview → `.crew/config.yaml`, brief, architecture, ADRs |
-| design | `/crew:design [init\|page\|review\|refresh]` | A gallery page of all of Sanzo Wada's *Dictionary of Color Combinations*, each previewed as UI with WCAG-checked roles for light and dark. You shortlist 2–4, and each becomes a full style tile to compare. The pick becomes `docs/design/DESIGN.md` (tokens, layout shell, component inventory, do's and don'ts). Pages are composed from it, and `check_design.py` flags drift |
+| design | `/crew:design [init\|page\|review\|refresh]` | One interactive **design studio**, served by the hub's own `crew.mjs ui` server at `/design` (linked from the hub's sidebar), runs the whole flow: shortlist palettes from all of Sanzo Wada's *Dictionary of Color Combinations* (WCAG-checked roles for light and dark) → **Next** builds a direction per palette with a curated OFL type pairing, shape, density, elevation and motion, previewed on the project's own screens → tune and compare side by side → save, Claude writes the rationale, you lock it → review the project's screens (approve, request a change, drop, or skip). Steps that need Claude are hand-offs (`design wait`), so nothing is copy-pasted. The result is `docs/design/DESIGN.md` (tokens, layout shell, component inventory, screens, do's and don'ts). Once final it changes only through a revision with an ADR (the pre-commit check enforces it). Pages are composed from it, and `check_design.py` flags drift |
 | guidelines | `/crew:guidelines` | `CLAUDE.md`, path-scoped `.claude/rules/` from stack packs, settings, hygiene files |
 | hub | `/crew:hub …` | The team's shared context in `.crew/` (Node ≥ 20 CLI, no install): the idea with its success criteria and the focus goal, goals, a ranked backlog of FEAT/BUG/CHORE/SPIKE items with priority, and plans with verifiable tasks and a declared footprint (`touches:`; one branch and one PR per plan). Enforced gates: no skeletons, triage, Definition of Ready, WIP limit, the idea's decision. A shared ledger (in the git common dir) records claims, moves, logs and spend from every worktree and agent, so parallel agents can't take the same plan. Roles and context: `context` gives each session a role-sliced brief within a budget (the SessionStart hook runs it), `next --role` gives each role its queue, `ask`/`answer`/`escalate` record questions between roles (an open one blocks only its plan; only a human answers an escalation), and overlapping or drifting footprints are flagged. Execution state: `checkpoint` records steps, checks and failed attempts (hooks do it automatically), `resume` shows a crashed or new session exactly where work stopped, and `done` needs every acceptance criterion verified by a run other than the implementer. Project memory: `learn` records decisions, gotchas, conventions and risks scoped to paths, `recall` brings back what applies to a plan (and the org playbook's lessons), and a plan can't go to review without naming its learnings. A central policy (`.crew/policy.yaml` over an org playbook layer) sets the mode, human and role gates, reserved decisions, models, tools, paths and budgets; guardrails only tighten, and `policy show` names the layer every value came from. `next` names the single best next step; `status` reports where the work stands, who owns what and what it cost; `migrate` converts a project-kit `.project/`. An interactive view (`export` for an offline page, `ui` for a live local server): executive overview, board, hierarchy, dependency graph and linked document pages. The plugin also registers the hub as MCP tools (`next`, `context`, `ask`, `escalate`, `answer`, `questions`, `status`, `graph`, `new_item`, `triage`, `move`, `log`, `focus`, `usage`, `learn`, `recall`, `checkpoint`, `resume`, `handoff`, `ledger`, …), so agents call typed tools behind the same gates instead of shelling out |
 | codemap | `/crew:codemap [enable\|build\|remove]` | Optional code knowledge graph via [graphify](https://pypi.org/project/graphifyy/): installs the CLI with your yes, wires its rebuild-on-commit hook and CLAUDE.md section, gitignores `graphify-out/`, and builds the graph so Claude queries it instead of reading files broadly |
@@ -29,11 +29,10 @@ Start a new Claude Code session to load it. To pick up later releases, run `clau
 | global-setup | `/crew:global-setup` | One-time install of the Karpathy-style working principles into `~/.claude/CLAUDE.md` |
 
 ### Optional modules
-Kickoff and onboard ask which of these to include. The choice is recorded in `.crew/config.yaml → modules:`.
+Kickoff and onboard ask whether to include it. The choice is recorded in `.crew/config.yaml → modules:`.
 
 | Module | Default | When off |
 |---|---|---|
-| `hub` | on | Nothing hub-related is generated: no `.crew/bin/crew.mjs`, idea, goals or plans, and no hub lines in CLAUDE.md, settings, hooks, the PR template or CI. `main` is still protected, and any branch name works (`feat/<slug>`, `fix/<slug>`, …) |
 | `graphify` | off | No graph. When on, `graphify-out/` is local and gitignored, and on machines without graphify, commits still succeed |
 
 ### Existing projects
@@ -64,13 +63,14 @@ CLAUDE.md                      # project facts + "how we work"
   STATUS.md                    # generated by `crew.mjs status --write`
   view/index.html              # generated by `crew.mjs export`: the interactive view (gitignored)
   drafts/                      # plan-mode output before it becomes a tracked plan
-  bin/crew.mjs + ui.html    # vendored single-file hub (Node ≥ 20) and its view, so the repo works without the plugin
+  bin/crew.mjs + ui.html + studio.html  # vendored single-file hub (Node ≥ 20), its view and the design studio, so the repo works without the plugin
   bin/check_structure.py       # layout guard run by the pre-commit hook
   bin/check_design.py          # design-token drift check (design pack)
   templates/
 docs/
   research/idea-research.md    # optional: /crew:research report + evidence.jsonl
-  design/DESIGN.md             # UI projects: tokens, layout shell, component inventory (+ palettes.html, directions.html)
+  design/DESIGN.md             # UI projects: tokens, layout shell, components, screens; final = locked, revised with ADRs
+  design/studio.json           # the design studio's state: shortlist, variants, the project's screens and their reviews
   project-brief.md
   architecture.md
   adr/0001-….md

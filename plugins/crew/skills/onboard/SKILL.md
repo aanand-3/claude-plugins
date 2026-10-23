@@ -13,10 +13,10 @@ The existing-code counterpart of `kickoff`. Kickoff interviews and creates; onbo
 ```yaml
 started: YYYY-MM-DD
 branch: chore/crew-onboard
-modules: {hub: true, graphify: false}
+modules: {graphify: false}
 steps: {preflight: done, map: pending, discover: pending, design: pending, guidelines: pending, hub: pending, git: pending, graph: pending}
 ```
-On start, if it exists, switch to its branch, show what's done and continue from the first `pending` step. A step for a module the user didn't choose is `skipped`.
+On start, if it exists, switch to its branch, show what's done and continue from the first `pending` step. The graph step is `skipped` without graphify.
 
 ## Steps
 
@@ -28,11 +28,8 @@ On start, if it exists, switch to its branch, show what's done and continue from
      - hooks: `core.hooksPath`, `.husky/`, `.pre-commit-config.yaml`, real files in `.git/hooks`;
      - CI (`.github/workflows/`, others), README, `docs/`, ADRs;
      - the default branch and remote.
-   - **Tools:** `git`, `python3` ≥ 3.9, `node` ≥ 20 (only with the hub).
-   - **Optional modules** (one AskUserQuestion, multiSelect):
-     - *Hub (Recommended)*: the team's shared context in `.crew/` (idea, goals, backlog, plans), with one branch and one PR per plan. A project-kit `.project/` folder is migrated instead (`crew.mjs migrate`);
-     - *Code graph (graphify)*: maps the codebase for this onboarding and for every later session.
-     **With the hub off, nothing hub-related is generated.**
+   - **Tools:** `git`, `python3` ≥ 3.9, `node` ≥ 20 (the hub and the design studio).
+   - **Optional module** (one AskUserQuestion): *Code graph (graphify)*, which maps the codebase for this onboarding and for every later session. A project-kit `.project/` folder is migrated by the hub step (`crew.mjs migrate`).
 
 1. **Map** — gather evidence before asking anything.
    - With graphify: follow the `codemap` skill (`${CLAUDE_PLUGIN_ROOT}/skills/codemap/SKILL.md`). Install the CLI if needed and **build** with `/graphify .`, but don't wire the hooks yet (step 7 does, once `.githooks` exists). `GRAPH_REPORT.md` (god nodes, communities) is the main input for the architecture and `structure:`.
@@ -44,7 +41,7 @@ On start, if it exists, switch to its branch, show what's done and continue from
    - Note what isn't covered by a pack, e.g. Go or Django. Those get rules in `.claude/rules/project.md` and no pack. Never force a pack that doesn't fit.
 
 2. **Discover (inferred)** — follow the `discover` skill in **inferred mode** (its *Inferred mode* section). Output: `.crew/config.yaml` (with `modules:`), `docs/project-brief.md`, `docs/architecture.md` (as-is), `docs/adr/0001…` and `0002-onboard-crew`.
-   - Pick `packs:` only where the code matches the pack. Ask before adding an arch pack whose rules the current code clearly breaks: adopting it means planned refactoring, recorded as an ADR and, with the hub, as a CHORE item.
+   - Pick `packs:` only where the code matches the pack. Ask before adding an arch pack whose rules the current code clearly breaks: adopting it means planned refactoring, recorded as an ADR and a CHORE item.
    - Existing docs win. If `docs/architecture.md` or ADRs exist, merge into them and show the diff rather than replacing them.
 
 3. **Design** (UI projects only, and only if the user wants it): `design` skill. Offer `review` of the existing UI first; `init` only if there's no established look worth keeping.
@@ -54,7 +51,7 @@ On start, if it exists, switch to its branch, show what's done and continue from
    - **Merge, never replace:** keep everything in the existing `CLAUDE.md` that is still true, move stack facts to their home (config, `project.md`) and show the diff.
    - The same goes for `.claude/settings.json` (merge the keys), the README (keep the content, add the *Where to find things* map and link instead of copying) and `.env.example`.
 
-5. **Hub** (only with `modules.hub`): `node "${CLAUDE_PLUGIN_ROOT}/skills/hub/dist/crew.mjs" init`.
+5. **Hub**: `node "${CLAUDE_PLUGIN_ROOT}/skills/hub/dist/crew.mjs" init`.
    - **Mode** (one AskUserQuestion): who approves what from here on. *AI-assisted (Recommended)*: agents do the work, a human approves each plan before it starts and before it's done. *AI-native*: agents run everything after the idea is decided; humans answer escalations. *Human-led*: humans drive and also approve triage. Write `.crew/policy.yaml` with `mode: <choice>` and, if the user names any, budgets (`budgets: {max_agents: N, run: {max_cost: USD}}`). Run `crew.mjs policy check`. Reserved decisions (deciding or killing the idea, production deploys, publishing, spending, deleting data, policy changes) always need the user, whatever the mode.
    Then offer, one question with multiSelect and nothing forced:
    - the idea (`new-idea`), from the brief: what the project is for and the success criteria the user agrees to;
@@ -74,8 +71,7 @@ On start, if it exists, switch to its branch, show what's done and continue from
    - Show: the files added and merged (`git diff --stat main...HEAD`), the detected stack table with anything still `assumed`, the packs applied, the modules enabled, and existing hooks or CI left as they were.
    - Offer to push and open a PR (`gh pr create`) or, without a remote, to review the diff. Merging is the user's call.
    - Next actions:
-     - with the hub: triage the imported items, then `/crew:hub plan` for the next change;
-     - without the hub: every change on its own branch and PR;
+     - triage the imported items, then `/crew:hub plan` for the next change;
      - with graphify: `/graphify query "…"` before broad reads.
 
 ## Rules

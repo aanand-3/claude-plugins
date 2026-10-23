@@ -82,7 +82,6 @@ research:
 packs: [base]           # guideline packs applied to .claude/rules/ (incl. exactly one arch-* pack for a backend)
 
 modules:                # optional parts of crew, chosen at kickoff/onboard
-  hub: <true | false>    # the shared context in .crew/ (idea, goals, backlog, plans); false = no hub files at all
   graphify: <true | false>   # code knowledge graph via graphify (graphify-out/, gitignored; /crew:codemap)
 
 playbook:               # optional: the org's shared playbook repo (org policy layer, role lessons)
@@ -93,4 +92,4 @@ git:
   default_branch: main
   remote: <none | github>
   merge: squash
-  branch_pattern: <"plan/P-###-<slug>" with the hub | "feat|fix|chore/<slug>" without>
+  branch_pattern: "plan/P-###-<slug>"

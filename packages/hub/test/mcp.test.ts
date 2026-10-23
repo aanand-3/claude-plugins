@@ -45,9 +45,16 @@ afterAll(() => server?.kill());
 it("lists the hub tools with input schemas", async () => {
   const { tools } = await rpc<{ tools: { name: string; inputSchema: { type: string; required?: string[] } }[] }>("tools/list");
   expect(tools.map((t) => t.name)).toEqual(
-    ["next", "context", "ask", "escalate", "answer", "questions", "current", "status", "check", "graph", "new_item", "triage", "move", "log", "focus", "usage", "learn", "recall", "checkpoint", "resume", "handoff", "ledger"]);
+    ["next", "context", "ask", "escalate", "answer", "questions", "current", "status", "check", "graph", "new_item", "triage", "move", "log", "focus", "usage", "learn", "recall", "checkpoint", "resume", "handoff", "design", "ledger"]);
   expect(tools.every((t) => t.inputSchema.type === "object")).toBe(true);
   expect(tools.find((t) => t.name === "move")!.inputSchema.required).toEqual(["id", "status"]);
+});
+
+it("shows the design studio's state like the CLI", async () => {
+  const r = await call("design");
+  expect(r.isError).toBe(false);
+  expect(r.content[0].text).toBe(tr("design", "show").trimEnd());
+  expect(r.content[0].text).toContain("studio: stage palette");
 });
 
 it("answers like the CLI", async () => {

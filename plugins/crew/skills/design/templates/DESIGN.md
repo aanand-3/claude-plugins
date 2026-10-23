@@ -2,6 +2,8 @@
 version: alpha
 name: <Project> — <Direction name>
 description: <one line: the feel, for whom>
+status: draft  # draft while choosing; final once locked — then it changes only through a revision
+revision: 0    # 1 when first locked; +1 per revision, each with an ADR mentioning "DESIGN.md revision <n>"
 source: "Wada #<id>"  # palette origin (wada.py roles <id>); "brand" if built from fixed brand colours
 colors:
   # paste `wada.py roles <id>` output here (light roles, then dark- roles); shadcn role names
@@ -24,34 +26,55 @@ colors:
   dark-background: "<#hex>"
   # … every role again with the dark- prefix
 typography:
+  pairing: <font pairing id>  # assets/fonts.json (studio.py fonts)
   display:
     fontFamily: <Display face>
     fontWeight: 600
     letterSpacing: -0.02em
+    lineHeight: 1.15
+    source: google  # Google Fonts (OFL); in code via @fontsource/<slug>
   body:
     fontFamily: <Text face>
     fontSize: 16px
     lineHeight: 1.5
+    source: google
   mono:
     fontFamily: <Mono face>
+    source: google
   scale: <1.2 | 1.25 | 1.333>  # sizes: <12, 14, 16, 20, 24, 30, 36>
 rounded:
+  preset: <sharp | soft | round>  # assets/presets.json
   sm: <4px>
   md: <8px>
   lg: <12px>
 spacing:
   base: 4px  # scale: 4 8 12 16 24 32 48 64 96
+density:
+  preset: <compact | comfortable | spacious>
+  control-height: <40px>
+  row-height: <44px>
+  ui-text: <14px>
+  gap: <16px>
+elevation:
+  preset: <flat | border | soft>
+  sm: "<none | 0 1px 2px rgb(r g b / 0.08)>"
+  md: "<0 8px 24px rgb(r g b / 0.14)>"
+motion:
+  preset: <none | subtle | expressive>
+  fast: <120ms>
+  base: <180ms>
+  easing: "<cubic-bezier(0.2, 0.8, 0.2, 1)>"
 components:
   button-primary:
     backgroundColor: "{colors.primary}"
     textColor: "{colors.primary-foreground}"
     rounded: "{rounded.md}"
-    height: 40px
+    height: "{density.control-height}"
   input:
     backgroundColor: "{colors.background}"
     textColor: "{colors.foreground}"
     rounded: "{rounded.md}"
-    height: 40px
+    height: "{density.control-height}"
   card:
     backgroundColor: "{colors.card}"
     textColor: "{colors.card-foreground}"
@@ -61,7 +84,7 @@ components:
 
 # <Project> design system
 
-The single home of visual decisions. Read this before building or changing any UI. Code uses tokens, never the raw values above. Change it with `/crew:design refresh`.
+The single home of visual decisions. Read this before building or changing any UI. Code uses tokens, never the raw values above. Edit it in the design studio (`crew.mjs ui --design`). Once `status: final`, change it only with `/crew:design refresh` (a new revision and an ADR).
 
 ## Overview
 <Direction name, in 2–4 sentences: the feel, why it suits these users, and how it differs from the competitors' look. Surface: app | marketing | both. Dark mode: yes/no.>
@@ -94,6 +117,13 @@ Inventory: compose pages from these. A new composite is added here, with its sta
 | <DataTable> | shadcn `table` | <dense/comfortable> | loading (skeleton), empty, error |
 
 **States:** loading = skeletons shaped like the content; empty = why + next action; error = what happened + retry.
+
+## Screens
+The project's own screens, approved in the studio (`docs/design/studio.json` → `screens`). Build each from its row with `/crew:design page <id>`.
+
+| Screen | Shell | Blocks | States | Built by |
+|---|---|---|---|---|
+| <id: Name — purpose> | <sidebar-app> | <page-header, stat-row, data-table> | <loading, empty, error> | <FEAT-###> |
 
 ## Do's and Don'ts
 - Do <project-specific rule>

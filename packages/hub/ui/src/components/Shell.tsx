@@ -1,5 +1,5 @@
 /** AppShell: sidebar nav, top bar with search and theme toggle, and the content area every view renders into. */
-import { Menu, Moon, Search, Sun } from "lucide-react";
+import { Menu, Moon, Palette, Search, Sun } from "lucide-react";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { useData } from "../data";
 import { docHref, go } from "../router";
@@ -82,6 +82,7 @@ export function Shell({ views, current, title, children }: { views: ViewDef[]; c
               <v.icon size={16} aria-hidden />{v.title}
             </a>
           ))}
+          {served && <a href="/design" className="navlink"><Palette size={16} aria-hidden />Design</a>}
         </nav>
         <footer className="sidebar__foot">
           <span>{served ? "Live from" : "Snapshot of"} <code>{g.project.branch ?? "detached"}</code></span>

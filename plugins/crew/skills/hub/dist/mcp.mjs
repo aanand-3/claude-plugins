@@ -1505,7 +1505,7 @@ var require_stringify = __commonJS({
         props.push(doc.directives.tagString(tag));
       return props.join(" ");
     }
-    function stringify(item, ctx, onComment, onChompKeep) {
+    function stringify2(item, ctx, onComment, onChompKeep) {
       if (identity.isPair(item))
         return item.toString(ctx, onComment, onChompKeep);
       if (identity.isAlias(item)) {
@@ -1534,7 +1534,7 @@ var require_stringify = __commonJS({
 ${ctx.indent}${str}`;
     }
     exports.createStringifyContext = createStringifyContext;
-    exports.stringify = stringify;
+    exports.stringify = stringify2;
   }
 });
 
@@ -1544,7 +1544,7 @@ var require_stringifyPair = __commonJS({
     "use strict";
     var identity = require_identity();
     var Scalar = require_Scalar();
-    var stringify = require_stringify();
+    var stringify2 = require_stringify();
     var stringifyComment = require_stringifyComment();
     function stringifyPair({ key, value }, ctx, onComment, onChompKeep) {
       const { allNullValues, doc, indent, indentStep, options: { commentString, indentSeq, simpleKeys } } = ctx;
@@ -1566,7 +1566,7 @@ var require_stringifyPair = __commonJS({
       });
       let keyCommentDone = false;
       let chompKeep = false;
-      let str = stringify.stringify(key, ctx, () => keyCommentDone = true, () => chompKeep = true);
+      let str = stringify2.stringify(key, ctx, () => keyCommentDone = true, () => chompKeep = true);
       if (!explicitKey && !ctx.inFlow && str.length > 1024) {
         if (simpleKeys)
           throw new Error("With simple keys, single line scalar must not span more than 1024 characters");
@@ -1618,7 +1618,7 @@ ${indent}:`;
         ctx.indent = ctx.indent.substring(2);
       }
       let valueCommentDone = false;
-      const valueStr = stringify.stringify(value, ctx, () => valueCommentDone = true, () => chompKeep = true);
+      const valueStr = stringify2.stringify(value, ctx, () => valueCommentDone = true, () => chompKeep = true);
       let ws = " ";
       if (keyComment || vsb || vcb) {
         ws = vsb ? "\n" : "";
@@ -1759,7 +1759,7 @@ var require_addPairToJSMap = __commonJS({
     "use strict";
     var log2 = require_log();
     var merge = require_merge();
-    var stringify = require_stringify();
+    var stringify2 = require_stringify();
     var identity = require_identity();
     var toJS = require_toJS();
     function addPairToJSMap(ctx, map, { key, value }) {
@@ -1795,7 +1795,7 @@ var require_addPairToJSMap = __commonJS({
       if (typeof jsKey !== "object")
         return String(jsKey);
       if (identity.isNode(key) && ctx?.doc) {
-        const strCtx = stringify.createStringifyContext(ctx.doc, {});
+        const strCtx = stringify2.createStringifyContext(ctx.doc, {});
         strCtx.anchors = /* @__PURE__ */ new Set();
         for (const node of ctx.anchors.keys())
           strCtx.anchors.add(node.anchor);
@@ -1862,12 +1862,12 @@ var require_stringifyCollection = __commonJS({
   "node_modules/yaml/dist/stringify/stringifyCollection.js"(exports) {
     "use strict";
     var identity = require_identity();
-    var stringify = require_stringify();
+    var stringify2 = require_stringify();
     var stringifyComment = require_stringifyComment();
     function stringifyCollection(collection, ctx, options) {
       const flow = ctx.inFlow ?? collection.flow;
-      const stringify2 = flow ? stringifyFlowCollection : stringifyBlockCollection;
-      return stringify2(collection, ctx, options);
+      const stringify3 = flow ? stringifyFlowCollection : stringifyBlockCollection;
+      return stringify3(collection, ctx, options);
     }
     function stringifyBlockCollection({ comment, items: items2 }, ctx, { blockItemPrefix, flowChars, itemIndent, onChompKeep, onComment }) {
       const { indent, options: { commentString } } = ctx;
@@ -1892,7 +1892,7 @@ var require_stringifyCollection = __commonJS({
           }
         }
         chompKeep = false;
-        let str2 = stringify.stringify(item, itemCtx, () => comment2 = null, () => chompKeep = true);
+        let str2 = stringify2.stringify(item, itemCtx, () => comment2 = null, () => chompKeep = true);
         if (comment2)
           str2 += stringifyComment.lineComment(str2, itemIndent, commentString(comment2));
         if (chompKeep && comment2)
@@ -1959,7 +1959,7 @@ ${indent}${line2}` : "\n";
         }
         if (comment)
           reqNewline = true;
-        let str = stringify.stringify(item, itemCtx, () => comment = null);
+        let str = stringify2.stringify(item, itemCtx, () => comment = null);
         reqNewline || (reqNewline = lines.length > linesAtValue || str.includes("\n"));
         if (i < items2.length - 1) {
           str += ",";
@@ -3320,7 +3320,7 @@ var require_stringifyDocument = __commonJS({
   "node_modules/yaml/dist/stringify/stringifyDocument.js"(exports) {
     "use strict";
     var identity = require_identity();
-    var stringify = require_stringify();
+    var stringify2 = require_stringify();
     var stringifyComment = require_stringifyComment();
     function stringifyDocument(doc, options) {
       const lines = [];
@@ -3335,7 +3335,7 @@ var require_stringifyDocument = __commonJS({
       }
       if (hasDirectives)
         lines.push("---");
-      const ctx = stringify.createStringifyContext(doc, options);
+      const ctx = stringify2.createStringifyContext(doc, options);
       const { commentString } = ctx.options;
       if (doc.commentBefore) {
         if (lines.length !== 1)
@@ -3357,7 +3357,7 @@ var require_stringifyDocument = __commonJS({
           contentComment = doc.contents.comment;
         }
         const onChompKeep = contentComment ? void 0 : () => chompKeep = true;
-        let body2 = stringify.stringify(doc.contents, ctx, () => contentComment = null, onChompKeep);
+        let body2 = stringify2.stringify(doc.contents, ctx, () => contentComment = null, onChompKeep);
         if (contentComment)
           body2 += stringifyComment.lineComment(body2, "", commentString(contentComment));
         if ((body2[0] === "|" || body2[0] === ">") && lines[lines.length - 1] === "---") {
@@ -3365,7 +3365,7 @@ var require_stringifyDocument = __commonJS({
         } else
           lines.push(body2);
       } else {
-        lines.push(stringify.stringify(doc.contents, ctx));
+        lines.push(stringify2.stringify(doc.contents, ctx));
       }
       if (doc.directives?.docEnd) {
         if (doc.comment) {
@@ -5500,7 +5500,7 @@ var require_cst_scalar = __commonJS({
 var require_cst_stringify = __commonJS({
   "node_modules/yaml/dist/parse/cst-stringify.js"(exports) {
     "use strict";
-    var stringify = (cst) => "type" in cst ? stringifyToken(cst) : stringifyItem(cst);
+    var stringify2 = (cst) => "type" in cst ? stringifyToken(cst) : stringifyItem(cst);
     function stringifyToken(token) {
       switch (token.type) {
         case "block-scalar": {
@@ -5553,7 +5553,7 @@ var require_cst_stringify = __commonJS({
         res += stringifyToken(value);
       return res;
     }
-    exports.stringify = stringify;
+    exports.stringify = stringify2;
   }
 });
 
@@ -7264,7 +7264,7 @@ var require_public_api = __commonJS({
       }
       return doc;
     }
-    function parse3(src, reviver, options) {
+    function parse4(src, reviver, options) {
       let _reviver = void 0;
       if (typeof reviver === "function") {
         _reviver = reviver;
@@ -7283,7 +7283,7 @@ var require_public_api = __commonJS({
       }
       return doc.toJS(Object.assign({ reviver: _reviver }, options));
     }
-    function stringify(value, replacer, options) {
+    function stringify2(value, replacer, options) {
       let _replacer = null;
       if (typeof replacer === "function" || Array.isArray(replacer)) {
         _replacer = replacer;
@@ -7305,10 +7305,10 @@ var require_public_api = __commonJS({
         return value.toString(options);
       return new Document.Document(value, _replacer, options).toString(options);
     }
-    exports.parse = parse3;
+    exports.parse = parse4;
     exports.parseAllDocuments = parseAllDocuments;
     exports.parseDocument = parseDocument;
-    exports.stringify = stringify;
+    exports.stringify = stringify2;
   }
 });
 
@@ -9454,6 +9454,75 @@ function hygiene(s2, f) {
   }
 }
 
+// src/commands/design.ts
+var import_yaml3 = __toESM(require_dist(), 1);
+import { dirname as dirname4, join as join7 } from "node:path";
+var FRONT = /^---\n([\s\S]*?)\n---\n/;
+function designPath(store) {
+  const cfg = store.ws.read(join7(store.dir, "config.yaml")) ?? "";
+  return join7(store.ws.root, yamlBlock(cfg, "design").file ?? "docs/design/DESIGN.md");
+}
+var studioPath = (store) => join7(dirname4(designPath(store)), "studio.json");
+function readDesign(store) {
+  const path = designPath(store);
+  const text2 = store.ws.read(path);
+  if (text2 === null) return null;
+  const m = FRONT.exec(text2);
+  const tokens = m ? (0, import_yaml3.parse)(m[1]) ?? {} : {};
+  return { path: store.rel(path), tokens, body: m ? text2.slice(m[0].length) : text2 };
+}
+function readStudio(store) {
+  const text2 = store.ws.read(studioPath(store));
+  if (text2 === null) return null;
+  try {
+    return JSON.parse(text2);
+  } catch {
+    fail(`${store.rel(studioPath(store))} is not valid JSON.`);
+  }
+}
+var revisionOf = (t) => Number.isInteger(Number(t.revision)) ? Number(t.revision) : 0;
+function writeStudio(store, studio) {
+  store.ws.write(studioPath(store), `${JSON.stringify(studio, null, 2)}
+`);
+}
+var HANDOFF_HELP = {
+  finalise: "write the prose sections of DESIGN.md for the saved draft",
+  locked: "write the ADR and set the design block in .crew/config.yaml",
+  revision: "write the ADR for the revision",
+  "screen-change": "revise this screen in studio.json \u2192 screens",
+  "screens-done": "write DESIGN.md \u2192 Screens for the approved screens and create one FEAT item per screen",
+  "screens-skipped": "tell the user `/crew:design page <name>` builds screens later"
+};
+function describe(h) {
+  return `${h.id}  ${h.kind}${h.screen ? ` (${h.screen})` : ""} \u2014 ${HANDOFF_HELP[h.kind]}${h.note ? `
+     note: ${h.note}` : ""}`;
+}
+function designShow(store, json) {
+  const design = readDesign(store);
+  const studio = readStudio(store);
+  if (json) return store.say(JSON.stringify({ design, studio }, null, 2));
+  if (!design && !studio) return store.say("No design yet. Start with /crew:design init.");
+  if (design) {
+    const t = design.tokens;
+    const typo = t.typography ?? {};
+    store.say(`${design.path}: ${t.name ?? "(no name)"} \u2014 ${t.status ?? "draft"}, revision ${revisionOf(t)}, source ${t.source ?? "?"}`);
+    store.say(`  type ${[typo.display?.fontFamily, typo.body?.fontFamily].filter(Boolean).join(" / ") || "?"} \xB7 shape ${t.rounded?.preset ?? "?"} \xB7 density ${t.density?.preset ?? "?"}`);
+  }
+  if (studio) {
+    const reviews = Object.entries(studio.reviews ?? {});
+    store.say(`studio: stage ${studio.stage ?? "palette"} \xB7 shortlist ${studio.shortlist?.join(", ") || "\u2014"} \xB7 ${studio.variants?.length ?? 0} pinned variant(s) \xB7 screens ${reviews.map(([id, r]) => `${id}=${r.status}`).join(", ") || "not reviewed"}`);
+    for (const h of studio.handoffs ?? []) store.say(`  waiting on Claude: ${describe(h)}`);
+  }
+}
+function designDone(store, id) {
+  const studio = readStudio(store) ?? fail("No studio.json yet.");
+  const list = studio.handoffs ?? [];
+  const left = id === "all" ? [] : list.filter((h) => h.id !== id);
+  if (left.length === list.length && list.length) fail(`No hand-off '${id}' (open: ${list.map((h) => h.id).join(", ")}).`);
+  writeStudio(store, { ...studio, handoffs: left });
+  store.say(`Done: ${id === "all" ? `${list.length} hand-off(s)` : id}. The studio updates by itself.`);
+}
+
 // src/commands/graph.ts
 import { basename as basename2 } from "node:path";
 
@@ -10078,6 +10147,11 @@ var TOOLS = {
     description: "Write the resume view into the plan's Handoff section (`crew.mjs handoff`), before ending a session.",
     input: obj({ plan: text("e.g. P-004; default: the plan of this branch") }),
     run: (st, a) => handoff(st, s(a, "plan"))
+  },
+  design: {
+    description: "The design studio's live state (`crew.mjs design show`): DESIGN.md's direction, status and revision, the page's stage, shortlist, pinned variants, screen reviews, and the steps it handed to Claude. With done: clear a hand-off you dealt with.",
+    input: obj({ json: { type: "boolean", description: "the full DESIGN.md tokens and studio.json" }, done: text("a hand-off id (h3) or all") }),
+    run: (st, a) => s(a, "done") ? designDone(st, s(a, "done")) : designShow(st, a.json === true)
   },
   ledger: {
     description: "Recent events from the shared ledger and the live claims (`crew.mjs ledger --json`).",

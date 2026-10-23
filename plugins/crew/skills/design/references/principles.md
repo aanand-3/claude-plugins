@@ -11,7 +11,7 @@ What makes a UI feel deliberate rather than generated. Use with DESIGN.md: this 
 - Contrast: body text 4.5:1 or more (aim for 7:1), large text and UI boundaries 3:1 or more.
 
 ## Typography
-- **Two families at most:** one for text, optionally one for display or headings. A monospace face is allowed for code and IDs. Pick fonts for the adjectives: geometric for precise, humanist for warm, grotesk for neutral or technical, serif for editorial or trustworthy. Avoid defaulting to whatever is most common; choose deliberately and write down why.
+- **Two families at most:** one for text, optionally one for display or headings. A monospace face is allowed for code and IDs. Pick fonts for the adjectives: geometric for precise, humanist for warm, grotesk for neutral or technical, serif for editorial or trustworthy. Start from the curated pairings in `assets/fonts.json` (`studio.py fonts --mood …`): each is OFL, has a matching mono and says why it fits. Avoid defaulting to whatever is most common; choose deliberately and write down why.
 - **A modular scale** (e.g. 1.2 for apps, 1.25–1.333 for marketing) with 5–7 steps. Every size used comes from the scale.
 - Body text 16 px with line height 1.5 and 60–75 characters per line. Headings get tighter line height (1.1–1.25) and slight negative tracking at large sizes.
 - Show hierarchy with weight and size together. Never use more than three weights.
@@ -19,8 +19,8 @@ What makes a UI feel deliberate rather than generated. Use with DESIGN.md: this 
 
 ## Space and shape
 - **4 px base, 8 px rhythm:** 4, 8, 12, 16, 24, 32, 48, 64, 96. The space between groups is larger than the space within them, because that gap is what shows the grouping.
-- **One radius family:** e.g. sm 4, md 8, lg 12. Nested radius equals outer radius minus padding. Choose either sharp or soft and stay consistent.
-- **Elevation:** at most two shadow levels, tinted with the palette hue. Prefer borders or surface contrast to shadows in apps.
+- **One radius family:** e.g. sm 4, md 8, lg 12 (the shape presets in `assets/presets.json`: sharp, soft, round). Nested radius equals outer radius minus padding. Choose either sharp or soft and stay consistent.
+- **Elevation:** at most two shadow levels, tinted with the palette hue (presets: flat, borders, soft shadows). **Density** is a decision too: compact, comfortable or spacious sets control height, row height and UI text size together. Prefer borders or surface contrast to shadows in apps.
 
 ## Layout shell (defined once, used by every page)
 - Apps: a persistent nav (side rail or top bar), a page header (title, primary action, secondary actions), a content area with a max width, and a consistent page padding. Define the breakpoints for collapsing the nav.

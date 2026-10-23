@@ -63,7 +63,8 @@ export function migrate(store: Store): void {
       store.ws.write(join(store.dir, DOCS[dir], name.replace(/^EP-/, "G-")), `${doc.text.trimEnd()}\n`);
       counts.docs++;
     } else if (rel === "config.yaml") {
-      store.ws.write(join(store.dir, rel), renamed(read(rel)).replace(/^(\s+)tracker:/m, "$1hub:"));
+      store.ws.write(join(store.dir, rel), renamed(read(rel)).replace(/^[ \t]+tracker:.*\n/m, "") // the hub is not a module
+        .replace(/^modules:[ \t]*\n(?![ \t])/m, ""));
     } else {
       store.ws.write(join(store.dir, rel), renamed(read(rel)));
     }

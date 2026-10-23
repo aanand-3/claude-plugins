@@ -1,0 +1,27 @@
+{
+  "note": "Named presets for the non-colour dimensions. `moods` steer the studio's direction builder; values are written to DESIGN.md as tokens. Shadows use {ink}, replaced with the palette's foreground as `r g b` so elevation is tinted with the palette hue.",
+  "shape": {
+    "sharp": {"label": "Sharp", "moods": ["technical", "bold", "editorial"], "rounded": {"sm": "2px", "md": "4px", "lg": "6px"}},
+    "soft": {"label": "Soft", "moods": ["calm", "warm", "earthy", "cool"], "rounded": {"sm": "4px", "md": "8px", "lg": "12px"}},
+    "round": {"label": "Round", "moods": ["friendly", "light"], "rounded": {"sm": "8px", "md": "12px", "lg": "20px"}}
+  },
+  "density": {
+    "compact": {"label": "Compact", "moods": ["technical"], "surface": "app",
+                "tokens": {"control-height": "32px", "row-height": "36px", "ui-text": "13px", "gap": "12px"}},
+    "comfortable": {"label": "Comfortable", "moods": ["calm", "warm", "cool", "earthy", "bold"], "surface": "both",
+                    "tokens": {"control-height": "40px", "row-height": "44px", "ui-text": "14px", "gap": "16px"}},
+    "spacious": {"label": "Spacious", "moods": ["editorial", "friendly", "light"], "surface": "marketing",
+                 "tokens": {"control-height": "48px", "row-height": "52px", "ui-text": "16px", "gap": "24px"}}
+  },
+  "elevation": {
+    "flat": {"label": "Flat", "moods": ["bold", "technical"], "shadows": {"sm": "none", "md": "none"}},
+    "border": {"label": "Borders", "moods": ["calm", "cool", "editorial"], "shadows": {"sm": "none", "md": "0 4px 16px rgb({ink} / 0.10)"}},
+    "soft": {"label": "Soft shadows", "moods": ["friendly", "warm", "light", "earthy"], "shadows": {"sm": "0 1px 2px rgb({ink} / 0.08)", "md": "0 8px 24px rgb({ink} / 0.14)"}}
+  },
+  "motion": {
+    "none": {"label": "Still", "moods": [], "tokens": {"fast": "0ms", "base": "0ms", "easing": "linear"}},
+    "subtle": {"label": "Subtle", "moods": ["calm", "technical", "cool", "editorial", "earthy"], "tokens": {"fast": "120ms", "base": "180ms", "easing": "cubic-bezier(0.2, 0.8, 0.2, 1)"}},
+    "expressive": {"label": "Expressive", "moods": ["friendly", "bold", "warm"], "tokens": {"fast": "160ms", "base": "280ms", "easing": "cubic-bezier(0.34, 1.4, 0.64, 1)"}}
+  },
+  "scale": {"1.2": "apps: tight steps for dense screens", "1.25": "both: balanced", "1.333": "marketing: dramatic headings"}
+}

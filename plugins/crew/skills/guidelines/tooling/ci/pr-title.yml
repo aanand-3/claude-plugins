@@ -13,23 +13,11 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-{{#hub}}
       - name: 'Title is "P-###: <title>" or a Conventional Commit'
-{{/hub}}
-{{^hub}}
-      - name: 'Title is a Conventional Commit'
-{{/hub}}
         env:
           TITLE: ${{ github.event.pull_request.title }}
         run: |
-{{#hub}}
           if printf '%s' "$TITLE" | grep -Eq '^P-[0-9]+: .+'; then exit 0; fi
-{{/hub}}
           if printf '%s' "$TITLE" | grep -Eq '^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([A-Za-z0-9._/-]+\))?!?: .+'; then exit 0; fi
-{{#hub}}
           echo "::error::PR title must be 'P-012: <plan title>' or a Conventional Commit (e.g. 'chore(deps): bump ruff'). Got: $TITLE"
-{{/hub}}
-{{^hub}}
-          echo "::error::PR title must be a Conventional Commit (e.g. 'chore(deps): bump ruff'). Got: $TITLE"
-{{/hub}}
           exit 1

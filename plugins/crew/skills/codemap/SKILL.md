@@ -19,7 +19,7 @@ argument-hint: "[enable | build | remove]"
 3. **Ignore the output.** `graphify-out/` goes in `.gitignore` (git-setup adds it when `modules.graphify: true`; add the line yourself if git-setup already ran). The graph is local and rebuilt per machine.
 4. **CLAUDE.md.** Run `graphify claude install`. It adds a `## graphify` section telling Claude to query the graph first. Keep the project CLAUDE.md's *Code map* line (from the guidelines template) and don't duplicate the section's content.
 5. **Config.** Set `modules.graphify: true` in `.crew/config.yaml`.
-6. **Build** if there's code to map (see *build*). In a project with no code yet, skip the build and say the graph is built once the first code lands (with the hub, it's part of P-001's scope).
+6. **Build** if there's code to map (see *build*). In a project with no code yet, skip the build and say the graph is built once the first code lands (it's part of P-001's scope).
 
 ## build
 - `/graphify .` builds the full graph (it uses the graphify skill, and it's the only step that uses an LLM). Later builds use `/graphify . --update`, or the hook does it on commit.

@@ -664,7 +664,7 @@ def test_migrate_converts_a_project_kit_folder(repo: Repo):
     assert not (crew / "ROADMAP.md").exists() and (crew / "bin/crew.mjs").is_file() and (crew / "drafts/note.md").is_file()
     assert "see G-001" in (crew / "drafts/note.md").read_text()
     config = (crew / "config.yaml").read_text()
-    assert "  hub: true" in config and "tracker" not in config and "hub:" in config and "wip_limit: 2" in config
+    assert "tracker" not in config and "modules:" not in config and "  hub:" not in config and "hub:" in config and "wip_limit: 2" in config
 
     knowledge = sorted(p.read_text() for p in (crew / "knowledge").glob("K-*.md"))
     assert len(knowledge) == 3  # decision, assumption, risk

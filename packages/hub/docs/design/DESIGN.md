@@ -2,6 +2,8 @@
 version: alpha
 name: crew hub — Sienna Workshop
 description: Warm, characterful and calm project-tracking UI for developers and their Claude sessions; dense like Linear, friendlier in tone.
+status: final
+revision: 1
 source: "Wada #182"  # Raw Sienna #bb7125, Vandyke Brown #4b3317, Deep Indigo #051230
 colors:
   background: "#f9faff"
@@ -47,6 +49,7 @@ colors:
   dark-chart-2: "#7d8fd6"
   dark-chart-3: "#a4a5b3"
 typography:
+  pairing: workshop  # Bricolage Grotesque / Nunito Sans (assets/fonts.json)
   display:
     fontFamily: Bricolage Grotesque
     fontWeight: 600

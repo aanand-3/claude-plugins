@@ -54,33 +54,6 @@ def test_env_file_is_blocked_even_if_forced(repo: Repo):
     assert r.returncode == 1 and ".env files must never be committed" in r.stderr
 
 
-NO_HUB = "packs: [base, python]\nmodules:\n  hub: false\n  graphify: false\n"
-
-
-def test_no_hub_generates_nothing_hub_related(repo: Repo):
-    repo.write(".crew/config.yaml", NO_HUB)
-    assert repo.py(SETUP_GIT, "--root", ".").returncode == 0
-    for f in [*(repo.path / ".githooks").iterdir(), repo.path / ".github/pull_request_template.md"]:
-        text = f.read_text()
-        for word in ("hub", "P-0", "P-###", ".crew/plans", "{{"):
-            assert word not in text, f"{f.name} mentions {word!r}"
-    assert repo.commit("chore: project scaffold (crew)").returncode == 0  # first commit allowed
-
-
-def test_no_hub_protects_main_but_allows_any_branch(repo: Repo):
-    repo.write(".crew/config.yaml", NO_HUB)
-    repo.py(SETUP_GIT, "--root", ".")
-    repo.commit("chore: project scaffold (crew)")
-    repo.write(".crew/notes.md", "x\n")
-    r = repo.commit("chore: notes on main", ".crew/notes.md")
-    assert r.returncode != 0 and "git switch -c" in r.stderr  # no .crew/ exception without the hub
-    repo.git("reset", "-q")
-    repo.git("switch", "-q", "-c", "feat/login")
-    repo.write("app.py", "print(1)\n")
-    r = repo.commit("feat(auth): add login", "app.py")
-    assert r.returncode == 0 and "doesn't follow" not in r.stderr
-
-
 def test_hub_default_renders_markers(repo: Repo):
     scaffold(repo)
     for f in [*(repo.path / ".githooks").iterdir(), repo.path / ".github/pull_request_template.md"]:

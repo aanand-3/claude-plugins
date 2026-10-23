@@ -1505,7 +1505,7 @@ var require_stringify = __commonJS({
         props.push(doc.directives.tagString(tag));
       return props.join(" ");
     }
-    function stringify(item, ctx, onComment, onChompKeep) {
+    function stringify2(item, ctx, onComment, onChompKeep) {
       if (identity.isPair(item))
         return item.toString(ctx, onComment, onChompKeep);
       if (identity.isAlias(item)) {
@@ -1534,7 +1534,7 @@ var require_stringify = __commonJS({
 ${ctx.indent}${str3}`;
     }
     exports.createStringifyContext = createStringifyContext;
-    exports.stringify = stringify;
+    exports.stringify = stringify2;
   }
 });
 
@@ -1544,7 +1544,7 @@ var require_stringifyPair = __commonJS({
     "use strict";
     var identity = require_identity();
     var Scalar = require_Scalar();
-    var stringify = require_stringify();
+    var stringify2 = require_stringify();
     var stringifyComment = require_stringifyComment();
     function stringifyPair({ key, value }, ctx, onComment, onChompKeep) {
       const { allNullValues, doc, indent, indentStep, options: { commentString, indentSeq, simpleKeys } } = ctx;
@@ -1566,7 +1566,7 @@ var require_stringifyPair = __commonJS({
       });
       let keyCommentDone = false;
       let chompKeep = false;
-      let str3 = stringify.stringify(key, ctx, () => keyCommentDone = true, () => chompKeep = true);
+      let str3 = stringify2.stringify(key, ctx, () => keyCommentDone = true, () => chompKeep = true);
       if (!explicitKey && !ctx.inFlow && str3.length > 1024) {
         if (simpleKeys)
           throw new Error("With simple keys, single line scalar must not span more than 1024 characters");
@@ -1618,7 +1618,7 @@ ${indent}:`;
         ctx.indent = ctx.indent.substring(2);
       }
       let valueCommentDone = false;
-      const valueStr = stringify.stringify(value, ctx, () => valueCommentDone = true, () => chompKeep = true);
+      const valueStr = stringify2.stringify(value, ctx, () => valueCommentDone = true, () => chompKeep = true);
       let ws = " ";
       if (keyComment || vsb || vcb) {
         ws = vsb ? "\n" : "";
@@ -1759,7 +1759,7 @@ var require_addPairToJSMap = __commonJS({
     "use strict";
     var log2 = require_log();
     var merge = require_merge();
-    var stringify = require_stringify();
+    var stringify2 = require_stringify();
     var identity = require_identity();
     var toJS = require_toJS();
     function addPairToJSMap(ctx, map, { key, value }) {
@@ -1795,7 +1795,7 @@ var require_addPairToJSMap = __commonJS({
       if (typeof jsKey !== "object")
         return String(jsKey);
       if (identity.isNode(key) && ctx?.doc) {
-        const strCtx = stringify.createStringifyContext(ctx.doc, {});
+        const strCtx = stringify2.createStringifyContext(ctx.doc, {});
         strCtx.anchors = /* @__PURE__ */ new Set();
         for (const node of ctx.anchors.keys())
           strCtx.anchors.add(node.anchor);
@@ -1862,12 +1862,12 @@ var require_stringifyCollection = __commonJS({
   "node_modules/yaml/dist/stringify/stringifyCollection.js"(exports) {
     "use strict";
     var identity = require_identity();
-    var stringify = require_stringify();
+    var stringify2 = require_stringify();
     var stringifyComment = require_stringifyComment();
     function stringifyCollection(collection, ctx, options) {
       const flow = ctx.inFlow ?? collection.flow;
-      const stringify2 = flow ? stringifyFlowCollection : stringifyBlockCollection;
-      return stringify2(collection, ctx, options);
+      const stringify3 = flow ? stringifyFlowCollection : stringifyBlockCollection;
+      return stringify3(collection, ctx, options);
     }
     function stringifyBlockCollection({ comment, items: items2 }, ctx, { blockItemPrefix, flowChars, itemIndent, onChompKeep, onComment }) {
       const { indent, options: { commentString } } = ctx;
@@ -1892,7 +1892,7 @@ var require_stringifyCollection = __commonJS({
           }
         }
         chompKeep = false;
-        let str4 = stringify.stringify(item, itemCtx, () => comment2 = null, () => chompKeep = true);
+        let str4 = stringify2.stringify(item, itemCtx, () => comment2 = null, () => chompKeep = true);
         if (comment2)
           str4 += stringifyComment.lineComment(str4, itemIndent, commentString(comment2));
         if (chompKeep && comment2)
@@ -1959,7 +1959,7 @@ ${indent}${line2}` : "\n";
         }
         if (comment)
           reqNewline = true;
-        let str3 = stringify.stringify(item, itemCtx, () => comment = null);
+        let str3 = stringify2.stringify(item, itemCtx, () => comment = null);
         reqNewline || (reqNewline = lines.length > linesAtValue || str3.includes("\n"));
         if (i < items2.length - 1) {
           str3 += ",";
@@ -3320,7 +3320,7 @@ var require_stringifyDocument = __commonJS({
   "node_modules/yaml/dist/stringify/stringifyDocument.js"(exports) {
     "use strict";
     var identity = require_identity();
-    var stringify = require_stringify();
+    var stringify2 = require_stringify();
     var stringifyComment = require_stringifyComment();
     function stringifyDocument(doc, options) {
       const lines = [];
@@ -3335,7 +3335,7 @@ var require_stringifyDocument = __commonJS({
       }
       if (hasDirectives)
         lines.push("---");
-      const ctx = stringify.createStringifyContext(doc, options);
+      const ctx = stringify2.createStringifyContext(doc, options);
       const { commentString } = ctx.options;
       if (doc.commentBefore) {
         if (lines.length !== 1)
@@ -3357,7 +3357,7 @@ var require_stringifyDocument = __commonJS({
           contentComment = doc.contents.comment;
         }
         const onChompKeep = contentComment ? void 0 : () => chompKeep = true;
-        let body2 = stringify.stringify(doc.contents, ctx, () => contentComment = null, onChompKeep);
+        let body2 = stringify2.stringify(doc.contents, ctx, () => contentComment = null, onChompKeep);
         if (contentComment)
           body2 += stringifyComment.lineComment(body2, "", commentString(contentComment));
         if ((body2[0] === "|" || body2[0] === ">") && lines[lines.length - 1] === "---") {
@@ -3365,7 +3365,7 @@ var require_stringifyDocument = __commonJS({
         } else
           lines.push(body2);
       } else {
-        lines.push(stringify.stringify(doc.contents, ctx));
+        lines.push(stringify2.stringify(doc.contents, ctx));
       }
       if (doc.directives?.docEnd) {
         if (doc.comment) {
@@ -5500,7 +5500,7 @@ var require_cst_scalar = __commonJS({
 var require_cst_stringify = __commonJS({
   "node_modules/yaml/dist/parse/cst-stringify.js"(exports) {
     "use strict";
-    var stringify = (cst) => "type" in cst ? stringifyToken(cst) : stringifyItem(cst);
+    var stringify2 = (cst) => "type" in cst ? stringifyToken(cst) : stringifyItem(cst);
     function stringifyToken(token) {
       switch (token.type) {
         case "block-scalar": {
@@ -5553,7 +5553,7 @@ var require_cst_stringify = __commonJS({
         res += stringifyToken(value);
       return res;
     }
-    exports.stringify = stringify;
+    exports.stringify = stringify2;
   }
 });
 
@@ -7264,7 +7264,7 @@ var require_public_api = __commonJS({
       }
       return doc;
     }
-    function parse4(src, reviver, options) {
+    function parse5(src, reviver, options) {
       let _reviver = void 0;
       if (typeof reviver === "function") {
         _reviver = reviver;
@@ -7283,7 +7283,7 @@ var require_public_api = __commonJS({
       }
       return doc.toJS(Object.assign({ reviver: _reviver }, options));
     }
-    function stringify(value, replacer, options) {
+    function stringify2(value, replacer, options) {
       let _replacer = null;
       if (typeof replacer === "function" || Array.isArray(replacer)) {
         _replacer = replacer;
@@ -7305,10 +7305,10 @@ var require_public_api = __commonJS({
         return value.toString(options);
       return new Document.Document(value, _replacer, options).toString(options);
     }
-    exports.parse = parse4;
+    exports.parse = parse5;
     exports.parseAllDocuments = parseAllDocuments;
     exports.parseDocument = parseDocument;
-    exports.stringify = stringify;
+    exports.stringify = stringify2;
   }
 });
 
@@ -9771,6 +9771,8 @@ function edges(docs) {
 // src/commands/export.ts
 var DATA_SLOT = '<script id="graph" type="application/json">null</script>';
 var UI_FILE = "ui.html";
+var STUDIO_FILE = "studio.html";
+var STUDIO_SLOT = '<script id="design" type="application/json">null</script>';
 function embed(graph) {
   return JSON.stringify(graph).replace(/</g, "\\u003c");
 }
@@ -9778,6 +9780,13 @@ function renderHtmlShell(store) {
   const shell = store.ws.read(join7(SCRIPT_DIR, UI_FILE));
   if (shell === null || !shell.includes(DATA_SLOT)) {
     fail(`The UI bundle (${UI_FILE}) is missing next to crew.mjs. Re-run \`crew.mjs init\` from the plugin.`);
+  }
+  return shell;
+}
+function renderStudioShell(store) {
+  const shell = store.ws.read(join7(SCRIPT_DIR, STUDIO_FILE));
+  if (shell === null || !shell.includes(STUDIO_SLOT)) {
+    fail(`The design studio (${STUDIO_FILE}) is missing next to crew.mjs. Re-run \`crew.mjs init\` from the plugin.`);
   }
   return shell;
 }
@@ -9817,6 +9826,8 @@ function vendor(store) {
   store.ws.write(join8(bin, "crew.mjs"), readFileSync4(SCRIPT_FILE, "utf8"), 493);
   const ui = store.ws.read(join8(SCRIPT_DIR, UI_FILE));
   if (ui !== null) store.ws.write(join8(bin, UI_FILE), ui);
+  const studio = store.ws.read(join8(SCRIPT_DIR, STUDIO_FILE));
+  if (studio !== null) store.ws.write(join8(bin, STUDIO_FILE), studio);
   const templates = join8(store.dir, "templates");
   for (const name of [...TEMPLATE_NAMES]) store.ws.write(join8(templates, name), store.ws.read(join8(SKILL_DIR, "templates", name)));
   const guide = store.ws.read(join8(SKILL_DIR, "references", "writing-guide.md"));
@@ -9964,7 +9975,7 @@ function migrate(store) {
 `);
       counts.docs++;
     } else if (rel === "config.yaml") {
-      store.ws.write(join9(store.dir, rel), renamed(read(rel)).replace(/^(\s+)tracker:/m, "$1hub:"));
+      store.ws.write(join9(store.dir, rel), renamed(read(rel)).replace(/^[ \t]+tracker:.*\n/m, "").replace(/^modules:[ \t]*\n(?![ \t])/m, ""));
     } else {
       store.ws.write(join9(store.dir, rel), renamed(read(rel)));
     }
@@ -10050,12 +10061,204 @@ ${details}
   return { knowledge: knowledge2, issues };
 }
 
+// src/commands/design.ts
+var import_yaml3 = __toESM(require_dist(), 1);
+import { existsSync as existsSync6, readFileSync as readFileSync5 } from "node:fs";
+import { dirname as dirname4, join as join10 } from "node:path";
+var HANDOFF_KINDS = ["finalise", "locked", "revision", "screen-change", "screens-done", "screens-skipped"];
+var STAGES = ["palette", "directions", "tune", "finalise", "screens", "done"];
+var STATE_KEYS = ["stage", "shortlist", "variants", "current", "reviews"];
+var REQUIRED_COLORS = ["background", "foreground", "primary", "primary-foreground"];
+var FRONT = /^---\n([\s\S]*?)\n---\n/;
+function designPath(store) {
+  const cfg = store.ws.read(join10(store.dir, "config.yaml")) ?? "";
+  return join10(store.ws.root, yamlBlock(cfg, "design").file ?? "docs/design/DESIGN.md");
+}
+var studioPath = (store) => join10(dirname4(designPath(store)), "studio.json");
+function readDesign(store) {
+  const path = designPath(store);
+  const text = store.ws.read(path);
+  if (text === null) return null;
+  const m = FRONT.exec(text);
+  const tokens = m ? (0, import_yaml3.parse)(m[1]) ?? {} : {};
+  return { path: store.rel(path), tokens, body: m ? text.slice(m[0].length) : text };
+}
+function readStudio(store) {
+  const text = store.ws.read(studioPath(store));
+  if (text === null) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    fail(`${store.rel(studioPath(store))} is not valid JSON.`);
+  }
+}
+var designPayload = (store) => ({ design: readDesign(store), studio: readStudio(store), served: true });
+var revisionOf = (t) => Number.isInteger(Number(t.revision)) ? Number(t.revision) : 0;
+function writeDesign(store, tokens, body2) {
+  store.ws.write(designPath(store), `---
+${(0, import_yaml3.stringify)(tokens, { lineWidth: 0 })}---
+${body2}`);
+}
+function writeStudio(store, studio) {
+  store.ws.write(studioPath(store), `${JSON.stringify(studio, null, 2)}
+`);
+}
+function checkTokens(tokens) {
+  if (!tokens || typeof tokens !== "object" || Array.isArray(tokens)) fail("tokens must be an object.");
+  const t = tokens;
+  if (typeof t.name !== "string" || !t.name) fail("tokens need a `name`.");
+  const colors = t.colors ?? {};
+  const missing = REQUIRED_COLORS.filter((c) => typeof colors[c] !== "string");
+  if (missing.length) fail(`colors are missing ${missing.join(", ")}.`);
+  return t;
+}
+function ordered(t, status2, revision) {
+  const { version, name, description, status: _s, revision: _r, source, ...rest } = t;
+  return {
+    version: version ?? "alpha",
+    name,
+    ...description ? { description } : {},
+    status: status2,
+    revision,
+    ...source ? { source } : {},
+    ...rest
+  };
+}
+var DEFAULT_BODY = (name) => `
+# ${name}
+
+Draft from the design studio. Claude writes the rationale (Overview, Colors, Typography, Layout, Elevation & Depth, Shapes, Components, Screens, Do's and Don'ts, Motion, Voice) at the Finalise step.
+`;
+function saveDesign(store, req) {
+  const current2 = readDesign(store);
+  const status2 = String(current2?.tokens.status ?? "draft");
+  const reason = typeof req.reason === "string" ? req.reason.trim() : "";
+  if (req.kind === "draft") {
+    if (status2 === "final") fail(`${current2.path} is final (revision ${revisionOf(current2.tokens)}). Start a revision to change it.`);
+    const t = checkTokens(req.tokens);
+    writeDesign(store, ordered(t, "draft", 0), current2?.body ?? DEFAULT_BODY(String(t.name)));
+    store.say(`Saved a draft of ${store.rel(designPath(store))}`);
+  } else if (req.kind === "lock") {
+    if (!current2) fail("There is no draft to lock yet. Save a draft first.");
+    if (status2 === "final") fail(`${current2.path} is already final.`);
+    checkTokens(current2.tokens);
+    writeDesign(store, ordered(current2.tokens, "final", 1), current2.body);
+    handoff2(store, { kind: "locked", note: "Design locked at revision 1: write the ADR (mention `DESIGN.md revision 1`) and the design block in config.yaml." });
+    store.say(`Locked ${current2.path} at revision 1`);
+  } else if (req.kind === "revision") {
+    if (!current2 || status2 !== "final") fail("Only a final design is revised. Save a draft instead.");
+    if (!reason) fail("A revision needs a reason (it goes into the ADR and the CHORE).");
+    const n = revisionOf(current2.tokens) + 1;
+    writeDesign(store, ordered(checkTokens(req.tokens), "final", n), current2.body);
+    if (store.ws.isDir(store.dirs.item)) {
+      newItem(
+        store,
+        "chore",
+        `Bring the UI onto design revision ${n}`,
+        void 0,
+        `DESIGN.md revision ${n}: ${reason}. Run \`check_design.py --all\` for the code that now drifts and move it onto the new tokens.`
+      );
+    }
+    handoff2(store, { kind: "revision", note: `Revision ${n}: ${reason}. Write the ADR (mention \`DESIGN.md revision ${n}\`).` });
+    store.say(`Saved ${current2.path} as revision ${n}`);
+  } else {
+    fail("kind must be draft, lock or revision.");
+  }
+}
+function updateStudio(store, patch) {
+  const studio = readStudio(store) ?? {};
+  for (const key of STATE_KEYS) if (key in patch) studio[key] = patch[key];
+  if (studio.stage !== void 0 && !STAGES.includes(String(studio.stage))) fail(`stage must be one of ${STAGES.join(", ")}.`);
+  writeStudio(store, studio);
+  const h = patch.handoff;
+  if (h) handoff2(store, h);
+}
+function handoff2(store, h) {
+  if (!HANDOFF_KINDS.includes(h.kind)) fail(`handoff kind must be one of ${HANDOFF_KINDS.join(", ")}.`);
+  const studio = readStudio(store) ?? {};
+  const list = studio.handoffs ?? [];
+  const next = Math.max(studio.handoff_seq ?? 0, ...list.map((x) => Number(x.id.slice(1)) || 0)) + 1;
+  list.push({
+    id: `h${next}`,
+    kind: h.kind,
+    ...h.note ? { note: String(h.note) } : {},
+    ...h.screen ? { screen: String(h.screen) } : {},
+    at: (/* @__PURE__ */ new Date()).toISOString()
+  });
+  writeStudio(store, { ...studio, handoffs: list, handoff_seq: next });
+}
+var HANDOFF_HELP = {
+  finalise: "write the prose sections of DESIGN.md for the saved draft",
+  locked: "write the ADR and set the design block in .crew/config.yaml",
+  revision: "write the ADR for the revision",
+  "screen-change": "revise this screen in studio.json \u2192 screens",
+  "screens-done": "write DESIGN.md \u2192 Screens for the approved screens and create one FEAT item per screen",
+  "screens-skipped": "tell the user `/crew:design page <name>` builds screens later"
+};
+function describe(h) {
+  return `${h.id}  ${h.kind}${h.screen ? ` (${h.screen})` : ""} \u2014 ${HANDOFF_HELP[h.kind]}${h.note ? `
+     note: ${h.note}` : ""}`;
+}
+function designShow(store, json) {
+  const design = readDesign(store);
+  const studio = readStudio(store);
+  if (json) return store.say(JSON.stringify({ design, studio }, null, 2));
+  if (!design && !studio) return store.say("No design yet. Start with /crew:design init.");
+  if (design) {
+    const t = design.tokens;
+    const typo = t.typography ?? {};
+    store.say(`${design.path}: ${t.name ?? "(no name)"} \u2014 ${t.status ?? "draft"}, revision ${revisionOf(t)}, source ${t.source ?? "?"}`);
+    store.say(`  type ${[typo.display?.fontFamily, typo.body?.fontFamily].filter(Boolean).join(" / ") || "?"} \xB7 shape ${t.rounded?.preset ?? "?"} \xB7 density ${t.density?.preset ?? "?"}`);
+  }
+  if (studio) {
+    const reviews = Object.entries(studio.reviews ?? {});
+    store.say(`studio: stage ${studio.stage ?? "palette"} \xB7 shortlist ${studio.shortlist?.join(", ") || "\u2014"} \xB7 ${studio.variants?.length ?? 0} pinned variant(s) \xB7 screens ${reviews.map(([id, r]) => `${id}=${r.status}`).join(", ") || "not reviewed"}`);
+    for (const h of studio.handoffs ?? []) store.say(`  waiting on Claude: ${describe(h)}`);
+  }
+}
+function designDone(store, id) {
+  const studio = readStudio(store) ?? fail("No studio.json yet.");
+  const list = studio.handoffs ?? [];
+  const left = id === "all" ? [] : list.filter((h) => h.id !== id);
+  if (left.length === list.length && list.length) fail(`No hand-off '${id}' (open: ${list.map((h) => h.id).join(", ")}).`);
+  writeStudio(store, { ...studio, handoffs: left });
+  store.say(`Done: ${id === "all" ? `${list.length} hand-off(s)` : id}. The studio updates by itself.`);
+}
+function designWait(store, timeoutSec) {
+  const path = studioPath(store);
+  const pending = () => {
+    try {
+      return existsSync6(path) ? JSON.parse(readFileSync5(path, "utf8")).handoffs ?? [] : [];
+    } catch {
+      return [];
+    }
+  };
+  const started = Date.now();
+  const tick = () => {
+    const list = pending();
+    if (list.length) {
+      process.stdout.write(`The studio handed ${list.length} step(s) to Claude:
+${list.map((h) => `  ${describe(h)}`).join("\n")}
+Do each, then \`crew.mjs design done <id>\` (the page updates live) and run \`design wait\` again.
+`);
+      process.exit(0);
+    }
+    if (Date.now() - started > timeoutSec * 1e3) {
+      process.stdout.write(`No hand-off from the studio in ${timeoutSec}s. Run \`design wait\` again to keep listening.
+`);
+      process.exit(3);
+    }
+    setTimeout(tick, 500);
+  };
+  tick();
+}
+
 // src/server.ts
 import { spawn } from "node:child_process";
 import { randomBytes as randomBytes2 } from "node:crypto";
-import { existsSync as existsSync6, watch } from "node:fs";
+import { existsSync as existsSync7, watch } from "node:fs";
 import { createServer } from "node:http";
-import { join as join10 } from "node:path";
+import { dirname as dirname5, join as join11 } from "node:path";
 var str = (b, k) => typeof b[k] === "string" && b[k] ? b[k] : void 0;
 var ACTIONS = {
   move: (s, b) => {
@@ -10067,7 +10270,9 @@ var ACTIONS = {
     severity: str(b, "severity"),
     goal: str(b, "goal")
   }),
-  focus: (s, b) => setFocus(s, str(b, "goal") ?? fail("goal is required"))
+  focus: (s, b) => setFocus(s, str(b, "goal") ?? fail("goal is required")),
+  "design-save": (s, b) => saveDesign(s, b),
+  "design-studio": (s, b) => updateStudio(s, b)
 };
 function runAction(open, name, body2) {
   const action = ACTIONS[name];
@@ -10106,7 +10311,20 @@ function serve(store, o) {
       res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" });
       return res.end(page);
     }
+    if (req.method === "GET" && path === "/design/") {
+      res.writeHead(301, { location: "/design" });
+      return res.end();
+    }
+    if (req.method === "GET" && path === "/design") {
+      const page = renderStudioShell(store).replace(
+        STUDIO_SLOT,
+        () => `${STUDIO_SLOT}<meta name="hub-token" content="${token}">`
+      );
+      res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" });
+      return res.end(page);
+    }
     if (req.method === "GET" && path === "/api/graph") return send(res, 200, buildGraph(open()));
+    if (req.method === "GET" && path === "/api/design") return send(res, 200, designPayload(open()));
     if (req.method === "GET" && path === "/api/events") {
       res.writeHead(200, { "content-type": "text/event-stream", "cache-control": "no-store", connection: "keep-alive" });
       res.write("retry: 1000\n\n");
@@ -10135,7 +10353,7 @@ function serve(store, o) {
       for (const c of clients) c.write("event: change\ndata: {}\n\n");
     }, 150);
   }
-  const watchers = [store.dir, join10(store.ws.root, ".git", "refs"), join10(store.ws.root, ".git", "HEAD")].filter((p) => existsSync6(p)).map((p) => watch(p, { recursive: !p.endsWith("HEAD") }, (_, file) => {
+  const watchers = [store.dir, dirname5(designPath(store)), join11(store.ws.root, ".git", "refs"), join11(store.ws.root, ".git", "HEAD")].filter((p) => existsSync7(p)).map((p) => watch(p, { recursive: !p.endsWith("HEAD") }, (_, file) => {
     if (!String(file ?? "").startsWith("view")) notify();
   }));
   return new Promise((resolve6, reject) => {
@@ -10147,7 +10365,7 @@ function serve(store, o) {
       server.listen(port, "127.0.0.1", () => {
         const actual = server.address().port;
         hosts = /* @__PURE__ */ new Set([`127.0.0.1:${actual}`, `localhost:${actual}`]);
-        const url = `http://127.0.0.1:${actual}/`;
+        const url = `http://127.0.0.1:${actual}/${o.page ?? ""}`;
         if (o.open) openBrowser(url);
         resolve6({ url, close: () => {
           watchers.forEach((w) => w.close());
@@ -10317,7 +10535,7 @@ function planSections(store, plan, role) {
   const known = recall(store.knowledge(), { globs: plan.touches() }).sort((a, b) => order.indexOf(a.type) - order.indexOf(b.type));
   const memory = { title: "Knowledge in scope", more: `crew.mjs recall --plan ${plan.id}`, lines: known.map(line) };
   const recover = { title: "Where the work stands", more: `crew.mjs resume ${plan.id}`, lines: recovery(store, plan) };
-  const handoff2 = { title: "Handoff & log", more: `crew.mjs ledger --ref ${plan.id}`, lines: [
+  const handoff3 = { title: "Handoff & log", more: `crew.mjs ledger --ref ${plan.id}`, lines: [
     ...para(plan.section("Handoff"), 6),
     ...para(plan.section("Progress log"), 99).slice(-3)
   ] };
@@ -10331,7 +10549,7 @@ function planSections(store, plan, role) {
     case "release":
       return [why, sect("Rollout & rollback", "Rollout & rollback"), blockers, ac, memory];
     default:
-      return [recover, why, ac, tasks, blockers, memory, handoff2];
+      return [recover, why, ac, tasks, blockers, memory, handoff3];
   }
 }
 var line = (e) => `${e.id} [${e.type}${e.origin === "playbook" ? ", playbook" : ""}] ${e.title}`;
@@ -10464,7 +10682,11 @@ Commands:
   ask [ID] --to ROLE TEXT [--fyi] \xB7 escalate [ID] TEXT \xB7 answer Q-\u2026 TEXT [--decision [--scope GLOBS]] [--approved-by NAME]
   questions [--to ROLE] [--ref ID] [--all] [--json]       questions between roles; an open one blocks only its document
   export [--json] [--out FILE]                  interactive HTML view (.crew/view/index.html) or the graph as JSON
-  ui [--port 8765] [--no-open]                  serve the view live on 127.0.0.1 (updates as files change)
+  ui [--port 8765] [--no-open] [--design]       serve the view live on 127.0.0.1 (updates as files change);
+                                                --design opens the design studio (/design)
+  design show [--json] \xB7 design wait [--timeout 1800] \xB7 design done ID|all
+                                                the design studio's state; wait blocks until the page hands a
+                                                step to Claude (run it in the background); done clears one
 `;
 var DRAFTED = { str: ["from"], flag: ["keep-draft"], required: ["from"] };
 var COMMANDS = {
@@ -10662,8 +10884,20 @@ var COMMANDS = {
     flag: ["json"],
     run: (s, a) => exportGraph(s, a.opt.json ? "json" : "html", str2(a, "out"))
   },
-  ui: { pos: [], int: ["port"], flag: ["no-open"], run: (s, a) => {
-    serve(s, { port: a.num.port ?? 8765, open: !a.opt["no-open"] }).then(
+  design: {
+    pos: ["action"],
+    rest: true,
+    int: ["timeout"],
+    flag: ["json"],
+    choices: { action: ["show", "wait", "done"] },
+    run: (s, a) => {
+      if (a.pos[0] === "show") return designShow(s, !!a.opt.json);
+      if (a.pos[0] === "wait") return designWait(s, a.num.timeout ?? 1800);
+      designDone(s, a.pos[1] ?? "all");
+    }
+  },
+  ui: { pos: [], int: ["port"], flag: ["no-open", "design"], run: (s, a) => {
+    serve(s, { port: a.num.port ?? 8765, open: !a.opt["no-open"], page: a.opt.design ? "design" : void 0 }).then(
       ({ url }) => process.stdout.write(`Hub UI at ${url} \u2014 live while this runs (Ctrl-C to stop)
 `),
       (e) => {
@@ -10680,7 +10914,7 @@ function str2(a, key) {
 }
 var UsageError = class extends Error {
 };
-function parse3(argv) {
+function parse4(argv) {
   const [cmd, ...rest] = argv;
   const spec = COMMANDS[cmd];
   if (!spec) throw new UsageError(cmd ? `unknown command '${cmd}'` : "a command is required");
@@ -10721,7 +10955,7 @@ function main(argv, open = () => Store.open()) {
   }
   let parsed;
   try {
-    parsed = parse3(argv);
+    parsed = parse4(argv);
   } catch (e) {
     process.stderr.write(`usage: crew.mjs <command> \u2026  (crew.mjs --help)
 crew.mjs: error: ${e.message}

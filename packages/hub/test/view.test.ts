@@ -78,7 +78,7 @@ describe("export --html", () => {
   });
 
   it("is vendored by init so the repo works without the plugin", () => {
-    expect(readdirSync(join(dir, ".crew/bin")).sort()).toEqual(["crew.mjs", "ui.html"]);
+    expect(readdirSync(join(dir, ".crew/bin")).sort()).toEqual(["crew.mjs", "studio.html", "ui.html"]);
   });
 });
 
@@ -131,4 +131,42 @@ describe("ui server", () => {
     const item = readdirSync(join(dir, ".crew/items")).find((n) => n.startsWith("CHORE-001-"))!;
     expect(readFileSync(join(dir, ".crew/items", item), "utf8")).toMatch(/status: triaged/);
   }, 20_000);
+
+  it("serves the design studio at /design with the token, and its data from /api/design", async () => {
+    const page = await (await fetch(`${url}design`)).text();
+    expect(page).toContain('<script id="design" type="application/json">null</script><meta name="hub-token"');
+    const moved = await fetch(`${url}design/`, { redirect: "manual" });
+    expect([moved.status, moved.headers.get("location")]).toEqual([301, "/design"]);
+    const data = await (await fetch(`${url}api/design`)).json();
+    expect(data).toMatchObject({ design: null, served: true, studio: { project: "Habitly", stage: "palette" } });
+    expect(data.studio.screens.map((sc: { id: string }) => sc.id)).toEqual(["today", "habits", "settings", "landing"]);
+  });
+
+  it("saves through the same token and gate, and `design wait` wakes on the hand-off", async () => {
+    const t = { "x-hub-token": await token() };
+    expect((await post("design-save", { kind: "draft", tokens: { name: "x" } })).status).toBe(403);
+    const bad = await post("design-save", { kind: "draft", tokens: { name: "x", colors: {} } }, t);
+    expect([bad.status, (await bad.json()).error]).toEqual([400, expect.stringContaining("colors are missing")]);
+    const tokens = { name: "Habitly — Loam Calm", colors: { background: "#fff7f8", foreground: "#321f20", primary: "#e36484", "primary-foreground": "#111111" } };
+    expect((await post("design-save", { kind: "draft", tokens }, t)).status).toBe(200);
+    expect(readFileSync(join(dir, "docs/design/DESIGN.md"), "utf8")).toMatch(/status: draft/);
+    const waiting = new Promise<string>((resolve) => {
+      const w = spawn("node", [DIST, "design", "wait", "--timeout", "20"], { cwd: dir });
+      let out = "";
+      w.stdout!.on("data", (b: Buffer) => { out += String(b); });
+      w.on("exit", (code) => resolve(`${code}:${out}`));
+    });
+    await new Promise((r) => setTimeout(r, 600));
+    expect((await post("design-studio", { stage: "finalise", handoff: { kind: "finalise", note: "draft saved" } }, t)).status).toBe(200);
+    expect(await waiting).toMatch(/^0:The studio handed 1 step\(s\) to Claude:\n {2}h1 {2}finalise/);
+    tr("design", "done", "h1");
+    expect(tr("design", "show")).toMatch(/draft, revision 0[\s\S]*stage finalise/);
+  }, 30_000);
+
+  it("`design wait` gives up after the timeout with exit code 3", () => {
+    let code = 0;
+    try { tr("design", "wait", "--timeout", "1"); } catch (e) { code = (e as { status: number }).status; }
+    expect(code).toBe(3);
+  });
 });
+

@@ -7,6 +7,7 @@ import { pathToFileURL } from "node:url";
 import { current, nextStep } from "./commands/advisor.js";
 import { newItem, triage } from "./commands/backlog.js";
 import { check } from "./commands/checks.js";
+import { designDone, designShow } from "./commands/design.js";
 import { buildGraph } from "./commands/graph.js";
 import { status } from "./commands/reports.js";
 import { context } from "./commands/context.js";
@@ -120,6 +121,10 @@ export const TOOLS: Record<string, Tool> = {
     input: obj({ plan: text("e.g. P-004; default: the plan of this branch") }), run: (st, a) => resume(st, s(a, "plan")) },
   handoff: { description: "Write the resume view into the plan's Handoff section (`crew.mjs handoff`), before ending a session.",
     input: obj({ plan: text("e.g. P-004; default: the plan of this branch") }), run: (st, a) => handoff(st, s(a, "plan")) },
+  design: { description: "The design studio's live state (`crew.mjs design show`): DESIGN.md's direction, status and revision, the "
+    + "page's stage, shortlist, pinned variants, screen reviews, and the steps it handed to Claude. With done: clear a hand-off you dealt with.",
+    input: obj({ json: { type: "boolean", description: "the full DESIGN.md tokens and studio.json" }, done: text("a hand-off id (h3) or all") }),
+    run: (st, a) => (s(a, "done") ? designDone(st, s(a, "done")!) : designShow(st, a.json === true)) },
   ledger: { description: "Recent events from the shared ledger and the live claims (`crew.mjs ledger --json`).",
     input: obj({ ref: text("only events about this ID"), type: { type: "string", enum: ["claim", "release", "move", "log", "usage", "learn", "checkpoint", "ask", "answer"] },
       limit: num("how many, newest last (default 20)") }),

@@ -6,7 +6,7 @@ import { CLOSED, ITEM_CLOSED, type Kind, REQUIRED_ON_CREATE, TEMPLATE_NAMES } fr
 import { SCRIPT_DIR, SCRIPT_FILE, SKILL_DIR, Store } from "../core/store.js";
 import { fail, idList, slugify } from "../core/text.js";
 import { breakdownToItems } from "./backlog.js";
-import { UI_FILE } from "./export.js";
+import { STUDIO_FILE, UI_FILE } from "./export.js";
 
 export function init(store: Store): void {
   for (const d of [...Object.values(store.dirs), store.knowledgeDir, join(store.dir, "drafts")]) {
@@ -27,6 +27,8 @@ function vendor(store: Store): void {
   store.ws.write(join(bin, "crew.mjs"), readFileSync(SCRIPT_FILE, "utf8"), 0o755);
   const ui = store.ws.read(join(SCRIPT_DIR, UI_FILE));
   if (ui !== null) store.ws.write(join(bin, UI_FILE), ui); // the HTML view `export` fills in
+  const studio = store.ws.read(join(SCRIPT_DIR, STUDIO_FILE));
+  if (studio !== null) store.ws.write(join(bin, STUDIO_FILE), studio); // the design studio `ui` serves at /design
   const templates = join(store.dir, "templates");
   for (const name of [...TEMPLATE_NAMES]) store.ws.write(join(templates, name), store.ws.read(join(SKILL_DIR, "templates", name))!);
   const guide = store.ws.read(join(SKILL_DIR, "references", "writing-guide.md"));

@@ -1,13 +1,15 @@
 /** `crew.mjs ui`: serves the view live on 127.0.0.1. The page reads /api/graph, listens on /api/events
- * (re-sent whenever .crew/ or a git ref changes) and runs a few commands through the same functions
- * the CLI uses, so every gate still applies. No --force, no document creation from the browser. */
+ * (re-sent whenever .crew/, docs/design/ or a git ref changes) and runs a few commands through the same
+ * functions the CLI uses, so every gate still applies. No --force, no document creation from the browser.
+ * /design is the design studio: it reads /api/design and saves through the design-* commands. */
 import { spawn } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { existsSync, watch } from "node:fs";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { triage } from "./commands/backlog.js";
-import { DATA_SLOT, renderHtmlShell } from "./commands/export.js";
+import { designPath, designPayload, saveDesign, updateStudio } from "./commands/design.js";
+import { DATA_SLOT, renderHtmlShell, renderStudioShell, STUDIO_SLOT } from "./commands/export.js";
 import { buildGraph } from "./commands/graph.js";
 import { setFocus } from "./commands/planning.js";
 import { log, move } from "./commands/workflow.js";
@@ -24,6 +26,8 @@ export const ACTIONS: Record<string, (s: Store, b: Body) => void> = {
   triage: (s, b) => triage(s, (str(b, "id") ?? fail("id is required")).toUpperCase(), {
     priority: str(b, "priority"), severity: str(b, "severity"), goal: str(b, "goal") }),
   focus: (s, b) => setFocus(s, str(b, "goal") ?? fail("goal is required")),
+  "design-save": (s, b) => saveDesign(s, b),
+  "design-studio": (s, b) => updateStudio(s, b),
 };
 
 /** Run one action like the CLI does: writes only land if it succeeds. */
@@ -41,7 +45,7 @@ export function runAction(open: () => Store, name: string, body: Body): { status
   }
 }
 
-export interface ServeOptions { port: number; open: boolean; root?: string }
+export interface ServeOptions { port: number; open: boolean; root?: string; page?: string }
 
 export function serve(store: Store, o: ServeOptions): Promise<{ url: string; close: () => void }> {
   store.require();
@@ -67,7 +71,18 @@ export function serve(store: Store, o: ServeOptions): Promise<{ url: string; clo
       res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" });
       return res.end(page);
     }
+    if (req.method === "GET" && path === "/design/") { // the page's API paths are relative to /
+      res.writeHead(301, { location: "/design" });
+      return res.end();
+    }
+    if (req.method === "GET" && path === "/design") {
+      const page = renderStudioShell(store).replace(STUDIO_SLOT,
+        () => `${STUDIO_SLOT}<meta name="hub-token" content="${token}">`);
+      res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" });
+      return res.end(page);
+    }
     if (req.method === "GET" && path === "/api/graph") return send(res, 200, buildGraph(open()));
+    if (req.method === "GET" && path === "/api/design") return send(res, 200, designPayload(open()));
     if (req.method === "GET" && path === "/api/events") {
       res.writeHead(200, { "content-type": "text/event-stream", "cache-control": "no-store", connection: "keep-alive" });
       res.write("retry: 1000\n\n");
@@ -95,7 +110,7 @@ export function serve(store: Store, o: ServeOptions): Promise<{ url: string; clo
     if (timer) clearTimeout(timer);
     timer = setTimeout(() => { for (const c of clients) c.write("event: change\ndata: {}\n\n"); }, 150);
   }
-  const watchers = [store.dir, join(store.ws.root, ".git", "refs"), join(store.ws.root, ".git", "HEAD")]
+  const watchers = [store.dir, dirname(designPath(store)), join(store.ws.root, ".git", "refs"), join(store.ws.root, ".git", "HEAD")]
     .filter((p) => existsSync(p))
     .map((p) => watch(p, { recursive: !p.endsWith("HEAD") }, (_, file) => {
       if (!String(file ?? "").startsWith("view")) notify(); // our own export output is not a change
@@ -109,7 +124,7 @@ export function serve(store: Store, o: ServeOptions): Promise<{ url: string; clo
       server.listen(port, "127.0.0.1", () => {
         const actual = (server.address() as { port: number }).port;
         hosts = new Set([`127.0.0.1:${actual}`, `localhost:${actual}`]);
-        const url = `http://127.0.0.1:${actual}/`;
+        const url = `http://127.0.0.1:${actual}/${o.page ?? ""}`;
         if (o.open) openBrowser(url);
         resolve({ url, close: () => { watchers.forEach((w) => w.close()); for (const c of clients) c.end(); server.close(); } });
       });

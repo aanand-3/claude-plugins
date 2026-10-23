@@ -1,6 +1,6 @@
 ---
 name: design
-description: Give a web frontend one deliberate, modern visual design and keep every page on it — browse a gallery of Sanzo Wada's colour combinations, shortlist, compare full style tiles and pick a direction, record it as docs/design/DESIGN.md (tokens, layout shell, component inventory, do's and don'ts), compose new pages from it, and review UI for drift and generic "AI-looking" design. Use when the user asks for a design system, look and feel, theme, colors/fonts, "make it look modern/better", before building a new page or screen, or for a UI/design review.
+description: Give a web frontend one deliberate, modern visual design and keep every page on it — one interactive design studio walks palette (Sanzo Wada's colour combinations) → directions (curated type pairings, shape, density, elevation, motion) → tune and compare → finalise and lock → the project's own screens, recorded as docs/design/DESIGN.md (tokens, layout shell, component inventory, screens, do's and don'ts); compose new pages from it, revise it only through recorded revisions, and review UI for drift and generic "AI-looking" design. Use when the user asks for a design system, look and feel, theme, colors/fonts, "make it look modern/better", before building a new page or screen, or for a UI/design review.
 argument-hint: "[init | page <name> | review | refresh]"
 ---
 
@@ -13,44 +13,57 @@ References (read the ones the mode needs):
 - [references/motion.md](references/motion.md) — when and how to animate.
 - [references/companions.md](references/companions.md) — optional third-party skills (Impeccable, Taste, Emil Kowalski, shadcn) and when to suggest them.
 
+Catalogs (`${CLAUDE_SKILL_DIR}/assets/`): `fonts.json` (curated OFL pairings with moods and a reason each), `presets.json` (shape, density, elevation, motion, type scale), `blocks.json` (shells and blocks for project screens), `wada/` (the palettes). `catalog.json` is all of them plus every palette's UI roles, built by `studio.py catalog`; the studio page embeds it.
+
 Scripts (`${CLAUDE_SKILL_DIR}/scripts/`):
-- `gallery.py` — writes `docs/design/palettes.html`, every combination previewed as UI, for the user to shortlist from.
+- `studio.py fonts|seed|catalog` — font pairings for moods; validate Claude's spec and write `docs/design/studio.json`; rebuild the catalog.
 - `wada.py suggest|show|roles` — palette candidates from *A Dictionary of Color Combinations* and their WCAG-checked UI roles.
-- `check_design.py --all|--staged|--export tailwind` — lints DESIGN.md, scans UI code for off-token values, exports Tailwind v4 theme CSS. Vendored to `.crew/bin/` by the guidelines step when the `design` pack is on.
+- `check_design.py --all|--staged|--export tailwind` — lints DESIGN.md, enforces the lock (a final design changes only through a revision with an ADR; always blocks on `--staged`), scans UI code for off-token values, exports Tailwind v4 theme CSS. Vendored to `.crew/bin/` by the guidelines step when the `design` pack is on.
+
+The studio is part of the hub: `dist/studio.html` in the hub skill, served by the same `crew ui` server as the hub's view (`/` is the hub, `/design` the studio, linked both ways) and saving straight into `docs/design/` — nothing is copied by hand. Below, `crew` means `node "${CLAUDE_SKILL_DIR}/../hub/dist/crew.mjs"` (the plugin's copy; it works as soon as `.crew/config.yaml` exists, before `crew init`). Its stages: **Palette → Directions → Tune → Finalise → Project screens → Done**. The page does every stage that needs no Claude by itself (shortlist → Next builds directions in the page). Steps that need Claude arrive as **hand-offs**: `crew design wait` (run in the background) exits when the user clicks one, `crew design show` (or the MCP `design` tool) prints the state, `crew design done <id>` clears one and the page updates live.
 
 Mode is `$ARGUMENTS` (default: `init` when no DESIGN.md exists, otherwise ask).
 
-## init — choose a direction, write DESIGN.md
-1. **Context.** Read `.crew/config.yaml` (frontend stack, `frontend_dir`), `docs/project-brief.md` (users, purpose) and `docs/research/idea-research.md` if it exists (competitors — note their visual conventions so we can stand apart).
-2. **Ask once** (AskUserQuestion, ≤4): product surface — *app* (dashboards, forms, tables), *marketing* (landing/content), or *both*; three adjectives for how it should feel; reference sites they like (optional); fixed brand assets (logo colours, fonts) and whether dark mode is required (default: yes for apps).
-3. **Palette gallery — the user browses, Claude suggests.** Map the adjectives to moods (`calm, bold, warm, cool, light, dark, earthy`) and run
-   `python3 "${CLAUDE_SKILL_DIR}/scripts/gallery.py" --mood <moods> [--avoid "<competitor hexes>"] --out docs/design/palettes.html`.
-   It writes every Wada combination (plus `docs/design/palettes-extra.json`, if present) as a filterable page. Each one is previewed as UI in light and dark, ranked by the moods, and Claude's top picks are badged *suggested*. Open it (see step 5 for how) and ask the user to shortlist **2–4** and paste back the line the page gives them ("Shortlist: #214, #155, #223").
-   - If the user says "you pick", choose 3 suggested combinations that **differ from each other** (hue family and temperature), not simply the top three scores (`wada.py suggest` lists them).
-   - If more than 4 are shortlisted, ask which to drop. If the user has fixed brand colours, skip the gallery and build the directions around those colours.
-4. **Directions** — one per shortlisted combination (2–4). For each, get roles with `wada.py roles <id>`, then choose a type pairing and shape language that fits the adjectives (principles → Typography). Two directions on similar palettes should differ in type and shape. Name each direction in two words that describe it ("Ledger Calm", "Signal Bold"). Fill `templates/directions.html` (replace every `{{…}}`) → `docs/design/directions.html`: one column per direction showing palette, type scale, buttons, input, card, table row, and one sample screen of the real product (app mode: its main list/detail screen with real-looking domain data; marketing: the hero and one section), in light and dark.
-5. **Show it.** Open the file in a browser: the built-in browser pane if available (serve `docs/design/` with `python3 -m http.server` if file URLs are refused), otherwise give the user the path. Screenshot it and ask the user to pick one, or mix (e.g. "palette of A, type of B"). If none fits, go back to the gallery for a new shortlist. Allow at most two rounds of tweaks on the directions.
-6. **Write `docs/design/DESIGN.md`** from `templates/DESIGN.md`: the chosen roles under `colors` (light + `dark-` prefixed), typography, rounded, spacing, components, and the prose — overview (the direction and *why* it suits these users), layout shell, component inventory, states, motion, voice, and the project's do's and don'ts. Keep `source: Wada #<id>` in front matter. Then run `python3 "${CLAUDE_SKILL_DIR}/scripts/check_design.py" --all --root .` — the lint must be clean.
-7. **Record it.** In `.crew/config.yaml` set `design: {file: docs/design/DESIGN.md, direction: <name>, source: "Wada #<id>", surface: <app|marketing|both>, dark_mode: <bool>}` and `design_check: warn`, add `design` to `packs:`, and write an ADR ("Visual design direction"). Standalone, suggest `/crew:guidelines --refresh` so the `design` rules and checker are installed. **No application code**: the Tailwind theme is applied by the first UI plan (`check_design.py --export tailwind`).
+## init — one continuous flow from palette to project screens
+1. **Context.** Read `.crew/config.yaml` (frontend stack, `frontend_dir`), `docs/project-brief.md` (users, purpose), the goals and FEAT items, and `docs/research/idea-research.md` if it exists (competitors — note their visual conventions so we can stand apart).
+2. **Ask once** (AskUserQuestion, ≤4): product surface — *app*, *marketing* or *both*; three adjectives for how it should feel; fixed brand assets (logo colours, fonts) and whether dark mode is required (default: yes for apps); and **project screens: lay them out now (recommended) or later**.
+3. **Seed the studio.** Map the adjectives to moods (`calm, bold, warm, cool, light, dark, earthy, technical, editorial, friendly`). Write a spec (format in `studio.py`'s docstring) to a draft file:
+   - `project`, `surface`, `moods`, `avoid` (competitor hexes);
+   - `directions` (optional, 0–4): only when you have a reason the page's builder wouldn't (brand colours, a reference site). Use `wada.py suggest` and `studio.py fonts --mood … --surface …`; two directions on similar palettes differ in type and shape;
+   - `screens` (when the user chose *now*): the 3–6 screens the product needs first, from the brief, goals and items — each a shell plus blocks from `assets/blocks.json`, filled with **real domain content** (names, numbers, states), never lorem ipsum. App: the main list, the detail, the key form, the dashboard. Marketing: the landing page sections.
+   Run `python3 "${CLAUDE_SKILL_DIR}/scripts/studio.py" seed <spec>` (it validates and refuses a bad spec with every problem listed).
+   - Brand colours: skip the palette stage — seed one direction per brand option and add the colours as `docs/design/palettes-extra.json` (see `wada.py`).
+4. **Open the studio.** `crew ui --design --no-open` in the background, then open the printed URL (the built-in browser pane if available; otherwise give the URL). If the hub's view is already running, reuse it: the studio is its `/design` page. Tell the user what to do in one line (shortlist up to four palettes, Next, pick a direction, tune, save). Then start `crew design wait` in the background and wait for it — don't poll.
+5. **Answer each hand-off**, `crew design done <id>`, and start `crew design wait` again until the flow is done:
+   - **finalise** — write DESIGN.md's prose from `templates/DESIGN.md` for the saved tokens (don't touch the front matter): overview (the direction and *why* it suits these users), colours, typography, layout shell, elevation, shapes, component inventory, states, motion, voice, do's and don'ts. Run `check_design.py --all --root .` — the lint must be clean.
+   - **locked** — the user locked revision 1. Write the ADR ("Visual design direction", mention `DESIGN.md revision 1`), set `design: {file: docs/design/DESIGN.md, direction: <name>, source: "Wada #<id>", surface: <…>, dark_mode: <bool>}` and `design_check: warn` in `.crew/config.yaml`, and add `design` to `packs:`.
+   - **screen-change** — revise that screen in `docs/design/studio.json → screens` as the note asks (edit the JSON; keep ids). The page marks it *revised* for another review.
+   - **screens-done** — add a row per approved screen to DESIGN.md → Screens, and one FEAT item per screen (during kickoff, step 6 adds them once goals exist) (`crew new-item feat "Build the <name> screen" --why "<purpose>; layout in DESIGN.md → Screens"`), noting its id in the row.
+   - **screens-skipped** — say `/crew:design page <name>` builds screens later.
+   - **revision** — see refresh.
+6. Standalone, suggest `/crew:guidelines --refresh` so the `design` rules and checker are installed. **No application code**: the Tailwind theme is applied by the first UI plan (`check_design.py --export tailwind`).
 
 ## page <name> — before building a page or screen
-1. Read DESIGN.md (tokens, shell, inventory, do's and don'ts) and the page's plan.
+1. Read DESIGN.md (tokens, shell, inventory, Screens, do's and don'ts) and the page's plan. If DESIGN.md → Screens has the page, start from its approved layout (`docs/design/studio.json → screens`); otherwise add it there first (and let the user review it in the studio) when it is a main screen.
 2. Sketch the page as a composition of **shell + inventory components** (ASCII is fine) before coding. Anything not in the inventory: reuse/extend an inventory component first; a genuinely new composite gets added to the inventory section in the same change, with its states.
 3. Build with tokens only (`bg-primary`, `text-muted-foreground`, `rounded-md`, spacing scale). Every data view has loading, empty and error states.
-4. **QA loop:** run the app, screenshot at 375 px and 1280 px in light and dark, compare against DESIGN.md and one existing page, fix everything found in one batch, re-check once. Run `check_design.py --all`.
+4. **QA loop:** run the app, screenshot at 375 px and 1280 px in light and dark, compare against DESIGN.md, the studio's render of the screen and one existing page, fix everything found in one batch, re-check once. Run `check_design.py --all`.
 
 ## review — audit existing UI
 1. `check_design.py --all` for mechanical drift.
-2. Visual pass per page against DESIGN.md and principles (hierarchy, spacing rhythm, alignment, states, contrast, the tells list). Report as a table: `file:line | issue | before → after | why`. Fix only what the user approves.
+2. Visual pass per page against DESIGN.md (including Screens) and principles (hierarchy, spacing rhythm, alignment, states, contrast, the tells list). Report as a table: `file:line | issue | before → after | why`. Fix only what the user approves.
 3. Where a deeper pass would help, suggest a companion skill from references/companions.md (e.g. Impeccable `audit`/`polish` for a critique, Emil Kowalski's skills for motion).
 
-## refresh — change the design
-Revise DESIGN.md (re-run `wada.py roles` if the palette changes), regenerate the tile only if the direction changes, run the lint, and append an ADR when the change is visible to users. Then `check_design.py --all` lists the code that now drifts; capture it as a CHORE item rather than fixing it inline.
+## refresh — change a final design
+A `final` DESIGN.md changes only through a **revision**; the pre-commit check blocks anything else.
+1. Prefer the studio: open it, Tune → **Start a revision**, change it, give the reason, save. The server bumps `revision`, files a CHORE ("Bring the UI onto design revision N") and hands you a **revision** step.
+2. Without the studio, edit the tokens yourself and bump `revision` by one (prose-only edits need no revision).
+3. Either way, write an ADR that mentions `DESIGN.md revision N` and why, update the prose the change affects, run the lint, and let `check_design.py --all` list the code that now drifts — it belongs to the CHORE, not this change.
 
 ## Rules
-- **DESIGN.md is the one home for visual decisions.** Rules files, plans and components link to it; nobody copies token values elsewhere.
+- **DESIGN.md is the one home for visual decisions.** Rules files, plans and components link to it; nobody copies token values elsewhere. Once final, it changes only through a revision.
 - Tokens only in components. A deliberate exception carries a `design-ok` comment explaining why.
 - Decide, don't average: one direction, one accent, one display face. Spend boldness in one place per page.
-- Real content in tiles and pages (domain nouns, plausible numbers), never lorem ipsum.
+- Real content in directions, screens and pages (domain nouns, plausible numbers), never lorem ipsum.
 - Accessibility is part of the design: AA contrast (the scripts enforce it for tokens), visible focus, 44 px touch targets, `prefers-reduced-motion`.
-- Use Wada data only as colour values and names; never reproduce the book's pages or images.
+- Use Wada data only as colour values and names; never reproduce the book's pages or images. Fonts come only from `fonts.json` (all OFL) or the user's licensed brand fonts.

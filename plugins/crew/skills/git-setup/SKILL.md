@@ -1,13 +1,12 @@
 ---
 name: git-setup
-description: Initialize git for a project with the team's conventions — main branch, stack-aware .gitignore, .gitattributes, PR template, versioned hooks that protect main and enforce Conventional Commits, branch-per-plan (or branch-per-change without the hub) workflow, initial scaffold commit, and optionally a GitHub remote. Respects an existing repo's hooks. Use when setting up a new project's repository, when asked about branching/commit/PR conventions, or to connect the project to GitHub later.
+description: Initialize git for a project with the team's conventions — main branch, stack-aware .gitignore, .gitattributes, PR template, versioned hooks that protect main and enforce Conventional Commits, branch-per-plan workflow, initial scaffold commit, and optionally a GitHub remote. Respects an existing repo's hooks. Use when setting up a new project's repository, when asked about branching/commit/PR conventions, or to connect the project to GitHub later.
 argument-hint: "[--github]"
 ---
 
 # Git setup
 
 ## Conventions (what the hooks and hub assume)
-With `modules.hub: true` (the default):
 
 | Item | Rule |
 |---|---|
@@ -17,15 +16,6 @@ With `modules.hub: true` (the default):
 | On `main` | only `.crew/` planning commits (hook-enforced); everything else via a plan branch |
 | PR | title `P-###: <plan title>`; body from `.github/pull_request_template.md` |
 | Merge | squash-merge, delete branch; the plan is marked `done` in the last branch commit |
-
-With `modules.hub: false`, the hooks and PR template carry nothing hub-related:
-
-| Item | Rule |
-|---|---|
-| Work branch | `feat/<slug>`, `fix/<slug>`, `chore/<slug>`; any name is accepted |
-| Commits | Conventional Commits, e.g. `feat(auth): add signup endpoint` |
-| On `main` | nothing after the first commit (hook-enforced); every change via a branch and PR |
-| PR | title is a Conventional Commit; body from `.github/pull_request_template.md` |
 
 ## Steps
 1. Run (idempotent, never commits):

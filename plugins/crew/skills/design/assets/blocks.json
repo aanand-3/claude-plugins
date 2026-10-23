@@ -1,0 +1,25 @@
+{
+  "note": "The vocabulary for project screens in docs/design/studio.json. A screen is a shell plus a list of blocks with the project's real content; the studio renders them with the design tokens. `required` props must be present; `states` are the data states the studio can preview.",
+  "shells": {
+    "sidebar-app": "Persistent left navigation, top bar, content area. Dashboards and tools.",
+    "topbar-app": "Top navigation bar, centred content. Simple apps and settings-heavy products.",
+    "marketing": "Header, full-width sections, footer. Landing and content pages."
+  },
+  "blocks": {
+    "page-header": {"required": ["title"], "props": {"title": "page title", "subtitle": "one line under it", "actions": "button labels; the first is the primary action"}, "states": []},
+    "stat-row": {"required": ["stats"], "props": {"stats": "[{label, value, delta?}] — the 3–5 numbers that matter"}, "states": ["loading"]},
+    "filter-bar": {"required": [], "props": {"search": "search placeholder", "filters": "filter labels"}, "states": []},
+    "data-table": {"required": ["columns", "rows"], "props": {"columns": "column labels", "rows": "[[cell, …]] with real-looking data", "numeric": "indexes of right-aligned number columns", "status": "index of a column shown as a status chip"}, "states": ["loading", "empty", "error"]},
+    "list": {"required": ["items"], "props": {"items": "[{title, meta?, status?}]"}, "states": ["loading", "empty", "error"]},
+    "detail-panel": {"required": ["title", "fields"], "props": {"title": "record title", "fields": "[{label, value}]", "actions": "button labels"}, "states": ["loading", "error"]},
+    "form": {"required": ["fields"], "props": {"title": "form title", "fields": "[{label, type: text|email|select|textarea|checkbox, placeholder?, help?}]", "submit": "submit button label"}, "states": ["error"]},
+    "chart": {"required": ["title", "series"], "props": {"title": "states the insight", "kind": "bar|line", "series": "numbers", "labels": "x-axis labels"}, "states": ["loading", "empty"]},
+    "empty-state": {"required": ["title"], "props": {"title": "why it's empty", "body": "what to do", "action": "the next action"}, "states": []},
+    "tabs": {"required": ["tabs"], "props": {"tabs": "tab labels", "active": "index of the active tab"}, "states": []},
+    "split": {"required": ["left", "right"], "props": {"left": "blocks", "right": "blocks", "ratio": "2:1 | 1:1 | 1:2"}, "states": []},
+    "hero": {"required": ["headline"], "props": {"eyebrow": "small label", "headline": "a specific claim, not a slogan", "body": "proof or detail", "actions": "button labels"}, "states": []},
+    "feature-section": {"required": ["title", "items"], "props": {"title": "section claim", "items": "[{title, body}]"}, "states": []},
+    "pricing": {"required": ["plans"], "props": {"plans": "[{name, price, features: [], cta}]"}, "states": []},
+    "footer": {"required": [], "props": {"text": "small print", "links": "link labels"}, "states": []}
+  }
+}

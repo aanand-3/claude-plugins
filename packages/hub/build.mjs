@@ -2,6 +2,7 @@
 //   dist/crew.mjs — the CLI (esbuild, no runtime dependencies)
 //   dist/mcp.mjs     — the same commands as MCP tools over stdio (esbuild, no runtime dependencies)
 //   dist/ui.html     — the interactive view (Vite + React, JS/CSS/fonts inlined); `export` embeds the graph in it
+//   dist/studio.html — the design studio (same setup, the design skill's catalog.json inlined); `ui` serves it at /design
 // `node build.mjs` writes them; the freshness test builds into a temp dir and compares.
 import { build } from "esbuild";
 import { chmodSync, copyFileSync, mkdirSync, mkdtempSync, readFileSync } from "node:fs";
@@ -35,17 +36,21 @@ async function bundleNode(entry, outfile) {
   return outfile;
 }
 
-export async function bundleUi(outfile = join(DIST, "ui.html")) {
+export const bundleUi = (outfile = join(DIST, "ui.html")) => bundlePage("index.html", outfile);
+export const bundleStudio = (outfile = join(DIST, "studio.html")) => bundlePage("studio.html", outfile);
+
+async function bundlePage(page, outfile) {
   const outDir = mkdtempSync(join(tmpdir(), "hub-ui-"));
   const env = process.env.NODE_ENV;
   process.env.NODE_ENV = "production"; // the same bundle whoever builds it (vitest sets NODE_ENV=test)
   try {
-    await viteBuild({ configFile: new URL("ui/vite.config.ts", import.meta.url).pathname, mode: "production", build: { outDir } });
+    await viteBuild({ configFile: new URL("ui/vite.config.ts", import.meta.url).pathname, mode: "production",
+      build: { outDir, rollupOptions: { input: new URL(`ui/${page}`, import.meta.url).pathname } } });
   } finally {
     if (env === undefined) delete process.env.NODE_ENV; else process.env.NODE_ENV = env;
   }
   mkdirSync(join(outfile, ".."), { recursive: true });
-  copyFileSync(join(outDir, "index.html"), outfile);
+  copyFileSync(join(outDir, page), outfile);
   return outfile;
 }
 
@@ -53,4 +58,5 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   console.log(`built ${await bundleCli()}`);
   console.log(`built ${await bundleMcp()}`);
   console.log(`built ${await bundleUi()}`);
+  console.log(`built ${await bundleStudio()}`);
 }

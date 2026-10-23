@@ -24,4 +24,5 @@ paths: ["**/*.tsx", "**/*.jsx", "**/*.css", "index.html"]
 ## Before done
 - `python3 .crew/bin/check_design.py --all` reports no findings for the files you touched.
 - Screenshots at 375 px and 1280 px, in light and dark, compared against DESIGN.md and an existing page. Fix everything in one batch.
-- Visual changes to the system itself (new colour, font or radius) go through `/crew:design refresh` and an ADR, never directly into one component.
+- Visual changes to the system itself (new colour, font or radius) go through `/crew:design refresh` and an ADR, never directly into one component. A `final` DESIGN.md changes only as a new `revision` with an ADR mentioning `DESIGN.md revision <n>`; the pre-commit check blocks anything else.
+- A page listed in DESIGN.md → Screens is built from its approved layout (`docs/design/studio.json`).

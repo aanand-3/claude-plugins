@@ -206,18 +206,9 @@ def test_docs_templates_do_not_duplicate_owned_facts():
     assert "### Where new code goes" in arch and "├──" in arch  # the one home of the layout
 
 
-def test_tooling_drops_hub_steps_when_hub_off(repo: Repo):
-    repo.write(".crew/config.yaml", "packs: [base]\nmodules:\n  hub: false\n")
-    repo.py(COMPOSE, "--root", ".")
-    tooling = repo.path / ".crew/templates/tooling"
-    ci = (tooling / "ci/ci.yml").read_text()
-    assert not re.search(r"\bhub\b", ci.lower()) and not re.search(r"\{\{[#^/]", ci)
-    assert not (repo.path / ".crew/bin/track_plan_draft.py").exists()  # plan-draft hook is hub-only
-    assert "P-" not in (tooling / "ci/pr-title.yml").read_text()
-
-
 def test_tooling_keeps_hub_steps_by_default(repo: Repo):
     repo.write(".crew/config.yaml", "packs: [base]\n")
     repo.py(COMPOSE, "--root", ".")
     ci = (repo.path / ".crew/templates/tooling/ci/ci.yml").read_text()
     assert "crew.mjs check" in ci and not re.search(r"\{\{[#^/]", ci)
+    assert (repo.path / ".crew/bin/track_plan_draft.py").exists()

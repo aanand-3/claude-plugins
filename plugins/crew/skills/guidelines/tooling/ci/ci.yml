@@ -16,12 +16,7 @@ permissions:
 
 jobs:
   guards:
-{{#hub}}
     name: guards (structure, hub, secrets)
-{{/hub}}
-{{^hub}}
-    name: guards (structure, secrets)
-{{/hub}}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -32,10 +27,8 @@ jobs:
           node-version: 22
       - name: Structure report (add --strict once the layout settles)
         run: python3 .crew/bin/check_structure.py --all
-{{#hub}}
       - name: Hub consistency
         run: node .crew/bin/crew.mjs check
-{{/hub}}
       - name: Secret scan (gitleaks)
         env:
           GITLEAKS_VERSION: 8.28.0

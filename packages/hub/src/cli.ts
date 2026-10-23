@@ -6,6 +6,7 @@ import { current, nextStep } from "./commands/advisor.js";
 import { newItem, triage } from "./commands/backlog.js";
 import { check } from "./commands/checks.js";
 import { migrate } from "./commands/migrate.js";
+import { designDone, designShow, designWait } from "./commands/design.js";
 import { exportGraph } from "./commands/export.js";
 import { serve } from "./server.js";
 import { init, newGoal, newIdea, newPlan, setFocus } from "./commands/planning.js";
@@ -50,7 +51,11 @@ Commands:
   ask [ID] --to ROLE TEXT [--fyi] · escalate [ID] TEXT · answer Q-… TEXT [--decision [--scope GLOBS]] [--approved-by NAME]
   questions [--to ROLE] [--ref ID] [--all] [--json]       questions between roles; an open one blocks only its document
   export [--json] [--out FILE]                  interactive HTML view (.crew/view/index.html) or the graph as JSON
-  ui [--port 8765] [--no-open]                  serve the view live on 127.0.0.1 (updates as files change)
+  ui [--port 8765] [--no-open] [--design]       serve the view live on 127.0.0.1 (updates as files change);
+                                                --design opens the design studio (/design)
+  design show [--json] · design wait [--timeout 1800] · design done ID|all
+                                                the design studio's state; wait blocks until the page hands a
+                                                step to Claude (run it in the background); done clears one
 `;
 
 type Args = { pos: string[]; opt: Record<string, string | boolean | undefined>; num: Record<string, number | undefined> };
@@ -132,8 +137,14 @@ const COMMANDS: Record<string, Spec> = {
   status: { pos: [], flag: ["write"], run: (s, a) => status(s, !!a.opt.write) },
   export: { pos: [], str: ["out"], flag: ["json"],
     run: (s, a) => exportGraph(s, a.opt.json ? "json" : "html", str(a, "out")) },
-  ui: { pos: [], int: ["port"], flag: ["no-open"], run: (s, a) => {
-    serve(s, { port: a.num.port ?? 8765, open: !a.opt["no-open"] }).then(
+  design: { pos: ["action"], rest: true, int: ["timeout"], flag: ["json"], choices: { action: ["show", "wait", "done"] },
+    run: (s, a) => {
+      if (a.pos[0] === "show") return designShow(s, !!a.opt.json);
+      if (a.pos[0] === "wait") return designWait(s, a.num.timeout ?? 1800);
+      designDone(s, a.pos[1] ?? "all");
+    } },
+  ui: { pos: [], int: ["port"], flag: ["no-open", "design"], run: (s, a) => {
+    serve(s, { port: a.num.port ?? 8765, open: !a.opt["no-open"], page: a.opt.design ? "design" : undefined }).then(
       ({ url }) => process.stdout.write(`Hub UI at ${url} — live while this runs (Ctrl-C to stop)\n`),
       (e: Error) => { process.stderr.write(`${e.message}\n`); process.exit(1); });
   } },

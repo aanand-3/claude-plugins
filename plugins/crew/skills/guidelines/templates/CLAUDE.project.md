@@ -16,7 +16,6 @@ Rules live in `.claude/rules/`. `base.md` and `project.md` always load; the othe
 <list each generated rules file with one line on what it covers>
 
 ## How we work
-{{#hub}}
 - **Approvals are the user's.** Steps the policy gates (`crew.mjs policy show`) need the user's explicit yes; only then pass `--approved-by <their name>`. Never approve on their behalf.
 - **Start from context.** Every session begins with `crew.mjs context` (the hook prints it); work from `crew.mjs next --role <your role>`. Ask other roles with `crew.mjs ask … --to <role>` instead of guessing; escalate reserved decisions with `crew.mjs escalate`.
 - **Resume, checkpoint, hand off.** Start picked-up work with `crew.mjs resume`; after each task or check `crew.mjs checkpoint --run "<check>" --ac <n>`; record failed approaches with `--attempt … --why …`; end a session with `crew.mjs handoff`.
@@ -28,11 +27,5 @@ Rules live in `.claude/rules/`. `base.md` and `project.md` always load; the othe
 - Bugs, ideas and tech debt found along the way are captured as items (`crew.mjs new-item bug|feat|chore … --why`) on `main`, not fixed silently. P0 bugs take the expedite lane.
 - The shared context lives in `.crew/`: `idea.md` (what this is for, success criteria, the focus goal), goals, items, plans. Work toward the focus goal; `crew.mjs next` names the next step and `crew.mjs status` answers "where are we?".
 - Before marking a plan done: all acceptance criteria verified, the full check is green, docs and `.env.example` updated, Outcome written.
-{{/hub}}
-{{^hub}}
-- **One change = one branch = one PR.** Branch `feat|fix|chore/<slug>` from `main`; commits `type(scope): summary` (Conventional Commits); squash-merge. Nothing is committed directly to `main`.
-- Keep a PR to one concern. Bugs, ideas and tech debt found along the way go into the PR's Follow-ups, not fixed silently.
-- Before opening the PR: acceptance criteria verified, the full check is green, docs and `.env.example` updated.
-{{/hub}}
 - Significant technical decisions get an ADR in `docs/adr/`; changing an architecture rule updates `project.md` and the boundary lint config together.
 - Never commit secrets or `.env`. Never bypass git hooks (`--no-verify`).

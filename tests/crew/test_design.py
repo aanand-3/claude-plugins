@@ -1,10 +1,11 @@
-"""design skill: DESIGN.md lint, drift scan, Tailwind export, Wada palette roles, vendoring."""
+"""design skill: DESIGN.md lint, lock, drift scan, Tailwind export, Wada palette roles, studio catalogs, vendoring."""
 import json
 
-from conftest import CHECK_DESIGN, COMPOSE, GALLERY, WADA, Repo, load_script
+from conftest import CHECK_DESIGN, COMPOSE, STUDIO, WADA, Repo, load_script
 
 cd = load_script(CHECK_DESIGN)
 wada = load_script(WADA)
+studio = load_script(STUDIO)
 
 DESIGN = """---
 name: Demo — Ledger Calm
@@ -138,15 +139,121 @@ def test_wada_lab_round_trip_and_project_extras(tmp_path):
     assert len(combos) == 349 and combos["v2-1"]["colors"][0] == "#1f3a5f"
 
 
-def test_gallery_embeds_every_combination_with_previews_and_suggestions(repo: Repo):
-    repo.write("docs/design/palettes-extra.json",
-               json.dumps([{"id": "v2-1", "colors": ["#1f3a5f", "#e8d5b7", "#c0392b"]}]))
-    r = repo.py(GALLERY, "--mood", "calm,warm", "--suggest", "5")
+SPEC = {
+    "project": "Habitly", "surface": "app", "moods": ["calm", "warm", "friendly"], "avoid": ["#1da1f2"],
+    "directions": [{"name": "Ledger Calm", "palette": "#214", "pairing": "ledger", "shape": "soft", "density": "comfortable",
+                    "elevation": "border", "motion": "subtle", "why": "Calm and trustworthy for a daily habit."}],
+    "screens": [
+        {"id": "today", "name": "Today", "purpose": "Check in on today's habits", "shell": "sidebar-app", "nav": ["Today", "Habits"],
+         "blocks": [{"type": "page-header", "title": "Today", "actions": ["Log check-in"]},
+                    {"type": "stat-row", "stats": [{"label": "Streak", "value": "12 days"}]},
+                    {"type": "split", "left": [{"type": "list", "items": [{"title": "Read 20 pages"}]}],
+                     "right": [{"type": "detail-panel", "title": "Read 20 pages", "fields": [{"label": "Goal", "value": "Daily"}]}]}]},
+    ],
+}
+
+
+def test_catalog_is_committed_fresh():
+    assert Repo(STUDIO.parent).py(STUDIO, "catalog", "--check").returncode == 0, "run studio.py catalog"
+
+
+def test_catalog_has_every_palette_with_roles_and_valid_fonts_presets_blocks():
+    cat = studio.catalog()
+    assert len(cat["palettes"]) == 348
+    p = cat["palettes"][0]
+    assert {"background", "foreground", "primary", "primary-foreground", "chart-1"} <= set(p["light"]) and p["dark"]
+    assert set(p["moods"]) == set(wada.MOODS)
+    ids = [f["id"] for f in cat["fonts"]]
+    assert len(ids) == len(set(ids)) >= 30
+    for f in cat["fonts"]:
+        assert set(f["moods"]) <= set(studio.FONT_MOODS) and f["surface"] in studio.SURFACES and f["why"], f["id"]
+        for face in ("display", "body", "mono"):
+            assert f[face]["family"].replace(" ", "+") in f["google"], f["id"]
+            assert f"@fontsource/{studio.slug(f[face]['family'])}" in f["fontsource"], f["id"]
+    assert studio.google_css(cat["fonts"][0]) == ("https://fonts.googleapis.com/css2?family=Fraunces:wght@600"
+                                                  "&family=Source+Sans+3:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap")
+    for dim in ("shape", "density", "elevation", "motion"):
+        assert cat["presets"][dim] and all(set(v["moods"]) <= set(studio.FONT_MOODS) for v in cat["presets"][dim].values())
+    for name, b in cat["blocks"]["blocks"].items():
+        assert set(b["required"]) <= set(b["props"]), name
+
+
+def test_font_suggestions_rank_by_mood_and_surface():
+    top = studio.suggest_fonts(["technical", "cool"], "app")[:3]
+    assert all({"technical", "cool"} <= set(p["moods"]) for p in top)
+    assert studio.suggest_fonts(["calm"], None) == studio.suggest_fonts(["calm"], None)  # deterministic
+
+
+def test_seed_writes_studio_json_and_refuses_bad_specs(repo: Repo):
+    repo.write("spec.json", json.dumps(SPEC))
+    r = repo.py(STUDIO, "seed", "spec.json")
     assert r.returncode == 0, r.stderr
-    html = (repo.path / "docs/design/palettes.html").read_text()
-    assert "__DATA__" not in html and "__MOODS__" not in html
-    data = json.loads(html.split("const DATA = ", 1)[1].split(";\n", 1)[0])
-    assert len(data) == 349 and sum(d["suggested"] for d in data) == 5
-    assert {"background", "primary", "primary-foreground"} <= set(data[0]["light"]) and data[0]["dark"]
-    assert 'new Set(["calm", "warm"])' in html
-    assert repo.py(GALLERY, "--mood", "spicy").returncode != 0
+    data = json.loads((repo.path / "docs/design/studio.json").read_text())
+    assert data["stage"] == "palette" and data["handoffs"] == [] and len(data["suggested"]) == 8
+    assert data["directions"][0]["palette"] == "214" and data["screens"][0]["id"] == "today"
+    data["stage"], data["shortlist"] = "tune", ["214"]
+    repo.write("docs/design/studio.json", json.dumps(data))
+    repo.py(STUDIO, "seed", "spec.json", "--keep-state")
+    kept = json.loads((repo.path / "docs/design/studio.json").read_text())
+    assert kept["stage"] == "tune" and kept["shortlist"] == ["214"]
+    bad = {**SPEC, "moods": ["spicy"], "directions": [{"palette": "9999", "pairing": "nope", "shape": "blobby"}],
+           "screens": [{"id": "Bad Id", "shell": "nowhere", "blocks": [{"type": "data-table"}, {"type": "carousel"}]}]}
+    repo.write("spec.json", json.dumps(bad))
+    err = repo.py(STUDIO, "seed", "spec.json").stderr
+    for needle in ("unknown moods", "unknown palette '9999'", "unknown pairing 'nope'", "unknown shape 'blobby'",
+                   "lowercase slug", "`shell` must be", "missing `columns`", "unknown block type 'carousel'"):
+        assert needle in err, needle
+
+
+FINAL = DESIGN.replace("source:", "status: final\nrevision: 1\nsource:")
+ADR = "# 0002 Visual design\n\nRecords DESIGN.md revision {n}.\n"
+
+
+def test_lock_needs_a_revision_and_an_adr_for_every_change(repo: Repo):
+    repo.write(".crew/config.yaml", CONFIG.format(mode="warn"))
+    repo.write("docs/design/DESIGN.md", FINAL)
+    repo.git("add", "-A")
+    first = repo.py(CHECK_DESIGN, "--staged")
+    assert first.returncode == 1 and "revision 1 has no ADR in docs/adr/ mentioning `DESIGN.md revision 1`" in first.stderr
+    repo.write("docs/adr/0002-visual-design.md", ADR.format(n=1))
+    repo.git("add", "-A")
+    assert repo.py(CHECK_DESIGN, "--staged").returncode == 0
+    repo.commit("design locked")
+
+    repo.write("docs/design/DESIGN.md", FINAL.replace('primary: "#4f4086"', 'primary: "#3f3076"'))
+    repo.git("add", "-A")
+    silent = repo.py(CHECK_DESIGN, "--staged")
+    assert silent.returncode == 1 and "token changes need `revision: 2`" in silent.stderr  # blocks even in warn mode
+    repo.write("docs/design/DESIGN.md", FINAL.replace('primary: "#4f4086"', 'primary: "#3f3076"').replace("revision: 1", "revision: 2"))
+    repo.git("add", "-A")
+    assert "revision 2 has no ADR" in repo.py(CHECK_DESIGN, "--staged").stderr
+    repo.write("docs/adr/0003-design-revision.md", ADR.format(n=2))
+    repo.git("add", "-A")
+    assert repo.py(CHECK_DESIGN, "--staged").returncode == 0
+    repo.write("docs/design/DESIGN.md", FINAL.replace("status: final", "status: draft"))
+    repo.git("add", "-A")
+    assert "can't go back to `draft`" in repo.py(CHECK_DESIGN, "--staged").stderr
+
+
+def test_prose_edits_to_a_final_design_need_no_revision(repo: Repo):
+    repo.write("docs/design/DESIGN.md", FINAL)
+    repo.write("docs/adr/0002-visual-design.md", ADR.format(n=1))
+    repo.commit("locked")
+    repo.write("docs/design/DESIGN.md", FINAL + "\n## Voice\nPlain and specific.\n")
+    repo.git("add", "-A")
+    assert repo.py(CHECK_DESIGN, "--staged").returncode == 0
+
+
+def test_lint_checks_status_and_revision():
+    assert cd.lint(cd.front_matter(FINAL)) == []
+    assert "needs `revision: <n>`" in "".join(cd.lint(cd.front_matter(FINAL.replace("revision: 1", "revision: 0"))))
+    assert "status is 'done'" in "".join(cd.lint(cd.front_matter(FINAL.replace("status: final", "status: done"))))
+
+
+def test_export_tailwind_includes_density_elevation_and_motion():
+    tokens = cd.front_matter(DESIGN.replace("rounded:\n  md: 8px", "rounded:\n  preset: soft\n  md: 8px\n"
+        "density:\n  preset: comfortable\n  control-height: 40px\nelevation:\n  preset: soft\n  md: \"0 8px 24px rgb(0 0 0 / 0.1)\"\n"
+        "motion:\n  preset: subtle\n  fast: 120ms\n  easing: \"cubic-bezier(0.2, 0.8, 0.2, 1)\""))
+    out = cd.export_tailwind(tokens)
+    assert "--radius-preset" not in out and "--control-height: 40px;" in out and "--duration-fast: 120ms;" in out
+    assert "--shadow-md: 0 8px 24px rgb(0 0 0 / 0.1);" in out and "--ease-standard: var(--easing);" in out

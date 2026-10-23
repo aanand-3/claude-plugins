@@ -8,6 +8,8 @@ import { buildGraph } from "./graph.js";
 /** The marker the UI bundle carries where the data goes; the page reads it back by id. */
 export const DATA_SLOT = '<script id="graph" type="application/json">null</script>';
 export const UI_FILE = "ui.html"; // next to crew.mjs: dist/ in the plugin, .crew/bin/ when vendored
+export const STUDIO_FILE = "studio.html"; // the design studio, served at /design
+export const STUDIO_SLOT = '<script id="design" type="application/json">null</script>'; // the server adds its token here
 
 /** JSON that is safe inside a <script> element. */
 export function embed(graph: Graph): string {
@@ -19,6 +21,15 @@ export function renderHtmlShell(store: Store): string {
   const shell = store.ws.read(join(SCRIPT_DIR, UI_FILE));
   if (shell === null || !shell.includes(DATA_SLOT)) {
     fail(`The UI bundle (${UI_FILE}) is missing next to crew.mjs. Re-run \`crew.mjs init\` from the plugin.`);
+  }
+  return shell;
+}
+
+/** The design studio bundle; it loads DESIGN.md and studio.json from the server (it has no offline copy). */
+export function renderStudioShell(store: Store): string {
+  const shell = store.ws.read(join(SCRIPT_DIR, STUDIO_FILE));
+  if (shell === null || !shell.includes(STUDIO_SLOT)) {
+    fail(`The design studio (${STUDIO_FILE}) is missing next to crew.mjs. Re-run \`crew.mjs init\` from the plugin.`);
   }
   return shell;
 }

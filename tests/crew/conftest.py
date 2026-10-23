@@ -61,7 +61,7 @@ def repo(tmp_path: Path) -> Repo:
     return r
 CHECK_DESIGN = SKILLS / "design" / "scripts" / "check_design.py"
 WADA = SKILLS / "design" / "scripts" / "wada.py"
-GALLERY = SKILLS / "design" / "scripts" / "gallery.py"
+STUDIO = SKILLS / "design" / "scripts" / "studio.py"
 VERIFY_EVIDENCE = SKILLS / "research" / "scripts" / "verify_evidence.py"
 
 
