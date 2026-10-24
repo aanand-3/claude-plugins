@@ -22,6 +22,7 @@ const SKILLS = new URL("../../plugins/crew/skills/", import.meta.url).pathname;
 /** The skill scripts: src/tools/<skill>/<name>.ts → skills/<skill>/scripts/<name>.mjs. */
 export const TOOLS = [
   ["git-setup", "setup_git"], ["git-setup", "check_secrets"],
+  ["guidelines", "compose_rules"], ["guidelines", "check_structure"], ["guidelines", "format_on_edit"], ["guidelines", "track_plan_draft"],
 ];
 export const toolPath = (skill, name) => join(SKILLS, skill, "scripts", `${name}.mjs`);
 export const bundleTool = (skill, name, outfile = toolPath(skill, name)) => bundleNode(`src/tools/${skill}/${name}.ts`, outfile);

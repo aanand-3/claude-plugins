@@ -27,8 +27,8 @@ if [ -f .crew/bin/check_secrets.mjs ]; then
   node .crew/bin/check_secrets.mjs --staged || exit 1
 fi
 # high-level layout guard (declared in .crew/config.yaml → structure:); warns or blocks per structure_check
-if [ -f .crew/bin/check_structure.py ]; then
-  python3 .crew/bin/check_structure.py --staged || exit 1
+if [ -f .crew/bin/check_structure.mjs ]; then
+  node .crew/bin/check_structure.mjs --staged || exit 1
 fi
 # design-system drift (tokens from docs/design/DESIGN.md); warns or blocks per design_check
 if [ -f .crew/bin/check_design.py ]; then

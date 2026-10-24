@@ -29,10 +29,10 @@ Packs are versioned in `${CLAUDE_SKILL_DIR}/stacks/` and copied verbatim; **only
 1. **Read** `.crew/config.yaml`, `docs/project-brief.md`, `docs/architecture.md`.
 2. **Compose rules** (deterministic):
    ```bash
-   python3 "${CLAUDE_SKILL_DIR}/scripts/compose_rules.py" --root . --dry-run
-   python3 "${CLAUDE_SKILL_DIR}/scripts/compose_rules.py" --root .
+   node "${CLAUDE_SKILL_DIR}/scripts/compose_rules.mjs" --root . --dry-run
+   node "${CLAUDE_SKILL_DIR}/scripts/compose_rules.mjs" --root .
    ```
-   It also copies helper scripts to `.crew/bin/` (`check_structure.py` for the pre-commit layout and module-size check, `format_on_edit.py` for the format-after-edit hook, `track_plan_draft.py` for the plan-mode hook) and the matching **tooling reference configs** (ruff/pyright/import-linter, ESLint+boundaries, tsconfig, pre-commit, Makefile, CI, Dependabot, VS Code) to `.crew/templates/tooling/` for P-001 to apply.
+   It also copies helper scripts to `.crew/bin/` (`check_structure.mjs` for the pre-commit layout and module-size check, `format_on_edit.mjs` for the format-after-edit hook, `track_plan_draft.mjs` for the plan-mode hook) and the matching **tooling reference configs** (ruff/pyright/import-linter, ESLint+boundaries, tsconfig, pre-commit, Makefile, CI, Dependabot, VS Code) to `.crew/templates/tooling/` for P-001 to apply.
    Output per file: `WRITE`, `OK (unchanged)`, `SKIP` (hand-edited — show the diff; `--force` only with the user's agreement), `STALE` (pack no longer selected — `--prune` removes it).
 3. **Write `.claude/rules/project.md`** (no `paths`, always loaded, ≤ ~70 lines). Never restate pack content; only what is specific to this project:
    - **Concrete choices** where packs offer options (ORM, sync/async, PK type, Redis uses, job system, auth, styling).
@@ -49,7 +49,7 @@ Packs are versioned in `${CLAUDE_SKILL_DIR}/stacks/` and copied verbatim; **only
 8. **Report**: files written, packs applied, and any conflicts between packs and project decisions (resolve them in `project.md`, never by editing a pack copy).
 
 ## Refresh (`--refresh` or stack changed)
-Re-run step 2 (reports drift and stale packs). Then update `project.md`, and `docs/architecture.md → Repository layout` whenever `structure:` changed. Run `check_structure.py --all` to confirm the architecture layout has no gaps. Never silently overwrite hand-edited files.
+Re-run step 2 (reports drift and stale packs). Then update `project.md`, and `docs/architecture.md → Repository layout` whenever `structure:` changed. Run `node .crew/bin/check_structure.mjs --all` to confirm the architecture layout has no gaps. Never silently overwrite hand-edited files.
 
 ## Adding a stack pack (maintainers)
 `stacks/<name>.md` with frontmatter `pack`, `description`, `scope` (`backend` | `frontend` | `any`), `requires`, `paths` (globs relative to the app root; empty = always loaded). Add it to the pack mapping in `discover/references/questions.md`. Packs hold enforceable, reusable rules — never project specifics.

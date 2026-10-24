@@ -12,10 +12,6 @@ ROOT = Path(__file__).resolve().parents[2]
 PLUGIN = ROOT / "plugins" / "crew"
 SKILLS = PLUGIN / "skills"
 HUB = SKILLS / "hub" / "dist" / "crew.mjs"
-COMPOSE = SKILLS / "guidelines" / "scripts" / "compose_rules.py"
-STRUCTURE = SKILLS / "guidelines" / "scripts" / "check_structure.py"
-FORMAT = SKILLS / "guidelines" / "scripts" / "format_on_edit.py"
-PLAN_DRAFT_HOOK = SKILLS / "guidelines" / "scripts" / "track_plan_draft.py"
 INSTALL_GLOBAL = SKILLS / "global-setup" / "scripts" / "install_global.py"
 
 GIT_ENV = {

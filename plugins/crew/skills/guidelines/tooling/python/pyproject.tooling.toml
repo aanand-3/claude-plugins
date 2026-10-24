@@ -46,7 +46,7 @@ ignore = ["E501"]  # line length is the formatter's job
 [tool.ruff.lint.mccabe]
 max-complexity = 10
 
-[tool.ruff.lint.pylint]  # size limits from the base pack (Modules & size); module length is checked by check_structure.py
+[tool.ruff.lint.pylint]  # size limits from the base pack (Modules & size); module length is checked by check_structure.mjs
 max-args = 5
 max-branches = 12
 max-returns = 6

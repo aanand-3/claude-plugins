@@ -44,7 +44,7 @@ done before the hub existed right after `init`. On start, if the `chore/crew-onb
 3. **Design** (UI projects only, and only if the user wants it): `design` skill. Offer `review` of the existing UI first; `init` only if there's no established look worth keeping.
 
 4. **Guidelines** — follow the `guidelines` skill.
-   - Run `compose_rules.py --dry-run` first and show the result.
+   - Run `compose_rules.mjs --dry-run` first and show the result.
    - **Merge, never replace:** keep everything in the existing `CLAUDE.md` that is still true, move stack facts to their home (config, `project.md`) and show the diff.
    - The same goes for `.claude/settings.json` (merge the keys), the README (keep the content, add the *Where to find things* map and link instead of copying) and `.env.example`.
 
