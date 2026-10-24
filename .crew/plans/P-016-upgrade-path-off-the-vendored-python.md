@@ -5,11 +5,11 @@ goal:
 items: CHORE-009
 touches: packages/crew/**, plugins/crew/skills/git-setup/**, plugins/crew/skills/guidelines/**, plugins/crew/skills/design/scripts/**, plugins/crew/skills/research/scripts/**, plugins/crew/skills/global-setup/scripts/**, plugins/crew/skills/hub/dist/**, .crew/bin/crew.mjs, .claude/launch.json
 depends_on:
-status: ready
+status: in-progress
 branch: plan/P-016-upgrade-path-off-the-vendored-python
 pr:
 created: 2026-10-24
-started:
+started: 2026-10-24
 completed:
 assignee: developer
 ---
@@ -99,5 +99,6 @@ The other half, removing the last Python from this repo (`tests/`, the pytest do
 
 - 2026-10-24: status draft → ready
 - 2026-10-24: assigned to the developer role
+- 2026-10-24: status ready → in-progress — branch plan/P-016-upgrade-path-off-the-vendored-python
 
 ## Outcome
