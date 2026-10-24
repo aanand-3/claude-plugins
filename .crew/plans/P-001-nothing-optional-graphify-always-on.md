@@ -101,6 +101,7 @@ Latest log:
 - 2026-10-24: status ready → in-progress — branch plan/P-001-nothing-optional-graphify-always-on
 - 2026-10-24: touches: brace globs aren't supported, listed each skill dir; added scripts/sample-project.mjs (the sample now has graphify's hook, as every crew project does)
 - 2026-10-24: status in-progress → in-review
+- 2026-10-24: BUG-004: tests/crew hub/team tests inherit CREW_ROLE/CREW_RUN, so the full suite fails 12/166 under checkpoint --run (passes 166 from a plain shell; pre-existing, not a P-001 regression)
 
 ## Outcome
 - **What shipped:** graphify is always on.
