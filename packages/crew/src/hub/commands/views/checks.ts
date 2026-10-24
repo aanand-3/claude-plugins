@@ -3,7 +3,7 @@ import { join } from "node:path";
 import * as git from "../../core/git.js";
 import type { Doc } from "../../core/work/doc.js";
 import { decisionProblems, readinessProblems, triageProblems } from "../../core/work/gates.js";
-import { ACTIVE, CLOSED, GOAL_FLOW, IDEA_FLOW, ITEM_FLOW, MAX_WRITTEN_AHEAD, PLAN_FLOW, REQUIRED_ON_CREATE } from "../../core/work/model.js";
+import { ACTIVE, CLOSED, GOAL_FLOW, HUB_STATE_MARKER, IDEA_FLOW, ITEM_FLOW, MAX_WRITTEN_AHEAD, PLAN_FLOW, REQUIRED_ON_CREATE } from "../../core/work/model.js";
 import * as q from "../../core/work/queries.js";
 import { drift, overlapping } from "../../core/work/footprint.js";
 import { globRe, K_ID_RE, KNOWLEDGE_TYPES, secretsIn } from "../../core/memory/knowledge.js";
@@ -224,6 +224,9 @@ function hygiene(s: Snapshot, f: Findings): void {
   }
   if (s.store.ws.isDir(join(s.store.ws.root, ".project"))) {
     f.hints.push("a .project/ directory from project-kit is still here — `crew.mjs migrate` moves it into .crew/");
+  }
+  if (!s.store.ws.read(join(s.store.ws.root, "CLAUDE.md"))?.includes(HUB_STATE_MARKER)) {
+    f.hints.push("CLAUDE.md has no hub-state section (project state stays in the hub) — `crew.mjs init` adds it");
   }
   if (!s.store.ws.read(join(s.store.ws.root, ".githooks", "post-commit"))?.includes("graphify")) {
     f.hints.push("code graph not set up (no graphify hook in .githooks/post-commit) — `/crew:codemap` installs and wires it");

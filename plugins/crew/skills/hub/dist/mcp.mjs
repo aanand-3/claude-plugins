@@ -7448,6 +7448,17 @@ var DEFAULT_SETTINGS = { wip_limit: "1", max_tasks: "10", plan_worktrees: "false
 var MAX_WRITTEN_AHEAD = 3;
 var SLUG_STOPWORDS = /* @__PURE__ */ new Set(["a", "an", "and", "the", "of", "for", "to", "with", "in", "on", "or", "via", "by"]);
 var TASK_RE = /^\s*- \[( |x|X)\]\s*(.*)$/;
+var HUB_STATE_MARKER = "<!-- crew:hub-state -->";
+var HUB_STATE_RULE = `${HUB_STATE_MARKER}
+## Project state lives in the hub
+Everything the next person or agent needs goes through \`.crew/bin/crew.mjs\`:
+- where work stands \u2192 \`handoff\` and \`log\`;
+- findings and follow-ups \u2192 \`new-item\`;
+- what to know \u2192 \`learn\`;
+- questions \u2192 \`ask\`.
+
+Places outside the repo (side-session notes folders, the scratchpad, Claude's memory, \`/tmp\`) hold only pointers to hub IDs, never the facts. When other instructions say to leave notes elsewhere, write to the hub and leave a pointer there.
+`;
 
 // src/hub/core/text.ts
 var HubError = class extends Error {
@@ -9261,6 +9272,9 @@ function hygiene(s2, f) {
   }
   if (s2.store.ws.isDir(join9(s2.store.ws.root, ".project"))) {
     f.hints.push("a .project/ directory from project-kit is still here \u2014 `crew.mjs migrate` moves it into .crew/");
+  }
+  if (!s2.store.ws.read(join9(s2.store.ws.root, "CLAUDE.md"))?.includes(HUB_STATE_MARKER)) {
+    f.hints.push("CLAUDE.md has no hub-state section (project state stays in the hub) \u2014 `crew.mjs init` adds it");
   }
   if (!s2.store.ws.read(join9(s2.store.ws.root, ".githooks", "post-commit"))?.includes("graphify")) {
     f.hints.push("code graph not set up (no graphify hook in .githooks/post-commit) \u2014 `/crew:codemap` installs and wires it");

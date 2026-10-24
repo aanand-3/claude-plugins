@@ -17,11 +17,11 @@ it("global install is idempotent and preserves user content", () => {
 });
 
 it("global install replaces the pre-rename block", () => {
-  const target = repo.write("CLAUDE.md", "# Mine\n<!-- project-kit:global:start -->\nold\n<!-- project-kit:global:end -->\nkeep me\n");
+  const target = repo.write("CLAUDE.md", "# Mine\n<!-- project-kit:global:start -->\nthe old block\n<!-- project-kit:global:end -->\nkeep me\n");
   expect(repo.node(INSTALL_GLOBAL, ["--apply", "--target", target]).returncode).toBe(0);
   const text = repo.read("CLAUDE.md");
   expect(text).not.toContain("project-kit:global");
-  expect(text).not.toContain("old");
+  expect(text).not.toContain("the old block");
   expect(text.split("crew:global:start").length - 1).toBe(1);
   expect(text).toContain("keep me");
 });

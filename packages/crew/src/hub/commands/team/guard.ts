@@ -4,7 +4,8 @@
  * It never returns "allow": permissions are checked on the rewritten input as usual (T0 spike, docs/vision.md).
  * Applies to subagents only; the main session (no agent_type) is the human's own and is left alone. */
 import { readFileSync, realpathSync } from "node:fs";
-import { basename, dirname, isAbsolute, join, relative } from "node:path";
+import { homedir, tmpdir } from "node:os";
+import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { Doc } from "../../core/work/doc.js";
 import * as git from "../../core/git.js";
 import { globRe } from "../../core/memory/knowledge.js";
@@ -16,18 +17,22 @@ type Decision = { deny: string } | { input: Record<string, unknown> } | null;
 
 const HUB_MCP = /^mcp__(?:plugin_crew_)?hub__/;
 
-/** The real path (macOS reaches temp dirs through /var → /private/var); a file that doesn't exist yet via its directory. */
+/** The real path (macOS reaches temp dirs through /var → /private/var); a path that doesn't exist yet via its nearest
+ * existing ancestor. */
 function real(p: string): string {
   try {
     return realpathSync(p);
   } catch {
-    try {
-      return join(realpathSync(dirname(p)), basename(p));
-    } catch {
-      return p;
-    }
+    const up = dirname(p);
+    return up === p ? p : join(real(up), basename(p));
   }
 }
+/** A path as the shell would see it: quotes dropped, a leading `~`/`$HOME` expanded. */
+const shellPath = (p: string) => p.replace(/^["']|["']$/g, "").replace(/^(~|\$HOME|\$\{HOME\})(?=\/|$)/, homedir());
+const within = (dir: string, p: string) => {
+  const r = relative(dir, p);
+  return r !== ".." && !r.startsWith("../") && !isAbsolute(r);
+};
 const CREW_CLI = /\bcrew\.mjs\b/;
 const EDITS: Record<string, string> = { Edit: "file_path", Write: "file_path", MultiEdit: "file_path", NotebookEdit: "notebook_path" };
 const WRITERS = /^(rm|mv|cp|ln|chmod|chown|truncate|tee|install|touch|mkdir)$/;
@@ -45,7 +50,7 @@ export function agentRole(root: string, agentType: string): string | null {
 }
 
 const patternRe = (p: string) => new RegExp(`^${p.trim().replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*").replace(/\?/g, ".")}$`);
-const segments = (cmd: string) => cmd.split(/&&|\|\||;|\|/).map((c) => c.trim()).filter(Boolean);
+const segments = (cmd: string) => cmd.split(/&&|\|\||;|(?<!>)\||\n/).map((c) => c.trim()).filter(Boolean);
 const words = (cmd: string) => cmd.split(/[\s"'=]+/).map((w) => w.replace(/^>+/, "").replace(/^\.\//, "")).filter(Boolean);
 
 /** Anything that could run a program from inside an operand-taking command. */
@@ -67,15 +72,46 @@ function hubCommand(seg: string): string | null {
   return w[i] ?? null;
 }
 
-/** Paths a shell command writes to (best effort): redirection targets and the operands of common writing commands. */
+/** A redirection (`>`, `>>`, `>|`, `2>`, `&>`, `>&FILE`); group 1 is the `&` of `>&`, group 2 the target. */
+const REDIRECT = /\d*&?>{1,2}\|?(&?)\s*([^\s;&|<>]+)/g;
+/** Words that can come before the command itself (`{ cd x; }`, `if cd x; then`, `builtin cd x`). */
+const PREFIX = /^(\{|!|if|then|else|elif|do|while|until|builtin|command|time)$/;
+
+/** Paths a shell command writes to (best effort): redirection targets and the operands of common writing commands — for
+ * cp/ln/install only the destination. A relative target after `cd DIR` in the chain is DIR/target. A leading variable is
+ * expanded from the command's own assignments or the environment; one that can't be stays `$NAME…` (unresolved). */
 export function writeTargets(cmd: string): string[] {
-  const out = [...cmd.matchAll(/(?<![0-9&])>{1,2}\s*([^\s;&|<>]+)/g)].map((m) => m[1]).filter((t) => !t.startsWith("&"));
+  const out: string[] = [];
+  const vars: Record<string, string> = {};
+  const expand = (t: string) => t.replace(/^["']|["']$/g, "")
+    .replace(/^\$(?:\{(\w+)\}|(\w+))/, (m, a, b) => vars[a ?? b] ?? process.env[a ?? b] ?? m);
+  const rooted = (t: string) => /^(\/|~|\$)/.test(t);
+  let dir = "";
+  const at = (raw: string) => {
+    const t = expand(raw);
+    return !dir || rooted(t) ? t : join(dir, t);
+  };
   for (const seg of segments(cmd)) {
-    const [head, ...args] = words(seg);
-    const sub = args[0];
-    if ((head && WRITERS.test(head)) || (head === "sed" && args.some((a) => a.startsWith("-i")))
-      || (head === "git" && /^(checkout|restore|rm|mv)$/.test(sub ?? ""))) {
-      out.push(...(head === "git" ? args.slice(1) : args).filter((a) => !a.startsWith("-")));
+    const set = /^(?:export\s+)?(\w+)=(\S*)$/.exec(seg);
+    if (set) { vars[set[1]] = expand(set[2]); continue; }
+    for (const m of seg.matchAll(REDIRECT)) if (!(m[1] && /^(\d+|-)$/.test(m[2]))) out.push(at(m[2]));
+    let [head, ...args] = words(seg.replace(REDIRECT, ""));
+    while (head !== undefined && PREFIX.test(head.replace(/^\(+/, ""))) [head, ...args] = args;
+    head = head?.replace(/^\(+/, "");
+    if (head === "cd" || head === "pushd") {
+      const to = expand(args.find((a) => !a.startsWith("-")) ?? "~");
+      dir = rooted(to) ? to : join(dir, to);
+      continue;
+    }
+    const operands = (head === "git" ? args.slice(1) : args).filter((a) => !a.startsWith("-"));
+    if (head && /^(cp|ln|install)$/.test(head)) {
+      const t = args.findIndex((a) => a === "-t" || a === "--target-directory");
+      // `ln -s TARGET` alone makes the link in the current directory, named after the target
+      const dest = t >= 0 ? args[t + 1] : head === "ln" && operands.length === 1 ? basename(operands[0]) : operands.at(-1);
+      if (dest) out.push(at(dest));
+    } else if ((head && WRITERS.test(head)) || (head === "sed" && args.some((a) => a.startsWith("-i")))
+      || (head === "git" && /^(checkout|restore|rm|mv)$/.test(args[0] ?? ""))) {
+      out.push(...operands.map(at));
     }
   }
   return out.map((t) => t.replace(/^\.\//, ""));
@@ -88,21 +124,43 @@ export function decide(store: Store, h: HookInput): Decision {
   const run = role ? `${role}:${h.agent_id ?? "unknown"}` : null;
   const { policy } = resolvePolicy(root, store.dir, role);
   const top = real((h.cwd && git.git(["-C", h.cwd, "rev-parse", "--show-toplevel"])?.trim()) || root);
-  // a path inside a plan's shared worktree is that checkout's path: the policy protects it there too
-  const rel = (p: string) => (isAbsolute(p) ? relative(top, real(p)) : p).replace(/^\.\//, "").replace(/^\.claude\/worktrees\/[^/]+\//, "");
+  // relative paths are the tool's, so they resolve against the hook's cwd (BUG-007)
+  const abs = (p: string) => real(resolve(h.cwd || top, shellPath(p)));
+  // every checkout of the repository, deepest first: a path is matched within the one that holds it, so the policy protects
+  // each worktree's files (and the main checkout's, from inside a worktree) alike
+  let trees: string[] | null = null;
+  const checkouts = () => (trees ??= [...new Set([top, root, ...git.worktrees().map((w) => w.path)].map(real))]
+    .sort((a, b) => b.length - a.length));
+  const rel = (p: string) => {
+    const a = abs(p);
+    return relative(checkouts().find((d) => within(d, a)) ?? top, a).replace(/^\.claude\/worktrees\/[^/]+\//, "");
+  };
   const hits = (globs: string[], p: string) => globs.some((g) => globRe(g).test(rel(p)));
+  // project state stays in the hub: writes go to the repository (any of its worktrees) or throwaway temp files
+  const outside = (p: string) => {
+    const a = abs(p);
+    return !a.startsWith("/dev/") && ![...checkouts(), real(tmpdir()), real("/tmp")].some((d) => within(d, a));
+  };
+  const HUB_STATE = "project state stays in the hub (CLAUDE.md, crew:hub-state): use crew.mjs handoff, log, new-item, learn "
+    + "or ask, and keep only a pointer to the hub ID elsewhere";
   const input = h.tool_input ?? {};
 
-  // every subagent: protected paths, secret files, no approvals
+  // every subagent: protected paths, writes outside the repository, secret files, no approvals
   const path = EDITS[h.tool_name] ? String(input[EDITS[h.tool_name]] ?? "") : "";
   if (path && hits(policy.paths.protected, path)) return { deny: `${rel(path)} is protected by the crew policy (paths.protected)` };
+  if (path && outside(path)) return { deny: `${abs(path)} is outside the repository; ${HUB_STATE}` };
   if (h.tool_name === "Read" && hits(policy.secrets.files, String(input.file_path ?? ""))) {
     return { deny: `${rel(String(input.file_path))} is a secret file (secrets.files); agents never read it` };
   }
   const cmd = h.tool_name === "Bash" ? String(input.command ?? "") : "";
   if (cmd) {
-    const target = writeTargets(cmd).find((t) => hits(policy.paths.protected, t));
+    const targets = writeTargets(cmd);
+    const target = targets.find((t) => hits(policy.paths.protected, t));
     if (target) return { deny: `the command writes to ${rel(target)}, which the crew policy protects (paths.protected)` };
+    const unknown = targets.find((t) => t.startsWith("$"));
+    if (unknown) return { deny: `the command writes to ${unknown}, which the guard can't resolve (an unknown variable); use a literal path` };
+    const away = targets.find(outside);
+    if (away) return { deny: `the command writes to ${abs(away)}, outside the repository; ${HUB_STATE}` };
     if (words(cmd).some((w) => hits(policy.secrets.files, w))) return { deny: "the command touches a secret file (secrets.files)" };
     if (CREW_CLI.test(cmd) && /--approved-by\b/.test(cmd)) return { deny: "only the human approves: agents never pass --approved-by" };
     if (segments(cmd).some((c) => hubCommand(c) === "agents" && !/--check\b/.test(c))) {
