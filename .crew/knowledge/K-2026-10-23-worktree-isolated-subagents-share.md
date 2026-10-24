@@ -2,7 +2,7 @@
 id: K-2026-10-23-worktree-isolated-subagents-share
 type: learning
 title: Worktree-isolated subagents share the ledger
-scope: packages/hub/src/core/ledger.ts
+scope: packages/crew/src/hub/core/memory/ledger.ts
 source: G-003
 supersedes:
 tier: project

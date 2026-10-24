@@ -2,7 +2,7 @@
 id: K-2026-10-23-done-needs-evidence-from-a-run-other
 type: decision
 title: Done needs evidence from a run other than the implementer
-scope: packages/hub/src/commands/execution.ts
+scope: packages/crew/src/hub/commands/work/execution.ts
 source: IDEA
 supersedes:
 tier: project

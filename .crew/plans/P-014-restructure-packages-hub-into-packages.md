@@ -74,12 +74,12 @@ The other session's P-004 (in review) edits `core/git.ts`, `commands/workflow.ts
 - Rebuild, and diff `dist/` against the pre-move build. Copy `dist/crew.mjs` into `.crew/bin/` only if it changed.
 
 ## Tasks
-- [ ] T1: `git mv` the package and the source files into the groups; update `package.json` → verify: `test ! -e packages/hub && ls packages/crew/src/hub/core packages/crew/src/hub/commands`
-- [ ] T2: rewrite imports in `src/`, `ui/` and `test/`; fix `build.mjs` and `ui/tsconfig.json` → verify: `cd packages/crew && npm run typecheck`
-- [ ] T3: make `structure.test.ts` recursive, with the new contract paths → verify: `cd packages/crew && npx vitest run test/structure.test.ts`
-- [ ] T4: build and compare `dist/` → verify: `cd packages/crew && npm test && npm run build && git diff --stat ../../plugins/crew/skills/hub/dist`
-- [ ] T5: repo paths (launch.json, README, config comment, vision.md, DESIGN.md, knowledge scopes) → verify: `git grep -n 'packages/hub' -- ':!.crew/plans' ':!.crew/items'` lists only the vision.md rename log, and `node .crew/bin/crew.mjs check` has no scope hints
-- [ ] T6: full suites → verify: `for s in tests/*/; do (cd $s && env -u CREW_ROLE -u CREW_RUN uvx --with pyyaml pytest -q); done`
+- [x] T1: `git mv` the package and the source files into the groups; update `package.json` → verify: `test ! -e packages/hub && ls packages/crew/src/hub/core packages/crew/src/hub/commands`
+- [x] T2: rewrite imports in `src/`, `ui/` and `test/`; fix `build.mjs` and `ui/tsconfig.json` → verify: `cd packages/crew && npm run typecheck`
+- [x] T3: make `structure.test.ts` recursive, with the new contract paths → verify: `cd packages/crew && npx vitest run test/structure.test.ts`
+- [x] T4: build and compare `dist/` → verify: `cd packages/crew && npm test && npm run build && git diff --stat ../../plugins/crew/skills/hub/dist`
+- [x] T5: repo paths (launch.json, README, config comment, vision.md, DESIGN.md, knowledge scopes) → verify: `git grep -n 'packages/hub' -- ':!.crew/plans' ':!.crew/items'` lists only the vision.md rename log, and `node .crew/bin/crew.mjs check` has no scope hints
+- [x] T6: full suites → verify: `for s in tests/*/; do (cd $s && env -u CREW_ROLE -u CREW_RUN uvx --with pyyaml pytest -q); done`
 
 ## Test plan
 - AC3 and AC4: the existing vitest suite, plus the stricter, recursive `structure.test.ts`.
@@ -101,5 +101,23 @@ n/a: internal layout only. The plugin ships `dist/`, which doesn't change. Rollb
 - 2026-10-24: status draft → ready
 - 2026-10-24: assigned to the developer role
 - 2026-10-24: status ready → in-progress — branch plan/P-014-restructure-packages-hub-into-packages
+- 2026-10-24: structure test now walks ui/src/studio/ too and found Preview.tsx at 326 lines (the old list skipped that folder): ComponentSheet and TypeSpecimen moved verbatim to studio/Specimens.tsx; studio.html is byte-identical
 
 ## Outcome
+- **What shipped:**
+  - `packages/hub` became `packages/crew` (npm `@crew/crew`).
+  - The hub sources live under `src/hub/`. `core/` and `commands/` are grouped into `work/`, `team/` and `memory/`, plus `views/` for commands; only `store`, `workspace`, `git` and `text` stay at the root of `core/`.
+  - Imports, `build.mjs`, `ui/tsconfig.json`, launch.json, the README, the config comment, `vision.md`, `DESIGN.md` and 29 knowledge scopes now point at the new paths.
+- **Deviation:** `structure.test.ts` now walks every folder. It found `ui/src/studio/Preview.tsx` at 326 lines; the old hard-coded list never checked `studio/`. `ComponentSheet` and `TypeSpecimen` moved verbatim to `studio/Specimens.tsx`, and `studio.html` is byte-identical.
+- **dist:** only the banner and esbuild's module-path comments changed. There are no code changes and no local paths.
+- **Left as history:** `docs/vision.md:205,227` (the rename log and an old workstream's notes).
+- **Follow-ups:**
+  - P-004 (in review, in another session) edits `core/git.ts` and `commands/workflow.ts`. Whichever merges second carries those edits to `src/hub/core/git.ts` and `src/hub/commands/work/workflow.ts`. Its new `.github/workflows/ci.yml` needs `packages/crew` if it names the package.
+  - CHORE-008 next.
+- **Verified:**
+  - `npm run typecheck`; vitest: 49 passed.
+  - `npm run build`.
+  - pytest: 166 + 3 passed, without `CREW_*` set.
+  - `crew.mjs check`: no scope hints.
+
+Learnings: none

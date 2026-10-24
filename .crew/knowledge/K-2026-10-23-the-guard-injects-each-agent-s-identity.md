@@ -2,7 +2,7 @@
 id: K-2026-10-23-the-guard-injects-each-agent-s-identity
 type: decision
 title: The guard injects each agent's identity by rewriting its tool input
-scope: plugins/crew/skills/guidelines/templates/settings.json, packages/hub/src/core/ledger.ts
+scope: plugins/crew/skills/guidelines/templates/settings.json, packages/crew/src/hub/core/memory/ledger.ts
 source: G-003
 supersedes:
 tier: project

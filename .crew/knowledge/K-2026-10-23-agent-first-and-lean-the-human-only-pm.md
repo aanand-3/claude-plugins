@@ -2,7 +2,7 @@
 id: K-2026-10-23-agent-first-and-lean-the-human-only-pm
 type: decision
 title: Agent-first and lean: the human-only PM layer is removed, not optional
-scope: packages/hub/src/core/model.ts, plugins/crew/skills/hub/**
+scope: packages/crew/src/hub/core/work/model.ts, plugins/crew/skills/hub/**
 source: IDEA
 supersedes:
 tier: project

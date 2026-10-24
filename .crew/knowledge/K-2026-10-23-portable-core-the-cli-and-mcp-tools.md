@@ -2,7 +2,7 @@
 id: K-2026-10-23-portable-core-the-cli-and-mcp-tools
 type: decision
 title: Portable core: the CLI and MCP tools carry everything, hooks only automate
-scope: packages/hub/src/mcp.ts, plugins/crew/skills/guidelines/templates/settings.json
+scope: packages/crew/src/hub/mcp.ts, plugins/crew/skills/guidelines/templates/settings.json
 source: IDEA
 supersedes:
 tier: project

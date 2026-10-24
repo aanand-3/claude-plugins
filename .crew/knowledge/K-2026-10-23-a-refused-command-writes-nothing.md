@@ -2,7 +2,7 @@
 id: K-2026-10-23-a-refused-command-writes-nothing
 type: convention
 title: A refused command writes nothing
-scope: packages/hub/src/core/workspace.ts, packages/hub/src/cli.ts, packages/hub/src/mcp.ts
+scope: packages/crew/src/hub/core/workspace.ts, packages/crew/src/hub/cli.ts, packages/crew/src/hub/mcp.ts
 source: 
 supersedes:
 tier: project

@@ -2,7 +2,7 @@
 id: K-2026-10-23-policy-is-layered-and-guardrails-only
 type: decision
 title: Policy is layered and guardrails only tighten
-scope: packages/hub/src/core/policy.ts, packages/hub/src/commands/policy.ts
+scope: packages/crew/src/hub/core/team/policy.ts, packages/crew/src/hub/commands/team/policy.ts
 source: IDEA
 supersedes:
 tier: project

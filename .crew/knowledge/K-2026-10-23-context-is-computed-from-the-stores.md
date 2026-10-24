@@ -2,7 +2,7 @@
 id: K-2026-10-23-context-is-computed-from-the-stores
 type: decision
 title: Context is computed from the stores, never stored
-scope: packages/hub/src/commands/context.ts
+scope: packages/crew/src/hub/commands/memory/context.ts
 source: IDEA
 supersedes:
 tier: project

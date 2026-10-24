@@ -30,7 +30,7 @@ Team (agents)       PM · Architect · Developer · QA · Release, in one or mor
 |---|---|---|
 | plugin `project-kit` | **`crew`** | an agent team, idea to ship |
 | marketplace `aanand-plugins` | unchanged | it's the publisher, not the product |
-| tracker (package `packages/tracker`, skill `tracker`, MCP server `tracker`) | **hub** (`packages/hub`, skill `crew:hub`, MCP server `hub`) | it's the team's shared context, not a PM tracker |
+| tracker (package `packages/tracker`, skill `tracker`, MCP server `tracker`) | **hub** (`packages/hub`, now `packages/crew`; skill `crew:hub`, MCP server `hub`) | it's the team's shared context, not a PM tracker |
 | `.project/` | **`.crew/`** | |
 | `.project/bin/tracker.mjs` | **`.crew/bin/crew.mjs`** (CLI `crew <cmd>`) | |
 | epic `EP-###` | **goal `G-###`** | executives set goals; `focus` points at one |

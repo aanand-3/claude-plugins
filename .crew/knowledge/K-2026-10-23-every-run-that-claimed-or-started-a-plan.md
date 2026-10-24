@@ -2,7 +2,7 @@
 id: K-2026-10-23-every-run-that-claimed-or-started-a-plan
 type: decision
 title: Every run that claimed or started a plan is an implementer
-scope: packages/hub/src/commands/execution.ts
+scope: packages/crew/src/hub/commands/work/execution.ts
 source: FEAT-001
 supersedes:
 tier: project

@@ -2,7 +2,7 @@
 id: K-2026-10-23-compare-real-paths-macos-temp-dirs-are
 type: gotcha
 title: Compare real paths: macOS temp dirs are reached through /var → /private/var
-scope: packages/hub/src/core/store.ts
+scope: packages/crew/src/hub/core/store.ts
 source: 
 supersedes:
 tier: project

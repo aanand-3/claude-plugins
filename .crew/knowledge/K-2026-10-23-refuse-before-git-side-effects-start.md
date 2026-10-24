@@ -2,7 +2,7 @@
 id: K-2026-10-23-refuse-before-git-side-effects-start
 type: gotcha
 title: Refuse before git side effects: start once made a branch and then refused
-scope: packages/hub/src/commands/workflow.ts
+scope: packages/crew/src/hub/commands/work/workflow.ts
 source: 
 supersedes:
 tier: project

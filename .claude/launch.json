@@ -4,7 +4,7 @@
     {
       "name": "hub-preview",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "4173", "--bind", "127.0.0.1", "--directory", "packages/hub/preview"],
+      "runtimeArgs": ["-m", "http.server", "4173", "--bind", "127.0.0.1", "--directory", "packages/crew/preview"],
       "port": 4173
     }
   ]

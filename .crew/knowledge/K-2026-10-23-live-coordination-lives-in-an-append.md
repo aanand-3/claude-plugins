@@ -2,7 +2,7 @@
 id: K-2026-10-23-live-coordination-lives-in-an-append
 type: decision
 title: Live coordination lives in an append-only ledger in the git common dir
-scope: packages/hub/src/core/ledger.ts, packages/hub/src/core/workspace.ts
+scope: packages/crew/src/hub/core/memory/ledger.ts, packages/crew/src/hub/core/workspace.ts
 source: IDEA
 supersedes:
 tier: project

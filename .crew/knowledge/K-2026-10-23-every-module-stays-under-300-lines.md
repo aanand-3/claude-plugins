@@ -2,7 +2,7 @@
 id: K-2026-10-23-every-module-stays-under-300-lines
 type: convention
 title: Every module stays under 300 lines, and src/core never imports src/commands
-scope: packages/hub/src/**, plugins/crew/skills/**
+scope: packages/crew/src/hub/**, plugins/crew/skills/**
 source: 
 supersedes:
 tier: project

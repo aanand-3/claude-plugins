@@ -2,7 +2,7 @@
 id: K-2026-10-23-ai-assisted-as-the-default-mode-changes
 type: risk
 title: ai-assisted as the default mode changes behaviour for existing users
-scope: packages/hub/src/core/policy.ts
+scope: packages/crew/src/hub/core/team/policy.ts
 source: 
 supersedes:
 tier: project

@@ -2,7 +2,7 @@
 id: K-2026-10-23-a-move-made-on-behalf-of-another-step
 type: gotcha
 title: A move made on behalf of another step must not make its run an implementer
-scope: packages/hub/src/commands/execution.ts, packages/hub/src/commands/review.ts
+scope: packages/crew/src/hub/commands/work/execution.ts, packages/crew/src/hub/commands/work/review.ts
 source: 
 supersedes:
 tier: project

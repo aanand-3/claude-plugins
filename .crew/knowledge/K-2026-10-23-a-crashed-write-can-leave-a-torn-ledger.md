@@ -2,7 +2,7 @@
 id: K-2026-10-23-a-crashed-write-can-leave-a-torn-ledger
 type: gotcha
 title: A crashed write can leave a torn ledger line: start the next append on a fresh line
-scope: packages/hub/src/core/ledger.ts
+scope: packages/crew/src/hub/core/memory/ledger.ts
 source: FEAT-001
 supersedes:
 tier: project

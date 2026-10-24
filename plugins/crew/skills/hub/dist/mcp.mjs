@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Generated from packages/hub by `npm run build`. Do not edit.
+// Generated from packages/crew by `npm run build`. Do not edit.
 import { createRequire as __crewRequire } from "node:module"; const require = __crewRequire(import.meta.url);
 var __create = Object.create;
 var __defProp = Object.defineProperty;
@@ -7364,15 +7364,15 @@ var require_dist = __commonJS({
   }
 });
 
-// src/mcp.ts
+// src/hub/mcp.ts
 import { createInterface } from "node:readline";
 import { pathToFileURL } from "node:url";
 
-// src/core/git.ts
+// src/hub/core/git.ts
 import { spawnSync } from "node:child_process";
 import { resolve } from "node:path";
 
-// src/core/model.ts
+// src/hub/core/work/model.ts
 var IDEA_ID = "IDEA";
 var IDEA_FLOW = {
   exploring: ["researching", "killed"],
@@ -7449,7 +7449,7 @@ var MAX_WRITTEN_AHEAD = 3;
 var SLUG_STOPWORDS = /* @__PURE__ */ new Set(["a", "an", "and", "the", "of", "for", "to", "with", "in", "on", "or", "via", "by"]);
 var TASK_RE = /^\s*- \[( |x|X)\]\s*(.*)$/;
 
-// src/core/text.ts
+// src/hub/core/text.ts
 var HubError = class extends Error {
 };
 function fail(message) {
@@ -7520,7 +7520,7 @@ function byKey(key) {
   };
 }
 
-// src/core/git.ts
+// src/hub/core/git.ts
 var ROOT = null;
 function useRoot(root) {
   ROOT = root;
@@ -7565,7 +7565,7 @@ function words(out) {
   return (out ?? "").split(/\s+/).filter(Boolean);
 }
 
-// src/core/queries.ts
+// src/hub/core/work/queries.ts
 var up = (s2) => (s2 ?? "").toUpperCase();
 function itemStatus(item, plans2) {
   const st = item.get("status") || "new";
@@ -7607,7 +7607,7 @@ function goalPlans(goalId, plans2, items2) {
   return [...plans2.values()].filter((p) => planGoal(p, items2) === goalId);
 }
 
-// src/core/knowledge.ts
+// src/hub/core/memory/knowledge.ts
 var KNOWLEDGE_TYPES = ["decision", "learning", "gotcha", "convention", "risk"];
 var TIERS = ["project", "playbook-candidate"];
 var K_ID_RE = /\bK-\d{4}-\d{2}-\d{2}-[a-z0-9-]+\b/g;
@@ -7715,7 +7715,7 @@ function knowledgeId(title, taken) {
   return id;
 }
 
-// src/core/footprint.ts
+// src/hub/core/work/footprint.ts
 var LIVE = /* @__PURE__ */ new Set(["ready", "in-progress", "blocked", "in-review"]);
 function overlapping(plan, plans2) {
   const mine = plan.touches();
@@ -7736,12 +7736,12 @@ function drift(plan, base) {
   return [...changed].filter((f) => !f.startsWith(".crew/") && !globs.some((g) => g.test(f))).sort();
 }
 
-// src/core/policy.ts
+// src/hub/core/team/policy.ts
 var import_yaml = __toESM(require_dist(), 1);
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, resolve as resolve2 } from "node:path";
 
-// src/core/presets.ts
+// src/hub/core/team/presets.ts
 var DRAFTS = { paths: { write: [".crew/drafts/**"] } };
 var PRESETS = {
   lifecycle: {
@@ -7778,7 +7778,7 @@ var PRESETS = {
   }
 };
 
-// src/core/policy.ts
+// src/hub/core/team/policy.ts
 var MODES = ["ai-native", "ai-assisted", "human-led"];
 var NOTIFY_ON = ["escalation", "budget", "stale", "goal-done", "paused"];
 var ACTIONS = /* @__PURE__ */ new Set(["plan.assigned", "plan.reassigned", "plan.reviewed"]);
@@ -8050,14 +8050,14 @@ function approvalReason(p, transition) {
   return null;
 }
 
-// src/commands/execution.ts
+// src/hub/commands/work/execution.ts
 import { spawnSync as spawnSync3 } from "node:child_process";
 import { createHash as createHash2 } from "node:crypto";
 
-// src/commands/questions.ts
+// src/hub/commands/team/questions.ts
 import { randomBytes as randomBytes2 } from "node:crypto";
 
-// src/commands/knowledge.ts
+// src/hub/commands/memory/knowledge.ts
 import { join as join2 } from "node:path";
 function learn(store, type, title, o = {}) {
   store.require();
@@ -8129,10 +8129,10 @@ function view(e, store) {
   };
 }
 
-// src/commands/autonomy.ts
+// src/hub/commands/team/autonomy.ts
 import { spawnSync as spawnSync2 } from "node:child_process";
 
-// src/core/doc.ts
+// src/hub/core/work/doc.ts
 var EMPTY_LINES = /* @__PURE__ */ new Set(["-", "- [ ]", "1."]);
 var END = "(?![\\s\\S])";
 function escapeRe(s2) {
@@ -8307,7 +8307,7 @@ ${body2.trim()}
 `;
 }
 
-// src/core/gates.ts
+// src/hub/core/work/gates.ts
 function triageProblems(item) {
   const prefix = item.id.split("-")[0];
   const problems = item.missing(TRIAGE_SECTIONS[prefix]).map((n2) => `empty section: ${n2}`);
@@ -8368,18 +8368,18 @@ function itemProblems(store, plan) {
   return problems;
 }
 
-// src/commands/checks.ts
+// src/hub/commands/views/checks.ts
 import { join as join7 } from "node:path";
 
-// src/commands/agents.ts
+// src/hub/commands/team/agents.ts
 import { join as join6 } from "node:path";
 
-// src/core/store.ts
+// src/hub/core/store.ts
 import { existsSync as existsSync4, realpathSync } from "node:fs";
 import { dirname as dirname3, join as join5, resolve as resolve3 } from "node:path";
 import { fileURLToPath } from "node:url";
 
-// src/core/ledger.ts
+// src/hub/core/memory/ledger.ts
 import { createHash, randomBytes } from "node:crypto";
 import { appendFileSync, existsSync as existsSync2, linkSync, mkdirSync, readFileSync as readFileSync2, renameSync, statSync as statSync2, unlinkSync, writeFileSync } from "node:fs";
 import { basename, dirname, join as join3 } from "node:path";
@@ -8533,7 +8533,7 @@ function releaseLock(lock, token) {
   }
 }
 
-// src/core/workspace.ts
+// src/hub/core/workspace.ts
 import { chmodSync, copyFileSync, existsSync as existsSync3, mkdirSync as mkdirSync2, readdirSync as readdirSync2, readFileSync as readFileSync3, rmSync, statSync as statSync3, writeFileSync as writeFileSync2 } from "node:fs";
 import { dirname as dirname2, join as join4, relative, sep } from "node:path";
 var Workspace = class {
@@ -8632,7 +8632,7 @@ var Workspace = class {
   }
 };
 
-// src/core/store.ts
+// src/hub/core/store.ts
 var SCRIPT_FILE = fileURLToPath(import.meta.url);
 var SCRIPT_DIR = dirname3(SCRIPT_FILE);
 var SKILL_DIR = dirname3(SCRIPT_DIR);
@@ -8831,7 +8831,7 @@ var Store = class _Store {
   }
 };
 
-// src/commands/agents.ts
+// src/hub/commands/team/agents.ts
 var HUMAN = "executive";
 var PLAIN = /^[\w-]+$/;
 var agentsDir = (store) => join6(store.ws.root, ".claude", "agents");
@@ -8900,7 +8900,7 @@ function agentHints(store) {
   return agentProblems(store).map((p) => `agents: ${store.rel(p.path)} is ${p.problem} \u2014 run \`crew.mjs agents\``);
 }
 
-// src/commands/policy.ts
+// src/hub/commands/team/policy.ts
 var import_yaml2 = __toESM(require_dist(), 1);
 function policyFindings(store) {
   const base = resolvePolicy(store.ws.root, store.dir);
@@ -8916,7 +8916,7 @@ function policyFindings(store) {
   return { errors: [...errors].map((e) => `policy: ${e}`), hints: [...hints].map((h) => `policy: ${h}`) };
 }
 
-// src/commands/checks.ts
+// src/hub/commands/views/checks.ts
 var Snapshot = class {
   constructor(store) {
     this.store = store;
@@ -9105,7 +9105,7 @@ function hygiene(s2, f) {
   }
 }
 
-// src/commands/goals.ts
+// src/hub/commands/work/goals.ts
 function goalEvidence(store, goal) {
   const cps = store.ledger.events().filter((e) => e.type === "checkpoint" && e.ref === goal.id);
   return criteria(goal).map((ac) => {
@@ -9135,7 +9135,7 @@ function goalProblems(store, goal) {
   return problems;
 }
 
-// src/commands/review.ts
+// src/hub/commands/work/review.ts
 var lastCode = (branch) => git(["log", "-1", "--format=%H", branch, "--", ".", ":(exclude).crew"])?.trim() || null;
 function review(store, planId, o) {
   store.require();
@@ -9166,7 +9166,7 @@ function reviewProblems(store, plan) {
   return covered && !(currentBranch() === plan.get("branch") && dirty.length) ? [] : [`the code changed since the approving review (${String(last.sha ?? "?").slice(0, 7)}): ${how} again`];
 }
 
-// src/commands/workflow.ts
+// src/hub/commands/work/workflow.ts
 var LOG_SECTION = { item: "Notes" };
 function move(store, docId, status2, note, force = false, approvedBy, via) {
   store.require();
@@ -9319,7 +9319,7 @@ function log(store, docId, text2) {
   store.ledger.record("log", doc.id, { text: text2 });
 }
 
-// src/commands/autonomy.ts
+// src/hub/commands/team/autonomy.ts
 function notify(store, kind, ref, text2, key = "") {
   const { command, on } = store.policy.policy.notify;
   if (!command || !on.includes(kind)) return;
@@ -9333,7 +9333,7 @@ function notify(store, kind, ref, text2, key = "") {
   });
 }
 
-// src/commands/questions.ts
+// src/hub/commands/team/questions.ts
 function questions(events) {
   const byId = /* @__PURE__ */ new Map();
   for (const e of events) {
@@ -9409,7 +9409,7 @@ function listQuestions(store, o = {}) {
   }
 }
 
-// src/commands/liveness.ts
+// src/hub/commands/team/liveness.ts
 var HOUR = 36e5;
 var ACTIVITY = /* @__PURE__ */ new Set(["claim", "checkpoint", "move", "log"]);
 function staleClaims(store, events = store.ledger.events(), now = Date.now()) {
@@ -9463,7 +9463,7 @@ function livenessHints(store) {
   ];
 }
 
-// src/commands/execution.ts
+// src/hub/commands/work/execution.ts
 var OUTPUT_LINES = 15;
 var OUTPUT_CHARS = 2e3;
 var RUN_TIMEOUT_MS = 10 * 6e4;
@@ -9633,7 +9633,7 @@ function handoff(store, id) {
   store.say(`${plan.id}: handoff written`);
 }
 
-// src/commands/team.ts
+// src/hub/commands/team/team.ts
 var ACTIVE2 = /* @__PURE__ */ new Set(["in-progress", "blocked", "in-review"]);
 function assign(store, planId, to, team, note, approvedBy) {
   store.require();
@@ -9716,7 +9716,7 @@ function staff(store, json = false) {
   if (!s2.start.length && !s2.waiting.length) store.say("  nothing ready to start \u2014 the PM ranks, the Architect specs the next plans");
 }
 
-// src/commands/release.ts
+// src/hub/commands/work/release.ts
 function mergeOrder(store) {
   const base = store.baseBranch(), plans2 = store.plans(true), events = store.ledger.events(), moved = store.ledger.lastStatus(events);
   const doneAt = new Map(events.filter((e) => e.type === "move" && e.to === "done").map((e) => [e.ref, e.ts]));
@@ -9760,7 +9760,7 @@ function mergeOrderCmd(store, json = false) {
   for (const p of m.merged) store.say(`merged: ${p.id} (${p.branch}) \u2014 delete the branch`);
 }
 
-// src/commands/roles.ts
+// src/hub/commands/team/roles.ts
 var View = class {
   constructor(store) {
     this.store = store;
@@ -9858,7 +9858,7 @@ function roleLines(store, role) {
   ];
 }
 
-// src/commands/advisor.ts
+// src/hub/commands/views/advisor.ts
 function current(store) {
   if (!store.ws.isDir(store.dir)) return;
   const focus = store.focus();
@@ -9971,7 +9971,7 @@ var Context = class {
   }
 };
 
-// src/commands/backlog.ts
+// src/hub/commands/work/backlog.ts
 function createItem(store, prefix, title, body2, fields) {
   const iid = store.nextId(prefix, "item");
   const doc = store.build(`item-${ITEM_TYPES[prefix]}.md`, body2, { id: iid, title, type: ITEM_TYPES[prefix], ...fields });
@@ -10041,7 +10041,7 @@ Nothing was changed.`);
   move(store, item.id, "triaged", summary(item), false, o.approvedBy);
 }
 
-// src/commands/design.ts
+// src/hub/commands/views/design.ts
 var import_yaml3 = __toESM(require_dist(), 1);
 import { dirname as dirname4, join as join8 } from "node:path";
 var FRONT = /^---\n([\s\S]*?)\n---\n/;
@@ -10110,13 +10110,13 @@ function designDone(store, id) {
   store.say(`Done: ${id === "all" ? `${list.length} hand-off(s)` : id}. The studio updates by itself.`);
 }
 
-// src/commands/graph.ts
+// src/hub/commands/views/graph.ts
 import { basename as basename2 } from "node:path";
 
-// src/graph-types.ts
+// src/hub/graph-types.ts
 var SCHEMA_VERSION = 5;
 
-// src/commands/graph.ts
+// src/hub/commands/views/graph.ts
 var ID_RE = /\b(?:IDEA|(?:G|P|FEAT|BUG|CHORE|SPIKE)-\d+|K-\d{4}-\d{2}-\d{2}-[a-z0-9-]+)\b/g;
 var DATE_KEYS = ["created", "started", "completed", "decided", "closed"];
 var up3 = (s2) => s2 ? s2.toUpperCase() : null;
@@ -10255,7 +10255,7 @@ function edges(docs) {
   return out;
 }
 
-// src/commands/reports.ts
+// src/hub/commands/views/reports.ts
 var TOP = 5;
 var PLAN_HEADER = ["| Plan | Title | Goal | Status | Tasks | Owner |", "|---|---|---|---|---|---|"];
 function status(store, write) {
@@ -10353,7 +10353,7 @@ function recentlyDone(plans2) {
   return done.length ? done.map((p) => `- ${p.get("completed") || "?"} \u2014 ${p.id}: ${p.get("title")}` + (p.get("pr") ? ` \u2014 ${p.get("pr")}` : "")) : ["_None._"];
 }
 
-// src/commands/context.ts
+// src/hub/commands/memory/context.ts
 var DEFAULT_BUDGET = 6e3;
 var para = (text2, n2 = 3) => stripComments(text2).split("\n").map((l) => l.trim()).filter(Boolean).slice(0, n2);
 var TYPES = {
@@ -10476,7 +10476,7 @@ function context(store, o = {}) {
   else for (const l of lines) store.say(l);
 }
 
-// src/commands/ledger.ts
+// src/hub/commands/memory/ledger.ts
 var DETAIL = {
   claim: (e) => `branch ${e.branch ?? "?"}${e.force ? " (forced)" : ""}`,
   release: (e) => String(e.reason ?? ""),
@@ -10514,7 +10514,7 @@ function showLedger(store, o = {}) {
   }
 }
 
-// src/commands/planning.ts
+// src/hub/commands/work/planning.ts
 function setFocus(store, goalId) {
   store.require();
   const idea2 = store.idea() ?? fail(`Write the idea first (\`new-idea\`): the focus goal is recorded on it.`);
@@ -10529,7 +10529,7 @@ function setFocus(store, goalId) {
   if (goal.get("status") === "proposed") store.say(`note: ${gid} is still proposed \u2014 \`move ${gid} active\` when its first plan starts`);
 }
 
-// src/commands/runs.ts
+// src/hub/commands/team/runs.ts
 var WORKFLOWS = {
   kickoff: ["preflight", "discover", "design", "guidelines", "hub", "git", "graph", "idea-and-plan"],
   onboard: ["preflight", "map", "discover", "design", "guidelines", "hub", "git", "graph"]
@@ -10564,7 +10564,7 @@ function resumeWorkflow(store, workflow, json = false) {
   store.say(next ? `next: ${next}` : `${workflow}: every step is done or skipped`);
 }
 
-// src/mcp.ts
+// src/hub/mcp.ts
 var text = (description) => ({ type: "string", description });
 var obj = (properties = {}, required = []) => ({
   type: "object",

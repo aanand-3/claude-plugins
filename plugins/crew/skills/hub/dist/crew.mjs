@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Generated from packages/hub by `npm run build`. Do not edit.
+// Generated from packages/crew by `npm run build`. Do not edit.
 import { createRequire as __crewRequire } from "node:module"; const require = __crewRequire(import.meta.url);
 var __create = Object.create;
 var __defProp = Object.defineProperty;
@@ -7364,19 +7364,19 @@ var require_dist = __commonJS({
   }
 });
 
-// src/cli.ts
+// src/hub/cli.ts
 import { parseArgs } from "node:util";
 
-// src/core/store.ts
+// src/hub/core/store.ts
 import { existsSync as existsSync4, realpathSync } from "node:fs";
 import { dirname as dirname3, join as join4, resolve as resolve3 } from "node:path";
 import { fileURLToPath } from "node:url";
 
-// src/core/git.ts
+// src/hub/core/git.ts
 import { spawnSync } from "node:child_process";
 import { resolve } from "node:path";
 
-// src/core/model.ts
+// src/hub/core/work/model.ts
 var TEMPLATE_NAMES = [
   "idea.md",
   "goal.md",
@@ -7462,7 +7462,7 @@ var MAX_WRITTEN_AHEAD = 3;
 var SLUG_STOPWORDS = /* @__PURE__ */ new Set(["a", "an", "and", "the", "of", "for", "to", "with", "in", "on", "or", "via", "by"]);
 var TASK_RE = /^\s*- \[( |x|X)\]\s*(.*)$/;
 
-// src/core/text.ts
+// src/hub/core/text.ts
 var HubError = class extends Error {
 };
 function fail(message) {
@@ -7533,7 +7533,7 @@ function byKey(key) {
   };
 }
 
-// src/core/git.ts
+// src/hub/core/git.ts
 var ROOT = null;
 function useRoot(root) {
   ROOT = root;
@@ -7581,7 +7581,7 @@ function words(out) {
   return (out ?? "").split(/\s+/).filter(Boolean);
 }
 
-// src/core/doc.ts
+// src/hub/core/work/doc.ts
 var EMPTY_LINES = /* @__PURE__ */ new Set(["-", "- [ ]", "1."]);
 var END = "(?![\\s\\S])";
 function escapeRe(s) {
@@ -7756,7 +7756,7 @@ ${body2.trim()}
 `;
 }
 
-// src/core/ledger.ts
+// src/hub/core/memory/ledger.ts
 import { createHash, randomBytes } from "node:crypto";
 import { appendFileSync, existsSync, linkSync, mkdirSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
@@ -7910,7 +7910,7 @@ function releaseLock(lock, token) {
   }
 }
 
-// src/core/knowledge.ts
+// src/hub/core/memory/knowledge.ts
 var KNOWLEDGE_TYPES = ["decision", "learning", "gotcha", "convention", "risk"];
 var TIERS = ["project", "playbook-candidate"];
 var K_ID_RE = /\bK-\d{4}-\d{2}-\d{2}-[a-z0-9-]+\b/g;
@@ -8018,12 +8018,12 @@ function knowledgeId(title, taken) {
   return id;
 }
 
-// src/core/policy.ts
+// src/hub/core/team/policy.ts
 var import_yaml = __toESM(require_dist(), 1);
 import { existsSync as existsSync2, readdirSync, readFileSync as readFileSync2, statSync as statSync2 } from "node:fs";
 import { join as join2, resolve as resolve2 } from "node:path";
 
-// src/core/presets.ts
+// src/hub/core/team/presets.ts
 var DRAFTS = { paths: { write: [".crew/drafts/**"] } };
 var PRESETS = {
   lifecycle: {
@@ -8060,7 +8060,7 @@ var PRESETS = {
   }
 };
 
-// src/core/policy.ts
+// src/hub/core/team/policy.ts
 var MODES = ["ai-native", "ai-assisted", "human-led"];
 var NOTIFY_ON = ["escalation", "budget", "stale", "goal-done", "paused"];
 var ACTIONS = /* @__PURE__ */ new Set(["plan.assigned", "plan.reassigned", "plan.reviewed"]);
@@ -8332,7 +8332,7 @@ function approvalReason(p, transition) {
   return null;
 }
 
-// src/core/workspace.ts
+// src/hub/core/workspace.ts
 import { chmodSync, copyFileSync, existsSync as existsSync3, mkdirSync as mkdirSync2, readdirSync as readdirSync2, readFileSync as readFileSync3, rmSync, statSync as statSync3, writeFileSync as writeFileSync2 } from "node:fs";
 import { dirname as dirname2, join as join3, relative, sep } from "node:path";
 var Workspace = class {
@@ -8431,7 +8431,7 @@ var Workspace = class {
   }
 };
 
-// src/core/store.ts
+// src/hub/core/store.ts
 var SCRIPT_FILE = fileURLToPath(import.meta.url);
 var SCRIPT_DIR = dirname3(SCRIPT_FILE);
 var SKILL_DIR = dirname3(SCRIPT_DIR);
@@ -8630,7 +8630,7 @@ var Store = class _Store {
   }
 };
 
-// src/core/queries.ts
+// src/hub/core/work/queries.ts
 var up = (s) => (s ?? "").toUpperCase();
 function itemStatus(item, plans2) {
   const st = item.get("status") || "new";
@@ -8672,7 +8672,7 @@ function goalPlans(goalId, plans2, items2) {
   return [...plans2.values()].filter((p) => planGoal(p, items2) === goalId);
 }
 
-// src/core/footprint.ts
+// src/hub/core/work/footprint.ts
 var LIVE = /* @__PURE__ */ new Set(["ready", "in-progress", "blocked", "in-review"]);
 function overlapping(plan, plans2) {
   const mine = plan.touches();
@@ -8693,14 +8693,14 @@ function drift(plan, base) {
   return [...changed].filter((f) => !f.startsWith(".crew/") && !globs.some((g) => g.test(f))).sort();
 }
 
-// src/commands/execution.ts
+// src/hub/commands/work/execution.ts
 import { spawnSync as spawnSync3 } from "node:child_process";
 import { createHash as createHash2 } from "node:crypto";
 
-// src/commands/questions.ts
+// src/hub/commands/team/questions.ts
 import { randomBytes as randomBytes2 } from "node:crypto";
 
-// src/commands/knowledge.ts
+// src/hub/commands/memory/knowledge.ts
 import { join as join5 } from "node:path";
 function learn(store, type, title, o = {}) {
   store.require();
@@ -8772,11 +8772,11 @@ function view(e, store) {
   };
 }
 
-// src/commands/autonomy.ts
+// src/hub/commands/team/autonomy.ts
 import { spawnSync as spawnSync2 } from "node:child_process";
 import { readFileSync as readFileSync5 } from "node:fs";
 
-// src/commands/guard.ts
+// src/hub/commands/team/guard.ts
 import { readFileSync as readFileSync4, realpathSync as realpathSync2 } from "node:fs";
 import { basename as basename2, dirname as dirname4, isAbsolute, join as join6, relative as relative2 } from "node:path";
 var HUB_MCP = /^mcp__(?:plugin_crew_)?hub__/;
@@ -8886,7 +8886,7 @@ function guard(store) {
   return 0;
 }
 
-// src/core/gates.ts
+// src/hub/core/work/gates.ts
 function triageProblems(item) {
   const prefix = item.id.split("-")[0];
   const problems = item.missing(TRIAGE_SECTIONS[prefix]).map((n) => `empty section: ${n}`);
@@ -8947,10 +8947,10 @@ function itemProblems(store, plan) {
   return problems;
 }
 
-// src/commands/checks.ts
+// src/hub/commands/views/checks.ts
 import { join as join8 } from "node:path";
 
-// src/commands/agents.ts
+// src/hub/commands/team/agents.ts
 import { join as join7 } from "node:path";
 var HUMAN = "executive";
 var PLAIN = /^[\w-]+$/;
@@ -9050,7 +9050,7 @@ function agents(store, check2 = false) {
   return 0;
 }
 
-// src/commands/policy.ts
+// src/hub/commands/team/policy.ts
 var import_yaml2 = __toESM(require_dist(), 1);
 var show2 = (v) => Array.isArray(v) ? v.length ? v.join(", ") : "\u2014" : v === null || v === void 0 ? "\u2014" : String(v);
 function policyShow(store, role, team, json = false) {
@@ -9120,7 +9120,7 @@ function report(store, errors, hints) {
   for (const h of hints) store.say(`HINT   ${h.startsWith("policy: ") ? h : `policy: ${h}`}`);
 }
 
-// src/commands/checks.ts
+// src/hub/commands/views/checks.ts
 var Snapshot = class {
   constructor(store) {
     this.store = store;
@@ -9309,7 +9309,7 @@ function hygiene(s, f) {
   }
 }
 
-// src/commands/goals.ts
+// src/hub/commands/work/goals.ts
 function goalEvidence(store, goal) {
   const cps = store.ledger.events().filter((e) => e.type === "checkpoint" && e.ref === goal.id);
   return criteria(goal).map((ac) => {
@@ -9339,7 +9339,7 @@ function goalProblems(store, goal) {
   return problems;
 }
 
-// src/commands/review.ts
+// src/hub/commands/work/review.ts
 var lastCode = (branch) => git(["log", "-1", "--format=%H", branch, "--", ".", ":(exclude).crew"])?.trim() || null;
 function review(store, planId, o) {
   store.require();
@@ -9370,7 +9370,7 @@ function reviewProblems(store, plan) {
   return covered && !(currentBranch() === plan.get("branch") && dirty.length) ? [] : [`the code changed since the approving review (${String(last.sha ?? "?").slice(0, 7)}): ${how} again`];
 }
 
-// src/commands/workflow.ts
+// src/hub/commands/work/workflow.ts
 var LOG_SECTION = { item: "Notes" };
 function move(store, docId, status2, note, force = false, approvedBy, via) {
   store.require();
@@ -9596,7 +9596,7 @@ function log(store, docId, text) {
   store.ledger.record("log", doc.id, { text });
 }
 
-// src/commands/autonomy.ts
+// src/hub/commands/team/autonomy.ts
 function notify(store, kind, ref, text, key = "") {
   const { command, on } = store.policy.policy.notify;
   if (!command || !on.includes(kind)) return;
@@ -9688,7 +9688,7 @@ function usageHook(store) {
   return 0;
 }
 
-// src/commands/questions.ts
+// src/hub/commands/team/questions.ts
 function questions(events) {
   const byId = /* @__PURE__ */ new Map();
   for (const e of events) {
@@ -9764,7 +9764,7 @@ function listQuestions(store, o = {}) {
   }
 }
 
-// src/commands/liveness.ts
+// src/hub/commands/team/liveness.ts
 var HOUR = 36e5;
 var ACTIVITY = /* @__PURE__ */ new Set(["claim", "checkpoint", "move", "log"]);
 function staleClaims(store, events = store.ledger.events(), now = Date.now()) {
@@ -9818,7 +9818,7 @@ function livenessHints(store) {
   ];
 }
 
-// src/commands/execution.ts
+// src/hub/commands/work/execution.ts
 var OUTPUT_LINES = 15;
 var OUTPUT_CHARS = 2e3;
 var RUN_TIMEOUT_MS = 10 * 6e4;
@@ -9988,7 +9988,7 @@ function handoff(store, id) {
   store.say(`${plan.id}: handoff written`);
 }
 
-// src/commands/team.ts
+// src/hub/commands/team/team.ts
 var ACTIVE2 = /* @__PURE__ */ new Set(["in-progress", "blocked", "in-review"]);
 function assign(store, planId, to, team, note, approvedBy) {
   store.require();
@@ -10071,7 +10071,7 @@ function staff(store, json = false) {
   if (!s.start.length && !s.waiting.length) store.say("  nothing ready to start \u2014 the PM ranks, the Architect specs the next plans");
 }
 
-// src/commands/release.ts
+// src/hub/commands/work/release.ts
 function mergeOrder(store) {
   const base = store.baseBranch(), plans2 = store.plans(true), events = store.ledger.events(), moved = store.ledger.lastStatus(events);
   const doneAt = new Map(events.filter((e) => e.type === "move" && e.to === "done").map((e) => [e.ref, e.ts]));
@@ -10115,7 +10115,7 @@ function mergeOrderCmd(store, json = false) {
   for (const p of m.merged) store.say(`merged: ${p.id} (${p.branch}) \u2014 delete the branch`);
 }
 
-// src/commands/roles.ts
+// src/hub/commands/team/roles.ts
 var View = class {
   constructor(store) {
     this.store = store;
@@ -10213,7 +10213,7 @@ function roleLines(store, role) {
   ];
 }
 
-// src/commands/advisor.ts
+// src/hub/commands/views/advisor.ts
 function current(store) {
   if (!store.ws.isDir(store.dir)) return;
   const focus = store.focus();
@@ -10326,7 +10326,7 @@ var Context = class {
   }
 };
 
-// src/commands/backlog.ts
+// src/hub/commands/work/backlog.ts
 function createItem(store, prefix, title, body2, fields) {
   const iid = store.nextId(prefix, "item");
   const doc = store.build(`item-${ITEM_TYPES[prefix]}.md`, body2, { id: iid, title, type: ITEM_TYPES[prefix], ...fields });
@@ -10433,24 +10433,24 @@ Slice of ${goal.id} (${goal.get("title")}): ${cand}
   return it;
 }
 
-// src/commands/migrate.ts
+// src/hub/commands/work/migrate.ts
 import { existsSync as existsSync5, readdirSync as readdirSync3, statSync as statSync4 } from "node:fs";
 import { join as join11 } from "node:path";
 
-// src/commands/planning.ts
+// src/hub/commands/work/planning.ts
 import { readFileSync as readFileSync6 } from "node:fs";
 import { join as join10, resolve as resolve5 } from "node:path";
 
-// src/commands/export.ts
+// src/hub/commands/views/export.ts
 import { join as join9, resolve as resolve4 } from "node:path";
 
-// src/commands/graph.ts
+// src/hub/commands/views/graph.ts
 import { basename as basename3 } from "node:path";
 
-// src/graph-types.ts
+// src/hub/graph-types.ts
 var SCHEMA_VERSION = 5;
 
-// src/commands/graph.ts
+// src/hub/commands/views/graph.ts
 var ID_RE = /\b(?:IDEA|(?:G|P|FEAT|BUG|CHORE|SPIKE)-\d+|K-\d{4}-\d{2}-\d{2}-[a-z0-9-]+)\b/g;
 var DATE_KEYS = ["created", "started", "completed", "decided", "closed"];
 var up3 = (s) => s ? s.toUpperCase() : null;
@@ -10589,7 +10589,7 @@ function edges(docs) {
   return out;
 }
 
-// src/commands/export.ts
+// src/hub/commands/views/export.ts
 var DATA_SLOT = '<script id="graph" type="application/json">null</script>';
 var UI_FILE = "ui.html";
 var STUDIO_FILE = "studio.html";
@@ -10629,7 +10629,7 @@ function exportGraph(store, format, out) {
   store.say(`Wrote ${store.rel(path)} \u2014 open it in a browser (it works offline; re-run export to refresh)`);
 }
 
-// src/commands/planning.ts
+// src/hub/commands/work/planning.ts
 function init(store) {
   for (const d of [...Object.values(store.dirs), store.knowledgeDir, join10(store.dir, "drafts")]) {
     const keep = join10(d, ".gitkeep");
@@ -10747,7 +10747,7 @@ function hintUnplanned(store, goal, items2) {
   if (open.length) store.say(`note: ${goal} has unplanned items (${open.join(", ")}) \u2014 link the one this plan delivers with --items`);
 }
 
-// src/commands/migrate.ts
+// src/hub/commands/work/migrate.ts
 var DROPPED = /^(bin|templates|view)\/|^(ROADMAP|BACKLOG|STATUS|README)\.md$/;
 var ARCHIVED = /^(milestones|sprints|releases)\/|^(project-plan|raid)\.md$/;
 var DOCS = { epics: "goals", items: "items", plans: "plans" };
@@ -10902,7 +10902,7 @@ ${details}
   return { knowledge: knowledge2, issues };
 }
 
-// src/commands/design.ts
+// src/hub/commands/views/design.ts
 var import_yaml3 = __toESM(require_dist(), 1);
 import { existsSync as existsSync6, readFileSync as readFileSync7 } from "node:fs";
 import { dirname as dirname5, join as join12 } from "node:path";
@@ -11094,7 +11094,7 @@ Do each, then \`crew.mjs design done <id>\` (the page updates live) and run \`de
   tick();
 }
 
-// src/server.ts
+// src/hub/server.ts
 import { spawn } from "node:child_process";
 import { randomBytes as randomBytes3 } from "node:crypto";
 import { existsSync as existsSync7, watch } from "node:fs";
@@ -11246,7 +11246,7 @@ function openBrowser(url) {
   }).unref();
 }
 
-// src/commands/reports.ts
+// src/hub/commands/views/reports.ts
 var TOP = 5;
 var PLAN_HEADER = ["| Plan | Title | Goal | Status | Tasks | Owner |", "|---|---|---|---|---|---|"];
 function status(store, write) {
@@ -11344,7 +11344,7 @@ function recentlyDone(plans2) {
   return done.length ? done.map((p) => `- ${p.get("completed") || "?"} \u2014 ${p.id}: ${p.get("title")}` + (p.get("pr") ? ` \u2014 ${p.get("pr")}` : "")) : ["_None._"];
 }
 
-// src/commands/context.ts
+// src/hub/commands/memory/context.ts
 var DEFAULT_BUDGET = 6e3;
 var para = (text, n = 3) => stripComments(text).split("\n").map((l) => l.trim()).filter(Boolean).slice(0, n);
 var TYPES = {
@@ -11467,7 +11467,7 @@ function context(store, o = {}) {
   else for (const l of lines) store.say(l);
 }
 
-// src/commands/runs.ts
+// src/hub/commands/team/runs.ts
 var WORKFLOWS = {
   kickoff: ["preflight", "discover", "design", "guidelines", "hub", "git", "graph", "idea-and-plan"],
   onboard: ["preflight", "map", "discover", "design", "guidelines", "hub", "git", "graph"]
@@ -11502,7 +11502,7 @@ function resumeWorkflow(store, workflow, json = false) {
   store.say(next ? `next: ${next}` : `${workflow}: every step is done or skipped`);
 }
 
-// src/commands/ledger.ts
+// src/hub/commands/memory/ledger.ts
 var DETAIL = {
   claim: (e) => `branch ${e.branch ?? "?"}${e.force ? " (forced)" : ""}`,
   release: (e) => String(e.reason ?? ""),
@@ -11540,7 +11540,7 @@ function showLedger(store, o = {}) {
   }
 }
 
-// src/cli.ts
+// src/hub/cli.ts
 var USAGE = `crew hub: the team's shared context \u2014 the idea, goals, backlog items, plans and tasks.
 
 Nothing is created as an empty skeleton: write the content first (sections as in the templates)
@@ -11931,7 +11931,7 @@ function print(lines) {
 `);
 }
 
-// src/main.ts
+// src/hub/main.ts
 var major = parseInt(process.versions.node.split(".")[0], 10);
 if (major < 20) {
   process.stderr.write(`crew hub needs Node.js \u2265 20 (found ${process.versions.node}).
