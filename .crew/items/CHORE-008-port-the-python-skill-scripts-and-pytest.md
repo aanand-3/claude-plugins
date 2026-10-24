@@ -5,7 +5,7 @@ title: Port the Python skill scripts and pytest suite to Node
 status: triaged
 priority: P2
 goal:
-plan:
+plan: P-015
 created: 2026-10-24
 closed:
 ---
