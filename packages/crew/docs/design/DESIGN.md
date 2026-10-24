@@ -108,8 +108,8 @@ The single home of visual decisions for the hub UI (`packages/crew/ui`). Read th
 - Weights 400/500/600 only. All numbers that change use tabular numerals.
 
 ## Layout
-- **Shell:** a left sidebar (232 px) with the project name, nav (Overview, Board, Hierarchy, Graph), and the current branch plus data source at the bottom. A top bar holds the page title, the global search (`/` focuses it) and the filter chips. Content has a max width of 1440 px and padding of 24 px (16 px on mobile). Document pages use a two-column layout: content at max 72ch, plus a 320 px relations panel.
-- **Breakpoints:** below 768 px the sidebar collapses to a top bar with a menu button, and the relations panel moves below the content. At 1024 px and up the board shows all columns side by side; below that it scrolls horizontally with snap.
+- **Shell:** a left sidebar (232 px) with the project name, nav (Overview, Board, Hierarchy, Graph), and the current branch plus data source at the bottom. A top bar holds the page title, the global search (`/` focuses it) and the filter chips. Content has a max width of 1440 px and padding of 24 px (16 px on mobile). Document pages use a two-column layout: a header across both columns (title on the left, the Actions split button on the right), a main column that fills the width (prose capped at 90ch) with main sections as collapsible panels and reference sections as tabs, plus a sticky 360 px details rail (details with spend, touches, relations, triage/log).
+- **Breakpoints:** below 768 px the sidebar collapses to a top bar with a menu button, and the details rail moves below the content (it stacks below 1024 px). At 1024 px and up the board shows all columns side by side; below that it scrolls horizontally with snap.
 - **Rhythm:** 24 px between sections, 12 px between cards in a group, 8 px inside cards.
 
 ## Elevation & Depth
@@ -140,6 +140,12 @@ Inventory: compose pages from these. A new composite is added here, with its sta
 | Checklist | list | readiness (gate) and tasks | pass/fail per line |
 | Markdown | rendered sections | doc body | — |
 | FilterBar | Chips + search | — | active filters |
+| Tabs | `role="tablist"` buttons | reference sections per kind | selected (arrow keys, Home, End), hidden when no tab has content |
+| CollapsiblePanel | `<details>` | plain, with aside (progress) | open (default), collapsed |
+| ActionMenu | split Button + `role="menu"` | primary move + menu, menu only | open, closed, busy, disabled (CLI-only entry shows its command) |
+| FileList | mono list in a scroll box | Touches, Applies to | collapsed (first 10), expanded (show all), filtered (more than 20), no match |
+| SpendBreakdown | rows + ProgressBar | by agent (role), by document | empty (CLI command), unattributed row |
+| TaskList | list grouped by `###` phase | plan tasks | done/open per line, long verify collapsed |
 
 **States:** loading = skeletons shaped like the content; empty = why it's empty plus the CLI command that fills it (e.g. "No focus goal: `crew.mjs focus G-###`"); error = what happened plus retry (served mode).
 

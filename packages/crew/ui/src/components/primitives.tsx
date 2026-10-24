@@ -1,5 +1,7 @@
-/** Small building blocks from the DESIGN.md inventory: Chip, StatusChip, IdLink, ProgressBar, Card, Kpi, Empty. */
-import type { ReactNode } from "react";
+/** Small building blocks from the DESIGN.md inventory: Chip, StatusChip, IdLink, ProgressBar, Card, Kpi, Empty,
+ * CollapsiblePanel, Tabs, FileList. */
+import { ChevronRight } from "lucide-react";
+import { type KeyboardEvent, type ReactNode, useState } from "react";
 import { type GraphDoc, useData } from "../data";
 import { docHref } from "../router";
 
@@ -79,3 +81,88 @@ export function DocTitle({ doc }: { doc: GraphDoc }) {
 
 export const fmtDate = (iso: string | null | undefined) =>
   iso ? new Date(`${iso}T00:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "—";
+
+/** 12.4k, 3.1M: token counts at a glance. */
+export const fmtTokens = (n: number) =>
+  n >= 1e6 ? `${(n / 1e6).toFixed(1)}M` : n >= 1e3 ? `${(n / 1e3).toFixed(1)}k` : String(Math.round(n));
+
+/** A section that collapses (native details, open by default). */
+export function CollapsiblePanel({ title, aside, children, open = true }: { title: ReactNode; aside?: ReactNode; children: ReactNode; open?: boolean }) {
+  return (
+    <details className="panel" open={open}>
+      <summary className="panel__head">
+        <ChevronRight size={16} className="panel__chev" aria-hidden />
+        <h3 className="panel__title">{title}</h3>
+        {aside && <span className="panel__aside">{aside}</span>}
+      </summary>
+      <div className="panel__body">{children}</div>
+    </details>
+  );
+}
+
+export interface Tab { id: string; label: ReactNode; content: ReactNode }
+
+/** A tab strip: arrow keys, Home and End move between tabs; the first tab starts selected. */
+export function Tabs({ tabs, label }: { tabs: Tab[]; label: string }) {
+  const [current, setCurrent] = useState(tabs[0]?.id);
+  if (!tabs.length) return null;
+  const at = Math.max(tabs.findIndex((t) => t.id === current), 0);
+  const slug = (id: string) => id.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  const onKey = (e: KeyboardEvent<HTMLDivElement>) => {
+    const to = { ArrowRight: at + 1, ArrowLeft: at - 1, Home: 0, End: tabs.length - 1 }[e.key];
+    if (to === undefined) return;
+    e.preventDefault();
+    const next = tabs[(to + tabs.length) % tabs.length];
+    setCurrent(next.id);
+    document.getElementById(`tab-${slug(next.id)}`)?.focus();
+  };
+  const tab = tabs[at];
+  return (
+    <section className="tabs">
+      <div className="tabs__list" role="tablist" aria-label={label} onKeyDown={onKey}>
+        {tabs.map((t, i) => (
+          <button key={t.id} id={`tab-${slug(t.id)}`} role="tab" aria-selected={i === at} aria-controls={`tabpanel-${slug(t.id)}`}
+            tabIndex={i === at ? 0 : -1} className={`tabs__tab ${i === at ? "tabs__tab--on" : ""}`} onClick={() => setCurrent(t.id)}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+      <div className="tabs__panel" role="tabpanel" id={`tabpanel-${slug(tab.id)}`} aria-labelledby={`tab-${slug(tab.id)}`}>{tab.content}</div>
+    </section>
+  );
+}
+
+const FILES_SHOWN = 10;
+
+/** Paths one per line, grouped by top-level directory: the first 10, then "Show all"; a filter when there are many. */
+export function FileList({ files }: { files: string[] }) {
+  const [all, setAll] = useState(false);
+  const [q, setQ] = useState("");
+  const hits = q ? files.filter((f) => f.toLowerCase().includes(q.toLowerCase())) : files;
+  const shown = all || q ? hits : hits.slice(0, FILES_SHOWN);
+  const groups = new Map<string, string[]>();
+  for (const f of shown) {
+    const top = f.includes("/") ? `${f.split("/")[0]}/` : "";
+    groups.set(top, [...groups.get(top) ?? [], f]);
+  }
+  return (
+    <div className="filelist">
+      {files.length > 20 && (
+        <input className="input filelist__filter" type="search" placeholder={`Filter ${files.length} paths…`} value={q}
+          aria-label="Filter paths" onChange={(e) => setQ(e.target.value)} />
+      )}
+      <div className="filelist__box">
+        {[...groups].map(([top, fs]) => (
+          <div key={top || "."} className="filelist__group">
+            {top && groups.size > 1 && <span className="filelist__dir">{top}</span>}
+            <ul>{fs.map((f) => <li key={f}><code>{f}</code></li>)}</ul>
+          </div>
+        ))}
+        {q && !hits.length && <p className="muted">No path matches.</p>}
+      </div>
+      {!q && hits.length > FILES_SHOWN && (
+        <button className="btn btn--ghost btn--sm" onClick={() => setAll(!all)}>{all ? "Show fewer" : `Show all ${hits.length}`}</button>
+      )}
+    </div>
+  );
+}

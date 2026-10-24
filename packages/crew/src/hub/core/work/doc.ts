@@ -104,6 +104,20 @@ export class Doc {
     return this.checklist("Tasks");
   }
 
+  /** The checklist like `checklist()`, each line with the `###` subheading it sits under (null before any). */
+  taskGroups(name = "Tasks"): [boolean, string, string | null][] {
+    const out: [boolean, string, string | null][] = [];
+    let phase: string | null = null;
+    for (const line of stripComments(this.section(name)).split("\n")) {
+      const h = /^###\s+(.+?)\s*$/.exec(line);
+      if (h) phase = h[1];
+      const m = TASK_RE.exec(line);
+      const label = m?.[2].trim();
+      if (m && label && label !== "T1: … → verify: …") out.push([m[1] !== " ", label, phase]);
+    }
+    return out;
+  }
+
   appendTo(name: string, entry: string): void {
     const m = sectionRe(name).exec(this.text);
     if (!m) {

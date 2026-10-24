@@ -28,17 +28,17 @@ export function RelationsPanel({ id }: { id: string }) {
       <h3 className="relations__title">Relations</h3>
       {!groups.length && <p className="muted">Not linked to anything yet.</p>}
       {groups.map((g) => (
-        <section key={g.label} className="relations__group">
-          <h4>{g.label} <span className="muted">{g.ids.length}</span></h4>
+        <details key={g.label} className="relations__group" open>
+          <summary><h4>{g.label} <span className="muted">{g.ids.length}</span></h4></summary>
           <ul>
             {g.ids.map((rid) => (
               <li key={rid}>
-                <IdLink id={rid} withTitle />
                 <StatusChip status={ix.byId.get(rid)?.status ?? ""} />
+                <IdLink id={rid} withTitle />
               </li>
             ))}
           </ul>
-        </section>
+        </details>
       ))}
     </aside>
   );

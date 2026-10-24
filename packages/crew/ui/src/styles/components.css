@@ -14,8 +14,14 @@
   height: 36px; padding: 0 var(--space-3); border-radius: var(--radius-md); border: 1px solid var(--border);
   background: var(--card); color: var(--foreground); font: inherit; min-width: 0;
 }
-.select { padding-right: var(--space-6); cursor: pointer; }
-.select--on { border-color: var(--primary); background: var(--accent); }
+/* Our own chevron (the Lucide one the Actions button uses), not the platform's arrow. */
+.select {
+  appearance: none; padding-right: 34px; cursor: pointer; text-overflow: ellipsis;
+  background-image: var(--select-chevron); background-repeat: no-repeat; background-position: right 10px center; background-size: 16px;
+}
+.select:hover { border-color: var(--muted-foreground); }
+.select:focus-visible { outline: 2px solid var(--ring); outline-offset: 1px; }
+.select--on { border-color: var(--primary); background-color: var(--accent); }
 .check { display: inline-flex; align-items: center; gap: var(--space-2); white-space: nowrap; cursor: pointer; }
 .check input { accent-color: var(--primary); width: 16px; height: 16px; }
 
@@ -60,9 +66,9 @@
 .progress i { display: block; height: 100%; background: var(--primary); border-radius: 3px; transition: width 180ms var(--ease); }
 
 /* ---- links & rows */
-.idlink { display: inline-flex; gap: 6px; align-items: baseline; text-decoration: none; min-width: 0; }
+.idlink { display: inline-flex; gap: 6px; align-items: baseline; text-decoration: none; min-width: 0; max-width: 100%; }
 .idlink:hover .idlink__title, .idlink:hover .id { text-decoration: underline; text-decoration-color: var(--primary); }
-.idlink__title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.idlink__title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .doctitle { text-decoration: none; font-weight: 500; }
 .doctitle:hover { text-decoration: underline; }
 .rows { list-style: none; padding: 0; display: flex; flex-direction: column; }
@@ -100,6 +106,7 @@
 .toolbar { display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap; }
 .filters { display: flex; gap: var(--space-2); flex-wrap: wrap; align-items: center; }
 .filters__q { width: 180px; }
+.filters .select { field-sizing: content; max-width: 200px; }  /* size to the chosen value, not the longest option (the cap where field-sizing is missing) */
 .segmented { display: inline-flex; background: var(--muted); border-radius: var(--radius-md); padding: 3px; }
 .segmented__btn { border: 0; background: transparent; height: 30px; padding: 0 var(--space-3); border-radius: var(--radius-sm); font: 500 var(--text-sm) var(--font-body); color: var(--muted-foreground); cursor: pointer; }
 .segmented__btn--on { background: var(--card); color: var(--foreground); }

@@ -106,7 +106,9 @@ export function usageHook(store: Store): number {
   const u = transcriptUsage(text);
   if (!u.tokensIn && !u.tokensOut) return 0;
   Object.assign(store.ledger.who, { role, run: `${role}:${h.agent_id ?? "unknown"}` });
-  store.ledger.record("usage", null, { tokens_in: u.tokensIn, tokens_out: u.tokensOut, cost: 0, cache_read: u.cacheRead,
+  // a run that worked on one document carries it; otherwise spend() splits the usage over the run's documents at read time
+  const refs = new Set(store.ledger.events().filter((e) => e.run === store.ledger.who.run && e.type !== "usage" && e.ref).map((e) => e.ref));
+  store.ledger.record("usage", refs.size === 1 ? [...refs][0] : null, { tokens_in: u.tokensIn, tokens_out: u.tokensOut, cost: 0, cache_read: u.cacheRead,
     ...(u.model ? { model: u.model } : {}), source: "transcript" });
   if (budgetProblems(store).some((b) => b.startsWith("project"))) notify(store, "budget", null, budgetProblems(store).join("; "), "project");
   return 0;
