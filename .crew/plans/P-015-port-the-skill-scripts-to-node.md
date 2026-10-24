@@ -7,7 +7,7 @@ touches: packages/crew/**, plugins/crew/skills/git-setup/**, plugins/crew/skills
 depends_on:
 status: in-review
 branch: plan/P-015-port-the-skill-scripts-to-node
-pr:
+pr: https://github.com/aanand-3/claude-plugins/pull/7
 created: 2026-10-24
 started: 2026-10-24
 completed:
