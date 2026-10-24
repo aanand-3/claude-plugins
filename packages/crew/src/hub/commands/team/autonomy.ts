@@ -6,7 +6,8 @@ import { readFileSync } from "node:fs";
 import type { Store } from "../../core/store.js";
 import { agentRole } from "./guard.js";
 import { paused, staleClaims } from "./liveness.js";
-import { openQuestions } from "./questions.js";
+import { escalationHolds } from "./questions.js";
+import { CLOSED, ITEM_CLOSED } from "../../core/work/model.js";
 import { budgetProblems } from "../work/workflow.js";
 
 // -- notify
@@ -26,14 +27,24 @@ export function notify(store: Store, kind: string, ref: string | null, text: str
 }
 
 // -- the runner
-export interface Stop { stop: boolean; reasons: string[] }
+export interface Stop { stop: boolean; reasons: string[]; held: string[] }
 
-/** Whether an unattended run should go on: it stops on an open escalation, a pause, an exhausted project budget, or when
- * the focus goal is done (or there is none). Stale claims don't stop it — the Director reassigns them — but they alert. */
+/** Whether an unattended run should go on: it stops on an open escalation that isn't about one plan or item, on
+ * escalations that hold every open plan and item, a pause, an exhausted project budget, or when the focus goal is done (or
+ * there is none). An escalation about a plan or item holds only that document (`held`). Stale claims don't stop it — the
+ * Director reassigns them — but they alert. */
 export function runState(store: Store): Stop {
   const events = store.ledger.events(), reasons: string[] = [];
-  const escalations = openQuestions(events).filter((x) => x.escalation || x.to === "executive");
-  if (escalations.length) reasons.push(`waiting for the executive: ${escalations.map((x) => `${x.id} ${x.text}`).join("; ")}`);
+  const { held, stops } = escalationHolds(events);
+  if (stops.length) reasons.push(`waiting for the executive: ${stops.map((x) => `${x.id} ${x.text}`).join("; ")}`);
+  const holds = [...held].map(([ref, qids]) => `${ref} (${qids.join(", ")})`);
+  if (holds.length) {
+    const open = (docs: ReturnType<Store["plans"]>) => [...docs.values()]
+      .filter((d) => !CLOSED.has(d.get("status") ?? "") && !ITEM_CLOSED.has(d.get("status") ?? "") && !held.has(d.id));
+    if (!open(store.plans()).length && !open(store.items()).length) {
+      reasons.push(`waiting for the executive: escalations hold every open plan and item: ${holds.join("; ")}`);
+    }
+  }
   const halt = paused(events);
   if (halt) reasons.push(`paused by ${halt.actor}: ${halt.reason ?? "no reason given"}`);
   const over = budgetProblems(store).filter((b) => b.startsWith("project"));
@@ -43,7 +54,7 @@ export function runState(store: Store): Stop {
   else if (goal.get("status") === "done") reasons.push(`${focus} is done: the executive validates it and sets the next goals`);
   for (const s of staleClaims(store, events)) notify(store, "stale", s.ref, `${s.ref}: no activity for ${s.hours}h from ${s.actor}`, s.run);
   for (const b of over) notify(store, "budget", null, b, b.split(":")[0]);
-  return { stop: reasons.length > 0, reasons };
+  return { stop: reasons.length > 0, reasons, held: holds };
 }
 
 const LOOP = `while node .crew/bin/crew.mjs run --check; do claude -p "/crew:team continue" || break; done`;
@@ -52,10 +63,13 @@ export function run(store: Store, check = false, json = false): number {
   store.require();
   const s = runState(store);
   if (json) store.say(JSON.stringify(s));
-  else if (check) store.say(s.stop ? `STOP  ${s.reasons.join("\nSTOP  ")}` : "GO    the team can continue");
+  else if (check) {
+    store.say(s.stop ? `STOP  ${s.reasons.join("\nSTOP  ")}` : "GO    the team can continue");
+    for (const h of s.held) store.say(`HELD  ${h}: waiting for the executive`);
+  }
   else {
     store.say("Run the team unattended (from the project root): each pass hands \"continue\" to the Director; the loop stops");
-    store.say("on an escalation, a pause, an exhausted budget or a done goal (`run --check` exits 1).");
+    store.say("on an escalation that holds everything, a pause, an exhausted budget or a done goal (`run --check` exits 1).");
     store.say(`  ${LOOP}`);
     store.say("Scheduled instead (cron, a CI schedule): `node .crew/bin/crew.mjs run --check && claude -p \"/crew:team continue\"`.");
     store.say(s.stop ? `Now: stopped — ${s.reasons.join("; ")}` : "Now: the team can continue.");

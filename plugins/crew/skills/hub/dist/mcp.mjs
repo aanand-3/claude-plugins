@@ -7487,7 +7487,7 @@ function norm(name) {
   return SECTION_ALIASES[n2] ?? n2;
 }
 function slugify(title) {
-  const words2 = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").split("-").filter(Boolean);
+  const words2 = title.toLowerCase().replace(/['’]/g, "").replace(/[^a-z0-9]+/g, "-").split("-").filter(Boolean);
   const out = [];
   for (const w of words2) {
     if ([...out, w].join("-").length > 40) break;
@@ -7771,7 +7771,13 @@ function drift(plan, base, home) {
     ...at(["ls-files", "--others", "--exclude-standard"])?.split("\n") ?? []
   ].filter(Boolean));
   const globs = plan.touches().map(globRe);
-  return [...changed].filter((f) => !f.startsWith(".crew/") && !globs.some((g) => g.test(f))).sort();
+  const outside = [...changed].filter((f) => !f.startsWith(".crew/") && !globs.some((g) => g.test(f)));
+  const generated = /* @__PURE__ */ new Set();
+  if (outside.length) {
+    const out = (at(["check-attr", "-z", "linguist-generated", "--", ...outside]) ?? "").split("\0");
+    for (let i = 0; i + 2 < out.length; i += 3) if (out[i + 2] === "true" || out[i + 2] === "set") generated.add(out[i]);
+  }
+  return outside.filter((f) => !generated.has(f)).sort();
 }
 
 // src/hub/core/team/policy.ts

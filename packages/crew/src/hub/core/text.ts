@@ -61,7 +61,7 @@ export function norm(name: string): string {
 }
 
 export function slugify(title: string): string {
-  const words = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").split("-").filter(Boolean);
+  const words = title.toLowerCase().replace(/['’]/g, "").replace(/[^a-z0-9]+/g, "-").split("-").filter(Boolean);
   const out: string[] = [];
   for (const w of words) {
     if ([...out, w].join("-").length > 40) break;
