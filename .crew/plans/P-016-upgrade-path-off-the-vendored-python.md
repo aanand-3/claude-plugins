@@ -5,7 +5,7 @@ goal:
 items: CHORE-009
 touches: packages/crew/**, plugins/crew/skills/git-setup/**, plugins/crew/skills/guidelines/**, plugins/crew/skills/design/scripts/**, plugins/crew/skills/research/scripts/**, plugins/crew/skills/global-setup/scripts/**, plugins/crew/skills/hub/dist/**, .crew/bin/crew.mjs, .claude/launch.json
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-016-upgrade-path-off-the-vendored-python
 pr:
 created: 2026-10-24
@@ -95,11 +95,27 @@ The other half, removing the last Python from this repo (`tests/`, the pytest do
 
 ## Handoff
 
+_Generated 2026-10-24 by `crew.mjs handoff` from the ledger._
+
+- P-016: Upgrade path off the vendored Python [in-review] tasks 5/5 — claimed by Arpit Anand (main-node-only)
+- last checkpoint 2026-10-24 09:20 at done (4cf61d0) by Arpit Anand; since then 1 commit(s), 0 uncommitted file(s)
+- ✓ vitest test/tools/upgrade.test.ts — 6 passed: rewrite in shell and JSON, idempotent, unsafe forms left; pre-port fixture ends clean and a fake key is blocked by check_secrets.mjs; Makefile caller keeps the .py then frees it; customised hook keeps its lines; no .mjs, no rewrite (AC 1,2,3,4) (reported)
+- ✓ vitest test/upgrade-hints.test.ts — check hints at leftover .py, files that run them and modules:, and is silent once clean (AC 5) (reported)
+- ✓ launch.json hub-preview (vite preview packages/crew --outDir preview) serves /habitly.html 200, byte-identical to the file, no python (AC 6) (reported)
+- ✓ npm run typecheck && npx vitest run — 19 files, 124 tests; build clean; tests/crew pytest 112 passed (no CREW_*) (AC 7) (reported)
+- evidence: AC1 ✓ (self), AC2 ✓ (self), AC3 ✓ (self), AC4 ✓ (self), AC5 ✓ (self), AC6 ✓ (self), AC7 ✓ (self)
+
+Latest log:
+- 2026-10-24: status draft → ready
+- 2026-10-24: assigned to the developer role
+- 2026-10-24: status ready → in-progress — branch plan/P-016-upgrade-path-off-the-vendored-python
+
 ## Progress log
 
 - 2026-10-24: status draft → ready
 - 2026-10-24: assigned to the developer role
 - 2026-10-24: status ready → in-progress — branch plan/P-016-upgrade-path-off-the-vendored-python
+- 2026-10-24: status in-progress → in-review
 
 ## Outcome
 - **What shipped:**
