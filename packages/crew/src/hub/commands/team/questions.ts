@@ -27,6 +27,18 @@ export function questions(events: LedgerEvent[]): Question[] {
 export const openQuestions = (events: LedgerEvent[], ref?: string) =>
   questions(events).filter((q) => !q.answer && (!ref || q.ref === ref));
 
+/** Open escalations split by what they stop: one about a plan or an item holds that document only (`held`: ref → question
+ * IDs); one with no ref, or about the idea or a goal, stops the whole team (`stops`). */
+export function escalationHolds(events: LedgerEvent[]): { held: Map<string, string[]>; stops: Question[] } {
+  const held = new Map<string, string[]>(), stops: Question[] = [];
+  for (const q of openQuestions(events).filter((x) => x.escalation || x.to === "executive")) {
+    const kind = q.ref ? kindOf(q.ref) : null;
+    if (q.ref && (kind === "plan" || kind === "item")) held.set(q.ref, [...(held.get(q.ref) ?? []), q.id]);
+    else stops.push(q);
+  }
+  return { held, stops };
+}
+
 /** Moves that take a document forward; an open blocking question stops these (blocked, dropped and going back stay allowed). */
 export const FORWARD = new Set(["ready", "in-progress", "in-review", "done", "active", "decided", "triaged"]);
 
