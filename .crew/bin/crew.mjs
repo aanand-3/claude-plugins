@@ -7461,6 +7461,17 @@ var DEFAULT_SETTINGS = { wip_limit: "1", max_tasks: "10", plan_worktrees: "false
 var MAX_WRITTEN_AHEAD = 3;
 var SLUG_STOPWORDS = /* @__PURE__ */ new Set(["a", "an", "and", "the", "of", "for", "to", "with", "in", "on", "or", "via", "by"]);
 var TASK_RE = /^\s*- \[( |x|X)\]\s*(.*)$/;
+var HUB_STATE_MARKER = "<!-- crew:hub-state -->";
+var HUB_STATE_RULE = `${HUB_STATE_MARKER}
+## Project state lives in the hub
+Everything the next person or agent needs goes through \`.crew/bin/crew.mjs\`:
+- where work stands \u2192 \`handoff\` and \`log\`;
+- findings and follow-ups \u2192 \`new-item\`;
+- what to know \u2192 \`learn\`;
+- questions \u2192 \`ask\`.
+
+Places outside the repo (side-session notes folders, the scratchpad, Claude's memory, \`/tmp\`) hold only pointers to hub IDs, never the facts. When other instructions say to leave notes elsewhere, write to the hub and leave a pointer there.
+`;
 
 // src/hub/core/text.ts
 var HubError = class extends Error {
@@ -8896,19 +8907,22 @@ import { readFileSync as readFileSync6 } from "node:fs";
 
 // src/hub/commands/team/guard.ts
 import { readFileSync as readFileSync4, realpathSync as realpathSync2 } from "node:fs";
-import { basename as basename2, dirname as dirname4, isAbsolute, join as join7, relative as relative2 } from "node:path";
+import { homedir, tmpdir } from "node:os";
+import { basename as basename2, dirname as dirname4, isAbsolute, join as join7, relative as relative2, resolve as resolve4 } from "node:path";
 var HUB_MCP = /^mcp__(?:plugin_crew_)?hub__/;
 function real(p) {
   try {
     return realpathSync2(p);
   } catch {
-    try {
-      return join7(realpathSync2(dirname4(p)), basename2(p));
-    } catch {
-      return p;
-    }
+    const up4 = dirname4(p);
+    return up4 === p ? p : join7(real(up4), basename2(p));
   }
 }
+var shellPath = (p) => p.replace(/^["']|["']$/g, "").replace(/^(~|\$HOME|\$\{HOME\})(?=\/|$)/, homedir());
+var within = (dir, p) => {
+  const r = relative2(dir, p);
+  return r !== ".." && !r.startsWith("../") && !isAbsolute(r);
+};
 var CREW_CLI = /\bcrew\.mjs\b/;
 var EDITS = { Edit: "file_path", Write: "file_path", MultiEdit: "file_path", NotebookEdit: "notebook_path" };
 var WRITERS = /^(rm|mv|cp|ln|chmod|chown|truncate|tee|install|touch|mkdir)$/;
@@ -8922,7 +8936,7 @@ function agentRole(root, agentType) {
   }
 }
 var patternRe = (p) => new RegExp(`^${p.trim().replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*").replace(/\?/g, ".")}$`);
-var segments = (cmd) => cmd.split(/&&|\|\||;|\|/).map((c) => c.trim()).filter(Boolean);
+var segments = (cmd) => cmd.split(/&&|\|\||;|(?<!>)\||\n/).map((c) => c.trim()).filter(Boolean);
 var words2 = (cmd) => cmd.split(/[\s"'=]+/).map((w) => w.replace(/^>+/, "").replace(/^\.\//, "")).filter(Boolean);
 var RUNNER = /\$\(|`|<\(|-exec|xargs|system|\b(node|bun|deno|sh|bash|zsh|eval|exec)\b/;
 function runsHub(seg) {
@@ -8936,13 +8950,40 @@ function hubCommand(seg) {
   for (i++; i < w.length && w[i].startsWith("-"); i++) if (!w[i].includes("=")) i++;
   return w[i] ?? null;
 }
+var REDIRECT = /\d*&?>{1,2}\|?(&?)\s*([^\s;&|<>]+)/g;
+var PREFIX = /^(\{|!|if|then|else|elif|do|while|until|builtin|command|time)$/;
 function writeTargets(cmd) {
-  const out = [...cmd.matchAll(/(?<![0-9&])>{1,2}\s*([^\s;&|<>]+)/g)].map((m) => m[1]).filter((t) => !t.startsWith("&"));
+  const out = [];
+  const vars = {};
+  const expand = (t) => t.replace(/^["']|["']$/g, "").replace(/^\$(?:\{(\w+)\}|(\w+))/, (m, a, b) => vars[a ?? b] ?? process.env[a ?? b] ?? m);
+  const rooted = (t) => /^(\/|~|\$)/.test(t);
+  let dir = "";
+  const at = (raw) => {
+    const t = expand(raw);
+    return !dir || rooted(t) ? t : join7(dir, t);
+  };
   for (const seg of segments(cmd)) {
-    const [head, ...args] = words2(seg);
-    const sub = args[0];
-    if (head && WRITERS.test(head) || head === "sed" && args.some((a) => a.startsWith("-i")) || head === "git" && /^(checkout|restore|rm|mv)$/.test(sub ?? "")) {
-      out.push(...(head === "git" ? args.slice(1) : args).filter((a) => !a.startsWith("-")));
+    const set = /^(?:export\s+)?(\w+)=(\S*)$/.exec(seg);
+    if (set) {
+      vars[set[1]] = expand(set[2]);
+      continue;
+    }
+    for (const m of seg.matchAll(REDIRECT)) if (!(m[1] && /^(\d+|-)$/.test(m[2]))) out.push(at(m[2]));
+    let [head, ...args] = words2(seg.replace(REDIRECT, ""));
+    while (head !== void 0 && PREFIX.test(head.replace(/^\(+/, ""))) [head, ...args] = args;
+    head = head?.replace(/^\(+/, "");
+    if (head === "cd" || head === "pushd") {
+      const to = expand(args.find((a) => !a.startsWith("-")) ?? "~");
+      dir = rooted(to) ? to : join7(dir, to);
+      continue;
+    }
+    const operands = (head === "git" ? args.slice(1) : args).filter((a) => !a.startsWith("-"));
+    if (head && /^(cp|ln|install)$/.test(head)) {
+      const t = args.findIndex((a) => a === "-t" || a === "--target-directory");
+      const dest = t >= 0 ? args[t + 1] : head === "ln" && operands.length === 1 ? basename2(operands[0]) : operands.at(-1);
+      if (dest) out.push(at(dest));
+    } else if (head && WRITERS.test(head) || head === "sed" && args.some((a) => a.startsWith("-i")) || head === "git" && /^(checkout|restore|rm|mv)$/.test(args[0] ?? "")) {
+      out.push(...operands.map(at));
     }
   }
   return out.map((t) => t.replace(/^\.\//, ""));
@@ -8954,18 +8995,35 @@ function decide(store, h) {
   const run2 = role ? `${role}:${h.agent_id ?? "unknown"}` : null;
   const { policy } = resolvePolicy(root, store.dir, role);
   const top = real(h.cwd && git(["-C", h.cwd, "rev-parse", "--show-toplevel"])?.trim() || root);
-  const rel = (p) => (isAbsolute(p) ? relative2(top, real(p)) : p).replace(/^\.\//, "").replace(/^\.claude\/worktrees\/[^/]+\//, "");
+  const abs = (p) => real(resolve4(h.cwd || top, shellPath(p)));
+  let trees = null;
+  const checkouts = () => trees ??= [...new Set([top, root, ...worktrees().map((w) => w.path)].map(real))].sort((a, b) => b.length - a.length);
+  const rel = (p) => {
+    const a = abs(p);
+    return relative2(checkouts().find((d) => within(d, a)) ?? top, a).replace(/^\.claude\/worktrees\/[^/]+\//, "");
+  };
   const hits = (globs, p) => globs.some((g) => globRe(g).test(rel(p)));
+  const outside = (p) => {
+    const a = abs(p);
+    return !a.startsWith("/dev/") && ![...checkouts(), real(tmpdir()), real("/tmp")].some((d) => within(d, a));
+  };
+  const HUB_STATE = "project state stays in the hub (CLAUDE.md, crew:hub-state): use crew.mjs handoff, log, new-item, learn or ask, and keep only a pointer to the hub ID elsewhere";
   const input = h.tool_input ?? {};
   const path = EDITS[h.tool_name] ? String(input[EDITS[h.tool_name]] ?? "") : "";
   if (path && hits(policy.paths.protected, path)) return { deny: `${rel(path)} is protected by the crew policy (paths.protected)` };
+  if (path && outside(path)) return { deny: `${abs(path)} is outside the repository; ${HUB_STATE}` };
   if (h.tool_name === "Read" && hits(policy.secrets.files, String(input.file_path ?? ""))) {
     return { deny: `${rel(String(input.file_path))} is a secret file (secrets.files); agents never read it` };
   }
   const cmd = h.tool_name === "Bash" ? String(input.command ?? "") : "";
   if (cmd) {
-    const target = writeTargets(cmd).find((t) => hits(policy.paths.protected, t));
+    const targets = writeTargets(cmd);
+    const target = targets.find((t) => hits(policy.paths.protected, t));
     if (target) return { deny: `the command writes to ${rel(target)}, which the crew policy protects (paths.protected)` };
+    const unknown = targets.find((t) => t.startsWith("$"));
+    if (unknown) return { deny: `the command writes to ${unknown}, which the guard can't resolve (an unknown variable); use a literal path` };
+    const away = targets.find(outside);
+    if (away) return { deny: `the command writes to ${abs(away)}, outside the repository; ${HUB_STATE}` };
     if (words2(cmd).some((w) => hits(policy.secrets.files, w))) return { deny: "the command touches a secret file (secrets.files)" };
     if (CREW_CLI.test(cmd) && /--approved-by\b/.test(cmd)) return { deny: "only the human approves: agents never pass --approved-by" };
     if (segments(cmd).some((c) => hubCommand(c) === "agents" && !/--check\b/.test(c))) {
@@ -9476,6 +9534,9 @@ function hygiene(s, f) {
   if (s.store.ws.isDir(join10(s.store.ws.root, ".project"))) {
     f.hints.push("a .project/ directory from project-kit is still here \u2014 `crew.mjs migrate` moves it into .crew/");
   }
+  if (!s.store.ws.read(join10(s.store.ws.root, "CLAUDE.md"))?.includes(HUB_STATE_MARKER)) {
+    f.hints.push("CLAUDE.md has no hub-state section (project state stays in the hub) \u2014 `crew.mjs init` adds it");
+  }
   if (!s.store.ws.read(join10(s.store.ws.root, ".githooks", "post-commit"))?.includes("graphify")) {
     f.hints.push("code graph not set up (no graphify hook in .githooks/post-commit) \u2014 `/crew:codemap` installs and wires it");
   }
@@ -9514,7 +9575,7 @@ function goalProblems(store, goal) {
 
 // src/hub/commands/work/planning.ts
 import { readFileSync as readFileSync5 } from "node:fs";
-import { join as join12, relative as relative4, resolve as resolve5 } from "node:path";
+import { join as join12, relative as relative4, resolve as resolve6 } from "node:path";
 
 // src/hub/commands/work/backlog.ts
 function createItem(store, prefix, title, body2, fields) {
@@ -9624,7 +9685,7 @@ Slice of ${goal.id} (${goal.get("title")}): ${cand}
 }
 
 // src/hub/commands/views/export.ts
-import { join as join11, resolve as resolve4 } from "node:path";
+import { join as join11, resolve as resolve5 } from "node:path";
 
 // src/hub/commands/views/graph.ts
 import { basename as basename3 } from "node:path";
@@ -9802,10 +9863,10 @@ function exportGraph(store, format, out) {
     const text = `${JSON.stringify(graph, null, 2)}
 `;
     if (!out) return store.say(text.trimEnd());
-    store.ws.write(resolve4(out), text);
-    return store.say(`Wrote ${store.rel(resolve4(out))}`);
+    store.ws.write(resolve5(out), text);
+    return store.say(`Wrote ${store.rel(resolve5(out))}`);
   }
-  const path = out ? resolve4(out) : join11(store.dir, "view", "index.html");
+  const path = out ? resolve5(out) : join11(store.dir, "view", "index.html");
   if (!out) store.ws.write(join11(store.dir, "view", ".gitignore"), "# generated by `crew.mjs export`\n*\n");
   store.ws.write(path, renderHtml(store, graph));
   store.say(`Wrote ${store.rel(path)} \u2014 open it in a browser (it works offline; re-run export to refresh)`);
@@ -9822,10 +9883,20 @@ function init(store) {
   const model = store.ws.read(join12(SKILL_DIR, "references", "model.md"));
   if (!store.ws.isFile(readme) && model !== null) store.ws.write(readme, model);
   store.say(`Initialized ${store.rel(store.dir)}/`);
+  hubStateRule(store);
+}
+function hubStateRule(store) {
+  const path = join12(store.ws.root, "CLAUDE.md");
+  const text = store.ws.read(path);
+  if (text?.includes(HUB_STATE_MARKER)) return;
+  store.ws.write(path, text === null ? HUB_STATE_RULE : `${text.trimEnd()}
+
+${HUB_STATE_RULE}`);
+  store.say(`${text === null ? "Created" : "Added the hub-state section to"} CLAUDE.md`);
 }
 function vendor(store) {
   const bin = join12(store.dir, "bin");
-  if (resolve5(SCRIPT_DIR) === resolve5(bin)) return;
+  if (resolve6(SCRIPT_DIR) === resolve6(bin)) return;
   store.ws.write(join12(bin, "crew.mjs"), readFileSync5(SCRIPT_FILE, "utf8"), 493);
   const ui = store.ws.read(join12(SCRIPT_DIR, UI_FILE));
   if (ui !== null) store.ws.write(join12(bin, UI_FILE), ui);
@@ -11453,7 +11524,7 @@ function serve(store, o) {
   const watchers = [store.dir, dirname6(designPath(store)), join16(store.ws.root, ".git", "refs"), join16(store.ws.root, ".git", "HEAD")].filter((p) => existsSync7(p)).map((p) => watch(p, { recursive: !p.endsWith("HEAD") }, (_, file) => {
     if (!String(file ?? "").startsWith("view")) notify2();
   }));
-  return new Promise((resolve6, reject) => {
+  return new Promise((resolve7, reject) => {
     const listen = (port, tries) => {
       server.once("error", (e) => {
         if (e.code === "EADDRINUSE" && tries > 0) listen(port + 1, tries - 1);
@@ -11464,7 +11535,7 @@ function serve(store, o) {
         hosts = /* @__PURE__ */ new Set([`127.0.0.1:${actual}`, `localhost:${actual}`]);
         const url = `http://127.0.0.1:${actual}/${o.page ?? ""}`;
         if (o.open) openBrowser(url);
-        resolve6({ url, close: () => {
+        resolve7({ url, close: () => {
           watchers.forEach((w) => w.close());
           for (const c of clients) c.end();
           server.close();
@@ -11479,7 +11550,7 @@ function send(res, status2, body2) {
   res.end(JSON.stringify(body2));
 }
 function readJson(req) {
-  return new Promise((resolve6, reject) => {
+  return new Promise((resolve7, reject) => {
     let raw = "";
     req.on("data", (c) => {
       raw += c;
@@ -11488,7 +11559,7 @@ function readJson(req) {
     req.on("end", () => {
       try {
         const v = JSON.parse(raw || "{}");
-        resolve6(v && typeof v === "object" && !Array.isArray(v) ? v : {});
+        resolve7(v && typeof v === "object" && !Array.isArray(v) ? v : {});
       } catch {
         reject(new Error("Body must be JSON."));
       }

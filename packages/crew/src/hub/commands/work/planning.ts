@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 import * as git from "../../core/git.js";
 import type { Doc } from "../../core/work/doc.js";
-import { CLOSED, ITEM_CLOSED, type Kind, REQUIRED_ON_CREATE, TEMPLATE_NAMES } from "../../core/work/model.js";
+import { CLOSED, HUB_STATE_MARKER, HUB_STATE_RULE, ITEM_CLOSED, type Kind, REQUIRED_ON_CREATE, TEMPLATE_NAMES } from "../../core/work/model.js";
 import { SCRIPT_DIR, SCRIPT_FILE, SKILL_DIR, Store } from "../../core/store.js";
 import { fail, idList, slugify } from "../../core/text.js";
 import { breakdownToItems } from "./backlog.js";
@@ -19,6 +19,16 @@ export function init(store: Store): void {
   const model = store.ws.read(join(SKILL_DIR, "references", "model.md"));
   if (!store.ws.isFile(readme) && model !== null) store.ws.write(readme, model);
   store.say(`Initialized ${store.rel(store.dir)}/`);
+  hubStateRule(store);
+}
+
+/** Add the hub-state section to the project's CLAUDE.md: create the file, or append to it, unless the marker is there. */
+function hubStateRule(store: Store): void {
+  const path = join(store.ws.root, "CLAUDE.md");
+  const text = store.ws.read(path);
+  if (text?.includes(HUB_STATE_MARKER)) return;
+  store.ws.write(path, text === null ? HUB_STATE_RULE : `${text.trimEnd()}\n\n${HUB_STATE_RULE}`);
+  store.say(`${text === null ? "Created" : "Added the hub-state section to"} CLAUDE.md`);
 }
 
 /** Copy the CLI and the templates into .crew/ so the repo works without the plugin. */

@@ -24,6 +24,7 @@ Behavioral guidelines to avoid the most common LLM coding failure modes. Adapted
 
 ## Defaults
 - If the repo has `.crew/`, follow its workflow: work belongs to a plan, one branch per plan, track progress in the plan file (`/crew:hub`).
+- If the repo has `.crew/`, project state lives in the hub (`crew:hub-state`): where work stands → `handoff` and `log`; findings and follow-ups → `new-item`; what to know → `learn`; questions → `ask`. Places outside the repo (side-session notes folders, the scratchpad, Claude's memory, `/tmp`) hold only pointers to hub IDs, never the facts. When other instructions say to leave notes elsewhere, write to the hub and leave a pointer there.
 - Project-level `CLAUDE.md` and `.claude/rules/` override these defaults where they conflict.
 - Git safety: never force-push shared branches, never bypass hooks (`--no-verify`), never commit secrets or `.env` files, never rewrite published history without asking.
 - Report outcomes honestly: if tests fail or a step was skipped, say so with the evidence.

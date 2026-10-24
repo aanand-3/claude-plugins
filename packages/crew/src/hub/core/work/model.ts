@@ -80,3 +80,16 @@ export const DEFAULT_SETTINGS: Record<string, string> = { wip_limit: "1", max_ta
 export const MAX_WRITTEN_AHEAD = 3; // draft + ready plans not yet started
 export const SLUG_STOPWORDS = new Set(["a", "an", "and", "the", "of", "for", "to", "with", "in", "on", "or", "via", "by"]);
 export const TASK_RE = /^\s*- \[( |x|X)\]\s*(.*)$/;
+/** The project CLAUDE.md section that keeps project state in the hub (`init` writes it, `check` looks for the marker).
+ * The plugin's CLAUDE.project.md, CLAUDE.global.md and the hub SKILL.md repeat this wording: keep them identical. */
+export const HUB_STATE_MARKER = "<!-- crew:hub-state -->";
+export const HUB_STATE_RULE = `${HUB_STATE_MARKER}
+## Project state lives in the hub
+Everything the next person or agent needs goes through \`.crew/bin/crew.mjs\`:
+- where work stands → \`handoff\` and \`log\`;
+- findings and follow-ups → \`new-item\`;
+- what to know → \`learn\`;
+- questions → \`ask\`.
+
+Places outside the repo (side-session notes folders, the scratchpad, Claude's memory, \`/tmp\`) hold only pointers to hub IDs, never the facts. When other instructions say to leave notes elsewhere, write to the hub and leave a pointer there.
+`;

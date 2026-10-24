@@ -1,6 +1,7 @@
 /** The hub, end to end — Workstream T1: identity flags and the guard (the PreToolUse hook behind `crew.mjs guard`).
  * Ported from tests/crew/test_hub.py (section "Workstream T1: identity and the guard"). */
-import { realpathSync } from "node:fs";
+import { mkdirSync, realpathSync, symlinkSync } from "node:fs";
+import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import { beforeEach, expect, it } from "vitest";
 import { Repo } from "../../helpers/repo.js";
@@ -79,6 +80,105 @@ it("the guard protects its own files from every subagent", () => {
   expect(hook(repo, bash("crew-developer", "cat .crew/policy.yaml"))).toBeNull(); // reading the policy is fine
   expect(hook(repo, { tool_name: "Read", agent_type: "Explore", agent_id: "a", tool_input: { file_path: ".env" } }).permissionDecision).toBe("deny");
   expect(hook(repo, bash("Explore", "cat .env")).permissionDecision).toBe("deny");
+});
+
+it("guard_outside_repo: subagents keep project state in the repository (BUG-006)", () => {
+  init(repo);
+  agent(repo, "crew-developer", "developer");
+  const notes = join(homedir(), ".claude", "side-sessions", "local_abc", "notes", "handover.md"); // a side-session notes folder
+  const memory = join(homedir(), ".claude", "projects", "-x", "memory", "plan.md");
+  const w = (who: string | null, p: string, tool = "Write") =>
+    hook(repo, { tool_name: tool, tool_input: { file_path: p }, ...(who ? { agent_type: who, agent_id: "a" } : {}) });
+  for (const p of [notes, memory]) {
+    for (const [who, tool] of [["crew-developer", "Write"], ["crew-developer", "Edit"], ["Explore", "Write"]]) {
+      const out = w(who, p, tool);
+      expect(out?.permissionDecision, `${who} ${tool} ${p}`).toBe("deny");
+      expect(out.permissionDecisionReason).toContain("project state stays in the hub");
+    }
+    expect(w(null, p)).toBeNull(); // the main session is left alone
+  }
+  for (const cmd of [`echo done > ${notes}`, "echo done >> ~/.claude/projects/-x/memory/plan.md", 'cp a.md "$HOME/notes.md"']) {
+    expect(hook(repo, bash("crew-developer", cmd))?.permissionDecision, cmd).toBe("deny");
+  }
+  const plan = join(realpathSync(repo.path), ".claude", "worktrees", "P-001-x", "src", "a.py"); // a plan worktree
+  for (const p of ["src/a.py", join(repo.path, "docs/b.md"), plan, join(tmpdir(), "scratch.txt"), "/tmp/out.log"]) {
+    expect(w("crew-developer", p), p).toBeNull();
+  }
+  for (const cmd of ["npm test > /tmp/out.log 2>&1", "node x.js > /dev/null", "echo x > notes/a.md"]) {
+    expect(hook(repo, bash("crew-developer", cmd)), cmd).toBeNull();
+  }
+});
+
+it("guard_resolves_paths: relative and symlinked paths are matched where they lead (BUG-007)", () => {
+  init(repo);
+  agent(repo, "crew-developer", "developer");
+  mkdirSync(join(repo.path, "src", "deep"), { recursive: true });
+  symlinkSync(join(repo.path, ".crew"), join(repo.path, "hub"));
+  const w = (p: string, cwd?: string) =>
+    hook(repo, { tool_name: "Write", agent_type: "crew-developer", agent_id: "a", tool_input: { file_path: p }, ...(cwd ? { cwd } : {}) });
+  for (const [p, cwd] of [["../../.crew/policy.yaml", join(repo.path, "src", "deep")], ["hub/policy.yaml", undefined],
+    [join(repo.path, "hub", "bin", "crew.mjs"), undefined]] as [string, string | undefined][]) {
+    expect(w(p, cwd)?.permissionDecisionReason, p).toContain("protected");
+  }
+  expect(hook(repo, { ...bash("Explore", "echo x > ../.claude/settings.json"), cwd: join(repo.path, "src") }).permissionDecision).toBe("deny");
+  expect(w("a.py", join(repo.path, "src", "deep"))).toBeNull();
+});
+
+it("guard_outside_repo: only destinations count, cd is followed, fd redirects are writes", () => {
+  init(repo);
+  agent(repo, "crew-developer", "developer");
+  const run = (cmd: string) => hook(repo, bash("crew-developer", cmd));
+  for (const cmd of ["cp a.md ~/notes.md", "cp -t ~/.claude/notes a.md", "ln -s src/a.py ~/a.py", "mv a.md ~/a.md",
+    "cd ~/.claude/projects/x/memory && echo hi > plan.md", "cd ~\necho hi > notes.md", "ls 2> ~/err.log",
+    "ls &> ~/.claude/notes.md", "ls 1>> ~/out.log"]) {
+    expect(run(cmd)?.permissionDecisionReason, cmd).toContain("outside the repository; project state stays in the hub");
+  }
+  for (const cmd of ["cd .crew && echo x > policy.yaml", "ls 2> .crew/policy.yaml", "cp a.md .crew/bin/crew.mjs 2>&1"]) {
+    expect(run(cmd)?.permissionDecisionReason, cmd).toContain("protected");
+  }
+  for (const cmd of ["cp ~/.npmrc fixtures/npmrc", "ln -s /opt/homebrew/bin/node bin/node", "cp .crew/policy.yaml /tmp/policy.yaml",
+    "cd src && echo x > a.txt", "npm test 2>&1 | tee out.txt", "(cd docs && touch b.md)"]) {
+    expect(run(cmd), cmd).toBeNull();
+  }
+});
+
+it("guard_shell_forms: >| and >&FILE, cd behind keywords, variables, one-operand ln (BUG-009, BUG-010)", () => {
+  init(repo);
+  agent(repo, "crew-developer", "developer");
+  const run = (cmd: string) => hook(repo, bash("crew-developer", cmd));
+  for (const cmd of ["echo hi >| ~/x", "echo hi >& ~/x", "{ cd ~; echo hi > x.md; }", "if cd ~; then echo hi > x.md; fi",
+    "builtin cd ~ && echo hi > x.md", "command cd ~ && echo hi > x.md", "D=~/.claude; cd $D && echo hi > x.md",
+    "export D=$HOME/.claude; echo x > \"$D/n.md\"", "cd ~ && ln -s /opt/homebrew/bin/node"]) {
+    expect(run(cmd)?.permissionDecisionReason, cmd).toContain("outside the repository");
+  }
+  for (const cmd of ["echo x >| .crew/policy.yaml", "echo x >& .crew/policy.yaml", "{ cd .crew; echo x > policy.yaml; }",
+    "builtin cd .crew && echo x > policy.yaml", "cd .crew/bin && ln -sf /tmp/crew.mjs"]) {
+    expect(run(cmd)?.permissionDecisionReason, cmd).toContain("protected");
+  }
+  for (const cmd of ["cd $CREW_TEST_UNSET && echo x > a.md", "echo x > ${CREW_TEST_UNSET}/a.md"]) {
+    expect(run(cmd)?.permissionDecisionReason, cmd).toContain("can't resolve");
+  }
+  for (const cmd of ["ls >&2", "ls 2>&1 >&-", "ln -s /opt/homebrew/bin/node", "D=/tmp; echo x > $D/out.log",
+    "if true; then echo x > out.txt; fi", "{ cd src; echo x > a.txt; }"]) {
+    expect(run(cmd), cmd).toBeNull();
+  }
+});
+
+it("guard_resolves_paths: each checkout's protected files, from any worktree", () => {
+  init(repo, { commit: true });
+  agent(repo, "crew-developer", "developer");
+  const main = realpathSync(repo.path);
+  const plan = join(main, ".claude", "worktrees", "P-001-x"), side = join(realpathSync(tmpdir()), `side-${process.pid}-${Date.now()}`);
+  repo.git("worktree", "add", "-q", plan, "-b", "plan/P-001-x");
+  repo.git("worktree", "add", "-q", side, "-b", "side");
+  const w = (p: string) => hook(repo, { tool_name: "Write", agent_type: "crew-developer", agent_id: "a", cwd: plan, tool_input: { file_path: p } });
+  for (const p of [join(main, ".crew/policy.yaml"), "../../../.crew/policy.yaml", join(side, ".crew/policy.yaml"),
+    join(side, ".claude/settings.json"), join(plan, ".crew/bin/crew.mjs")]) {
+    expect(w(p)?.permissionDecisionReason, p).toContain("protected");
+  }
+  expect(hook(repo, { ...bash("crew-developer", `echo x > ${join(main, ".crew/policy.yaml")}`), cwd: plan }).permissionDecision).toBe("deny");
+  expect(w(join(side, "src/a.py"))).toBeNull();
+  repo.git("worktree", "remove", "--force", side);
 });
 
 it("the guard applies the role's policy", () => {

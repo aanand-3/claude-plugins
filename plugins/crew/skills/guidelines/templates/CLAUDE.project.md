@@ -27,3 +27,13 @@ Rules live in `.claude/rules/`. `base.md` and `project.md` always load; the othe
 - Before marking a plan done: all acceptance criteria verified, the full check is green, docs and `.env.example` updated, Outcome written.
 - Significant technical decisions get an ADR in `docs/adr/`; changing an architecture rule updates `project.md` and the boundary lint config together.
 - Never commit secrets or `.env`. Never bypass git hooks (`--no-verify`).
+
+<!-- crew:hub-state -->
+## Project state lives in the hub
+Everything the next person or agent needs goes through `.crew/bin/crew.mjs`:
+- where work stands → `handoff` and `log`;
+- findings and follow-ups → `new-item`;
+- what to know → `learn`;
+- questions → `ask`.
+
+Places outside the repo (side-session notes folders, the scratchpad, Claude's memory, `/tmp`) hold only pointers to hub IDs, never the facts. When other instructions say to leave notes elsewhere, write to the hub and leave a pointer there.
