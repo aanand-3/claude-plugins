@@ -5,12 +5,12 @@ goal:
 items: CHORE-008
 touches: packages/crew/**, plugins/crew/skills/git-setup/**, plugins/crew/skills/guidelines/**, plugins/crew/skills/design/**, plugins/crew/skills/research/**, plugins/crew/skills/global-setup/**, plugins/crew/skills/kickoff/SKILL.md, plugins/crew/skills/onboard/SKILL.md, plugins/crew/skills/discover/**, plugins/crew/skills/hub/dist/**, .crew/bin/crew.mjs, tests/**, README.md
 depends_on:
-status: in-review
+status: done
 branch: plan/P-015-port-the-skill-scripts-to-node
 pr: https://github.com/aanand-3/claude-plugins/pull/7
 created: 2026-10-24
 started: 2026-10-24
-completed:
+completed: 2026-10-24
 assignee: developer
 ---
 
@@ -136,6 +136,7 @@ Latest log:
 - 2026-10-24: review fixes: verify_evidence through undici (proxy env, per-step timeouts, 2 MB cap, redirect loop = 302); legacy entity decoding; None for missing urls; install_global difflib port (764/764 fuzzed cases identical) and refusal of out-of-order markers; int/float flags and exclusive-flag errors as argparse; tools may import only their own skill and tools/cli; README
 - 2026-10-24: status in-progress → in-review
 - 2026-10-24: review nits: engines >=20.18.1 (undici 7); redirect loop matched by undici's exact reason (it has no code); --timeout accepts Python float syntax, inf = no timeout, nan refused
+- 2026-10-24: status in-review → done
 
 ## Outcome
 - **What shipped:** the 11 skill scripts are TypeScript in `packages/crew/src/tools/<skill>/`, each bundled to a standalone `skills/<skill>/scripts/<name>.mjs`.
