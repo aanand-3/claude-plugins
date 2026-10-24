@@ -7921,11 +7921,7 @@ function releaseLock(lock, token) {
   }
 }
 
-// src/hub/core/memory/knowledge.ts
-var KNOWLEDGE_TYPES = ["decision", "learning", "gotcha", "convention", "risk"];
-var TIERS = ["project", "playbook-candidate"];
-var K_ID_RE = /\bK-\d{4}-\d{2}-\d{2}-[a-z0-9-]+\b/g;
-var RISK_LEVELS = ["H", "M", "L"];
+// src/shared/secrets.ts
 var SECRET_PATTERNS = {
   "AWS access key": /\b(AKIA|ASIA)[0-9A-Z]{16}\b/,
   "private key": /-----BEGIN [A-Z ]*PRIVATE KEY-----/,
@@ -7935,10 +7931,18 @@ var SECRET_PATTERNS = {
   "OpenAI API key": /\bsk-(proj-)?[A-Za-z0-9_-]{32,}/,
   "Google API key": /\bAIza[0-9A-Za-z_-]{35}\b/,
   "Stripe live key": /\b(sk|rk)_live_[0-9A-Za-z]{20,}\b/,
+  "HubSpot private app token": /\bpat-(na|eu)\d-[0-9a-f]{8}-[0-9a-f-]{27}\b/,
   "credentials in URL": /\b[a-z][a-z0-9+.-]*:\/\/[^/\s:@]+:[^/\s:@]{8,}@(?!localhost|127\.0\.0\.1|postgres|redis|db\b)/
 };
+var ALLOW_SECRET = "pk:allow-secret";
+
+// src/hub/core/memory/knowledge.ts
+var KNOWLEDGE_TYPES = ["decision", "learning", "gotcha", "convention", "risk"];
+var TIERS = ["project", "playbook-candidate"];
+var K_ID_RE = /\bK-\d{4}-\d{2}-\d{2}-[a-z0-9-]+\b/g;
+var RISK_LEVELS = ["H", "M", "L"];
 function secretsIn(text, extra = []) {
-  const lines = text.split("\n").filter((l) => !l.includes("pk:allow-secret")).join("\n");
+  const lines = text.split("\n").filter((l) => !l.includes(ALLOW_SECRET)).join("\n");
   const custom = Object.fromEntries(extra.flatMap((p, i) => {
     try {
       return [[`policy secrets.patterns[${i}]`, new RegExp(p)]];

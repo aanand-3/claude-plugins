@@ -16,17 +16,23 @@ const ALL = [...files(SRC), ...files(UI)];
 const targets = (f: URL): string[] => [...readFileSync(f, "utf8").matchAll(/\b(?:from|import)\s*\(?\s*["'](\.{1,2}\/[^"']+)["']/g)]
   .map(([, spec]) => relative(SRC_DIR, join(dirname(fileURLToPath(f)), spec)).replace(/\.js$/, ""));
 
-it("core only imports core: never commands, the CLI, the server or MCP", () => {
+it("core only imports core (and shared/): never commands, the CLI, the server or MCP", () => {
   for (const f of under("hub/core/")) {
-    for (const t of targets(f)) expect(t.startsWith("hub/core/"), `${f.pathname} imports ${t}`).toBe(true);
+    for (const t of targets(f)) expect(t.startsWith("hub/core/") || t.startsWith("shared/"), `${f.pathname} imports ${t}`).toBe(true);
   }
 });
 
 it("each skill script imports only its own skill folder, tools/cli and tools/legacy, never the hub: each bundle stays small and standalone", () => {
   for (const f of under("tools/")) {
     const skill = relative(SRC_DIR, fileURLToPath(f)).split("/")[1];
-    for (const t of targets(f)) expect(t.startsWith(`tools/${skill}/`) || ["tools/cli", "tools/legacy"].includes(t), `${f.pathname} imports ${t}`).toBe(true);
+    for (const t of targets(f)) {
+      expect(t.startsWith(`tools/${skill}/`) || t.startsWith("shared/") || ["tools/cli", "tools/legacy"].includes(t), `${f.pathname} imports ${t}`).toBe(true);
+    }
   }
+});
+
+it("shared/ imports nothing else in src/: the hub and the skill scripts both build on it", () => {
+  for (const f of under("shared/")) for (const t of targets(f)) expect(t.startsWith("shared/"), `${f.pathname} imports ${t}`).toBe(true);
 });
 
 it("hub sources sit in their domain folders", () => {

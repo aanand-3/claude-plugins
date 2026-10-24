@@ -5,7 +5,7 @@ goal:
 items: CHORE-011
 touches:
 depends_on:
-status: draft
+status: dropped
 branch:
 pr: 
 created: 2026-10-23
@@ -203,6 +203,7 @@ The test suite is the oracle for "no loss of functionality". So the black-box te
 
 ## Progress log
 - 2026-10-24: imported from plan mode (`~/.claude/plans/what-would-it-take-rippling-quilt.md`); it predates the hub tracking plans, status draft from git history
+- 2026-10-24: status draft → dropped — superseded: the plan-mode plan for the Node-only move, delivered as P-001 (#5), P-014 (#6), P-015 (#7), P-016 (#8) and the hub-test port planned next
 
 ## Outcome
 Mostly delivered by P-001, P-014, P-015 and P-016 (PRs #5–#8). What remains is CHORE-011 (the hub's pytest suites to vitest, then the last Python); spec that as its own plan, then close this one.

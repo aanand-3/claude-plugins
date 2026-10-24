@@ -5,7 +5,7 @@ title: Remove the last Python after the hub tests move to vitest
 status: triaged
 priority: P2
 goal:
-plan: P-012
+plan: P-017
 created: 2026-10-24
 closed:
 ---

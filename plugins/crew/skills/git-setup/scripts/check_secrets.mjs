@@ -4,7 +4,9 @@ import { createRequire as __crewRequire } from "node:module"; const require = __
 
 // src/tools/git-setup/check_secrets.ts
 import { spawnSync } from "node:child_process";
-var BLOCK = {
+
+// src/shared/secrets.ts
+var SECRET_PATTERNS = {
   "AWS access key": /\b(AKIA|ASIA)[0-9A-Z]{16}\b/,
   "private key": /-----BEGIN [A-Z ]*PRIVATE KEY-----/,
   "GitHub token": /\b(gh[pousr]_[A-Za-z0-9]{36,}|github_pat_[A-Za-z0-9_]{60,})\b/,
@@ -16,11 +18,13 @@ var BLOCK = {
   "HubSpot private app token": /\bpat-(na|eu)\d-[0-9a-f]{8}-[0-9a-f-]{27}\b/,
   "credentials in URL": /\b[a-z][a-z0-9+.-]*:\/\/[^/\s:@]+:[^/\s:@]{8,}@(?!localhost|127\.0\.0\.1|postgres|redis|db\b)/
 };
+var ALLOW_SECRET = "pk:allow-secret";
+
+// src/tools/git-setup/check_secrets.ts
 var WARN = {
   "hard-coded secret-looking value": /\b(password|passwd|secret|token|api[_-]?key|client[_-]?secret)\b\s*[:=]\s*["'][^"'\s]{12,}["']/i
 };
 var SKIP_FILES = /(\.lock$|lock\.json$|lock\.yaml$|\.svg$|\.min\.js$)/;
-var ALLOW = "pk:allow-secret";
 function stagedAdditions() {
   const diff = spawnSync("git", ["diff", "--cached", "-U0", "--diff-filter=AM", "--no-color"], { encoding: "utf8" }).stdout ?? "";
   const out = /* @__PURE__ */ new Map();
@@ -49,18 +53,18 @@ function main() {
     }
     if (SKIP_FILES.test(path)) continue;
     for (const line of lines) {
-      if (line.includes(ALLOW)) continue;
-      for (const [label, re] of Object.entries(BLOCK)) if (re.test(line)) blocked.push(`${path}: ${label}`);
+      if (line.includes(ALLOW_SECRET)) continue;
+      for (const [label, re] of Object.entries(SECRET_PATTERNS)) if (re.test(line)) blocked.push(`${path}: ${label}`);
       for (const [label, re] of Object.entries(WARN)) if (re.test(line)) warned.push(`${path}: ${label}`);
     }
   }
   for (const w of [...new Set(warned)].sort()) {
-    console.error(`\u26A0\uFE0F  crew secrets: ${w} \u2014 use settings/env instead (or mark the line \`${ALLOW}\` if it's a fake)`);
+    console.error(`\u26A0\uFE0F  crew secrets: ${w} \u2014 use settings/env instead (or mark the line \`${ALLOW_SECRET}\` if it's a fake)`);
   }
   if (blocked.length) {
     console.error("\u270B crew secrets: likely secret in staged changes:");
     for (const b of [...new Set(blocked)].sort()) console.error(`   ${b}`);
-    console.error(`   Remove it (rotate it if it was real), load it from env/settings, or mark a known fake with \`${ALLOW}\`.`);
+    console.error(`   Remove it (rotate it if it was real), load it from env/settings, or mark a known fake with \`${ALLOW_SECRET}\`.`);
     process.exit(1);
   }
 }

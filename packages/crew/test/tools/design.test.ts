@@ -7,10 +7,9 @@ import { contrast } from "../../src/tools/design/color.js";
 import { exportTailwind, frontMatter, lint, scanText } from "../../src/tools/design/check_design.js";
 import { catalog, FONT_MOODS, googleCss, slug, SURFACES, suggestFonts } from "../../src/tools/design/studio.js";
 import { hexToLab, labToHex, lch, load, MOODS, roles, suggest } from "../../src/tools/design/wada.js";
-import { PY } from "../helpers/repo.js";
 import { DESIGN, FINAL } from "./design-fixtures.js";
 
-describe.skipIf(PY)("check_design", () => {
+describe("check_design", () => {
   it("contrast matches the WCAG reference values", () => {
     expect(contrast("#000000", "#ffffff")).toBe(21.0);
     expect(contrast("#777777", "#ffffff")).toBeLessThan(4.5);
@@ -71,7 +70,7 @@ describe.skipIf(PY)("check_design", () => {
   });
 });
 
-describe.skipIf(PY)("wada", () => {
+describe("wada", () => {
   it("the dataset and deterministic suggestions", () => {
     const combos = load(null);
     expect(combos.size).toBe(348);
@@ -102,7 +101,7 @@ describe.skipIf(PY)("wada", () => {
   });
 });
 
-describe.skipIf(PY)("studio", () => {
+describe("studio", () => {
   it("the catalog has every palette with roles, and valid fonts, presets and blocks", () => {
     const cat = catalog();
     expect(cat.palettes).toHaveLength(348);

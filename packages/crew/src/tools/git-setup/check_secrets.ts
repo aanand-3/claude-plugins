@@ -9,25 +9,12 @@
  * Usage: check_secrets.mjs --staged
  */
 import { spawnSync } from "node:child_process";
+import { ALLOW_SECRET as ALLOW, SECRET_PATTERNS as BLOCK } from "../../shared/secrets.js";
 
-// The same high-confidence patterns as the hub's knowledge check (src/hub/core/memory/knowledge.ts).
-const BLOCK: Record<string, RegExp> = {
-  "AWS access key": /\b(AKIA|ASIA)[0-9A-Z]{16}\b/,
-  "private key": /-----BEGIN [A-Z ]*PRIVATE KEY-----/,
-  "GitHub token": /\b(gh[pousr]_[A-Za-z0-9]{36,}|github_pat_[A-Za-z0-9_]{60,})\b/,
-  "Slack token": /\bxox[abprs]-[A-Za-z0-9-]{10,}\b/,
-  "Anthropic API key": /\bsk-ant-[A-Za-z0-9_-]{20,}/,
-  "OpenAI API key": /\bsk-(proj-)?[A-Za-z0-9_-]{32,}/,
-  "Google API key": /\bAIza[0-9A-Za-z_-]{35}\b/,
-  "Stripe live key": /\b(sk|rk)_live_[0-9A-Za-z]{20,}\b/,
-  "HubSpot private app token": /\bpat-(na|eu)\d-[0-9a-f]{8}-[0-9a-f-]{27}\b/,
-  "credentials in URL": /\b[a-z][a-z0-9+.-]*:\/\/[^/\s:@]+:[^/\s:@]{8,}@(?!localhost|127\.0\.0\.1|postgres|redis|db\b)/,
-};
 const WARN: Record<string, RegExp> = {
   "hard-coded secret-looking value": /\b(password|passwd|secret|token|api[_-]?key|client[_-]?secret)\b\s*[:=]\s*["'][^"'\s]{12,}["']/i,
 };
 const SKIP_FILES = /(\.lock$|lock\.json$|lock\.yaml$|\.svg$|\.min\.js$)/;
-const ALLOW = "pk:allow-secret";
 
 function stagedAdditions(): Map<string, string[]> {
   const diff = spawnSync("git", ["diff", "--cached", "-U0", "--diff-filter=AM", "--no-color"], { encoding: "utf8" }).stdout ?? "";
