@@ -5,7 +5,7 @@ goal: G-001
 items: FEAT-023
 touches: packages/crew/ui/**, packages/crew/src/hub/core/memory/ledger.ts, packages/crew/src/hub/graph-types.ts, packages/crew/src/hub/commands/views/**, packages/crew/src/hub/commands/team/autonomy.ts, packages/crew/src/hub/core/work/doc.ts, packages/crew/test/**, packages/crew/scripts/sample-project.mjs, packages/crew/docs/design/DESIGN.md, plugins/crew/skills/hub/dist/**, .crew/bin/**
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-020-jira-style-document-page-spend-by-plan
 pr:
 created: 2026-10-24
@@ -89,10 +89,41 @@ n/a: UI and read-time ledger aggregation only. The graph schema version bumps (t
 
 ## Handoff
 
+_Generated 2026-10-24 by `crew.mjs handoff` from the ledger._
+
+- P-020: Jira-style document page, spend by plan and agent, tasks and epic views [in-review] tasks 9/9 — claimed by Arpit Anand (developer:p020-jira-ui)
+- last checkpoint 2026-10-24 17:00 at T9 (3bcd939) by Arpit Anand; since then 3 commit(s), 3 uncommitted file(s): .claude/launch.json, .crew/plans/P-020-jira-style-document-page-spend-by-plan.md, .crew/knowledge/K-2026-10-24-judge-ui-from-full-size-screenshots.md
+- ✓ cd packages/crew && npx vitest run test/ledger.test.ts -t spend (reported)
+- ✓ cd packages/crew && npx vitest run test/view.test.ts -t tasks (reported)
+- ✓ npm run typecheck (incl. tsc -p ui) clean; browser 1680px viewport: P-014 docpage 1392px = main 1000 + rail 360, no blank band; Context panel collapses and reopens; reference tabs switch with ArrowRight/End/Home and wrap; item/goal/idea pages group sections per TABBED (AC 1,2) (reported)
+- ✓ browser: G-001 split button (aria-haspopup=menu, aria-expanded toggles) opens by mouse and Enter, ArrowDown moves focus, Escape and outside click close it; Move to proposed (sandbox) showed 'G-001: active → proposed'; Move to done showed the gate refusal; menu fits at 375px (AC 3) (reported)
+- ✓ browser: P-014 Touches 8 grouped by top dir; sandbox P-001 with 47 paths: 10 shown, 'Show all 47', 240px scroll box, filter narrows to matches; Relations rows chip-first in a grid, groups are details open (AC 4,5) (reported)
+- ✓ browser vs independent ledger tally: P-014 Spend 562.3k tokens · 2 runs (562315, runs qa+architect) with role tooltip; Overview KPI 8.4M (8358739), by agent architect 4.7M/12, qa 3.1M/10, director 339.3k/3, pm 180.7k/3; top plans P-015 2.6M, P-019 1.5M, P-017, P-016, P-014; unattributed 327.1k (AC 7) (reported)
+- ✓ browser: P-014 Tasks panel lists T1–T6 with verify commands (long ones collapsed), 6/6 progress; board task counts carry a title tooltip (open tasks, else 'every task is done') (AC 9) (reported)
+- ✓ browser: G-001 Child issues 8 (items + plans, sorted by status, 3/8 done); CHORE-007 shows its plan P-014; Hierarchy expands P-019 into T1–T5, done plans collapsed (AC 9) (reported)
+- ✓ cd packages/crew && npm run build && npx vitest run test/dist.test.ts test/design.test.ts (AC 10)
+- evidence: AC1 ✓ (self), AC2 ✓ (self), AC3 ✓ (self), AC4 ✓ (self), AC5 ✓ (self), AC6 —, AC7 ✓ (self), AC8 —, AC9 ✓ (self), AC10 ✓ (self)
+
+Latest log:
+- 2026-10-24: status draft → ready
+- 2026-10-24: assigned to the developer role
+- 2026-10-24: status ready → in-progress — branch plan/P-020-jira-style-document-page-spend-by-plan
+
 ## Progress log
 
 - 2026-10-24: status draft → ready
 - 2026-10-24: assigned to the developer role
 - 2026-10-24: status ready → in-progress — branch plan/P-020-jira-style-document-page-spend-by-plan
+- 2026-10-24: status in-progress → in-review
 
 ## Outcome
+Shipped as planned: the full-width document page (360px details rail, prose capped at 90ch), collapsible panels and per-kind tabs, the Actions split-button menu with triage and log in the rail, FileList for Touches and Applies to, status-first collapsible Relations, a Spend row, a Tasks panel by `###` phase, Child issues on goal and item pages, Hierarchy tasks, the board's open-task tooltip, and Overview spend by agent and top plans. `Ledger.spend()` gains `byRole`/`byRef` with run attribution; graph schema v6.
+
+Deviations:
+- `test/mcp.test.ts` also asserted schema 5; updated to 6.
+- Fixes found in visual review, beyond the spec: dropdowns use the Lucide chevron via a `--select-chevron` token instead of the platform arrow; filter dropdowns size to their chosen value (`field-sizing: content`, capped at 200px); long IDs truncate in Relations and wrap in the page kicker; the Child issues table scrolls inside its panel; board cards show "FEAT-006 +6" instead of every delivered ID; the Actions menu is left-anchored below 768px.
+- Merged main (P-019) into the branch; the rebuilt bundles were identical to the text merge.
+
+Follow-ups: FEAT-024 / P-021 (a Designer role, a scripted layout sweep and a review checklist), because no team role reviews visual design today.
+
+Learnings: K-2026-10-24-judge-ui-from-full-size-screenshots
