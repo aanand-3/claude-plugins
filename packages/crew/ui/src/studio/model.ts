@@ -1,4 +1,4 @@
-/** The studio's model: the catalog (built by the design skill's studio.py and embedded at build time), variants
+/** The studio's model: the catalog (built by the design skill's studio.mjs and embedded at build time), variants
  * (one full design direction), and the conversions variant → DESIGN.md tokens → CSS variables. Pure functions. */
 import rawCatalog from "../../../../../plugins/crew/skills/design/assets/catalog.json";
 
@@ -70,7 +70,7 @@ export function roles(v: Variant, mode: Mode, studio: StudioFile | null): Roles 
   return { ...base[mode], ...v.overrides[mode] };
 }
 
-// ---------------------------------------------------------------- contrast (same pairs as check_design.py)
+// ---------------------------------------------------------------- contrast (same pairs as check_design.mjs)
 export const PAIRS: [string, string, number][] = [
   ["foreground", "background", 4.5], ["muted-foreground", "background", 4.5], ["card-foreground", "card", 4.5],
   ["primary-foreground", "primary", 4.5], ["secondary-foreground", "secondary", 4.5],

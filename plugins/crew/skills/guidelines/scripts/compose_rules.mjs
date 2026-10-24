@@ -6,7 +6,24 @@ import { createRequire as __crewRequire } from "node:module"; const require = __
 import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve as resolvePath } from "node:path";
 import { fileURLToPath } from "node:url";
+
+// src/tools/cli.ts
 import { parseArgs } from "node:util";
+function cli(usage, config) {
+  try {
+    return parseArgs(config);
+  } catch (e) {
+    return usageError(usage, e.message);
+  }
+}
+function usageError(usage, message) {
+  const name = usage.split(" ")[1] ?? "script";
+  console.error(`${usage}
+${name}: error: ${message}`);
+  process.exit(2);
+}
+
+// src/tools/guidelines/compose_rules.ts
 var HERE = dirname(fileURLToPath(import.meta.url));
 var STACKS = join(HERE, "..", "stacks");
 var TOOLING = join(HERE, "..", "tooling");
@@ -129,7 +146,7 @@ function vendor(root, packs) {
   }
 }
 function main() {
-  const { values: args } = parseArgs({ options: {
+  const { values: args } = cli("usage: compose_rules.mjs [-h] [--root ROOT] [--packs PACKS] [--dry-run] [--force] [--prune]", { options: {
     root: { type: "string", default: "." },
     packs: { type: "string" },
     "dry-run": { type: "boolean", default: false },

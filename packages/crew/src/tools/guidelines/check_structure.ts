@@ -31,7 +31,7 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { parseArgs } from "node:util";
+import { cli, usageError } from "../cli.js";
 
 const SOURCE_SUFFIXES = new Set([".py", ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".go", ".rs", ".java", ".kt", ".rb", ".cs"]);
 const GENERATED = ["/migrations/", "alembic/versions/", "/generated/", ".gen.", ".d.ts", "/.crew/bin/"];
@@ -158,13 +158,12 @@ function report(title: string, found: string[], blocking: boolean): void {
 }
 
 function main(): void {
-  const { values: args } = parseArgs({ options: {
+  const usage = "usage: check_structure.mjs [-h] (--staged | --all) [--strict]";
+  const { values: args } = cli(usage, { options: {
     staged: { type: "boolean", default: false }, all: { type: "boolean", default: false }, strict: { type: "boolean", default: false },
   } });
-  if (args.staged === args.all) {
-    console.error("usage: check_structure.mjs (--staged | --all) [--strict]\ncheck_structure.mjs: error: one of the arguments --staged --all is required");
-    process.exit(2);
-  }
+  if (args.staged && args.all) usageError(usage, "argument --all: not allowed with argument --staged");
+  if (!args.staged && !args.all) usageError(usage, "one of the arguments --staged --all is required");
   const root = git("rev-parse", "--show-toplevel").trim() || ".";
   if (!isFile(join(root, ".crew", "config.yaml"))) return;
   const listing = (filter: string) => (args.staged ? git("diff", "--cached", "--name-only", `--diff-filter=${filter}`) : git("ls-files")).split("\n");

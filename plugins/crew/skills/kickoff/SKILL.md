@@ -56,7 +56,7 @@ record the steps done before the hub existed right after `init`. Any session or 
        - frontend API types generated from the backend's OpenAPI spec;
        - per-app Dockerfiles and `compose.yaml` with the selected services, plus `.env` from `.env.example`;
        - Makefile targets with `##` help text (`make help` is the command reference), and README *Getting started* updated with the real first-run steps.
-     - if `docs/design/DESIGN.md` exists: apply its tokens with `python3 .crew/bin/check_design.py --export tailwind` in the frontend's global CSS, and build the layout shell from DESIGN.md → Layout;
+     - if `docs/design/DESIGN.md` exists: apply its tokens with `node .crew/bin/check_design.mjs --export tailwind` in the frontend's global CSS, and build the layout shell from DESIGN.md → Layout;
      - **No empty placeholder folders.**
      - build the code graph once the shells exist (`/graphify .`, when graphify is set up) and confirm the post-commit hook updates it;
      - **Acceptance criteria** include `make check` green from a clean checkout, with every configured tool run at least once.

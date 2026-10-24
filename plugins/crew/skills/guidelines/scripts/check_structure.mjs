@@ -6,7 +6,24 @@ import { createRequire as __crewRequire } from "node:module"; const require = __
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
+
+// src/tools/cli.ts
 import { parseArgs } from "node:util";
+function cli(usage, config) {
+  try {
+    return parseArgs(config);
+  } catch (e) {
+    return usageError(usage, e.message);
+  }
+}
+function usageError(usage, message) {
+  const name = usage.split(" ")[1] ?? "script";
+  console.error(`${usage}
+${name}: error: ${message}`);
+  process.exit(2);
+}
+
+// src/tools/guidelines/check_structure.ts
 var SOURCE_SUFFIXES = /* @__PURE__ */ new Set([".py", ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".go", ".rs", ".java", ".kt", ".rb", ".cs"]);
 var GENERATED = ["/migrations/", "alembic/versions/", "/generated/", ".gen.", ".d.ts", "/.crew/bin/"];
 var DEFAULT_MAX_LINES = 300;
@@ -118,15 +135,14 @@ function report(title, found, blocking) {
   for (const v of found) console.error(`   ${v}`);
 }
 function main() {
-  const { values: args } = parseArgs({ options: {
+  const usage = "usage: check_structure.mjs [-h] (--staged | --all) [--strict]";
+  const { values: args } = cli(usage, { options: {
     staged: { type: "boolean", default: false },
     all: { type: "boolean", default: false },
     strict: { type: "boolean", default: false }
   } });
-  if (args.staged === args.all) {
-    console.error("usage: check_structure.mjs (--staged | --all) [--strict]\ncheck_structure.mjs: error: one of the arguments --staged --all is required");
-    process.exit(2);
-  }
+  if (args.staged && args.all) usageError(usage, "argument --all: not allowed with argument --staged");
+  if (!args.staged && !args.all) usageError(usage, "one of the arguments --staged --all is required");
   const root = git("rev-parse", "--show-toplevel").trim() || ".";
   if (!isFile(join(root, ".crew", "config.yaml"))) return;
   const listing = (filter) => (args.staged ? git("diff", "--cached", "--name-only", `--diff-filter=${filter}`) : git("ls-files")).split("\n");

@@ -31,8 +31,8 @@ if [ -f .crew/bin/check_structure.mjs ]; then
   node .crew/bin/check_structure.mjs --staged || exit 1
 fi
 # design-system drift (tokens from docs/design/DESIGN.md); warns or blocks per design_check
-if [ -f .crew/bin/check_design.py ]; then
-  python3 .crew/bin/check_design.py --staged || exit 1
+if [ -f .crew/bin/check_design.mjs ]; then
+  node .crew/bin/check_design.mjs --staged || exit 1
 fi
 # lint/format/type hooks from the pre-commit framework, once the project tooling adds .pre-commit-config.yaml.
 # Run directly (no `pre-commit install`) so core.hooksPath stays on .githooks.

@@ -13,7 +13,7 @@
 import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve as resolvePath } from "node:path";
 import { fileURLToPath } from "node:url";
-import { parseArgs } from "node:util";
+import { cli } from "../cli.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const STACKS = join(HERE, "..", "stacks");
@@ -148,7 +148,7 @@ function vendor(root: string, packs: string[]): void {
 }
 
 function main(): void {
-  const { values: args } = parseArgs({ options: {
+  const { values: args } = cli("usage: compose_rules.mjs [-h] [--root ROOT] [--packs PACKS] [--dry-run] [--force] [--prune]", { options: {
     root: { type: "string", default: "." }, packs: { type: "string" },
     "dry-run": { type: "boolean", default: false }, force: { type: "boolean", default: false }, prune: { type: "boolean", default: false },
   } });

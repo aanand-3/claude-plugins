@@ -1,5 +1,5 @@
 {
-  "note": "Curated type pairings. Every family is on Google Fonts under the SIL Open Font License, and on Fontsource as @fontsource/<slug>. `display.weight` is the heading weight, `tracking` its letter-spacing; body text uses 400/500/600. Moods match wada.py plus technical, editorial and friendly.",
+  "note": "Curated type pairings. Every family is on Google Fonts under the SIL Open Font License, and on Fontsource as @fontsource/<slug>. `display.weight` is the heading weight, `tracking` its letter-spacing; body text uses 400/500/600. Moods match wada.mjs plus technical, editorial and friendly.",
   "pairings": [
     {"id": "ledger", "name": "Ledger", "display": {"family": "Fraunces", "weight": 600, "tracking": "-0.02em"}, "body": {"family": "Source Sans 3"}, "mono": {"family": "JetBrains Mono"},
      "classification": "soft serif + humanist sans", "moods": ["calm", "warm", "editorial"], "surface": "both",

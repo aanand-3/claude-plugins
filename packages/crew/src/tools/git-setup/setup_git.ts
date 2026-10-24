@@ -13,7 +13,7 @@ import { spawnSync } from "node:child_process";
 import { chmodSync, copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { parseArgs } from "node:util";
+import { cli } from "../cli.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ASSETS = join(HERE, "..", "assets");
@@ -51,7 +51,7 @@ function stacksFromConfig(root: string): string[] {
 }
 
 function main(): void {
-  const { values: args } = parseArgs({ options: {
+  const { values: args } = cli("usage: setup_git.mjs [-h] [--root ROOT] [--stacks STACKS] [--take-over-hooks]", { options: {
     root: { type: "string", default: "." }, stacks: { type: "string" }, "take-over-hooks": { type: "boolean", default: false },
   } });
   const root = resolve(args.root!);

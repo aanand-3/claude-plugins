@@ -10997,7 +10997,7 @@ function saveDesign(store, req) {
         "chore",
         `Bring the UI onto design revision ${n}`,
         void 0,
-        `DESIGN.md revision ${n}: ${reason}. Run \`check_design.py --all\` for the code that now drifts and move it onto the new tokens.`
+        `DESIGN.md revision ${n}: ${reason}. Run \`check_design.mjs --all\` for the code that now drifts and move it onto the new tokens.`
       );
     }
     handoff2(store, { kind: "revision", note: `Revision ${n}: ${reason}. Write the ADR (mention \`DESIGN.md revision ${n}\`).` });

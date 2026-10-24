@@ -7,7 +7,24 @@ import { spawnSync } from "node:child_process";
 import { chmodSync, copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+
+// src/tools/cli.ts
 import { parseArgs } from "node:util";
+function cli(usage, config) {
+  try {
+    return parseArgs(config);
+  } catch (e) {
+    return usageError(usage, e.message);
+  }
+}
+function usageError(usage, message) {
+  const name = usage.split(" ")[1] ?? "script";
+  console.error(`${usage}
+${name}: error: ${message}`);
+  process.exit(2);
+}
+
+// src/tools/git-setup/setup_git.ts
 var HERE = dirname(fileURLToPath(import.meta.url));
 var ASSETS = join(HERE, "..", "assets");
 function run(root, ...args) {
@@ -36,7 +53,7 @@ function stacksFromConfig(root) {
   return stacks;
 }
 function main() {
-  const { values: args } = parseArgs({ options: {
+  const { values: args } = cli("usage: setup_git.mjs [-h] [--root ROOT] [--stacks STACKS] [--take-over-hooks]", { options: {
     root: { type: "string", default: "." },
     stacks: { type: "string" },
     "take-over-hooks": { type: "boolean", default: false }

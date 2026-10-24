@@ -53,9 +53,6 @@ def repo(tmp_path: Path) -> Repo:
     r = Repo(tmp_path)
     r.git("init", "-q", "-b", "main")
     return r
-CHECK_DESIGN = SKILLS / "design" / "scripts" / "check_design.py"
-WADA = SKILLS / "design" / "scripts" / "wada.py"
-STUDIO = SKILLS / "design" / "scripts" / "studio.py"
 VERIFY_EVIDENCE = SKILLS / "research" / "scripts" / "verify_evidence.py"
 
 
