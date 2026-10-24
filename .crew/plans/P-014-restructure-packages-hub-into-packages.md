@@ -5,12 +5,12 @@ goal:
 items: CHORE-007
 touches: packages/**, .claude/launch.json, README.md, .crew/config.yaml, .crew/knowledge/**, docs/vision.md, plugins/crew/skills/hub/dist/**, .crew/bin/crew.mjs
 depends_on:
-status: in-review
+status: done
 branch: plan/P-014-restructure-packages-hub-into-packages
 pr: https://github.com/aanand-3/claude-plugins/pull/6
 created: 2026-10-24
 started: 2026-10-24
-completed:
+completed: 2026-10-24
 assignee: developer
 ---
 
@@ -118,6 +118,7 @@ Latest log:
 - 2026-10-24: structure test now walks ui/src/studio/ too and found Preview.tsx at 326 lines (the old list skipped that folder): ComponentSheet and TypeSpecimen moved verbatim to studio/Specimens.tsx; studio.html is byte-identical
 - 2026-10-24: status in-progress → in-review
 - 2026-10-24: review follow-up: structure test resolves every relative import (static, side-effect import "…", dynamic import("…")) to its path under src/; core may only import core; the UI contract no longer depends on ../ depth. Each hole shown failing on a planted file, then removed
+- 2026-10-24: status in-review → done
 
 ## Outcome
 - **What shipped:**
