@@ -5,7 +5,7 @@ goal:
 items: CHORE-008
 touches: packages/crew/**, plugins/crew/skills/git-setup/**, plugins/crew/skills/guidelines/**, plugins/crew/skills/design/**, plugins/crew/skills/research/**, plugins/crew/skills/global-setup/**, plugins/crew/skills/kickoff/SKILL.md, plugins/crew/skills/onboard/SKILL.md, plugins/crew/skills/discover/**, plugins/crew/skills/hub/dist/**, .crew/bin/crew.mjs, tests/**, README.md
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-015-port-the-skill-scripts-to-node
 pr:
 created: 2026-10-24
@@ -96,11 +96,31 @@ This plan ports the scripts and their 57 tests to TypeScript and vitest in `pack
 
 ## Handoff
 
+_Generated 2026-10-24 by `crew.mjs handoff` from the ledger._
+
+- P-015: Port the skill scripts to Node [in-review] tasks 7/7 — claimed by Arpit Anand (main-node-only)
+- last checkpoint 2026-10-24 08:20 at done (9acdd4b) by Arpit Anand; since then 1 commit(s), 0 uncommitted file(s)
+- ✓ git-setup: CREW_TOOLS=py vitest test/tools/git-setup (7 passed on .py), then 7 passed on .mjs (AC 1,2) (reported)
+- ✓ CREW_TOOLS=py vitest test/tools/{guidelines,design-cli,global-setup} — 26 passed on the .py (14 + 9 + 3) (AC 1) (reported)
+- ✓ guidelines: vitest test/tools/guidelines — 14 passed on the .py, then 14 on the .mjs; track_plan_draft output byte-identical to the .py (AC 1,2) (reported)
+- ✓ design: 9 CLI tests green on the .py then the .mjs; 11 function tests on the TS port; 14 wada/studio commands and check_design --all/--staged/--export output identical to the .py; catalog equal value for value (only Python's 0.0 vs 0 differs), regenerated (AC 1,2,4) (reported)
+- ✓ research + global-setup: 4 function tests on the TS port, 3 install_global CLI tests; --check diff, verify_evidence --no-fetch/--report output identical to the .py (AC 1,2) (reported)
+- ✓ npm run typecheck && npm test in packages/crew: 17 files, 110 tests (incl. dist freshness for every skill script and the tools-never-import-the-hub rule); npm run build leaves the tree clean (AC 2,6) (reported)
+- ✓ python-free run (python/pip shims that log and fail first on PATH): crew init, setup_git, compose_rules, scaffold commit; fake key blocked; off-token hex warns; scripts/ reported; both Claude hooks answer; 0 python calls (AC 5) (reported)
+- ✓ cd tests/crew && env -u CREW_ROLE -u CREW_RUN uvx --with pyyaml pytest -q — 112 passed (test_hub + test_team) (AC 6) (reported)
+- evidence: AC1 ✓ (self), AC2 ✓ (self), AC3 —, AC4 ✓ (self), AC5 ✓ (self), AC6 ✓ (self)
+
+Latest log:
+- 2026-10-24: status draft → ready
+- 2026-10-24: assigned to the developer role
+- 2026-10-24: status ready → in-progress — branch plan/P-015-port-the-skill-scripts-to-node
+
 ## Progress log
 
 - 2026-10-24: status draft → ready
 - 2026-10-24: assigned to the developer role
 - 2026-10-24: status ready → in-progress — branch plan/P-015-port-the-skill-scripts-to-node
+- 2026-10-24: status in-progress → in-review
 
 ## Outcome
 - **What shipped:** the 11 skill scripts are TypeScript in `packages/crew/src/tools/<skill>/`, each bundled to a standalone `skills/<skill>/scripts/<name>.mjs`.
