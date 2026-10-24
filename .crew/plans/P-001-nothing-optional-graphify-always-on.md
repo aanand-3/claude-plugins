@@ -84,5 +84,6 @@ graphify stays an external tool: PyPI `graphifyy`, installed with uv, the one de
 
 - 2026-10-24: status draft → ready
 - 2026-10-24: assigned to the developer role
+- 2026-10-24: BUG-004: tests/crew hub/team tests inherit CREW_ROLE/CREW_RUN, so the full suite fails 12/166 under checkpoint --run (passes 166 from a plain shell; pre-existing, not a P-001 regression)
 
 ## Outcome
