@@ -10090,8 +10090,12 @@ function start(store, planId, force = false, approvedBy) {
   if (shared) {
     let home = store.planHome(doc.id);
     if (!home) {
+      const existed = planBranches().includes(branch);
+      if (!existed && currentBranch() !== store.baseBranch()) {
+        fail(`With plan_worktrees, start ${doc.id} from a checkout of ${store.baseBranch()}: its spec moves from there to the plan's worktree.`);
+      }
       home = openPlanWorktree(store, doc.id, branch);
-      if (doc.path?.startsWith(store.dir)) {
+      if (!existed && doc.path?.startsWith(store.dir)) {
         const f = store.rel(doc.path);
         restore(store, f);
         doc.path = join12(home, f);
@@ -10660,7 +10664,7 @@ function mergeOrder(store) {
   const doneAt = new Map(events.filter((e) => e.type === "move" && e.to === "done").map((e) => [e.ref, e.ts]));
   const branches = new Set(planBranches());
   const status2 = (p) => moved.get(p.id) ?? p.get("status") ?? "";
-  const worktrees2 = store.planWorktrees();
+  const worktrees2 = new Map([...store.settings().plan_worktrees ? store.planWorktrees() : []].filter(([, wt]) => dirty(wt, ".").length));
   const isMerged = (p) => !worktrees2.has(p.id) && git(["merge-base", "--is-ancestor", p.get("branch"), base]) !== null;
   const out = { base, merge: [], waiting: [], merged: [] };
   const done = [...plans2.values()].filter((p) => status2(p) === "done" && branches.has(p.get("branch") ?? "")).sort(byKey((p) => [doneAt.get(p.id) ?? p.get("completed") ?? "", p.id]));

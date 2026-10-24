@@ -178,9 +178,13 @@ export function start(store: Store, planId: string, force = false, approvedBy?: 
   }
   if (shared) { // the plan's shared worktree: no branch switch here, nothing to commit until the plan completes
     let home = store.planHome(doc.id);
-    if (!home) { // specced before plan_worktrees: it gets its worktree now, with its spec
+    if (!home) { // specced before plan_worktrees: it gets its worktree now
+      const existed = git.planBranches().includes(branch); // its branch holds the live plan: keep it as it is
+      if (!existed && git.currentBranch() !== store.baseBranch()) {
+        fail(`With plan_worktrees, start ${doc.id} from a checkout of ${store.baseBranch()}: its spec moves from there to the plan's worktree.`);
+      }
       home = openPlanWorktree(store, doc.id, branch);
-      if (doc.path?.startsWith(store.dir)) {
+      if (!existed && doc.path?.startsWith(store.dir)) { // a new branch: the spec moves from this checkout
         const f = store.rel(doc.path);
         restore(store, f);
         doc.path = join(home, f);

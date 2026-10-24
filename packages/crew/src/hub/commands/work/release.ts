@@ -13,8 +13,10 @@ export function mergeOrder(store: Store): MergeOrder {
   const doneAt = new Map(events.filter((e) => e.type === "move" && e.to === "done").map((e) => [e.ref, e.ts]));
   const branches = new Set(git.planBranches());
   const status = (p: Doc) => moved.get(p.id) ?? p.get("status") ?? "";
-  const worktrees = store.planWorktrees();
-  // a plan worktree holds the plan's work uncommitted: its branch has no commit yet, so it only looks merged
+  // with plan_worktrees, a plan's worktree holds its work uncommitted until Release commits it: its branch then only
+  // looks merged. Other worktrees on a plan branch (a developer's own checkout) hold no plan work.
+  const worktrees = new Map([...store.settings().plan_worktrees ? store.planWorktrees() : []]
+    .filter(([, wt]) => git.dirty(wt, ".").length));
   const isMerged = (p: Doc) => !worktrees.has(p.id) && git.git(["merge-base", "--is-ancestor", p.get("branch")!, base]) !== null;
   const out: MergeOrder = { base, merge: [], waiting: [], merged: [] };
   const done = [...plans.values()].filter((p) => status(p) === "done" && branches.has(p.get("branch") ?? ""))

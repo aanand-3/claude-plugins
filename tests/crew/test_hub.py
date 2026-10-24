@@ -1793,3 +1793,41 @@ def test_guard_protects_hub_files_inside_plan_worktrees(repo: Repo):
     assert hook(repo, bash("crew-developer", "cp evil.mjs .claude/worktrees/P-001-x/.crew/bin/crew.mjs"))["permissionDecision"] == "deny"
     assert hook(repo, {"tool_name": "Write", "agent_type": "crew-developer", "agent_id": "a",
                        "tool_input": {"file_path": ".claude/worktrees/P-001-x/src/app.py"}}) is None
+
+
+def test_merge_order_ignores_plan_worktrees_in_solo_mode(repo: Repo):
+    """Without plan_worktrees, a worktree on a merged plan's branch (a developer's isolation checkout) holds no plan work."""
+    init(repo, commit=True)
+    ready_plan(repo)
+    repo.commit("chore(hub): plan")
+    assert tr(repo, "start", "P-001").returncode == 0
+    branch = repo.git("branch", "--show-current").stdout.strip()
+    repo.write("src/auth/a.py", "x = 1\n")
+    p = plan_file(repo, "P-001")
+    p.write_text(p.read_text().replace("- [ ] T", "- [x] T").rstrip() + "\nShipped.\nLearnings: none\n")
+    assert tr(repo, "move", "P-001", "in-review").returncode == 0
+    qa_done(repo, "P-001")
+    repo.commit("feat(P-001): signup")
+    repo.git("switch", "-q", "main")
+    repo.git("merge", "-q", "--no-ff", branch, "-m", "merge P-001")
+    repo.git("worktree", "add", "-q", str(repo.path / ".claude/worktrees/agent-x"), branch)
+    out = tr(repo, "merge-order").stdout
+    assert "merged: P-001" in out and "commit everything" not in out
+
+
+def test_plan_worktrees_start_keeps_an_existing_branchs_progress(repo: Repo):
+    """A plan started before plan_worktrees: its worktree opens on the branch as it is, not with main's stale copy."""
+    init(repo, commit=True)
+    ready_plan(repo)
+    repo.commit("chore(hub): plan")
+    assert tr(repo, "start", "P-001").returncode == 0
+    assert tr(repo, "log", "P-001", "LIVE-PROGRESS-NOTE").returncode == 0
+    repo.commit("chore(P-001): progress")
+    assert tr(repo, "release", "P-001", "--force").returncode == 0
+    repo.git("switch", "-q", "main")
+    repo.write(".crew/config.yaml", "hub:\n  plan_worktrees: true\n")
+    repo.commit("chore(hub): plan worktrees")
+    r = tr(repo, "start", "P-001")
+    assert r.returncode == 0, r.stderr
+    assert "LIVE-PROGRESS-NOTE" in plan_file(plan_worktree(repo, "P-001"), "P-001").read_text()
+    assert repo.git("status", "--porcelain").stdout.strip() == ""  # main's copy left alone
