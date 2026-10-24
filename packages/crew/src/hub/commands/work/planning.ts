@@ -1,6 +1,6 @@
 /** Creating tracked documents: init, the idea, goals, plans; setting the focus goal. */
 import { readFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { join, relative, resolve } from "node:path";
 import * as git from "../../core/git.js";
 import type { Doc } from "../../core/work/doc.js";
 import { CLOSED, ITEM_CLOSED, type Kind, REQUIRED_ON_CREATE, TEMPLATE_NAMES } from "../../core/work/model.js";
@@ -111,9 +111,12 @@ export function newPlan(store: Store, title: string, draftPath: string, o: PlanO
   for (const i of linked) {
     const item = items.get(i)!;
     item.set("plan", pid);
-    if (wt && item.path?.startsWith(store.dir)) { // the link travels with the plan
-      const f = store.rel(item.path);
-      restore(store, f);
+    // the link travels with the plan, from this checkout or from the plan worktree the item was carried to
+    const from = !wt || !item.path ? null : item.path.startsWith(store.dir) ? store.ws.root
+      : [...store.planWorktrees().values()].find((w) => w !== wt && item.path!.startsWith(`${w}/`)) ?? null;
+    if (wt && from) {
+      const f = relative(from, item.path!);
+      restore(store, f, from);
       item.path = join(wt, f);
       moved.add(f);
     }
@@ -146,11 +149,11 @@ export function openPlanWorktree(store: Store, pid: string, branch: string): str
   return path;
 }
 
-/** Move this checkout's uncommitted items, goals and knowledge into a plan's worktree: they are committed with that plan,
- * so nothing is committed to the base branch on its own, and every checkout still sees them (the store overlays them).
- * The idea, config and policy stay: plan worktrees read those as committed. */
+/** Move this checkout's uncommitted items, goals, knowledge and idea (a new focus) into a plan's worktree: they are
+ * committed with that plan, so nothing is committed to the base branch on its own, and every checkout still sees them
+ * (the store overlays them). Config and policy stay: plan worktrees read those as committed. */
 function carryHub(store: Store, wt: string, done: Set<string>): void {
-  const carried = [store.dirs.item, store.dirs.goal, store.knowledgeDir].map((d) => `${store.rel(d)}/`);
+  const carried = [...[store.dirs.item, store.dirs.goal, store.knowledgeDir].map((d) => `${store.rel(d)}/`), store.rel(store.ideaPath)];
   for (const f of git.dirty(store.ws.root, store.rel(store.dir))) {
     if (done.has(f) || !carried.some((d) => f.startsWith(d))) continue;
     store.ws.write(join(wt, f), store.ws.read(join(store.ws.root, f)) ?? "");
@@ -158,9 +161,9 @@ function carryHub(store: Store, wt: string, done: Set<string>): void {
   }
 }
 
-/** Put a file of this checkout back as committed (or remove it when it isn't committed). */
-export function restore(store: Store, f: string): void {
-  const head = git.show("HEAD", f), path = join(store.ws.root, f);
+/** Put a file of a checkout (this one by default) back as committed (or remove it when it isn't committed). */
+export function restore(store: Store, f: string, root = store.ws.root): void {
+  const head = git.git(["-C", root, "show", `HEAD:${f}`]), path = join(root, f);
   if (head === null) store.ws.remove(path);
   else store.ws.write(path, head);
 }

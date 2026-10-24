@@ -60,6 +60,21 @@ export function dirty(dir: string, path: string): string[] {
     .split("\n").filter((l) => l.length > 3 && !l.slice(0, 2).includes("D")).map((l) => l.slice(3));
 }
 
+/** The commit on `base` that squash-merged `branch` (plan `pid`), or null: one since the two forked whose subject names the
+ * plan (`P-###: …` or `<type>(P-###): …`) and that holds the branch tip's version of every file the branch changed. The
+ * subject only narrows the search; a mention-only commit, or a branch that moved on after its squash, doesn't match. */
+export function squashMerge(branch: string, base: string, pid: string): string | null {
+  const fork = git(["merge-base", branch, base])?.trim();
+  const changed = fork ? (git(["diff", "--name-only", "-z", fork, branch]) ?? "").split("\0").filter(Boolean) : [];
+  if (!changed.length) return null;
+  const names = new RegExp(`^(\\w+\\(${pid}\\)|${pid}):`);
+  for (const line of (git(["log", "--format=%H %s", `${fork}..${base}`]) ?? "").split("\n")) {
+    const [sha, subject] = [line.slice(0, line.indexOf(" ")), line.slice(line.indexOf(" ") + 1)];
+    if (sha && names.test(subject) && git(["--literal-pathspecs", "diff", "--quiet", branch, sha, "--", ...changed]) !== null) return sha;
+  }
+  return null;
+}
+
 export function planBranches(): string[] {
   return words(git(["for-each-ref", "--format=%(refname:short)", "refs/heads/plan/", "refs/remotes/origin/plan/"]));
 }

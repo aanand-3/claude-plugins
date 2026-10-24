@@ -1747,6 +1747,8 @@ def test_plan_worktrees_are_seen_and_edited_from_main(repo: Repo):
     assert tr(repo, "log", "P-001", "picked the provider").returncode == 0
     p1 = plan_file(plan_worktree(repo, "P-001"), "P-001").read_text()
     assert "status: ready" in p1 and "picked the provider" in p1
+    assert tr(repo, "assign", "P-001", "--to", "developer").returncode == 0  # a plan only in its worktree is assigned there
+    assert "assignee: developer" in plan_file(plan_worktree(repo, "P-001"), "P-001").read_text()
     status = tr(repo, "status").stdout
     assert "| P-001 | Signup |" in status and "BUG-001" in status
     assert "P-002: Login [draft]" in tr(repo, "context", "P-002").stdout
