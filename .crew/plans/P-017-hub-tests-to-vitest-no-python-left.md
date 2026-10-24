@@ -7,7 +7,7 @@ touches: packages/crew/**, tests/**, .github/workflows/ci.yml, .crew/config.yaml
 depends_on:
 status: in-review
 branch: plan/P-017-hub-tests-to-vitest-no-python-left
-pr:
+pr: https://github.com/aanand-3/claude-plugins/pull/12
 created: 2026-10-24
 started: 2026-10-24
 completed:
