@@ -31,7 +31,7 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { cli, usageError } from "../cli.js";
+import { cli, exclusive, usageError } from "../cli.js";
 
 const SOURCE_SUFFIXES = new Set([".py", ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".go", ".rs", ".java", ".kt", ".rb", ".cs"]);
 const GENERATED = ["/migrations/", "alembic/versions/", "/generated/", ".gen.", ".d.ts", "/.crew/bin/"];
@@ -162,7 +162,7 @@ function main(): void {
   const { values: args } = cli(usage, { options: {
     staged: { type: "boolean", default: false }, all: { type: "boolean", default: false }, strict: { type: "boolean", default: false },
   } });
-  if (args.staged && args.all) usageError(usage, "argument --all: not allowed with argument --staged");
+  exclusive(usage, ["--staged", "--all"]);
   if (!args.staged && !args.all) usageError(usage, "one of the arguments --staged --all is required");
   const root = git("rev-parse", "--show-toplevel").trim() || ".";
   if (!isFile(join(root, ".crew", "config.yaml"))) return;

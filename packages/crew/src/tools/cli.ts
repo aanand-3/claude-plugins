@@ -15,3 +15,15 @@ export function usageError(usage: string, message: string): never {
   console.error(`${usage}\n${name}: error: ${message}`);
   process.exit(2);
 }
+
+/** argparse's type=int / type=float: a value that isn't one is a usage error. */
+export function number(usage: string, flag: string, value: string, kind: "int" | "float" = "int"): number {
+  const ok = kind === "int" ? /^\s*[-+]?\d+\s*$/.test(value) : value.trim() !== "" && Number.isFinite(Number(value));
+  return ok ? Number(value) : usageError(usage, `argument ${flag}: invalid ${kind} value: '${value}'`);
+}
+
+/** argparse's mutually exclusive group: at most one of these flags (argv order decides how the error reads). */
+export function exclusive(usage: string, flags: string[]): void {
+  const given = process.argv.slice(2).map((a) => a.split("=")[0]).filter((a, i, all) => flags.includes(a) && all.indexOf(a) === i);
+  if (given.length > 1) usageError(usage, `argument ${given[1]}: not allowed with argument ${given[0]}`);
+}

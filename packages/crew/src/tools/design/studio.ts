@@ -20,7 +20,7 @@
  */
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { cli, usageError } from "../cli.js";
+import { cli, number, usageError } from "../cli.js";
 import { hexToRgb, isMain, pyFloat, reprList, skillDir, stripChars } from "./color.js";
 import * as wada from "./wada.js";
 
@@ -183,7 +183,7 @@ function main(): void {
     const bad = moods.filter((m) => !FONT_MOODS.includes(m));
     if (bad.length) fail(`Unknown mood ${reprList(bad)}; use ${FONT_MOODS.join(", ")}`);
     if (args.surface !== undefined && !SURFACES.includes(args.surface)) usageError(usage, `argument --surface: invalid choice: '${args.surface}' (choose from 'app', 'marketing', 'both')`);
-    for (const p of suggestFonts(moods, args.surface ?? null).slice(0, Number(args.count))) {
+    for (const p of suggestFonts(moods, args.surface ?? null).slice(0, number(usage, "--count", args.count!))) {
       console.log(`${p.id.padEnd(11)} score ${pyFloat(p.score).padEnd(4)} ${p.display.family} / ${p.body.family} / ${p.mono.family}  — ${p.why}`);
     }
   } else {

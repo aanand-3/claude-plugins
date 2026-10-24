@@ -22,6 +22,10 @@ function usageError(usage, message) {
 ${name}: error: ${message}`);
   process.exit(2);
 }
+function exclusive(usage, flags) {
+  const given = process.argv.slice(2).map((a) => a.split("=")[0]).filter((a, i, all) => flags.includes(a) && all.indexOf(a) === i);
+  if (given.length > 1) usageError(usage, `argument ${given[1]}: not allowed with argument ${given[0]}`);
+}
 
 // src/tools/design/color.ts
 import { basename, dirname, join } from "node:path";
@@ -277,9 +281,8 @@ function main() {
     root: { type: "string" },
     strict: { type: "boolean", default: false }
   } });
-  const picked = [args.staged, args.all, args.export !== void 0].filter(Boolean).length;
-  if (picked === 0) usageError(usage, "one of the arguments --staged --all --export is required");
-  if (picked > 1) usageError(usage, "only one of --staged, --all and --export may be given");
+  exclusive(usage, ["--staged", "--all", "--export"]);
+  if (!args.staged && !args.all && args.export === void 0) usageError(usage, "one of the arguments --staged --all --export is required");
   if (args.export !== void 0 && args.export !== "tailwind") usageError(usage, `argument --export: invalid choice: '${args.export}' (choose from 'tailwind')`);
   const root = resolvePath(args.root || git(process.cwd(), "rev-parse", "--show-toplevel").trim() || ".");
   const cfg = config(root);

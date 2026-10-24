@@ -22,9 +22,10 @@ it("core only imports core: never commands, the CLI, the server or MCP", () => {
   }
 });
 
-it("the skill scripts never reach into the hub: each bundle stays a small standalone file", () => {
+it("each skill script imports only its own skill folder and tools/cli, never the hub: each bundle stays small and standalone", () => {
   for (const f of under("tools/")) {
-    for (const t of targets(f)) expect(t.startsWith("tools/"), `${f.pathname} imports ${t}`).toBe(true);
+    const skill = relative(SRC_DIR, fileURLToPath(f)).split("/")[1];
+    for (const t of targets(f)) expect(t.startsWith(`tools/${skill}/`) || t === "tools/cli", `${f.pathname} imports ${t}`).toBe(true);
   }
 });
 

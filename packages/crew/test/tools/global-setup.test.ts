@@ -36,3 +36,12 @@ it("--check prints a unified diff and writes nothing", () => {
   expect(r.stdout).toContain("(dry run — re-run with --apply to write)");
   expect(repo.read("CLAUDE.md")).toBe("# Mine\n");
 });
+
+it("refuses a file whose end marker comes before its start marker, and leaves it alone", () => {
+  const text = "# Mine\n<!-- crew:global:end -->\nx\n<!-- crew:global:start -->\n";
+  const target = repo.write("CLAUDE.md", text);
+  const r = repo.py(INSTALL_GLOBAL, ["--apply", "--target", target]);
+  expect(r.returncode).toBe(1);
+  expect(r.stderr).toContain("comes before");
+  expect(repo.read("CLAUDE.md")).toBe(text);
+});

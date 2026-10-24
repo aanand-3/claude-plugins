@@ -15,7 +15,7 @@
  */
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { cli, usageError } from "../cli.js";
+import { cli, number, usageError } from "../cli.js";
 import { contrast, hexToRgb, isMain, pyFloat, pyRound, reprList, skillDir } from "./color.js";
 
 export interface Combo { id: string; names: string[]; colors: string[] }
@@ -227,7 +227,7 @@ function main(): void {
     const bad = moods.filter((m) => !MOODS.includes(m));
     if (bad.length) fail(`Unknown mood ${reprList(bad)}; use ${MOODS.join(", ")}`);
     const avoid = args.avoid!.split(",").map((a) => a.trim()).filter((a) => hexToRgb(a || "x"));
-    const offset = Number(args.offset), count = Number(args.count);
+    const offset = number(usage, "--offset", args.offset!), count = number(usage, "--count", args.count!);
     for (const c of suggest(combos, moods, args.size ? Number(args.size) : null, avoid).slice(offset, offset + count)) {
       console.log(`#${c.id.padStart(4)}  score ${c.scoreText.padEnd(5)}  ` + c.names.map((n, i) => `${c.colors[i]} ${n}`).join("  "));
     }

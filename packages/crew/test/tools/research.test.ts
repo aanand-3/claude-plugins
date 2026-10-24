@@ -1,10 +1,13 @@
 /** research skill: evidence verification and report citation checks (network stubbed; the pytest suite
  * monkeypatched the Python module's fetch, these inject one into the TS port). */
 import { mkdtempSync, writeFileSync } from "node:fs";
+import { createServer, request, type Server } from "node:http";
+import type { AddressInfo } from "node:net";
+import { connect } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { checkReport, type Fetch, type Row, verify } from "../../src/tools/research/verify_evidence.js";
+import { checkReport, type Fetch, fetchPage, normalize, type Row, verify } from "../../src/tools/research/verify_evidence.js";
 import { PY } from "../helpers/repo.js";
 
 const PAGES: Record<string, [number, string]> = {
@@ -48,6 +51,17 @@ describe.skipIf(PY)("verify_evidence", () => {
     expect(data.at(-1)!.verified).toBe("broken");
   });
 
+  it("normalize decodes entities like html.unescape, legacy forms included", () => {
+    expect(normalize("Team&nbsp;plan &ampx &notit; &eacute;")).toBe("team plan &x ¬it; é");
+  });
+
+  it("a cited row without a url reads None, as the Python printed", () => {
+    const report = join(mkdtempSync(join(tmpdir(), "research-")), "r.md");
+    writeFileSync(report, "[E1]");
+    expect(checkReport(report, [{ id: "E1", verified: "broken" }], "2026-10-14")[0]).toEqual(
+      ["E1 is broken: None — fix, re-check manually, or drop the claim"]);
+  });
+
   it("the report check flags missing and unusable citations", async () => {
     const data = rows();
     await verify(data, 5, false, "2026-10-14", pages);
@@ -60,5 +74,62 @@ describe.skipIf(PY)("verify_evidence", () => {
     expect(warnings.some((w) => w.includes("possibly dead"))).toBe(true);
     writeFileSync(report, "Acme costs $29 [E1][E2].");
     expect(checkReport(report, data, "2026-10-14")[0]).toEqual([]);
+  });
+});
+
+/** A local HTTP server; `handler` answers every request. */
+async function serve(handler: Parameters<typeof createServer>[1]): Promise<[Server, string]> {
+  const server = createServer(handler);
+  await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
+  return [server, `http://127.0.0.1:${(server.address() as AddressInfo).port}`];
+}
+
+describe.skipIf(PY)("fetchPage (the real fetch, against local servers)", () => {
+  const saved = { ...process.env };
+  const restore = () => { for (const k of ["HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy", "NO_PROXY", "no_proxy"]) {
+    if (saved[k] === undefined) delete process.env[k]; else process.env[k] = saved[k]; } };
+
+  it("goes through the proxy in HTTP_PROXY, and around it for NO_PROXY hosts", async () => {
+    const [site, siteUrl] = await serve((_q, s) => s.end("<p>hello</p>"));
+    const tunnels: string[] = [];
+    const [proxy, proxyUrl] = await serve((q, s) => { // plain proxying, in case the client doesn't tunnel
+      tunnels.push(q.url ?? "");
+      const up = request(q.url!, { method: q.method, headers: q.headers }, (r) => { s.writeHead(r.statusCode!, r.headers); r.pipe(s); });
+      q.pipe(up);
+    });
+    proxy.on("connect", (q, sock) => { // CONNECT tunnels
+      tunnels.push(q.url ?? "");
+      const [host, port] = (q.url ?? "").split(":");
+      const up = connect(Number(port), host, () => { sock.write("HTTP/1.1 200 Connection Established\r\n\r\n"); up.pipe(sock); sock.pipe(up); });
+    });
+    try {
+      restore();
+      process.env.HTTP_PROXY = proxyUrl;
+      delete process.env.NO_PROXY; delete process.env.no_proxy;
+      expect(await fetchPage(`${siteUrl}/x`, 5)).toEqual([200, "<p>hello</p>"]);
+      expect(tunnels.length).toBe(1);
+      process.env.NO_PROXY = "127.0.0.1";
+      expect(await fetchPage(`${siteUrl}/y`, 5)).toEqual([200, "<p>hello</p>"]);
+      expect(tunnels.length).toBe(1); // bypassed
+    } finally {
+      restore();
+      site.close(); proxy.close();
+    }
+  });
+
+  it("reads at most 2 MB, and a redirect loop is a redirect status (broken), not a network failure", async () => {
+    const [site, url] = await serve((q, s) => {
+      if (q.url === "/loop") { s.writeHead(302, { Location: "/loop" }); s.end(); return; }
+      s.write("a".repeat(3_000_000));
+      s.end();
+    });
+    try {
+      restore();
+      const [status, body] = await fetchPage(`${url}/big`, 5);
+      expect([status, body.length]).toEqual([200, 2_000_000]);
+      expect((await fetchPage(`${url}/loop`, 5))[0]).toBe(302);
+    } finally {
+      site.close();
+    }
   });
 });

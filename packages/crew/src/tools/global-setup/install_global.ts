@@ -12,6 +12,7 @@ import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { cli } from "../cli.js";
+import { unifiedDiff } from "./difflib.js";
 
 const START = "<!-- crew:global:start -->";
 const END = "<!-- crew:global:end -->";
@@ -24,6 +25,7 @@ function merged(existing: string, block: string): string {
     if (existing.includes(start) && existing.includes(end)) {
       const i = existing.indexOf(start);
       const pre = existing.slice(0, i), rest = existing.slice(i + start.length);
+      if (!rest.includes(end)) throw new Error(`the ${end} marker comes before ${start}; fix the file by hand`);
       const post = rest.slice(rest.indexOf(end) + end.length);
       return pre + wrapped.replace(/\n+$/, "") + post;
     }
@@ -33,37 +35,6 @@ function merged(existing: string, block: string): string {
 
 /** Lines with their endings, like Python's str.splitlines(keepends=True). */
 const linesOf = (s: string) => s.match(/[^\n]*\n|[^\n]+$/g) ?? [];
-
-/** difflib.unified_diff(a, b, fromfile, tofile) with 3 lines of context, from a longest-common-subsequence match. */
-function unifiedDiff(a: string[], b: string[], from: string, to: string): string {
-  const n = a.length, m = b.length;
-  const lcs = Array.from({ length: n + 1 }, () => new Array<number>(m + 1).fill(0));
-  for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) lcs[i][j] = a[i] === b[j] ? lcs[i + 1][j + 1] + 1 : Math.max(lcs[i + 1][j], lcs[i][j + 1]);
-  const ops: [" " | "-" | "+", number, number][] = []; // (op, index in a, index in b)
-  let i = 0, j = 0;
-  while (i < n || j < m) {
-    if (i < n && j < m && a[i] === b[j]) ops.push([" ", i++, j++]);
-    else if (i < n && (j >= m || lcs[i + 1][j] >= lcs[i][j + 1])) ops.push(["-", i++, j]); // removals first, as difflib prints them
-    else ops.push(["+", i, j++]);
-  }
-  // group the changed lines into hunks: changes closer than 2 × 3 context lines share one
-  const groups: [number, number][] = [];
-  ops.forEach(([op], k) => {
-    if (op === " ") return;
-    const last = groups.at(-1);
-    if (last && k - last[1] <= 6) last[1] = k + 1;
-    else groups.push([k, k + 1]);
-  });
-  const range = (start: number, len: number) => (len === 1 ? `${start + 1}` : `${len ? start + 1 : start},${len}`);
-  const out = [`--- ${from}\n`, `+++ ${to}\n`];
-  for (const [first, end] of groups) {
-    const hunk = ops.slice(Math.max(0, first - 3), Math.min(ops.length, end + 3));
-    const aLen = hunk.filter(([op]) => op !== "+").length, bLen = hunk.filter(([op]) => op !== "-").length;
-    out.push(`@@ -${range(hunk[0][1], aLen)} +${range(hunk[0][2], bLen)} @@\n`);
-    for (const [op, x, y] of hunk) out.push(op + (op === "+" ? b[y] : a[x]));
-  }
-  return groups.length ? out.join("") : "";
-}
 
 const stamp = () => {
   const d = new Date(), p = (x: number) => String(x).padStart(2, "0");
@@ -77,7 +48,13 @@ function main(): void {
   } });
   const target = args.target!.replace(/^~(?=$|\/)/, homedir());
   const existing = existsSync(target) ? readFileSync(target, "utf8") : "";
-  const next = merged(existing, readFileSync(ASSET, "utf8"));
+  let next: string;
+  try {
+    next = merged(existing, readFileSync(ASSET, "utf8"));
+  } catch (e) {
+    console.error(`${target}: ${(e as Error).message}`);
+    process.exit(1);
+  }
   const state = existing.includes(START) || existing.includes(LEGACY[0]) ? "installed" : existing ? "absent (file exists)" : "absent (no file)";
   if (next === existing) {
     console.log(`${target}: up to date`);

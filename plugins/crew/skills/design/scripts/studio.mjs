@@ -21,6 +21,10 @@ function usageError(usage, message) {
 ${name}: error: ${message}`);
   process.exit(2);
 }
+function number(usage, flag, value, kind = "int") {
+  const ok = kind === "int" ? /^\s*[-+]?\d+\s*$/.test(value) : value.trim() !== "" && Number.isFinite(Number(value));
+  return ok ? Number(value) : usageError(usage, `argument ${flag}: invalid ${kind} value: '${value}'`);
+}
 
 // src/tools/design/color.ts
 import { basename, dirname, join } from "node:path";
@@ -256,7 +260,7 @@ function main() {
     const bad = moods.filter((m) => !MOODS.includes(m));
     if (bad.length) fail(`Unknown mood ${reprList(bad)}; use ${MOODS.join(", ")}`);
     const avoid = args.avoid.split(",").map((a) => a.trim()).filter((a) => hexToRgb(a || "x"));
-    const offset = Number(args.offset), count = Number(args.count);
+    const offset = number(usage, "--offset", args.offset), count = number(usage, "--count", args.count);
     for (const c of suggest(combos, moods, args.size ? Number(args.size) : null, avoid).slice(offset, offset + count)) {
       console.log(`#${c.id.padStart(4)}  score ${c.scoreText.padEnd(5)}  ` + c.names.map((n, i) => `${c.colors[i]} ${n}`).join("  "));
     }
@@ -437,7 +441,7 @@ function main2() {
     const bad = moods.filter((m) => !FONT_MOODS.includes(m));
     if (bad.length) fail2(`Unknown mood ${reprList(bad)}; use ${FONT_MOODS.join(", ")}`);
     if (args.surface !== void 0 && !SURFACES.includes(args.surface)) usageError(usage, `argument --surface: invalid choice: '${args.surface}' (choose from 'app', 'marketing', 'both')`);
-    for (const p of suggestFonts(moods, args.surface ?? null).slice(0, Number(args.count))) {
+    for (const p of suggestFonts(moods, args.surface ?? null).slice(0, number(usage, "--count", args.count))) {
       console.log(`${p.id.padEnd(11)} score ${pyFloat(p.score).padEnd(4)} ${p.display.family} / ${p.body.family} / ${p.mono.family}  \u2014 ${p.why}`);
     }
   } else {

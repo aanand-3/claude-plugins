@@ -23,8 +23,9 @@
  */
 import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { basename } from "node:path";
-import { decodeHTML } from "entities";
-import { cli } from "../cli.js";
+import { DecodingMode, decodeHTML } from "entities";
+import { Agent, EnvHttpProxyAgent, fetch, type Response } from "undici";
+import { cli, number } from "../cli.js";
 
 export interface Row { id?: string; url?: string; quote?: string; verified?: string; http_status?: number; checked?: string;
   note?: string; repo?: { stars: number | null; pushed: string; archived: boolean }; [k: string]: unknown }
@@ -37,21 +38,53 @@ const REPO_URL = /^https?:\/\/(?:www\.)?github\.com\/([\w.-]+)\/([\w.-]+?)(?:\.g
 const NOT_REPOS = new Set(["orgs", "topics", "search", "marketplace", "features", "sponsors", "collections", "apps", "settings"]);
 const MAX_BODY = 2_000_000;
 
+const PROXY_VARS = ["HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy"];
+
+/** The first MAX_BODY bytes of the body, decoded as UTF-8 (bad bytes replaced); the rest is never downloaded. */
+async function readCapped(res: Response): Promise<string> {
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  const reader = res.body?.getReader();
+  while (reader && size < MAX_BODY) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+    size += value.length;
+  }
+  await reader?.cancel();
+  const bytes = new Uint8Array(size);
+  let at = 0;
+  for (const c of chunks) { bytes.set(c, at); at += c.length; }
+  return new TextDecoder("utf-8").decode(bytes.subarray(0, MAX_BODY));
+}
+
+/** Like urllib did: through the proxy in *_PROXY (honouring NO_PROXY), the timeout applied to each step (connect, headers,
+ * every body read) rather than the whole download, and a redirect loop reported as the redirect status. */
 export const fetchPage: Fetch = async (url, timeout, headers = {}) => {
+  const ms = timeout * 1000;
+  const options = { connect: { timeout: ms }, headersTimeout: ms, bodyTimeout: ms };
+  const dispatcher = PROXY_VARS.some((v) => process.env[v]) ? new EnvHttpProxyAgent(options) : new Agent(options);
   try {
-    const res = await fetch(url, { headers: { "User-Agent": UA, "Accept-Language": "en", ...headers }, signal: AbortSignal.timeout(timeout * 1000) });
-    if (res.status >= 400) return [res.status, ""];
-    const bytes = new Uint8Array(await res.arrayBuffer()).subarray(0, MAX_BODY);
-    return [res.status, new TextDecoder("utf-8").decode(bytes)];
+    const res = await fetch(url, { headers: { "User-Agent": UA, "Accept-Language": "en", ...headers }, dispatcher });
+    if (res.status >= 400) {
+      await res.body?.cancel();
+      return [res.status, ""];
+    }
+    return [res.status, await readCapped(res)];
   } catch (e) {
-    const code = ((e as { cause?: { code?: string } }).cause?.code ?? "").toUpperCase();
-    return [code === "ENOTFOUND" || code === "EAI_NONAME" ? -1 : 0, ""];
+    const err = e as { message?: string; cause?: { code?: string; message?: string } };
+    const code = (err.cause?.code ?? "").toUpperCase();
+    if (code === "ENOTFOUND" || code === "EAI_NONAME") return [-1, ""];
+    if (/redirect/i.test(`${err.message ?? ""} ${err.cause?.message ?? ""}`)) return [302, ""]; // urllib raised HTTPError with the 3xx
+    return [0, ""];
+  } finally {
+    void dispatcher.destroy();
   }
 };
 
 export function normalize(text: string): string {
   text = text.replace(/<(script|style|noscript)\b[\s\S]*?<\/\1>/gi, " ");
-  text = decodeHTML(text.replace(/<[^>]+>/g, " "));
+  text = decodeHTML(text.replace(/<[^>]+>/g, " "), DecodingMode.Legacy); // html.unescape also decodes unterminated legacy entities (&ampx)
   text = text.replaceAll("’", "'").replaceAll("‘", "'").replaceAll("“", '"').replaceAll("”", '"');
   return text.replace(/\s+/g, " ").trim().toLowerCase();
 }
@@ -131,30 +164,32 @@ export function checkReport(report: string, rows: Row[], today: string): [string
   for (const eid of cited) {
     const row = byId.get(eid);
     if (!row) errors.push(`${eid} is cited but not in the evidence file`);
-    else if (row.verified === "broken" || row.verified === "mismatch") errors.push(`${eid} is ${row.verified}: ${row.url} — fix, re-check manually, or drop the claim`);
-    else if (!USABLE.has(row.verified ?? "")) warnings.push(`${eid} is ${row.verified ?? "not checked"}: ${row.url}`);
+    else if (row.verified === "broken" || row.verified === "mismatch") errors.push(`${eid} is ${row.verified}: ${row.url ?? "None"} — fix, re-check manually, or drop the claim`);
+    else if (!USABLE.has(row.verified ?? "")) warnings.push(`${eid} is ${row.verified ?? "not checked"}: ${row.url ?? "None"}`);
     const repo = row?.repo;
     if (row && repo) {
       const pushed = repo.pushed || "";
-      if (repo.archived) warnings.push(`${eid} ${row.url} is archived — don't count it as an active competitor`);
-      else if (pushed && (Date.parse(today) - Date.parse(pushed)) / 86_400_000 > 365) warnings.push(`${eid} ${row.url} last pushed ${pushed} — possibly dead`);
+      if (repo.archived) warnings.push(`${eid} ${row.url ?? "None"} is archived — don't count it as an active competitor`);
+      else if (pushed && (Date.parse(today) - Date.parse(pushed)) / 86_400_000 > 365) warnings.push(`${eid} ${row.url ?? "None"} last pushed ${pushed} — possibly dead`);
     }
   }
   return [errors, warnings];
 }
 
 async function main(): Promise<void> {
-  const { values: args } = cli("usage: verify_evidence.mjs [-h] [--file FILE] [--report REPORT] [--recheck] [--no-fetch] [--timeout TIMEOUT]", { options: {
+  const usage = "usage: verify_evidence.mjs [-h] [--file FILE] [--report REPORT] [--recheck] [--no-fetch] [--timeout TIMEOUT]";
+  const { values: args } = cli(usage, { options: {
     file: { type: "string", default: "docs/research/evidence.jsonl" }, report: { type: "string" }, recheck: { type: "boolean", default: false },
     "no-fetch": { type: "boolean", default: false }, timeout: { type: "string", default: "15" },
   } });
+  const timeout = number(usage, "--timeout", args.timeout!, "float"); // checked with the other flags, as argparse did
   const path = args.file!;
   if (!existsSync(path) || !statSync(path).isFile()) fail(`${path} not found`);
   const rows = load(path);
   const now = new Date();
   const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
   if (!args["no-fetch"]) {
-    await verify(rows, Number(args.timeout), args.recheck!, today);
+    await verify(rows, timeout, args.recheck!, today);
     writeFileSync(path, rows.map((r) => pyJsonLine(r) + "\n").join(""));
   }
   const counts = new Map<string, number>();

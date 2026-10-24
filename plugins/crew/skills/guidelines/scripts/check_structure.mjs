@@ -22,6 +22,10 @@ function usageError(usage, message) {
 ${name}: error: ${message}`);
   process.exit(2);
 }
+function exclusive(usage, flags) {
+  const given = process.argv.slice(2).map((a) => a.split("=")[0]).filter((a, i, all) => flags.includes(a) && all.indexOf(a) === i);
+  if (given.length > 1) usageError(usage, `argument ${given[1]}: not allowed with argument ${given[0]}`);
+}
 
 // src/tools/guidelines/check_structure.ts
 var SOURCE_SUFFIXES = /* @__PURE__ */ new Set([".py", ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".go", ".rs", ".java", ".kt", ".rb", ".cs"]);
@@ -141,7 +145,7 @@ function main() {
     all: { type: "boolean", default: false },
     strict: { type: "boolean", default: false }
   } });
-  if (args.staged && args.all) usageError(usage, "argument --all: not allowed with argument --staged");
+  exclusive(usage, ["--staged", "--all"]);
   if (!args.staged && !args.all) usageError(usage, "one of the arguments --staged --all is required");
   const root = git("rev-parse", "--show-toplevel").trim() || ".";
   if (!isFile(join(root, ".crew", "config.yaml"))) return;

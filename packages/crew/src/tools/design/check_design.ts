@@ -25,7 +25,7 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, resolve as resolvePath } from "node:path";
-import { cli, usageError } from "../cli.js";
+import { cli, exclusive, usageError } from "../cli.js";
 import { contrast, hexToRgb, isMain, pyFloat, splitlines, stripChars } from "./color.js";
 
 export interface Tokens { [key: string]: string | Tokens }
@@ -243,9 +243,8 @@ function main(): void {
     staged: { type: "boolean", default: false }, all: { type: "boolean", default: false }, export: { type: "string" },
     root: { type: "string" }, strict: { type: "boolean", default: false },
   } });
-  const picked = [args.staged, args.all, args.export !== undefined].filter(Boolean).length;
-  if (picked === 0) usageError(usage, "one of the arguments --staged --all --export is required");
-  if (picked > 1) usageError(usage, "only one of --staged, --all and --export may be given");
+  exclusive(usage, ["--staged", "--all", "--export"]);
+  if (!args.staged && !args.all && args.export === undefined) usageError(usage, "one of the arguments --staged --all --export is required");
   if (args.export !== undefined && args.export !== "tailwind") usageError(usage, `argument --export: invalid choice: '${args.export}' (choose from 'tailwind')`);
 
   const root = resolvePath(args.root || git(process.cwd(), "rev-parse", "--show-toplevel").trim() || ".");
