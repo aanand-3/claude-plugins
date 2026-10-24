@@ -5,12 +5,12 @@ goal:
 items: CHORE-012, CHORE-011, BUG-004
 touches: packages/crew/**, tests/**, .github/workflows/ci.yml, .crew/config.yaml, .gitignore, README.md, plugins/crew/skills/hub/SKILL.md, plugins/crew/skills/hub/references/writing-guide.md, .crew/templates/writing-guide.md, plugins/crew/skills/*/scripts/*.mjs, plugins/crew/skills/hub/dist/**, .crew/bin/crew.mjs
 depends_on:
-status: in-review
+status: done
 branch: plan/P-017-hub-tests-to-vitest-no-python-left
 pr: https://github.com/aanand-3/claude-plugins/pull/12
 created: 2026-10-24
 started: 2026-10-24
-completed:
+completed: 2026-10-24
 assignee: developer
 ---
 
@@ -109,6 +109,7 @@ Latest log:
 - 2026-10-24: status ready → in-progress — branch plan/P-017-hub-tests-to-vitest-no-python-left
 - 2026-10-24: status in-progress → in-review
 - 2026-10-24: review nits: dropped the last per-test timeout override (context, 90s), basics checks is-a-file like is_file(), blank lines left by the helper merge, Repo.run 60s process timeout; merged main for the permissions block
+- 2026-10-24: status in-review → done
 
 ## Outcome
 - **What shipped:**
