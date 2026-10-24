@@ -1,5 +1,4 @@
-/** Throwaway git repos for running the plugin's scripts against, like the pytest suite's conftest did.
- * `CREW_TOOLS=py` runs the original Python scripts instead of the ported .mjs, so one test file checks both. */
+/** Throwaway git repos to run the plugin's scripts and the hub bundle against. */
 import { spawnSync } from "node:child_process";
 import { chmodSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { devNull, tmpdir } from "node:os";
@@ -10,10 +9,9 @@ export const ROOT = fileURLToPath(new URL("../../../../", import.meta.url));
 export const PLUGIN = join(ROOT, "plugins", "crew");
 export const SKILLS = join(PLUGIN, "skills");
 export const HUB = join(SKILLS, "hub", "dist", "crew.mjs");
-export const PY = process.env.CREW_TOOLS === "py";
 
-/** A skill script: the ported .mjs, or the original .py under CREW_TOOLS=py. */
-export const script = (skill: string, name: string) => join(SKILLS, skill, "scripts", `${name}.${PY ? "py" : "mjs"}`);
+/** A skill script's bundle. */
+export const script = (skill: string, name: string) => join(SKILLS, skill, "scripts", `${name}.mjs`);
 
 const GIT_ENV = {
   GIT_AUTHOR_NAME: "Test", GIT_AUTHOR_EMAIL: "test@example.com",
@@ -29,7 +27,7 @@ export class Repo {
   env: Record<string, string>;
 
   constructor(readonly path: string) {
-    const base = Object.entries(process.env).filter(([k]) => !k.startsWith("CREW_") || k === "CREW_TOOLS");
+    const base = Object.entries(process.env).filter(([k]) => !k.startsWith("CREW_"));
     this.env = { ...Object.fromEntries(base) as Record<string, string>, ...GIT_ENV };
   }
 
@@ -40,8 +38,9 @@ export class Repo {
     return r;
   }
 
+  /** Run a command; a process still running after a minute is killed and fails the test, so a hang can't block a worker. */
   run(cmd: string, args: string[], input?: string): Result {
-    const p = spawnSync(cmd, args, { cwd: this.path, env: this.env, input, encoding: "utf8" });
+    const p = spawnSync(cmd, args, { cwd: this.path, env: this.env, input, encoding: "utf8", timeout: 60_000 });
     if (p.error) throw p.error;
     return { returncode: p.status ?? -1, stdout: p.stdout, stderr: p.stderr };
   }
@@ -52,9 +51,9 @@ export class Repo {
     return r;
   }
 
-  /** Run a skill script (or the hub bundle) with node or python3, as its extension says. */
-  py(path: string, args: string[] = [], input?: string): Result {
-    return this.run(path.endsWith(".py") ? "python3" : "node", [path, ...args], input);
+  /** Run a skill script or the hub bundle with node. */
+  node(path: string, args: string[] = [], input?: string): Result {
+    return this.run("node", [path, ...args], input);
   }
 
   write(rel: string, text = "", mode?: number): string {

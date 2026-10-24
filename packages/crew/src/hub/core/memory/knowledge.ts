@@ -1,6 +1,7 @@
 /** Project memory: short knowledge entries (.crew/knowledge/K-<date>-<slug>.md), each one fact plus why, scoped to the
  * paths it applies to, so the next agent touching those paths recalls it. Pure helpers; commands live in commands/knowledge.ts. */
 import { Doc } from "../work/doc.js";
+import { ALLOW_SECRET, SECRET_PATTERNS } from "../../../shared/secrets.js";
 import { slugify, stripComments, today } from "../text.js";
 
 export const KNOWLEDGE_TYPES = ["decision", "learning", "gotcha", "convention", "risk"] as const;
@@ -8,22 +9,9 @@ export const TIERS = ["project", "playbook-candidate"] as const;
 export const K_ID_RE = /\bK-\d{4}-\d{2}-\d{2}-[a-z0-9-]+\b/g;
 export const RISK_LEVELS = ["H", "M", "L"];
 
-/** High-confidence secret patterns, the same as git-setup's check_secrets (src/tools/git-setup/check_secrets.ts); `pk:allow-secret` on a line exempts it. */
-const SECRET_PATTERNS: Record<string, RegExp> = {
-  "AWS access key": /\b(AKIA|ASIA)[0-9A-Z]{16}\b/,
-  "private key": /-----BEGIN [A-Z ]*PRIVATE KEY-----/,
-  "GitHub token": /\b(gh[pousr]_[A-Za-z0-9]{36,}|github_pat_[A-Za-z0-9_]{60,})\b/,
-  "Slack token": /\bxox[abprs]-[A-Za-z0-9-]{10,}\b/,
-  "Anthropic API key": /\bsk-ant-[A-Za-z0-9_-]{20,}/,
-  "OpenAI API key": /\bsk-(proj-)?[A-Za-z0-9_-]{32,}/,
-  "Google API key": /\bAIza[0-9A-Za-z_-]{35}\b/,
-  "Stripe live key": /\b(sk|rk)_live_[0-9A-Za-z]{20,}\b/,
-  "credentials in URL": /\b[a-z][a-z0-9+.-]*:\/\/[^/\s:@]+:[^/\s:@]{8,}@(?!localhost|127\.0\.0\.1|postgres|redis|db\b)/,
-};
-
 /** Names of the secret patterns found in text (plus the policy's own `secrets.patterns`). */
 export function secretsIn(text: string, extra: string[] = []): string[] {
-  const lines = text.split("\n").filter((l) => !l.includes("pk:allow-secret")).join("\n");
+  const lines = text.split("\n").filter((l) => !l.includes(ALLOW_SECRET)).join("\n");
   const custom = Object.fromEntries(extra.flatMap((p, i) => {
     try {
       return [[`policy secrets.patterns[${i}]`, new RegExp(p)]];

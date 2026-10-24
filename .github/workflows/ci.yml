@@ -17,14 +17,11 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: packages/crew/package-lock.json
-      - uses: astral-sh/setup-uv@v6
       - name: Hub — install
         working-directory: packages/crew
         run: npm ci
       - name: Hub — typecheck and tests
         working-directory: packages/crew
         run: npm run typecheck && npm test
-      - name: Hub — dist in sync
-        run: (cd packages/crew && npm run build) && git diff --exit-code -- plugins/crew/skills/hub/dist
-      - name: Hub tests (pytest)
-        run: uvx --with pyyaml pytest tests/crew -q
+      - name: Bundles in sync (the hub's dist/ and every skill script)
+        run: (cd packages/crew && npm run build) && git diff --exit-code -- plugins/crew/skills

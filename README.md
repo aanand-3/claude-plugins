@@ -123,11 +123,7 @@ claude plugin install crew@aanand-plugins
 
 Start a new Claude Code session after editing skills to pick up the changes.
 
-Before changing the bundled scripts, run the test suites: `npm test` in `packages/crew/` (the hub, the skill scripts, the plugin's manifests and templates) and the hub's end-to-end suite in `tests/crew/`, which moves to vitest next:
-
-```bash
-(cd tests/crew && uvx --with pyyaml pytest)
-```
+Before changing the bundled scripts, run the tests: `npm test` in `packages/crew/` covers the hub (unit and end to end against the shipped `dist/crew.mjs`), the skill scripts, and the plugin's manifests and templates. CI runs the same suite on every pull request (`.github/workflows/ci.yml`, the same command as `hub.full_suite` in `.crew/config.yaml`).
 The plugin follows the rules it ships: every source module stays under 300 lines (tested).
 
 The skill scripts are TypeScript too, in `packages/crew/src/tools/<skill>/`. Each builds to one standalone `plugins/crew/skills/<skill>/scripts/<name>.mjs` (projects vendor some of them into `.crew/bin/`), and none imports the hub. The hub is TypeScript in `packages/crew/` (not shipped), under `src/hub/`: `core/` and `commands/` are grouped by domain (`work/`, `team/`, `memory/`, and `views/` for commands). `npm run build` bundles it into the files the plugin ships, `plugins/crew/skills/hub/dist/crew.mjs` (the CLI), `dist/mcp.mjs` (the same commands as stdio MCP tools, registered in `plugins/crew/.mcp.json`) and `dist/ui.html` (the React view, everything inlined); commit the rebuilt bundles with the source (a test fails when they differ). The view's design lives in `packages/crew/docs/design/DESIGN.md`; `ui/` reads only the graph contract (`src/hub/graph-types.ts`) and the status vocabulary (tested). `scripts/preview.sh` rebuilds and exports a generated sample project (`scripts/sample-project.mjs`) to `preview/habitly.html` for visual checks. `src/hub/core/` (documents, rules, queries) never imports `src/hub/commands/` or the CLI (tested). Commands stage their writes and only flush them if they succeed, so a refused command changes nothing.

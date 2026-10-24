@@ -29,7 +29,7 @@ const GOAL = "## Outcome\nUsers sign up.\n\n## Scope\n**In:**\n- signup\n\n**Out
   + "## Candidate plans\n- Signup endpoint — POST /signup\n";
 const BUG = "## Environment\nlocal\n\n## Steps to reproduce\n1. POST /login with an empty email\n\n## Expected\n422\n\n## Actual\n500\n";
 
-const tr = (r: Repo, ...args: string[]): Result => r.py(HUB, args);
+const tr = (r: Repo, ...args: string[]): Result => r.node(HUB, args);
 
 /** A committed hub with plan_worktrees on and no human gates. */
 function worktreeHub(): Repo {

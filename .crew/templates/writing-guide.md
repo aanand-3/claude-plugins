@@ -20,7 +20,7 @@ A tracked document is a contract between whoever plans the work and whoever does
 | CHORE | What and why, the cost of not doing it, and when it's done | "Refactor stuff" |
 | SPIKE | One question, a hard timebox, the output it produces (ADR, recommendation, follow-up items) | Open-ended research |
 
-UI plans (projects with `docs/design/DESIGN.md`) also end with a task like `Visual QA → verify: check_design.py --all clean; screenshots at 375/1280 px, light and dark, match DESIGN.md`.
+UI plans (projects with `docs/design/DESIGN.md`) also end with a task like `Visual QA → verify: node .crew/bin/check_design.mjs --all clean; screenshots at 375/1280 px, light and dark, match DESIGN.md`.
 
 ### Goal
 | Section | Good | Bad |

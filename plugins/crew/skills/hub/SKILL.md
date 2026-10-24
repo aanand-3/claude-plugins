@@ -128,7 +128,7 @@ Start every workflow by checking where you are: `crew.mjs context` (or `context 
 - **Bugs found mid-plan:** capture them as BUG items on main later; record them in the plan's Outcome as follow-ups for now.
 
 ### 5. Finish a plan
-1. **Verify every acceptance criterion** with the targeted checks the tasks and test plan name (`checkpoint --run … --ac …`). Run `python3 .crew/bin/check_structure.py --all`.
+1. **Verify every acceptance criterion** with the targeted checks the tasks and test plan name (`checkpoint --run … --ac …`). Run `node .crew/bin/check_structure.mjs --all`.
 2. Tick all tasks and write the **Outcome**: what shipped, deviations, follow-ups, and `Learnings: K-…` (or `none`). `in-review` is refused without it.
 3. `move P-### in-review`, then open the PR:
    - title `P-###: <title>`;
