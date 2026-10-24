@@ -16,10 +16,18 @@ export function usageError(usage: string, message: string): never {
   process.exit(2);
 }
 
-/** argparse's type=int / type=float: a value that isn't one is a usage error. */
+const DIGITS = String.raw`\d+(?:_\d+)*`; // Python allows _ between digits
+const INT = new RegExp(`^[+-]?${DIGITS}$`);
+const FLOAT = new RegExp(`^[+-]?(?:(?:${DIGITS})?\\.${DIGITS}|${DIGITS}\\.?)(?:[eE][+-]?${DIGITS})?$`);
+const SPECIAL = /^([+-]?)(inf|infinity|nan)$/i;
+
+/** argparse's type=int / type=float, which call Python's int() / float(): a value that isn't one is a usage error. */
 export function number(usage: string, flag: string, value: string, kind: "int" | "float" = "int"): number {
-  const ok = kind === "int" ? /^\s*[-+]?\d+\s*$/.test(value) : value.trim() !== "" && Number.isFinite(Number(value));
-  return ok ? Number(value) : usageError(usage, `argument ${flag}: invalid ${kind} value: '${value}'`);
+  const v = value.trim();
+  if (INT.test(v) || (kind === "float" && FLOAT.test(v))) return Number(v.replaceAll("_", ""));
+  const special = kind === "float" ? SPECIAL.exec(v) : null;
+  if (special) return special[2].toLowerCase() === "nan" ? NaN : (special[1] === "-" ? -Infinity : Infinity);
+  return usageError(usage, `argument ${flag}: invalid ${kind} value: '${value}'`);
 }
 
 /** argparse's mutually exclusive group: at most one of these flags (argv order decides how the error reads). */

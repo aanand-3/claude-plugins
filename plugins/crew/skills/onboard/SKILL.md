@@ -25,7 +25,7 @@ done before the hub existed right after `init`. On start, if the `chore/crew-onb
      - hooks: `core.hooksPath`, `.husky/`, `.pre-commit-config.yaml`, real files in `.git/hooks`;
      - CI (`.github/workflows/`, others), README, `docs/`, ADRs;
      - the default branch and remote.
-   - **Tools:** `git`, `node` ≥ 20 (every crew script), `uv` (installs graphify for the code graph).
+   - **Tools:** `git`, `node` ≥ 20.18 (every crew script; the hub alone runs on 20), `uv` (installs graphify for the code graph).
    - **Code graph:** graphify maps the codebase for this onboarding and for every later session. It's an external tool, installed in step 1 only with the user's yes. A project-kit `.project/` folder is migrated by the hub step (`crew.mjs migrate`).
 
 1. **Map** — gather evidence before asking anything.

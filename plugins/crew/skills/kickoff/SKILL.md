@@ -20,7 +20,7 @@ record the steps done before the hub existed right after `init`. Any session or 
 
 0. **Preflight**
    - Confirm the target directory (default: current). If it already has application code (source files, a package manifest, commits beyond a scaffold), stop and suggest `/crew:onboard`, which maps and merges instead of interviewing from scratch. Docs or an empty repo are fine.
-   - Check tools: `git --version`, `node --version` (every crew script needs Node.js ≥ 20), `uv --version` (installs graphify for the code graph, step 5). `gh` only if the user wants GitHub now.
+   - Check tools: `git --version`, `node --version` (every crew script needs Node.js ≥ 20.18; the hub alone runs on 20), `uv --version` (installs graphify for the code graph, step 5). `gh` only if the user wants GitHub now.
    - Check `~/.claude/CLAUDE.md` for `<!-- crew:global:start -->`. If missing, mention once that `/crew:global-setup` installs the global working principles (one-time per machine) — don't run it from here.
    - If there's no `docs/research/idea-research.md`, mention once that `/crew:research` can check competitors and prior art before committing to the idea. It's optional and standalone; don't run it from here.
    - Tell the user the plan in a few lines: discover → design (UI projects) → guidelines → hub → git → code graph → idea, goals & first plan. The code graph (graphify) is an external tool, installed in step 5 only with their yes.

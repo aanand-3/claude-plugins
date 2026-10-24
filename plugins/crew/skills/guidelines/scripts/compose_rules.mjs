@@ -22,6 +22,9 @@ function usageError(usage, message) {
 ${name}: error: ${message}`);
   process.exit(2);
 }
+var DIGITS = String.raw`\d+(?:_\d+)*`;
+var INT = new RegExp(`^[+-]?${DIGITS}$`);
+var FLOAT = new RegExp(`^[+-]?(?:(?:${DIGITS})?\\.${DIGITS}|${DIGITS}\\.?)(?:[eE][+-]?${DIGITS})?$`);
 
 // src/tools/guidelines/compose_rules.ts
 var HERE = dirname(fileURLToPath(import.meta.url));

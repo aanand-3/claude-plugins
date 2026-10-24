@@ -22,6 +22,9 @@ function usageError(usage, message) {
 ${name}: error: ${message}`);
   process.exit(2);
 }
+var DIGITS = String.raw`\d+(?:_\d+)*`;
+var INT = new RegExp(`^[+-]?${DIGITS}$`);
+var FLOAT = new RegExp(`^[+-]?(?:(?:${DIGITS})?\\.${DIGITS}|${DIGITS}\\.?)(?:[eE][+-]?${DIGITS})?$`);
 function exclusive(usage, flags) {
   const given = process.argv.slice(2).map((a) => a.split("=")[0]).filter((a, i, all) => flags.includes(a) && all.indexOf(a) === i);
   if (given.length > 1) usageError(usage, `argument ${given[1]}: not allowed with argument ${given[0]}`);

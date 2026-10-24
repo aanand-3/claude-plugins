@@ -21,9 +21,16 @@ function usageError(usage, message) {
 ${name}: error: ${message}`);
   process.exit(2);
 }
+var DIGITS = String.raw`\d+(?:_\d+)*`;
+var INT = new RegExp(`^[+-]?${DIGITS}$`);
+var FLOAT = new RegExp(`^[+-]?(?:(?:${DIGITS})?\\.${DIGITS}|${DIGITS}\\.?)(?:[eE][+-]?${DIGITS})?$`);
+var SPECIAL = /^([+-]?)(inf|infinity|nan)$/i;
 function number(usage, flag, value, kind = "int") {
-  const ok = kind === "int" ? /^\s*[-+]?\d+\s*$/.test(value) : value.trim() !== "" && Number.isFinite(Number(value));
-  return ok ? Number(value) : usageError(usage, `argument ${flag}: invalid ${kind} value: '${value}'`);
+  const v = value.trim();
+  if (INT.test(v) || kind === "float" && FLOAT.test(v)) return Number(v.replaceAll("_", ""));
+  const special = kind === "float" ? SPECIAL.exec(v) : null;
+  if (special) return special[2].toLowerCase() === "nan" ? NaN : special[1] === "-" ? -Infinity : Infinity;
+  return usageError(usage, `argument ${flag}: invalid ${kind} value: '${value}'`);
 }
 
 // src/tools/design/color.ts

@@ -26789,9 +26789,16 @@ function usageError(usage, message) {
 ${name}: error: ${message}`);
   process.exit(2);
 }
+var DIGITS = String.raw`\d+(?:_\d+)*`;
+var INT = new RegExp(`^[+-]?${DIGITS}$`);
+var FLOAT = new RegExp(`^[+-]?(?:(?:${DIGITS})?\\.${DIGITS}|${DIGITS}\\.?)(?:[eE][+-]?${DIGITS})?$`);
+var SPECIAL = /^([+-]?)(inf|infinity|nan)$/i;
 function number(usage, flag, value, kind = "int") {
-  const ok = kind === "int" ? /^\s*[-+]?\d+\s*$/.test(value) : value.trim() !== "" && Number.isFinite(Number(value));
-  return ok ? Number(value) : usageError(usage, `argument ${flag}: invalid ${kind} value: '${value}'`);
+  const v = value.trim();
+  if (INT.test(v) || kind === "float" && FLOAT.test(v)) return Number(v.replaceAll("_", ""));
+  const special = kind === "float" ? SPECIAL.exec(v) : null;
+  if (special) return special[2].toLowerCase() === "nan" ? NaN : special[1] === "-" ? -Infinity : Infinity;
+  return usageError(usage, `argument ${flag}: invalid ${kind} value: '${value}'`);
 }
 
 // src/tools/research/verify_evidence.ts
@@ -26821,7 +26828,7 @@ async function readCapped(res) {
   return new TextDecoder("utf-8").decode(bytes.subarray(0, MAX_BODY));
 }
 var fetchPage = async (url, timeout, headers = {}) => {
-  const ms = timeout * 1e3;
+  const ms = Number.isFinite(timeout) ? timeout * 1e3 : 0;
   const options = { connect: { timeout: ms }, headersTimeout: ms, bodyTimeout: ms };
   const dispatcher = PROXY_VARS.some((v) => process.env[v]) ? new import_undici.EnvHttpProxyAgent(options) : new import_undici.Agent(options);
   try {
@@ -26835,7 +26842,7 @@ var fetchPage = async (url, timeout, headers = {}) => {
     const err = e;
     const code = (err.cause?.code ?? "").toUpperCase();
     if (code === "ENOTFOUND" || code === "EAI_NONAME") return [-1, ""];
-    if (/redirect/i.test(`${err.message ?? ""} ${err.cause?.message ?? ""}`)) return [302, ""];
+    if (err.cause?.message === "redirect count exceeded") return [302, ""];
     return [0, ""];
   } finally {
     void dispatcher.destroy();
@@ -26936,6 +26943,7 @@ async function main() {
     timeout: { type: "string", default: "15" }
   } });
   const timeout = number(usage, "--timeout", args.timeout, "float");
+  if (Number.isNaN(timeout)) usageError(usage, "argument --timeout: nan is not a timeout");
   const path = args.file;
   if (!existsSync(path) || !statSync(path).isFile()) fail(`${path} not found`);
   const rows = load(path);

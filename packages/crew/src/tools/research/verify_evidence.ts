@@ -25,7 +25,7 @@ import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { basename } from "node:path";
 import { DecodingMode, decodeHTML } from "entities";
 import { Agent, EnvHttpProxyAgent, fetch, type Response } from "undici";
-import { cli, number } from "../cli.js";
+import { cli, number, usageError } from "../cli.js";
 
 export interface Row { id?: string; url?: string; quote?: string; verified?: string; http_status?: number; checked?: string;
   note?: string; repo?: { stars: number | null; pushed: string; archived: boolean }; [k: string]: unknown }
@@ -61,7 +61,7 @@ async function readCapped(res: Response): Promise<string> {
 /** Like urllib did: through the proxy in *_PROXY (honouring NO_PROXY), the timeout applied to each step (connect, headers,
  * every body read) rather than the whole download, and a redirect loop reported as the redirect status. */
 export const fetchPage: Fetch = async (url, timeout, headers = {}) => {
-  const ms = timeout * 1000;
+  const ms = Number.isFinite(timeout) ? timeout * 1000 : 0; // undici: 0 = no timeout (`--timeout inf`)
   const options = { connect: { timeout: ms }, headersTimeout: ms, bodyTimeout: ms };
   const dispatcher = PROXY_VARS.some((v) => process.env[v]) ? new EnvHttpProxyAgent(options) : new Agent(options);
   try {
@@ -75,7 +75,8 @@ export const fetchPage: Fetch = async (url, timeout, headers = {}) => {
     const err = e as { message?: string; cause?: { code?: string; message?: string } };
     const code = (err.cause?.code ?? "").toUpperCase();
     if (code === "ENOTFOUND" || code === "EAI_NONAME") return [-1, ""];
-    if (/redirect/i.test(`${err.message ?? ""} ${err.cause?.message ?? ""}`)) return [302, ""]; // urllib raised HTTPError with the 3xx
+    // undici gives a redirect loop no error code, only this reason; urllib raised HTTPError with the 3xx
+    if (err.cause?.message === "redirect count exceeded") return [302, ""];
     return [0, ""];
   } finally {
     void dispatcher.destroy();
@@ -183,6 +184,7 @@ async function main(): Promise<void> {
     "no-fetch": { type: "boolean", default: false }, timeout: { type: "string", default: "15" },
   } });
   const timeout = number(usage, "--timeout", args.timeout!, "float"); // checked with the other flags, as argparse did
+  if (Number.isNaN(timeout)) usageError(usage, "argument --timeout: nan is not a timeout"); // the Python crashed on it
   const path = args.file!;
   if (!existsSync(path) || !statSync(path).isFile()) fail(`${path} not found`);
   const rows = load(path);

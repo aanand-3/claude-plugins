@@ -8,7 +8,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { checkReport, type Fetch, fetchPage, normalize, type Row, verify } from "../../src/tools/research/verify_evidence.js";
-import { PY } from "../helpers/repo.js";
+import { PY, Repo, script } from "../helpers/repo.js";
 
 const PAGES: Record<string, [number, string]> = {
   "https://acme.example/pricing": [200, "<html><script>x</script><p>Team&nbsp;plan: <b>$29 per user</b> / month</p></html>"],
@@ -131,5 +131,23 @@ describe.skipIf(PY)("fetchPage (the real fetch, against local servers)", () => {
     } finally {
       site.close();
     }
+  });
+});
+
+describe.skipIf(PY)("verify_evidence flags and errors", () => {
+  it("only undici's redirect-loop reason counts as a redirect, not any error mentioning one", async () => {
+    // a name with "redirect" in it that never resolves: a lookup failure (-1) or no network (0), never 302
+    expect([-1, 0]).toContain((await fetchPage("https://redirect.invalid/", 5))[0]);
+  });
+
+  it("--timeout takes Python's float syntax; inf means no timeout, nan is refused", () => {
+    const repo = Repo.create(false);
+    repo.write("ev.jsonl", JSON.stringify({ id: "E1", url: "https://a.example/", verified: "yes", http_status: 200 }) + "\n");
+    const run = (t: string) => repo.py(script("research", "verify_evidence"), ["--no-fetch", "--file", "ev.jsonl", "--timeout", t]);
+    for (const t of ["inf", "Infinity", " 7 ", "1e1", "1_0", ".5"]) expect(run(t).returncode, t).toBe(0);
+    const nan = run("nan");
+    expect(nan.returncode).toBe(2);
+    expect(nan.stderr).toContain("nan is not a timeout");
+    for (const t of ["abc", "1__0", "0x10"]) expect(run(t).stderr, t).toContain(`invalid float value: '${t}'`);
   });
 });

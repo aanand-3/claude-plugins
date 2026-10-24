@@ -23,6 +23,9 @@ function usageError(usage, message) {
 ${name}: error: ${message}`);
   process.exit(2);
 }
+var DIGITS = String.raw`\d+(?:_\d+)*`;
+var INT = new RegExp(`^[+-]?${DIGITS}$`);
+var FLOAT = new RegExp(`^[+-]?(?:(?:${DIGITS})?\\.${DIGITS}|${DIGITS}\\.?)(?:[eE][+-]?${DIGITS})?$`);
 
 // src/tools/global-setup/difflib.ts
 var SequenceMatcher = class {
