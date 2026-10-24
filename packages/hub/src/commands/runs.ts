@@ -1,6 +1,6 @@
 /** Workflow runs in the ledger: a multi-step job (kickoff, onboard) records each step as it finishes, so an interrupted run —
  * or another session or agent — resumes from the first step not done. `checkpoint --workflow W --step S [--skip]`,
- * `resume --workflow W`. Replaces the kickoff.yaml / onboard.yaml progress files where the hub exists. */
+ * `resume --workflow W`. Kickoff and onboard track their progress this way. */
 import type { LedgerEvent } from "../core/ledger.js";
 import type { Store } from "../core/store.js";
 import { fail } from "../core/text.js";
