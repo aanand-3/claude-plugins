@@ -108,7 +108,7 @@ export function saveDesign(store: Store, req: SaveRequest): void {
     writeDesign(store, ordered(checkTokens(req.tokens), "final", n), current.body);
     if (store.ws.isDir(store.dirs.item)) { // the hub's backlog exists (the hub module is on)
       newItem(store, "chore", `Bring the UI onto design revision ${n}`, undefined,
-        `DESIGN.md revision ${n}: ${reason}. Run \`check_design.py --all\` for the code that now drifts and move it onto the new tokens.`);
+        `DESIGN.md revision ${n}: ${reason}. Run \`check_design.mjs --all\` for the code that now drifts and move it onto the new tokens.`);
     }
     handoff(store, { kind: "revision", note: `Revision ${n}: ${reason}. Write the ADR (mention \`DESIGN.md revision ${n}\`).` });
     store.say(`Saved ${current.path} as revision ${n}`);

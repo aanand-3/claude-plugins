@@ -154,7 +154,7 @@ export function Done() {
     <div className="stage stage--narrow">
       <header className="stage__head"><div>
         <h1>The design is set</h1>
-        <p className="muted">{design?.path ?? "DESIGN.md"} is the one home of visual decisions. Every page is built from its tokens, shell and components; `check_design.py` flags drift.</p>
+        <p className="muted">{design?.path ?? "DESIGN.md"} is the one home of visual decisions. Every page is built from its tokens, shell and components; `check_design.mjs` flags drift.</p>
       </div></header>
       {recording && <Waiting>Claude is recording the approved screens in DESIGN.md and adding a backlog item for each.</Waiting>}
       <article className="card">

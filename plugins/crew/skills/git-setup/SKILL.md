@@ -20,7 +20,7 @@ argument-hint: "[--github]"
 ## Steps
 1. Run (idempotent, never commits):
    ```bash
-   python3 "${CLAUDE_SKILL_DIR}/scripts/setup_git.py" --root .
+   node "${CLAUDE_SKILL_DIR}/scripts/setup_git.mjs" --root .
    ```
    (Clones don't inherit `core.hooksPath`; the project's SessionStart hook in `.claude/settings.json` re-activates `.githooks` automatically, and the README tells humans to run `git config core.hooksPath .githooks`.)
    It derives `.gitignore` sections from `.crew/config.yaml` packs (or `--stacks python,node,docker`), plus `graphify-out/` for the code graph. It adds `.gitattributes`, the PR template and `.githooks/{pre-commit,commit-msg}`, and sets `core.hooksPath`.
@@ -37,5 +37,5 @@ argument-hint: "[--github]"
 - Always ask before merging, pushing, or deleting branches.
 
 ## Notes
-- `.githooks/pre-commit` runs, in order: main-branch guard → secret scan (`.crew/bin/check_secrets.py`, blocks) → structure check (warns) → `pre-commit run` if `.pre-commit-config.yaml` exists (added by P-001 from the tooling templates). **Never run `pre-commit install`** — it would replace `core.hooksPath` and drop the crew guards.
+- `.githooks/pre-commit` runs, in order: main-branch guard → secret scan (`.crew/bin/check_secrets.mjs`, blocks) → structure check (warns) → `pre-commit run` if `.pre-commit-config.yaml` exists (added by P-001 from the tooling templates). **Never run `pre-commit install`** — it would replace `core.hooksPath` and drop the crew guards.
 - Never use `--no-verify`, never force-push `main`.

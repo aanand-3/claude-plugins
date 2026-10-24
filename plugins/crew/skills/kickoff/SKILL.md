@@ -20,7 +20,7 @@ record the steps done before the hub existed right after `init`. Any session or 
 
 0. **Preflight**
    - Confirm the target directory (default: current). If it already has application code (source files, a package manifest, commits beyond a scaffold), stop and suggest `/crew:onboard`, which maps and merges instead of interviewing from scratch. Docs or an empty repo are fine.
-   - Check tools: `git --version`, `node --version` (the hub and the design studio need Node.js ≥ 20), `python3 --version` (the other scripts need Python ≥ 3.9). `gh` only if the user wants GitHub now.
+   - Check tools: `git --version`, `node --version` (every crew script needs Node.js ≥ 20.18; the hub alone runs on 20), `uv --version` (installs graphify for the code graph, step 5). `gh` only if the user wants GitHub now.
    - Check `~/.claude/CLAUDE.md` for `<!-- crew:global:start -->`. If missing, mention once that `/crew:global-setup` installs the global working principles (one-time per machine) — don't run it from here.
    - If there's no `docs/research/idea-research.md`, mention once that `/crew:research` can check competitors and prior art before committing to the idea. It's optional and standalone; don't run it from here.
    - Tell the user the plan in a few lines: discover → design (UI projects) → guidelines → hub → git → code graph → idea, goals & first plan. The code graph (graphify) is an external tool, installed in step 5 only with their yes.
@@ -56,7 +56,7 @@ record the steps done before the hub existed right after `init`. Any session or 
        - frontend API types generated from the backend's OpenAPI spec;
        - per-app Dockerfiles and `compose.yaml` with the selected services, plus `.env` from `.env.example`;
        - Makefile targets with `##` help text (`make help` is the command reference), and README *Getting started* updated with the real first-run steps.
-     - if `docs/design/DESIGN.md` exists: apply its tokens with `python3 .crew/bin/check_design.py --export tailwind` in the frontend's global CSS, and build the layout shell from DESIGN.md → Layout;
+     - if `docs/design/DESIGN.md` exists: apply its tokens with `node .crew/bin/check_design.mjs --export tailwind` in the frontend's global CSS, and build the layout shell from DESIGN.md → Layout;
      - **No empty placeholder folders.**
      - build the code graph once the shells exist (`/graphify .`, when graphify is set up) and confirm the post-commit hook updates it;
      - **Acceptance criteria** include `make check` green from a clean checkout, with every configured tool run at least once.

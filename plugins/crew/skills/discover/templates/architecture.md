@@ -22,7 +22,7 @@ flowchart LR
 <!-- The single home for the layout; README and CLAUDE.md link here. Show the designed tree,
      including folders that don't exist yet (they appear as code lands), with one line per
      directory. Every directory declared in `.crew/config.yaml → structure:` (root and source
-     roots) must appear here; `check_structure.py --all` warns otherwise. -->
+     roots) must appear here; `check_structure.mjs --all` warns otherwise. -->
 ```text
 <project>/
 ├── <backend_dir>src/<package>/

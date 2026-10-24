@@ -269,7 +269,7 @@ tr("new-item", "feat", "Weekly summary email", "--why", "Three pilot users asked
 tr("escalate", "FEAT-008", "Reminders need Postmark's paid tier ($20/month): approve the spend, or ship push notifications later?");
 tr("status", "--write");
 // The design studio's input: Claude's spec (project screens) seeded into docs/design/studio.json
-const studio = new URL("../../../plugins/crew/skills/design/scripts/studio.py", import.meta.url).pathname;
-sh("python3", [studio, "seed", new URL("sample-design.json", import.meta.url).pathname]);
+const studio = new URL("../../../plugins/crew/skills/design/scripts/studio.mjs", import.meta.url).pathname;
+sh("node", [studio, "seed", new URL("sample-design.json", import.meta.url).pathname]);
 commit("chore(hub): day 3 of the check-in loop");
 console.log(`sample project ready: ${dir}`);

@@ -30,7 +30,7 @@ frontend-check: ## Frontend: typecheck, eslint (boundaries), prettier, vitest
 	cd frontend && pnpm check
 
 structure: ## Report files outside the declared layout
-	python3 .crew/bin/check_structure.py --all
+	node .crew/bin/check_structure.mjs --all
 
 fmt: ## Format everything
 	cd backend && uv run ruff check --fix . && uv run ruff format .

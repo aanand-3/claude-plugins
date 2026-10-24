@@ -3,6 +3,7 @@
 //   dist/mcp.mjs     — the same commands as MCP tools over stdio (esbuild, no runtime dependencies)
 //   dist/ui.html     — the interactive view (Vite + React, JS/CSS/fonts inlined); `export` embeds the graph in it
 //   dist/studio.html — the design studio (same setup, the design skill's catalog.json inlined); `ui` serves it at /design
+//   skills/<skill>/scripts/<name>.mjs — the skill scripts (esbuild, one standalone file each; projects vendor some of them)
 // `node build.mjs` writes them; the freshness test builds into a temp dir and compares.
 import { build } from "esbuild";
 import { chmodSync, copyFileSync, mkdirSync, mkdtempSync, readFileSync } from "node:fs";
@@ -16,6 +17,17 @@ const VERSION = JSON.parse(readFileSync(new URL("package.json", import.meta.url)
 
 export const bundleCli = (outfile = join(DIST, "crew.mjs")) => bundleNode("src/hub/main.ts", outfile);
 export const bundleMcp = (outfile = join(DIST, "mcp.mjs")) => bundleNode("src/hub/mcp.ts", outfile);
+
+const SKILLS = new URL("../../plugins/crew/skills/", import.meta.url).pathname;
+/** The skill scripts: src/tools/<skill>/<name>.ts → skills/<skill>/scripts/<name>.mjs. */
+export const TOOLS = [
+  ["git-setup", "setup_git"], ["git-setup", "check_secrets"],
+  ["guidelines", "compose_rules"], ["guidelines", "check_structure"], ["guidelines", "format_on_edit"], ["guidelines", "track_plan_draft"],
+  ["design", "check_design"], ["design", "wada"], ["design", "studio"],
+  ["research", "verify_evidence"], ["global-setup", "install_global"],
+];
+export const toolPath = (skill, name) => join(SKILLS, skill, "scripts", `${name}.mjs`);
+export const bundleTool = (skill, name, outfile = toolPath(skill, name)) => bundleNode(`src/tools/${skill}/${name}.ts`, outfile);
 
 async function bundleNode(entry, outfile) {
   await build({
@@ -59,4 +71,5 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   console.log(`built ${await bundleMcp()}`);
   console.log(`built ${await bundleUi()}`);
   console.log(`built ${await bundleStudio()}`);
+  for (const [skill, name] of TOOLS) console.log(`built ${await bundleTool(skill, name)}`);
 }

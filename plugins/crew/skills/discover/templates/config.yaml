@@ -44,7 +44,7 @@ architecture:
   environments: [local, test]   # add staging/production when a deployment target is chosen
 
 # High-level layout guard: allowed immediate children per governed directory.
-# Checked by .githooks/pre-commit (.crew/bin/check_structure.py). Folders are created
+# Checked by .githooks/pre-commit (.crew/bin/check_structure.mjs). Folders are created
 # only when real code needs them; changing this list is a deliberate, reviewed decision.
 # warn = report drift on commit but never block (default while the layout is young);
 # block = reject the commit. Tests live under allowed entries (backend/tests, co-located

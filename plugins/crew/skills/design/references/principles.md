@@ -3,7 +3,7 @@
 What makes a UI feel deliberate rather than generated. Use with DESIGN.md: this file explains *how to decide*; DESIGN.md records *what was decided* for the project.
 
 ## Colour
-- **Start from a combination, not a hue.** Wada's combinations are 2–4 colours chosen to sit together. Use one combination per product. The most saturated colour becomes the accent (`primary`). The quietest colour tints the neutrals. The rest become `secondary` and chart colours. `wada.py roles` does this mapping and checks contrast.
+- **Start from a combination, not a hue.** Wada's combinations are 2–4 colours chosen to sit together. Use one combination per product. The most saturated colour becomes the accent (`primary`). The quietest colour tints the neutrals. The rest become `secondary` and chart colours. `wada.mjs roles` does this mapping and checks contrast.
 - **Proportions:** roughly 70% neutral surfaces, 20% secondary/structure, 10% or less accent. The accent marks the one primary action and the current state. It is not decoration.
 - **Tinted neutrals.** Pure grey and pure black look unconsidered. Give backgrounds, borders and text a trace of the palette's hue (chroma under 6).
 - **Status colours** (destructive, success, warning) are functional. Keep them few, and always pair them with an icon or text, never colour alone.
@@ -11,7 +11,7 @@ What makes a UI feel deliberate rather than generated. Use with DESIGN.md: this 
 - Contrast: body text 4.5:1 or more (aim for 7:1), large text and UI boundaries 3:1 or more.
 
 ## Typography
-- **Two families at most:** one for text, optionally one for display or headings. A monospace face is allowed for code and IDs. Pick fonts for the adjectives: geometric for precise, humanist for warm, grotesk for neutral or technical, serif for editorial or trustworthy. Start from the curated pairings in `assets/fonts.json` (`studio.py fonts --mood …`): each is OFL, has a matching mono and says why it fits. Avoid defaulting to whatever is most common; choose deliberately and write down why.
+- **Two families at most:** one for text, optionally one for display or headings. A monospace face is allowed for code and IDs. Pick fonts for the adjectives: geometric for precise, humanist for warm, grotesk for neutral or technical, serif for editorial or trustworthy. Start from the curated pairings in `assets/fonts.json` (`studio.mjs fonts --mood …`): each is OFL, has a matching mono and says why it fits. Avoid defaulting to whatever is most common; choose deliberately and write down why.
 - **A modular scale** (e.g. 1.2 for apps, 1.25–1.333 for marketing) with 5–7 steps. Every size used comes from the scale.
 - Body text 16 px with line height 1.5 and 60–75 characters per line. Headings get tighter line height (1.1–1.25) and slight negative tracking at large sizes.
 - Show hierarchy with weight and size together. Never use more than three weights.
@@ -54,5 +54,5 @@ What makes a UI feel deliberate rather than generated. Use with DESIGN.md: this 
 ## Self-check before calling a page done
 1. Would this page look the same for any other product? If so, it doesn't use the direction.
 2. Squint: is there exactly one most-important thing?
-3. Are all spacing, colour, radius and font values tokens? (`check_design.py`)
+3. Are all spacing, colour, radius and font values tokens? (`check_design.mjs`)
 4. Light and dark, 375 and 1280 px, keyboard-only: does it still work?

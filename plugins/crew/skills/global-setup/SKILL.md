@@ -13,12 +13,12 @@ The content is `${CLAUDE_SKILL_DIR}/assets/CLAUDE.global.md`. It is inserted bet
 ## Steps
 1. Dry run and show the user the result:
    ```bash
-   python3 "${CLAUDE_SKILL_DIR}/scripts/install_global.py" --check
+   node "${CLAUDE_SKILL_DIR}/scripts/install_global.mjs" --check
    ```
 2. If the user's existing global file has instructions that conflict with the block, point them out and ask which should win. Don't edit the user's own content without approval.
 3. On the user's explicit yes:
    ```bash
-   python3 "${CLAUDE_SKILL_DIR}/scripts/install_global.py" --apply
+   node "${CLAUDE_SKILL_DIR}/scripts/install_global.mjs" --apply
    ```
    (A timestamped backup is written next to the file.)
 4. Tell the user it takes effect in new sessions.

@@ -4,9 +4,9 @@ name: <Project> — <Direction name>
 description: <one line: the feel, for whom>
 status: draft  # draft while choosing; final once locked — then it changes only through a revision
 revision: 0    # 1 when first locked; +1 per revision, each with an ADR mentioning "DESIGN.md revision <n>"
-source: "Wada #<id>"  # palette origin (wada.py roles <id>); "brand" if built from fixed brand colours
+source: "Wada #<id>"  # palette origin (wada.mjs roles <id>); "brand" if built from fixed brand colours
 colors:
-  # paste `wada.py roles <id>` output here (light roles, then dark- roles); shadcn role names
+  # paste `wada.mjs roles <id>` output here (light roles, then dark- roles); shadcn role names
   background: "<#hex>"
   foreground: "<#hex>"
   card: "<#hex>"
@@ -26,7 +26,7 @@ colors:
   dark-background: "<#hex>"
   # … every role again with the dark- prefix
 typography:
-  pairing: <font pairing id>  # assets/fonts.json (studio.py fonts)
+  pairing: <font pairing id>  # assets/fonts.json (studio.mjs fonts)
   display:
     fontFamily: <Display face>
     fontWeight: 600

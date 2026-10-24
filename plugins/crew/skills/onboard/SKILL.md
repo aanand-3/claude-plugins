@@ -25,7 +25,7 @@ done before the hub existed right after `init`. On start, if the `chore/crew-onb
      - hooks: `core.hooksPath`, `.husky/`, `.pre-commit-config.yaml`, real files in `.git/hooks`;
      - CI (`.github/workflows/`, others), README, `docs/`, ADRs;
      - the default branch and remote.
-   - **Tools:** `git`, `python3` ≥ 3.9, `node` ≥ 20 (the hub and the design studio).
+   - **Tools:** `git`, `node` ≥ 20.18 (every crew script; the hub alone runs on 20), `uv` (installs graphify for the code graph).
    - **Code graph:** graphify maps the codebase for this onboarding and for every later session. It's an external tool, installed in step 1 only with the user's yes. A project-kit `.project/` folder is migrated by the hub step (`crew.mjs migrate`).
 
 1. **Map** — gather evidence before asking anything.
@@ -44,7 +44,7 @@ done before the hub existed right after `init`. On start, if the `chore/crew-onb
 3. **Design** (UI projects only, and only if the user wants it): `design` skill. Offer `review` of the existing UI first; `init` only if there's no established look worth keeping.
 
 4. **Guidelines** — follow the `guidelines` skill.
-   - Run `compose_rules.py --dry-run` first and show the result.
+   - Run `compose_rules.mjs --dry-run` first and show the result.
    - **Merge, never replace:** keep everything in the existing `CLAUDE.md` that is still true, move stack facts to their home (config, `project.md`) and show the diff.
    - The same goes for `.claude/settings.json` (merge the keys), the README (keep the content, add the *Where to find things* map and link instead of copying) and `.env.example`.
 
@@ -57,7 +57,7 @@ done before the hub existed right after `init`. On start, if the `chore/crew-onb
    - a CHORE item to apply the tooling reference configs (`.crew/templates/tooling/`) where the repo lacks lint, type-check or CI.
    Planning normally happens on main; during onboarding it rides along on the onboard branch and lands with its PR.
 
-6. **Git** — follow the `git-setup` skill. `setup_git.py` never re-inits, never overwrites existing files, and leaves existing hooks alone unless `--take-over-hooks` (ask first; offer to merge the guard lines into the existing hooks instead).
+6. **Git** — follow the `git-setup` skill. `setup_git.mjs` never re-inits, never overwrites existing files, and leaves existing hooks alone unless `--take-over-hooks` (ask first; offer to merge the guard lines into the existing hooks instead).
    - Existing `.gitignore`: only the missing sections are appended. Review them.
    - Commit on the onboard branch: `chore: onboard crew`. The main guard doesn't apply on a branch.
 

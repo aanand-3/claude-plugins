@@ -26,7 +26,7 @@ jobs:
         with:
           node-version: 22
       - name: Structure report (add --strict once the layout settles)
-        run: python3 .crew/bin/check_structure.py --all
+        run: node .crew/bin/check_structure.mjs --all
       - name: Hub consistency
         run: node .crew/bin/crew.mjs check
       - name: Secret scan (gitleaks)

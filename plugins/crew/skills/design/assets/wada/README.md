@@ -8,4 +8,4 @@
   ```json
   [{"id": "v2-12", "names": ["Colour A", "Colour B", "Colour C"], "colors": ["#aabbcc", "#ddeeff", "#112233"]}]
   ```
-  `wada.py` picks these up automatically.
+  `wada.mjs` picks these up automatically.
