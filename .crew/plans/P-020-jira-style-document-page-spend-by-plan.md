@@ -5,12 +5,12 @@ goal: G-001
 items: FEAT-023, BUG-019
 touches: packages/crew/ui/**, packages/crew/src/hub/core/memory/ledger.ts, packages/crew/src/hub/graph-types.ts, packages/crew/src/hub/commands/views/**, packages/crew/src/hub/commands/team/autonomy.ts, packages/crew/src/hub/core/work/doc.ts, packages/crew/test/**, packages/crew/scripts/sample-project.mjs, packages/crew/docs/design/DESIGN.md, plugins/crew/skills/hub/dist/**, .crew/bin/**
 depends_on:
-status: in-review
+status: done
 branch: plan/P-020-jira-style-document-page-spend-by-plan
-pr:
+pr: https://github.com/aanand-3/claude-plugins/pull/14
 created: 2026-10-24
 started: 2026-10-24
-completed:
+completed: 2026-10-24
 assignee: developer
 ---
 
@@ -128,6 +128,8 @@ Latest log:
 - 2026-10-24: Correction: the cumulative-usage bug is BUG-019, not BUG-018 (previous log line)
 - 2026-10-24: Correction: the earlier BUG-017/BUG-018 IDs in this log were never created (new-item with --goal/--severity was refused for qa and rolled back). Filed as BUG-019 (Relations rows misaligned, AC5) and BUG-020 (usage events cumulative, spend overcounts; pre-existing)
 - 2026-10-24: Took BUG-019 (QA's AC5 failure: Relations rows misaligned) into this plan; fixed with a 96px status column that fits the widest chip, so every title starts at the same x.
+- 2026-10-24: BUG-019 re-tested at db4217a: Relations titles align at one x on G-001, P-014, CHORE-007, IDEA, P-001; fixed (AC5 pass)
+- 2026-10-24: status in-review → done
 
 ## Outcome
 Shipped as planned: the full-width document page (360px details rail, prose capped at 90ch), collapsible panels and per-kind tabs, the Actions split-button menu with triage and log in the rail, FileList for Touches and Applies to, status-first collapsible Relations, a Spend row, a Tasks panel by `###` phase, Child issues on goal and item pages, Hierarchy tasks, the board's open-task tooltip, and Overview spend by agent and top plans. `Ledger.spend()` gains `byRole`/`byRef` with run attribution; graph schema v6.

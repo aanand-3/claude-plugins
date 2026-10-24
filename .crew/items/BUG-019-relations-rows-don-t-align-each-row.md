@@ -2,11 +2,11 @@
 id: BUG-019
 type: bug
 title: Relations rows don't align: each row sizes its own chip column
-status: new
-severity:
-priority:
-goal:
-plan:
+status: triaged
+severity: S4
+priority: P3
+goal: G-001
+plan: P-020
 created: 2026-10-24
 closed:
 ---
@@ -38,3 +38,4 @@ Cosmetic (S4): titles are harder to scan down a group. Fails the "aligned in a g
 
 ## Notes
 Found by QA while testing P-020.
+- 2026-10-24: status new → triaged — priority P3, severity S4

@@ -2,10 +2,10 @@
 id: BUG-020
 type: bug
 title: Usage events repeat a resumed run's earlier tokens, so spend overcounts
-status: new
-severity:
-priority:
-goal:
+status: triaged
+severity: S3
+priority: P2
+goal: G-003
 plan:
 created: 2026-10-24
 closed:
@@ -43,3 +43,4 @@ S3: every spend figure (Overview KPI, Spend by agent, Top plans, doc Spend rows,
 
 ## Notes
 Predates P-020 (capture came with FEAT-020); P-020 AC7 only asks the UI to match the ledger, which it does. Found by QA while testing P-020.
+- 2026-10-24: status new → triaged — priority P2, severity S3
