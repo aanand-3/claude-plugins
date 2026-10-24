@@ -1,4 +1,5 @@
 {
+  "plansDirectory": ".crew/drafts",
   "hooks": {
     "PreToolUse": [
       {
@@ -17,6 +18,27 @@
           {
             "type": "command",
             "command": "cd \"$CLAUDE_PROJECT_DIR\" 2>/dev/null || exit 0; [ -f .crew/bin/crew.mjs ] && node .crew/bin/crew.mjs usage --hook >/dev/null 2>&1; exit 0"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -f \"$CLAUDE_PROJECT_DIR/.crew/bin/track_plan_draft.mjs\" ] && node \"$CLAUDE_PROJECT_DIR/.crew/bin/track_plan_draft.mjs\" --session; true"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "ExitPlanMode",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -f \"$CLAUDE_PROJECT_DIR/.crew/bin/track_plan_draft.mjs\" ] && node \"$CLAUDE_PROJECT_DIR/.crew/bin/track_plan_draft.mjs\"; true"
           }
         ]
       }

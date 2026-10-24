@@ -5,7 +5,7 @@ title: Kickoff as the team's first job
 status: triaged
 priority: P1
 goal: G-003
-plan:
+plan: P-011
 created: 2026-10-23
 closed:
 ---
