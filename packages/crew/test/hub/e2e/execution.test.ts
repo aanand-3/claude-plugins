@@ -8,7 +8,6 @@ import { events, mcpCall, started } from "./sections.js";
 let repo: Repo;
 beforeEach(() => { repo = Repo.create(); });
 
-
 it("a crashed run resumes from the ledger", () => {
   started(repo);
   const r = tr(repo, "checkpoint", "--run", "echo 'AssertionError: 409 expected' && false", "--ac", "1");

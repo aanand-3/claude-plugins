@@ -13,10 +13,6 @@ const BUILT_IN_AGENTS = ["director", "pm", "architect", "developer", "qa", "rele
 let repo: Repo;
 beforeEach(() => { repo = Repo.create(); });
 
-
-
-
-
 const templates = () => readdirSync(AGENT_TEMPLATES).filter((f) => f.endsWith(".md")).sort();
 
 it("agents render every role but the human's", () => {

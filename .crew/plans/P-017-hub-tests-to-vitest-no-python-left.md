@@ -108,6 +108,7 @@ Latest log:
 - 2026-10-24: assigned to the developer role
 - 2026-10-24: status ready → in-progress — branch plan/P-017-hub-tests-to-vitest-no-python-left
 - 2026-10-24: status in-progress → in-review
+- 2026-10-24: review nits: dropped the last per-test timeout override (context, 90s), basics checks is-a-file like is_file(), blank lines left by the helper merge, Repo.run 60s process timeout; merged main for the permissions block
 
 ## Outcome
 - **What shipped:**
@@ -141,7 +142,7 @@ Latest log:
   - `worktrees.test.ts` ← 8: plan_worktrees_new_plan_specs_in_its_own_worktree, plan_worktrees_refuse_a_spec_off_the_base_branch, plan_worktrees_are_seen_and_edited_from_main, plan_worktrees_start_checkpoint_and_merge_order, plan_worktrees_developer_agent_has_no_isolation, guard_protects_hub_files_inside_plan_worktrees, merge_order_ignores_plan_worktrees_in_solo_mode, plan_worktrees_start_keeps_an_existing_branchs_progress
   - `team.test.ts, team-2.test.ts` ← 22: staff_proposes_the_ready_non_overlapping_frontier, staff_stays_within_max_agents, the_lifecycle_preset_is_a_policy_layer, a_developer_starts_only_what_the_pm_assigned_to_it, under_the_lifecycle_only_the_pm_completes_and_triages, activating_the_goal_set_waits_for_the_executive, role_gates_on_one_edge, a_goal_is_done_only_when_the_pm_verified_it_and_nothing_is_left, a_stale_claim_is_flagged_and_reassigned, the_third_bounce_goes_to_the_director, attempts_over_the_limit_go_to_the_director, a_paused_team_staffs_and_starts_nothing, kickoff_runs_in_the_ledger, review_sends_changes_back_and_done_needs_an_approval_of_the_current_code, only_qa_checks_count_as_evidence_under_the_lifecycle, raci_under_the_lifecycle, merge_order_puts_dependencies_first, a_plan_waits_for_its_unmerged_dependency, the_runner_stops_on_escalation_pause_budget_and_a_done_goal, notify_runs_the_policy_command_once_per_event, usage_is_captured_from_each_agents_transcript_and_budgets_bite, the_fast_lane_skips_the_architect_but_not_qa
 - **Deviations:**
-  - **Timeout:** `vitest.config.ts` raised the per-test timeout from 30s to 120s. 16 e2e files run in parallel and each spawns the hub dozens of times, so the slowest team cases passed 30s on a busy machine. They were timeouts, never assertion failures. Two per-test 60s overrides were dropped in favour of the suite default.
+  - **Timeout:** `vitest.config.ts` raised the per-test timeout from 30s to 120s. 16 e2e files run in parallel and each spawns the hub dozens of times, so the slowest team cases passed 30s on a busy machine. They were timeouts, never assertion failures. The per-test overrides (60s, 90s) were dropped in favour of the suite default, and `Repo.run` kills a process still running after 60s, so a hung hub fails its test instead of blocking a worker.
   - **Behaviour change:** knowledge entries now also refuse a HubSpot private-app token (`test/shared.test.ts`).
 - **Follow-ups:**
   - **The guard compares paths unresolved.** A protected file reached through a symlinked prefix (macOS `/var` → `/private/var`) isn't recognised. The worktree-guard port had to `realpath` the test repo to match pytest's resolved `tmp_path`. Capture it as a BUG on main.

@@ -7,14 +7,8 @@ import { Repo } from "../../helpers/repo.js";
 import { init, newPlan, tr } from "./helpers.js";
 import { agent, bash, events, hook, mcpCall } from "./sections.js";
 
-
 let repo: Repo;
 beforeEach(() => { repo = Repo.create(); });
-
-
-
-
-
 
 it("identity flags win over the environment", () => {
   init(repo);

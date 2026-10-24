@@ -1,6 +1,6 @@
 /** The hub, end to end — basics: init and vendoring, refusals, usage, drafts, the Definition of Ready, transitions,
  * dependencies, the WIP limit and ID allocation. Ported from tests/crew/test_hub.py (section "basics"). */
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { beforeEach, expect, it } from "vitest";
 import { HUB, Repo } from "../../helpers/repo.js";
@@ -14,7 +14,8 @@ it("init vendors the script and the templates", () => {
   init(repo);
   for (const rel of ["bin/crew.mjs", "bin/ui.html", "templates/plan.md", "templates/goal.md", "templates/idea.md",
     "templates/item-bug.md", "templates/writing-guide.md", "README.md", "items/.gitkeep", "plans/.gitkeep", "goals/.gitkeep"]) {
-    expect(existsSync(join(repo.path, ".crew", rel)), rel).toBe(true);
+    const p = join(repo.path, ".crew", rel);
+    expect(existsSync(p) && statSync(p).isFile(), rel).toBe(true);
   }
   for (const gone of ["sprints", "milestones", "ROADMAP.md", "BACKLOG.md", "templates/sprint.md", "templates/raid.md"]) {
     expect(existsSync(join(repo.path, ".crew", gone)), gone).toBe(false);

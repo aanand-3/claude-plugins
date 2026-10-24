@@ -10,7 +10,6 @@ import { OLD_RAID, oldProject } from "./sections.js";
 let repo: Repo;
 beforeEach(() => { repo = Repo.create(); });
 
-
 const isFile = (p: string) => existsSync(p) && statSync(p).isFile();
 
 it("migrate converts a project-kit folder", () => {

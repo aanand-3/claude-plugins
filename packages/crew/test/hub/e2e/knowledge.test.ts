@@ -11,7 +11,6 @@ import { events, knowledge, mcpCall, orgPlaybook, readyPlan } from "./sections.j
 let repo: Repo;
 beforeEach(() => { repo = Repo.create(); });
 
-
 it("learn and recall round trip", () => {
   init(repo);
   repo.write("src/auth/login.py", "x\n");

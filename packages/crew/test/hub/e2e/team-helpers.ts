@@ -23,9 +23,6 @@ export function staffing(repo: Repo): Json {
   return JSON.parse(r.stdout);
 }
 
-
-
-
 /** Tick every task and write the outcome, as the pytest suite's `p.write_text(...)` lines do. */
 export function ship(repo: Repo, id: string): void {
   const p = planFile(repo, id);

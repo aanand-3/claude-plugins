@@ -11,13 +11,6 @@ import { agent, bash, events, frontmatter, hook, readyPlan } from "./sections.js
 let repo: Repo;
 beforeEach(() => { repo = Repo.create(); });
 
-
-
-
-
-
-
-
 function worktreeHub(repo: Repo): void {
   init(repo, { commit: true });
   repo.write(".crew/config.yaml", "hub:\n  plan_worktrees: true\n");

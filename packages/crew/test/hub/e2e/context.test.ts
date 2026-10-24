@@ -39,7 +39,7 @@ it("context stays within budget in role order", () => {
   const project = tr(repo, "context", "--role", "director").stdout;
   expect(sectionOrder(project).slice(0, 2)).toEqual(["Idea & focus", "Next for director"]);
   expect(project).toContain("P-001 held by developer (dev-run)");
-}, 90_000); // ~20 hub runs: more than the 30s default on a loaded machine
+});
 
 it("an ask blocks only its plan", () => {
   init(repo, { commit: true });

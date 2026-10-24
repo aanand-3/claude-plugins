@@ -38,8 +38,9 @@ export class Repo {
     return r;
   }
 
+  /** Run a command; a process still running after a minute is killed and fails the test, so a hang can't block a worker. */
   run(cmd: string, args: string[], input?: string): Result {
-    const p = spawnSync(cmd, args, { cwd: this.path, env: this.env, input, encoding: "utf8" });
+    const p = spawnSync(cmd, args, { cwd: this.path, env: this.env, input, encoding: "utf8", timeout: 60_000 });
     if (p.error) throw p.error;
     return { returncode: p.status ?? -1, stdout: p.stdout, stderr: p.stderr };
   }
