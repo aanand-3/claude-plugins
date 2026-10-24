@@ -30,6 +30,33 @@ it("the vendored copy runs without the plugin", () => {
   expect(repo.node(vendored, ["init"]).returncode).toBe(0); // re-init from the vendored copy is a no-op vendor
 });
 
+it("hub_state_init: init writes the hub-state section into CLAUDE.md, once", () => {
+  init(repo);
+  const claude = read(join(repo.path, "CLAUDE.md"));
+  expect(claude).toMatch(/^<!-- crew:hub-state -->\n/);
+  expect(claude).toContain("pointers to hub IDs");
+  const other = Repo.create();
+  other.write("CLAUDE.md", "# Ferry\n\nOur own rules.\n");
+  init(other);
+  const appended = other.read("CLAUDE.md");
+  expect(appended.startsWith("# Ferry\n\nOur own rules.\n\n<!-- crew:hub-state -->\n")).toBe(true);
+  const r = tr(other, "init");
+  expect(r.stdout).not.toContain("CLAUDE.md");
+  expect(other.read("CLAUDE.md")).toBe(appended);
+});
+
+it("hub_state_check: check hints until CLAUDE.md has the hub-state section", () => {
+  init(repo);
+  const hint = "CLAUDE.md has no hub-state section";
+  expect(tr(repo, "check").stdout).not.toContain(hint);
+  repo.write("CLAUDE.md", "# Ferry\n");
+  expect(tr(repo, "check").stdout).toContain(hint);
+  repo.run("rm", ["CLAUDE.md"]);
+  expect(tr(repo, "check").stdout).toContain(hint);
+  tr(repo, "init");
+  expect(tr(repo, "check").stdout).not.toContain(hint);
+});
+
 it("a refused command writes nothing", () => {
   init(repo);
   tr(repo, "new-item", "bug", "Crash", "--why", "500 on login");
