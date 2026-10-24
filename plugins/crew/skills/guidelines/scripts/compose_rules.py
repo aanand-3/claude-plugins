@@ -9,9 +9,6 @@ In a monorepo, `architecture.backend_dir` / `architecture.frontend_dir` in confi
 the globs of backend-/frontend-scoped packs, so React rules never load for backend files
 and Python rules never load for frontend files.
 
-Tooling templates are rendered for `modules:` in config: {{#graphify}}…{{/graphify}} keeps
-a block when graphify is on, {{^graphify}}…{{/graphify}} when it's off.
-
 Usage: compose_rules.py [--root DIR] [--packs a,b] [--dry-run] [--force] [--prune]
 """
 from __future__ import annotations
@@ -66,23 +63,6 @@ def scope_dirs(root: Path) -> dict[str, str]:
     return dirs
 
 
-def modules_from_config(root: Path) -> dict[str, bool]:
-    """`modules:` switches; a missing key means off."""
-    flags = {"graphify": False}
-    m = re.search(r"^modules:[ \t]*\n((?:[ \t]+.*\n?)*)", config_text(root), re.M)
-    for key, value in re.findall(r"^[ \t]+(\w+):[ \t]*(\w+)", m.group(1) if m else "", re.M):
-        flags[key] = value.lower() == "true"
-    return flags
-
-
-def render_blocks(text: str, flags: dict[str, bool]) -> str:
-    """Keep {{#flag}}…{{/flag}} when flag is on and {{^flag}}…{{/flag}} when off; drop the rest."""
-    def keep(m: re.Match[str]) -> str:
-        return m.group(3) if flags.get(m.group(2), False) == (m.group(1) == "#") else ""
-    text = re.sub(r"^\{\{([#^])(\w+)\}\}\n(.*?)^\{\{/\2\}\}\n", keep, text, flags=re.M | re.S)
-    return re.sub(r"\{\{([#^])(\w+)\}\}(.*?)\{\{/\2\}\}", keep, text, flags=re.S)
-
-
 def packs_from_config(root: Path) -> list[str]:
     text = config_text(root)
     if not text:
@@ -124,10 +104,8 @@ def render(name: str, dirs: dict[str, str]) -> str:
     return head + MARKER.format(pack=name) + "\n\n" + body.lstrip()
 
 
-def copy_if_changed(src: Path, dst: Path, root: Path, executable: bool = False, flags: dict[str, bool] | None = None) -> None:
+def copy_if_changed(src: Path, dst: Path, root: Path, executable: bool = False) -> None:
     data = src.read_bytes()
-    if flags is not None and b"{{" in data:
-        data = render_blocks(data.decode(), flags).encode()
     if dst.exists() and dst.read_bytes() == data:
         return
     dst.parent.mkdir(parents=True, exist_ok=True)
@@ -141,7 +119,6 @@ def vendor(root: Path, packs: list[str]) -> None:
     """Copy helper scripts and the relevant tooling reference configs into the project,
     so hooks and P-001 work without the plugin installed."""
     here = Path(__file__).resolve().parent
-    flags = modules_from_config(root)
     for name in VENDORED:
         copy_if_changed(here / name, root / ".crew" / "bin" / name, root, executable=True)
     for pack, src in VENDORED_FOR.items():
@@ -151,9 +128,9 @@ def vendor(root: Path, packs: list[str]) -> None:
     for folder in folders:
         for src in sorted((TOOLING / folder).rglob("*")):
             if src.is_file() and ARCH_TOOLING.get(src.name, "base") in packs:
-                copy_if_changed(src, root / ".crew" / "templates" / "tooling" / src.relative_to(TOOLING), root, flags=flags)
+                copy_if_changed(src, root / ".crew" / "templates" / "tooling" / src.relative_to(TOOLING), root)
     if (TOOLING / "README.md").is_file():
-        copy_if_changed(TOOLING / "README.md", root / ".crew" / "templates" / "tooling" / "README.md", root, flags=flags)
+        copy_if_changed(TOOLING / "README.md", root / ".crew" / "templates" / "tooling" / "README.md", root)
 
 
 def main() -> None:

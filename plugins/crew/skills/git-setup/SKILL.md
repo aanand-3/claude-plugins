@@ -23,7 +23,7 @@ argument-hint: "[--github]"
    python3 "${CLAUDE_SKILL_DIR}/scripts/setup_git.py" --root .
    ```
    (Clones don't inherit `core.hooksPath`; the project's SessionStart hook in `.claude/settings.json` re-activates `.githooks` automatically, and the README tells humans to run `git config core.hooksPath .githooks`.)
-   It derives `.gitignore` sections from `.crew/config.yaml` packs (or `--stacks python,node,docker`), plus `graphify-out/` when `modules.graphify` is on. It adds `.gitattributes`, the PR template and `.githooks/{pre-commit,commit-msg}`, rendered for `modules.hub` (`--no-hub` forces the plain variant), and sets `core.hooksPath`.
+   It derives `.gitignore` sections from `.crew/config.yaml` packs (or `--stacks python,node,docker`), plus `graphify-out/` for the code graph. It adds `.gitattributes`, the PR template and `.githooks/{pre-commit,commit-msg}`, and sets `core.hooksPath`.
    **Existing repo:** it never re-inits and never overwrites existing files. If the repo already has hooks (`core.hooksPath` set elsewhere, e.g. Husky, or real hooks in `.git/hooks`), it leaves them active and says so. Then ask the user whether to merge the crew checks into their hooks, or take over with `--take-over-hooks`.
 2. Review `git status` with the user. Make sure no secrets or `.env` are staged.
 3. Initial commit (first commit on main is allowed by the hook; in an existing repo, commit on the onboard branch instead):

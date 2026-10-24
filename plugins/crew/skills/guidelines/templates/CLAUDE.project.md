@@ -6,9 +6,7 @@ Each fact has one home; read it on demand rather than copying it here:
 - **Stack and settings:** `.crew/config.yaml`. The concrete choices that matter while coding are in `.claude/rules/project.md`, which is always loaded.
 - **Layout and where new code goes:** [docs/architecture.md → Repository layout](docs/architecture.md#repository-layout).
 - **Purpose and scope:** [docs/project-brief.md](docs/project-brief.md). **Decisions:** [docs/adr/](docs/adr/).
-{{#graphify}}
-- **Code map:** `graphify-out/GRAPH_REPORT.md` (local, rebuilt on commit). Query it (`/graphify query "…"`) before reading files broadly.
-{{/graphify}}
+- **Code map:** `graphify-out/GRAPH_REPORT.md` (local, rebuilt on commit; `/crew:codemap` sets it up). Once it exists, query it (`/graphify query "…"`) before reading files broadly.
 - **Commands:** `make help`, where the Makefile is the source of truth. The full gate is `make check`. <Until the project tooling lands: "no commands yet".>
 
 ## Engineering rules

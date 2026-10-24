@@ -7,9 +7,6 @@
 - versioned hooks in .githooks/ + `git config core.hooksPath .githooks`
   (an existing hooks setup, e.g. Husky, is left alone unless --take-over-hooks)
 
-Templates are rendered for `modules:` in config: {{#graphify}}…{{/graphify}} keeps a block
-when graphify is on, {{^graphify}}…{{/graphify}} when it's off.
-
 Usage: setup_git.py [--root DIR] [--stacks python,node,docker] [--take-over-hooks]
        (stacks default: derived from .crew/config.yaml packs)
 """
@@ -31,23 +28,6 @@ def run(root: Path, *args: str) -> str:
 def config_text(root: Path) -> str:
     cfg = root / ".crew" / "config.yaml"
     return cfg.read_text() if cfg.is_file() else ""
-
-
-def modules_from_config(root: Path) -> dict[str, bool]:
-    """`modules:` switches; a missing key means off."""
-    flags = {"graphify": False}
-    m = re.search(r"^modules:[ \t]*\n((?:[ \t]+.*\n?)*)", config_text(root), re.M)
-    for key, value in re.findall(r"^[ \t]+(\w+):[ \t]*(\w+)", m.group(1) if m else "", re.M):
-        flags[key] = value.lower() == "true"
-    return flags
-
-
-def render_blocks(text: str, flags: dict[str, bool]) -> str:
-    """Keep {{#flag}}…{{/flag}} when flag is on and {{^flag}}…{{/flag}} when off; drop the rest."""
-    def keep(m: re.Match[str]) -> str:
-        return m.group(3) if flags.get(m.group(2), False) == (m.group(1) == "#") else ""
-    text = re.sub(r"^\{\{([#^])(\w+)\}\}\n(.*?)^\{\{/\2\}\}\n", keep, text, flags=re.M | re.S)
-    return re.sub(r"\{\{([#^])(\w+)\}\}(.*?)\{\{/\2\}\}", keep, text, flags=re.S)
 
 
 def foreign_hooks(root: Path) -> str:
@@ -81,15 +61,12 @@ def main() -> None:
     ap.add_argument("--take-over-hooks", action="store_true", help="replace an existing hooks setup (Husky, .git/hooks)")
     args = ap.parse_args()
     root = Path(args.root).resolve()
-    flags = modules_from_config(root)
 
     if not (root / ".git").exists():
         subprocess.run(["git", "init", "-q", "-b", "main"], cwd=root, check=True)
         print("git init (main)")
 
-    stacks = args.stacks.split(",") if args.stacks else stacks_from_config(root)
-    if flags["graphify"]:
-        stacks.append("graphify")
+    stacks = [*(args.stacks.split(",") if args.stacks else stacks_from_config(root)), "graphify"]  # the code graph is always on
     gi = root / ".gitignore"
     content = gi.read_text() if gi.exists() else ""
     for part in ["base", *stacks]:
@@ -104,7 +81,7 @@ def main() -> None:
         target = root / dst
         if not target.exists():
             target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_text(render_blocks((ASSETS / src).read_text(), flags))
+            target.write_text((ASSETS / src).read_text())
             print(f"wrote {dst}")
 
     hooks = root / ".githooks"
@@ -112,7 +89,7 @@ def main() -> None:
     for hook in (ASSETS / "githooks").iterdir():
         target = hooks / hook.name
         if not target.exists():
-            target.write_text(render_blocks(hook.read_text(), flags))
+            target.write_text(hook.read_text())
             target.chmod(0o755)
             print(f"wrote .githooks/{hook.name}")
     secrets_src = Path(__file__).resolve().parent / "check_secrets.py"

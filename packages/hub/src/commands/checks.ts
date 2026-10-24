@@ -212,4 +212,7 @@ function hygiene(s: Snapshot, f: Findings): void {
   if (s.store.ws.isDir(join(s.store.ws.root, ".project"))) {
     f.hints.push("a .project/ directory from project-kit is still here — `crew.mjs migrate` moves it into .crew/");
   }
+  if (!s.store.ws.read(join(s.store.ws.root, ".githooks", "post-commit"))?.includes("graphify")) {
+    f.hints.push("code graph not set up (no graphify hook in .githooks/post-commit) — `/crew:codemap` installs and wires it");
+  }
 }

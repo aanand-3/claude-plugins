@@ -15,7 +15,7 @@ you ── this session ── crew-director ─┬─ crew-pm ─ crew-architec
 ```
 
 ## Before the first run (each step once; skip what is already in place)
-1. **Hub.** `.crew/` must exist (`/crew:hub init`, or kickoff/onboard with the hub module).
+1. **Hub.** `.crew/` must exist (`/crew:hub init`, or kickoff/onboard).
 2. **Policy.** The team runs best under the lifecycle preset: each step belongs to one role and you approve the goal set.
    If `.crew/policy.yaml` has no `preset: lifecycle`, show the user what it does (`crew.mjs policy show` after) and add it
    only with their yes — a policy change is theirs.

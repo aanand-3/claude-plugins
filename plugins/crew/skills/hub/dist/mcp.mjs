@@ -9100,6 +9100,9 @@ function hygiene(s2, f) {
   if (s2.store.ws.isDir(join7(s2.store.ws.root, ".project"))) {
     f.hints.push("a .project/ directory from project-kit is still here \u2014 `crew.mjs migrate` moves it into .crew/");
   }
+  if (!s2.store.ws.read(join7(s2.store.ws.root, ".githooks", "post-commit"))?.includes("graphify")) {
+    f.hints.push("code graph not set up (no graphify hook in .githooks/post-commit) \u2014 `/crew:codemap` installs and wires it");
+  }
 }
 
 // src/commands/goals.ts

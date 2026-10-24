@@ -3,14 +3,14 @@ id: P-001
 title: Nothing optional: graphify always on
 goal:
 items: CHORE-006
-touches: .crew/config.yaml, README.md, plugins/crew/.claude-plugin/plugin.json, plugins/crew/skills/{codemap, discover, git-setup, guidelines, kickoff, onboard}/**, packages/hub/src/commands/checks.ts, packages/hub/test/**, plugins/crew/skills/hub/dist/**, .crew/bin/crew.mjs, tests/crew/**
+touches: .crew/config.yaml, README.md, plugins/crew/.claude-plugin/plugin.json, plugins/crew/skills/codemap/**, plugins/crew/skills/discover/**, plugins/crew/skills/git-setup/**, plugins/crew/skills/guidelines/**, plugins/crew/skills/kickoff/**, plugins/crew/skills/onboard/**, packages/hub/src/commands/checks.ts, packages/hub/src/commands/runs.ts, plugins/crew/skills/team/SKILL.md, packages/hub/test/**, packages/hub/scripts/sample-project.mjs, plugins/crew/skills/hub/dist/**, .crew/bin/crew.mjs, tests/crew/**
 depends_on:
-status: ready
+status: done
 branch: plan/P-001-nothing-optional-graphify-always-on
-pr:
+pr: https://github.com/aanand-3/claude-plugins/pull/5
 created: 2026-10-24
-started:
-completed:
+started: 2026-10-24
+completed: 2026-10-24
 assignee: developer
 ---
 
@@ -57,11 +57,11 @@ graphify stays an external tool: PyPI `graphifyy`, installed with uv, the one de
 - **Rebuild:** `npm run build` regenerates `plugins/crew/skills/hub/dist/`. Refresh the vendored `.crew/bin/crew.mjs` from dist.
 
 ## Tasks
-- [ ] T1: setup_git.py and compose_rules.py drop `modules:` and the renderer; graphify-out always ignored → verify: `uvx --with pyyaml pytest tests/crew/test_git_setup.py tests/crew/test_guidelines.py`
-- [ ] T2: CLAUDE.project.md is unconditional; the template-block test becomes "no `{{` in any template" → verify: `uvx --with pyyaml pytest tests/crew/test_plugin_contents.py`
-- [ ] T3: skills and docs (kickoff, onboard, codemap, discover, git-setup, guidelines, README, plugin.json) and the config template → verify: the git grep in AC1 is empty
-- [ ] T4: hub `check` code-graph hint with a vitest case; rebuild dist and the vendored copy → verify: `cd packages/hub && npm test && npm run build && git diff --stat ../../plugins/crew/skills/hub/dist`
-- [ ] T5: full suites → verify: `for s in tests/*/; do uvx --with pyyaml pytest "$s" -q; done && (cd packages/hub && npm test)`
+- [x] T1: setup_git.py and compose_rules.py drop `modules:` and the renderer; graphify-out always ignored → verify: `uvx --with pyyaml pytest tests/crew/test_git_setup.py tests/crew/test_guidelines.py`
+- [x] T2: CLAUDE.project.md is unconditional; the template-block test becomes "no `{{` in any template" → verify: `uvx --with pyyaml pytest tests/crew/test_plugin_contents.py`
+- [x] T3: skills and docs (kickoff, onboard, codemap, discover, git-setup, guidelines, README, plugin.json) and the config template → verify: the git grep in AC1 is empty
+- [x] T4: hub `check` code-graph hint with a vitest case; rebuild dist and the vendored copy → verify: `cd packages/hub && npm test && npm run build && git diff --stat ../../plugins/crew/skills/hub/dist`
+- [x] T5: full suites → verify: `for s in tests/*/; do uvx --with pyyaml pytest "$s" -q; done && (cd packages/hub && npm test)`
 
 ## Test plan
 - AC2: rewrite `test_graphify_module_ignores_graph_output` → `test_graph_output_always_ignored`, with config that has no `modules:`.
@@ -80,10 +80,66 @@ graphify stays an external tool: PyPI `graphifyy`, installed with uv, the one de
 
 ## Handoff
 
+_Generated 2026-10-24 by `crew.mjs handoff` from the ledger._
+
+- P-001: Nothing optional: graphify always on [in-review] tasks 5/5 — claimed by Arpit Anand (main-node-only)
+- last checkpoint 2026-10-24 06:46 at done (b990183) by Arpit Anand; since then 1 commit(s), 0 uncommitted file(s)
+- ✓ for s in tests/*/; do uvx --with pyyaml pytest $s -q; done (166 + 3 passed) (AC 2,3,5) (reported)
+- ✓ cd packages/hub && npm run typecheck && npm test (48 passed, incl. test/codegraph.test.ts) (AC 4,5) (reported)
+- ✓ git grep -nE '\{\{[#^/][a-z]+\}\}|modules\.graphify|--no-hub|[Oo]ptional modules' -- ':!.crew/knowledge' ':!.crew/plans' ':!.crew/items' && exit 1 || exit 0 (AC 1)
+- ✗ cd tests/crew && uvx --with pyyaml pytest -q (AC 5) — 12 failed, 154 passed in 309.90s (0:05:09)
+- ✗ (env | grep '^CREW' | sed 's/=.*/=<set>/'; cd tests/crew && uvx --with pyyaml pytest -q -rf) > /private/tmp/claude-502/-Users-aanand-Documents-Projects-Personal-claude-plugins/43bb9741-f43c-4234-b9c5-0ba9cb898763/scratchpad/crew-pytest.txt 2>&1; s=$?; tail -25 /private/tmp/claude-502/-Users-aanand-Documents-Projects-Personal-claude-plugins/43bb9741-f43c-4234-b9c5-0ba9cb898763/scratchpad/crew-pytest.txt; exit $s (AC 2,3,5) — 12 failed, 154 passed in 276.32s (0:04:36)
+- ✓ cd tests/crew && uvx --with pyyaml pytest -q -k test_graph_output_always_ignored (AC 2)
+- ✓ cd tests/crew && uvx --with pyyaml pytest -q -k 'test_templates_have_no_module_blocks or test_yaml_and_toml_templates_parse' (AC 3)
+- ✓ cd tests/marketplace && uvx --with pyyaml pytest -q (AC 5)
+- ✓ cd packages/hub && npm test (AC 4,5)
+- ✓ cd packages/hub && npm run typecheck (AC 5)
+- ✓ cd packages/hub && npm run build && test -z "$(git status --porcelain)" (AC 5)
+- ✓ cd packages/hub && npx tsc --noEmit && npx vitest run (48 passed) (AC 4) (reported)
+- ✓ cd packages/hub && npx vitest run test/dist.test.ts && ! git grep -q /Users/ -- ../../plugins/crew/skills/hub/dist ../../.crew/bin (AC 5)
+- evidence: AC1 ✓, AC2 ✓, AC3 ✓, AC4 ✓ (self), AC5 ✓ (self)
+
+Latest log:
+- 2026-10-24: review: changes requested — The three doc fixes in 27f8043 are right (guidelines/SKILL.md:43, team/SKILL.md:18, runs.ts:3). Only the rebuild needs to change. It ran through the symlinked packages/hub/node_modules, so esbuild wrote absolute local paths into the bundles: 144 lines each in plugins/crew/skills/hub/dist/crew.mjs, dist/mcp.mjs and .crew/bin/crew.mjs --as architect --run-id architect:a6a9026eea4e5b5ac read '../../../../../../../../../Users/aanand/Documents/Projects/Personal/claude-plugins/packages/hub/node_modules/...' where they used to read 'node_modules/...'. That leaks a machine path, and a clean npm ci build would no longer match dist. The runs.ts change is a comment and doesn't reach the bundle, so the fix is: git checkout 03eb01a -- plugins/crew/skills/hub/dist .crew/bin/crew.mjs --as architect --run-id architect:a6a9026eea4e5b5ac (or rebuild with a real npm ci install, not a symlink), then confirm git grep -c /Users/ in those paths is empty. Don't commit packages/hub/node_modules.
+- 2026-10-24: status in-review → in-progress — changes requested: The three doc fixes in 27f8043 are right (guidelines/SKILL.md:43, team/SKILL.md:18, runs.ts:3). Only the rebuild needs to change. It ran through the symlinked packages/hub/node_modules, so esbuild wrote absolute local paths into the bundles: 144 lines each in plugins/crew/skills/hub/dist/crew.mjs, dist/mcp.mjs and .crew/bin/crew.mjs --as architect --run-id architect:a6a9026eea4e5b5ac read '../../../../../../../../../Users/aanand/Documents/Projects/Personal/claude-plugins/packages/hub/node_modules/...' where they used to read 'node_modules/...'. That leaks a machine path, and a clean npm ci build would no longer match dist. The runs.ts change is a comment and doesn't reach the bundle, so the fix is: git checkout 03eb01a -- plugins/crew/skills/hub/dist .crew/bin/crew.mjs --as architect --run-id architect:a6a9026eea4e5b5ac (or rebuild with a real npm ci install, not a symlink), then confirm git grep -c /Users/ in those paths is empty. Don't commit packages/hub/node_modules.
+- 2026-10-24: bundles restored to 03eb01a: the symlinked node_modules had written absolute local paths into dist; a clean npm ci build reproduces them byte for byte
+
 ## Progress log
 
 - 2026-10-24: status draft → ready
 - 2026-10-24: assigned to the developer role
+- 2026-10-24: status ready → in-progress — branch plan/P-001-nothing-optional-graphify-always-on
+- 2026-10-24: touches: brace globs aren't supported, listed each skill dir; added scripts/sample-project.mjs (the sample now has graphify's hook, as every crew project does)
+- 2026-10-24: status in-progress → in-review
 - 2026-10-24: BUG-004: tests/crew hub/team tests inherit CREW_ROLE/CREW_RUN, so the full suite fails 12/166 under checkpoint --run (passes 166 from a plain shell; pre-existing, not a P-001 regression)
+- 2026-10-24: review: changes requested — Two module-switch leftovers remain in skills: (1) plugins/crew/skills/guidelines/SKILL.md:43 still says 'resolve the module blocks; keep *How we work* verbatim (the variant for the chosen modules)' - the template has no blocks or variants now; reword to copy How we work verbatim. (2) plugins/crew/skills/team/SKILL.md:18 says 'or kickoff/onboard with the hub module' - the hub is not a module; reword to 'or kickoff/onboard'. Add plugins/crew/skills/team/** to touches (log it) for (2). Optional, same pass: packages/hub/src/commands/runs.ts:3 comment 'Replaces the kickoff.yaml / onboard.yaml progress files where the hub exists' is now stale (needs packages/hub/src/commands/runs.ts in touches and a dist rebuild, so skip if you prefer). Everything else is approved as is: scripts, template, check hint, tests, dist in sync.
+- 2026-10-24: status in-review → in-progress — changes requested: Two module-switch leftovers remain in skills: (1) plugins/crew/skills/guidelines/SKILL.md:43 still says 'resolve the module blocks; keep *How we work* verbatim (the variant for the chosen modules)' - the template has no blocks or variants now; reword to copy How we work verbatim. (2) plugins/crew/skills/team/SKILL.md:18 says 'or kickoff/onboard with the hub module' - the hub is not a module; reword to 'or kickoff/onboard'. Add plugins/crew/skills/team/** to touches (log it) for (2). Optional, same pass: packages/hub/src/commands/runs.ts:3 comment 'Replaces the kickoff.yaml / onboard.yaml progress files where the hub exists' is now stale (needs packages/hub/src/commands/runs.ts in touches and a dist rebuild, so skip if you prefer). Everything else is approved as is: scripts, template, check hint, tests, dist in sync.
+- 2026-10-24: review fixes: guidelines SKILL drops 'module blocks'/'variant'; team SKILL drops 'hub module'; runs.ts header no longer mentions kickoff.yaml (touches widened for team/SKILL.md and runs.ts)
+- 2026-10-24: status in-progress → in-review
+- 2026-10-24: review: changes requested — The three doc fixes in 27f8043 are right (guidelines/SKILL.md:43, team/SKILL.md:18, runs.ts:3). Only the rebuild needs to change. It ran through the symlinked packages/hub/node_modules, so esbuild wrote absolute local paths into the bundles: 144 lines each in plugins/crew/skills/hub/dist/crew.mjs, dist/mcp.mjs and .crew/bin/crew.mjs --as architect --run-id architect:a6a9026eea4e5b5ac read '../../../../../../../../../Users/aanand/Documents/Projects/Personal/claude-plugins/packages/hub/node_modules/...' where they used to read 'node_modules/...'. That leaks a machine path, and a clean npm ci build would no longer match dist. The runs.ts change is a comment and doesn't reach the bundle, so the fix is: git checkout 03eb01a -- plugins/crew/skills/hub/dist .crew/bin/crew.mjs --as architect --run-id architect:a6a9026eea4e5b5ac (or rebuild with a real npm ci install, not a symlink), then confirm git grep -c /Users/ in those paths is empty. Don't commit packages/hub/node_modules.
+- 2026-10-24: status in-review → in-progress — changes requested: The three doc fixes in 27f8043 are right (guidelines/SKILL.md:43, team/SKILL.md:18, runs.ts:3). Only the rebuild needs to change. It ran through the symlinked packages/hub/node_modules, so esbuild wrote absolute local paths into the bundles: 144 lines each in plugins/crew/skills/hub/dist/crew.mjs, dist/mcp.mjs and .crew/bin/crew.mjs --as architect --run-id architect:a6a9026eea4e5b5ac read '../../../../../../../../../Users/aanand/Documents/Projects/Personal/claude-plugins/packages/hub/node_modules/...' where they used to read 'node_modules/...'. That leaks a machine path, and a clean npm ci build would no longer match dist. The runs.ts change is a comment and doesn't reach the bundle, so the fix is: git checkout 03eb01a -- plugins/crew/skills/hub/dist .crew/bin/crew.mjs --as architect --run-id architect:a6a9026eea4e5b5ac (or rebuild with a real npm ci install, not a symlink), then confirm git grep -c /Users/ in those paths is empty. Don't commit packages/hub/node_modules.
+- 2026-10-24: bundles restored to 03eb01a: the symlinked node_modules had written absolute local paths into dist; a clean npm ci build reproduces them byte for byte
+- 2026-10-24: status in-progress → in-review
+- 2026-10-24: status in-review → done
 
 ## Outcome
+- **What shipped:** graphify is always on.
+  - `modules:` is gone from the config template and this repo's config.
+  - `setup_git.py` and `compose_rules.py` lost `modules_from_config` and `render_blocks`. Templates are copied as-is, and `graphify-out/` is always ignored.
+  - The CLAUDE.md code-map line is unconditional.
+  - kickoff, onboard and codemap set up the graph every time. A declined install is not a failure.
+  - `crew.mjs check` hints until graphify's hook is in `.githooks/post-commit`.
+- **Beyond plan:**
+  - kickoff's and onboard's `kickoff.yaml`/`onboard.yaml` progress files were a hub-optional leftover. Both now track progress only in the ledger.
+  - The sample project now carries graphify's hook, as every crew project does.
+- **Deviations:** the hub-optional template blocks were already gone on `main` (Workstream T), so the work was graphify plus a few stale hub-off mentions (`git-setup` `--no-hub`, the README, `plugin.json`, the kickoff/onboard descriptions).
+- **Follow-ups:**
+  - CHORE-007, CHORE-008, CHORE-009.
+  - This repo itself has no graphify hook, so its own `check` shows the new hint until `/crew:codemap` runs here.
+- **Verified:**
+  - pytest: 166 + 3 passed.
+  - vitest: 48 passed, including `test/codegraph.test.ts`.
+  - `npm run build` is in sync with `dist/` and `.crew/bin/crew.mjs`.
+  - The AC1 grep is empty.
+
+Learnings: none
