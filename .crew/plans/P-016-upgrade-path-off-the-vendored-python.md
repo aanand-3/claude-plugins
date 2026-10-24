@@ -70,11 +70,11 @@ The other half, removing the last Python from this repo (`tests/`, the pytest do
 - **Preview:** `node packages/crew/node_modules/vite/bin/vite.js packages/crew/preview --port 4173 --strictPort --host 127.0.0.1`.
 
 ## Tasks
-- [ ] T1: `src/tools/legacy.ts` with tests for rewrite, references and cleanup on fixture files → verify: `cd packages/crew && npx vitest run test/tools/legacy.test.ts`
-- [ ] T2: `setup_git` and `compose_rules` call it; a pre-port project fixture covers AC1–AC4 → verify: `npx vitest run test/tools/upgrade.test.ts`
-- [ ] T3: hub `check` hints with a vitest case → verify: `npx vitest run test/upgrade-hints.test.ts`
-- [ ] T4: guidelines SKILL Refresh step; launch.json on vite → verify: start the preview config and fetch `/habitly.html`
-- [ ] T5: build and the full suites → verify: `npm run typecheck && npm test && npm run build && git status --porcelain` is empty; `cd tests/crew && env -u CREW_ROLE -u CREW_RUN uvx --with pyyaml pytest -q`
+- [x] T1: `src/tools/legacy.ts` with tests for rewrite, references and cleanup on fixture files → verify: `cd packages/crew && npx vitest run test/tools/legacy.test.ts`
+- [x] T2: `setup_git` and `compose_rules` call it; a pre-port project fixture covers AC1–AC4 → verify: `npx vitest run test/tools/upgrade.test.ts`
+- [x] T3: hub `check` hints with a vitest case → verify: `npx vitest run test/upgrade-hints.test.ts`
+- [x] T4: guidelines SKILL Refresh step; launch.json on vite → verify: start the preview config and fetch `/habitly.html`
+- [x] T5: build and the full suites → verify: `npm run typecheck && npm test && npm run build && git status --porcelain` is empty; `cd tests/crew && env -u CREW_ROLE -u CREW_RUN uvx --with pyyaml pytest -q`
 
 ## Test plan
 - **AC1–AC4:** `test/tools/upgrade.test.ts` builds a pre-port project:
@@ -102,3 +102,16 @@ The other half, removing the last Python from this repo (`tests/`, the pytest do
 - 2026-10-24: status ready → in-progress — branch plan/P-016-upgrade-path-off-the-vendored-python
 
 ## Outcome
+- **What shipped:**
+  - `tools/legacy.ts`, run by `setup_git` (for `check_secrets`) and `compose_rules` (for the other four) after they vendor the `.mjs`.
+  - It rewrites crew's own `.githooks/*` and `.claude/settings.json` from `python3 … .crew/bin/X.py` to `node … .crew/bin/X.mjs`, and `[ -f …X.py ]` to `.mjs`. It does this only for scripts whose `.mjs` is vendored, and nothing else in the file changes.
+  - It removes `.crew/bin/X.py` only when no file names it. That includes the project's own CI, `Makefile`, `settings.local.json`, `package.json`, pre-commit config, `.husky` and a foreign `core.hooksPath`; each of those callers is reported as `KEEP`.
+  - `crew.mjs check` hints at leftover `.py` copies, files that still run them, and a `modules:` block.
+  - The guidelines *Refresh* section has the steps.
+  - `launch.json` serves the preview with `vite preview`.
+- **Deviations:**
+  - `vite preview` replaces the plan's vite dev server. The dev server rewrites HTML, and it choked on the inlined bundle; `vite preview` serves the file byte for byte.
+  - The out-dir is `packages/crew` + `preview`, because vite warns when the out-dir is its own root.
+- **Follow-ups:** CHORE-011 removes the last Python (`tests/crew`, the pytest docs and the `.gitignore` lines) once P-004 lands and CHORE-008's hub-test port is done.
+
+Learnings: none
