@@ -5,12 +5,12 @@ goal:
 items: CHORE-006
 touches: .crew/config.yaml, README.md, plugins/crew/.claude-plugin/plugin.json, plugins/crew/skills/codemap/**, plugins/crew/skills/discover/**, plugins/crew/skills/git-setup/**, plugins/crew/skills/guidelines/**, plugins/crew/skills/kickoff/**, plugins/crew/skills/onboard/**, packages/hub/src/commands/checks.ts, packages/hub/src/commands/runs.ts, plugins/crew/skills/team/SKILL.md, packages/hub/test/**, packages/hub/scripts/sample-project.mjs, plugins/crew/skills/hub/dist/**, .crew/bin/crew.mjs, tests/crew/**
 depends_on:
-status: in-review
+status: done
 branch: plan/P-001-nothing-optional-graphify-always-on
 pr: https://github.com/aanand-3/claude-plugins/pull/5
 created: 2026-10-24
 started: 2026-10-24
-completed:
+completed: 2026-10-24
 assignee: developer
 ---
 
@@ -120,6 +120,7 @@ Latest log:
 - 2026-10-24: status in-review → in-progress — changes requested: The three doc fixes in 27f8043 are right (guidelines/SKILL.md:43, team/SKILL.md:18, runs.ts:3). Only the rebuild needs to change. It ran through the symlinked packages/hub/node_modules, so esbuild wrote absolute local paths into the bundles: 144 lines each in plugins/crew/skills/hub/dist/crew.mjs, dist/mcp.mjs and .crew/bin/crew.mjs --as architect --run-id architect:a6a9026eea4e5b5ac read '../../../../../../../../../Users/aanand/Documents/Projects/Personal/claude-plugins/packages/hub/node_modules/...' where they used to read 'node_modules/...'. That leaks a machine path, and a clean npm ci build would no longer match dist. The runs.ts change is a comment and doesn't reach the bundle, so the fix is: git checkout 03eb01a -- plugins/crew/skills/hub/dist .crew/bin/crew.mjs --as architect --run-id architect:a6a9026eea4e5b5ac (or rebuild with a real npm ci install, not a symlink), then confirm git grep -c /Users/ in those paths is empty. Don't commit packages/hub/node_modules.
 - 2026-10-24: bundles restored to 03eb01a: the symlinked node_modules had written absolute local paths into dist; a clean npm ci build reproduces them byte for byte
 - 2026-10-24: status in-progress → in-review
+- 2026-10-24: status in-review → done
 
 ## Outcome
 - **What shipped:** graphify is always on.
