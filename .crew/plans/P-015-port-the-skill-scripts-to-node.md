@@ -5,11 +5,11 @@ goal:
 items: CHORE-008
 touches: packages/crew/**, plugins/crew/skills/git-setup/**, plugins/crew/skills/guidelines/**, plugins/crew/skills/design/**, plugins/crew/skills/research/**, plugins/crew/skills/global-setup/**, plugins/crew/skills/kickoff/SKILL.md, plugins/crew/skills/onboard/SKILL.md, plugins/crew/skills/discover/**, plugins/crew/skills/hub/dist/**, .crew/bin/crew.mjs, tests/**, README.md
 depends_on:
-status: ready
+status: in-progress
 branch: plan/P-015-port-the-skill-scripts-to-node
 pr:
 created: 2026-10-24
-started:
+started: 2026-10-24
 completed:
 assignee: developer
 ---
@@ -100,5 +100,6 @@ This plan ports the scripts and their 57 tests to TypeScript and vitest in `pack
 
 - 2026-10-24: status draft → ready
 - 2026-10-24: assigned to the developer role
+- 2026-10-24: status ready → in-progress — branch plan/P-015-port-the-skill-scripts-to-node
 
 ## Outcome
