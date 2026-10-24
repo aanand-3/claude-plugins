@@ -38,7 +38,7 @@ const up = (s: string | null) => (s ?? "").toUpperCase();
 
 export function findings(store: Store): Findings {
   const s = new Snapshot(store), f: Findings = { errors: [], hints: [] };
-  for (const rule of [idea, plans, overlaps, items, goals, ledger, knowledge, hygiene]) rule(s, f);
+  for (const rule of [idea, plans, lostPlans, overlaps, items, goals, ledger, knowledge, hygiene]) rule(s, f);
   const p = policyFindings(store);
   return { errors: [...f.errors, ...p.errors], hints: [...f.hints, ...p.hints, ...agentHints(store), ...livenessHints(store)] };
 }
@@ -95,6 +95,18 @@ function plans(s: Snapshot, f: Findings): void {
     if ((ACTIVE.has(st ?? "") || st === "ready") && !q.onFocus(p, s.items, s.focus)) {
       f.hints.push(`${pid}: ${st} but does not serve the focus goal ${s.focus} (only bugs and chores may run off focus)`);
     }
+  }
+}
+
+/** A plan branch with no plan file anywhere and no worktree: its worktree was removed before Release committed the work. */
+function lostPlans(s: Snapshot, f: Findings): void {
+  const seen = new Set<string>();
+  for (const b of git.planBranches()) {
+    const pid = /^(?:origin\/)?plan\/(P-\d+)/.exec(b)?.[1];
+    if (!pid || seen.has(pid) || s.allPlans.has(pid) || s.store.planWorktrees().has(pid)) continue;
+    seen.add(pid);
+    f.hints.push(`${pid}: branch ${b} has no plan file and no worktree — its worktree was removed before Release committed `
+      + "it, so the uncommitted work is gone; recover what you can, then delete the branch");
   }
 }
 
