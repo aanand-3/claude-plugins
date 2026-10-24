@@ -2,10 +2,10 @@
 id: P-020
 title: Jira-style document page, spend by plan and agent, tasks and epic views
 goal: G-001
-items: FEAT-023
+items: FEAT-023, BUG-019
 touches: packages/crew/ui/**, packages/crew/src/hub/core/memory/ledger.ts, packages/crew/src/hub/graph-types.ts, packages/crew/src/hub/commands/views/**, packages/crew/src/hub/commands/team/autonomy.ts, packages/crew/src/hub/core/work/doc.ts, packages/crew/test/**, packages/crew/scripts/sample-project.mjs, packages/crew/docs/design/DESIGN.md, plugins/crew/skills/hub/dist/**, .crew/bin/**
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-020-jira-style-document-page-spend-by-plan
 pr:
 created: 2026-10-24
@@ -92,9 +92,9 @@ n/a: UI and read-time ledger aggregation only. The graph schema version bumps (t
 _Generated 2026-10-24 by `crew.mjs handoff` from the ledger._
 
 - P-020: Jira-style document page, spend by plan and agent, tasks and epic views [in-review] tasks 9/9 — claimed by Arpit Anand (developer:p020-jira-ui)
-- last checkpoint 2026-10-24 17:00 at T9 (3bcd939) by Arpit Anand; since then 3 commit(s), 3 uncommitted file(s): .claude/launch.json, .crew/plans/P-020-jira-style-document-page-spend-by-plan.md, .crew/knowledge/K-2026-10-24-judge-ui-from-full-size-screenshots.md
-- ✓ cd packages/crew && npx vitest run test/ledger.test.ts -t spend (reported)
-- ✓ cd packages/crew && npx vitest run test/view.test.ts -t tasks (reported)
+- last checkpoint 2026-10-24 17:58 at T5 (2e51ad9) by Arpit Anand; since then 1 commit(s), 1 uncommitted file(s): .claude/launch.json
+- ✓ cd packages/crew && npx vitest run test/ledger.test.ts -t spend (AC 6)
+- ✓ cd packages/crew && npx vitest run test/view.test.ts -t tasks (AC 8)
 - ✓ npm run typecheck (incl. tsc -p ui) clean; browser 1680px viewport: P-014 docpage 1392px = main 1000 + rail 360, no blank band; Context panel collapses and reopens; reference tabs switch with ArrowRight/End/Home and wrap; item/goal/idea pages group sections per TABBED (AC 1,2) (reported)
 - ✓ browser: G-001 split button (aria-haspopup=menu, aria-expanded toggles) opens by mouse and Enter, ArrowDown moves focus, Escape and outside click close it; Move to proposed (sandbox) showed 'G-001: active → proposed'; Move to done showed the gate refusal; menu fits at 375px (AC 3) (reported)
 - ✓ browser: P-014 Touches 8 grouped by top dir; sandbox P-001 with 47 paths: 10 shown, 'Show all 47', 240px scroll box, filter narrows to matches; Relations rows chip-first in a grid, groups are details open (AC 4,5) (reported)
@@ -102,12 +102,17 @@ _Generated 2026-10-24 by `crew.mjs handoff` from the ledger._
 - ✓ browser: P-014 Tasks panel lists T1–T6 with verify commands (long ones collapsed), 6/6 progress; board task counts carry a title tooltip (open tasks, else 'every task is done') (AC 9) (reported)
 - ✓ browser: G-001 Child issues 8 (items + plans, sorted by status, 3/8 done); CHORE-007 shows its plan P-014; Hierarchy expands P-019 into T1–T5, done plans collapsed (AC 9) (reported)
 - ✓ cd packages/crew && npm run build && npx vitest run test/dist.test.ts test/design.test.ts (AC 10)
-- evidence: AC1 ✓ (self), AC2 ✓ (self), AC3 ✓ (self), AC4 ✓ (self), AC5 ✓ (self), AC6 —, AC7 ✓ (self), AC8 —, AC9 ✓ (self), AC10 ✓ (self)
+- ✓ cd packages/crew && npx vitest run test/view.test.ts test/dist.test.ts test/design.test.ts && npm run typecheck (AC 10)
+- ✓ packages/crew/docs/design/DESIGN.md component inventory (lines 143-147) lists Tabs, CollapsiblePanel, ActionMenu, FileList and SpendBreakdown with elements, variants and states (AC 10) (reported)
+- ✓ browser (sandbox UI 127.0.0.1:8767, viewport 1440x900) #/doc/P-014: .docpage grid 1160px = main 768px (1fr) + 32px gap + .docpage__side 360px, side right edge 1416 = content area minus 24px padding, so no blank band; side position sticky top 80px; prose .md max-width 864px = measured 90ch; at 1000px grid becomes one 720px column with head, main, then side stacked (AC 1) (reported)
+- ✓ browser (sandbox UI, 1440px) #/doc/P-014: Context, Scope, Acceptance criteria, Approach, Tasks are <details> panels open by default; clicking the Context summary collapsed it (open=false, body hidden in screenshot) and clicking again reopened it; one role=tablist 'Reference sections' with Test plan, Rollout & rollback, Risks & open questions, Handoff, Progress log, Outcome (roving tabindex 0/-1, tabpanel aria-labelledby); keyboard: ArrowRight moved focus+selection to Rollout & rollback and swapped the panel, End -> Outcome, ArrowRight wrapped to Test plan, ArrowLeft wrapped to Outcome, Home -> Test plan. G-001: panels Child issues/Outcome/Scope/Acceptance criteria/Breakdown, tab Progress log; IDEA: panels Problem/Outcome/Success criteria/Direction/Constraints, tabs Research/Progress log; BUG-001: panels Summary/Steps/Expected/Actual/Impact, tabs Environment/Notes (AC 2) (reported)
+- ✓ cd packages/crew && npm run typecheck && npx vitest run test/dist.test.ts test/view.test.ts
+- evidence: AC1 ✓, AC2 ✓, AC3 ✓ (self), AC4 ✓ (self), AC5 ✓ (self), AC6 ✓, AC7 ✓ (self), AC8 ✓, AC9 ✓ (self), AC10 ✓
 
 Latest log:
-- 2026-10-24: status draft → ready
-- 2026-10-24: assigned to the developer role
-- 2026-10-24: status ready → in-progress — branch plan/P-020-jira-style-document-page-spend-by-plan
+- 2026-10-24: status in-progress → in-review
+- 2026-10-24: review: changes requested — packages/crew/ui/src/views/Overview.tsx:29 'Top plans by spend' ranks every byRef key except 'unattributed', but byRef also holds goals, items, knowledge entries and deleted docs (the live graph has G-001, FEAT-024, BUG-003, FEAT-021, K-… and P-002/P-003 with no doc); AC7 says the top 5 plans. Filter to refs whose doc is a plan (ix.byId.get(ref)?.kind === 'plan') before slicing, and keep the unattributed row. Rebuild the bundles after.
+- 2026-10-24: status in-review → in-progress — changes requested: packages/crew/ui/src/views/Overview.tsx:29 'Top plans by spend' ranks every byRef key except 'unattributed', but byRef also holds goals, items, knowledge entries and deleted docs (the live graph has G-001, FEAT-024, BUG-003, FEAT-021, K-… and P-002/P-003 with no doc); AC7 says the top 5 plans. Filter to refs whose doc is a plan (ix.byId.get(ref)?.kind === 'plan') before slicing, and keep the unattributed row. Rebuild the bundles after.
 
 ## Progress log
 
@@ -117,6 +122,12 @@ Latest log:
 - 2026-10-24: status in-progress → in-review
 - 2026-10-24: review: changes requested — packages/crew/ui/src/views/Overview.tsx:29 'Top plans by spend' ranks every byRef key except 'unattributed', but byRef also holds goals, items, knowledge entries and deleted docs (the live graph has G-001, FEAT-024, BUG-003, FEAT-021, K-… and P-002/P-003 with no doc); AC7 says the top 5 plans. Filter to refs whose doc is a plan (ix.byId.get(ref)?.kind === 'plan') before slicing, and keep the unattributed row. Rebuild the bundles after.
 - 2026-10-24: status in-review → in-progress — changes requested: packages/crew/ui/src/views/Overview.tsx:29 'Top plans by spend' ranks every byRef key except 'unattributed', but byRef also holds goals, items, knowledge entries and deleted docs (the live graph has G-001, FEAT-024, BUG-003, FEAT-021, K-… and P-002/P-003 with no doc); AC7 says the top 5 plans. Filter to refs whose doc is a plan (ix.byId.get(ref)?.kind === 'plan') before slicing, and keep the unattributed row. Rebuild the bundles after.
+- 2026-10-24: status in-progress → in-review
+- 2026-10-24: BUG-017: Relations rows misaligned; each li sizes its own auto chip column (AC5)
+- 2026-10-24: BUG-018: usage hook records cumulative transcript totals per stop, so spend sums overcount resumed runs (pre-existing; affects AC7 numbers, not the AC)
+- 2026-10-24: Correction: the cumulative-usage bug is BUG-019, not BUG-018 (previous log line)
+- 2026-10-24: Correction: the earlier BUG-017/BUG-018 IDs in this log were never created (new-item with --goal/--severity was refused for qa and rolled back). Filed as BUG-019 (Relations rows misaligned, AC5) and BUG-020 (usage events cumulative, spend overcounts; pre-existing)
+- 2026-10-24: Took BUG-019 (QA's AC5 failure: Relations rows misaligned) into this plan; fixed with a 96px status column that fits the widest chip, so every title starts at the same x.
 
 ## Outcome
 Shipped as planned: the full-width document page (360px details rail, prose capped at 90ch), collapsible panels and per-kind tabs, the Actions split-button menu with triage and log in the rail, FileList for Touches and Applies to, status-first collapsible Relations, a Spend row, a Tasks panel by `###` phase, Child issues on goal and item pages, Hierarchy tasks, the board's open-task tooltip, and Overview spend by agent and top plans. `Ledger.spend()` gains `byRole`/`byRef` with run attribution; graph schema v6.
@@ -126,6 +137,7 @@ Deviations:
 - Fixes found in visual review, beyond the spec: dropdowns use the Lucide chevron via a `--select-chevron` token instead of the platform arrow; filter dropdowns size to their chosen value (`field-sizing: content`, capped at 200px); long IDs truncate in Relations and wrap in the page kicker; the Child issues table scrolls inside its panel; board cards show "FEAT-006 +6" instead of every delivered ID; the Actions menu is left-anchored below 768px.
 - Merged main (P-019) into the branch; the rebuilt bundles were identical to the text merge.
 - A move no longer carries the log note: the note box moved to the rail's Log card, which logs on its own; a move's reason is logged separately.
+- QA round 1: AC5 failed (BUG-019, Relations rows misaligned); fixed in this plan with a 96px status column, and BUG-019 added to the plan's items. QA also filed BUG-020 (resumed runs' usage is counted twice), which predates this plan.
 - Review round 1 (architect): "Top plans by spend" now ranks plans only (it ranked every ref); the Actions menu closes when Tab moves focus out and its toggle has `aria-controls`.
 
 Follow-ups: FEAT-024 / P-021 (a Designer role, a scripted layout sweep and a review checklist), because no team role reviews visual design today.
