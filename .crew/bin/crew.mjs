@@ -7702,6 +7702,19 @@ ${line2}`;
   tasks() {
     return this.checklist("Tasks");
   }
+  /** The checklist like `checklist()`, each line with the `###` subheading it sits under (null before any). */
+  taskGroups(name = "Tasks") {
+    const out = [];
+    let phase = null;
+    for (const line2 of stripComments(this.section(name)).split("\n")) {
+      const h = /^###\s+(.+?)\s*$/.exec(line2);
+      if (h) phase = h[1];
+      const m = TASK_RE.exec(line2);
+      const label = m?.[2].trim();
+      if (m && label && label !== "T1: \u2026 \u2192 verify: \u2026") out.push([m[1] !== " ", label, phase]);
+    }
+    return out;
+  }
   appendTo(name, entry) {
     const m = sectionRe(name).exec(this.text);
     if (!m) {
@@ -7793,6 +7806,7 @@ ${body2.trim()}
 import { createHash, randomBytes } from "node:crypto";
 import { appendFileSync, existsSync, linkSync, mkdirSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
+var UNATTRIBUTED = "unattributed";
 var LOCK_WAIT_MS = 5e3;
 var LOCK_STALE_MS = 3e4;
 function whoAmI(root) {
@@ -7857,14 +7871,35 @@ var Ledger = class _Ledger {
     return out;
   }
   spend(events = this.events()) {
-    const s = { cost: 0, tokensIn: 0, tokensOut: 0, byActor: {} };
+    const s = { cost: 0, tokensIn: 0, tokensOut: 0, byActor: {}, byRole: {}, byRef: {} };
+    const touched = /* @__PURE__ */ new Map();
+    for (const ev of events) {
+      if (ev.type !== "usage" && ev.ref) touched.set(ev.run, (touched.get(ev.run) ?? /* @__PURE__ */ new Set()).add(ev.ref));
+    }
+    const runs = /* @__PURE__ */ new Map();
+    const add = (group, key, tokens, cost, run2) => {
+      const u = s[group][key] ??= group === "byRef" ? { tokens: 0, cost: 0, runs: 0, roles: {} } : { tokens: 0, cost: 0, runs: 0 };
+      u.tokens += tokens;
+      u.cost += cost;
+      const seen = runs.get(`${group}|${key}`) ?? /* @__PURE__ */ new Set();
+      if (!seen.has(run2)) u.runs++;
+      runs.set(`${group}|${key}`, seen.add(run2));
+    };
     for (const ev of events) {
       if (ev.type !== "usage") continue;
-      const cost = Number(ev.cost) || 0;
+      const cost = Number(ev.cost) || 0, tin = Number(ev.tokens_in) || 0, tout = Number(ev.tokens_out) || 0;
       s.cost += cost;
-      s.tokensIn += Number(ev.tokens_in) || 0;
-      s.tokensOut += Number(ev.tokens_out) || 0;
+      s.tokensIn += tin;
+      s.tokensOut += tout;
       s.byActor[ev.actor] = (s.byActor[ev.actor] ?? 0) + cost;
+      add("byRole", ev.role ?? ev.actor, tin + tout, cost, ev.run);
+      const refs = ev.ref ? [ev.ref] : [...touched.get(ev.run) ?? []];
+      if (!refs.length) refs.push(UNATTRIBUTED);
+      const role = ev.role ?? ev.actor;
+      for (const ref of refs) {
+        add("byRef", ref, (tin + tout) / refs.length, cost / refs.length, ev.run);
+        s.byRef[ref].roles[role] = (s.byRef[ref].roles[role] ?? 0) + (tin + tout) / refs.length;
+      }
     }
     return s;
   }
@@ -9691,7 +9726,7 @@ import { join as join11, resolve as resolve5 } from "node:path";
 import { basename as basename3 } from "node:path";
 
 // src/hub/graph-types.ts
-var SCHEMA_VERSION = 5;
+var SCHEMA_VERSION = 6;
 
 // src/hub/commands/views/graph.ts
 var ID_RE = /\b(?:IDEA|(?:G|P|FEAT|BUG|CHORE|SPIKE)-\d+|K-\d{4}-\d{2}-\d{2}-[a-z0-9-]+)\b/g;
@@ -9728,7 +9763,7 @@ function buildGraph(store) {
 }
 function toDoc(store, d, kind, all) {
   const status2 = kind === "item" ? itemStatus(d, all.plans) : d.get("status") ?? "";
-  const tasks = kind === "plan" ? d.tasks() : kind === "idea" ? d.checklist("Success criteria") : [];
+  const tasks = kind === "plan" ? d.taskGroups() : kind === "idea" ? d.taskGroups("Success criteria") : [];
   return {
     id: kind === "idea" ? IDEA_ID : d.id,
     kind,
@@ -9748,12 +9783,17 @@ function toDoc(store, d, kind, all) {
     branch: d.get("branch"),
     pr: d.get("pr"),
     dates: Object.fromEntries(DATE_KEYS.filter((k) => d.get(k)).map((k) => [k, d.get(k)])),
-    tasks: tasks.length || kind === "plan" ? { done: tasks.filter(([x]) => x).length, total: tasks.length } : null,
+    tasks: tasks.length || kind === "plan" ? { done: tasks.filter(([x]) => x).length, total: tasks.length, list: tasks.map(task) } : null,
     gate: gate(store, d, kind, status2),
     source: d.source,
     path: d.path ? store.rel(d.path) : null,
     sections: sections(d.text)
   };
+}
+var TASK_LINE = /^(?:(T\d+):\s*)?(.*?)(?:\s*→\s*verify:\s*(.*))?$/;
+function task([done, line2, phase]) {
+  const [, id = null, text = line2, verify = null] = TASK_LINE.exec(line2) ?? [];
+  return { id, text: text.trim(), verify: verify?.trim() || null, done, phase };
 }
 function knowledgeDoc(store, e) {
   const d = e.doc;
@@ -10407,7 +10447,8 @@ function usageHook(store) {
   const u = transcriptUsage(text);
   if (!u.tokensIn && !u.tokensOut) return 0;
   Object.assign(store.ledger.who, { role, run: `${role}:${h.agent_id ?? "unknown"}` });
-  store.ledger.record("usage", null, {
+  const refs = new Set(store.ledger.events().filter((e) => e.run === store.ledger.who.run && e.type !== "usage" && e.ref).map((e) => e.ref));
+  store.ledger.record("usage", refs.size === 1 ? [...refs][0] : null, {
     tokens_in: u.tokensIn,
     tokens_out: u.tokensOut,
     cost: 0,

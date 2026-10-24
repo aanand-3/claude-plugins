@@ -24,7 +24,15 @@ export interface LedgerEvent {
 }
 
 export interface Who { run: string; actor: string; role: string | null; team: string | null; worktree: string }
-export interface Spend { cost: number; tokensIn: number; tokensOut: number; byActor: Record<string, number> }
+export interface Usage { tokens: number; cost: number; runs: number }
+/** byRole: by the role a run acted in, else its actor. byRef: by the document a usage event names, else split evenly over the
+ * documents its run wrote other events about (read time, so old events count too), else `unattributed`. */
+export interface Spend {
+  cost: number; tokensIn: number; tokensOut: number; byActor: Record<string, number>;
+  byRole: Record<string, Usage>; byRef: Record<string, RefUsage>;
+}
+export interface RefUsage extends Usage { roles: Record<string, number> }  // tokens by role
+export const UNATTRIBUTED = "unattributed";
 
 const LOCK_WAIT_MS = 5_000;
 const LOCK_STALE_MS = 30_000;
@@ -94,14 +102,35 @@ export class Ledger {
   }
 
   spend(events = this.events()): Spend {
-    const s: Spend = { cost: 0, tokensIn: 0, tokensOut: 0, byActor: {} };
+    const s: Spend = { cost: 0, tokensIn: 0, tokensOut: 0, byActor: {}, byRole: {}, byRef: {} };
+    const touched = new Map<string, Set<string>>(); // run → the refs it wrote other events about
+    for (const ev of events) {
+      if (ev.type !== "usage" && ev.ref) touched.set(ev.run, (touched.get(ev.run) ?? new Set()).add(ev.ref));
+    }
+    const runs = new Map<string, Set<string>>(); // "byRole|key" → the runs counted there
+    const add = (group: "byRole" | "byRef", key: string, tokens: number, cost: number, run: string) => {
+      const u: Usage = (s[group][key] ??= group === "byRef" ? { tokens: 0, cost: 0, runs: 0, roles: {} } : { tokens: 0, cost: 0, runs: 0 });
+      u.tokens += tokens;
+      u.cost += cost;
+      const seen = runs.get(`${group}|${key}`) ?? new Set();
+      if (!seen.has(run)) u.runs++;
+      runs.set(`${group}|${key}`, seen.add(run));
+    };
     for (const ev of events) {
       if (ev.type !== "usage") continue;
-      const cost = Number(ev.cost) || 0;
+      const cost = Number(ev.cost) || 0, tin = Number(ev.tokens_in) || 0, tout = Number(ev.tokens_out) || 0;
       s.cost += cost;
-      s.tokensIn += Number(ev.tokens_in) || 0;
-      s.tokensOut += Number(ev.tokens_out) || 0;
+      s.tokensIn += tin;
+      s.tokensOut += tout;
       s.byActor[ev.actor] = (s.byActor[ev.actor] ?? 0) + cost;
+      add("byRole", ev.role ?? ev.actor, tin + tout, cost, ev.run);
+      const refs = ev.ref ? [ev.ref] : [...touched.get(ev.run) ?? []];
+      if (!refs.length) refs.push(UNATTRIBUTED);
+      const role = ev.role ?? ev.actor;
+      for (const ref of refs) {
+        add("byRef", ref, (tin + tout) / refs.length, cost / refs.length, ev.run);
+        s.byRef[ref].roles[role] = (s.byRef[ref].roles[role] ?? 0) + (tin + tout) / refs.length;
+      }
     }
     return s;
   }

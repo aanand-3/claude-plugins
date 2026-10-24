@@ -62,7 +62,7 @@ it("answers like the CLI", async () => {
   expect(r.isError).toBe(false);
   expect(r.content[0].text).toBe(tr("next").trimEnd());
   const graph = JSON.parse((await call("graph")).content[0].text);
-  expect(graph.schemaVersion).toBe(5);
+  expect(graph.schemaVersion).toBe(6);
 });
 
 it("captures an item, writing it to .crew/", async () => {

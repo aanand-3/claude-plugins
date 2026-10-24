@@ -1,9 +1,11 @@
-/** The ledger's lock: a holder only removes its own lock, and a stale lock is taken over exactly once. */
+/** The ledger's lock: a holder only removes its own lock, and a stale lock is taken over exactly once.
+ * Spend: usage grouped by role and attributed to the documents its run worked on. */
 import { existsSync, mkdtempSync, readFileSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { acquireLock, releaseLock } from "../src/hub/core/memory/ledger.js";
+import { acquireLock, Ledger, type LedgerEvent, releaseLock } from "../src/hub/core/memory/ledger.js";
+import type { Workspace } from "../src/hub/core/workspace.js";
 
 const lockIn = () => join(mkdtempSync(join(tmpdir(), "hub-lock-")), "ledger.jsonl.lock");
 
@@ -26,5 +28,37 @@ describe("ledger lock", () => {
     const token = acquireLock(lock, 1_000, 60_000);
     expect(readFileSync(lock, "utf8")).toBe(token);
     releaseLock(lock, token);
+  });
+});
+
+const ev = (type: LedgerEvent["type"], ref: string | null, run: string, fields: Record<string, unknown> = {}): LedgerEvent =>
+  ({ ts: "2026-10-24T00:00:00.000Z", type, ref, run, actor: "Ann", role: null, team: null, worktree: "/w", ...fields });
+const usage = (run: string, tokens: number, fields: Record<string, unknown> = {}) =>
+  ev("usage", null, run, { tokens_in: tokens / 2, tokens_out: tokens / 2, cost: 0, ...fields });
+const spend = (events: LedgerEvent[]) =>
+  new Ledger({} as Workspace, "/nonexistent/ledger.jsonl", { run: "me", actor: "Ann", role: null, team: null, worktree: "/w" }).spend(events);
+
+describe("spend", () => {
+  it("goes to the usage's own ref when it has one", () => {
+    const s = spend([usage("r1", 150, { ref: "P-1", cost: 0.5, role: "developer" })]);
+    expect(s.byRef).toEqual({ "P-1": { tokens: 150, cost: 0.5, runs: 1, roles: { developer: 150 } } });
+    expect(s.byActor).toEqual({ Ann: 0.5 });
+  });
+
+  it("splits usage with no ref evenly over the refs its run wrote", () => {
+    const s = spend([ev("move", "P-1", "r2", { to: "in-progress" }), ev("checkpoint", "P-2", "r2"), ev("checkpoint", "P-2", "r2"),
+      usage("r2", 200, { role: "qa" })]);
+    expect(s.byRef).toEqual({ "P-1": { tokens: 100, cost: 0, runs: 1, roles: { qa: 100 } }, "P-2": { tokens: 100, cost: 0, runs: 1, roles: { qa: 100 } } });
+  });
+
+  it("puts a run that touched nothing under unattributed", () => {
+    const s = spend([ev("move", "P-1", "other"), usage("r3", 80, { role: "pm" })]);
+    expect(s.byRef).toEqual({ unattributed: { tokens: 80, cost: 0, runs: 1, roles: { pm: 80 } } });
+  });
+
+  it("groups by role, falling back to the actor, and counts runs once", () => {
+    const s = spend([usage("a", 10, { role: "qa" }), usage("a", 20, { role: "qa" }), usage("b", 5, { role: "qa" }), usage("c", 7)]);
+    expect(s.byRole).toEqual({ qa: { tokens: 35, cost: 0, runs: 2 }, Ann: { tokens: 7, cost: 0, runs: 1 } });
+    expect(s).toMatchObject({ tokensIn: 21, tokensOut: 21, cost: 0 });
   });
 });

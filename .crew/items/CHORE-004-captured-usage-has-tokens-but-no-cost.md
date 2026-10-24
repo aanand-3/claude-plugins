@@ -2,8 +2,8 @@
 id: CHORE-004
 type: chore
 title: Captured usage has tokens but no cost
-status: new
-priority:
+status: triaged
+priority: P3
 goal: G-003
 plan:
 created: 2026-10-23
@@ -19,3 +19,5 @@ usage --hook (T7) records tokens from each subagent transcript but cost 0: the h
 - [ ]
 
 ## Notes
+- 2026-10-24: Direction (2026-10-24): derive $ cost from tokens with a per-model price table configurable in .crew/config.yaml; the UI (FEAT-023) shows tokens now and $ once cost > 0.
+- 2026-10-24: status new → triaged — priority P3

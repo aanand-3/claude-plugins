@@ -1,5 +1,5 @@
-/** Hierarchy: Idea → Goal → Item → Plan, with progress at every level. */
-import { ChevronRight } from "lucide-react";
+/** Hierarchy: Idea → Goal → Item → Plan → Task, with progress at every level. */
+import { Check, ChevronRight, Circle } from "lucide-react";
 import type { ReactNode } from "react";
 import { FilterBar, useFilters } from "../components/FilterBar";
 import { Chip, Empty, ProgressBar, StatusChip } from "../components/primitives";
@@ -39,7 +39,19 @@ export function Tree() {
   const [f] = useFilters();
   const items = docsOf(ix, "item"), plans = docsOf(ix, "plan"), goals = docsOf(ix, "goal");
   const plansOf = (it: GraphDoc) => plans.filter((p) => p.items.includes(it.id));
-  const planNode = (p: GraphDoc) => <Row key={p.id} doc={p} done={p.tasks?.done ?? 0} total={p.tasks?.total ?? 0} unit="tasks" />;
+  const planNode = (p: GraphDoc) => (
+    <Row key={p.id} doc={p} done={p.tasks?.done ?? 0} total={p.tasks?.total ?? 0} unit="tasks">
+      {p.tasks?.list.length ? p.tasks.list.map((t, i) => (
+        <li key={t.id ?? i} className="tree__node">
+          <span className="tree__task">
+            {t.done ? <Check size={14} className="tone-success" aria-label="done" /> : <Circle size={14} className="muted" aria-label="open" />}
+            <span className="id">{t.id ?? ""}</span>
+            <span className="tree__tasktext">{t.phase && <span className="muted">{t.phase} · </span>}{t.text.replace(/`/g, "")}</span>
+          </span>
+        </li>
+      )) : null}
+    </Row>
+  );
   const itemNode = (it: GraphDoc) => {
     const ps = plansOf(it);
     return <Row key={it.id} doc={it} done={0} total={0} unit="">{ps.length ? ps.map(planNode) : null}</Row>;

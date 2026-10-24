@@ -238,7 +238,8 @@ for (const p of ["P-006", "P-007", "P-008"]) tr("move", p, "ready");
 // P-006 in progress on its branch, half the tasks done
 commit("chore(hub): check-in and streak plans");
 tr("start", "P-006");
-edit(file("plans", "P-006"), (t) => t.replace("- [ ] T1", "- [x] T1").replace("- [ ] T2", "- [x] T2"));
+edit(file("plans", "P-006"), (t) => t.replace("- [ ] T1", "### Phase 1: Server\n- [x] T1").replace("- [ ] T2", "- [x] T2")
+  .replace("- [ ] T3", "\n### Phase 2: Home screen\n- [ ] T3"));
 tr("log", "P-006", "offline queue needs the service worker from the PWA spike — see SPIKE-001 notes");
 tr("checkpoint", "P-006", "--attempt", "background sync API", "--why", "not available in Safari; the queue needs the service worker");
 commit("feat(P-006): API and home button");

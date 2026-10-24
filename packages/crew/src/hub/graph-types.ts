@@ -1,12 +1,16 @@
 /** The hub graph: the JSON contract between the CLI (`export`), the local server and the UI.
  * Bump SCHEMA_VERSION on any breaking change; consumers check it. Types only, no runtime code. */
 
-export const SCHEMA_VERSION = 5;
+export const SCHEMA_VERSION = 6;
 
 export type DocKind = "idea" | "goal" | "item" | "plan" | "knowledge";
 export type EdgeType = "serves" | "in-goal" | "delivers" | "depends-on" | "learned-in" | "supersedes" | "mentions";
 
 export interface Section { heading: string; markdown: string }
+/** One checklist line: `T3: text → verify: cmd` under an optional `### phase` subheading. */
+export interface Task { id: string | null; text: string; verify: string | null; done: boolean; phase: string | null }
+export interface Usage { tokens: number; cost: number; runs: number }
+export interface RefUsage extends Usage { roles: Record<string, number> }  // tokens by role
 
 export interface GraphDoc {
   id: string;
@@ -27,7 +31,7 @@ export interface GraphDoc {
   branch: string | null;
   pr: string | null;
   dates: Record<string, string>;    // created, started, completed, decided, closed
-  tasks: { done: number; total: number } | null;   // plan tasks; the idea's success criteria
+  tasks: { done: number; total: number; list: Task[] } | null;   // plan tasks; the idea's success criteria
   gate: string[] | null;            // what blocks the next gate: readiness (draft/ready plans), triage (new items), decision (idea)
   source: string;                   // "worktree" or the plan/* branch the live copy came from
   path: string | null;              // repo-relative
@@ -44,7 +48,9 @@ export interface Graph {
   focus: string | null;             // the focus goal
   docs: GraphDoc[];
   edges: GraphEdge[];
-  spend: { cost: number; tokensIn: number; tokensOut: number; byActor: Record<string, number> };  // ledger usage events
+  // ledger usage events; byRole: role (else actor), byRef: the document (or split over the run's documents, else "unattributed")
+  spend: { cost: number; tokensIn: number; tokensOut: number; byActor: Record<string, number>;
+    byRole: Record<string, Usage>; byRef: Record<string, RefUsage> };
   questions: { id: string; ref: string | null; to: string; text: string; by: string; ts: string; blocking: boolean; escalation: boolean }[];  // open ones
   next: string[];                   // the lines `crew.mjs next` prints
   check: { errors: string[]; hints: string[] };

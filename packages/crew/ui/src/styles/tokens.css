@@ -23,6 +23,7 @@
   --card-foreground: #212331;
   --muted: #eff0fc;
   --muted-foreground: #686a77;
+  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23686a77' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");  /* Lucide chevron-down in muted-foreground */
   --border: #dbdce7;
   --primary: #bb7125;
   --primary-foreground: #111111;
@@ -73,6 +74,7 @@
   --card-foreground: #ebedff;
   --muted: #2f3039;
   --muted-foreground: #a4a5b3;
+  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a4a5b3' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   --border: #383942;
   --primary: #bb7125;
   --primary-foreground: #111111;

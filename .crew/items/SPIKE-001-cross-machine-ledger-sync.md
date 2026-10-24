@@ -29,3 +29,4 @@ and follow-up items if it's go.
 
 ## Notes
 - 2026-10-23: status new → triaged — priority P3
+- 2026-10-24: Constraint (2026-10-24, from the hub UI work): no database. Files, git and the append-only ledger stay the source of truth; ledger.jsonl lives in the local git common dir and is never pushed today.

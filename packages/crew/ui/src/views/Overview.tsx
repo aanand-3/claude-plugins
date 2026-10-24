@@ -1,6 +1,6 @@
 /** Overview, the executive view: the idea and its success criteria, the focus goal, what's next, what needs attention. */
 import { ArrowRight, Ban, Hourglass } from "lucide-react";
-import { Card, Chip, DocTitle, Empty, IdLink, Kpi, ProgressBar, StatusChip } from "../components/primitives";
+import { Card, Chip, DocTitle, Empty, fmtTokens, IdLink, Kpi, ProgressBar, StatusChip } from "../components/primitives";
 import { Markdown } from "../components/Markdown";
 import { docsOf, focusGoal, idea, useData } from "../data";
 import { docHref } from "../router";
@@ -24,6 +24,11 @@ export function Overview() {
     .sort((a, b) => (b.dates.created ?? "").localeCompare(a.dates.created ?? "")).slice(0, 5);
   const waiting = plans.filter((d) => d.waitsFor.length && !["done", "dropped"].includes(d.status));
   const criteria = root?.tasks;
+  const tokens = g.spend.tokensIn + g.spend.tokensOut;
+  const roles = Object.entries(g.spend.byRole).sort((a, b) => b[1].tokens - a[1].tokens);
+  // byRef also holds goals, items and knowledge (and refs with no document): rank plans only.
+  const topRefs = Object.entries(g.spend.byRef).filter(([r]) => ix.byId.get(r)?.kind === "plan").sort((a, b) => b[1].tokens - a[1].tokens).slice(0, 5);
+  const unattributed = g.spend.byRef.unattributed;
   const outcome = (id: string) => ix.byId.get(id)?.sections.find((s) => s.heading === "Outcome")?.markdown ?? "";
   return (
     <div className="stack">
@@ -33,7 +38,7 @@ export function Overview() {
         <Kpi value={focus ? `${focusItems.filter((i) => i.status === "done").length} / ${focusItems.length}` : "—"}
           caption={focus ? `items done · focus ${focus.id}` : "no focus goal"} />
         <Kpi value={active.length} caption="plans in progress or review" />
-        <Kpi value={`$${g.spend.cost.toFixed(2)}`} caption={`spent · ${(g.spend.tokensIn + g.spend.tokensOut).toLocaleString()} tokens`} />
+        <Kpi value={fmtTokens(tokens)} caption={<>tokens spent{g.spend.cost > 0 && <> · ${g.spend.cost.toFixed(2)}</>}</>} />
         <Kpi value={blocked.length + serious.length} tone={blocked.length + serious.length ? "destructive" : "success"}
           caption="blocked plans + open S1/S2 bugs" />
       </div>
@@ -74,6 +79,42 @@ export function Overview() {
               );
             })}
           </ul>
+        </Card>
+      </div>
+
+      <div className="grid-2">
+        <Card title="Spend by agent">
+          {roles.length ? (
+            <ul className="rows spend">
+              {roles.map(([role, u]) => (
+                <li key={role} className="spend__row">
+                  <span className="spend__name">{role}</span>
+                  <span className="spend__num">{fmtTokens(u.tokens)} tokens · {u.runs} run{u.runs === 1 ? "" : "s"}{u.cost > 0 && <> · ${u.cost.toFixed(2)}</>}</span>
+                  <ProgressBar value={u.tokens} total={tokens} label={`${role} share of tokens`} />
+                </li>
+              ))}
+            </ul>
+          ) : <Empty command="crew.mjs usage --hook">No usage recorded yet.</Empty>}
+        </Card>
+        <Card title="Top plans by spend">
+          {topRefs.length || unattributed ? (
+            <ul className="rows spend">
+              {topRefs.map(([ref, u]) => (
+                <li key={ref} className="spend__row">
+                  <span className="spend__name"><IdLink id={ref} withTitle /></span>
+                  <span className="spend__num">{fmtTokens(u.tokens)} tokens · {u.runs} run{u.runs === 1 ? "" : "s"}</span>
+                  <ProgressBar value={u.tokens} total={tokens} label={`${ref} share of tokens`} />
+                </li>
+              ))}
+              {unattributed && (
+                <li className="spend__row">
+                  <span className="spend__name muted" title="runs that wrote no move, checkpoint, learn or log">unattributed</span>
+                  <span className="spend__num">{fmtTokens(unattributed.tokens)} tokens · {unattributed.runs} run{unattributed.runs === 1 ? "" : "s"}</span>
+                  <ProgressBar value={unattributed.tokens} total={tokens} label="unattributed share of tokens" />
+                </li>
+              )}
+            </ul>
+          ) : <Empty command="crew.mjs usage --hook">No usage recorded yet.</Empty>}
         </Card>
       </div>
 

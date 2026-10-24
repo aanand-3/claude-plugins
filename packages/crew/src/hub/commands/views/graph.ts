@@ -10,7 +10,7 @@ import { CLOSED, IDEA_ID, type Kind } from "../../core/work/model.js";
 import * as q from "../../core/work/queries.js";
 import type { Docs, Store } from "../../core/store.js";
 import { stripComments, today } from "../../core/text.js";
-import { type Graph, type GraphDoc, type GraphEdge, SCHEMA_VERSION } from "../../graph-types.js";
+import { type Graph, type GraphDoc, type GraphEdge, SCHEMA_VERSION, type Task } from "../../graph-types.js";
 import { nextLines } from "./advisor.js";
 import { findings } from "./checks.js";
 import { openQuestions } from "../team/questions.js";
@@ -48,7 +48,7 @@ export function buildGraph(store: Store): Graph {
 
 function toDoc(store: Store, d: Doc, kind: Kind, all: Loaded): GraphDoc {
   const status = kind === "item" ? q.itemStatus(d, all.plans) : d.get("status") ?? "";
-  const tasks = kind === "plan" ? d.tasks() : kind === "idea" ? d.checklist("Success criteria") : [];
+  const tasks = kind === "plan" ? d.taskGroups() : kind === "idea" ? d.taskGroups("Success criteria") : [];
   return {
     id: kind === "idea" ? IDEA_ID : d.id,
     kind: kind as GraphDoc["kind"],
@@ -68,12 +68,19 @@ function toDoc(store: Store, d: Doc, kind: Kind, all: Loaded): GraphDoc {
     branch: d.get("branch"),
     pr: d.get("pr"),
     dates: Object.fromEntries(DATE_KEYS.filter((k) => d.get(k)).map((k) => [k, d.get(k)!])),
-    tasks: tasks.length || kind === "plan" ? { done: tasks.filter(([x]) => x).length, total: tasks.length } : null,
+    tasks: tasks.length || kind === "plan" ? { done: tasks.filter(([x]) => x).length, total: tasks.length, list: tasks.map(task) } : null,
     gate: gate(store, d, kind, status),
     source: d.source,
     path: d.path ? store.rel(d.path) : null,
     sections: sections(d.text),
   };
+}
+
+const TASK_LINE = /^(?:(T\d+):\s*)?(.*?)(?:\s*→\s*verify:\s*(.*))?$/;
+
+function task([done, line, phase]: [boolean, string, string | null]): Task {
+  const [, id = null, text = line, verify = null] = TASK_LINE.exec(line) ?? [];
+  return { id, text: text.trim(), verify: verify?.trim() || null, done, phase };
 }
 
 function knowledgeDoc(store: Store, e: Entry): GraphDoc {

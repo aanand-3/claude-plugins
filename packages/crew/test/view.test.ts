@@ -24,7 +24,7 @@ describe("graph", () => {
     expect(new Set(graph.docs.map((d) => d.kind))).toEqual(new Set(["idea", "goal", "item", "plan", "knowledge"]));
     expect(new Set(graph.edges.map((e) => e.type))).toEqual(
       new Set(["serves", "in-goal", "delivers", "depends-on", "learned-in", "mentions"]));
-    expect(graph.schemaVersion).toBe(5);
+    expect(graph.schemaVersion).toBe(6);
     const gotcha = graph.docs.find((d) => d.kind === "knowledge" && d.type === "gotcha")!;
     expect(gotcha).toMatchObject({ status: "active", touches: ["src/auth/**"], source: "P-004" });
     expect(graph.edges).toContainEqual({ from: gotcha.id, to: "P-004", type: "learned-in" });
@@ -42,6 +42,18 @@ describe("graph", () => {
     expect(graph.edges).toContainEqual({ from: "G-001", to: "IDEA", type: "serves" });
     expect(doc("P-007").waitsFor).toEqual(["P-006"]);
     expect(graph.edges).toContainEqual({ from: "P-007", to: "P-006", type: "depends-on" });
+  });
+
+  it("lists a plan's tasks with their verify commands and the ### phase they sit under", () => {
+    expect(doc("P-006").tasks).toEqual({ done: 2, total: 4, list: [
+      { id: "T1", text: "API", verify: "test", done: true, phase: "Phase 1: Server" },
+      { id: "T2", text: "home button", verify: "test", done: true, phase: "Phase 1: Server" },
+      { id: "T3", text: "undo toast", verify: "test", done: false, phase: "Phase 2: Home screen" },
+      { id: "T4", text: "offline queue", verify: "test", done: false, phase: "Phase 2: Home screen" },
+    ] });
+    expect(doc("P-009").tasks!.list).toEqual([{ id: "T1", text: "profile API", verify: null, done: false, phase: null },
+      { id: "T2", text: "form", verify: "UI test", done: false, phase: null }]);
+    expect(doc("IDEA").tasks!.list.map((t) => t.id)).toEqual([null, null, null]);  // success criteria: no task IDs
   });
 
   it("carries the gate each document is waiting on", () => {
@@ -101,7 +113,7 @@ describe("ui server", () => {
   it("serves the page without data (the page fetches it) and the graph as JSON", async () => {
     const page = await (await fetch(url)).text();
     expect(page).toContain('<script id="graph" type="application/json">null</script>');
-    expect((await (await fetch(`${url}api/graph`)).json()).schemaVersion).toBe(5);
+    expect((await (await fetch(`${url}api/graph`)).json()).schemaVersion).toBe(6);
   });
 
   it("refuses commands without the page's token, from another origin, or for another host", async () => {
