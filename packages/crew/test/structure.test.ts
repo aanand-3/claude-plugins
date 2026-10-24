@@ -1,16 +1,25 @@
 import { readdirSync, readFileSync } from "node:fs";
+import { dirname, join, relative } from "node:path";
+import { fileURLToPath } from "node:url";
 import { expect, it } from "vitest";
 
 const SRC = new URL("../src/", import.meta.url);
 const UI = new URL("../ui/src/", import.meta.url);
+const SRC_DIR = fileURLToPath(SRC);
 /** Every .ts/.tsx module under a directory, at any depth. */
 const files = (base: URL): URL[] => readdirSync(base, { recursive: true, encoding: "utf8" })
   .filter((f) => /\.tsx?$/.test(f)).map((f) => new URL(f, base));
 const under = (dir: string) => files(SRC).filter((f) => f.pathname.includes(`/src/${dir}`));
 const ALL = [...files(SRC), ...files(UI)];
+/** Where each relative import of a module points, as a path under src/ (`../` when outside it): static
+ * (`from "…"`), side-effect (`import "…"`) and dynamic (`import("…")`) imports alike. */
+const targets = (f: URL): string[] => [...readFileSync(f, "utf8").matchAll(/\b(?:from|import)\s*\(?\s*["'](\.{1,2}\/[^"']+)["']/g)]
+  .map(([, spec]) => relative(SRC_DIR, join(dirname(fileURLToPath(f)), spec)).replace(/\.js$/, ""));
 
-it("core never depends on commands or the CLI", () => {
-  for (const f of under("hub/core/")) expect(readFileSync(f, "utf8"), f.pathname).not.toMatch(/from "(\.\.\/)+(commands|cli|server|mcp)[/."]/);
+it("core only imports core: never commands, the CLI, the server or MCP", () => {
+  for (const f of under("hub/core/")) {
+    for (const t of targets(f)) expect(t.startsWith("hub/core/"), `${f.pathname} imports ${t}`).toBe(true);
+  }
 });
 
 it("hub sources sit in their domain folders", () => {
@@ -25,8 +34,8 @@ it("modules stay small (base pack: Modules & size)", () => {
 
 it("the UI only reaches the core through the graph contract and the status vocabulary", () => {
   for (const f of files(UI)) {
-    for (const [, path] of readFileSync(f, "utf8").matchAll(/from "((?:\.\.\/){2,3}src\/[^"]+)"/g)) {
-      expect(["src/hub/graph-types", "src/hub/core/work/model"].some((ok) => path.endsWith(ok)), `${f.pathname} imports ${path}`).toBe(true);
+    for (const t of targets(f).filter((x) => !x.startsWith("../"))) {
+      expect(["hub/graph-types", "hub/core/work/model"], `${f.pathname} imports src/${t}`).toContain(t);
     }
   }
 });

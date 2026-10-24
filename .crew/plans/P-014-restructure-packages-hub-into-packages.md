@@ -117,6 +117,7 @@ Latest log:
 - 2026-10-24: status ready → in-progress — branch plan/P-014-restructure-packages-hub-into-packages
 - 2026-10-24: structure test now walks ui/src/studio/ too and found Preview.tsx at 326 lines (the old list skipped that folder): ComponentSheet and TypeSpecimen moved verbatim to studio/Specimens.tsx; studio.html is byte-identical
 - 2026-10-24: status in-progress → in-review
+- 2026-10-24: review follow-up: structure test resolves every relative import (static, side-effect import "…", dynamic import("…")) to its path under src/; core may only import core; the UI contract no longer depends on ../ depth. Each hole shown failing on a planted file, then removed
 
 ## Outcome
 - **What shipped:**
