@@ -7500,7 +7500,7 @@ function norm(name) {
   return SECTION_ALIASES[n] ?? n;
 }
 function slugify(title) {
-  const words3 = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").split("-").filter(Boolean);
+  const words3 = title.toLowerCase().replace(/['’]/g, "").replace(/[^a-z0-9]+/g, "-").split("-").filter(Boolean);
   const out = [];
   for (const w of words3) {
     if ([...out, w].join("-").length > 40) break;

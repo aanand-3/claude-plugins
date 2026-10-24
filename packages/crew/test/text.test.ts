@@ -13,6 +13,12 @@ describe("slugify", () => {
     expect(slugify("Sign up and sign in")).toBe("sign-up-and-sign-in");
     expect(slugify("Daily check-in")).toBe("daily-check-in");
   });
+  it("drops apostrophes instead of splitting on them", () => {
+    expect(slugify("the team's first job")).toBe("the-teams-first-job");
+    expect(slugify("the team’s first job")).toBe("the-teams-first-job");
+    expect(slugify("don't stop")).toBe("dont-stop");
+    expect(slugify("rock 'n' roll")).toBe("rock-n-roll");
+  });
 });
 
 describe("ids and dates", () => {

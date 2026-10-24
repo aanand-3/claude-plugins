@@ -1,5 +1,7 @@
 /** The hub, end to end — backlog items: intake, the triage gate, goal breakdowns, plan links, derived status and
  * next's ordering. Ported from tests/crew/test_hub.py (section "backlog items"). */
+import { readdirSync } from "node:fs";
+import { join } from "node:path";
 import { beforeEach, expect, it } from "vitest";
 import { Repo } from "../../helpers/repo.js";
 import { GOAL_DRAFT, PLAN_DRAFT } from "./fixtures.js";
@@ -45,6 +47,12 @@ it("a new item with a priority is triaged", () => {
   expect(item(repo, "SPIKE-001")).toContain("status: new"); // a spike needs its Question and Timebox
   expect(r.stdout).toContain("stays new");
   expect(r.stdout).toContain("Question");
+});
+
+it("a new item's slug drops apostrophes", () => {
+  init(repo);
+  expect(tr(repo, "new-item", "feat", "Kickoff as the team's first job", "--why", "x").returncode).toBe(0);
+  expect(readdirSync(join(repo.path, ".crew/items"))).toContain("FEAT-001-kickoff-as-the-teams-first-job.md");
 });
 
 it("a goal's breakdown becomes triaged items", () => {

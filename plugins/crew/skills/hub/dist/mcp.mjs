@@ -7487,7 +7487,7 @@ function norm(name) {
   return SECTION_ALIASES[n2] ?? n2;
 }
 function slugify(title) {
-  const words2 = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").split("-").filter(Boolean);
+  const words2 = title.toLowerCase().replace(/['’]/g, "").replace(/[^a-z0-9]+/g, "-").split("-").filter(Boolean);
   const out = [];
   for (const w of words2) {
     if ([...out, w].join("-").length > 40) break;
