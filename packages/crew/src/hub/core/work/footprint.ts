@@ -17,13 +17,14 @@ export function overlapping(plan: Doc, plans: Docs): { id: string; globs: string
 }
 
 /** Files changed on the plan's branch (since it left the base branch, plus uncommitted) that no `touches:` glob covers.
- * Only answerable on the plan's own branch; elsewhere it returns null. */
-export function drift(plan: Doc, base: string): string[] | null {
-  if (git.currentBranch() !== plan.get("branch") || !plan.touches().length) return null;
-  const fork = git.git(["merge-base", base, "HEAD"])?.trim();
+ * Only answerable where the plan's work is (`home`: its worktree, or this checkout on its branch); else null. */
+export function drift(plan: Doc, base: string, home: string | null): string[] | null {
+  if (!home || !plan.touches().length) return null;
+  const at = (args: string[]) => git.git(["-C", home, ...args]);
+  const fork = at(["merge-base", base, "HEAD"])?.trim();
   if (!fork) return null;
-  const changed = new Set([...(git.git(["diff", "--name-only", fork])?.split("\n") ?? []),
-    ...(git.git(["ls-files", "--others", "--exclude-standard"])?.split("\n") ?? [])].filter(Boolean));
+  const changed = new Set([...(at(["diff", "--name-only", fork])?.split("\n") ?? []),
+    ...(at(["ls-files", "--others", "--exclude-standard"])?.split("\n") ?? [])].filter(Boolean));
   const globs = plan.touches().map(globRe);
   return [...changed].filter((f) => !f.startsWith(".crew/") && !globs.some((g) => g.test(f))).sort();
 }

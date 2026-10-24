@@ -40,7 +40,7 @@ export interface Graph {
   schemaVersion: number;
   generatedAt: string;
   project: { name: string; branch: string | null; today: string };
-  settings: { wip_limit: number; max_tasks: number };
+  settings: { wip_limit: number; max_tasks: number; plan_worktrees: boolean };
   focus: string | null;             // the focus goal
   docs: GraphDoc[];
   edges: GraphEdge[];

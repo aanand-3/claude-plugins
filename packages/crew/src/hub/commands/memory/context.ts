@@ -36,7 +36,7 @@ function planSections(store: Store, plan: Doc, role: string): Section[] {
   const tasks: Section = { title: "Remaining tasks", more: plan.path ? store.rel(plan.path) : plan.id,
     lines: plan.tasks().filter(([d]) => !d).map(([, t]) => t) };
   const waits = q.unmetDeps(plan, plans), asks = openQuestions(store.ledger.events(), plan.id);
-  const over = overlapping(plan, plans), outside = drift(plan, store.baseBranch()) ?? [];
+  const over = overlapping(plan, plans), outside = drift(plan, store.baseBranch(), store.planHome(plan.id)) ?? [];
   const questions: Section = { title: "Open questions", more: "crew.mjs questions", lines: [
     ...asks.map((x) => `${x.blocking ? "blocking: " : ""}${x.id} ${x.by} → ${x.to}: ${x.text}`),
     ...openQuestions(store.ledger.events()).filter((x) => x.to === role && x.ref !== plan.id)
@@ -123,7 +123,9 @@ export function context(store: Store, o: { id?: string; role?: string; budget?: 
   if (budget < 200) fail("--budget must be at least 200 characters.");
   const pid = o.id?.toUpperCase() ?? /^plan\/(P-\d+)/.exec(git.currentBranch() ?? "")?.[1];
   const plan = pid ? store.plans(true).get(pid) ?? fail(`No plan ${pid}.`) : null;
-  const header = `crew context${role === "any" ? "" : ` — ${role}`}${plan ? ` — ${plan.id}: ${plan.get("title")} [${plan.get("status")}]` : ""}`;
+  const home = plan ? store.planHome(plan.id) : null; // the plan's shared worktree: where its team works
+  const header = `crew context${role === "any" ? "" : ` — ${role}`}${plan ? ` — ${plan.id}: ${plan.get("title")} [${plan.get("status")}]` : ""}`
+    + (home && home !== store.ws.root ? ` — work in ${store.rel(home)}` : "");
   const lines = assemble(header, plan ? planSections(store, plan, role) : projectSections(store, role), budget);
   if (o.json) store.say(JSON.stringify({ plan: plan?.id ?? null, role, budget, text: lines.join("\n") }));
   else for (const l of lines) store.say(l);

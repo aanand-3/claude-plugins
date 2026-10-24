@@ -76,7 +76,7 @@ export const DECIDED_SECTIONS = ["Problem", "Outcome", "Success criteria"];
 export const READY_SECTIONS = ["Context", "Scope", "Acceptance criteria", "Test plan"];
 export const SECTION_ALIASES: Record<string, string> = { candidateplans: "breakdown" };
 /** `hub:` settings in .crew/config.yaml. */
-export const DEFAULT_SETTINGS: Record<string, string> = { wip_limit: "1", max_tasks: "10" };
+export const DEFAULT_SETTINGS: Record<string, string> = { wip_limit: "1", max_tasks: "10", plan_worktrees: "false" };
 export const MAX_WRITTEN_AHEAD = 3; // draft + ready plans not yet started
 export const SLUG_STOPWORDS = new Set(["a", "an", "and", "the", "of", "for", "to", "with", "in", "on", "or", "via", "by"]);
 export const TASK_RE = /^\s*- \[( |x|X)\]\s*(.*)$/;

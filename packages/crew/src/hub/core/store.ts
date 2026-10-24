@@ -21,6 +21,8 @@ export type DirKind = Exclude<Kind, "idea">;
 export interface Settings {
   wip_limit: number;
   max_tasks: number;
+  /** One shared worktree per plan, created at `new-plan` (the agent team's way of working). */
+  plan_worktrees: boolean;
 }
 
 /** `key: value` lines of one top-level block of a YAML file (`hub:` in config.yaml); enough for flat settings. */
@@ -44,6 +46,7 @@ export class Store {
   readonly knowledgeDir: string;
   private ledgerCache: Ledger | null = null;
   private policyCache: Resolved | null = null;
+  private worktreeCache: Map<string, string> | null = null;
 
   constructor(readonly ws: Workspace) {
     git.useRoot(ws.root);
@@ -93,7 +96,7 @@ export class Store {
     const text = this.ws.read(join(this.dir, "config.yaml"));
     const s = { ...DEFAULT_SETTINGS, ...(text === null ? {} : yamlBlock(text, "hub")) };
     const int = (k: string) => (/^\d+$/.test(s[k]) ? parseInt(s[k], 10) : parseInt(DEFAULT_SETTINGS[k], 10));
-    return { wip_limit: int("wip_limit"), max_tasks: int("max_tasks") };
+    return { wip_limit: int("wip_limit"), max_tasks: int("max_tasks"), plan_worktrees: s.plan_worktrees === "true" };
   }
 
   // -- loading
@@ -112,12 +115,50 @@ export class Store {
     return docs;
   }
 
-  goals(): Docs { return this.loadDir(this.dirs.goal); }
-  items(): Docs { return this.loadDir(this.dirs.item); }
+  goals(): Docs { return this.overlay(this.dirs.goal, this.loadDir(this.dirs.goal)); }
+  items(): Docs { return this.overlay(this.dirs.item, this.loadDir(this.dirs.item)); }
+
+  /** Worktrees of plan branches other than this checkout, by plan ID: where each plan's team works. */
+  planWorktrees(): Map<string, string> {
+    if (this.worktreeCache) return this.worktreeCache;
+    const real = (p: string) => (existsSync(p) ? realpathSync(p) : p);
+    const here = real(this.ws.root), out = new Map<string, string>();
+    for (const w of git.worktrees()) {
+      const m = /^plan\/(P-\d+)/.exec(w.branch ?? "");
+      if (m && existsSync(w.path) && real(w.path) !== here) out.set(m[1], w.path);
+    }
+    return (this.worktreeCache = out);
+  }
+
+  /** A worktree was added or removed: look again. */
+  forgetWorktrees(): void {
+    this.worktreeCache = null;
+  }
+
+  /** Where a plan's work is: this checkout when it is on the plan's branch, else the plan's worktree, else null. */
+  planHome(pid: string): string | null {
+    if (new RegExp(`^plan/${pid}-`).test(git.currentBranch() ?? "")) return this.ws.root;
+    return this.planWorktrees().get(pid) ?? null;
+  }
+
+  /** One directory's documents, overlaid with those changed (uncommitted) in plan worktrees — a plan's items, goals and
+   * knowledge live there until it completes. This checkout's copy wins where it changed the same file too. */
+  private overlay(d: string, docs: Docs): Docs {
+    const rel = this.rel(d), mine = new Set(git.dirty(this.ws.root, rel));
+    for (const wt of this.planWorktrees().values()) {
+      for (const f of git.dirty(wt, rel)) {
+        if (!f.endsWith(".md") || f.slice(rel.length + 1).includes("/") || mine.has(f)) continue;
+        const path = join(wt, f), text = this.ws.read(path);
+        const doc = text === null ? null : this.attach(Doc.parse(text, path));
+        if (doc?.id) docs.set(doc.id, doc);
+      }
+    }
+    return docs;
+  }
 
   /** Project knowledge, plus the org playbook's lessons (`lessons/**.md`, read-only) when a playbook is configured. */
   knowledge(withPlaybook = true): Entry[] {
-    const project = [...this.loadDir(this.knowledgeDir).values()].map((d) => toEntry(d, "project"));
+    const project = [...this.overlay(this.knowledgeDir, this.loadDir(this.knowledgeDir)).values()].map((d) => toEntry(d, "project"));
     const pb = withPlaybook ? playbook(this.ws.root, this.dir) : { read: null };
     const lessons = pb.read && pb.list ? pb.list("lessons").filter((f) => f.endsWith(".md")).flatMap((f) => {
       const text = pb.read!(f);
@@ -145,10 +186,18 @@ export class Store {
     return (this.idea()?.get("focus") ?? "").toUpperCase();
   }
 
-  /** Plans on the worktree; with includeBranches, live copies from every plan/* branch win
-   * unless main already closed the plan (merged or dropped). */
+  /** Plans on the worktree, with each plan worktree's copy of its own plan (the live one); with includeBranches, live
+   * copies from every other plan/* branch too. Either wins unless main already closed the plan (merged or dropped). */
   plans(includeBranches = false): Docs {
     const plans = this.loadDir(this.dirs.plan);
+    for (const [pid, wt] of this.planWorktrees()) {
+      const dir = join(wt, this.rel(this.dirs.plan));
+      const name = this.ws.list(dir).find((n) => n.startsWith(`${pid}-`) && n.endsWith(".md"));
+      const base = plans.get(pid);
+      if (name && (!base || !CLOSED.has(base.get("status") ?? ""))) {
+        plans.set(pid, this.attach(Doc.parse(this.ws.read(join(dir, name))!, join(dir, name))));
+      }
+    }
     if (includeBranches) {
       for (const [pid, doc] of this.branchPlans()) {
         const base = plans.get(pid);
@@ -166,7 +215,7 @@ export class Store {
       const local = ref.replace(/^origin\//, "");
       if (local === here || (ref !== local && refs.includes(local))) continue; // the worktree / prefer local copy
       const m = /^plan\/(P-\d+)/.exec(local);
-      if (!m) continue;
+      if (!m || this.planWorktrees().has(m[1])) continue; // a plan worktree's copy is read from disk
       for (const name of git.lsTree(ref, ".crew/plans/")) {
         if (name.split("/").pop()!.startsWith(`${m[1]}-`)) {
           const text = git.show(ref, name);
@@ -182,17 +231,23 @@ export class Store {
     const kind = kindOf(docId);
     if (!kind) fail(`Unrecognised ID '${docId}'. Expected IDEA, G-###, P-### or FEAT/BUG/CHORE/SPIKE-###.`);
     if (kind === "idea") return this.idea() ?? fail(`No idea yet: write ${this.rel(this.ideaPath)} with \`new-idea\`.`);
-    const doc = this.loadDir(this.dirs[kind]).get(docId);
+    const doc = this.docs(kind).get(docId);
     return doc ?? fail(`${docId} not found in ${this.rel(this.dirs[kind])}`);
   }
 
-  /** Next free ID, scanning the worktree and every branch so parallel work never reuses one. */
+  /** A kind's documents as the hub sees them: this checkout's, plus what plan worktrees hold. */
+  docs(kind: DirKind): Docs {
+    return kind === "plan" ? this.plans() : kind === "item" ? this.items() : this.goals();
+  }
+
+  /** Next free ID, scanning every worktree and every branch so parallel work never reuses one. */
   nextId(prefix: string, kind: DirKind): string {
     const d = this.dirs[kind];
     const width = 3;
     const names = this.ws.list(d);
     const rel = `${this.rel(d)}/`;
     for (const ref of git.allRefs()) names.push(...git.lsTree(ref, rel).map((n) => n.split("/").pop()!));
+    for (const w of git.worktrees()) names.push(...this.ws.list(join(w.path, this.rel(d))));
     const nums = names.map((n) => new RegExp(`^${prefix}-(\\d+)`).exec(n)).filter((m) => m).map((m) => parseInt(m![1], 10));
     return `${prefix}-${String(Math.max(0, ...nums) + 1).padStart(width, "0")}`;
   }
@@ -230,7 +285,7 @@ export class Store {
   checkRef(docId: string | undefined, kind: DirKind): string {
     if (!docId) return "";
     docId = docId.toUpperCase();
-    if (kindOf(docId) !== kind || !this.loadDir(this.dirs[kind]).has(docId)) {
+    if (kindOf(docId) !== kind || !this.docs(kind).has(docId)) {
       fail(`${kind[0].toUpperCase()}${kind.slice(1)} ${docId} does not exist.`);
     }
     return docId;

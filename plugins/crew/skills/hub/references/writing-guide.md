@@ -38,7 +38,7 @@ UI plans (projects with `docs/design/DESIGN.md`) also end with a task like `Visu
 | Acceptance criteria | Observable behavior: inputs → outputs, error cases, non-functional limits where relevant. Each maps to a test or a demonstrable check | "Code is clean", "tests pass", "feature works" |
 | Approach | Key decisions and why; assumptions; what is reused. `touches:` (front matter) lists the paths it will change | A restatement of the tasks; `touches: src/**` |
 | Tasks | 3–8 steps, each ≤ ~half a day, in order, each ending `→ verify: <command, test or check>` | "Implement backend", or tasks with no way to verify them |
-| Test plan | Which tests cover which criterion (unit / integration / e2e / manual); bugs name the regression test that fails before the fix | "Add tests" |
+| Test plan | Targeted checks: which tests cover which criterion (unit / integration / e2e / manual), scoped to the files in `touches`; bugs name the regression test that fails before the fix. Never the full suite: Release runs it before merging | "Add tests", "run the full suite" |
 | Rollout & rollback | Migrations, flags, config, observability, how to back out; or "n/a — internal refactor, no runtime change" | Empty on a change that touches data or config |
 | Risks & open questions | Concrete unknowns, each with a mitigation or an owner | "None" on non-trivial work |
 
@@ -124,6 +124,7 @@ Second slice of G-001 (Connections), delivers FEAT-002; committed to S-02. OIDC 
 - [ ] T6: log redaction check → verify: test captures logs during create/delete and asserts no token substring
 
 ## Test plan
+**Targeted checks:**
 - Unit: entity rules; cipher conformance suite run against the fake and the AES-GCM adapter (AC 1, 2).
 - Integration (compose Postgres): repository round-trip, tenant filter, audit row on delete (AC 1, 3, 4).
 - API: list/get/delete including the cross-tenant 404; response bodies and captured logs contain no token (AC 3, 5).

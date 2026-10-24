@@ -1303,6 +1303,20 @@ def test_a_refused_start_leaves_no_branch_and_can_be_retried(repo: Repo):
     assert tr(repo, "start", "P-001").returncode == 0
 
 
+def test_start_carries_uncommitted_hub_files_to_the_plan_branch(repo: Repo):
+    """Hub bookkeeping rides along with the plan's one commit; anything else uncommitted still refuses the start."""
+    init(repo, commit=True)
+    ready_plan(repo)  # the plan exists only as uncommitted files under .crew/
+    repo.write("src/app.py", "x = 1\n")
+    r = tr(repo, "start", "P-001")
+    assert r.returncode != 0 and "not clean" in r.stderr
+    (repo.path / "src/app.py").unlink()
+    assert tr(repo, "start", "P-001").returncode == 0
+    assert repo.git("branch", "--show-current").stdout.strip().startswith("plan/P-001")
+    assert "status: in-progress" in plan_file(repo, "P-001").read_text()
+    assert repo.git("ls-tree", "-r", "--name-only", "main", ".crew/plans").stdout.strip() == ".crew/plans/.gitkeep"
+
+
 def test_a_refusal_after_branching_rolls_the_branch_back(repo: Repo):
     """Refused at flush, after the branch exists (here: another writer holds the ledger lock): no branch is left behind."""
     init(repo, commit=True)
@@ -1682,3 +1696,100 @@ def test_agent_templates_are_valid_and_name_real_commands(repo: Repo):
         for cmd in re.findall(r"crew\.mjs ([a-z][a-z-]*)", path.read_text()):
             assert cmd in commands, f"{path.name}: crew.mjs {cmd} is not a hub command"
     assert {p.stem for p in AGENT_TEMPLATES.glob("*.md")} == {*BUILT_IN_AGENTS, "generic"}
+
+
+# ------------------------------------------------------------------ shared plan worktrees (plan_worktrees)
+def worktree_hub(repo: Repo) -> None:
+    init(repo, commit=True)
+    repo.write(".crew/config.yaml", "hub:\n  plan_worktrees: true\n")
+    repo.commit("chore(hub): plan worktrees")
+
+
+def plan_worktree(repo: Repo, plan_id: str) -> Repo:
+    wt = Repo(next((repo.path / ".claude/worktrees").glob(f"{plan_id}-*")))
+    wt.env = repo.env
+    return wt
+
+
+def test_plan_worktrees_new_plan_specs_in_its_own_worktree(repo: Repo):
+    worktree_hub(repo)
+    assert tr(repo, "new-item", "bug", "Crash", "--why", "500 on login").returncode == 0  # uncommitted on main
+    repo.write(".crew/drafts/other.md", "a draft that stays\n")
+    (repo.path / ".crew/config.yaml").write_text("hub:\n  plan_worktrees: true\n  wip_limit: 2\n")  # setup stays on main
+    r = new_plan(repo, "Signup", PLAN_DRAFT, "--items", "BUG-001")
+    assert r.returncode == 0, r.stderr
+    wt = plan_worktree(repo, "P-001")
+    assert wt.git("branch", "--show-current").stdout.strip() == "plan/P-001-signup"
+    assert "status: draft" in plan_file(wt, "P-001").read_text()
+    assert "plan: P-001" in item(wt, "BUG-001")  # the link travels with the plan
+    assert not list((repo.path / ".crew/plans").glob("P-*.md")) and not list((repo.path / ".crew/items").glob("BUG-*.md"))
+    lines = {line.strip() for line in repo.git("status", "--porcelain").stdout.splitlines()}
+    assert lines == {"M .crew/config.yaml", "?? .crew/drafts/other.md"}  # setup and drafts stay; nothing else is left
+    assert repo.git("log", "--oneline").stdout.count("\n") == 3  # and nothing was committed
+    assert ".claude/worktrees/" in (repo.path / ".git/info/exclude").read_text()
+
+
+def test_plan_worktrees_refuse_a_spec_off_the_base_branch(repo: Repo):
+    worktree_hub(repo)
+    repo.git("switch", "-q", "-c", "elsewhere")
+    r = new_plan(repo)
+    assert r.returncode != 0 and "from a checkout of main" in r.stderr
+    assert not (repo.path / ".claude/worktrees").exists()
+
+
+def test_plan_worktrees_are_seen_and_edited_from_main(repo: Repo):
+    worktree_hub(repo)
+    new_plan(repo, "Signup", PLAN_DRAFT)
+    new_bug(repo, "Crash")
+    new_plan(repo, "Login", PLAN_DRAFT, "--touches", "src/login/**")  # carries BUG-001 into P-002's worktree
+    assert plan_worktree(repo, "P-002").path.name.startswith("P-002-")  # no reused ID for a plan only in a worktree
+    assert tr(repo, "move", "P-001", "ready").returncode == 0
+    assert tr(repo, "log", "P-001", "picked the provider").returncode == 0
+    p1 = plan_file(plan_worktree(repo, "P-001"), "P-001").read_text()
+    assert "status: ready" in p1 and "picked the provider" in p1
+    status = tr(repo, "status").stdout
+    assert "| P-001 | Signup |" in status and "BUG-001" in status
+    assert "P-002: Login [draft]" in tr(repo, "context", "P-002").stdout
+    assert tr(repo, "triage", "BUG-001", "--priority", "P2", "--severity", "S3").returncode == 0  # an item carried to a worktree is edited there
+    assert "status: triaged" in item(plan_worktree(repo, "P-002"), "BUG-001")
+
+
+def test_plan_worktrees_start_checkpoint_and_merge_order(repo: Repo):
+    worktree_hub(repo)
+    new_plan(repo, "Signup", PLAN_DRAFT)
+    tr(repo, "move", "P-001", "ready")
+    r = tr(repo, "start", "P-001")
+    assert r.returncode == 0 and "work in .claude/worktrees/P-001-signup" in r.stdout, r.stderr
+    assert repo.git("branch", "--show-current").stdout.strip() == "main"
+    wt = plan_worktree(repo, "P-001")
+    assert "status: in-progress" in plan_file(wt, "P-001").read_text()
+    wt.write("src/auth/marker.txt", "only in the plan's worktree\n")
+    assert tr(repo, "checkpoint", "P-001", "--run", "test -f src/auth/marker.txt", "--ac", "1").returncode == 0
+    assert events(repo, "--type", "checkpoint")[-1]["verify"][0]["ok"]  # the check ran in the worktree
+    assert "work in .claude/worktrees/P-001-signup" in tr(repo, "context", "P-001").stdout
+    wt.write("docs/stray.md", "outside touches\n")
+    assert "P-001: changes outside its touches: docs/stray.md" in tr(repo, "check").stdout
+    wt.path.joinpath("docs/stray.md").unlink()
+    p = plan_file(wt, "P-001")
+    p.write_text(p.read_text().replace("- [ ] T", "- [x] T").rstrip() + "\nShipped.\nLearnings: none\n")
+    assert tr(repo, "move", "P-001", "in-review").returncode == 0
+    qa_done(repo, "P-001", "test -f src/auth/marker.txt")
+    out = tr(repo, "merge-order").stdout
+    assert "commit everything in .claude/worktrees/P-001-signup once" in out and "squash-merge plan/P-001-signup" in out
+
+
+def test_plan_worktrees_developer_agent_has_no_isolation(repo: Repo):
+    worktree_hub(repo)
+    assert tr(repo, "agents").returncode == 0
+    assert "isolation" not in frontmatter(repo.path / ".claude/agents/crew-developer.md")
+
+
+def test_guard_protects_hub_files_inside_plan_worktrees(repo: Repo):
+    init(repo)
+    agent(repo, "crew-developer", "developer")
+    for path in (str(repo.path / ".claude/worktrees/P-001-x/.crew/bin/crew.mjs"), ".claude/worktrees/P-001-x/.crew/policy.yaml"):
+        out = hook(repo, {"tool_name": "Write", "agent_type": "crew-developer", "agent_id": "a", "tool_input": {"file_path": path}})
+        assert out and out["permissionDecision"] == "deny" and "protected" in out["permissionDecisionReason"], path
+    assert hook(repo, bash("crew-developer", "cp evil.mjs .claude/worktrees/P-001-x/.crew/bin/crew.mjs"))["permissionDecision"] == "deny"
+    assert hook(repo, {"tool_name": "Write", "agent_type": "crew-developer", "agent_id": "a",
+                       "tool_input": {"file_path": ".claude/worktrees/P-001-x/src/app.py"}}) is None

@@ -5,7 +5,7 @@ import * as git from "../../core/git.js";
 import type { Store } from "../../core/store.js";
 import { byKey } from "../../core/text.js";
 
-export interface MergeOrder { base: string; merge: { id: string; title: string; branch: string }[]; waiting: { id: string; why: string }[];
+export interface MergeOrder { base: string; merge: { id: string; title: string; branch: string; worktree?: string }[]; waiting: { id: string; why: string }[];
   merged: { id: string; branch: string }[] }
 
 export function mergeOrder(store: Store): MergeOrder {
@@ -13,25 +13,28 @@ export function mergeOrder(store: Store): MergeOrder {
   const doneAt = new Map(events.filter((e) => e.type === "move" && e.to === "done").map((e) => [e.ref, e.ts]));
   const branches = new Set(git.planBranches());
   const status = (p: Doc) => moved.get(p.id) ?? p.get("status") ?? "";
-  const isMerged = (b: string) => git.git(["merge-base", "--is-ancestor", b, base]) !== null;
+  const worktrees = store.planWorktrees();
+  // a plan worktree holds the plan's work uncommitted: its branch has no commit yet, so it only looks merged
+  const isMerged = (p: Doc) => !worktrees.has(p.id) && git.git(["merge-base", "--is-ancestor", p.get("branch")!, base]) !== null;
   const out: MergeOrder = { base, merge: [], waiting: [], merged: [] };
   const done = [...plans.values()].filter((p) => status(p) === "done" && branches.has(p.get("branch") ?? ""))
     .sort(byKey((p) => [doneAt.get(p.id) ?? p.get("completed") ?? "", p.id])); // first completed, first merged
   const pending = new Set<string>(); // done but not merged yet
   for (const p of done) {
-    if (isMerged(p.get("branch")!)) out.merged.push({ id: p.id, branch: p.get("branch")! });
+    if (isMerged(p)) out.merged.push({ id: p.id, branch: p.get("branch")! });
     else pending.add(p.id);
   }
   const unmergedDep = (p: Doc) => p.dependsOn().filter((d) => {
     const dep = plans.get(d), b = dep?.get("branch") ?? "";
-    return dep && status(dep) !== "dropped" && (pending.has(d) || (branches.has(b) && !isMerged(b)) || status(dep) !== "done");
+    return dep && status(dep) !== "dropped" && (pending.has(d) || (branches.has(b) && !isMerged(dep)) || status(dep) !== "done");
   });
   const placed = new Set<string>();
   for (let progress = true; progress;) { // dependencies first: place a plan once everything it depends on is placed or merged
     progress = false;
     for (const p of done.filter((x) => pending.has(x.id) && !placed.has(x.id))) {
       if (unmergedDep(p).every((d) => placed.has(d))) {
-        out.merge.push({ id: p.id, title: p.get("title") ?? "", branch: p.get("branch")! });
+        const wt = worktrees.get(p.id);
+        out.merge.push({ id: p.id, title: p.get("title") ?? "", branch: p.get("branch")!, ...(wt ? { worktree: store.rel(wt) } : {}) });
         placed.add(p.id);
         progress = true;
       }
@@ -48,7 +51,9 @@ export function mergeOrderCmd(store: Store, json = false): void {
   const m = mergeOrder(store);
   if (json) return store.say(JSON.stringify(m, null, 2));
   if (!m.merge.length && !m.waiting.length) store.say(`Nothing to merge into ${m.base}.`);
-  m.merge.forEach((p, i) => store.say(`${String(i + 1).padStart(2)}. ${p.id}: ${p.title} — merge ${p.branch} into ${m.base}`));
+  m.merge.forEach((p, i) => store.say(`${String(i + 1).padStart(2)}. ${p.id}: ${p.title} — `
+    + (p.worktree ? `commit everything in ${p.worktree} once (\`<type>(${p.id}): ${p.title}\`), squash-merge ${p.branch} into ${m.base}, `
+      + `then \`git worktree remove ${p.worktree}\` and delete the branch` : `merge ${p.branch} into ${m.base}`)));
   for (const w of m.waiting) store.say(`WAIT ${w.id}: ${w.why}`);
   for (const p of m.merged) store.say(`merged: ${p.id} (${p.branch}) — delete the branch`);
 }
