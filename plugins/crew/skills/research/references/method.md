@@ -8,7 +8,7 @@
 ```
 - `quote` is a short verbatim fragment from the page (under 25 words) that supports the claim. The verifier looks for it on the page.
 - `subject` is the product or repo the claim is about, so tables can be grouped.
-- `verify_evidence.py` adds `verified` (`yes | fuzzy | mismatch | broken | blocked | unverified | manual`), `http_status`, `checked`, and `repo` (`stars`, `pushed`, `archived`) for GitHub URLs. You set `manual` by hand only after confirming the quote yourself with WebFetch; add a `note`.
+- `verify_evidence.mjs` adds `verified` (`yes | fuzzy | mismatch | broken | blocked | unverified | manual`), `http_status`, `checked`, and `repo` (`stars`, `pushed`, `archived`) for GitHub URLs. You set `manual` by hand only after confirming the quote yourself with WebFetch; add a `note`.
 
 ## Lanes and query patterns
 | Lane | Find | Queries / places |

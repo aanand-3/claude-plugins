@@ -1,4 +1,4 @@
-"""Shared helpers: run the plugin's scripts against throwaway git repos."""
+"""Shared helpers: run the hub (dist/crew.mjs) against throwaway git repos. The skill scripts' tests are in packages/crew/test/tools."""
 from __future__ import annotations
 
 import os
@@ -12,7 +12,6 @@ ROOT = Path(__file__).resolve().parents[2]
 PLUGIN = ROOT / "plugins" / "crew"
 SKILLS = PLUGIN / "skills"
 HUB = SKILLS / "hub" / "dist" / "crew.mjs"
-INSTALL_GLOBAL = SKILLS / "global-setup" / "scripts" / "install_global.py"
 
 GIT_ENV = {
     "GIT_AUTHOR_NAME": "Test", "GIT_AUTHOR_EMAIL": "test@example.com",
@@ -53,14 +52,3 @@ def repo(tmp_path: Path) -> Repo:
     r = Repo(tmp_path)
     r.git("init", "-q", "-b", "main")
     return r
-VERIFY_EVIDENCE = SKILLS / "research" / "scripts" / "verify_evidence.py"
-
-
-def load_script(path: Path):
-    """Import a plugin script as a module (for unit tests of its functions)."""
-    import importlib.util
-    sys.path.insert(0, str(path.parent))
-    spec = importlib.util.spec_from_file_location(path.stem, path)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module

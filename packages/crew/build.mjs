@@ -24,6 +24,7 @@ export const TOOLS = [
   ["git-setup", "setup_git"], ["git-setup", "check_secrets"],
   ["guidelines", "compose_rules"], ["guidelines", "check_structure"], ["guidelines", "format_on_edit"], ["guidelines", "track_plan_draft"],
   ["design", "check_design"], ["design", "wada"], ["design", "studio"],
+  ["research", "verify_evidence"], ["global-setup", "install_global"],
 ];
 export const toolPath = (skill, name) => join(SKILLS, skill, "scripts", `${name}.mjs`);
 export const bundleTool = (skill, name, outfile = toolPath(skill, name)) => bundleNode(`src/tools/${skill}/${name}.ts`, outfile);

@@ -22,6 +22,12 @@ it("core only imports core: never commands, the CLI, the server or MCP", () => {
   }
 });
 
+it("the skill scripts never reach into the hub: each bundle stays a small standalone file", () => {
+  for (const f of under("tools/")) {
+    for (const t of targets(f)) expect(t.startsWith("tools/"), `${f.pathname} imports ${t}`).toBe(true);
+  }
+});
+
 it("hub sources sit in their domain folders", () => {
   const loose = (dir: string) => readdirSync(new URL(dir, SRC)).filter((f) => /\.ts$/.test(f));
   expect(loose("hub/commands/")).toEqual([]);

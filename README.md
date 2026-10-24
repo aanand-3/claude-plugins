@@ -123,14 +123,14 @@ claude plugin install crew@aanand-plugins
 
 Start a new Claude Code session after editing skills to pick up the changes.
 
-Before changing the bundled scripts, run the test suites. Tests live in `tests/<plugin>/` (plus `tests/marketplace/`), outside the plugin folders so they don't ship on install. Each folder is its own suite, so run them one at a time:
+Before changing the bundled scripts, run the test suites: `npm test` in `packages/crew/` (the hub, the skill scripts, the plugin's manifests and templates) and the hub's end-to-end suite in `tests/crew/`, which moves to vitest next:
 
 ```bash
-for suite in tests/*/; do uvx --with pyyaml pytest "$suite" || exit 1; done
+(cd tests/crew && uvx --with pyyaml pytest)
 ```
-The plugin follows the rules it ships: every script and source module stays under 300 lines (tested).
+The plugin follows the rules it ships: every source module stays under 300 lines (tested).
 
-The hub is TypeScript in `packages/crew/` (not shipped), under `src/hub/`: `core/` and `commands/` are grouped by domain (`work/`, `team/`, `memory/`, and `views/` for commands). `npm run build` bundles it into the files the plugin ships, `plugins/crew/skills/hub/dist/crew.mjs` (the CLI), `dist/mcp.mjs` (the same commands as stdio MCP tools, registered in `plugins/crew/.mcp.json`) and `dist/ui.html` (the React view, everything inlined); commit the rebuilt bundles with the source (a test fails when they differ). The view's design lives in `packages/crew/docs/design/DESIGN.md`; `ui/` reads only the graph contract (`src/hub/graph-types.ts`) and the status vocabulary (tested). `scripts/preview.sh` rebuilds and exports a generated sample project (`scripts/sample-project.mjs`) to `preview/habitly.html` for visual checks. `src/hub/core/` (documents, rules, queries) never imports `src/hub/commands/` or the CLI (tested). Commands stage their writes and only flush them if they succeed, so a refused command changes nothing.
+The skill scripts are TypeScript too, in `packages/crew/src/tools/<skill>/`. Each builds to one standalone `plugins/crew/skills/<skill>/scripts/<name>.mjs` (projects vendor some of them into `.crew/bin/`), and none imports the hub. The hub is TypeScript in `packages/crew/` (not shipped), under `src/hub/`: `core/` and `commands/` are grouped by domain (`work/`, `team/`, `memory/`, and `views/` for commands). `npm run build` bundles it into the files the plugin ships, `plugins/crew/skills/hub/dist/crew.mjs` (the CLI), `dist/mcp.mjs` (the same commands as stdio MCP tools, registered in `plugins/crew/.mcp.json`) and `dist/ui.html` (the React view, everything inlined); commit the rebuilt bundles with the source (a test fails when they differ). The view's design lives in `packages/crew/docs/design/DESIGN.md`; `ui/` reads only the graph contract (`src/hub/graph-types.ts`) and the status vocabulary (tested). `scripts/preview.sh` rebuilds and exports a generated sample project (`scripts/sample-project.mjs`) to `preview/habitly.html` for visual checks. `src/hub/core/` (documents, rules, queries) never imports `src/hub/commands/` or the CLI (tested). Commands stage their writes and only flush them if they succeed, so a refused command changes nothing.
 
 ```bash
 cd packages/crew && npm ci && npm run typecheck && npm test && npm run build
