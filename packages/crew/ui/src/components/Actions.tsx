@@ -80,16 +80,17 @@ export function ActionMenu({ doc, act }: { doc: GraphDoc; act: Act }) {
   };
   const hasMenu = rest.length > 0 || focusable;
   return (
-    <div className="actionmenu" ref={root} onKeyDown={onKey}>
+    <div className="actionmenu" ref={root} onKeyDown={onKey}
+      onBlur={(e) => { if (e.relatedTarget && !root.current?.contains(e.relatedTarget)) setOpen(false); }}>  {/* Tab out closes it */}
       {primary && <button className="btn actionmenu__primary" disabled={act.busy} onClick={() => move(primary)}>Move to {primary}</button>}
       {hasMenu && (
-        <button className={`btn ${primary ? "" : "btn--ghost"} actionmenu__toggle`} aria-haspopup="menu" aria-expanded={open}
+        <button className={`btn ${primary ? "" : "btn--ghost"} actionmenu__toggle`} aria-haspopup="menu" aria-expanded={open} aria-controls={`actions-${doc.id}`}
           aria-label={primary ? "More actions" : undefined} disabled={act.busy} onClick={() => setOpen(!open)}>
           {!primary && "Actions"}<ChevronDown size={16} aria-hidden />
         </button>
       )}
       {open && (
-        <div className="actionmenu__menu" role="menu" ref={menu} aria-label={`Actions for ${doc.id}`}>
+        <div className="actionmenu__menu" role="menu" id={`actions-${doc.id}`} ref={menu} aria-label={`Actions for ${doc.id}`}>
           {rest.map((s) => CLI_ONLY[`${doc.status}>${s}`]
             ? <button key={s} role="menuitem" disabled className="actionmenu__item" title="creates the plan branch: run it in the CLI">
                 Move to {s}<code>crew.mjs start {doc.id}</code></button>

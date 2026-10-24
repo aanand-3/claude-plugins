@@ -5,7 +5,7 @@ goal: G-001
 items: FEAT-023
 touches: packages/crew/ui/**, packages/crew/src/hub/core/memory/ledger.ts, packages/crew/src/hub/graph-types.ts, packages/crew/src/hub/commands/views/**, packages/crew/src/hub/commands/team/autonomy.ts, packages/crew/src/hub/core/work/doc.ts, packages/crew/test/**, packages/crew/scripts/sample-project.mjs, packages/crew/docs/design/DESIGN.md, plugins/crew/skills/hub/dist/**, .crew/bin/**
 depends_on:
-status: in-review
+status: in-progress
 branch: plan/P-020-jira-style-document-page-spend-by-plan
 pr:
 created: 2026-10-24
@@ -115,6 +115,8 @@ Latest log:
 - 2026-10-24: assigned to the developer role
 - 2026-10-24: status ready → in-progress — branch plan/P-020-jira-style-document-page-spend-by-plan
 - 2026-10-24: status in-progress → in-review
+- 2026-10-24: review: changes requested — packages/crew/ui/src/views/Overview.tsx:29 'Top plans by spend' ranks every byRef key except 'unattributed', but byRef also holds goals, items, knowledge entries and deleted docs (the live graph has G-001, FEAT-024, BUG-003, FEAT-021, K-… and P-002/P-003 with no doc); AC7 says the top 5 plans. Filter to refs whose doc is a plan (ix.byId.get(ref)?.kind === 'plan') before slicing, and keep the unattributed row. Rebuild the bundles after.
+- 2026-10-24: status in-review → in-progress — changes requested: packages/crew/ui/src/views/Overview.tsx:29 'Top plans by spend' ranks every byRef key except 'unattributed', but byRef also holds goals, items, knowledge entries and deleted docs (the live graph has G-001, FEAT-024, BUG-003, FEAT-021, K-… and P-002/P-003 with no doc); AC7 says the top 5 plans. Filter to refs whose doc is a plan (ix.byId.get(ref)?.kind === 'plan') before slicing, and keep the unattributed row. Rebuild the bundles after.
 
 ## Outcome
 Shipped as planned: the full-width document page (360px details rail, prose capped at 90ch), collapsible panels and per-kind tabs, the Actions split-button menu with triage and log in the rail, FileList for Touches and Applies to, status-first collapsible Relations, a Spend row, a Tasks panel by `###` phase, Child issues on goal and item pages, Hierarchy tasks, the board's open-task tooltip, and Overview spend by agent and top plans. `Ledger.spend()` gains `byRole`/`byRef` with run attribution; graph schema v6.
@@ -123,6 +125,8 @@ Deviations:
 - `test/mcp.test.ts` also asserted schema 5; updated to 6.
 - Fixes found in visual review, beyond the spec: dropdowns use the Lucide chevron via a `--select-chevron` token instead of the platform arrow; filter dropdowns size to their chosen value (`field-sizing: content`, capped at 200px); long IDs truncate in Relations and wrap in the page kicker; the Child issues table scrolls inside its panel; board cards show "FEAT-006 +6" instead of every delivered ID; the Actions menu is left-anchored below 768px.
 - Merged main (P-019) into the branch; the rebuilt bundles were identical to the text merge.
+- A move no longer carries the log note: the note box moved to the rail's Log card, which logs on its own; a move's reason is logged separately.
+- Review round 1 (architect): "Top plans by spend" now ranks plans only (it ranked every ref); the Actions menu closes when Tab moves focus out and its toggle has `aria-controls`.
 
 Follow-ups: FEAT-024 / P-021 (a Designer role, a scripted layout sweep and a review checklist), because no team role reviews visual design today.
 

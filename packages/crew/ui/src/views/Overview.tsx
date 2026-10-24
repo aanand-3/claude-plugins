@@ -26,7 +26,8 @@ export function Overview() {
   const criteria = root?.tasks;
   const tokens = g.spend.tokensIn + g.spend.tokensOut;
   const roles = Object.entries(g.spend.byRole).sort((a, b) => b[1].tokens - a[1].tokens);
-  const topRefs = Object.entries(g.spend.byRef).filter(([r]) => r !== "unattributed").sort((a, b) => b[1].tokens - a[1].tokens).slice(0, 5);
+  // byRef also holds goals, items and knowledge (and refs with no document): rank plans only.
+  const topRefs = Object.entries(g.spend.byRef).filter(([r]) => ix.byId.get(r)?.kind === "plan").sort((a, b) => b[1].tokens - a[1].tokens).slice(0, 5);
   const unattributed = g.spend.byRef.unattributed;
   const outcome = (id: string) => ix.byId.get(id)?.sections.find((s) => s.heading === "Outcome")?.markdown ?? "";
   return (
