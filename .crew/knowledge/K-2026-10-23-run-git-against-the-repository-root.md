@@ -2,7 +2,7 @@
 id: K-2026-10-23-run-git-against-the-repository-root
 type: gotcha
 title: Run git against the repository root, never the current directory
-scope: packages/hub/src/core/git.ts
+scope: packages/crew/src/hub/core/git.ts
 source: FEAT-001
 supersedes:
 tier: project

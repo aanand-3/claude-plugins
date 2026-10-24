@@ -2,7 +2,7 @@
 id: K-2026-10-23-a-plan-file-on-main-can-lag-its-branch
 type: gotcha
 title: A plan file on main can lag its branch: staffing reads status from the ledger's last move and live claims
-scope: packages/hub/src/commands/team.ts
+scope: packages/crew/src/hub/commands/team/team.ts
 source: 
 supersedes:
 tier: project

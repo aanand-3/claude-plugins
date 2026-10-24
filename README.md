@@ -130,10 +130,10 @@ for suite in tests/*/; do uvx --with pyyaml pytest "$suite" || exit 1; done
 ```
 The plugin follows the rules it ships: every script and source module stays under 300 lines (tested).
 
-The hub is TypeScript in `packages/hub/` (not shipped). `npm run build` bundles it into the files the plugin ships, `plugins/crew/skills/hub/dist/crew.mjs` (the CLI), `dist/mcp.mjs` (the same commands as stdio MCP tools, registered in `plugins/crew/.mcp.json`) and `dist/ui.html` (the React view, everything inlined); commit the rebuilt bundles with the source (a test fails when they differ). The view's design lives in `packages/hub/docs/design/DESIGN.md`; `ui/` reads only the graph contract (`src/graph-types.ts`) and the status vocabulary (tested). `scripts/preview.sh` rebuilds and exports a generated sample project (`scripts/sample-project.mjs`) to `preview/habitly.html` for visual checks. `src/core/` (documents, rules, queries) never imports `src/commands/` or the CLI (tested). Commands stage their writes and only flush them if they succeed, so a refused command changes nothing.
+The hub is TypeScript in `packages/crew/` (not shipped), under `src/hub/`: `core/` and `commands/` are grouped by domain (`work/`, `team/`, `memory/`, and `views/` for commands). `npm run build` bundles it into the files the plugin ships, `plugins/crew/skills/hub/dist/crew.mjs` (the CLI), `dist/mcp.mjs` (the same commands as stdio MCP tools, registered in `plugins/crew/.mcp.json`) and `dist/ui.html` (the React view, everything inlined); commit the rebuilt bundles with the source (a test fails when they differ). The view's design lives in `packages/crew/docs/design/DESIGN.md`; `ui/` reads only the graph contract (`src/hub/graph-types.ts`) and the status vocabulary (tested). `scripts/preview.sh` rebuilds and exports a generated sample project (`scripts/sample-project.mjs`) to `preview/habitly.html` for visual checks. `src/hub/core/` (documents, rules, queries) never imports `src/hub/commands/` or the CLI (tested). Commands stage their writes and only flush them if they succeed, so a refused command changes nothing.
 
 ```bash
-cd packages/hub && npm ci && npm run typecheck && npm test && npm run build
+cd packages/crew && npm ci && npm run typecheck && npm test && npm run build
 ```
 ### Extending
 

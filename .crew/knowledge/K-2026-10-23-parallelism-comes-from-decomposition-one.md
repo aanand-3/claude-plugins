@@ -2,7 +2,7 @@
 id: K-2026-10-23-parallelism-comes-from-decomposition-one
 type: decision
 title: Parallelism comes from decomposition: one plan has one owner
-scope: packages/hub/src/core/footprint.ts, packages/hub/src/commands/workflow.ts
+scope: packages/crew/src/hub/core/work/footprint.ts, packages/crew/src/hub/commands/work/workflow.ts
 source: IDEA
 supersedes:
 tier: project

@@ -2,7 +2,7 @@
 id: K-2026-10-23-taking-over-a-plan-must-switch-to-its
 type: gotcha
 title: Taking over a plan must switch to its existing branch, possibly still checked out in the gone run's worktree
-scope: packages/hub/src/commands/workflow.ts
+scope: packages/crew/src/hub/commands/work/workflow.ts
 source: 
 supersedes:
 tier: project

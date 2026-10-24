@@ -2,7 +2,7 @@
 id: K-2026-10-23-read-a-plan-s-live-status-from-its
 type: gotcha
 title: Read a plan's live status from its branch, not main's copy
-scope: packages/hub/src/commands/checks.ts, packages/hub/src/core/store.ts
+scope: packages/crew/src/hub/commands/views/checks.ts, packages/crew/src/hub/core/store.ts
 source: 
 supersedes:
 tier: project

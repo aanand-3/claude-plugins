@@ -2,7 +2,7 @@
 id: K-2026-10-23-usage-capture-can-read-each-subagent-s
 type: learning
 title: Usage capture can read each subagent's own transcript
-scope: packages/hub/src/core/ledger.ts
+scope: packages/crew/src/hub/core/memory/ledger.ts
 source: G-003
 supersedes:
 tier: project

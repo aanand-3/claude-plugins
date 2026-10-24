@@ -2,7 +2,7 @@
 id: K-2026-10-23-undo-unstaged-side-effects-on-refusal
 type: convention
 title: Undo unstaged side effects on refusal with Workspace.onAbort
-scope: packages/hub/src/core/workspace.ts, packages/hub/src/commands/workflow.ts
+scope: packages/crew/src/hub/core/workspace.ts, packages/crew/src/hub/commands/work/workflow.ts
 source: FEAT-001
 supersedes:
 tier: project

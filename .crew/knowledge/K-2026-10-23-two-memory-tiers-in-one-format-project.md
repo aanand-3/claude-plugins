@@ -2,7 +2,7 @@
 id: K-2026-10-23-two-memory-tiers-in-one-format-project
 type: decision
 title: Two memory tiers in one format: project knowledge and the org playbook
-scope: packages/hub/src/core/knowledge.ts, packages/hub/src/commands/knowledge.ts
+scope: packages/crew/src/hub/core/memory/knowledge.ts, packages/crew/src/hub/commands/memory/knowledge.ts
 source: IDEA
 supersedes:
 tier: project

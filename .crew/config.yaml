@@ -1,3 +1,3 @@
-# The crew repository dogfoods its own hub. Stack facts live in README.md and packages/hub/package.json.
+# The crew repository dogfoods its own hub. Stack facts live in README.md and packages/crew/package.json.
 hub:
   wip_limit: 1

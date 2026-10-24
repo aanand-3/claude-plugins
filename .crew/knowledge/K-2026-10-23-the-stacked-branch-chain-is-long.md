@@ -2,7 +2,7 @@
 id: K-2026-10-23-the-stacked-branch-chain-is-long
 type: risk
 title: The stacked branch chain is long and lands as one breaking release
-scope: plugins/crew/**, packages/hub/**
+scope: plugins/crew/**, packages/crew/**
 source: 
 supersedes:
 tier: project
