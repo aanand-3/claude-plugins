@@ -5,7 +5,7 @@ goal:
 items: CHORE-006
 touches: .crew/config.yaml, README.md, plugins/crew/.claude-plugin/plugin.json, plugins/crew/skills/codemap/**, plugins/crew/skills/discover/**, plugins/crew/skills/git-setup/**, plugins/crew/skills/guidelines/**, plugins/crew/skills/kickoff/**, plugins/crew/skills/onboard/**, packages/hub/src/commands/checks.ts, packages/hub/src/commands/runs.ts, plugins/crew/skills/team/SKILL.md, packages/hub/test/**, packages/hub/scripts/sample-project.mjs, plugins/crew/skills/hub/dist/**, .crew/bin/crew.mjs, tests/crew/**
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-001-nothing-optional-graphify-always-on
 pr: https://github.com/aanand-3/claude-plugins/pull/5
 created: 2026-10-24
@@ -83,16 +83,25 @@ graphify stays an external tool: PyPI `graphifyy`, installed with uv, the one de
 _Generated 2026-10-24 by `crew.mjs handoff` from the ledger._
 
 - P-001: Nothing optional: graphify always on [in-review] tasks 5/5 — claimed by Arpit Anand (main-node-only)
-- last checkpoint 2026-10-23 19:02 at done (92e332e) by Arpit Anand; since then 1 commit(s), 0 uncommitted file(s)
+- last checkpoint 2026-10-24 06:44 at done (03eb01a) by Arpit Anand; since then 1 commit(s), 1 uncommitted file(s): packages/hub/node_modules
 - ✓ for s in tests/*/; do uvx --with pyyaml pytest $s -q; done (166 + 3 passed) (AC 2,3,5) (reported)
 - ✓ cd packages/hub && npm run typecheck && npm test (48 passed, incl. test/codegraph.test.ts) (AC 4,5) (reported)
 - ✓ git grep -nE '\{\{[#^/][a-z]+\}\}|modules\.graphify|--no-hub|[Oo]ptional modules' -- ':!.crew/knowledge' ':!.crew/plans' ':!.crew/items' && exit 1 || exit 0 (AC 1)
-- evidence: AC1 ✓ (self), AC2 ✓ (self), AC3 ✓ (self), AC4 ✓ (self), AC5 ✓ (self)
+- ✗ cd tests/crew && uvx --with pyyaml pytest -q (AC 5) — 12 failed, 154 passed in 309.90s (0:05:09)
+- ✗ (env | grep '^CREW' | sed 's/=.*/=<set>/'; cd tests/crew && uvx --with pyyaml pytest -q -rf) > /private/tmp/claude-502/-Users-aanand-Documents-Projects-Personal-claude-plugins/43bb9741-f43c-4234-b9c5-0ba9cb898763/scratchpad/crew-pytest.txt 2>&1; s=$?; tail -25 /private/tmp/claude-502/-Users-aanand-Documents-Projects-Personal-claude-plugins/43bb9741-f43c-4234-b9c5-0ba9cb898763/scratchpad/crew-pytest.txt; exit $s (AC 2,3,5) — 12 failed, 154 passed in 276.32s (0:04:36)
+- ✓ cd tests/crew && uvx --with pyyaml pytest -q -k test_graph_output_always_ignored (AC 2)
+- ✓ cd tests/crew && uvx --with pyyaml pytest -q -k 'test_templates_have_no_module_blocks or test_yaml_and_toml_templates_parse' (AC 3)
+- ✓ cd tests/marketplace && uvx --with pyyaml pytest -q (AC 5)
+- ✓ cd packages/hub && npm test (AC 4,5)
+- ✓ cd packages/hub && npm run typecheck (AC 5)
+- ✓ cd packages/hub && npm run build && test -z "$(git status --porcelain)" (AC 5)
+- ✓ cd packages/hub && npx tsc --noEmit && npx vitest run (48 passed) (AC 4) (reported)
+- evidence: AC1 ✓, AC2 ✓, AC3 ✓, AC4 ✓ (self), AC5 ✓
 
 Latest log:
-- 2026-10-24: assigned to the developer role
-- 2026-10-24: status ready → in-progress — branch plan/P-001-nothing-optional-graphify-always-on
-- 2026-10-24: touches: brace globs aren't supported, listed each skill dir; added scripts/sample-project.mjs (the sample now has graphify's hook, as every crew project does)
+- 2026-10-24: review: changes requested — Two module-switch leftovers remain in skills: (1) plugins/crew/skills/guidelines/SKILL.md:43 still says 'resolve the module blocks; keep *How we work* verbatim (the variant for the chosen modules)' - the template has no blocks or variants now; reword to copy How we work verbatim. (2) plugins/crew/skills/team/SKILL.md:18 says 'or kickoff/onboard with the hub module' - the hub is not a module; reword to 'or kickoff/onboard'. Add plugins/crew/skills/team/** to touches (log it) for (2). Optional, same pass: packages/hub/src/commands/runs.ts:3 comment 'Replaces the kickoff.yaml / onboard.yaml progress files where the hub exists' is now stale (needs packages/hub/src/commands/runs.ts in touches and a dist rebuild, so skip if you prefer). Everything else is approved as is: scripts, template, check hint, tests, dist in sync.
+- 2026-10-24: status in-review → in-progress — changes requested: Two module-switch leftovers remain in skills: (1) plugins/crew/skills/guidelines/SKILL.md:43 still says 'resolve the module blocks; keep *How we work* verbatim (the variant for the chosen modules)' - the template has no blocks or variants now; reword to copy How we work verbatim. (2) plugins/crew/skills/team/SKILL.md:18 says 'or kickoff/onboard with the hub module' - the hub is not a module; reword to 'or kickoff/onboard'. Add plugins/crew/skills/team/** to touches (log it) for (2). Optional, same pass: packages/hub/src/commands/runs.ts:3 comment 'Replaces the kickoff.yaml / onboard.yaml progress files where the hub exists' is now stale (needs packages/hub/src/commands/runs.ts in touches and a dist rebuild, so skip if you prefer). Everything else is approved as is: scripts, template, check hint, tests, dist in sync.
+- 2026-10-24: review fixes: guidelines SKILL drops 'module blocks'/'variant'; team SKILL drops 'hub module'; runs.ts header no longer mentions kickoff.yaml (touches widened for team/SKILL.md and runs.ts)
 
 ## Progress log
 
@@ -105,6 +114,7 @@ Latest log:
 - 2026-10-24: review: changes requested — Two module-switch leftovers remain in skills: (1) plugins/crew/skills/guidelines/SKILL.md:43 still says 'resolve the module blocks; keep *How we work* verbatim (the variant for the chosen modules)' - the template has no blocks or variants now; reword to copy How we work verbatim. (2) plugins/crew/skills/team/SKILL.md:18 says 'or kickoff/onboard with the hub module' - the hub is not a module; reword to 'or kickoff/onboard'. Add plugins/crew/skills/team/** to touches (log it) for (2). Optional, same pass: packages/hub/src/commands/runs.ts:3 comment 'Replaces the kickoff.yaml / onboard.yaml progress files where the hub exists' is now stale (needs packages/hub/src/commands/runs.ts in touches and a dist rebuild, so skip if you prefer). Everything else is approved as is: scripts, template, check hint, tests, dist in sync.
 - 2026-10-24: status in-review → in-progress — changes requested: Two module-switch leftovers remain in skills: (1) plugins/crew/skills/guidelines/SKILL.md:43 still says 'resolve the module blocks; keep *How we work* verbatim (the variant for the chosen modules)' - the template has no blocks or variants now; reword to copy How we work verbatim. (2) plugins/crew/skills/team/SKILL.md:18 says 'or kickoff/onboard with the hub module' - the hub is not a module; reword to 'or kickoff/onboard'. Add plugins/crew/skills/team/** to touches (log it) for (2). Optional, same pass: packages/hub/src/commands/runs.ts:3 comment 'Replaces the kickoff.yaml / onboard.yaml progress files where the hub exists' is now stale (needs packages/hub/src/commands/runs.ts in touches and a dist rebuild, so skip if you prefer). Everything else is approved as is: scripts, template, check hint, tests, dist in sync.
 - 2026-10-24: review fixes: guidelines SKILL drops 'module blocks'/'variant'; team SKILL drops 'hub module'; runs.ts header no longer mentions kickoff.yaml (touches widened for team/SKILL.md and runs.ts)
+- 2026-10-24: status in-progress → in-review
 
 ## Outcome
 - **What shipped:** graphify is always on.
