@@ -3,9 +3,9 @@
 import { createRequire as __crewRequire } from "node:module"; const require = __crewRequire(import.meta.url);
 
 // src/tools/git-setup/setup_git.ts
-import { spawnSync } from "node:child_process";
-import { chmodSync, copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { spawnSync as spawnSync2 } from "node:child_process";
+import { chmodSync, copyFileSync, existsSync as existsSync2, mkdirSync, readdirSync as readdirSync2, readFileSync as readFileSync2, statSync as statSync2, writeFileSync as writeFileSync2 } from "node:fs";
+import { dirname, join as join2, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 // src/tools/cli.ts
@@ -27,22 +27,78 @@ var DIGITS = String.raw`\d+(?:_\d+)*`;
 var INT = new RegExp(`^[+-]?${DIGITS}$`);
 var FLOAT = new RegExp(`^[+-]?(?:(?:${DIGITS})?\\.${DIGITS}|${DIGITS}\\.?)(?:[eE][+-]?${DIGITS})?$`);
 
+// src/tools/legacy.ts
+import { spawnSync } from "node:child_process";
+import { existsSync, readdirSync, readFileSync, statSync, unlinkSync, writeFileSync } from "node:fs";
+import { join, relative } from "node:path";
+var isFile = (p) => existsSync(p) && statSync(p).isFile();
+var filesIn = (root, dir) => {
+  const d = join(root, dir);
+  return existsSync(d) && statSync(d).isDirectory() ? readdirSync(d).filter((f) => isFile(join(d, f))).map((f) => `${dir}/${f}`) : [];
+};
+function crewOwned(root) {
+  return [...filesIn(root, ".githooks"), ".claude/settings.json"].filter((f) => isFile(join(root, f)));
+}
+function projectOwned(root) {
+  const hooksPath = (spawnSync("git", ["config", "core.hooksPath"], { cwd: root, encoding: "utf8" }).stdout ?? "").trim();
+  const foreign = hooksPath && hooksPath !== ".githooks" ? filesIn(root, hooksPath) : [];
+  return [
+    ".claude/settings.local.json",
+    ...filesIn(root, ".github/workflows"),
+    ".gitlab-ci.yml",
+    "Makefile",
+    ".pre-commit-config.yaml",
+    "package.json",
+    ...filesIn(root, ".husky"),
+    ...foreign
+  ].filter((f) => isFile(join(root, f)));
+}
+function rewriteText(text, name) {
+  return text.replace(new RegExp(`\\bpython3?(\\s+)(\\S*?\\.crew/bin/${name})\\.py\\b`, "g"), "node$1$2.mjs").replace(new RegExp(`(-f\\s+\\S*?\\.crew/bin/${name})\\.py\\b`, "g"), "$1.mjs");
+}
+function upgrade(root, names) {
+  const out = [];
+  const bin = join(root, ".crew", "bin");
+  for (const file of crewOwned(root)) {
+    const before = readFileSync(join(root, file), "utf8");
+    let after = before;
+    for (const name of names) if (isFile(join(bin, `${name}.mjs`))) after = rewriteText(after, name);
+    if (after !== before) {
+      writeFileSync(join(root, file), after);
+      out.push(`UPGRADE ${file} (runs the vendored .mjs scripts)`);
+    }
+  }
+  const everyFile = [...crewOwned(root), ...projectOwned(root)];
+  for (const name of names) {
+    const py = join(bin, `${name}.py`);
+    if (!isFile(py)) continue;
+    const callers = everyFile.filter((f) => readFileSync(join(root, f), "utf8").includes(`${name}.py`));
+    if (callers.length) {
+      out.push(`KEEP    ${relative(root, py)} \u2014 still called from ${callers.join(", ")}; point it at node .crew/bin/${name}.mjs and re-run`);
+    } else {
+      unlinkSync(py);
+      out.push(`REMOVE  ${relative(root, py)} (nothing calls it any more)`);
+    }
+  }
+  return out;
+}
+
 // src/tools/git-setup/setup_git.ts
 var HERE = dirname(fileURLToPath(import.meta.url));
-var ASSETS = join(HERE, "..", "assets");
+var ASSETS = join2(HERE, "..", "assets");
 function run(root, ...args) {
-  return (spawnSync("git", args, { cwd: root, encoding: "utf8" }).stdout ?? "").trim();
+  return (spawnSync2("git", args, { cwd: root, encoding: "utf8" }).stdout ?? "").trim();
 }
 function configText(root) {
-  const cfg = join(root, ".crew", "config.yaml");
-  return isFile(cfg) ? readFileSync(cfg, "utf8") : "";
+  const cfg = join2(root, ".crew", "config.yaml");
+  return isFile2(cfg) ? readFileSync2(cfg, "utf8") : "";
 }
-var isFile = (p) => existsSync(p) && statSync(p).isFile();
+var isFile2 = (p) => existsSync2(p) && statSync2(p).isFile();
 function foreignHooks(root) {
   const path = run(root, "config", "core.hooksPath");
   if (path && path !== ".githooks") return `core.hooksPath is '${path}'`;
-  const hooksDir = join(root, ".git", "hooks");
-  const real = existsSync(hooksDir) && statSync(hooksDir).isDirectory() ? readdirSync(hooksDir).filter((h) => isFile(join(hooksDir, h)) && !h.endsWith(".sample")).sort() : [];
+  const hooksDir = join2(root, ".git", "hooks");
+  const real = existsSync2(hooksDir) && statSync2(hooksDir).isDirectory() ? readdirSync2(hooksDir).filter((h) => isFile2(join2(hooksDir, h)) && !h.endsWith(".sample")).sort() : [];
   return real.length ? `.git/hooks has ${real.join(", ")}` : "";
 }
 function stacksFromConfig(root) {
@@ -62,47 +118,48 @@ function main() {
     "take-over-hooks": { type: "boolean", default: false }
   } });
   const root = resolve(args.root);
-  if (!existsSync(join(root, ".git"))) {
-    const r = spawnSync("git", ["init", "-q", "-b", "main"], { cwd: root, stdio: "inherit" });
+  if (!existsSync2(join2(root, ".git"))) {
+    const r = spawnSync2("git", ["init", "-q", "-b", "main"], { cwd: root, stdio: "inherit" });
     if (r.status !== 0) process.exit(r.status ?? 1);
     console.log("git init (main)");
   }
   const stacks = [...args.stacks ? args.stacks.split(",") : stacksFromConfig(root), "graphify"];
-  const gi = join(root, ".gitignore");
-  let content = existsSync(gi) ? readFileSync(gi, "utf8") : "";
+  const gi = join2(root, ".gitignore");
+  let content = existsSync2(gi) ? readFileSync2(gi, "utf8") : "";
   for (const part of ["base", ...stacks]) {
     if (!content.includes(`# --- ${part} ---`)) {
-      content = (content.trim() ? content.trimEnd() + "\n\n" : "") + readFileSync(join(ASSETS, "gitignore", `${part}.gitignore`), "utf8");
+      content = (content.trim() ? content.trimEnd() + "\n\n" : "") + readFileSync2(join2(ASSETS, "gitignore", `${part}.gitignore`), "utf8");
       console.log(`.gitignore += ${part}`);
     }
   }
-  writeFileSync(gi, content);
+  writeFileSync2(gi, content);
   for (const [src, dst] of [["gitattributes", ".gitattributes"], ["pull_request_template.md", ".github/pull_request_template.md"]]) {
-    const target = join(root, dst);
-    if (!existsSync(target)) {
+    const target = join2(root, dst);
+    if (!existsSync2(target)) {
       mkdirSync(dirname(target), { recursive: true });
-      writeFileSync(target, readFileSync(join(ASSETS, src), "utf8"));
+      writeFileSync2(target, readFileSync2(join2(ASSETS, src), "utf8"));
       console.log(`wrote ${dst}`);
     }
   }
-  const hooks = join(root, ".githooks");
+  const hooks = join2(root, ".githooks");
   mkdirSync(hooks, { recursive: true });
-  for (const hook of readdirSync(join(ASSETS, "githooks"))) {
-    const target = join(hooks, hook);
-    if (!existsSync(target)) {
-      writeFileSync(target, readFileSync(join(ASSETS, "githooks", hook), "utf8"));
+  for (const hook of readdirSync2(join2(ASSETS, "githooks"))) {
+    const target = join2(hooks, hook);
+    if (!existsSync2(target)) {
+      writeFileSync2(target, readFileSync2(join2(ASSETS, "githooks", hook), "utf8"));
       chmodSync(target, 493);
       console.log(`wrote .githooks/${hook}`);
     }
   }
-  const secretsSrc = join(HERE, "check_secrets.mjs");
-  const secretsDst = join(root, ".crew", "bin", "check_secrets.mjs");
-  if (!existsSync(secretsDst) || !readFileSync(secretsDst).equals(readFileSync(secretsSrc))) {
+  const secretsSrc = join2(HERE, "check_secrets.mjs");
+  const secretsDst = join2(root, ".crew", "bin", "check_secrets.mjs");
+  if (!existsSync2(secretsDst) || !readFileSync2(secretsDst).equals(readFileSync2(secretsSrc))) {
     mkdirSync(dirname(secretsDst), { recursive: true });
     copyFileSync(secretsSrc, secretsDst);
     chmodSync(secretsDst, 493);
     console.log("wrote .crew/bin/check_secrets.mjs");
   }
+  for (const line of upgrade(root, ["check_secrets"])) console.log(line);
   const existing = foreignHooks(root);
   if (existing && !args["take-over-hooks"]) {
     console.log(`left hooks alone: ${existing}. .githooks/ is written but inactive; merge it into your hooks, or rerun with --take-over-hooks`);

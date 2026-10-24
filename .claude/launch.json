@@ -3,8 +3,8 @@
   "configurations": [
     {
       "name": "hub-preview",
-      "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "4173", "--bind", "127.0.0.1", "--directory", "packages/crew/preview"],
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["packages/crew/node_modules/vite/bin/vite.js", "preview", "packages/crew", "--outDir", "preview", "--port", "4173", "--strictPort", "--host", "127.0.0.1"],
       "port": 4173
     }
   ]

@@ -8369,20 +8369,52 @@ function itemProblems(store, plan) {
 }
 
 // src/hub/commands/views/checks.ts
-import { join as join7 } from "node:path";
+import { join as join8 } from "node:path";
+
+// src/hub/commands/views/legacy.ts
+import { join as join3 } from "node:path";
+var LEGACY = ["check_secrets", "check_structure", "check_design", "format_on_edit", "track_plan_draft"];
+var REFRESH = "`/crew:guidelines --refresh` moves crew's hooks and settings to the .mjs scripts and removes the .py once nothing calls it";
+function legacyHints(store) {
+  const { ws } = store;
+  const at = (...p) => join3(ws.root, ...p);
+  const hints = [];
+  const leftovers = LEGACY.filter((n2) => ws.isFile(at(".crew", "bin", `${n2}.py`)));
+  if (leftovers.length) hints.push(`.crew/bin/ still has the Python scripts ${leftovers.map((n2) => `${n2}.py`).join(", ")} \u2014 ${REFRESH}`);
+  const files2 = [
+    ...ws.list(at(".githooks")).map((f) => `.githooks/${f}`),
+    ".claude/settings.json",
+    ".claude/settings.local.json",
+    ...ws.list(at(".github", "workflows")).map((f) => `.github/workflows/${f}`),
+    ".gitlab-ci.yml",
+    "Makefile",
+    ".pre-commit-config.yaml",
+    "package.json",
+    ...ws.list(at(".husky")).map((f) => `.husky/${f}`)
+  ];
+  for (const file of files2) {
+    const text2 = ws.read(at(file));
+    const calls = text2 ? LEGACY.filter((n2) => text2.includes(`.crew/bin/${n2}.py`)) : [];
+    if (calls.length) hints.push(`${file} still runs ${calls.map((n2) => `.crew/bin/${n2}.py`).join(", ")} \u2014 use node .crew/bin/<name>.mjs (${REFRESH})`);
+  }
+  if (/^modules:/m.test(ws.read(at(".crew", "config.yaml")) ?? "")) {
+    hints.push("`.crew/config.yaml` still has a `modules:` block \u2014 nothing in crew is optional any more, so delete it");
+  }
+  return hints;
+}
 
 // src/hub/commands/team/agents.ts
-import { join as join6 } from "node:path";
+import { join as join7 } from "node:path";
 
 // src/hub/core/store.ts
 import { existsSync as existsSync4, realpathSync } from "node:fs";
-import { dirname as dirname3, join as join5, resolve as resolve3 } from "node:path";
+import { dirname as dirname3, join as join6, resolve as resolve3 } from "node:path";
 import { fileURLToPath } from "node:url";
 
 // src/hub/core/memory/ledger.ts
 import { createHash, randomBytes } from "node:crypto";
 import { appendFileSync, existsSync as existsSync2, linkSync, mkdirSync, readFileSync as readFileSync2, renameSync, statSync as statSync2, unlinkSync, writeFileSync } from "node:fs";
-import { basename, dirname, join as join3 } from "node:path";
+import { basename, dirname, join as join4 } from "node:path";
 var LOCK_WAIT_MS = 5e3;
 var LOCK_STALE_MS = 3e4;
 function whoAmI(root) {
@@ -8409,7 +8441,7 @@ var Ledger = class _Ledger {
   /** `<git common dir>/crew/ledger.jsonl`; `.crew/ledger.jsonl` outside git. */
   static at(ws, crewDir) {
     const common = commonDir(ws.root);
-    return new _Ledger(ws, common ? join3(common, "crew", "ledger.jsonl") : join3(crewDir, "ledger.jsonl"), whoAmI(ws.root));
+    return new _Ledger(ws, common ? join4(common, "crew", "ledger.jsonl") : join4(crewDir, "ledger.jsonl"), whoAmI(ws.root));
   }
   /** Every event on disk, then the ones this command has staged. */
   events() {
@@ -8535,7 +8567,7 @@ function releaseLock(lock, token) {
 
 // src/hub/core/workspace.ts
 import { chmodSync, copyFileSync, existsSync as existsSync3, mkdirSync as mkdirSync2, readdirSync as readdirSync2, readFileSync as readFileSync3, rmSync, statSync as statSync3, writeFileSync as writeFileSync2 } from "node:fs";
-import { dirname as dirname2, join as join4, relative, sep } from "node:path";
+import { dirname as dirname2, join as join5, relative, sep } from "node:path";
 var Workspace = class {
   constructor(root) {
     this.root = root;
@@ -8588,7 +8620,7 @@ var Workspace = class {
     return relative(this.root, path).split(sep).join("/");
   }
   join(...parts) {
-    return join4(...parts);
+    return join5(...parts);
   }
   /** Run fn at the start of flush(), before any file is written; a HubError there aborts the whole flush. */
   beforeFlush(fn) {
@@ -8652,10 +8684,10 @@ var Store = class _Store {
   constructor(ws) {
     this.ws = ws;
     useRoot(ws.root);
-    this.dir = join5(ws.root, ".crew");
-    this.dirs = Object.fromEntries(Object.entries(DIRS).map(([k, v]) => [k, join5(this.dir, v)]));
-    this.ideaPath = join5(this.dir, "idea.md");
-    this.knowledgeDir = join5(this.dir, "knowledge");
+    this.dir = join6(ws.root, ".crew");
+    this.dirs = Object.fromEntries(Object.entries(DIRS).map(([k, v]) => [k, join6(this.dir, v)]));
+    this.ideaPath = join6(this.dir, "idea.md");
+    this.knowledgeDir = join6(this.dir, "knowledge");
   }
   ws;
   dir;
@@ -8686,15 +8718,15 @@ var Store = class _Store {
   }
   /** Project copy wins (so a cloned repo works without the plugin); fall back to the skill's. */
   template(name) {
-    for (const d of [join5(this.dir, "templates"), join5(SKILL_DIR, "templates")]) {
-      const text2 = this.ws.read(join5(d, name));
+    for (const d of [join6(this.dir, "templates"), join6(SKILL_DIR, "templates")]) {
+      const text2 = this.ws.read(join6(d, name));
       if (text2 !== null) return text2;
     }
     return fail(`Template ${name} not found.`);
   }
   /** Hub settings from the `hub:` block of .crew/config.yaml, with defaults. */
   settings() {
-    const text2 = this.ws.read(join5(this.dir, "config.yaml"));
+    const text2 = this.ws.read(join6(this.dir, "config.yaml"));
     const s2 = { ...DEFAULT_SETTINGS, ...text2 === null ? {} : yamlBlock(text2, "hub") };
     const int = (k) => /^\d+$/.test(s2[k]) ? parseInt(s2[k], 10) : parseInt(DEFAULT_SETTINGS[k], 10);
     return { wip_limit: int("wip_limit"), max_tasks: int("max_tasks") };
@@ -8707,7 +8739,7 @@ var Store = class _Store {
   loadDir(d) {
     const docs = /* @__PURE__ */ new Map();
     for (const name of this.ws.list(d).filter((n2) => n2.endsWith(".md"))) {
-      const path = join5(d, name);
+      const path = join6(d, name);
       const doc = this.attach(Doc.parse(this.ws.read(path), path));
       if (doc.id) docs.set(doc.id, doc);
     }
@@ -8732,7 +8764,7 @@ var Store = class _Store {
   }
   /** The branch plans start from: `git.default_branch` in .crew/config.yaml, else the policy's first protected branch. */
   baseBranch() {
-    const text2 = this.ws.read(join5(this.dir, "config.yaml"));
+    const text2 = this.ws.read(join6(this.dir, "config.yaml"));
     const configured = text2 === null ? void 0 : yamlBlock(text2, "git").default_branch;
     return configured || this.policy.policy.git.protected_branches[0] || "main";
   }
@@ -8834,11 +8866,11 @@ var Store = class _Store {
 // src/hub/commands/team/agents.ts
 var HUMAN = "executive";
 var PLAIN = /^[\w-]+$/;
-var agentsDir = (store) => join6(store.ws.root, ".claude", "agents");
-var agentFile = (store, role) => join6(agentsDir(store), `crew-${role}.md`);
+var agentsDir = (store) => join7(store.ws.root, ".claude", "agents");
+var agentFile = (store, role) => join7(agentsDir(store), `crew-${role}.md`);
 function template(store, name) {
-  for (const d of [join6(store.dir, "templates", "agents"), join6(SKILL_DIR, "agents")]) {
-    const text2 = store.ws.read(join6(d, `${name}.md`));
+  for (const d of [join7(store.dir, "templates", "agents"), join7(SKILL_DIR, "agents")]) {
+    const text2 = store.ws.read(join7(d, `${name}.md`));
     if (text2 !== null) return text2;
   }
   return fail(`Agent template ${name}.md not found. Re-run \`crew.mjs init\` from the plugin.`);
@@ -8878,8 +8910,8 @@ var agentRoles = (store) => resolvePolicy(store.ws.root, store.dir).roles.filter
 function rendered(store) {
   const out = /* @__PURE__ */ new Map();
   for (const name of store.ws.list(agentsDir(store)).filter((n2) => /^crew-.*\.md$/.test(n2))) {
-    const role = Doc.parse(store.ws.read(join6(agentsDir(store), name)) ?? "").get("crew-role");
-    if (role) out.set(join6(agentsDir(store), name), role);
+    const role = Doc.parse(store.ws.read(join7(agentsDir(store), name)) ?? "").get("crew-role");
+    if (role) out.set(join7(agentsDir(store), name), role);
   }
   return out;
 }
@@ -9093,16 +9125,17 @@ function hygiene(s2, f) {
   if (ahead.length > MAX_WRITTEN_AHEAD) {
     f.hints.push(`${ahead.length} plans written ahead of the work (> ${MAX_WRITTEN_AHEAD}) \u2014 keep later work as backlog items so plans don't go stale`);
   }
-  const leftovers = s2.store.ws.list(join7(s2.store.dir, "drafts")).filter((n2) => n2.endsWith(".md"));
+  const leftovers = s2.store.ws.list(join8(s2.store.dir, "drafts")).filter((n2) => n2.endsWith(".md"));
   if (leftovers.length) {
     f.hints.push(`unconverted drafts in .crew/drafts/: ${leftovers.join(", ")} \u2014 create the document from them or delete`);
   }
-  if (s2.store.ws.isDir(join7(s2.store.ws.root, ".project"))) {
+  if (s2.store.ws.isDir(join8(s2.store.ws.root, ".project"))) {
     f.hints.push("a .project/ directory from project-kit is still here \u2014 `crew.mjs migrate` moves it into .crew/");
   }
-  if (!s2.store.ws.read(join7(s2.store.ws.root, ".githooks", "post-commit"))?.includes("graphify")) {
+  if (!s2.store.ws.read(join8(s2.store.ws.root, ".githooks", "post-commit"))?.includes("graphify")) {
     f.hints.push("code graph not set up (no graphify hook in .githooks/post-commit) \u2014 `/crew:codemap` installs and wires it");
   }
+  f.hints.push(...legacyHints(s2.store));
 }
 
 // src/hub/commands/work/goals.ts
@@ -10043,13 +10076,13 @@ Nothing was changed.`);
 
 // src/hub/commands/views/design.ts
 var import_yaml3 = __toESM(require_dist(), 1);
-import { dirname as dirname4, join as join8 } from "node:path";
+import { dirname as dirname4, join as join9 } from "node:path";
 var FRONT = /^---\n([\s\S]*?)\n---\n/;
 function designPath(store) {
-  const cfg = store.ws.read(join8(store.dir, "config.yaml")) ?? "";
-  return join8(store.ws.root, yamlBlock(cfg, "design").file ?? "docs/design/DESIGN.md");
+  const cfg = store.ws.read(join9(store.dir, "config.yaml")) ?? "";
+  return join9(store.ws.root, yamlBlock(cfg, "design").file ?? "docs/design/DESIGN.md");
 }
-var studioPath = (store) => join8(dirname4(designPath(store)), "studio.json");
+var studioPath = (store) => join9(dirname4(designPath(store)), "studio.json");
 function readDesign(store) {
   const path = designPath(store);
   const text2 = store.ws.read(path);

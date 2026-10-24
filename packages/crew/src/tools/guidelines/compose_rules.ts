@@ -14,6 +14,7 @@ import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, 
 import { dirname, join, relative, resolve as resolvePath } from "node:path";
 import { fileURLToPath } from "node:url";
 import { cli } from "../cli.js";
+import { upgrade } from "../legacy.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const STACKS = join(HERE, "..", "stacks");
@@ -175,7 +176,11 @@ function main(): void {
     console.log(`${dry ? "WOULD WRITE" : "WRITE"}  ${rel(target, root)}`);
     if (!dry) writeFileSync(target, content);
   }
-  if (!dry && isDir(join(root, ".crew"))) vendor(root, packs);
+  if (!dry && isDir(join(root, ".crew"))) {
+    vendor(root, packs);
+    // projects set up before the Node port: hooks and settings move to the vendored .mjs, the .py copies go once unused
+    for (const line of upgrade(root, ["check_structure", "format_on_edit", "track_plan_draft", "check_design"])) console.log(line);
+  }
   // generated files whose pack is no longer selected
   for (const f of isDir(outDir) ? readdirSync(outDir).filter((n) => n.endsWith(".md")).sort() : []) {
     const existing = join(outDir, f), stem = f.slice(0, -3);
