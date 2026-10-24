@@ -5,7 +5,7 @@ title: Restructure packages/hub into packages/crew by domain
 status: triaged
 priority: P2
 goal:
-plan:
+plan: P-014
 created: 2026-10-24
 closed:
 ---

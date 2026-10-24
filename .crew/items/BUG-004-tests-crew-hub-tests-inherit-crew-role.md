@@ -2,9 +2,9 @@
 id: BUG-004
 type: bug
 title: tests/crew hub tests inherit CREW_ROLE/CREW_RUN and fail under checkpoint --run
-status: new
-severity:
-priority:
+status: triaged
+severity: S3
+priority: P2
 goal:
 plan:
 created: 2026-10-24
@@ -41,3 +41,4 @@ No QA run can record a passing full tests/crew suite through `checkpoint --run`,
 
 ## Notes
 Suggested fix: the test repo fixture should build its subprocess env from os.environ with every CREW_* key removed, and then set only what each test needs (test_team.py already sets repo.env["CREW_RUN"] explicitly).
+- 2026-10-24: status new → triaged — priority P2, severity S3
