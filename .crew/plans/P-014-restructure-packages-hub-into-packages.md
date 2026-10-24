@@ -7,7 +7,7 @@ touches: packages/**, .claude/launch.json, README.md, .crew/config.yaml, .crew/k
 depends_on:
 status: in-review
 branch: plan/P-014-restructure-packages-hub-into-packages
-pr:
+pr: https://github.com/aanand-3/claude-plugins/pull/6
 created: 2026-10-24
 started: 2026-10-24
 completed:
