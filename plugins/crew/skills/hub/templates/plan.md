@@ -38,8 +38,12 @@ completed:
 - [ ] T1: … → verify: …
 
 ## Test plan
-<!-- Unit / integration / e2e / manual checks and which acceptance criterion each covers.
-     Bug fixes: the regression test that fails before the fix and passes after. -->
+<!-- Targeted checks: the tests that cover this plan's change (the files in `touches`), unit / integration / e2e /
+     manual, and which acceptance criterion each covers. The developer and QA run only these.
+     Bug fixes: the regression test that fails before the fix and passes after.
+     The full suite is never a task or a criterion: Release runs it (`hub.full_suite`, or CI) before merging. -->
+**Targeted checks:**
+-
 
 ## Rollout & rollback
 <!-- Migrations, feature flags, config/env changes, observability (logs, metrics, alerts), how to back out.

@@ -75,12 +75,14 @@ export function evidenceProblems(store: Store, plan: Doc, approvedBy?: string): 
   return problems;
 }
 
-/** git's view now: HEAD and the dirty files, plus a fingerprint so an unchanged tree isn't checkpointed twice. */
-function snapshot(): { sha: string | null; dirty: string[]; fingerprint: string } {
-  const sha = git.git(["rev-parse", "HEAD"])?.trim() || null;
-  const status = git.git(["status", "--porcelain"]) ?? "";
+/** git's view now in a checkout (the plan's worktree, or this one): HEAD and the dirty files, plus a fingerprint so an
+ * unchanged tree isn't checkpointed twice. */
+function snapshot(dir: string): { sha: string | null; dirty: string[]; fingerprint: string } {
+  const at = (args: string[]) => git.git(["-C", dir, ...args]);
+  const sha = at(["rev-parse", "HEAD"])?.trim() || null;
+  const status = at(["status", "--porcelain"]) ?? "";
   const dirty = status.split("\n").filter(Boolean).map((l) => l.slice(3)).filter((p) => !p.startsWith(".crew/drafts/"));
-  const diff = git.git(["diff", "HEAD"]) ?? "";
+  const diff = at(["diff", "HEAD"]) ?? "";
   return { sha, dirty, fingerprint: createHash("sha1").update(`${sha}\n${status}\n${diff}`).digest("hex").slice(0, 12) };
 }
 
@@ -107,14 +109,15 @@ export function checkpoint(store: Store, id: string | undefined, o: CheckpointOp
     if (o.auto) return 0; // the hook fires on every branch; only plan branches have execution state
     fail("Not on a plan branch: name the plan (`checkpoint P-###`).");
   }
-  const snap = snapshot();
+  const home = (plan.id.startsWith("P-") && store.planHome(plan.id)) || store.ws.root; // checks run where the plan's work is
+  const snap = snapshot(home);
   const last = checkpoints(store.ledger.events(), plan.id).at(-1);
   if (o.auto && last?.fingerprint === snap.fingerprint) return 0;
   const acs = parseAc(o.ac, criteria(plan).length);
   const prints = acs.map((n) => acPrint(criteria(plan)[n - 1]));
   const verify: Verify[] = [];
   if (o.run) {
-    const r = spawnSync(o.run, { shell: true, cwd: store.ws.root, encoding: "utf8", timeout: RUN_TIMEOUT_MS, maxBuffer: 32 << 20 });
+    const r = spawnSync(o.run, { shell: true, cwd: home, encoding: "utf8", timeout: RUN_TIMEOUT_MS, maxBuffer: 32 << 20 });
     verify.push({ cmd: o.run, ok: r.status === 0, ac: acs, ac_text: prints, output: tail(`${r.stdout ?? ""}${r.stderr ?? ""}`, store.policy.policy.secrets.patterns), observed: true });
   }
   if (o.verify) {
@@ -155,9 +158,9 @@ export function recovery(store: Store, plan: Doc): string[] {
   const out = [`${plan.id}: ${plan.get("title")} [${plan.get("status")}] tasks ${tasks.filter(([d]) => d).length}/${tasks.length}`
     + (owner ? ` — claimed by ${owner.actor} (${owner.run})` : "")];
   if (last) {
-    const here = git.currentBranch() === plan.get("branch");
-    const now = here ? snapshot() : null;
-    const ahead = here && last.sha && now?.sha ? Number(git.git(["rev-list", "--count", `${last.sha}..HEAD`])?.trim() || 0) : 0;
+    const home = store.planHome(plan.id);
+    const now = home ? snapshot(home) : null;
+    const ahead = home && last.sha && now?.sha ? Number(git.git(["-C", home, "rev-list", "--count", `${last.sha}..HEAD`])?.trim() || 0) : 0;
     out.push(`last checkpoint ${String(last.ts).slice(0, 16).replace("T", " ")} at ${last.step} (${String(last.sha ?? "?").slice(0, 7)}) by ${last.actor}`
       + (now ? `; since then ${ahead} commit(s), ${now.dirty.length} uncommitted file(s)${now.dirty.length ? `: ${now.dirty.slice(0, 8).join(", ")}` : ""}` : ""));
   } else out.push("no checkpoint yet");

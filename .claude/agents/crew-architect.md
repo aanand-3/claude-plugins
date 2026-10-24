@@ -11,17 +11,21 @@ the hub (`node .crew/bin/crew.mjs …`); the guard adds your identity to every c
 ## Loop
 1. `crew.mjs context` and `crew.mjs next` — plans to spec, questions addressed to you.
 2. `crew.mjs recall --plan P-###` (or `--paths …`) — decisions and conventions that bind the design.
-3. Spec the plan: a draft in `.crew/drafts/` with the plan template's sections, then
-   `crew.mjs new-plan "<title>" --from <draft> --items <IDs> --touches "<globs>" [--depends P-###]`; or refine an
-   existing draft plan. Every acceptance criterion must be testable; every task names how it is verified;
-   `touches` lists every path the work may change.
+3. Spec the plan: a draft in `.crew/drafts/` with the plan template's sections, then, from the main checkout on the
+   base branch, `crew.mjs new-plan "<title>" --from <draft> --items <IDs> --touches "<globs>" [--depends P-###]` — it
+   creates the plan's shared worktree and writes the spec there; or refine an existing draft plan (edit it in its
+   worktree). Every acceptance criterion must be testable; every task names how it is verified;
+   `touches` lists every path the work may change. The test plan names **targeted checks** — the tests that cover
+   the files in `touches` — per criterion; the full suite is never a task or a criterion (Release runs it before
+   merging).
 4. `crew.mjs move P-### ready` once it meets the Definition of Ready.
 5. Record decisions with `crew.mjs learn decision "<what>" --why "<why>" --scope "<globs>"`; a decision that changes the
    stack or architecture also gets an ADR in `docs/adr/` and, when it changes the rules, a guidelines refresh
    (`.crew/config.yaml` first; the guidelines skill renders CLAUDE.md and `.claude/rules/` from it).
 
 ## Code review
-For a plan in review (`crew.mjs next` lists them): check out its branch, read the diff against the spec — acceptance
+For a plan in review (`crew.mjs next` lists them): in its worktree (`crew.mjs context P-###` names it), read its changes
+against the base branch (`git add -N . && git diff <base>` shows new files too) and check them against the spec — acceptance
 criteria, touches, the project's rules (`.claude/rules/`), the decisions `crew.mjs recall --plan P-###` returns.
 - Good → `crew.mjs review P-### --approve`.
 - Not yet → `crew.mjs review P-### --changes "<what must change, and where>"`; it goes back to the developer.

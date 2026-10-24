@@ -43,6 +43,23 @@ export function currentBranch(): string | null {
   return git(["branch", "--show-current"])?.trim() || null;
 }
 
+/** Every worktree of the repository, with its branch (null when detached). */
+export function worktrees(): { path: string; branch: string | null }[] {
+  const out: { path: string; branch: string | null }[] = [];
+  for (const line of (git(["worktree", "list", "--porcelain"]) ?? "").split("\n")) {
+    if (line.startsWith("worktree ")) out.push({ path: line.slice(9), branch: null });
+    else if (line.startsWith("branch ") && out.length) out.at(-1)!.branch = line.slice(7).replace(/^refs\/heads\//, "");
+  }
+  return out;
+}
+
+/** Files under `path` with uncommitted changes (added, modified or untracked; not deleted) in the worktree at `dir`,
+ * relative to its root. */
+export function dirty(dir: string, path: string): string[] {
+  return (git(["-C", dir, "status", "--porcelain", "--untracked-files=all", "--no-renames", "--", path]) ?? "")
+    .split("\n").filter((l) => l.length > 3 && !l.slice(0, 2).includes("D")).map((l) => l.slice(3));
+}
+
 export function planBranches(): string[] {
   return words(git(["for-each-ref", "--format=%(refname:short)", "refs/heads/plan/", "refs/remotes/origin/plan/"]));
 }
@@ -59,8 +76,9 @@ export function show(ref: string, path: string): string | null {
   return git(["show", `${ref}:${path}`]);
 }
 
-export function treeIsClean(): boolean {
-  return !(git(["status", "--porcelain"]) ?? "").trim();
+/** No uncommitted changes, apart from those under `except` (a path relative to the repository root). */
+export function treeIsClean(except?: string): boolean {
+  return !(git(["status", "--porcelain", ...(except ? ["--", ".", `:(exclude)${except}`] : [])]) ?? "").trim();
 }
 
 function words(out: string | null): string[] {

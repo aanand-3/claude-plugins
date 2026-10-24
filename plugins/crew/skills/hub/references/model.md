@@ -135,6 +135,8 @@ When the focus goal is done, set the next one. There is exactly one focus at a t
 |---|---|---|
 | `wip_limit` | 1 | Plans `in-progress` at once |
 | `max_tasks` | 10 | A plan with more tasks must be split |
+| `plan_worktrees` | false | One shared worktree per plan, created at `new-plan`; a single commit when the plan completes (the agent team needs it) |
+| `full_suite` | — | The command that runs every test; Release runs it before each merge when the project has no CI |
 
 ## Item types
 | Type | Use for | Triage gate (must have content) |
@@ -175,7 +177,8 @@ draft ──► ready ──► in-progress ──► in-review ──► done
 **Goal:** `proposed → active → done | dropped`. Run `move G-### active` when its first plan starts; it closes only after its acceptance criteria are confirmed.
 
 ## Definition of Ready (plan → `ready`, enforced)
-- Context, Scope (In/Out), Acceptance criteria and Test plan are written. Every criterion is observable and testable.
+- Context, Scope (In/Out), Acceptance criteria and Test plan are written. Every criterion is observable and testable,
+  with a targeted check (the tests covering `touches`); the full suite is never a task or a criterion.
 - `touches:` lists the paths (globs) the plan expects to change.
 - 1–`max_tasks` tasks (aim for 3–8), each ending `→ verify: <how>`.
 - Every linked item is triaged. A plan that fixes a BUG names its regression test.
@@ -183,7 +186,7 @@ draft ──► ready ──► in-progress ──► in-review ──► done
 
 ## Definition of Done (plan → `done`)
 - Every acceptance criterion is verified with the named checks, and all tasks are ticked.
-- The full check gate is green. Docs, `.env.example` and ADRs are updated where needed; rollout steps are documented.
+- The targeted checks are green (the full suite runs once, before the merge: CI, or `full_suite`). Docs, `.env.example` and ADRs are updated where needed; rollout steps are documented.
 - Outcome written: what shipped, deviations, follow-ups (captured as items on main).
 
 ## Size, dependencies and WIP

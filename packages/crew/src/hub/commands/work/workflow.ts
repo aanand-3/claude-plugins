@@ -1,4 +1,5 @@
 /** Status changes: validated transitions, starting a plan, progress logs. */
+import { join } from "node:path";
 import * as git from "../../core/git.js";
 import type { Doc } from "../../core/work/doc.js";
 import { decisionProblems, fastLane, learningsProblems, readinessProblems, triageProblems } from "../../core/work/gates.js";
@@ -7,6 +8,7 @@ import { approvalReason } from "../../core/team/policy.js";
 import { evidenceProblems, writeHandoff } from "./execution.js";
 import { FORWARD, openQuestions } from "../team/questions.js";
 import { goalProblems } from "./goals.js";
+import { openPlanWorktree, restore } from "./planning.js";
 import { reviewProblems } from "./review.js";
 import { bounces, escalateLimit, refuseWhilePaused } from "../team/liveness.js";
 import { notify } from "../team/autonomy.js";
@@ -149,15 +151,15 @@ export function start(store: Store, planId: string, force = false, approvedBy?: 
   // its branch exists and nobody holds it (released or reassigned): this run takes the work over where it stopped
   const takeover = git.planBranches().includes(branch) && !store.ledger.claims().has(doc.id)
     && ["in-progress", "blocked"].includes(store.ledger.lastStatus().get(doc.id) ?? doc.get("status") ?? "");
-  if (!force && !takeover) checkStartable(store, doc);
-  const over = budgetProblems(store);
-  if (over.length && !approvedBy) {
-    fail(`Over budget — no new work without a human's approval (\`start ${doc.id} --approved-by <name>\`):\n  - ${over.join("\n  - ")}`);
-  }
   const held = store.ledger.claims().get(doc.id);
   if (held && held.run !== store.ledger.who.run && !force) {
     fail(`${doc.id} is claimed by ${held.actor} (${held.run}, ${held.worktree}) since ${held.ts.slice(0, 10)}. `
       + `Coordinate with them, or \`release ${doc.id} --force\` if that run is gone.`);
+  }
+  if (!force && !takeover) checkStartable(store, doc);
+  const over = budgetProblems(store);
+  if (over.length && !approvedBy) {
+    fail(`Over budget — no new work without a human's approval (\`start ${doc.id} --approved-by <name>\`):\n  - ${over.join("\n  - ")}`);
   }
   const asked = openQuestions(store.ledger.events(), doc.id).filter((x) => x.blocking);
   if (asked.length && !force) { // refuse before the branch exists, not after
@@ -166,11 +168,33 @@ export function start(store: Store, planId: string, force = false, approvedBy?: 
   }
   assignedHere(store, doc.id);
   authorize(store, doc.id, "plan.in-progress", approvedBy, "ready"); // every refusal that can happen now happens before the branch
-  if (!git.treeIsClean()) fail("Working tree not clean. Commit or stash first.");
+  const shared = store.settings().plan_worktrees;
+  // uncommitted hub files (the spec, moves) ride along to the plan branch and land in the plan's commit
+  if (!shared && !git.treeIsClean(store.rel(store.dir))) fail("Working tree not clean. Commit or stash first (changes under the hub's directory may stay).");
   const focus = store.focus();
   if (!q.onFocus(doc, store.items(), focus)) store.say(`note: ${planId} does not serve the focus goal ${focus}`);
   for (const o of overlapping(doc, store.plans(true)).filter((x) => store.plans(true).get(x.id)?.get("status") !== "ready")) {
     store.say(`warning: ${planId} overlaps ${o.id} (in progress) on ${o.globs.join(", ")} — expect conflicts; coordinate or add depends_on`);
+  }
+  if (shared) { // the plan's shared worktree: no branch switch here, nothing to commit until the plan completes
+    let home = store.planHome(doc.id);
+    if (!home) { // specced before plan_worktrees: it gets its worktree now
+      const existed = git.planBranches().includes(branch); // its branch holds the live plan: keep it as it is
+      if (!existed && git.currentBranch() !== store.baseBranch()) {
+        fail(`With plan_worktrees, start ${doc.id} from a checkout of ${store.baseBranch()}: its spec moves from there to the plan's worktree.`);
+      }
+      home = openPlanWorktree(store, doc.id, branch);
+      if (!existed && doc.path?.startsWith(store.dir)) { // a new branch: the spec moves from this checkout
+        const f = store.rel(doc.path);
+        restore(store, f);
+        doc.path = join(home, f);
+        doc.save();
+      }
+    }
+    claimPlan(store, planId, branch, force, takeover, approvedBy);
+    store.say(`${doc.id}: work in ${store.rel(home)} (${branch}) — claimed by ${store.ledger.who.actor} (${store.ledger.who.run}); `
+      + "nothing to commit until the plan completes");
+    return;
   }
   const from = git.currentBranch(), sha = git.git(["rev-parse", "HEAD"])?.trim();
   // a takeover may find the branch still checked out in the gone run's worktree
@@ -179,7 +203,12 @@ export function start(store: Store, planId: string, force = false, approvedBy?: 
     git.git(from ? ["switch", "-q", from] : ["switch", "-q", "--detach", sha ?? "HEAD"]);
     if (!takeover) git.git(["branch", "-D", branch]);
   });
-  doc = store.find(planId); // re-read on the new branch
+  claimPlan(store, planId, branch, force, takeover, approvedBy); // re-reads the plan on the new branch
+  store.say(`Switched to ${branch} — claimed by ${store.ledger.who.actor} (${store.ledger.who.run})`);
+}
+
+function claimPlan(store: Store, planId: string, branch: string, force: boolean, takeover: boolean, approvedBy?: string): void {
+  const doc = store.find(planId);
   if (doc.get("status") === "draft" && force) {
     doc.set("status", "ready");
     doc.save();
@@ -187,7 +216,6 @@ export function start(store: Store, planId: string, force = false, approvedBy?: 
   store.ledger.record("claim", doc.id, { branch, ...(force ? { force: true } : {}), ...(takeover ? { takeover: true } : {}) });
   if (doc.get("status") !== "in-progress") move(store, planId, "in-progress", `branch ${branch}`, force, approvedBy);
   else store.say(`${doc.id}: taken over where it stopped — \`resume ${doc.id}\``);
-  store.say(`Switched to ${branch} — claimed by ${store.ledger.who.actor} (${store.ledger.who.run})`);
 }
 
 /** A plan is started by the role it is assigned to; under a policy that gates assignment (`plan.assigned`), only once

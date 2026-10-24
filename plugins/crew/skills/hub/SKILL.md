@@ -112,14 +112,15 @@ Start every workflow by checking where you are: `crew.mjs context` (or `context 
 4. **From plan mode:** take the latest file in `.crew/drafts/` or `~/.claude/plans/` and rewrite it into these sections. In a project set up by kickoff, a hook reminds you of this as soon as plan mode exits.
 5. `new-plan "<title>" --from … --items <IDs> --touches "<globs>" [--goal] [--depends]`. `touches:` is the plan's footprint: narrow globs for the paths it will change.
 6. Review it with the user, then `move P-### ready`. If the script lists problems, fix them; don't `--force` past the Definition of Ready.
-7. Commit on main: `chore(hub): plan P-### <title>`.
+7. Don't commit it on its own: `start` carries uncommitted hub files to the plan branch, and they land in the plan's commit. Commit hub changes on main (`chore(hub): …`, one per batch) only when someone working from another checkout or worktree needs to see them.
 
 ### 4. Execute
 - **Picking work up (a new session, after compaction, or someone else's plan):** `resume` first. It shows the last checkpoint against git now, the checks that failed, the approaches not to retry and the next task. Don't repeat an attempt it lists.
-- Be on an up-to-date `main` with a clean tree, then `start P-###` and commit `chore(P-###): start`. Starting claims the plan for your run; `done` or `dropped` releases it.
-- **Checkpoint as you go:** after each task or check, `checkpoint --run "<the task's verify command>" --ac <criteria it covers>`; when an approach fails, `checkpoint --attempt "<what>" --why "<why it failed>"`. The Stop and PreCompact hooks checkpoint automatically, so a crash loses at most one step. Before ending a session, `handoff`.
+- **Shared plan worktrees** (`plan_worktrees: true` under `hub:` in `.crew/config.yaml`; the agent team requires it): `new-plan`, run from `main`, creates the plan's branch and its worktree `.claude/worktrees/<P-###-slug>`, writes the spec there and takes the checkout's uncommitted items, goals and knowledge along. Everyone works on the plan in that worktree (`context P-###` names it); hub commands work from any checkout, `start` claims without switching branches, and `checkpoint --run` runs in the worktree. Nothing is committed until the plan is complete: then one commit in the worktree, a squash-merge, and `git worktree remove` (`merge-order` lists each step). The rest of this section is the solo flow without it.
+- Be on an up-to-date `main` with no uncommitted changes outside `.crew/`, then `start P-###` (no commit: uncommitted hub files move to the plan branch with you). Starting claims the plan for your run; `done` or `dropped` releases it.
+- **Checkpoint as you go:** after each task or check, `checkpoint --run "<the task's verify command>" --ac <criteria it covers>` — the task's targeted check, never the full suite; when an approach fails, `checkpoint --attempt "<what>" --why "<why it failed>"`. The Stop and PreCompact hooks checkpoint automatically, so a crash loses at most one step. Before ending a session, `handoff`.
 - Record what the work costs as you go: `usage --tokens-in … --tokens-out … --cost … --ref P-###`. Nothing records it automatically yet, so budgets only see what runs record.
-- After each task, tick it and commit it with the code: `feat(P-###): …`.
+- After each task, tick it; don't commit. **One commit per plan:** when every task is done, commit the code and the hub files together (`feat(P-###): <title>`), then fix rounds (`fix(P-###): …`). Stopping before the plan is done, commit what you have (`chore(P-###): wip — …`) so a takeover doesn't lose it.
 - Use `log P-### "<decision / deviation / blocker>"` as you go. If blocked: `move P-### blocked --note "<why>"`.
 - **Scope changes:**
   - small and inside the plan's goal: update Scope, AC and `touches:`, and log why;
@@ -127,18 +128,18 @@ Start every workflow by checking where you are: `crew.mjs context` (or `context 
 - **Bugs found mid-plan:** capture them as BUG items on main later; record them in the plan's Outcome as follow-ups for now.
 
 ### 5. Finish a plan
-1. **Verify every acceptance criterion** with the checks the tasks and test plan name (`checkpoint --run … --ac …`). Run `python3 .crew/bin/check_structure.py --all`.
+1. **Verify every acceptance criterion** with the targeted checks the tasks and test plan name (`checkpoint --run … --ac …`). Run `python3 .crew/bin/check_structure.py --all`.
 2. Tick all tasks and write the **Outcome**: what shipped, deviations, follow-ups, and `Learnings: K-…` (or `none`). `in-review` is refused without it.
 3. `move P-### in-review`, then open the PR:
    - title `P-###: <title>`;
    - the body comes from the PR template and links the plan, its items and its goal;
    - put the URL in the plan's `pr:`;
    - with no remote, summarize the diff for review instead.
-4. **Done needs independent evidence.** Another run (QA, `CREW_RUN`/`CREW_ROLE`) re-runs the checks: `checkpoint P-### --run "<check>" --ac all`, then `move P-### done`. The run that implemented the plan can't mark it done, and its own checks don't count. With a human's `--approved-by`, an `evidence: …` note on a criterion also counts. Then commit `chore(P-###): complete`. **Ask before squash-merging.** The linked items become `done` automatically.
+4. **Done needs independent evidence.** Another run (QA, `CREW_RUN`/`CREW_ROLE`) re-runs the checks: `checkpoint P-### --run "<check>" --ac all`, then `move P-### done`. The run that implemented the plan can't mark it done, and its own checks don't count. With a human's `--approved-by`, an `evidence: …` note on a criterion also counts. The completion rides along with the merge; no separate commit. **Before merging**, the full suite passes on the branch: green CI, or `full_suite` from the `hub:` block of `.crew/config.yaml` — the only place it runs. **Squash-merge** (ask first in a human-driven session), so main gets one commit per plan. The linked items become `done` automatically.
 5. **On main:** capture follow-ups as items, run `check` and act on its hints.
 
 ### 6. Close a goal, finish the idea
-1. When a goal's plans and items are closed, verify its acceptance criteria with the user and record each one (`checkpoint G-### --verify "<how>" --result pass --ac n`), then `move G-### done` (refused while a criterion is unverified, a plan or item is open, or a plan drifted) and `focus` the next goal.
+1. When a goal's plans and items are closed, verify its acceptance criteria with the user and record each one (`checkpoint G-### --verify "<how>" --result pass --ac n`), then `move G-### done` (refused while a criterion is unverified, a plan or item is open, or a plan drifted), `focus` the next goal and commit both on main: `chore(hub): G-### done`.
 2. When every success criterion on the idea is met, tick it with its evidence and report to the user. The idea stays `decided`; new direction starts with a pivot (`move IDEA proposed`).
 
 ### What's next / status

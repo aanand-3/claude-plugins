@@ -76,7 +76,8 @@ export function decide(store: Store, h: HookInput): Decision {
   const run = role ? `${role}:${h.agent_id ?? "unknown"}` : null;
   const { policy } = resolvePolicy(root, store.dir, role);
   const top = real((h.cwd && git.git(["-C", h.cwd, "rev-parse", "--show-toplevel"])?.trim()) || root);
-  const rel = (p: string) => (isAbsolute(p) ? relative(top, real(p)) : p).replace(/^\.\//, "");
+  // a path inside a plan's shared worktree is that checkout's path: the policy protects it there too
+  const rel = (p: string) => (isAbsolute(p) ? relative(top, real(p)) : p).replace(/^\.\//, "").replace(/^\.claude\/worktrees\/[^/]+\//, "");
   const hits = (globs: string[], p: string) => globs.some((g) => globRe(g).test(rel(p)));
   const input = h.tool_input ?? {};
 

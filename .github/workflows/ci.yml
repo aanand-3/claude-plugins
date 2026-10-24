@@ -1,0 +1,30 @@
+# The full suite: runs on every pull request and push to main. Developers and QA run targeted checks;
+# this is the gate before a plan merges. Keep it in step with `hub.full_suite` in .crew/config.yaml.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  full-suite:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: packages/crew/package-lock.json
+      - uses: astral-sh/setup-uv@v6
+      - name: Hub — install
+        working-directory: packages/crew
+        run: npm ci
+      - name: Hub — typecheck and tests
+        working-directory: packages/crew
+        run: npm run typecheck && npm test
+      - name: Hub — dist in sync
+        run: (cd packages/crew && npm run build) && git diff --exit-code -- plugins/crew/skills/hub/dist
+      - name: Hub tests (pytest)
+        run: uvx --with pyyaml pytest tests/crew -q

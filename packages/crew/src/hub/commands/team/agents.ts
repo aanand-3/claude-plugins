@@ -43,7 +43,8 @@ export function renderAgent(store: Store, role: string): { text: string; errors:
     ["model", p.models.default],
     ["tools", p.tools.allow.filter((t) => PLAIN.test(t)).join(", ") || null],
     ["disallowedTools", deny.join(", ") || null],
-    ["isolation", role === "developer" ? "worktree" : null], // parallel developers never share a checkout
+    // parallel developers never share a checkout: each plan has its own worktree (plan_worktrees), else each developer
+    ["isolation", role === "developer" && !store.settings().plan_worktrees ? "worktree" : null],
     ["maxTurns", p.limits.max_turns === null ? null : String(p.limits.max_turns)],
   ];
   const own = new Set(["name", ...derived.map(([k]) => k)]);
