@@ -8372,7 +8372,7 @@ function itemProblems(store, plan) {
 import { join as join8 } from "node:path";
 
 // src/hub/commands/views/legacy.ts
-import { join as join3 } from "node:path";
+import { isAbsolute, join as join3, relative } from "node:path";
 var LEGACY = ["check_secrets", "check_structure", "check_design", "format_on_edit", "track_plan_draft"];
 var REFRESH = "`/crew:guidelines --refresh` moves crew's hooks and settings to the .mjs scripts and removes the .py once nothing calls it";
 function legacyHints(store) {
@@ -8381,19 +8381,22 @@ function legacyHints(store) {
   const hints = [];
   const leftovers = LEGACY.filter((n2) => ws.isFile(at(".crew", "bin", `${n2}.py`)));
   if (leftovers.length) hints.push(`.crew/bin/ still has the Python scripts ${leftovers.map((n2) => `${n2}.py`).join(", ")} \u2014 ${REFRESH}`);
-  const files2 = [
-    ...ws.list(at(".githooks")).map((f) => `.githooks/${f}`),
+  const hookDirs = [git(["rev-parse", "--git-path", "hooks"])?.trim(), git(["config", "core.hooksPath"])?.trim()].filter((d) => !!d).map((d) => isAbsolute(d) ? d : at(d));
+  const inDir = (dir) => ws.list(dir).filter((f) => !f.endsWith(".sample")).map((f) => relative(ws.root, join3(dir, f)));
+  const files2 = [.../* @__PURE__ */ new Set([
+    ...inDir(at(".githooks")),
+    ...hookDirs.flatMap(inDir),
     ".claude/settings.json",
     ".claude/settings.local.json",
-    ...ws.list(at(".github", "workflows")).map((f) => `.github/workflows/${f}`),
+    ...inDir(at(".github", "workflows")),
     ".gitlab-ci.yml",
     "Makefile",
     ".pre-commit-config.yaml",
     "package.json",
-    ...ws.list(at(".husky")).map((f) => `.husky/${f}`)
-  ];
+    ...inDir(at(".husky"))
+  ])];
   for (const file of files2) {
-    const text2 = ws.read(at(file));
+    const text2 = ws.read(join3(ws.root, file));
     const calls = text2 ? LEGACY.filter((n2) => text2.includes(`.crew/bin/${n2}.py`)) : [];
     if (calls.length) hints.push(`${file} still runs ${calls.map((n2) => `.crew/bin/${n2}.py`).join(", ")} \u2014 use node .crew/bin/<name>.mjs (${REFRESH})`);
   }
@@ -8567,7 +8570,7 @@ function releaseLock(lock, token) {
 
 // src/hub/core/workspace.ts
 import { chmodSync, copyFileSync, existsSync as existsSync3, mkdirSync as mkdirSync2, readdirSync as readdirSync2, readFileSync as readFileSync3, rmSync, statSync as statSync3, writeFileSync as writeFileSync2 } from "node:fs";
-import { dirname as dirname2, join as join5, relative, sep } from "node:path";
+import { dirname as dirname2, join as join5, relative as relative2, sep } from "node:path";
 var Workspace = class {
   constructor(root) {
     this.root = root;
@@ -8617,7 +8620,7 @@ var Workspace = class {
     return [...names].sort();
   }
   rel(path) {
-    return relative(this.root, path).split(sep).join("/");
+    return relative2(this.root, path).split(sep).join("/");
   }
   join(...parts) {
     return join5(...parts);

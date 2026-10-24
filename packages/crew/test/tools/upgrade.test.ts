@@ -18,14 +18,14 @@ const prePort = (text: string) => LEGACY.reduce((t, n) => t.replaceAll(`node .cr
 let repo: Repo;
 beforeEach(() => { repo = Repo.create(); });
 
-/** A project as crew left it before the port, with packs selected so every script has an .mjs to move to. */
+/** A project as crew left it before the port: crew's hooks and settings, and the .py copies it vendored for those packs. */
 function prePortProject(r: Repo, packs = "[base, react, design]"): void {
   r.write(".crew/config.yaml", `packs: ${packs}\n`);
   r.py(HUB, ["init"]);
   for (const hook of ["pre-commit", "commit-msg"]) r.write(`.githooks/${hook}`, prePort(template(`git-setup/assets/githooks/${hook}`)), 0o755);
   r.git("config", "core.hooksPath", ".githooks");
   r.write(".claude/settings.json", prePort(template("guidelines/templates/settings.json")));
-  for (const n of LEGACY) r.write(`.crew/bin/${n}.py`, "# the old Python script\n");
+  for (const n of LEGACY) if (n !== "check_design" || packs.includes("design")) r.write(`.crew/bin/${n}.py`, "# the old Python script\n");
 }
 const py = (r: Repo, n: string) => existsSync(join(r.path, ".crew", "bin", `${n}.py`));
 
@@ -39,7 +39,9 @@ describe.skipIf(PY)("rewriteText", () => {
   });
 
   it("leaves a call it can't rewrite safely, and other scripts, alone", () => {
-    for (const text of ["python3 -B .crew/bin/check_secrets.py", "python3 tools/check_secrets.py", "python3 .crew/bin/check_secrets.pyc"]) {
+    for (const text of ["python3 -B .crew/bin/check_secrets.py", "python3 tools/check_secrets.py", "python3 .crew/bin/check_secrets.pyc",
+      ".venv/bin/python .crew/bin/check_secrets.py", "/opt/homebrew/bin/python3 .crew/bin/check_secrets.py",
+      "rm -f .crew/bin/check_secrets.py", "cp .crew/bin/check_secrets.py .crew/bin/check_secrets.py.bak"]) {
       expect(rewriteText(text, "check_secrets")).toBe(text);
     }
   });
@@ -91,9 +93,44 @@ describe.skipIf(PY)("upgrading a pre-port project", () => {
 
   it("leaves a call alone while its .mjs isn't vendored, so no check is skipped silently", () => {
     prePortProject(repo, "[base]"); // no design pack: compose doesn't vendor check_design.mjs
+    repo.write(".crew/bin/check_design.py", "# a project that dropped the design pack after vendoring it\n");
     const out = repo.py(COMPOSE, ["--root", "."]).stdout;
     expect(repo.read(".githooks/pre-commit")).toContain("python3 .crew/bin/check_design.py --staged");
     expect(out).toContain("KEEP    .crew/bin/check_design.py");
     expect(py(repo, "check_structure")).toBe(false);
+  });
+
+  it("without the design pack (the default), the guarded check_design line moves too, and check has nothing left to say", () => {
+    prePortProject(repo, "[base]");
+    repo.py(SETUP_GIT, ["--root", "."]);
+    repo.py(COMPOSE, ["--root", "."]);
+    expect(repo.read(".githooks/pre-commit")).toBe(template("git-setup/assets/githooks/pre-commit"));
+    const check = repo.py(HUB, ["check"]).stdout;
+    for (const s of ["Python scripts", "still runs"]) expect(check).not.toContain(s);
+  });
+
+  it("keeps a .py that a hook merged into .git/hooks still calls", () => {
+    prePortProject(repo);
+    repo.git("config", "--unset", "core.hooksPath"); // the user merged crew's lines into their own hooks instead
+    repo.write(".git/hooks/pre-commit", prePort(template("git-setup/assets/githooks/pre-commit")), 0o755);
+    const out = repo.py(SETUP_GIT, ["--root", "."]).stdout;
+    expect(out).toContain("KEEP    .crew/bin/check_secrets.py — still called from .git/hooks/pre-commit");
+    expect(repo.read(".git/hooks/pre-commit")).toContain("python3 .crew/bin/check_secrets.py"); // theirs: reported, not edited
+    expect(py(repo, "check_secrets")).toBe(true);
+    expect(repo.py(HUB, ["check"]).stdout).toContain(".git/hooks/pre-commit still runs .crew/bin/check_secrets.py");
+  });
+
+  it("keeps a .py that hooks at an absolute core.hooksPath, or a tracked script, still call", () => {
+    prePortProject(repo);
+    const elsewhere = Repo.create(false);
+    elsewhere.write("hooks/pre-commit", "#!/bin/sh\npython3 .crew/bin/check_secrets.py --staged\n", 0o755);
+    repo.git("config", "core.hooksPath", join(elsewhere.path, "hooks"));
+    repo.write("scripts/lint.sh", "node .crew/bin/check_structure.py --all\n");
+    repo.git("add", "scripts/lint.sh");
+    const git = repo.py(SETUP_GIT, ["--root", "."]).stdout, compose = repo.py(COMPOSE, ["--root", "."]).stdout;
+    expect(git).toMatch(/KEEP {4}\.crew\/bin\/check_secrets\.py — still called from \S*hooks\/pre-commit/);
+    expect(py(repo, "check_secrets")).toBe(true);
+    expect(compose).toContain("KEEP    .crew/bin/check_structure.py — still called from scripts/lint.sh");
+    expect(py(repo, "check_structure")).toBe(true);
   });
 });

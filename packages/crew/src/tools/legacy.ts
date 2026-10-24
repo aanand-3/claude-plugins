@@ -2,59 +2,70 @@
  * `python3 .crew/bin/X.py` lines that call them. setup_git and compose_rules run this after vendoring the `.mjs`.
  *
  * - rewrite: in the files crew owns (its hooks and .claude/settings.json), point the calls at the vendored .mjs;
- * - cleanup: remove a `.py` only once no file, crew's or the project's own, still names it — a commit or a Claude hook
- *   never loses a check halfway, and a reference crew can't rewrite safely keeps its `.py` and is reported instead. */
+ * - cleanup: remove a `.py` only once nothing still names it — no tracked file (docs aside), no active git hook, no local
+ *   settings — so a commit or a Claude hook never loses a check halfway; a caller crew can't rewrite safely keeps its
+ *   `.py` and is reported instead. */
 import { spawnSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, statSync, unlinkSync, writeFileSync } from "node:fs";
-import { join, relative } from "node:path";
+import { join, relative, resolve } from "node:path";
 
 export const LEGACY = ["check_secrets", "check_structure", "check_design", "format_on_edit", "track_plan_draft"];
 
 const isFile = (p: string) => existsSync(p) && statSync(p).isFile();
-const filesIn = (root: string, dir: string) => {
-  const d = join(root, dir);
-  return existsSync(d) && statSync(d).isDirectory() ? readdirSync(d).filter((f) => isFile(join(d, f))).map((f) => `${dir}/${f}`) : [];
-};
+const git = (root: string, ...args: string[]) => spawnSync("git", args, { cwd: root, encoding: "utf8" });
+/** Files directly in dir (absolute), git's .sample hooks aside. */
+const filesIn = (dir: string) => (existsSync(dir) && statSync(dir).isDirectory()
+  ? readdirSync(dir).filter((f) => !f.endsWith(".sample") && isFile(join(dir, f))).map((f) => join(dir, f)) : []);
 
-/** Files crew wrote and may rewrite. */
-function crewOwned(root: string): string[] {
-  return [...filesIn(root, ".githooks"), ".claude/settings.json"].filter((f) => isFile(join(root, f)));
+/** Files crew wrote and may rewrite (absolute). */
+const crewOwned = (root: string) => [...filesIn(join(root, ".githooks")), join(root, ".claude", "settings.json")].filter(isFile);
+
+/** Where the project may still call the scripts, and crew never edits (absolute): every tracked file but docs and crew's
+ * own planning, the usual CI and build files even when untracked, the hooks git actually runs (.git/hooks, a
+ * core.hooksPath anywhere) and the untracked local settings. */
+function projectOwned(root: string, name: string): string[] {
+  const out = new Set<string>();
+  const grep = git(root, "grep", "-l", "-F", "-e", `${name}.py`, "--", ".", ":!*.md", ":!.crew/**", ":!docs/**");
+  for (const f of (grep.stdout ?? "").split("\n").filter(Boolean)) out.add(resolve(root, f));
+  // the usual places too, tracked or not (an uncommitted Makefile, a project that isn't a repository yet)
+  for (const f of [...filesIn(join(root, ".github", "workflows")), ...filesIn(join(root, ".husky")),
+    ...[".gitlab-ci.yml", "Makefile", ".pre-commit-config.yaml", "package.json"].map((f) => join(root, f))]) out.add(f);
+  const hooksDir = (git(root, "rev-parse", "--git-path", "hooks").stdout ?? "").trim();
+  const hooksPath = (git(root, "config", "core.hooksPath").stdout ?? "").trim();
+  for (const dir of [hooksDir, hooksPath].filter(Boolean)) for (const f of filesIn(resolve(root, dir))) out.add(f);
+  out.add(join(root, ".claude", "settings.local.json"));
+  return [...out].filter(isFile);
 }
 
-/** The project's own files that may call the scripts too: reported, never edited. */
-function projectOwned(root: string): string[] {
-  const hooksPath = (spawnSync("git", ["config", "core.hooksPath"], { cwd: root, encoding: "utf8" }).stdout ?? "").trim();
-  const foreign = hooksPath && hooksPath !== ".githooks" ? filesIn(root, hooksPath) : [];
-  return [".claude/settings.local.json", ...filesIn(root, ".github/workflows"), ".gitlab-ci.yml", "Makefile",
-    ".pre-commit-config.yaml", "package.json", ...filesIn(root, ".husky"), ...foreign].filter((f) => isFile(join(root, f)));
-}
-
-/** `python3 … .crew/bin/X.py` → `node … .crew/bin/X.mjs` and `[ -f … .crew/bin/X.py ]` → `.mjs`; any other mention
- * (e.g. `python3 -B …`) is left alone, so it keeps its `.py`. Works in shell hooks and in JSON-escaped commands. */
+/** `python3 … .crew/bin/X.py` → `node … .crew/bin/X.mjs` and `[ -f … .crew/bin/X.py ]` → `.mjs`. Anything else that names
+ * the script — a path-qualified interpreter (.venv/bin/python), `python3 -B`, `rm -f`, `X.py.bak` — is left alone, so it
+ * keeps its `.py`. Works in shell hooks and in JSON-escaped commands. */
 export function rewriteText(text: string, name: string): string {
+  const py = `\\.crew/bin/${name})\\.py(?![\\w.])`;
   return text
-    .replace(new RegExp(`\\bpython3?(\\s+)(\\S*?\\.crew/bin/${name})\\.py\\b`, "g"), "node$1$2.mjs")
-    .replace(new RegExp(`(-f\\s+\\S*?\\.crew/bin/${name})\\.py\\b`, "g"), "$1.mjs");
+    .replace(new RegExp(`(?<![\\w./-])python3?(\\s+)(\\S*?${py}`, "g"), "node$1$2.mjs")
+    .replace(new RegExp(`(\\[\\s+-f\\s+\\S*?${py}`, "g"), "$1.mjs");
 }
 
 /** Upgrade the given scripts in root; returns the lines to print (UPGRADE / REMOVE / KEEP). */
 export function upgrade(root: string, names: string[]): string[] {
   const out: string[] = [];
   const bin = join(root, ".crew", "bin");
+  // move a call once its .mjs is vendored, or when neither file is there (a guarded line that runs nothing either way)
+  const movable = names.filter((n) => isFile(join(bin, `${n}.mjs`)) || !isFile(join(bin, `${n}.py`)));
   for (const file of crewOwned(root)) {
-    const before = readFileSync(join(root, file), "utf8");
-    let after = before;
-    for (const name of names) if (isFile(join(bin, `${name}.mjs`))) after = rewriteText(after, name);
+    const before = readFileSync(file, "utf8");
+    const after = movable.reduce((t, n) => rewriteText(t, n), before);
     if (after !== before) {
-      writeFileSync(join(root, file), after);
-      out.push(`UPGRADE ${file} (runs the vendored .mjs scripts)`);
+      writeFileSync(file, after);
+      out.push(`UPGRADE ${relative(root, file)} (runs the vendored .mjs scripts)`);
     }
   }
-  const everyFile = [...crewOwned(root), ...projectOwned(root)];
   for (const name of names) {
     const py = join(bin, `${name}.py`);
     if (!isFile(py)) continue;
-    const callers = everyFile.filter((f) => readFileSync(join(root, f), "utf8").includes(`${name}.py`));
+    const callers = [...new Set([...crewOwned(root), ...projectOwned(root, name)])]
+      .filter((f) => readFileSync(f, "utf8").includes(`${name}.py`)).map((f) => relative(root, f));
     if (callers.length) {
       out.push(`KEEP    ${relative(root, py)} — still called from ${callers.join(", ")}; point it at node .crew/bin/${name}.mjs and re-run`);
     } else {

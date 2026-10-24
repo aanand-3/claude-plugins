@@ -5,7 +5,7 @@ import { createRequire as __crewRequire } from "node:module"; const require = __
 // src/tools/git-setup/setup_git.ts
 import { spawnSync as spawnSync2 } from "node:child_process";
 import { chmodSync, copyFileSync, existsSync as existsSync2, mkdirSync, readdirSync as readdirSync2, readFileSync as readFileSync2, statSync as statSync2, writeFileSync as writeFileSync2 } from "node:fs";
-import { dirname, join as join2, resolve } from "node:path";
+import { dirname, join as join2, resolve as resolve2 } from "node:path";
 import { fileURLToPath } from "node:url";
 
 // src/tools/cli.ts
@@ -30,49 +30,46 @@ var FLOAT = new RegExp(`^[+-]?(?:(?:${DIGITS})?\\.${DIGITS}|${DIGITS}\\.?)(?:[eE
 // src/tools/legacy.ts
 import { spawnSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, statSync, unlinkSync, writeFileSync } from "node:fs";
-import { join, relative } from "node:path";
+import { join, relative, resolve } from "node:path";
 var isFile = (p) => existsSync(p) && statSync(p).isFile();
-var filesIn = (root, dir) => {
-  const d = join(root, dir);
-  return existsSync(d) && statSync(d).isDirectory() ? readdirSync(d).filter((f) => isFile(join(d, f))).map((f) => `${dir}/${f}`) : [];
-};
-function crewOwned(root) {
-  return [...filesIn(root, ".githooks"), ".claude/settings.json"].filter((f) => isFile(join(root, f)));
-}
-function projectOwned(root) {
-  const hooksPath = (spawnSync("git", ["config", "core.hooksPath"], { cwd: root, encoding: "utf8" }).stdout ?? "").trim();
-  const foreign = hooksPath && hooksPath !== ".githooks" ? filesIn(root, hooksPath) : [];
-  return [
-    ".claude/settings.local.json",
-    ...filesIn(root, ".github/workflows"),
-    ".gitlab-ci.yml",
-    "Makefile",
-    ".pre-commit-config.yaml",
-    "package.json",
-    ...filesIn(root, ".husky"),
-    ...foreign
-  ].filter((f) => isFile(join(root, f)));
+var git = (root, ...args) => spawnSync("git", args, { cwd: root, encoding: "utf8" });
+var filesIn = (dir) => existsSync(dir) && statSync(dir).isDirectory() ? readdirSync(dir).filter((f) => !f.endsWith(".sample") && isFile(join(dir, f))).map((f) => join(dir, f)) : [];
+var crewOwned = (root) => [...filesIn(join(root, ".githooks")), join(root, ".claude", "settings.json")].filter(isFile);
+function projectOwned(root, name) {
+  const out = /* @__PURE__ */ new Set();
+  const grep = git(root, "grep", "-l", "-F", "-e", `${name}.py`, "--", ".", ":!*.md", ":!.crew/**", ":!docs/**");
+  for (const f of (grep.stdout ?? "").split("\n").filter(Boolean)) out.add(resolve(root, f));
+  for (const f of [
+    ...filesIn(join(root, ".github", "workflows")),
+    ...filesIn(join(root, ".husky")),
+    ...[".gitlab-ci.yml", "Makefile", ".pre-commit-config.yaml", "package.json"].map((f2) => join(root, f2))
+  ]) out.add(f);
+  const hooksDir = (git(root, "rev-parse", "--git-path", "hooks").stdout ?? "").trim();
+  const hooksPath = (git(root, "config", "core.hooksPath").stdout ?? "").trim();
+  for (const dir of [hooksDir, hooksPath].filter(Boolean)) for (const f of filesIn(resolve(root, dir))) out.add(f);
+  out.add(join(root, ".claude", "settings.local.json"));
+  return [...out].filter(isFile);
 }
 function rewriteText(text, name) {
-  return text.replace(new RegExp(`\\bpython3?(\\s+)(\\S*?\\.crew/bin/${name})\\.py\\b`, "g"), "node$1$2.mjs").replace(new RegExp(`(-f\\s+\\S*?\\.crew/bin/${name})\\.py\\b`, "g"), "$1.mjs");
+  const py = `\\.crew/bin/${name})\\.py(?![\\w.])`;
+  return text.replace(new RegExp(`(?<![\\w./-])python3?(\\s+)(\\S*?${py}`, "g"), "node$1$2.mjs").replace(new RegExp(`(\\[\\s+-f\\s+\\S*?${py}`, "g"), "$1.mjs");
 }
 function upgrade(root, names) {
   const out = [];
   const bin = join(root, ".crew", "bin");
+  const movable = names.filter((n) => isFile(join(bin, `${n}.mjs`)) || !isFile(join(bin, `${n}.py`)));
   for (const file of crewOwned(root)) {
-    const before = readFileSync(join(root, file), "utf8");
-    let after = before;
-    for (const name of names) if (isFile(join(bin, `${name}.mjs`))) after = rewriteText(after, name);
+    const before = readFileSync(file, "utf8");
+    const after = movable.reduce((t, n) => rewriteText(t, n), before);
     if (after !== before) {
-      writeFileSync(join(root, file), after);
-      out.push(`UPGRADE ${file} (runs the vendored .mjs scripts)`);
+      writeFileSync(file, after);
+      out.push(`UPGRADE ${relative(root, file)} (runs the vendored .mjs scripts)`);
     }
   }
-  const everyFile = [...crewOwned(root), ...projectOwned(root)];
   for (const name of names) {
     const py = join(bin, `${name}.py`);
     if (!isFile(py)) continue;
-    const callers = everyFile.filter((f) => readFileSync(join(root, f), "utf8").includes(`${name}.py`));
+    const callers = [.../* @__PURE__ */ new Set([...crewOwned(root), ...projectOwned(root, name)])].filter((f) => readFileSync(f, "utf8").includes(`${name}.py`)).map((f) => relative(root, f));
     if (callers.length) {
       out.push(`KEEP    ${relative(root, py)} \u2014 still called from ${callers.join(", ")}; point it at node .crew/bin/${name}.mjs and re-run`);
     } else {
@@ -117,7 +114,7 @@ function main() {
     stacks: { type: "string" },
     "take-over-hooks": { type: "boolean", default: false }
   } });
-  const root = resolve(args.root);
+  const root = resolve2(args.root);
   if (!existsSync2(join2(root, ".git"))) {
     const r = spawnSync2("git", ["init", "-q", "-b", "main"], { cwd: root, stdio: "inherit" });
     if (r.status !== 0) process.exit(r.status ?? 1);
