@@ -5,7 +5,7 @@ title: Upgrade path off vendored .py and remove the last Python
 status: triaged
 priority: P2
 goal:
-plan:
+plan: P-016
 created: 2026-10-24
 closed:
 ---
