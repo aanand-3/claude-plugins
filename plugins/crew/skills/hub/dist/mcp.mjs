@@ -7560,6 +7560,17 @@ function worktrees() {
 function dirty(dir, path) {
   return (git(["-C", dir, "status", "--porcelain", "--untracked-files=all", "--no-renames", "--", path]) ?? "").split("\n").filter((l) => l.length > 3 && !l.slice(0, 2).includes("D")).map((l) => l.slice(3));
 }
+function squashMerge(branch, base, pid) {
+  const fork = git(["merge-base", branch, base])?.trim();
+  const changed = fork ? (git(["diff", "--name-only", "-z", fork, branch]) ?? "").split("\0").filter(Boolean) : [];
+  if (!changed.length) return null;
+  const names = new RegExp(`^(\\w+\\(${pid}\\)|${pid}):`);
+  for (const line2 of (git(["log", "--format=%H %s", `${fork}..${base}`]) ?? "").split("\n")) {
+    const [sha, subject] = [line2.slice(0, line2.indexOf(" ")), line2.slice(line2.indexOf(" ") + 1)];
+    if (sha && names.test(subject) && git(["--literal-pathspecs", "diff", "--quiet", branch, sha, "--", ...changed]) !== null) return sha;
+  }
+  return null;
+}
 function planBranches() {
   return words(git(["for-each-ref", "--format=%(refname:short)", "refs/heads/plan/", "refs/remotes/origin/plan/"]));
 }
@@ -8385,7 +8396,7 @@ function itemProblems(store, plan) {
 }
 
 // src/hub/commands/views/checks.ts
-import { join as join8 } from "node:path";
+import { join as join9 } from "node:path";
 
 // src/hub/commands/views/legacy.ts
 import { isAbsolute, join as join3, relative } from "node:path";
@@ -8423,11 +8434,11 @@ function legacyHints(store) {
 }
 
 // src/hub/commands/team/agents.ts
-import { join as join7 } from "node:path";
+import { join as join8 } from "node:path";
 
 // src/hub/core/store.ts
 import { existsSync as existsSync4, realpathSync } from "node:fs";
-import { dirname as dirname3, join as join6, resolve as resolve3 } from "node:path";
+import { dirname as dirname3, join as join7, resolve as resolve3 } from "node:path";
 import { fileURLToPath } from "node:url";
 
 // src/hub/core/memory/ledger.ts
@@ -8683,6 +8694,49 @@ var Workspace = class {
   }
 };
 
+// src/hub/core/work/worktrees.ts
+import { statSync as statSync4 } from "node:fs";
+import { join as join6 } from "node:path";
+var WorktreeCopies = class {
+  /** `hub`: the hub directory, relative to the repository root (`.crew`). */
+  constructor(root, hub) {
+    this.root = root;
+    this.hub = hub;
+  }
+  root;
+  hub;
+  dirty = /* @__PURE__ */ new Map();
+  /** Files were written, or worktrees added or removed: read git again. */
+  forget() {
+    this.dirty.clear();
+  }
+  /** The worktrees' uncommitted copies of the hub files that match, one per file: the most recently written, whatever the
+   * worktree order. This checkout's copy wins where it changed the file too, or committed it after that copy was written
+   * (another plan merged). */
+  pick(worktrees2, match) {
+    const mine = new Set(this.dirtyIn(this.root)), newest = /* @__PURE__ */ new Map();
+    for (const wt of worktrees2) {
+      for (const f of this.dirtyIn(wt).filter((x) => match(x) && !mine.has(x))) {
+        const path = join6(wt, f), mtime = statSync4(path, { throwIfNoEntry: false })?.mtimeMs ?? -1;
+        if (mtime >= 0 && mtime > (newest.get(f)?.mtime ?? -1) && !this.committedSince(wt, f, mtime)) newest.set(f, { path, mtime });
+      }
+    }
+    return [...newest.values()].map((c) => c.path);
+  }
+  /** A checkout's uncommitted hub files: one `git status` per checkout until something is written. */
+  dirtyIn(dir) {
+    let d = this.dirty.get(dir);
+    if (!d) this.dirty.set(dir, d = dirty(dir, this.hub));
+    return d;
+  }
+  /** This checkout committed `f` after a worktree's copy was written (at `mtime`), and differently from what that worktree
+   * started from. */
+  committedSince(wt, f, mtime) {
+    if (show("HEAD", f) === git(["-C", wt, "show", `HEAD:${f}`])) return false;
+    return Number(git(["log", "-1", "--format=%ct", "HEAD", "--", f])?.trim() || 0) * 1e3 > mtime;
+  }
+};
+
 // src/hub/core/store.ts
 var SCRIPT_FILE = fileURLToPath(import.meta.url);
 var SCRIPT_DIR = dirname3(SCRIPT_FILE);
@@ -8703,10 +8757,11 @@ var Store = class _Store {
   constructor(ws) {
     this.ws = ws;
     useRoot(ws.root);
-    this.dir = join6(ws.root, ".crew");
-    this.dirs = Object.fromEntries(Object.entries(DIRS).map(([k, v]) => [k, join6(this.dir, v)]));
-    this.ideaPath = join6(this.dir, "idea.md");
-    this.knowledgeDir = join6(this.dir, "knowledge");
+    this.dir = join7(ws.root, ".crew");
+    this.dirs = Object.fromEntries(Object.entries(DIRS).map(([k, v]) => [k, join7(this.dir, v)]));
+    this.ideaPath = join7(this.dir, "idea.md");
+    this.knowledgeDir = join7(this.dir, "knowledge");
+    this.copies = new WorktreeCopies(ws.root, this.rel(this.dir));
   }
   ws;
   dir;
@@ -8716,6 +8771,7 @@ var Store = class _Store {
   ledgerCache = null;
   policyCache = null;
   worktreeCache = null;
+  copies;
   static open(root = repoRoot()) {
     return new _Store(new Workspace(root));
   }
@@ -8738,28 +8794,28 @@ var Store = class _Store {
   }
   /** Project copy wins (so a cloned repo works without the plugin); fall back to the skill's. */
   template(name) {
-    for (const d of [join6(this.dir, "templates"), join6(SKILL_DIR, "templates")]) {
-      const text2 = this.ws.read(join6(d, name));
+    for (const d of [join7(this.dir, "templates"), join7(SKILL_DIR, "templates")]) {
+      const text2 = this.ws.read(join7(d, name));
       if (text2 !== null) return text2;
     }
     return fail(`Template ${name} not found.`);
   }
   /** Hub settings from the `hub:` block of .crew/config.yaml, with defaults. */
   settings() {
-    const text2 = this.ws.read(join6(this.dir, "config.yaml"));
+    const text2 = this.ws.read(join7(this.dir, "config.yaml"));
     const s2 = { ...DEFAULT_SETTINGS, ...text2 === null ? {} : yamlBlock(text2, "hub") };
     const int = (k) => /^\d+$/.test(s2[k]) ? parseInt(s2[k], 10) : parseInt(DEFAULT_SETTINGS[k], 10);
     return { wip_limit: int("wip_limit"), max_tasks: int("max_tasks"), plan_worktrees: s2.plan_worktrees === "true" };
   }
   // -- loading
   attach(doc) {
-    doc.sink = (path, text2) => this.ws.write(path, text2);
+    doc.sink = (path, text2) => (this.ws.write(path, text2), this.copies.forget());
     return doc;
   }
   loadDir(d) {
     const docs = /* @__PURE__ */ new Map();
     for (const name of this.ws.list(d).filter((n2) => n2.endsWith(".md"))) {
-      const path = join6(d, name);
+      const path = join7(d, name);
       const doc = this.attach(Doc.parse(this.ws.read(path), path));
       if (doc.id) docs.set(doc.id, doc);
     }
@@ -8785,6 +8841,7 @@ var Store = class _Store {
   /** A worktree was added or removed: look again. */
   forgetWorktrees() {
     this.worktreeCache = null;
+    this.copies.forget();
   }
   /** Where a plan's work is: this checkout when it is on the plan's branch, else the plan's worktree, else null. */
   planHome(pid) {
@@ -8792,16 +8849,12 @@ var Store = class _Store {
     return this.planWorktrees().get(pid) ?? null;
   }
   /** One directory's documents, overlaid with those changed (uncommitted) in plan worktrees — a plan's items, goals and
-   * knowledge live there until it completes. This checkout's copy wins where it changed the same file too. */
+   * knowledge live there until it completes. */
   overlay(d, docs) {
-    const rel = this.rel(d), mine = new Set(dirty(this.ws.root, rel));
-    for (const wt of this.planWorktrees().values()) {
-      for (const f of dirty(wt, rel)) {
-        if (!f.endsWith(".md") || f.slice(rel.length + 1).includes("/") || mine.has(f)) continue;
-        const path = join6(wt, f), text2 = this.ws.read(path);
-        const doc = text2 === null ? null : this.attach(Doc.parse(text2, path));
-        if (doc?.id) docs.set(doc.id, doc);
-      }
+    const rel = `${this.rel(d)}/`, inDir = (f) => f.startsWith(rel) && f.endsWith(".md") && !f.slice(rel.length).includes("/");
+    for (const path of this.copies.pick(this.planWorktrees().values(), inDir)) {
+      const text2 = this.ws.read(path), doc = text2 === null ? null : this.attach(Doc.parse(text2, path));
+      if (doc?.id) docs.set(doc.id, doc);
     }
     return docs;
   }
@@ -8818,14 +8871,15 @@ var Store = class _Store {
   }
   /** The branch plans start from: `git.default_branch` in .crew/config.yaml, else the policy's first protected branch. */
   baseBranch() {
-    const text2 = this.ws.read(join6(this.dir, "config.yaml"));
+    const text2 = this.ws.read(join7(this.dir, "config.yaml"));
     const configured = text2 === null ? void 0 : yamlBlock(text2, "git").default_branch;
     return configured || this.policy.policy.git.protected_branches[0] || "main";
   }
   /** The project's idea (.crew/idea.md), if it has been written. */
   idea() {
-    const text2 = this.ws.read(this.ideaPath);
-    return text2 === null ? null : this.attach(Doc.parse(text2, this.ideaPath));
+    const rel = this.rel(this.ideaPath), path = this.copies.pick(this.planWorktrees().values(), (f) => f === rel)[0] ?? this.ideaPath;
+    const text2 = this.ws.read(path);
+    return text2 === null ? null : this.attach(Doc.parse(text2, path));
   }
   /** The focus goal's ID, as set on the idea (`focus G-###`). */
   focus() {
@@ -8836,11 +8890,11 @@ var Store = class _Store {
   plans(includeBranches = false) {
     const plans2 = this.loadDir(this.dirs.plan);
     for (const [pid, wt] of this.planWorktrees()) {
-      const dir = join6(wt, this.rel(this.dirs.plan));
+      const dir = join7(wt, this.rel(this.dirs.plan));
       const name = this.ws.list(dir).find((n2) => n2.startsWith(`${pid}-`) && n2.endsWith(".md"));
       const base = plans2.get(pid);
       if (name && (!base || !CLOSED.has(base.get("status") ?? ""))) {
-        plans2.set(pid, this.attach(Doc.parse(this.ws.read(join6(dir, name)), join6(dir, name))));
+        plans2.set(pid, this.attach(Doc.parse(this.ws.read(join7(dir, name)), join7(dir, name))));
       }
     }
     if (includeBranches) {
@@ -8888,7 +8942,7 @@ var Store = class _Store {
     const names = this.ws.list(d);
     const rel = `${this.rel(d)}/`;
     for (const ref of allRefs()) names.push(...lsTree(ref, rel).map((n2) => n2.split("/").pop()));
-    for (const w of worktrees()) names.push(...this.ws.list(join6(w.path, this.rel(d))));
+    for (const w of worktrees()) names.push(...this.ws.list(join7(w.path, this.rel(d))));
     const nums = names.map((n2) => new RegExp(`^${prefix}-(\\d+)`).exec(n2)).filter((m) => m).map((m) => parseInt(m[1], 10));
     return `${prefix}-${String(Math.max(0, ...nums) + 1).padStart(width, "0")}`;
   }
@@ -8933,11 +8987,11 @@ var Store = class _Store {
 // src/hub/commands/team/agents.ts
 var HUMAN = "executive";
 var PLAIN = /^[\w-]+$/;
-var agentsDir = (store) => join7(store.ws.root, ".claude", "agents");
-var agentFile = (store, role) => join7(agentsDir(store), `crew-${role}.md`);
+var agentsDir = (store) => join8(store.ws.root, ".claude", "agents");
+var agentFile = (store, role) => join8(agentsDir(store), `crew-${role}.md`);
 function template(store, name) {
-  for (const d of [join7(store.dir, "templates", "agents"), join7(SKILL_DIR, "agents")]) {
-    const text2 = store.ws.read(join7(d, `${name}.md`));
+  for (const d of [join8(store.dir, "templates", "agents"), join8(SKILL_DIR, "agents")]) {
+    const text2 = store.ws.read(join8(d, `${name}.md`));
     if (text2 !== null) return text2;
   }
   return fail(`Agent template ${name}.md not found. Re-run \`crew.mjs init\` from the plugin.`);
@@ -8977,8 +9031,8 @@ var agentRoles = (store) => resolvePolicy(store.ws.root, store.dir).roles.filter
 function rendered(store) {
   const out = /* @__PURE__ */ new Map();
   for (const name of store.ws.list(agentsDir(store)).filter((n2) => /^crew-.*\.md$/.test(n2))) {
-    const role = Doc.parse(store.ws.read(join7(agentsDir(store), name)) ?? "").get("crew-role");
-    if (role) out.set(join7(agentsDir(store), name), role);
+    const role = Doc.parse(store.ws.read(join8(agentsDir(store), name)) ?? "").get("crew-role");
+    if (role) out.set(join8(agentsDir(store), name), role);
   }
   return out;
 }
@@ -9040,7 +9094,7 @@ var valid = (flow, st) => st !== null && Object.hasOwn(flow, st);
 var up2 = (s2) => (s2 ?? "").toUpperCase();
 function findings(store) {
   const s2 = new Snapshot(store), f = { errors: [], hints: [] };
-  for (const rule of [idea, plans, overlaps, items, goals, ledger, knowledge, hygiene]) rule(s2, f);
+  for (const rule of [idea, plans, lostPlans, overlaps, items, goals, ledger, knowledge, hygiene]) rule(s2, f);
   const p = policyFindings(store);
   return { errors: [...f.errors, ...p.errors], hints: [...f.hints, ...p.hints, ...agentHints(store), ...livenessHints(store)] };
 }
@@ -9092,6 +9146,15 @@ function plans(s2, f) {
     if ((ACTIVE.has(st ?? "") || st === "ready") && !onFocus(p, s2.items, s2.focus)) {
       f.hints.push(`${pid}: ${st} but does not serve the focus goal ${s2.focus} (only bugs and chores may run off focus)`);
     }
+  }
+}
+function lostPlans(s2, f) {
+  const seen = /* @__PURE__ */ new Set();
+  for (const b of planBranches()) {
+    const pid = /^(?:origin\/)?plan\/(P-\d+)/.exec(b)?.[1];
+    if (!pid || seen.has(pid) || s2.allPlans.has(pid) || s2.store.planWorktrees().has(pid)) continue;
+    seen.add(pid);
+    f.hints.push(`${pid}: branch ${b} has no plan file and no worktree \u2014 its worktree was removed before Release committed it, so the uncommitted work is gone; recover what you can, then delete the branch`);
   }
 }
 function overlaps(s2, f) {
@@ -9192,14 +9255,14 @@ function hygiene(s2, f) {
   if (ahead.length > MAX_WRITTEN_AHEAD) {
     f.hints.push(`${ahead.length} plans written ahead of the work (> ${MAX_WRITTEN_AHEAD}) \u2014 keep later work as backlog items so plans don't go stale`);
   }
-  const leftovers = s2.store.ws.list(join8(s2.store.dir, "drafts")).filter((n2) => n2.endsWith(".md"));
+  const leftovers = s2.store.ws.list(join9(s2.store.dir, "drafts")).filter((n2) => n2.endsWith(".md"));
   if (leftovers.length) {
     f.hints.push(`unconverted drafts in .crew/drafts/: ${leftovers.join(", ")} \u2014 create the document from them or delete`);
   }
-  if (s2.store.ws.isDir(join8(s2.store.ws.root, ".project"))) {
+  if (s2.store.ws.isDir(join9(s2.store.ws.root, ".project"))) {
     f.hints.push("a .project/ directory from project-kit is still here \u2014 `crew.mjs migrate` moves it into .crew/");
   }
-  if (!s2.store.ws.read(join8(s2.store.ws.root, ".githooks", "post-commit"))?.includes("graphify")) {
+  if (!s2.store.ws.read(join9(s2.store.ws.root, ".githooks", "post-commit"))?.includes("graphify")) {
     f.hints.push("code graph not set up (no graphify hook in .githooks/post-commit) \u2014 `/crew:codemap` installs and wires it");
   }
   f.hints.push(...legacyHints(s2.store));
@@ -9865,7 +9928,7 @@ function checkpoint(store, id, o = {}) {
   store.require();
   const plan = planFromBranch(store, id);
   if (!plan) {
-    if (o.auto) return 0;
+    if (o.auto) return autoWorktrees(store, o);
     fail("Not on a plan branch: name the plan (`checkpoint P-###`).");
   }
   const home = plan.id.startsWith("P-") && store.planHome(plan.id) || store.ws.root;
@@ -9902,6 +9965,11 @@ function checkpoint(store, id, o = {}) {
     store.say(`${plan.id}: checkpoint at ${step}${snap.sha ? ` (${snap.sha.slice(0, 7)})` : ""}` + verify.map((v) => ` \u2014 ${v.ok ? "\u2713" : "\u2717"} ${v.cmd}`).join(""));
   }
   return verify.some((v) => !v.ok) ? 1 : 0;
+}
+function autoWorktrees(store, o) {
+  const plans2 = store.plans();
+  for (const pid of store.planWorktrees().keys()) if (plans2.get(pid)?.get("status") === "in-progress") checkpoint(store, pid, o);
+  return 0;
 }
 function parseAc(spec, n2) {
   if (!spec) return [];
@@ -10055,7 +10123,12 @@ function mergeOrder(store) {
   const branches = new Set(planBranches());
   const status2 = (p) => moved.get(p.id) ?? p.get("status") ?? "";
   const worktrees2 = new Map([...store.settings().plan_worktrees ? store.planWorktrees() : []].filter(([, wt]) => dirty(wt, ".").length));
-  const isMerged = (p) => !worktrees2.has(p.id) && git(["merge-base", "--is-ancestor", p.get("branch"), base]) !== null;
+  const merged = /* @__PURE__ */ new Map();
+  const isMerged = (p) => {
+    const b = p.get("branch");
+    if (!merged.has(p.id)) merged.set(p.id, !worktrees2.has(p.id) && (git(["merge-base", "--is-ancestor", b, base]) !== null || squashMerge(b, base, p.id) !== null));
+    return merged.get(p.id);
+  };
   const out = { base, merge: [], waiting: [], merged: [] };
   const done = [...plans2.values()].filter((p) => status2(p) === "done" && branches.has(p.get("branch") ?? "")).sort(byKey((p) => [doneAt.get(p.id) ?? p.get("completed") ?? "", p.id]));
   const pending = /* @__PURE__ */ new Set();
@@ -10307,13 +10380,13 @@ var Context = class {
 
 // src/hub/commands/views/design.ts
 var import_yaml3 = __toESM(require_dist(), 1);
-import { dirname as dirname4, join as join9 } from "node:path";
+import { dirname as dirname4, join as join10 } from "node:path";
 var FRONT = /^---\n([\s\S]*?)\n---\n/;
 function designPath(store) {
-  const cfg = store.ws.read(join9(store.dir, "config.yaml")) ?? "";
-  return join9(store.ws.root, yamlBlock(cfg, "design").file ?? "docs/design/DESIGN.md");
+  const cfg = store.ws.read(join10(store.dir, "config.yaml")) ?? "";
+  return join10(store.ws.root, yamlBlock(cfg, "design").file ?? "docs/design/DESIGN.md");
 }
-var studioPath = (store) => join9(dirname4(designPath(store)), "studio.json");
+var studioPath = (store) => join10(dirname4(designPath(store)), "studio.json");
 function readDesign(store) {
   const path = designPath(store);
   const text2 = store.ws.read(path);

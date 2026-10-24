@@ -1,5 +1,5 @@
 /** `merge-order`: what Release merges next — done plans whose branches are still unmerged, dependencies first. A plan waits
- * while a plan it depends on isn't merged yet; merged branches are listed for deletion. */
+ * while a plan it depends on isn't merged yet; merged (or squash-merged) branches are listed for deletion. */
 import type { Doc } from "../../core/work/doc.js";
 import * as git from "../../core/git.js";
 import type { Store } from "../../core/store.js";
@@ -17,7 +17,13 @@ export function mergeOrder(store: Store): MergeOrder {
   // looks merged. Other worktrees on a plan branch (a developer's own checkout) hold no plan work.
   const worktrees = new Map([...store.settings().plan_worktrees ? store.planWorktrees() : []]
     .filter(([, wt]) => git.dirty(wt, ".").length));
-  const isMerged = (p: Doc) => !worktrees.has(p.id) && git.git(["merge-base", "--is-ancestor", p.get("branch")!, base]) !== null;
+  const merged = new Map<string, boolean>(); // merged in, or squash-merged (this repo's way: the branch never becomes an ancestor)
+  const isMerged = (p: Doc) => {
+    const b = p.get("branch")!;
+    if (!merged.has(p.id)) merged.set(p.id, !worktrees.has(p.id)
+      && (git.git(["merge-base", "--is-ancestor", b, base]) !== null || git.squashMerge(b, base, p.id) !== null));
+    return merged.get(p.id)!;
+  };
   const out: MergeOrder = { base, merge: [], waiting: [], merged: [] };
   const done = [...plans.values()].filter((p) => status(p) === "done" && branches.has(p.get("branch") ?? ""))
     .sort(byKey((p) => [doneAt.get(p.id) ?? p.get("completed") ?? "", p.id])); // first completed, first merged

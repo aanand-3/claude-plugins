@@ -139,7 +139,7 @@ Start every workflow by checking where you are: `crew.mjs context` (or `context 
 5. **On main:** capture follow-ups as items, run `check` and act on its hints.
 
 ### 6. Close a goal, finish the idea
-1. When a goal's plans and items are closed, verify its acceptance criteria with the user and record each one (`checkpoint G-### --verify "<how>" --result pass --ac n`), then `move G-### done` (refused while a criterion is unverified, a plan or item is open, or a plan drifted), `focus` the next goal and commit both on main: `chore(hub): G-### done`.
+1. When a goal's plans and items are closed, verify its acceptance criteria with the user and record each one (`checkpoint G-### --verify "<how>" --result pass --ac n`), then `move G-### done` (refused while a criterion is unverified, a plan or item is open, or a plan drifted), `focus` the next goal. Don't commit them on their own: the change travels with the next plan, like every hub change (`new-plan` carries the goal and the idea's new focus into its worktree; solo, `start` carries them to the plan branch).
 2. When every success criterion on the idea is met, tick it with its evidence and report to the user. The idea stays `decided`; new direction starts with a pivot (`move IDEA proposed`).
 
 ### What's next / status

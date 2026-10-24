@@ -74,6 +74,8 @@ it("plan worktrees are seen and edited from main", () => {
   const p1 = read(planFile(planWorktree(repo, "P-001"), "P-001"));
   expect(p1).toContain("status: ready");
   expect(p1).toContain("picked the provider");
+  expect(tr(repo, "assign", "P-001", "--to", "developer").returncode).toBe(0); // a plan only in its worktree is assigned there
+  expect(read(planFile(planWorktree(repo, "P-001"), "P-001"))).toContain("assignee: developer");
   const status = tr(repo, "status").stdout;
   expect(status).toContain("| P-001 | Signup |");
   expect(status).toContain("BUG-001");

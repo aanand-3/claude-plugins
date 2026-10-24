@@ -7369,7 +7369,7 @@ import { parseArgs } from "node:util";
 
 // src/hub/core/store.ts
 import { existsSync as existsSync4, realpathSync } from "node:fs";
-import { dirname as dirname3, join as join4, resolve as resolve3 } from "node:path";
+import { dirname as dirname3, join as join5, resolve as resolve3 } from "node:path";
 import { fileURLToPath } from "node:url";
 
 // src/hub/core/git.ts
@@ -7572,6 +7572,17 @@ function worktrees() {
 }
 function dirty(dir, path) {
   return (git(["-C", dir, "status", "--porcelain", "--untracked-files=all", "--no-renames", "--", path]) ?? "").split("\n").filter((l) => l.length > 3 && !l.slice(0, 2).includes("D")).map((l) => l.slice(3));
+}
+function squashMerge(branch, base, pid) {
+  const fork = git(["merge-base", branch, base])?.trim();
+  const changed = fork ? (git(["diff", "--name-only", "-z", fork, branch]) ?? "").split("\0").filter(Boolean) : [];
+  if (!changed.length) return null;
+  const names = new RegExp(`^(\\w+\\(${pid}\\)|${pid}):`);
+  for (const line2 of (git(["log", "--format=%H %s", `${fork}..${base}`]) ?? "").split("\n")) {
+    const [sha, subject] = [line2.slice(0, line2.indexOf(" ")), line2.slice(line2.indexOf(" ") + 1)];
+    if (sha && names.test(subject) && git(["--literal-pathspecs", "diff", "--quiet", branch, sha, "--", ...changed]) !== null) return sha;
+  }
+  return null;
 }
 function planBranches() {
   return words(git(["for-each-ref", "--format=%(refname:short)", "refs/heads/plan/", "refs/remotes/origin/plan/"]));
@@ -8446,6 +8457,49 @@ var Workspace = class {
   }
 };
 
+// src/hub/core/work/worktrees.ts
+import { statSync as statSync4 } from "node:fs";
+import { join as join4 } from "node:path";
+var WorktreeCopies = class {
+  /** `hub`: the hub directory, relative to the repository root (`.crew`). */
+  constructor(root, hub) {
+    this.root = root;
+    this.hub = hub;
+  }
+  root;
+  hub;
+  dirty = /* @__PURE__ */ new Map();
+  /** Files were written, or worktrees added or removed: read git again. */
+  forget() {
+    this.dirty.clear();
+  }
+  /** The worktrees' uncommitted copies of the hub files that match, one per file: the most recently written, whatever the
+   * worktree order. This checkout's copy wins where it changed the file too, or committed it after that copy was written
+   * (another plan merged). */
+  pick(worktrees2, match) {
+    const mine = new Set(this.dirtyIn(this.root)), newest = /* @__PURE__ */ new Map();
+    for (const wt of worktrees2) {
+      for (const f of this.dirtyIn(wt).filter((x) => match(x) && !mine.has(x))) {
+        const path = join4(wt, f), mtime = statSync4(path, { throwIfNoEntry: false })?.mtimeMs ?? -1;
+        if (mtime >= 0 && mtime > (newest.get(f)?.mtime ?? -1) && !this.committedSince(wt, f, mtime)) newest.set(f, { path, mtime });
+      }
+    }
+    return [...newest.values()].map((c) => c.path);
+  }
+  /** A checkout's uncommitted hub files: one `git status` per checkout until something is written. */
+  dirtyIn(dir) {
+    let d = this.dirty.get(dir);
+    if (!d) this.dirty.set(dir, d = dirty(dir, this.hub));
+    return d;
+  }
+  /** This checkout committed `f` after a worktree's copy was written (at `mtime`), and differently from what that worktree
+   * started from. */
+  committedSince(wt, f, mtime) {
+    if (show("HEAD", f) === git(["-C", wt, "show", `HEAD:${f}`])) return false;
+    return Number(git(["log", "-1", "--format=%ct", "HEAD", "--", f])?.trim() || 0) * 1e3 > mtime;
+  }
+};
+
 // src/hub/core/store.ts
 var SCRIPT_FILE = fileURLToPath(import.meta.url);
 var SCRIPT_DIR = dirname3(SCRIPT_FILE);
@@ -8466,10 +8520,11 @@ var Store = class _Store {
   constructor(ws) {
     this.ws = ws;
     useRoot(ws.root);
-    this.dir = join4(ws.root, ".crew");
-    this.dirs = Object.fromEntries(Object.entries(DIRS).map(([k, v]) => [k, join4(this.dir, v)]));
-    this.ideaPath = join4(this.dir, "idea.md");
-    this.knowledgeDir = join4(this.dir, "knowledge");
+    this.dir = join5(ws.root, ".crew");
+    this.dirs = Object.fromEntries(Object.entries(DIRS).map(([k, v]) => [k, join5(this.dir, v)]));
+    this.ideaPath = join5(this.dir, "idea.md");
+    this.knowledgeDir = join5(this.dir, "knowledge");
+    this.copies = new WorktreeCopies(ws.root, this.rel(this.dir));
   }
   ws;
   dir;
@@ -8479,6 +8534,7 @@ var Store = class _Store {
   ledgerCache = null;
   policyCache = null;
   worktreeCache = null;
+  copies;
   static open(root = repoRoot()) {
     return new _Store(new Workspace(root));
   }
@@ -8501,28 +8557,28 @@ var Store = class _Store {
   }
   /** Project copy wins (so a cloned repo works without the plugin); fall back to the skill's. */
   template(name) {
-    for (const d of [join4(this.dir, "templates"), join4(SKILL_DIR, "templates")]) {
-      const text = this.ws.read(join4(d, name));
+    for (const d of [join5(this.dir, "templates"), join5(SKILL_DIR, "templates")]) {
+      const text = this.ws.read(join5(d, name));
       if (text !== null) return text;
     }
     return fail(`Template ${name} not found.`);
   }
   /** Hub settings from the `hub:` block of .crew/config.yaml, with defaults. */
   settings() {
-    const text = this.ws.read(join4(this.dir, "config.yaml"));
+    const text = this.ws.read(join5(this.dir, "config.yaml"));
     const s = { ...DEFAULT_SETTINGS, ...text === null ? {} : yamlBlock(text, "hub") };
     const int = (k) => /^\d+$/.test(s[k]) ? parseInt(s[k], 10) : parseInt(DEFAULT_SETTINGS[k], 10);
     return { wip_limit: int("wip_limit"), max_tasks: int("max_tasks"), plan_worktrees: s.plan_worktrees === "true" };
   }
   // -- loading
   attach(doc) {
-    doc.sink = (path, text) => this.ws.write(path, text);
+    doc.sink = (path, text) => (this.ws.write(path, text), this.copies.forget());
     return doc;
   }
   loadDir(d) {
     const docs = /* @__PURE__ */ new Map();
     for (const name of this.ws.list(d).filter((n) => n.endsWith(".md"))) {
-      const path = join4(d, name);
+      const path = join5(d, name);
       const doc = this.attach(Doc.parse(this.ws.read(path), path));
       if (doc.id) docs.set(doc.id, doc);
     }
@@ -8548,6 +8604,7 @@ var Store = class _Store {
   /** A worktree was added or removed: look again. */
   forgetWorktrees() {
     this.worktreeCache = null;
+    this.copies.forget();
   }
   /** Where a plan's work is: this checkout when it is on the plan's branch, else the plan's worktree, else null. */
   planHome(pid) {
@@ -8555,16 +8612,12 @@ var Store = class _Store {
     return this.planWorktrees().get(pid) ?? null;
   }
   /** One directory's documents, overlaid with those changed (uncommitted) in plan worktrees — a plan's items, goals and
-   * knowledge live there until it completes. This checkout's copy wins where it changed the same file too. */
+   * knowledge live there until it completes. */
   overlay(d, docs) {
-    const rel = this.rel(d), mine = new Set(dirty(this.ws.root, rel));
-    for (const wt of this.planWorktrees().values()) {
-      for (const f of dirty(wt, rel)) {
-        if (!f.endsWith(".md") || f.slice(rel.length + 1).includes("/") || mine.has(f)) continue;
-        const path = join4(wt, f), text = this.ws.read(path);
-        const doc = text === null ? null : this.attach(Doc.parse(text, path));
-        if (doc?.id) docs.set(doc.id, doc);
-      }
+    const rel = `${this.rel(d)}/`, inDir = (f) => f.startsWith(rel) && f.endsWith(".md") && !f.slice(rel.length).includes("/");
+    for (const path of this.copies.pick(this.planWorktrees().values(), inDir)) {
+      const text = this.ws.read(path), doc = text === null ? null : this.attach(Doc.parse(text, path));
+      if (doc?.id) docs.set(doc.id, doc);
     }
     return docs;
   }
@@ -8581,14 +8634,15 @@ var Store = class _Store {
   }
   /** The branch plans start from: `git.default_branch` in .crew/config.yaml, else the policy's first protected branch. */
   baseBranch() {
-    const text = this.ws.read(join4(this.dir, "config.yaml"));
+    const text = this.ws.read(join5(this.dir, "config.yaml"));
     const configured = text === null ? void 0 : yamlBlock(text, "git").default_branch;
     return configured || this.policy.policy.git.protected_branches[0] || "main";
   }
   /** The project's idea (.crew/idea.md), if it has been written. */
   idea() {
-    const text = this.ws.read(this.ideaPath);
-    return text === null ? null : this.attach(Doc.parse(text, this.ideaPath));
+    const rel = this.rel(this.ideaPath), path = this.copies.pick(this.planWorktrees().values(), (f) => f === rel)[0] ?? this.ideaPath;
+    const text = this.ws.read(path);
+    return text === null ? null : this.attach(Doc.parse(text, path));
   }
   /** The focus goal's ID, as set on the idea (`focus G-###`). */
   focus() {
@@ -8599,11 +8653,11 @@ var Store = class _Store {
   plans(includeBranches = false) {
     const plans2 = this.loadDir(this.dirs.plan);
     for (const [pid, wt] of this.planWorktrees()) {
-      const dir = join4(wt, this.rel(this.dirs.plan));
+      const dir = join5(wt, this.rel(this.dirs.plan));
       const name = this.ws.list(dir).find((n) => n.startsWith(`${pid}-`) && n.endsWith(".md"));
       const base = plans2.get(pid);
       if (name && (!base || !CLOSED.has(base.get("status") ?? ""))) {
-        plans2.set(pid, this.attach(Doc.parse(this.ws.read(join4(dir, name)), join4(dir, name))));
+        plans2.set(pid, this.attach(Doc.parse(this.ws.read(join5(dir, name)), join5(dir, name))));
       }
     }
     if (includeBranches) {
@@ -8651,7 +8705,7 @@ var Store = class _Store {
     const names = this.ws.list(d);
     const rel = `${this.rel(d)}/`;
     for (const ref of allRefs()) names.push(...lsTree(ref, rel).map((n) => n.split("/").pop()));
-    for (const w of worktrees()) names.push(...this.ws.list(join4(w.path, this.rel(d))));
+    for (const w of worktrees()) names.push(...this.ws.list(join5(w.path, this.rel(d))));
     const nums = names.map((n) => new RegExp(`^${prefix}-(\\d+)`).exec(n)).filter((m) => m).map((m) => parseInt(m[1], 10));
     return `${prefix}-${String(Math.max(0, ...nums) + 1).padStart(width, "0")}`;
   }
@@ -8765,7 +8819,7 @@ import { createHash as createHash2 } from "node:crypto";
 import { randomBytes as randomBytes2 } from "node:crypto";
 
 // src/hub/commands/memory/knowledge.ts
-import { join as join5 } from "node:path";
+import { join as join6 } from "node:path";
 function learn(store, type, title, o = {}) {
   store.require();
   if (!KNOWLEDGE_TYPES.includes(type)) fail(`Unknown type '${type}'. Use ${KNOWLEDGE_TYPES.join(", ")}.`);
@@ -8782,7 +8836,7 @@ ${why}`, store.policy.policy.secrets.patterns);
   if (risk && (!RISK_LEVELS.includes(risk.likelihood ?? "") || !RISK_LEVELS.includes(risk.impact ?? ""))) {
     fail("A risk needs --likelihood and --impact (H, M or L).");
   }
-  const id = knowledgeId(title, (k) => store.ws.isFile(join5(store.knowledgeDir, `${k}.md`)));
+  const id = knowledgeId(title, (k) => store.ws.isFile(join6(store.knowledgeDir, `${k}.md`)));
   const branch = /^plan\/(P-\d+)/.exec(currentBranch() ?? "")?.[1];
   const text = entryText({
     id,
@@ -8795,10 +8849,10 @@ ${why}`, store.policy.policy.secrets.patterns);
     scope: (o.scope ?? "").split(",").map((s) => s.trim()).filter(Boolean),
     source: o.source?.toUpperCase() ?? branch ?? ""
   });
-  store.ws.write(join5(store.knowledgeDir, `${id}.md`), text);
+  store.ws.write(join6(store.knowledgeDir, `${id}.md`), text);
   if (draftFile) store.consume(draftFile, o.keep);
   store.ledger.record("learn", id, { kind: type, title, ...supersedes ? { supersedes } : {} });
-  store.say(store.rel(join5(store.knowledgeDir, `${id}.md`)));
+  store.say(store.rel(join6(store.knowledgeDir, `${id}.md`)));
   return id;
 }
 function recallCmd(store, o = {}) {
@@ -8842,14 +8896,14 @@ import { readFileSync as readFileSync6 } from "node:fs";
 
 // src/hub/commands/team/guard.ts
 import { readFileSync as readFileSync4, realpathSync as realpathSync2 } from "node:fs";
-import { basename as basename2, dirname as dirname4, isAbsolute, join as join6, relative as relative2 } from "node:path";
+import { basename as basename2, dirname as dirname4, isAbsolute, join as join7, relative as relative2 } from "node:path";
 var HUB_MCP = /^mcp__(?:plugin_crew_)?hub__/;
 function real(p) {
   try {
     return realpathSync2(p);
   } catch {
     try {
-      return join6(realpathSync2(dirname4(p)), basename2(p));
+      return join7(realpathSync2(dirname4(p)), basename2(p));
     } catch {
       return p;
     }
@@ -8858,10 +8912,11 @@ function real(p) {
 var CREW_CLI = /\bcrew\.mjs\b/;
 var EDITS = { Edit: "file_path", Write: "file_path", MultiEdit: "file_path", NotebookEdit: "notebook_path" };
 var WRITERS = /^(rm|mv|cp|ln|chmod|chown|truncate|tee|install|touch|mkdir)$/;
+var OPERAND_OF = /^(ls|cat|less|head|tail|wc|cmp|diff|git|grep|egrep|rg|sed|awk|stat|file|find|du|test|\[|cp|mv|rm|ln|chmod|touch|readlink|realpath|shasum|sha1sum|sha256sum|md5|md5sum|echo|printf)$/;
 function agentRole(root, agentType) {
   if (!/^[\w-]+$/.test(agentType)) return null;
   try {
-    return Doc.parse(readFileSync4(join6(root, ".claude", "agents", `${agentType}.md`), "utf8")).get("crew-role");
+    return Doc.parse(readFileSync4(join7(root, ".claude", "agents", `${agentType}.md`), "utf8")).get("crew-role");
   } catch {
     return null;
   }
@@ -8869,6 +8924,11 @@ function agentRole(root, agentType) {
 var patternRe = (p) => new RegExp(`^${p.trim().replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*").replace(/\?/g, ".")}$`);
 var segments = (cmd) => cmd.split(/&&|\|\||;|\|/).map((c) => c.trim()).filter(Boolean);
 var words2 = (cmd) => cmd.split(/[\s"'=]+/).map((w) => w.replace(/^>+/, "").replace(/^\.\//, "")).filter(Boolean);
+var RUNNER = /\$\(|`|<\(|-exec|xargs|system|\b(node|bun|deno|sh|bash|zsh|eval|exec)\b/;
+function runsHub(seg) {
+  const head = seg.trim().split(/\s+/).find((w) => !/^\w+=/.test(w)) ?? "";
+  return !OPERAND_OF.test(basename2(head)) || RUNNER.test(seg);
+}
 function hubCommand(seg) {
   const w = seg.split(/\s+/);
   let i = w.findIndex((x) => CREW_CLI.test(x));
@@ -8926,7 +8986,8 @@ function decide(store, h) {
     const claimed = [...cmd.matchAll(/--as[=\s]+(\S+)/g)].map((m) => m[1]);
     if (claimed.some((c) => c !== role)) return { deny: `you are the ${role} agent; don't pass --as for another role` };
     if (/--run-id\b|\bCREW_(ROLE|RUN|ACTOR|TEAM)=/.test(cmd)) return { deny: "the guard sets your identity; don't pass --run-id or CREW_* variables" };
-    return { input: { ...input, command: cmd.replace(/(\bcrew\.mjs)(?=["'\s]|$)/g, `$1 --as ${role} --run-id ${run2}`) } };
+    const command = cmd.split(/(&&|\|\||;|\||&|\n)/).map((part, i) => i % 2 || !runsHub(part) ? part : part.replace(/(\bcrew\.mjs)(?=["'\s]|$)/g, `$1 --as ${role} --run-id ${run2}`)).join("");
+    return command === cmd ? null : { input: { ...input, command } };
   }
   if (HUB_MCP.test(h.tool_name)) {
     if (input.as !== void 0 && input.as !== role) return { deny: `you are the ${role} agent; don't set as for another role` };
@@ -8951,7 +9012,7 @@ function guard(store) {
 }
 
 // src/hub/commands/work/workflow.ts
-import { join as join12 } from "node:path";
+import { join as join13 } from "node:path";
 
 // src/hub/core/work/gates.ts
 function triageProblems(item) {
@@ -9015,20 +9076,20 @@ function itemProblems(store, plan) {
 }
 
 // src/hub/commands/views/checks.ts
-import { join as join9 } from "node:path";
+import { join as join10 } from "node:path";
 
 // src/hub/commands/views/legacy.ts
-import { isAbsolute as isAbsolute2, join as join7, relative as relative3 } from "node:path";
+import { isAbsolute as isAbsolute2, join as join8, relative as relative3 } from "node:path";
 var LEGACY = ["check_secrets", "check_structure", "check_design", "format_on_edit", "track_plan_draft"];
 var REFRESH = "`/crew:guidelines --refresh` moves crew's hooks and settings to the .mjs scripts and removes the .py once nothing calls it";
 function legacyHints(store) {
   const { ws } = store;
-  const at = (...p) => join7(ws.root, ...p);
+  const at = (...p) => join8(ws.root, ...p);
   const hints = [];
   const leftovers = LEGACY.filter((n) => ws.isFile(at(".crew", "bin", `${n}.py`)));
   if (leftovers.length) hints.push(`.crew/bin/ still has the Python scripts ${leftovers.map((n) => `${n}.py`).join(", ")} \u2014 ${REFRESH}`);
   const hookDirs = [git(["rev-parse", "--git-path", "hooks"])?.trim(), git(["config", "core.hooksPath"])?.trim()].filter((d) => !!d).map((d) => isAbsolute2(d) ? d : at(d));
-  const inDir = (dir) => ws.list(dir).filter((f) => !f.endsWith(".sample")).map((f) => relative3(ws.root, join7(dir, f)));
+  const inDir = (dir) => ws.list(dir).filter((f) => !f.endsWith(".sample")).map((f) => relative3(ws.root, join8(dir, f)));
   const files2 = [.../* @__PURE__ */ new Set([
     ...inDir(at(".githooks")),
     ...hookDirs.flatMap(inDir),
@@ -9042,7 +9103,7 @@ function legacyHints(store) {
     ...inDir(at(".husky"))
   ])];
   for (const file of files2) {
-    const text = ws.read(join7(ws.root, file));
+    const text = ws.read(join8(ws.root, file));
     const calls = text ? LEGACY.filter((n) => text.includes(`.crew/bin/${n}.py`)) : [];
     if (calls.length) hints.push(`${file} still runs ${calls.map((n) => `.crew/bin/${n}.py`).join(", ")} \u2014 use node .crew/bin/<name>.mjs (${REFRESH})`);
   }
@@ -9053,14 +9114,14 @@ function legacyHints(store) {
 }
 
 // src/hub/commands/team/agents.ts
-import { join as join8 } from "node:path";
+import { join as join9 } from "node:path";
 var HUMAN = "executive";
 var PLAIN = /^[\w-]+$/;
-var agentsDir = (store) => join8(store.ws.root, ".claude", "agents");
-var agentFile = (store, role) => join8(agentsDir(store), `crew-${role}.md`);
+var agentsDir = (store) => join9(store.ws.root, ".claude", "agents");
+var agentFile = (store, role) => join9(agentsDir(store), `crew-${role}.md`);
 function template(store, name) {
-  for (const d of [join8(store.dir, "templates", "agents"), join8(SKILL_DIR, "agents")]) {
-    const text = store.ws.read(join8(d, `${name}.md`));
+  for (const d of [join9(store.dir, "templates", "agents"), join9(SKILL_DIR, "agents")]) {
+    const text = store.ws.read(join9(d, `${name}.md`));
     if (text !== null) return text;
   }
   return fail(`Agent template ${name}.md not found. Re-run \`crew.mjs init\` from the plugin.`);
@@ -9100,8 +9161,8 @@ var agentRoles = (store) => resolvePolicy(store.ws.root, store.dir).roles.filter
 function rendered(store) {
   const out = /* @__PURE__ */ new Map();
   for (const name of store.ws.list(agentsDir(store)).filter((n) => /^crew-.*\.md$/.test(n))) {
-    const role = Doc.parse(store.ws.read(join8(agentsDir(store), name)) ?? "").get("crew-role");
-    if (role) out.set(join8(agentsDir(store), name), role);
+    const role = Doc.parse(store.ws.read(join9(agentsDir(store), name)) ?? "").get("crew-role");
+    if (role) out.set(join9(agentsDir(store), name), role);
   }
   return out;
 }
@@ -9247,7 +9308,7 @@ var valid = (flow, st) => st !== null && Object.hasOwn(flow, st);
 var up2 = (s) => (s ?? "").toUpperCase();
 function findings(store) {
   const s = new Snapshot(store), f = { errors: [], hints: [] };
-  for (const rule of [idea, plans, overlaps, items, goals, ledger, knowledge, hygiene]) rule(s, f);
+  for (const rule of [idea, plans, lostPlans, overlaps, items, goals, ledger, knowledge, hygiene]) rule(s, f);
   const p = policyFindings(store);
   return { errors: [...f.errors, ...p.errors], hints: [...f.hints, ...p.hints, ...agentHints(store), ...livenessHints(store)] };
 }
@@ -9299,6 +9360,15 @@ function plans(s, f) {
     if ((ACTIVE.has(st ?? "") || st === "ready") && !onFocus(p, s.items, s.focus)) {
       f.hints.push(`${pid}: ${st} but does not serve the focus goal ${s.focus} (only bugs and chores may run off focus)`);
     }
+  }
+}
+function lostPlans(s, f) {
+  const seen = /* @__PURE__ */ new Set();
+  for (const b of planBranches()) {
+    const pid = /^(?:origin\/)?plan\/(P-\d+)/.exec(b)?.[1];
+    if (!pid || seen.has(pid) || s.allPlans.has(pid) || s.store.planWorktrees().has(pid)) continue;
+    seen.add(pid);
+    f.hints.push(`${pid}: branch ${b} has no plan file and no worktree \u2014 its worktree was removed before Release committed it, so the uncommitted work is gone; recover what you can, then delete the branch`);
   }
 }
 function overlaps(s, f) {
@@ -9399,14 +9469,14 @@ function hygiene(s, f) {
   if (ahead.length > MAX_WRITTEN_AHEAD) {
     f.hints.push(`${ahead.length} plans written ahead of the work (> ${MAX_WRITTEN_AHEAD}) \u2014 keep later work as backlog items so plans don't go stale`);
   }
-  const leftovers = s.store.ws.list(join9(s.store.dir, "drafts")).filter((n) => n.endsWith(".md"));
+  const leftovers = s.store.ws.list(join10(s.store.dir, "drafts")).filter((n) => n.endsWith(".md"));
   if (leftovers.length) {
     f.hints.push(`unconverted drafts in .crew/drafts/: ${leftovers.join(", ")} \u2014 create the document from them or delete`);
   }
-  if (s.store.ws.isDir(join9(s.store.ws.root, ".project"))) {
+  if (s.store.ws.isDir(join10(s.store.ws.root, ".project"))) {
     f.hints.push("a .project/ directory from project-kit is still here \u2014 `crew.mjs migrate` moves it into .crew/");
   }
-  if (!s.store.ws.read(join9(s.store.ws.root, ".githooks", "post-commit"))?.includes("graphify")) {
+  if (!s.store.ws.read(join10(s.store.ws.root, ".githooks", "post-commit"))?.includes("graphify")) {
     f.hints.push("code graph not set up (no graphify hook in .githooks/post-commit) \u2014 `/crew:codemap` installs and wires it");
   }
   f.hints.push(...legacyHints(s.store));
@@ -9444,7 +9514,7 @@ function goalProblems(store, goal) {
 
 // src/hub/commands/work/planning.ts
 import { readFileSync as readFileSync5 } from "node:fs";
-import { join as join11, resolve as resolve5 } from "node:path";
+import { join as join12, relative as relative4, resolve as resolve5 } from "node:path";
 
 // src/hub/commands/work/backlog.ts
 function createItem(store, prefix, title, body2, fields) {
@@ -9554,7 +9624,7 @@ Slice of ${goal.id} (${goal.get("title")}): ${cand}
 }
 
 // src/hub/commands/views/export.ts
-import { join as join10, resolve as resolve4 } from "node:path";
+import { join as join11, resolve as resolve4 } from "node:path";
 
 // src/hub/commands/views/graph.ts
 import { basename as basename3 } from "node:path";
@@ -9710,14 +9780,14 @@ function embed(graph) {
   return JSON.stringify(graph).replace(/</g, "\\u003c");
 }
 function renderHtmlShell(store) {
-  const shell = store.ws.read(join10(SCRIPT_DIR, UI_FILE));
+  const shell = store.ws.read(join11(SCRIPT_DIR, UI_FILE));
   if (shell === null || !shell.includes(DATA_SLOT)) {
     fail(`The UI bundle (${UI_FILE}) is missing next to crew.mjs. Re-run \`crew.mjs init\` from the plugin.`);
   }
   return shell;
 }
 function renderStudioShell(store) {
-  const shell = store.ws.read(join10(SCRIPT_DIR, STUDIO_FILE));
+  const shell = store.ws.read(join11(SCRIPT_DIR, STUDIO_FILE));
   if (shell === null || !shell.includes(STUDIO_SLOT)) {
     fail(`The design studio (${STUDIO_FILE}) is missing next to crew.mjs. Re-run \`crew.mjs init\` from the plugin.`);
   }
@@ -9735,39 +9805,39 @@ function exportGraph(store, format, out) {
     store.ws.write(resolve4(out), text);
     return store.say(`Wrote ${store.rel(resolve4(out))}`);
   }
-  const path = out ? resolve4(out) : join10(store.dir, "view", "index.html");
-  if (!out) store.ws.write(join10(store.dir, "view", ".gitignore"), "# generated by `crew.mjs export`\n*\n");
+  const path = out ? resolve4(out) : join11(store.dir, "view", "index.html");
+  if (!out) store.ws.write(join11(store.dir, "view", ".gitignore"), "# generated by `crew.mjs export`\n*\n");
   store.ws.write(path, renderHtml(store, graph));
   store.say(`Wrote ${store.rel(path)} \u2014 open it in a browser (it works offline; re-run export to refresh)`);
 }
 
 // src/hub/commands/work/planning.ts
 function init(store) {
-  for (const d of [...Object.values(store.dirs), store.knowledgeDir, join11(store.dir, "drafts")]) {
-    const keep = join11(d, ".gitkeep");
+  for (const d of [...Object.values(store.dirs), store.knowledgeDir, join12(store.dir, "drafts")]) {
+    const keep = join12(d, ".gitkeep");
     if (!store.ws.isFile(keep)) store.ws.write(keep, "");
   }
   vendor(store);
-  const readme = join11(store.dir, "README.md");
-  const model = store.ws.read(join11(SKILL_DIR, "references", "model.md"));
+  const readme = join12(store.dir, "README.md");
+  const model = store.ws.read(join12(SKILL_DIR, "references", "model.md"));
   if (!store.ws.isFile(readme) && model !== null) store.ws.write(readme, model);
   store.say(`Initialized ${store.rel(store.dir)}/`);
 }
 function vendor(store) {
-  const bin = join11(store.dir, "bin");
+  const bin = join12(store.dir, "bin");
   if (resolve5(SCRIPT_DIR) === resolve5(bin)) return;
-  store.ws.write(join11(bin, "crew.mjs"), readFileSync5(SCRIPT_FILE, "utf8"), 493);
-  const ui = store.ws.read(join11(SCRIPT_DIR, UI_FILE));
-  if (ui !== null) store.ws.write(join11(bin, UI_FILE), ui);
-  const studio = store.ws.read(join11(SCRIPT_DIR, STUDIO_FILE));
-  if (studio !== null) store.ws.write(join11(bin, STUDIO_FILE), studio);
-  const templates = join11(store.dir, "templates");
-  for (const name of [...TEMPLATE_NAMES]) store.ws.write(join11(templates, name), store.ws.read(join11(SKILL_DIR, "templates", name)));
-  for (const name of store.ws.list(join11(SKILL_DIR, "agents"))) {
-    store.ws.write(join11(templates, "agents", name), store.ws.read(join11(SKILL_DIR, "agents", name)));
+  store.ws.write(join12(bin, "crew.mjs"), readFileSync5(SCRIPT_FILE, "utf8"), 493);
+  const ui = store.ws.read(join12(SCRIPT_DIR, UI_FILE));
+  if (ui !== null) store.ws.write(join12(bin, UI_FILE), ui);
+  const studio = store.ws.read(join12(SCRIPT_DIR, STUDIO_FILE));
+  if (studio !== null) store.ws.write(join12(bin, STUDIO_FILE), studio);
+  const templates = join12(store.dir, "templates");
+  for (const name of [...TEMPLATE_NAMES]) store.ws.write(join12(templates, name), store.ws.read(join12(SKILL_DIR, "templates", name)));
+  for (const name of store.ws.list(join12(SKILL_DIR, "agents"))) {
+    store.ws.write(join12(templates, "agents", name), store.ws.read(join12(SKILL_DIR, "agents", name)));
   }
-  const guide = store.ws.read(join11(SKILL_DIR, "references", "writing-guide.md"));
-  if (guide !== null) store.ws.write(join11(templates, "writing-guide.md"), guide);
+  const guide = store.ws.read(join12(SKILL_DIR, "references", "writing-guide.md"));
+  if (guide !== null) store.ws.write(join12(templates, "writing-guide.md"), guide);
 }
 function requireSections(doc, kind) {
   const missing = doc.missing(REQUIRED_ON_CREATE[kind]);
@@ -9803,7 +9873,7 @@ function newGoal(store, title, draftPath, priority, keep = false) {
   const eid = store.nextId("G", "goal");
   const doc = store.build("goal.md", draft, { id: eid, title, priority: Store.checkPriority(priority) || "P2" });
   requireSections(doc, "goal");
-  store.writeNew(doc, join11(store.dirs.goal, `${eid}-${slugify(title)}.md`));
+  store.writeNew(doc, join12(store.dirs.goal, `${eid}-${slugify(title)}.md`));
   breakdownToItems(store, doc);
   store.consume(draftFile, keep);
 }
@@ -9832,15 +9902,16 @@ function newPlan(store, title, draftPath, o = {}) {
   });
   requireSections(doc, "plan");
   const wt = shared ? openPlanWorktree(store, pid, branch) : null;
-  store.writeNew(doc, join11(wt ? join11(wt, store.rel(store.dirs.plan)) : store.dirs.plan, `${pid}-${slug}.md`));
+  store.writeNew(doc, join12(wt ? join12(wt, store.rel(store.dirs.plan)) : store.dirs.plan, `${pid}-${slug}.md`));
   const moved = /* @__PURE__ */ new Set();
   for (const i of linked) {
     const item = items2.get(i);
     item.set("plan", pid);
-    if (wt && item.path?.startsWith(store.dir)) {
-      const f = store.rel(item.path);
-      restore(store, f);
-      item.path = join11(wt, f);
+    const from = !wt || !item.path ? null : item.path.startsWith(store.dir) ? store.ws.root : [...store.planWorktrees().values()].find((w) => w !== wt && item.path.startsWith(`${w}/`)) ?? null;
+    if (wt && from) {
+      const f = relative4(from, item.path);
+      restore(store, f, from);
+      item.path = join12(wt, f);
       moved.add(f);
     }
     item.save();
@@ -9852,14 +9923,14 @@ function newPlan(store, title, draftPath, o = {}) {
 }
 function openPlanWorktree(store, pid, branch) {
   const main2 = worktrees()[0]?.path ?? store.ws.root;
-  const path = join11(main2, ".claude", "worktrees", branch.replace(/^plan\//, ""));
+  const path = join12(main2, ".claude", "worktrees", branch.replace(/^plan\//, ""));
   const exists = planBranches().includes(branch);
   git(["worktree", "add", "-q", ...exists ? [path, branch] : ["-b", branch, path, store.baseBranch()]], true);
   store.ws.onAbort(() => {
     git(["worktree", "remove", "--force", path]);
     if (!exists) git(["branch", "-D", branch]);
   });
-  const common = commonDir(store.ws.root), exclude = common ? join11(common, "info", "exclude") : null;
+  const common = commonDir(store.ws.root), exclude = common ? join12(common, "info", "exclude") : null;
   const ignored = exclude ? store.ws.read(exclude) ?? "" : null;
   if (exclude && ignored !== null && !/^\.claude\/worktrees\/?$/m.test(ignored)) {
     store.ws.write(exclude, `${ignored}${ignored && !ignored.endsWith("\n") ? "\n" : ""}.claude/worktrees/
@@ -9870,15 +9941,15 @@ function openPlanWorktree(store, pid, branch) {
   return path;
 }
 function carryHub(store, wt, done) {
-  const carried = [store.dirs.item, store.dirs.goal, store.knowledgeDir].map((d) => `${store.rel(d)}/`);
+  const carried = [...[store.dirs.item, store.dirs.goal, store.knowledgeDir].map((d) => `${store.rel(d)}/`), store.rel(store.ideaPath)];
   for (const f of dirty(store.ws.root, store.rel(store.dir))) {
     if (done.has(f) || !carried.some((d) => f.startsWith(d))) continue;
-    store.ws.write(join11(wt, f), store.ws.read(join11(store.ws.root, f)) ?? "");
+    store.ws.write(join12(wt, f), store.ws.read(join12(store.ws.root, f)) ?? "");
     restore(store, f);
   }
 }
-function restore(store, f) {
-  const head = show("HEAD", f), path = join11(store.ws.root, f);
+function restore(store, f, root = store.ws.root) {
+  const head = git(["-C", root, "show", `HEAD:${f}`]), path = join12(root, f);
   if (head === null) store.ws.remove(path);
   else store.ws.write(path, head);
 }
@@ -10102,7 +10173,7 @@ function start(store, planId, force = false, approvedBy) {
       if (!existed && doc.path?.startsWith(store.dir)) {
         const f = store.rel(doc.path);
         restore(store, f);
-        doc.path = join12(home, f);
+        doc.path = join13(home, f);
         doc.save();
       }
     }
@@ -10479,7 +10550,7 @@ function checkpoint(store, id, o = {}) {
   store.require();
   const plan = planFromBranch(store, id);
   if (!plan) {
-    if (o.auto) return 0;
+    if (o.auto) return autoWorktrees(store, o);
     fail("Not on a plan branch: name the plan (`checkpoint P-###`).");
   }
   const home = plan.id.startsWith("P-") && store.planHome(plan.id) || store.ws.root;
@@ -10516,6 +10587,11 @@ function checkpoint(store, id, o = {}) {
     store.say(`${plan.id}: checkpoint at ${step}${snap.sha ? ` (${snap.sha.slice(0, 7)})` : ""}` + verify.map((v) => ` \u2014 ${v.ok ? "\u2713" : "\u2717"} ${v.cmd}`).join(""));
   }
   return verify.some((v) => !v.ok) ? 1 : 0;
+}
+function autoWorktrees(store, o) {
+  const plans2 = store.plans();
+  for (const pid of store.planWorktrees().keys()) if (plans2.get(pid)?.get("status") === "in-progress") checkpoint(store, pid, o);
+  return 0;
 }
 function parseAc(spec, n) {
   if (!spec) return [];
@@ -10669,7 +10745,12 @@ function mergeOrder(store) {
   const branches = new Set(planBranches());
   const status2 = (p) => moved.get(p.id) ?? p.get("status") ?? "";
   const worktrees2 = new Map([...store.settings().plan_worktrees ? store.planWorktrees() : []].filter(([, wt]) => dirty(wt, ".").length));
-  const isMerged = (p) => !worktrees2.has(p.id) && git(["merge-base", "--is-ancestor", p.get("branch"), base]) !== null;
+  const merged = /* @__PURE__ */ new Map();
+  const isMerged = (p) => {
+    const b = p.get("branch");
+    if (!merged.has(p.id)) merged.set(p.id, !worktrees2.has(p.id) && (git(["merge-base", "--is-ancestor", b, base]) !== null || squashMerge(b, base, p.id) !== null));
+    return merged.get(p.id);
+  };
   const out = { base, merge: [], waiting: [], merged: [] };
   const done = [...plans2.values()].filter((p) => status2(p) === "done" && branches.has(p.get("branch") ?? "")).sort(byKey((p) => [doneAt.get(p.id) ?? p.get("completed") ?? "", p.id]));
   const pending = /* @__PURE__ */ new Set();
@@ -10920,8 +11001,8 @@ var Context = class {
 };
 
 // src/hub/commands/work/migrate.ts
-import { existsSync as existsSync5, readdirSync as readdirSync3, statSync as statSync4 } from "node:fs";
-import { join as join13 } from "node:path";
+import { existsSync as existsSync5, readdirSync as readdirSync3, statSync as statSync5 } from "node:fs";
+import { join as join14 } from "node:path";
 var DROPPED = /^(bin|templates|view)\/|^(ROADMAP|BACKLOG|STATUS|README)\.md$/;
 var ARCHIVED = /^(milestones|sprints|releases)\/|^(project-plan|raid)\.md$/;
 var DOCS = { epics: "goals", items: "items", plans: "plans" };
@@ -10938,7 +11019,7 @@ var OLD_REFS = [
   ".github/workflows/ci.yml"
 ];
 function walk(dir, prefix = "") {
-  return readdirSync3(dir, { withFileTypes: true }).flatMap((e) => e.isDirectory() ? walk(join13(dir, e.name), `${prefix}${e.name}/`) : [`${prefix}${e.name}`]);
+  return readdirSync3(dir, { withFileTypes: true }).flatMap((e) => e.isDirectory() ? walk(join14(dir, e.name), `${prefix}${e.name}/`) : [`${prefix}${e.name}`]);
 }
 function renamed(text) {
   return text.replace(/\bEP-(\d+)/g, "G-$1").replace(/\.project\//g, ".crew/").replace(/\btracker\.mjs\b/g, "crew.mjs").replace(/project-kit:tracker/g, "crew:hub");
@@ -10949,11 +11030,11 @@ function leanDoc(text, kind) {
   return t;
 }
 function migrate(store) {
-  const root = store.ws.root, old = join13(root, ".project");
-  if (!existsSync5(old) || !statSync4(old).isDirectory()) fail("No .project/ directory to migrate.");
+  const root = store.ws.root, old = join14(root, ".project");
+  if (!existsSync5(old) || !statSync5(old).isDirectory()) fail("No .project/ directory to migrate.");
   if (existsSync5(store.dir)) fail(`${store.rel(store.dir)}/ already exists \u2014 move it aside first; nothing was changed.`);
   const files2 = walk(old);
-  const read = (rel) => store.ws.read(join13(old, rel)) ?? "";
+  const read = (rel) => store.ws.read(join14(old, rel)) ?? "";
   const exitCriteria = milestoneCriteria(files2.filter((f) => f.startsWith("milestones/")).map(read));
   let counts = { docs: 0, archived: 0, knowledge: 0, issues: 0, drafted: 0 };
   const targets = /* @__PURE__ */ new Map();
@@ -10967,12 +11048,12 @@ function migrate(store) {
     const [dir, name] = [rel.split("/")[0], rel.split("/").pop()];
     const topLevelDoc = DOCS[dir] && name.endsWith(".md") && rel.split("/").length === 2;
     if (!TEXT.test(rel)) {
-      const to = join13(store.dir, ARCHIVED.test(rel) ? "archive" : "", rel);
+      const to = join14(store.dir, ARCHIVED.test(rel) ? "archive" : "", rel);
       put(rel, to);
-      store.ws.copy(join13(old, rel), to);
+      store.ws.copy(join14(old, rel), to);
     } else if (ARCHIVED.test(rel)) {
-      put(rel, join13(store.dir, "archive", rel));
-      store.ws.write(join13(store.dir, "archive", rel), renamed(read(rel)));
+      put(rel, join14(store.dir, "archive", rel));
+      store.ws.write(join14(store.dir, "archive", rel), renamed(read(rel)));
       counts.archived++;
     } else if (topLevelDoc) {
       const doc = Doc.parse(leanDoc(read(rel), dir));
@@ -10982,21 +11063,21 @@ function migrate(store) {
         doc.appendLog("status ready \u2192 draft \u2014 migrated to crew: declare `touches:` before moving it back to ready");
         counts.drafted++;
       }
-      put(rel, join13(store.dir, DOCS[dir], name.replace(/^EP-/, "G-")));
-      store.ws.write(join13(store.dir, DOCS[dir], name.replace(/^EP-/, "G-")), `${doc.text.trimEnd()}
+      put(rel, join14(store.dir, DOCS[dir], name.replace(/^EP-/, "G-")));
+      store.ws.write(join14(store.dir, DOCS[dir], name.replace(/^EP-/, "G-")), `${doc.text.trimEnd()}
 `);
       counts.docs++;
     } else if (rel === "config.yaml") {
-      put(rel, join13(store.dir, rel));
-      store.ws.write(join13(store.dir, rel), renamed(read(rel)).replace(/^[ \t]+tracker:.*\n/m, "").replace(/^modules:[ \t]*\n(?![ \t])/m, ""));
+      put(rel, join14(store.dir, rel));
+      store.ws.write(join14(store.dir, rel), renamed(read(rel)).replace(/^[ \t]+tracker:.*\n/m, "").replace(/^modules:[ \t]*\n(?![ \t])/m, ""));
     } else {
-      const to = join13(store.dir, rel.replace(/^epics\//, "goals/"));
+      const to = join14(store.dir, rel.replace(/^epics\//, "goals/"));
       put(rel, to);
       store.ws.write(to, renamed(read(rel)));
     }
   }
   if (files2.includes("project-plan.md")) {
-    const config = join13(store.dir, "config.yaml");
+    const config = join14(store.dir, "config.yaml");
     store.ws.write(config, hubSettings(store.ws.read(config) ?? "", read("project-plan.md")));
   }
   store.ws.remove(old);
@@ -11011,7 +11092,7 @@ function migrate(store) {
   if (branches.length) {
     store.say(`note: plan branches still hold .project/ (${branches.join(", ")}) \u2014 finish them on the old layout, or merge this commit into each and run \`crew.mjs migrate\` there too; until then their live status is not visible from main`);
   }
-  const stale = OLD_REFS.filter((f) => /\.project\/|tracker\.mjs/.test(store.ws.read(join13(root, f)) ?? ""));
+  const stale = OLD_REFS.filter((f) => /\.project\/|tracker\.mjs/.test(store.ws.read(join14(root, f)) ?? ""));
   if (stale.length) {
     store.say(`next: these still mention .project/ or tracker.mjs \u2014 re-render them (/crew:guidelines --refresh, /crew:git-setup): ${stale.join(", ")}`);
   }
@@ -11044,9 +11125,9 @@ function raid(store, text) {
       const title = row.decision || row.assumption || row.risk || Object.values(row).find((v) => v && !/^[A-Z]+-?\d+$/.test(v)) || "";
       if (!title) continue;
       const fields = Object.entries(row).filter(([, v]) => v).map(([k, v]) => `- **${k}:** ${v}`).join("\n");
-      const id = knowledgeId(title, (k) => store.ws.isFile(join13(store.knowledgeDir, `${k}.md`)));
+      const id = knowledgeId(title, (k) => store.ws.isFile(join14(store.knowledgeDir, `${k}.md`)));
       const level = (v) => (v ?? "").trim().slice(0, 1).toUpperCase();
-      store.ws.write(join13(store.knowledgeDir, `${id}.md`), entryText({
+      store.ws.write(join14(store.knowledgeDir, `${id}.md`), entryText({
         id,
         type,
         title,
@@ -11079,17 +11160,17 @@ ${details}
 // src/hub/commands/views/design.ts
 var import_yaml3 = __toESM(require_dist(), 1);
 import { existsSync as existsSync6, readFileSync as readFileSync7 } from "node:fs";
-import { dirname as dirname5, join as join14 } from "node:path";
+import { dirname as dirname5, join as join15 } from "node:path";
 var HANDOFF_KINDS = ["finalise", "locked", "revision", "screen-change", "screens-done", "screens-skipped"];
 var STAGES = ["palette", "directions", "tune", "finalise", "screens", "done"];
 var STATE_KEYS = ["stage", "shortlist", "variants", "current", "reviews"];
 var REQUIRED_COLORS = ["background", "foreground", "primary", "primary-foreground"];
 var FRONT = /^---\n([\s\S]*?)\n---\n/;
 function designPath(store) {
-  const cfg = store.ws.read(join14(store.dir, "config.yaml")) ?? "";
-  return join14(store.ws.root, yamlBlock(cfg, "design").file ?? "docs/design/DESIGN.md");
+  const cfg = store.ws.read(join15(store.dir, "config.yaml")) ?? "";
+  return join15(store.ws.root, yamlBlock(cfg, "design").file ?? "docs/design/DESIGN.md");
 }
-var studioPath = (store) => join14(dirname5(designPath(store)), "studio.json");
+var studioPath = (store) => join15(dirname5(designPath(store)), "studio.json");
 function readDesign(store) {
   const path = designPath(store);
   const text = store.ws.read(path);
@@ -11273,7 +11354,7 @@ import { spawn } from "node:child_process";
 import { randomBytes as randomBytes3 } from "node:crypto";
 import { existsSync as existsSync7, watch } from "node:fs";
 import { createServer } from "node:http";
-import { dirname as dirname6, join as join15 } from "node:path";
+import { dirname as dirname6, join as join16 } from "node:path";
 var str = (b, k) => typeof b[k] === "string" && b[k] ? b[k] : void 0;
 var ACTIONS2 = {
   move: (s, b) => {
@@ -11369,7 +11450,7 @@ function serve(store, o) {
       for (const c of clients) c.write("event: change\ndata: {}\n\n");
     }, 150);
   }
-  const watchers = [store.dir, dirname6(designPath(store)), join15(store.ws.root, ".git", "refs"), join15(store.ws.root, ".git", "HEAD")].filter((p) => existsSync7(p)).map((p) => watch(p, { recursive: !p.endsWith("HEAD") }, (_, file) => {
+  const watchers = [store.dir, dirname6(designPath(store)), join16(store.ws.root, ".git", "refs"), join16(store.ws.root, ".git", "HEAD")].filter((p) => existsSync7(p)).map((p) => watch(p, { recursive: !p.endsWith("HEAD") }, (_, file) => {
     if (!String(file ?? "").startsWith("view")) notify2();
   }));
   return new Promise((resolve6, reject) => {

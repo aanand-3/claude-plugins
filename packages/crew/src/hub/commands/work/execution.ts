@@ -106,7 +106,7 @@ export function checkpoint(store: Store, id: string | undefined, o: CheckpointOp
   store.require();
   const plan = planFromBranch(store, id);
   if (!plan) {
-    if (o.auto) return 0; // the hook fires on every branch; only plan branches have execution state
+    if (o.auto) return autoWorktrees(store, o); // the hook fires on every branch; only plans have execution state
     fail("Not on a plan branch: name the plan (`checkpoint P-###`).");
   }
   const home = (plan.id.startsWith("P-") && store.planHome(plan.id)) || store.ws.root; // checks run where the plan's work is
@@ -137,6 +137,14 @@ export function checkpoint(store: Store, id: string | undefined, o: CheckpointOp
       + verify.map((v) => ` — ${v.ok ? "✓" : "✗"} ${v.cmd}`).join(""));
   }
   return verify.some((v) => !v.ok) ? 1 : 0;
+}
+
+/** The Stop/PreCompact hook runs from the main checkout, not from a plan's shared worktree: checkpoint each in-progress plan
+ * that has one (an unchanged tree is skipped, as always). */
+function autoWorktrees(store: Store, o: CheckpointOptions): number {
+  const plans = store.plans();
+  for (const pid of store.planWorktrees().keys()) if (plans.get(pid)?.get("status") === "in-progress") checkpoint(store, pid, o);
+  return 0;
 }
 
 function parseAc(spec: string | undefined, n: number): number[] {

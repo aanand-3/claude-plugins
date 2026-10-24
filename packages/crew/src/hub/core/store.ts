@@ -10,6 +10,7 @@ import { playbook, type Resolved, resolvePolicy } from "./team/policy.js";
 import { CLOSED, DEFAULT_SETTINGS, DIRS, type Kind, PRIORITIES } from "./work/model.js";
 import { fail, kindOf, stripComments, today } from "./text.js";
 import { Workspace } from "./workspace.js";
+import { WorktreeCopies } from "./work/worktrees.js";
 
 /** dist/ in the plugin, or .crew/bin/ when running the vendored copy. */
 export const SCRIPT_FILE = fileURLToPath(import.meta.url);
@@ -47,6 +48,7 @@ export class Store {
   private ledgerCache: Ledger | null = null;
   private policyCache: Resolved | null = null;
   private worktreeCache: Map<string, string> | null = null;
+  private readonly copies: WorktreeCopies;
 
   constructor(readonly ws: Workspace) {
     git.useRoot(ws.root);
@@ -54,6 +56,7 @@ export class Store {
     this.dirs = Object.fromEntries(Object.entries(DIRS).map(([k, v]) => [k, join(this.dir, v)])) as Record<DirKind, string>;
     this.ideaPath = join(this.dir, "idea.md");
     this.knowledgeDir = join(this.dir, "knowledge");
+    this.copies = new WorktreeCopies(ws.root, this.rel(this.dir));
   }
 
   static open(root = git.repoRoot()): Store {
@@ -101,7 +104,7 @@ export class Store {
 
   // -- loading
   private attach(doc: Doc): Doc {
-    doc.sink = (path, text) => this.ws.write(path, text);
+    doc.sink = (path, text) => (this.ws.write(path, text), this.copies.forget()); // git sees new uncommitted files
     return doc;
   }
 
@@ -133,6 +136,7 @@ export class Store {
   /** A worktree was added or removed: look again. */
   forgetWorktrees(): void {
     this.worktreeCache = null;
+    this.copies.forget();
   }
 
   /** Where a plan's work is: this checkout when it is on the plan's branch, else the plan's worktree, else null. */
@@ -142,16 +146,12 @@ export class Store {
   }
 
   /** One directory's documents, overlaid with those changed (uncommitted) in plan worktrees — a plan's items, goals and
-   * knowledge live there until it completes. This checkout's copy wins where it changed the same file too. */
+   * knowledge live there until it completes. */
   private overlay(d: string, docs: Docs): Docs {
-    const rel = this.rel(d), mine = new Set(git.dirty(this.ws.root, rel));
-    for (const wt of this.planWorktrees().values()) {
-      for (const f of git.dirty(wt, rel)) {
-        if (!f.endsWith(".md") || f.slice(rel.length + 1).includes("/") || mine.has(f)) continue;
-        const path = join(wt, f), text = this.ws.read(path);
-        const doc = text === null ? null : this.attach(Doc.parse(text, path));
-        if (doc?.id) docs.set(doc.id, doc);
-      }
+    const rel = `${this.rel(d)}/`, inDir = (f: string) => f.startsWith(rel) && f.endsWith(".md") && !f.slice(rel.length).includes("/");
+    for (const path of this.copies.pick(this.planWorktrees().values(), inDir)) {
+      const text = this.ws.read(path), doc = text === null ? null : this.attach(Doc.parse(text, path));
+      if (doc?.id) docs.set(doc.id, doc);
     }
     return docs;
   }
@@ -177,8 +177,9 @@ export class Store {
 
   /** The project's idea (.crew/idea.md), if it has been written. */
   idea(): Doc | null {
-    const text = this.ws.read(this.ideaPath);
-    return text === null ? null : this.attach(Doc.parse(text, this.ideaPath));
+    const rel = this.rel(this.ideaPath), path = this.copies.pick(this.planWorktrees().values(), (f) => f === rel)[0] ?? this.ideaPath; // a new focus travels with a plan
+    const text = this.ws.read(path);
+    return text === null ? null : this.attach(Doc.parse(text, path));
   }
 
   /** The focus goal's ID, as set on the idea (`focus G-###`). */
