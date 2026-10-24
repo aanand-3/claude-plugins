@@ -5,12 +5,12 @@ goal: G-001
 items: CHORE-010
 touches: .crew/plans/P-005-*.md, .crew/plans/P-006-*.md, .crew/plans/P-007-*.md, .crew/plans/P-008-*.md, .crew/plans/P-009-*.md, .crew/plans/P-010-*.md, .crew/plans/P-011-*.md, .crew/plans/P-012-*.md, .crew/items/FEAT-00*.md, .crew/items/FEAT-01*.md, .crew/items/CHORE-00*.md, .claude/settings.json, .crew/bin/track_plan_draft.mjs
 depends_on:
-status: in-review
+status: done
 branch: plan/P-013-import-the-pre-hub-plans-plan-mode-plans
-pr:
+pr: https://github.com/aanand-3/claude-plugins/pull/10
 created: 2026-10-24
 started: 2026-10-24
-completed:
+completed: 2026-10-24
 assignee: developer
 ---
 
@@ -77,6 +77,7 @@ Latest log:
 - 2026-10-24: assigned to the developer role
 - 2026-10-24: status ready → in-progress — branch plan/P-013-import-the-pre-hub-plans-plan-mode-plans
 - 2026-10-24: status in-progress → in-review
+- 2026-10-24: status in-review → done
 
 ## Outcome
 <!-- Filled before review: what shipped, PR link, deviations from plan, follow-ups captured as items, and
