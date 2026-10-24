@@ -5,12 +5,12 @@ goal: G-003
 items: FEAT-022
 touches: packages/crew/src/hub/**, packages/crew/test/**, tests/crew/test_hub.py, plugins/crew/skills/hub/**, plugins/crew/skills/team/SKILL.md, .crew/templates/**, .crew/bin/crew.mjs, .crew/config.yaml, .claude/agents/**, .github/workflows/ci.yml
 depends_on: P-015
-status: in-review
+status: done
 branch: plan/P-004-agent-lifecycle-one-commit-per-plan
-pr:
+pr: https://github.com/aanand-3/claude-plugins/pull/9
 created: 2026-10-24
 started: 2026-10-24
-completed:
+completed: 2026-10-24
 assignee: developer
 ---
 
@@ -142,6 +142,7 @@ Latest log:
 - 2026-10-24: status in-review → in-progress — changes requested: Two correctness bugs, both reproduced in throwaway repos. (1) packages/crew/src/hub/commands/work/release.ts:16-18,29: isMerged() returns false for any plan whose branch is checked out in some worktree, whether or not plan_worktrees is on. store.planWorktrees() matches every worktree on a plan/P-### branch, and that includes Claude Code isolation worktrees in solo mode. Repro: solo mode, merge plan/P-001 into main with --no-ff, then 'git worktree add .claude/worktrees/agent-x plan/P-001-signup'. merge-order goes from 'merged: P-001' to '1. P-001 ... commit everything in .claude/worktrees/agent-x once ... squash-merge'. Dependents also show as waiting (line 29). Fix: apply the worktree rule only when settings().plan_worktrees is on, and treat the worktree as holding uncommitted work only when the branch has no commits past its merge-base or git.dirty(wt) is non-empty. Add a pytest case. (2) packages/crew/src/hub/commands/work/workflow.ts:181-187: in shared mode, start on a plan specced before plan_worktrees whose branch already exists (a takeover, or a branch left from solo work) opens the worktree on the existing branch. It then writes main's stale copy of the plan over the branch's live plan file (doc came from store.find, which is main's copy), so progress logs and ticked tasks are lost. Repro: solo start P-001, log 'LIVE-PROGRESS-NOTE', commit on the branch, release --force, switch to main, turn on plan_worktrees, start P-001: the worktree's plan file has no LIVE-PROGRESS-NOTE. Fix: when the branch existed (openPlanWorktree's exists), keep the branch's copy and do not restore or overwrite. Only move main's copy when the branch is new, and re-read with store.find after forgetWorktrees. Add a pytest case. Non-blocking notes are in the review report.
 - 2026-10-24: review fixes: merge-order counts a plan worktree as unmerged only with plan_worktrees and uncommitted work there; start keeps an existing branch's plan copy and needs the base branch to move a spec; regression tests for both
 - 2026-10-24: status in-progress → in-review
+- 2026-10-24: status in-review → done
 
 ## Outcome
 <!-- Filled before review: what shipped, PR link, deviations from plan, follow-ups captured as items, and
