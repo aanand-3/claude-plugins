@@ -16,8 +16,6 @@ COMPOSE = SKILLS / "guidelines" / "scripts" / "compose_rules.py"
 STRUCTURE = SKILLS / "guidelines" / "scripts" / "check_structure.py"
 FORMAT = SKILLS / "guidelines" / "scripts" / "format_on_edit.py"
 PLAN_DRAFT_HOOK = SKILLS / "guidelines" / "scripts" / "track_plan_draft.py"
-SETUP_GIT = SKILLS / "git-setup" / "scripts" / "setup_git.py"
-SECRETS = SKILLS / "git-setup" / "scripts" / "check_secrets.py"
 INSTALL_GLOBAL = SKILLS / "global-setup" / "scripts" / "install_global.py"
 
 GIT_ENV = {

@@ -90,7 +90,7 @@ In a monorepo, backend and frontend packs only apply under `architecture.backend
 
 ### Guards (enforced on every commit by `.githooks/`)
 - **main protection:** only `.crew/` planning commits are allowed on `main`.
-- **Secrets:** a built-in scanner (`.crew/bin/check_secrets.py`) blocks staged cloud keys, tokens, private keys and `.env` files from day one; gitleaks adds a broader scan in pre-commit and CI after P-001. Mark a known fake with `pk:allow-secret`.
+- **Secrets:** a built-in scanner (`.crew/bin/check_secrets.mjs`) blocks staged cloud keys, tokens, private keys and `.env` files from day one; gitleaks adds a broader scan in pre-commit and CI after P-001. Mark a known fake with `pk:allow-secret`.
 - **Conventional Commits:** the commit message must use a type and scope, e.g. `feat(P-012): …`.
 - **Module size (no god modules):** new or modified source files over `module_max_lines` (default 300 non-blank lines) are reported by the same check and mode; ruff/ESLint add function length, complexity and parameter limits (base pack → *Modules & size*).
 - **Structure:** new files are checked against the high-level layout declared in `.crew/config.yaml → structure:`. `structure_check: warn` (the default) reports drift without blocking, so it can be refactored later; `block` enforces it; `check_structure.py --all --strict` is the CI form once the layout settles. Tests live under allowed entries and are never flagged.

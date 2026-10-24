@@ -8,7 +8,7 @@ export const TIERS = ["project", "playbook-candidate"] as const;
 export const K_ID_RE = /\bK-\d{4}-\d{2}-\d{2}-[a-z0-9-]+\b/g;
 export const RISK_LEVELS = ["H", "M", "L"];
 
-/** High-confidence secret patterns, the same as git-setup's check_secrets.py; `pk:allow-secret` on a line exempts it. */
+/** High-confidence secret patterns, the same as git-setup's check_secrets (src/tools/git-setup/check_secrets.ts); `pk:allow-secret` on a line exempts it. */
 const SECRET_PATTERNS: Record<string, RegExp> = {
   "AWS access key": /\b(AKIA|ASIA)[0-9A-Z]{16}\b/,
   "private key": /-----BEGIN [A-Z ]*PRIVATE KEY-----/,

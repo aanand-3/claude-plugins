@@ -57,7 +57,7 @@ done before the hub existed right after `init`. On start, if the `chore/crew-onb
    - a CHORE item to apply the tooling reference configs (`.crew/templates/tooling/`) where the repo lacks lint, type-check or CI.
    Planning normally happens on main; during onboarding it rides along on the onboard branch and lands with its PR.
 
-6. **Git** — follow the `git-setup` skill. `setup_git.py` never re-inits, never overwrites existing files, and leaves existing hooks alone unless `--take-over-hooks` (ask first; offer to merge the guard lines into the existing hooks instead).
+6. **Git** — follow the `git-setup` skill. `setup_git.mjs` never re-inits, never overwrites existing files, and leaves existing hooks alone unless `--take-over-hooks` (ask first; offer to merge the guard lines into the existing hooks instead).
    - Existing `.gitignore`: only the missing sections are appended. Review them.
    - Commit on the onboard branch: `chore: onboard crew`. The main guard doesn't apply on a branch.
 
