@@ -5,6 +5,8 @@
  * - .gitattributes, .github/pull_request_template.md (if absent)
  * - versioned hooks in .githooks/ + `git config core.hooksPath .githooks`
  *   (an existing hooks setup, e.g. Husky, is left alone unless --take-over-hooks)
+ * - a project set up before the Node port: its hooks move from .crew/bin/check_secrets.py to the .mjs, and the .py
+ *   goes once nothing calls it (tools/legacy.ts)
  *
  * Usage: setup_git.mjs [--root DIR] [--stacks python,node,docker] [--take-over-hooks]
  *        (stacks default: derived from .crew/config.yaml packs)
@@ -14,6 +16,7 @@ import { chmodSync, copyFileSync, existsSync, mkdirSync, readdirSync, readFileSy
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { cli } from "../cli.js";
+import { upgrade } from "../legacy.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ASSETS = join(HERE, "..", "assets");
@@ -100,6 +103,7 @@ function main(): void {
     chmodSync(secretsDst, 0o755);
     console.log("wrote .crew/bin/check_secrets.mjs");
   }
+  for (const line of upgrade(root, ["check_secrets"])) console.log(line); // projects set up before the Node port
 
   const existing = foreignHooks(root);
   if (existing && !args["take-over-hooks"]) {

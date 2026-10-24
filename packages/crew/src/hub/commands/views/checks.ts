@@ -7,6 +7,7 @@ import { ACTIVE, CLOSED, GOAL_FLOW, IDEA_FLOW, ITEM_FLOW, MAX_WRITTEN_AHEAD, PLA
 import * as q from "../../core/work/queries.js";
 import { drift, overlapping } from "../../core/work/footprint.js";
 import { globRe, K_ID_RE, KNOWLEDGE_TYPES, secretsIn } from "../../core/memory/knowledge.js";
+import { legacyHints } from "./legacy.js";
 import { agentHints } from "../team/agents.js";
 import { livenessHints } from "../team/liveness.js";
 import { policyFindings } from "../team/policy.js";
@@ -215,4 +216,5 @@ function hygiene(s: Snapshot, f: Findings): void {
   if (!s.store.ws.read(join(s.store.ws.root, ".githooks", "post-commit"))?.includes("graphify")) {
     f.hints.push("code graph not set up (no graphify hook in .githooks/post-commit) — `/crew:codemap` installs and wires it");
   }
+  f.hints.push(...legacyHints(s.store));
 }

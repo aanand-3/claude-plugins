@@ -51,5 +51,11 @@ Packs are versioned in `${CLAUDE_SKILL_DIR}/stacks/` and copied verbatim; **only
 ## Refresh (`--refresh` or stack changed)
 Re-run step 2 (reports drift and stale packs). Then update `project.md`, and `docs/architecture.md → Repository layout` whenever `structure:` changed. Run `node .crew/bin/check_structure.mjs --all` to confirm the architecture layout has no gaps. Never silently overwrite hand-edited files.
 
+**A project set up before crew went Node-only** (`crew.mjs check` names `.crew/bin/*.py` leftovers or files that still run them):
+1. Run git-setup's script (`node "${CLAUDE_PLUGIN_ROOT}/skills/git-setup/scripts/setup_git.mjs" --root .`) and step 2's `compose_rules.mjs`. They move crew's own hooks and `.claude/settings.json` from `python3 .crew/bin/X.py` to `node .crew/bin/X.mjs` (`UPGRADE`), and remove each `.py` once nothing calls it (`REMOVE`).
+2. For every `KEEP` line, the named file still calls the `.py`. It's either the project's own file (CI, `Makefile`, `.claude/settings.local.json`, another hooks setup) or a call written another way. Show the user the one-line change to `node .crew/bin/X.mjs`, make it on their yes, and re-run step 2 so the `.py` goes.
+3. If `.crew/config.yaml` still has a `modules:` block, delete it: nothing in crew is optional any more.
+4. Run `crew.mjs check` again; none of these hints should be left. Commit `chore: move crew's scripts to Node`.
+
 ## Adding a stack pack (maintainers)
 `stacks/<name>.md` with frontmatter `pack`, `description`, `scope` (`backend` | `frontend` | `any`), `requires`, `paths` (globs relative to the app root; empty = always loaded). Add it to the pack mapping in `discover/references/questions.md`. Packs hold enforceable, reusable rules — never project specifics.
