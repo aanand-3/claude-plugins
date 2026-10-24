@@ -5,11 +5,11 @@ goal:
 items: CHORE-007
 touches: packages/**, .claude/launch.json, README.md, .crew/config.yaml, .crew/knowledge/**, docs/vision.md, plugins/crew/skills/hub/dist/**, .crew/bin/crew.mjs
 depends_on:
-status: ready
+status: in-progress
 branch: plan/P-014-restructure-packages-hub-into-packages
 pr:
 created: 2026-10-24
-started:
+started: 2026-10-24
 completed:
 assignee: developer
 ---
@@ -100,5 +100,6 @@ n/a: internal layout only. The plugin ships `dist/`, which doesn't change. Rollb
 
 - 2026-10-24: status draft → ready
 - 2026-10-24: assigned to the developer role
+- 2026-10-24: status ready → in-progress — branch plan/P-014-restructure-packages-hub-into-packages
 
 ## Outcome
