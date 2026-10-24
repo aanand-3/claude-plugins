@@ -5,7 +5,7 @@ goal:
 items: CHORE-007
 touches: packages/**, .claude/launch.json, README.md, .crew/config.yaml, .crew/knowledge/**, docs/vision.md, plugins/crew/skills/hub/dist/**, .crew/bin/crew.mjs
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-014-restructure-packages-hub-into-packages
 pr:
 created: 2026-10-24
@@ -96,12 +96,27 @@ n/a: internal layout only. The plugin ships `dist/`, which doesn't change. Rollb
 
 ## Handoff
 
+_Generated 2026-10-24 by `crew.mjs handoff` from the ledger._
+
+- P-014: Restructure packages/hub into packages/crew by domain [in-review] tasks 6/6 — claimed by Arpit Anand (main-node-only)
+- last checkpoint 2026-10-24 07:04 at done (a1a1ba7) by Arpit Anand; since then 1 commit(s), 0 uncommitted file(s)
+- ✓ cd packages/crew && npm run typecheck && npx vitest run (49 passed) (AC 2,3,4) (reported)
+- ✓ npm run build: dist differs only in the banner and esbuild module-path comments; no /Users paths (AC 5) (reported)
+- ✓ for s in tests/*/; do (cd $s && env -u CREW_ROLE -u CREW_RUN uvx --with pyyaml pytest -q); done (166 + 3 passed); crew.mjs check: no scope hints (AC 1,6) (reported)
+- evidence: AC1 ✓ (self), AC2 ✓ (self), AC3 ✓ (self), AC4 ✓ (self), AC5 ✓ (self), AC6 ✓ (self)
+
+Latest log:
+- 2026-10-24: assigned to the developer role
+- 2026-10-24: status ready → in-progress — branch plan/P-014-restructure-packages-hub-into-packages
+- 2026-10-24: structure test now walks ui/src/studio/ too and found Preview.tsx at 326 lines (the old list skipped that folder): ComponentSheet and TypeSpecimen moved verbatim to studio/Specimens.tsx; studio.html is byte-identical
+
 ## Progress log
 
 - 2026-10-24: status draft → ready
 - 2026-10-24: assigned to the developer role
 - 2026-10-24: status ready → in-progress — branch plan/P-014-restructure-packages-hub-into-packages
 - 2026-10-24: structure test now walks ui/src/studio/ too and found Preview.tsx at 326 lines (the old list skipped that folder): ComponentSheet and TypeSpecimen moved verbatim to studio/Specimens.tsx; studio.html is byte-identical
+- 2026-10-24: status in-progress → in-review
 
 ## Outcome
 - **What shipped:**
