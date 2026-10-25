@@ -97,5 +97,6 @@ It is the first plan the team builds after Wave 0 (P-026, merged), alone, so eve
 - 2026-10-25: status draft → ready
 - 2026-10-25: assigned to the developer role
 - 2026-10-25: status ready → in-progress — branch plan/P-027-live-agent-activity-in-the-hub
+- 2026-10-25: Architect: touches widened to packages/crew/src/hub/commands/team/policy.ts (policy show limits row) for AC7, answering Q-562bf9.
 
 ## Outcome
