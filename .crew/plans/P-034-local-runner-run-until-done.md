@@ -5,7 +5,7 @@ goal: G-007
 items: FEAT-042, CHORE-005
 touches: packages/crew/src/hub/commands/team/runner.ts, packages/crew/src/hub/commands/team/dispatch.ts, packages/crew/src/hub/commands/team/autonomy.reg.ts, packages/crew/src/hub/cli.ts, packages/crew/src/hub/core/team/policy.ts, packages/crew/test/hub/e2e/runner.test.ts, packages/crew/test/hub/e2e/dispatch.test.ts, plugins/crew/skills/team/SKILL.md, plugins/crew/skills/hub/references/model.md
 depends_on: P-031, P-027
-status: in-progress
+status: in-review
 branch: plan/P-034-local-runner-run-until-done
 pr:
 created: 2026-10-25
@@ -82,12 +82,12 @@ Overlaps, for staffing only: P-030 on `autonomy.reg.ts` (the `run` registration 
 - **Reuse:** `runState`, `notify` (autonomy.ts), `dispatch` (dispatch.ts), `agentProblems` (agents.ts), `requireBase` (hubstate.ts), `liveRuns`/`readActivity` (activity.ts). The test helpers render agents with `tr(repo, "agents")` and write settings.json from the guidelines template (`plugins/crew/skills/guidelines/templates/settings.json`).
 
 ## Tasks
-- [ ] T1: `preflight` → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/runner.test.ts -t preflight` (AC1, AC2, AC3)
-- [ ] T2: `untilDone` loop, pass reports, stop reasons, exit codes, the agent refusal; the `run` registration → verify: `npx vitest run test/hub/e2e/runner.test.ts -t loop` (AC4, AC5, AC6, AC7, AC9)
-- [ ] T3: `stopped` notify kind → verify: `npx vitest run test/hub/e2e/runner.test.ts -t notify`; `npx vitest run test/hub/e2e/policy.test.ts` (AC8)
-- [ ] T4: idle row in dispatch → verify: `npx vitest run test/hub/e2e/dispatch.test.ts -t idle` (AC10)
-- [ ] T5: team/SKILL.md (pass agent check, Unattended) and model.md → verify: `grep -n "until-done" plugins/crew/skills/team/SKILL.md`; `grep -n "stopped" plugins/crew/skills/hub/references/model.md`; `npx vitest run test/plugin` (AC11)
-- [ ] T6: types, sizes, unchanged suites → verify: `npm run typecheck`; `wc -l src/hub/commands/team/runner.ts src/hub/commands/team/dispatch*.ts`; `npx vitest run test/hub/run-check.test.ts test/hub/e2e/team-2.test.ts` (AC12)
+- [x] T1: `preflight` → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/runner.test.ts -t preflight` (AC1, AC2, AC3)
+- [x] T2: `untilDone` loop, pass reports, stop reasons, exit codes, the agent refusal; the `run` registration → verify: `npx vitest run test/hub/e2e/runner.test.ts -t loop` (AC4, AC5, AC6, AC7, AC9)
+- [x] T3: `stopped` notify kind → verify: `npx vitest run test/hub/e2e/runner.test.ts -t notify`; `npx vitest run test/hub/e2e/policy.test.ts` (AC8)
+- [x] T4: idle row in dispatch → verify: `npx vitest run test/hub/e2e/dispatch.test.ts -t idle` (AC10)
+- [x] T5: team/SKILL.md (pass agent check, Unattended) and model.md → verify: `grep -n "until-done" plugins/crew/skills/team/SKILL.md`; `grep -n "stopped" plugins/crew/skills/hub/references/model.md`; `npx vitest run test/plugin` (AC11)
+- [x] T6: types, sizes, unchanged suites → verify: `npm run typecheck`; `wc -l src/hub/commands/team/runner.ts src/hub/commands/team/dispatch*.ts`; `npx vitest run test/hub/run-check.test.ts test/hub/e2e/team-2.test.ts` (AC12)
 
 ## Test plan
 **Targeted checks** (from `packages/crew/`; e2e suites drive the built `dist/crew.mjs`: `npm run build` first, then discard the generated output, which Release builds). The tests never run `claude`: every loop case passes `--command`.
@@ -112,9 +112,8 @@ Overlaps, for staffing only: P-030 on `autonomy.reg.ts` (the `run` registration 
 
 _Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
 
-- P-034: Local runner: run --until-done [in-progress] tasks 0/6 — claimed by Arpit Anand (developer:add085e9ca4500746)
+- P-034: Local runner: run --until-done [in-review] tasks 6/6 — claimed by Arpit Anand (developer:add085e9ca4500746)
 - last checkpoint 2026-10-25 20:03 at T6 (8e07a10) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
-- next: T1: `preflight` → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/runner.test.ts -t preflight` (AC1, AC2, AC3)
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —, AC7 —, AC8 —, AC9 —, AC10 —, AC11 —, AC12 —
 
 Latest log:
@@ -127,5 +126,8 @@ Latest log:
 - 2026-10-25: status draft → ready
 - 2026-10-26: assigned to the developer role
 - 2026-10-26: status ready → in-progress — branch plan/P-034-local-runner-run-until-done
+- 2026-10-26: status in-progress → in-review
 
 ## Outcome
+`run --until-done [--max-passes N] [--command CMD]` is a real command (commands/team/runner.ts, registered in autonomy.reg.ts): preflight (agents rendered and loadable, guard/usage hooks fail, activity hook warns, base branch, pass command on PATH; exit 2), then one pass at a time with a runner `report` per pass, stopping on runState / empty dispatch (exit 0) or no progress in 2 passes / max passes (exit 1), with a `stopped` report and notification. Crew agents are refused. `stopped` is a notify kind. Dispatch sends idle live runs to the Director. team/SKILL.md and model.md updated.
+Learnings: none
