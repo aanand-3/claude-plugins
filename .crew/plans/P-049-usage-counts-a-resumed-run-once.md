@@ -75,6 +75,18 @@ n/a — internal; ships in the bundle (Release builds it) and reaches this repo 
 
 ## Handoff
 
+_Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
+
+- P-049: Usage counts a resumed run once [in-progress] tasks 0/4 — claimed by Arpit Anand (developer:ac88522a5fe146410)
+- last checkpoint 2026-10-25 19:52 at T4 (a8f88a5) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
+- next: T1: regression tests first (AC1–AC5), failing on the current code → verify: `cd packages/crew && npx vitest run test/ledger.test.ts test/activity.test.ts` fails on the new cases; after `npm run build`, `npx vitest run test/hub/e2e/team-2.test.ts -t "resumed"` fails
+- evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —
+
+Latest log:
+- 2026-10-25: status draft → ready
+- 2026-10-26: assigned to the developer role
+- 2026-10-26: status ready → in-progress — branch plan/P-049-usage-counts-a-resumed-run-once
+
 ## Progress log
 
 - 2026-10-25: status draft → ready
