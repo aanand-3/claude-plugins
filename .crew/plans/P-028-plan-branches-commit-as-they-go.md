@@ -61,12 +61,12 @@ The same files carry two more CHORE-014 follow-ups, so they ride here: squash de
 - **Reuse:** `git.changed`, `store.planHome`, `globRe`, `ws.onAbort`, the throwaway-repo helpers in `test/helpers/repo.ts` and `test/hub/e2e/helpers.ts`, `worktreeHub`/`donePlan` from `test/hub-worktrees.test.ts` (copy the setup, don't edit that file).
 
 ## Tasks
-- [ ] T1: git.ts `generated`, `codeChanges` and the merge-tree `squashMerge`; `test/hub/squash-merge.test.ts` with the main-also-changed, rename, mention-only and moved-on cases → verify: `cd packages/crew && npx vitest run test/hub/squash-merge.test.ts test/hub-worktrees.test.ts -t merge_order` (AC6)
-- [ ] T2: `commitWork` in execution.ts; `checkpoint` commits; `--auto` never commits and survives a failing worktree → verify: `npx vitest run test/hub/e2e/wip-commits.test.ts -t checkpoint` and `npx vitest run test/hub/e2e/execution.test.ts` (AC1, AC7)
-- [ ] T3: `move … in-review` commits first and a refused move leaves no commit; `start`'s message → verify: `npx vitest run test/hub/e2e/wip-commits.test.ts -t "in-review"` (AC2, AC8 message)
-- [ ] T4: review.ts: approve refuses on uncommitted code; the gate checks the plan's worktree from any checkout, generated files excluded; the BUG-014 regression test → verify: `npx vitest run test/hub/e2e/wip-commits.test.ts -t review` fails on today's code for the BUG-014 case and passes after; `npx vitest run test/hub/e2e/team-2.test.ts` still passes (AC3, AC4, AC5)
-- [ ] T5: developer.md and director.md text → verify: `grep -n "Never commit: the worktree keeps the work\|its code is committed when it is complete" plugins/crew/skills/hub/agents/developer.md plugins/crew/skills/hub/agents/director.md` finds nothing; `npx vitest run test/plugin` passes (AC8)
-- [ ] T6: types and module size → verify: `npm run typecheck`; `wc -l src/hub/core/git.ts src/hub/commands/work/execution.ts src/hub/commands/work/review.ts src/hub/commands/work/workflow.ts` each under 300
+- [x] T1: git.ts `generated`, `codeChanges` and the merge-tree `squashMerge`; `test/hub/squash-merge.test.ts` with the main-also-changed, rename, mention-only and moved-on cases → verify: `cd packages/crew && npx vitest run test/hub/squash-merge.test.ts test/hub-worktrees.test.ts -t merge_order` (AC6)
+- [x] T2: `commitWork` in execution.ts; `checkpoint` commits; `--auto` never commits and survives a failing worktree → verify: `npx vitest run test/hub/e2e/wip-commits.test.ts -t checkpoint` and `npx vitest run test/hub/e2e/execution.test.ts` (AC1, AC7)
+- [x] T3: `move … in-review` commits first and a refused move leaves no commit; `start`'s message → verify: `npx vitest run test/hub/e2e/wip-commits.test.ts -t "in-review"` (AC2, AC8 message)
+- [x] T4: review.ts: approve refuses on uncommitted code; the gate checks the plan's worktree from any checkout, generated files excluded; the BUG-014 regression test → verify: `npx vitest run test/hub/e2e/wip-commits.test.ts -t review` fails on today's code for the BUG-014 case and passes after; `npx vitest run test/hub/e2e/team-2.test.ts` still passes (AC3, AC4, AC5)
+- [x] T5: developer.md and director.md text → verify: `grep -n "Never commit: the worktree keeps the work\|its code is committed when it is complete" plugins/crew/skills/hub/agents/developer.md plugins/crew/skills/hub/agents/director.md` finds nothing; `npx vitest run test/plugin` passes (AC8)
+- [x] T6: types and module size → verify: `npm run typecheck`; `wc -l src/hub/core/git.ts src/hub/commands/work/execution.ts src/hub/commands/work/review.ts src/hub/commands/work/workflow.ts` each under 300
 
 ## Test plan
 **Targeted checks** (from `packages/crew/`, after `npm run build`; the e2e tests drive the built `dist/crew.mjs`):
@@ -93,15 +93,14 @@ The same files carry two more CHORE-014 follow-ups, so they ride here: squash de
 
 _Generated 2026-10-25 by `crew.mjs handoff` from the ledger._
 
-- P-028: Plan branches commit as they go [in-progress] tasks 0/6 — claimed by Arpit Anand (developer:a1c98a9dbee8039d1)
-- last checkpoint 2026-10-25 07:23 at T6 (f7c315a) by Arpit Anand; since then 0 commit(s), 8 uncommitted file(s): packages/crew/src/hub/commands/work/execution.ts, packages/crew/src/hub/commands/work/review.ts, packages/crew/src/hub/commands/work/workflow.ts, packages/crew/src/hub/core/git.ts, plugins/crew/skills/hub/agents/developer.md, plugins/crew/skills/hub/agents/director.md, packages/crew/test/hub/e2e/wip-commits.test.ts, packages/crew/test/hub/squash-merge.test.ts
-- next: T1: git.ts `generated`, `codeChanges` and the merge-tree `squashMerge`; `test/hub/squash-merge.test.ts` with the main-also-changed, rename, mention-only and moved-on cases → verify: `cd packages/crew && npx vitest run test/hub/squash-merge.test.ts test/hub-worktrees.test.ts -t merge_order` (AC6)
+- P-028: Plan branches commit as they go [in-progress] tasks 6/6 — claimed by Arpit Anand (developer:a1c98a9dbee8039d1)
+- last checkpoint 2026-10-25 07:43 at T6 (f7c315a) by Arpit Anand; since then 0 commit(s), 9 uncommitted file(s): packages/crew/src/hub/commands/work/execution.ts, packages/crew/src/hub/commands/work/review.ts, packages/crew/src/hub/commands/work/workflow.ts, packages/crew/src/hub/core/git.ts, packages/crew/test/hub/e2e/worktrees.test.ts, plugins/crew/skills/hub/agents/developer.md, plugins/crew/skills/hub/agents/director.md, packages/crew/test/hub/e2e/wip-commits.test.ts
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —, AC7 —, AC8 —
 
 Latest log:
-- 2026-10-25: status draft → ready
 - 2026-10-25: assigned to the developer role
 - 2026-10-25: status ready → in-progress — branch plan/P-028-plan-branches-commit-as-they-go
+- 2026-10-25: Architect: touches += packages/crew/test/hub/e2e/worktrees.test.ts (Q-1c0a2e).
 
 ## Progress log
 
@@ -111,3 +110,5 @@ Latest log:
 - 2026-10-25: Architect: touches += packages/crew/test/hub/e2e/worktrees.test.ts (Q-1c0a2e).
 
 ## Outcome
+Plan branches now get the hub's WIP commits at each checkpoint and at the hand-over; review approval and the done gate see the plan's worktree from any checkout; squash detection uses merge-tree.
+Learnings: K-2026-10-25-with-plan-worktrees-every-non-auto
