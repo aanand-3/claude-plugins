@@ -35,6 +35,7 @@ Code part of CHORE-018. The hub-only parts were done by the PM on 2026-10-25: `m
 - Code that only branch copies could reach goes too: `handoff`'s "lives on <ref>" refusal (execution.ts), `status`'s "(live on `<ref>`)" suffix (reports.ts), and move's `doc.source === "worktree"` condition on writing the handoff (workflow.ts). Everything left is a main-checkout document.
 - `check`'s `Snapshot.allPlans` goes (`plans` only). `lostPlans` hints a local `plan/*` branch with no plan in main and no worktree, as today. A branch that exists only on origin gets its own hint: "P-###: only origin/<branch> has it and the main checkout has no plan file: fetch it and bring the plan home (`migrate --gather` from a checkout of it)". No "work is gone" text for it.
 - `start`'s overlap warning passes `sharedGlobs(store)` (P-029's footprint.ts) to `overlapping`, so it ignores shared overlaps, and says "expect conflicts at release; narrow touches or list the file in hub.shared" instead of "add depends_on".
+- The other `overlapping` callers P-029 left (follow-up from its review): `context`'s overlap list (context.ts) and the role advice in roles.ts (the "sequence them or split the work" and "add depends_on or narrow touches" lines) also pass `sharedGlobs(store)`, and roles.ts's advice says to narrow touches or list the file in hub.shared, never to add depends_on.
 
 **Out (explicitly not doing):**
 - `nextId` keeps scanning every ref and worktree: ID uniqueness across unmerged branches is still needed.
@@ -46,7 +47,7 @@ Code part of CHORE-018. The hub-only parts were done by the PM on 2026-10-25: `m
 - [ ] AC2 · `grep -rn "plans(true)\|branchPlans\|includeBranches" packages/crew/src` finds nothing, and `npm run typecheck` passes.
 - [ ] AC3 · `start P-001` for a plan whose branch exists with a different committed plan file and no worktree opens the worktree on that branch, keeps main's plan file unchanged, and prints no "took the plan from".
 - [ ] AC4 · `check` with a local `plan/P-009-x` branch (no plan in main, no worktree) prints the "worktree was removed" hint as today. With only `origin/plan/P-009-x` (no local branch), it prints the origin-only hint and not the "uncommitted work is gone" text.
-- [ ] AC5 · `start` of a plan whose touches overlap an in-progress plan only on `hub.shared` touches prints no overlap warning. With a real overlap, the warning doesn't mention depends_on.
+- [ ] AC5 · `start` of a plan whose touches overlap an in-progress plan only on `hub.shared` touches prints no overlap warning. With a real overlap, the warning doesn't mention depends_on. The same holds for `context P-###`'s overlap list and `next --role architect`/`--role director`'s overlap advice (roles.ts): no shared-only overlap is listed, and no line suggests depends_on.
 - [ ] AC6 · The existing suites that cover the changed call sites pass: `test/hub/e2e/worktrees.test.ts` (with the "start keeps an existing branch's progress" case rewritten to AC3's expectation), `test/hub-worktrees.test.ts`, `test/hub/e2e/team.test.ts`, `test/hub/e2e/context.test.ts`, `test/hub/e2e/basics.test.ts`, `test/view.test.ts`.
 
 ## Approach
@@ -85,5 +86,6 @@ Code part of CHORE-018. The hub-only parts were done by the PM on 2026-10-25: `m
 ## Progress log
 
 - 2026-10-25: status draft → ready
+- 2026-10-25: Architect: scope += P-029 review follow-up: context.ts and roles.ts pass hub.shared to overlapping; roles.ts advice no longer suggests depends_on (AC5 extended). Both files were already in touches.
 
 ## Outcome
