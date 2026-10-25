@@ -119,6 +119,7 @@ Latest log:
 - 2026-10-25: status ready → in-progress — branch plan/P-029-overlap-is-not-a-dependency
 - 2026-10-25: status in-progress → in-review
 - 2026-10-25: status in-review → done
+- 2026-10-25: release blocked: hub.full_suite failed on the plan's work (brought up to main 3e879d0, rebuilt). test/view.test.ts > graph > matches the CLI expects the old overlap hint ('sequence them (depends_on) or narrow touches') and no 'P-007 depends on P-006 only through an overlap (web/home/**)' hint; P-029's new hints change that output. 1 failed / 319 passed. Not merged; plan commit 9401708 undone, work left uncommitted in its worktree. Back to the Director as a bug.
 
 ## Outcome
 `hub.shared` (a YAML list under `hub:` in .crew/config.yaml) makes overlaps on shared touches non-blocking in `staff` and in `check`'s overlap hint; the hint now says to narrow touches or share the file, not to add depends_on. New `check` touches rule: ERROR for a `hub.shared` that isn't a list; hints for broad wildcard touches (> 10 tracked files or covering a shared file), touches that list generated paths, and depends_on that only stands for an overlap. This repo's config lists the 8 shared paths; model.md and architect.md document it.
