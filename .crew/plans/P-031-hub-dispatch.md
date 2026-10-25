@@ -11,6 +11,7 @@ pr:
 created: 2026-10-25
 started:
 completed:
+assignee: developer
 ---
 
 # P-031: Hub dispatch
@@ -107,5 +108,6 @@ Needs no other plan's code. It reads P-029's shared-aware staffing through `staf
 ## Progress log
 
 - 2026-10-25: status draft → ready
+- 2026-10-25: assigned to the developer role
 
 ## Outcome
