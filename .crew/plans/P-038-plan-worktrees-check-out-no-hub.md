@@ -89,6 +89,7 @@ Latest log:
 - 2026-10-25: Spec amended for Q-5e93cb: touches widened to test/hub/e2e/worktrees.test.ts and test/hub-worktrees.test.ts; AC6 now allows exactly two one-line edits turning hub-document reads in the worktree into absence assertions, since AC1 removes those documents and the tests' intent (no plan docs in the worktree, worktree copy never written) holds more strongly. No overlap with P-041; P-039 already lists both files and is sequenced after P-038.
 - 2026-10-25: status in-progress → in-review
 - 2026-10-25: QA at ede2672: AC1-AC5 verified (sparse-worktrees.test.ts 6/6 + scratch replay); AC6 tests pass 9/9 and 10/10 and typecheck clean, but two assertions changed vs 'unchanged' in AC6 — Q-ca72af to architect. Note: sparse-checkout set in a worktree adds extensions.worktreeConfig=true to the shared repo config.
+- 2026-10-25: BUG-026: context/status show the plan branch's stale copy of an open plan over main's document (why QA saw the pre-amendment AC6)
 
 ## Outcome
 Plan worktrees are sparse checkouts without .crew/plans, items, goals, knowledge and idea.md (non-cone patterns from STATE_PATHS, full-checkout fallback if sparse-checkout fails); main checkout unchanged. Two existing worktree assertions now assert absence (Q-5e93cb).
