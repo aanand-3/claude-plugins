@@ -5,12 +5,12 @@ goal: G-007
 items: FEAT-038, FEAT-028, SPIKE-004
 touches: packages/crew/src/hub/core/work/footprint.ts, packages/crew/src/hub/commands/team/team.ts, packages/crew/src/hub/commands/views/checks.ts, packages/crew/test/hub/e2e/shared-touches.test.ts, .crew/config.yaml, plugins/crew/skills/hub/agents/architect.md, plugins/crew/skills/hub/references/model.md
 depends_on:
-status: in-review
+status: done
 branch: plan/P-029-overlap-is-not-a-dependency
 pr:
 created: 2026-10-25
 started: 2026-10-25
-completed:
+completed: 2026-10-25
 assignee: developer
 ---
 
@@ -118,6 +118,7 @@ Latest log:
 - 2026-10-25: assigned to the developer role
 - 2026-10-25: status ready → in-progress — branch plan/P-029-overlap-is-not-a-dependency
 - 2026-10-25: status in-progress → in-review
+- 2026-10-25: status in-review → done
 
 ## Outcome
 `hub.shared` (a YAML list under `hub:` in .crew/config.yaml) makes overlaps on shared touches non-blocking in `staff` and in `check`'s overlap hint; the hint now says to narrow touches or share the file, not to add depends_on. New `check` touches rule: ERROR for a `hub.shared` that isn't a list; hints for broad wildcard touches (> 10 tracked files or covering a shared file), touches that list generated paths, and depends_on that only stands for an overlap. This repo's config lists the 8 shared paths; model.md and architect.md document it.
