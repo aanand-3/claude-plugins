@@ -62,10 +62,10 @@ Code part of CHORE-018, and the fix for BUG-026 (`context`, `resume` and `status
 - Depends on P-029 for code: `start`'s warning calls P-029's `sharedGlobs` and its shared-aware `overlapping`. It also overlaps P-029 on team.ts and checks.ts.
 
 ## Tasks
-- [ ] T1: `test/hub/e2e/branch-copies.test.ts` with AC1, AC3, AC4, AC5 and AC7, failing on today's code for AC1, AC3 and AC7 → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/branch-copies.test.ts` (fails before the change)
-- [ ] T2: store.ts and the fifteen call sites → verify: AC2's grep; `npm run typecheck`; `npm run build && npx vitest run test/hub/e2e/branch-copies.test.ts -t stale` (AC1, AC2, AC7)
-- [ ] T3: `start` without the branch-copy path, with the shared-aware warning; `move`'s handoff condition; the "start keeps an existing branch's progress" case rewritten → verify: `npx vitest run test/hub/e2e/branch-copies.test.ts -t start test/hub/e2e/worktrees.test.ts` (AC3, AC5)
-- [ ] T4: checks.ts `Snapshot` and `lostPlans`; execution.ts `handoff` and reports.ts → verify: `npx vitest run test/hub/e2e/branch-copies.test.ts -t lost` (AC4)
+- [x] T1: `test/hub/e2e/branch-copies.test.ts` with AC1, AC3, AC4, AC5 and AC7, failing on today's code for AC1, AC3 and AC7 → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/branch-copies.test.ts` (fails before the change)
+- [x] T2: store.ts and the fifteen call sites → verify: AC2's grep; `npm run typecheck`; `npm run build && npx vitest run test/hub/e2e/branch-copies.test.ts -t stale` (AC1, AC2, AC7)
+- [x] T3: `start` without the branch-copy path, with the shared-aware warning; `move`'s handoff condition; the "start keeps an existing branch's progress" case rewritten → verify: `npx vitest run test/hub/e2e/branch-copies.test.ts -t start test/hub/e2e/worktrees.test.ts` (AC3, AC5)
+- [x] T4: checks.ts `Snapshot` and `lostPlans`; execution.ts `handoff` and reports.ts → verify: `npx vitest run test/hub/e2e/branch-copies.test.ts -t lost` (AC4)
 - [ ] T5: the covering suites → verify: `npx vitest run test/hub-worktrees.test.ts test/hub/e2e/team.test.ts test/hub/e2e/context.test.ts test/hub/e2e/basics.test.ts test/view.test.ts`; `wc -l` of each touched module under 300 (AC6)
 
 ## Test plan
@@ -86,6 +86,18 @@ Code part of CHORE-018, and the fix for BUG-026 (`context`, `resume` and `status
 - P-038 (sparse plan worktrees, done, not merged when this was written) changes planning.ts (`openPlanWorktree` checks out with `--no-checkout` and a sparse pattern) and one assertion each in `test/hub/e2e/worktrees.test.ts` and `test/hub-worktrees.test.ts`. Re-checked 2026-10-25: none of it touches the `plans(true)` lines (planning.ts `known`/`plans` in `newPlan`'s helpers) or the "start keeps an existing branch's progress" case, and planning.ts stays under 300 lines (193 on P-038's branch). So P-039 now `depends_on` P-038: its worktree takes in the base after P-038 lands (`git merge --ff-only main` before `start`). In a sparse worktree the branch still commits the plan file, so AC1/AC3/AC7 set up the branch copy by commit, not by reading the worktree's files. The edits are one token per call site, so merge conflicts are unlikely. P-032 waits for it (land merges the base into plan branches).
 
 ## Handoff
+
+_Generated 2026-10-25 by `crew.mjs handoff` from the ledger._
+
+- P-039: Drop the plan-branch reads (plans(true)) [in-progress] tasks 4/5 — claimed by Arpit Anand (developer:aa36891f95c4f8d92)
+- last checkpoint 2026-10-25 10:50 at T5 (6c1015d) by Arpit Anand; since then 0 commit(s), 2 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs
+- next: T5: the covering suites → verify: `npx vitest run test/hub-worktrees.test.ts test/hub/e2e/team.test.ts test/hub/e2e/context.test.ts test/hub/e2e/basics.test.ts test/view.test.ts`; `wc -l` of each touched module under 300 (AC6)
+- evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —, AC7 —
+
+Latest log:
+- 2026-10-25: Architect (Q-60f72b): BUG-026 linked; AC7 regression added; depends_on += P-038 after re-check of its planning.ts and test edits
+- 2026-10-25: assigned to the developer role
+- 2026-10-25: status ready → in-progress — branch plan/P-039-drop-the-plan-branch-reads-plans-true
 
 ## Progress log
 
