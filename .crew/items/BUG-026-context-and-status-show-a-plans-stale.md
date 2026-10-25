@@ -6,7 +6,7 @@ status: triaged
 severity: S2
 priority: P1
 goal: G-007
-plan:
+plan: P-039
 created: 2026-10-25
 closed:
 ---
@@ -39,3 +39,4 @@ Every agent that follows the documented loop (`context` / `resume`) reads stale 
 The branch override looks like a migration path for plans specced before hub state had one home (P-026). Possibly it should apply only when main has no doc for the plan.
 - 2026-10-25: status new → triaged — priority P1, severity S2
 - 2026-10-25: Triaged S2/P1 under G-007; fixed by P-039 (drop plans(true)). Asked the Architect to add it to P-039's items.
+- 2026-10-25: Architect: linked to P-039 (items += BUG-026; AC7 is its regression test).

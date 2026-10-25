@@ -2,9 +2,9 @@
 id: P-039
 title: Drop the plan-branch reads (plans(true))
 goal: G-007
-items: CHORE-018
+items: CHORE-018, BUG-026
 touches: packages/crew/src/hub/core/store.ts, packages/crew/src/hub/commands/memory/knowledge.ts, packages/crew/src/hub/commands/memory/context.ts, packages/crew/src/hub/commands/work/planning.ts, packages/crew/src/hub/commands/work/workflow.ts, packages/crew/src/hub/commands/work/release.ts, packages/crew/src/hub/commands/work/execution.ts, packages/crew/src/hub/commands/work/goals.ts, packages/crew/src/hub/commands/team/team.ts, packages/crew/src/hub/commands/team/roles.ts, packages/crew/src/hub/commands/views/reports.ts, packages/crew/src/hub/commands/views/advisor.ts, packages/crew/src/hub/commands/views/graph.ts, packages/crew/src/hub/commands/views/checks.ts, packages/crew/test/hub/e2e/worktrees.test.ts, packages/crew/test/hub-worktrees.test.ts, packages/crew/test/hub/e2e/branch-copies.test.ts
-depends_on: P-029
+depends_on: P-029, P-038
 status: ready
 branch: plan/P-039-drop-the-plan-branch-reads-plans-true
 pr:
@@ -16,7 +16,7 @@ completed:
 # P-039: Drop the plan-branch reads (plans(true))
 
 ## Context
-Code part of CHORE-018. The hub-only parts were done by the PM on 2026-10-25: `migrate --gather` found nothing to gather; BUG-015 and SPIKE-003 were already closed as duplicates; the two overlay-era knowledge entries were superseded by K-2026-10-25-plan-status-lives-in-the-main-checkout and K-2026-10-25-hub-writes-are-committed-on-the-base.
+Code part of CHORE-018, and the fix for BUG-026 (`context`, `resume` and `status` show an open plan's stale `plan/*` branch copy). The hub-only parts were done by the PM on 2026-10-25: `migrate --gather` found nothing to gather; BUG-015 and SPIKE-003 were already closed as duplicates; the two overlay-era knowledge entries were superseded by K-2026-10-25-plan-status-lives-in-the-main-checkout and K-2026-10-25-hub-writes-are-committed-on-the-base.
 
 `Store.plans(true)` (store.ts `branchPlans`) still overlays the plan file committed on each `plan/*` branch over the main checkout's copy, unless main already closed the plan. It existed for plans specced on their branch before hub state had one home (P-026). Fifteen call sites use it: `status`, `staff`, `context`, `next`, `check`, `merge-order`, `export`/`ui`, `recall --plan`, `checkpoint`/`resume`, `start` and `new-plan`.
 
@@ -49,6 +49,7 @@ Code part of CHORE-018. The hub-only parts were done by the PM on 2026-10-25: `m
 - [ ] AC4 · `check` with a local `plan/P-009-x` branch (no plan in main, no worktree) prints the "worktree was removed" hint as today. With only `origin/plan/P-009-x` (no local branch), it prints the origin-only hint and not the "uncommitted work is gone" text.
 - [ ] AC5 · `start` of a plan whose touches overlap an in-progress plan only on `hub.shared` touches prints no overlap warning. With a real overlap, the warning doesn't mention depends_on. The same holds for `context P-###`'s overlap list and `next --role architect`/`--role director`'s overlap advice (roles.ts): no shared-only overlap is listed, and no line suggests depends_on.
 - [ ] AC6 · The existing suites that cover the changed call sites pass: `test/hub/e2e/worktrees.test.ts` (with the "start keeps an existing branch's progress" case rewritten to AC3's expectation), `test/hub-worktrees.test.ts`, `test/hub/e2e/team.test.ts`, `test/hub/e2e/context.test.ts`, `test/hub/e2e/basics.test.ts`, `test/view.test.ts`.
+- [ ] AC7 · Regression test for BUG-026: in the same setup, with main's copy of P-001 also carrying an amended criterion and a checked task that the branch copy lacks, `context P-001` and `resume P-001` from the main checkout show main's status (`in-progress`), main's criteria text and main's task progress, and none of the branch copy's. `status` doesn't print "(live on". On today's code `context` shows the branch copy.
 
 ## Approach
 - store.ts: delete `branchPlans` and the parameter; `plans()` is `loadDir(this.dirs.plan)`; update the doc comment. Drop imports that only `branchPlans` used (`CLOSED` if unused).
@@ -60,8 +61,8 @@ Code part of CHORE-018. The hub-only parts were done by the PM on 2026-10-25: `m
 - Depends on P-029 for code: `start`'s warning calls P-029's `sharedGlobs` and its shared-aware `overlapping`. It also overlaps P-029 on team.ts and checks.ts.
 
 ## Tasks
-- [ ] T1: `test/hub/e2e/branch-copies.test.ts` with AC1, AC3, AC4 and AC5, failing on today's code for AC1 and AC3 → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/branch-copies.test.ts` (fails before the change)
-- [ ] T2: store.ts and the fifteen call sites → verify: AC2's grep; `npm run typecheck`; `npm run build && npx vitest run test/hub/e2e/branch-copies.test.ts -t stale` (AC1, AC2)
+- [ ] T1: `test/hub/e2e/branch-copies.test.ts` with AC1, AC3, AC4, AC5 and AC7, failing on today's code for AC1, AC3 and AC7 → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/branch-copies.test.ts` (fails before the change)
+- [ ] T2: store.ts and the fifteen call sites → verify: AC2's grep; `npm run typecheck`; `npm run build && npx vitest run test/hub/e2e/branch-copies.test.ts -t stale` (AC1, AC2, AC7)
 - [ ] T3: `start` without the branch-copy path, with the shared-aware warning; `move`'s handoff condition; the "start keeps an existing branch's progress" case rewritten → verify: `npx vitest run test/hub/e2e/branch-copies.test.ts -t start test/hub/e2e/worktrees.test.ts` (AC3, AC5)
 - [ ] T4: checks.ts `Snapshot` and `lostPlans`; execution.ts `handoff` and reports.ts → verify: `npx vitest run test/hub/e2e/branch-copies.test.ts -t lost` (AC4)
 - [ ] T5: the covering suites → verify: `npx vitest run test/hub-worktrees.test.ts test/hub/e2e/team.test.ts test/hub/e2e/context.test.ts test/hub/e2e/basics.test.ts test/view.test.ts`; `wc -l` of each touched module under 300 (AC6)
@@ -69,7 +70,8 @@ Code part of CHORE-018. The hub-only parts were done by the PM on 2026-10-25: `m
 ## Test plan
 **Targeted checks** (from `packages/crew/`, after `npm run build`):
 - Regression test: `test/hub/e2e/branch-copies.test.ts -t stale` (AC1) fails before the change (status reads the branch copy) and passes after.
-- AC1, AC3, AC4, AC5 → `npx vitest run test/hub/e2e/branch-copies.test.ts`
+- Regression test: `test/hub/e2e/branch-copies.test.ts -t stale` (AC7, BUG-026) fails before the change (`context` shows the branch copy's status, criteria and tasks) and passes after.
+- AC1, AC3, AC4, AC5, AC7 → `npx vitest run test/hub/e2e/branch-copies.test.ts`
 - AC2 → its grep; `npm run typecheck`
 - AC6 → `npx vitest run test/hub/e2e/worktrees.test.ts test/hub-worktrees.test.ts test/hub/e2e/team.test.ts test/hub/e2e/context.test.ts test/hub/e2e/basics.test.ts test/view.test.ts`
 
@@ -79,7 +81,8 @@ Code part of CHORE-018. The hub-only parts were done by the PM on 2026-10-25: `m
 
 ## Risks & open questions
 - A project still on a pre-P-026 layout (plans committed only on their branches): `check`'s `lostPlans` hint names each such branch, and `migrate --gather` from a checkout of it brings the plan home. Nothing reads it silently any more.
-- The widest touches of Wave 1 (fifteen call sites). It overlaps P-024 (release.ts), P-027 (reports.ts), P-028 (execution.ts, workflow.ts), P-029 (team.ts, checks.ts), P-037 (store.ts) and P-038 (planning.ts), so staffing runs it after them. The edits are one token per call site, so merge conflicts are unlikely. P-032 waits for it (land merges the base into plan branches).
+- The widest touches of Wave 1 (fifteen call sites). It overlaps P-024 (release.ts), P-027 (reports.ts), P-028 (execution.ts, workflow.ts), P-029 (team.ts, checks.ts), P-037 (store.ts) and P-038 (planning.ts), so staffing runs it after them.
+- P-038 (sparse plan worktrees, done, not merged when this was written) changes planning.ts (`openPlanWorktree` checks out with `--no-checkout` and a sparse pattern) and one assertion each in `test/hub/e2e/worktrees.test.ts` and `test/hub-worktrees.test.ts`. Re-checked 2026-10-25: none of it touches the `plans(true)` lines (planning.ts `known`/`plans` in `newPlan`'s helpers) or the "start keeps an existing branch's progress" case, and planning.ts stays under 300 lines (193 on P-038's branch). So P-039 now `depends_on` P-038: its worktree takes in the base after P-038 lands (`git merge --ff-only main` before `start`). In a sparse worktree the branch still commits the plan file, so AC1/AC3/AC7 set up the branch copy by commit, not by reading the worktree's files. The edits are one token per call site, so merge conflicts are unlikely. P-032 waits for it (land merges the base into plan branches).
 
 ## Handoff
 
@@ -87,5 +90,7 @@ Code part of CHORE-018. The hub-only parts were done by the PM on 2026-10-25: `m
 
 - 2026-10-25: status draft → ready
 - 2026-10-25: Architect: scope += P-029 review follow-up: context.ts and roles.ts pass hub.shared to overlapping; roles.ts advice no longer suggests depends_on (AC5 extended). Both files were already in touches.
+- 2026-10-25: Architect (Q-60f72b): items += BUG-026 (this plan removes its cause, `plans(true)`); AC7 added as its regression test (`context`/`resume` show main's status, criteria and tasks; AC1 checked status but not criteria or `resume`). depends_on += P-038: it changes planning.ts and two of the suites here; re-checked, no conflict with this plan's edits.
+- 2026-10-25: Architect (Q-60f72b): BUG-026 linked; AC7 regression added; depends_on += P-038 after re-check of its planning.ts and test edits
 
 ## Outcome
