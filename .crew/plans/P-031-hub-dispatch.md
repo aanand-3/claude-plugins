@@ -79,9 +79,9 @@ Needs no other plan's code. It reads P-029's shared-aware staffing through `staf
 
 ## Tasks
 - [x] T1: dispatch.ts rows 1–11, held/paused handling, cap and frontier → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/dispatch.test.ts` (AC1–AC7)
-- [ ] T2: registration (`dispatch.reg.ts` + index line, or cli.ts + mcp.ts) and the text form → verify: `npx vitest run test/hub/e2e/dispatch.test.ts -t mcp` and `node plugins/crew/skills/hub/dist/crew.mjs help | grep dispatch` (AC9)
-- [ ] T3: `goal.done: pm` in presets.ts; team/team-2 assertions → verify: `npx vitest run test/hub/e2e/team.test.ts test/hub/e2e/team-2.test.ts test/hub/e2e/dispatch.test.ts -t goal` (AC8)
-- [ ] T4: director.md, pm.md, team/SKILL.md "Each run", model.md (and hub/SKILL.md's row if the table still exists) → verify: `grep -c "hand each to the role" plugins/crew/skills/hub/agents/director.md` prints 0; `grep -n "dispatch --json" plugins/crew/skills/team/SKILL.md plugins/crew/skills/hub/agents/director.md`; `grep -n "goal.done.*pm" plugins/crew/skills/hub/references/model.md`; `npx vitest run test/plugin` (AC10)
+- [x] T2: registration (`dispatch.reg.ts` + index line, or cli.ts + mcp.ts) and the text form → verify: `npx vitest run test/hub/e2e/dispatch.test.ts -t mcp` and `node plugins/crew/skills/hub/dist/crew.mjs help | grep dispatch` (AC9)
+- [x] T3: `goal.done: pm` in presets.ts; team/team-2 assertions → verify: `npx vitest run test/hub/e2e/team.test.ts test/hub/e2e/team-2.test.ts test/hub/e2e/dispatch.test.ts -t goal` (AC8)
+- [x] T4: director.md, pm.md, team/SKILL.md "Each run", model.md (and hub/SKILL.md's row if the table still exists) → verify: `grep -c "hand each to the role" plugins/crew/skills/hub/agents/director.md` prints 0; `grep -n "dispatch --json" plugins/crew/skills/team/SKILL.md plugins/crew/skills/hub/agents/director.md`; `grep -n "goal.done.*pm" plugins/crew/skills/hub/references/model.md`; `npx vitest run test/plugin` (AC10)
 - [ ] T5: types, sizes, unchanged suites → verify: `npm run typecheck`; `wc -l src/hub/commands/team/dispatch*.ts`; `npx vitest run test/hub/e2e/basics.test.ts test/mcp.test.ts` (AC11)
 
 ## Test plan
