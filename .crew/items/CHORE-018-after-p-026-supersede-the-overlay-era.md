@@ -2,8 +2,8 @@
 id: CHORE-018
 type: chore
 title: After P-026: supersede the overlay-era knowledge and drop plans(true)
-status: new
-priority:
+status: triaged
+priority: P2
 goal: G-007
 plan:
 created: 2026-10-25
@@ -19,3 +19,4 @@ After P-026 merges and .crew/bin is refreshed: run migrate --gather once, close 
 - [ ]
 
 ## Notes
+- 2026-10-25: status new → triaged — priority P2
