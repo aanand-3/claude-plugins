@@ -92,6 +92,18 @@ It is the first plan the team builds after Wave 0 (P-026, merged), alone, so eve
 
 ## Handoff
 
+_Generated 2026-10-25 by `crew.mjs handoff` from the ledger._
+
+- P-027: Live agent activity in the hub [in-progress] tasks 0/7 — claimed by Arpit Anand (developer:a2058a8bac29fad70)
+- last checkpoint 2026-10-25 06:36 at T4 (f9cf69b) by Arpit Anand; since then 0 commit(s), 21 uncommitted file(s): packages/crew/src/hub/cli.ts, packages/crew/src/hub/commands/memory/ledger.ts, packages/crew/src/hub/commands/team/autonomy.ts, packages/crew/src/hub/commands/team/policy.ts, packages/crew/src/hub/commands/views/reports.ts, packages/crew/src/hub/core/memory/ledger.ts, packages/crew/src/hub/core/team/policy.ts, packages/crew/src/hub/server.ts
+- next: T1: `core/memory/activity.ts` — event shape, path, append with rotation and torn-line handling, read, `describe` (target and ref), `liveRuns` (live, idle, task, last action, tokens). → verify: `npx vitest run test/activity.test.ts` (unit, imports src) covers AC2, AC3, AC4 and the AC6/AC7 rules.
+- evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —, AC7 —, AC8 —, AC9 —, AC10 —, AC11 —
+
+Latest log:
+- 2026-10-25: assigned to the developer role
+- 2026-10-25: status ready → in-progress — branch plan/P-027-live-agent-activity-in-the-hub
+- 2026-10-25: Architect: touches widened to packages/crew/src/hub/commands/team/policy.ts (policy show limits row) for AC7, answering Q-562bf9.
+
 ## Progress log
 
 - 2026-10-25: status draft → ready
