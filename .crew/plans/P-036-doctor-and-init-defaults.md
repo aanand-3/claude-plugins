@@ -11,6 +11,7 @@ pr:
 created: 2026-10-25
 started:
 completed:
+assignee: developer
 ---
 
 # P-036: Doctor and init defaults
@@ -115,5 +116,6 @@ Overlaps, for staffing only: P-030 on `planning.reg.ts` (the `init` registration
 ## Progress log
 
 - 2026-10-25: status draft → ready
+- 2026-10-25: assigned to the developer role
 
 ## Outcome
