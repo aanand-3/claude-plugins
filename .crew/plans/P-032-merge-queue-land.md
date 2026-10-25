@@ -5,11 +5,11 @@ goal: G-007
 items: FEAT-037
 touches: packages/crew/src/hub/commands/work/land.ts, packages/crew/src/hub/commands/work/land.reg.ts, packages/crew/src/hub/commands/index.ts, packages/crew/src/hub/commands/work/release.ts, packages/crew/src/hub/commands/work/workflow.ts, packages/crew/src/hub/core/work/model.ts, packages/crew/src/hub/core/work/footprint.ts, packages/crew/src/hub/core/team/presets.ts, packages/crew/src/hub/core/team/policy.ts, packages/crew/src/hub/commands/team/liveness.ts, packages/crew/src/hub/commands/team/questions.ts, packages/crew/src/hub/commands/team/roles.ts, packages/crew/src/hub/commands/team/dispatch.ts, packages/crew/src/hub/commands/views/checks.ts, packages/crew/src/hub/commands/views/reports.ts, packages/crew/ui/src/views/Board.tsx, packages/crew/ui/src/views/Overview.tsx, packages/crew/ui/src/views/DocPage.tsx, packages/crew/ui/src/components/Actions.tsx, packages/crew/ui/src/components/primitives.tsx, packages/crew/test/hub/e2e/land.test.ts, packages/crew/test/hub/e2e/helpers.ts, packages/crew/test/hub/e2e/team-helpers.ts, packages/crew/test/hub/e2e/policy.test.ts, packages/crew/test/hub/e2e/team.test.ts, packages/crew/test/hub/e2e/team-2.test.ts, packages/crew/test/hub/e2e/execution.test.ts, packages/crew/test/hub/e2e/review-fixes.test.ts, packages/crew/test/hub/e2e/review-fixes-2.test.ts, packages/crew/test/hub/e2e/wip-commits.test.ts, packages/crew/test/hub/e2e/context.test.ts, packages/crew/test/hub/e2e/basics.test.ts, packages/crew/test/hub/e2e/ledger.test.ts, packages/crew/test/hub/e2e/worktrees.test.ts, packages/crew/test/hub/e2e/items.test.ts, packages/crew/test/hub/e2e/dispatch.test.ts, packages/crew/test/hub-worktrees.test.ts, packages/crew/test/hub/squash-merge.test.ts, plugins/crew/skills/hub/agents/release.md, plugins/crew/skills/hub/agents/pm.md, plugins/crew/skills/hub/agents/developer.md, plugins/crew/skills/hub/agents/qa.md, plugins/crew/skills/hub/references/model.md, plugins/crew/skills/hub/SKILL.md, docs/vision.md
 depends_on: P-028, P-024, P-030, P-039, P-031, P-043
-status: ready
+status: in-progress
 branch: plan/P-032-merge-queue-land
 pr:
 created: 2026-10-25
-started:
+started: 2026-10-26
 completed:
 assignee: developer
 ---
@@ -143,5 +143,6 @@ draft → ready → in-progress → in-review → accepted → done
 - 2026-10-25: status ready → draft — Architect: re-spec for the executive decision (accepted status, PM owns done)
 - 2026-10-25: status draft → ready — Architect: re-specced for accepted → land → done (executive decision)
 - 2026-10-26: assigned to the developer role
+- 2026-10-26: status ready → in-progress — branch plan/P-032-merge-queue-land
 
 ## Outcome
