@@ -124,6 +124,7 @@ Latest log:
 - 2026-10-25: Architect: touches widened with packages/crew/test/structure.test.ts (line 40 allows exactly ['index.ts'] in hub/commands/; decision logged at 54647cc).
 - 2026-10-25: status in-progress → in-review
 - 2026-10-25: status in-review → done
+- 2026-10-25: Release: squash-merged to main; hub.build output (references/commands.md, dist) in the commit; full suite green 52 files / 368 tests; no rollout steps in the plan beyond refresh-bin (left to the executive). Worktree and branch removed.
 
 ## Outcome
 Each hub command's CLI spec, help lines and MCP tool now live in `commands/<area>/<module>.reg.ts` (25 files), listed in `commands/index.ts`. `cli.ts` and `mcp.ts` load them, and a duplicate name fails at load. `npm run build` generates `plugins/crew/skills/hub/references/commands.md`, which SKILL.md links to in place of its table. The help text has the same lines, now grouped by registration, and `tools/list` the same tools, now in registration order.
