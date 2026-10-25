@@ -2,10 +2,10 @@
 id: BUG-026
 type: bug
 title: context and status show a plan's stale branch copy over the main checkout's document
-status: new
-severity:
-priority:
-goal:
+status: triaged
+severity: S2
+priority: P1
+goal: G-007
 plan:
 created: 2026-10-25
 closed:
@@ -37,3 +37,4 @@ Every agent that follows the documented loop (`context` / `resume`) reads stale 
 
 ## Notes
 The branch override looks like a migration path for plans specced before hub state had one home (P-026). Possibly it should apply only when main has no doc for the plan.
+- 2026-10-25: status new → triaged — priority P1, severity S2
