@@ -3,9 +3,9 @@ id: P-034
 title: Local runner: run --until-done
 goal: G-007
 items: FEAT-042, CHORE-005
-touches: packages/crew/src/hub/commands/team/runner.ts, packages/crew/src/hub/commands/team/dispatch.ts, packages/crew/src/hub/commands/team/autonomy.reg.ts, packages/crew/src/hub/cli.ts, packages/crew/src/hub/core/team/policy.ts, packages/crew/test/hub/e2e/runner.test.ts, packages/crew/test/hub/e2e/dispatch.test.ts, plugins/crew/skills/team/SKILL.md, plugins/crew/skills/hub/references/model.md
+touches: packages/crew/src/hub/commands/team/runner.ts, packages/crew/src/hub/commands/team/dispatch.ts, packages/crew/src/hub/commands/team/autonomy.reg.ts, packages/crew/src/hub/cli.ts, packages/crew/src/hub/core/team/policy.ts, packages/crew/test/hub/registry.test.ts, packages/crew/test/hub/e2e/runner.test.ts, packages/crew/test/hub/e2e/dispatch.test.ts, plugins/crew/skills/team/SKILL.md, plugins/crew/skills/hub/references/model.md
 depends_on: P-031, P-027
-status: in-review
+status: in-progress
 branch: plan/P-034-local-runner-run-until-done
 pr:
 created: 2026-10-25
@@ -76,14 +76,14 @@ Overlaps, for staffing only: P-030 on `autonomy.reg.ts` (the `run` registration 
 
 ## Approach
 - **`commands/team/runner.ts` (new):** `preflight(store): { fails: string[]; warns: string[] }` and `untilDone(store, { maxPasses, command }): number`. The loop uses `spawnSync(command, { shell: true, stdio: "inherit", cwd: root })`. It re-opens the store with `Store.open(root)` per pass and flushes each pass's report itself (`store.ws.flush()`), so a crash mid-run keeps what was recorded. The runner's own events are told apart by `source: "runner"`.
-- **Registration:** the `run` entry gains `flag: ["until-done", …]`, `int: ["max-passes"]` and `str: ["command"]`, and calls `untilDone` when `--until-done` is set, else today's `run`. This entry is in `commands/team/autonomy.reg.ts` if P-030 has landed when this branch updates to the base, else in cli.ts (P-030 then moves it). The help line is updated in the same place. autonomy.ts itself is not edited.
+- **Registration:** the `run` entry gains `flag: ["until-done", …]`, `int: ["max-passes"]` and `str: ["command"]`, and calls `untilDone` when `--until-done` is set, else today's `run`. This entry is in `commands/team/autonomy.reg.ts` if P-030 has landed when this branch updates to the base, else in cli.ts (P-030 then moves it). The help line is updated in the same place. autonomy.ts itself is not edited. Adding options to an existing command fails registry.test.ts's "options are as before the split" check (it compares each pre-split command's spec exactly). Change that check, not registry-before.json (K-2026-10-25): for each command in BEFORE.cli, each option list BEFORE has must be a subset of the current one and `pos` equal, so later plans may add options to existing commands without editing it.
 - **Settings parse:** read `.claude/settings.json` as JSON. Walk `hooks.<Event>[].hooks[].command` strings. Match on substrings (`crew.mjs guard`, `crew.mjs usage --hook`, `crew.mjs activity --hook`), the same commands the guidelines template writes.
 - **Idle row:** in dispatch.ts, read `readActivity` + `liveRuns(activity, events, Date.now(), idle_minutes ?? 20)` (P-027) and add the entries in the Director-exceptions group.
 - **Reuse:** `runState`, `notify` (autonomy.ts), `dispatch` (dispatch.ts), `agentProblems` (agents.ts), `requireBase` (hubstate.ts), `liveRuns`/`readActivity` (activity.ts). The test helpers render agents with `tr(repo, "agents")` and write settings.json from the guidelines template (`plugins/crew/skills/guidelines/templates/settings.json`).
 
 ## Tasks
 - [x] T1: `preflight` → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/runner.test.ts -t preflight` (AC1, AC2, AC3)
-- [x] T2: `untilDone` loop, pass reports, stop reasons, exit codes, the agent refusal; the `run` registration → verify: `npx vitest run test/hub/e2e/runner.test.ts -t loop` (AC4, AC5, AC6, AC7, AC9)
+- [x] T2: `untilDone` loop, pass reports, stop reasons, exit codes, the agent refusal; the `run` registration → verify: `npx vitest run test/hub/e2e/runner.test.ts -t loop` ; `npx vitest run test/hub/registry.test.ts` (AC4, AC5, AC6, AC7, AC9)
 - [x] T3: `stopped` notify kind → verify: `npx vitest run test/hub/e2e/runner.test.ts -t notify`; `npx vitest run test/hub/e2e/policy.test.ts` (AC8)
 - [x] T4: idle row in dispatch → verify: `npx vitest run test/hub/e2e/dispatch.test.ts -t idle` (AC10)
 - [x] T5: team/SKILL.md (pass agent check, Unattended) and model.md → verify: `grep -n "until-done" plugins/crew/skills/team/SKILL.md`; `grep -n "stopped" plugins/crew/skills/hub/references/model.md`; `npx vitest run test/plugin` (AC11)
@@ -127,6 +127,8 @@ Latest log:
 - 2026-10-26: assigned to the developer role
 - 2026-10-26: status ready → in-progress — branch plan/P-034-local-runner-run-until-done
 - 2026-10-26: status in-progress → in-review
+- 2026-10-26: review: changes requested — test/hub/registry.test.ts fails: 'the CLI commands and their options are as before the split' compares run's spec exactly, and run now has until-done/max-passes/command. Do not edit registry-before.json (K-2026-10-25). In packages/crew/test/hub/registry.test.ts (now in touches; see the spec's Registration note), change that check so for each command in BEFORE.cli, pos is equal and each option list BEFORE has is a subset of the current one; then npx vitest run test/hub/registry.test.ts passes. Everything else checks out: diff within touches, runner/dispatch/policy/docs match the spec, runner, dispatch, policy, run-check, team-2 and plugin suites pass, typecheck passes, sizes fine. The extras (text on the stop report, PASS lines on stdout) are accepted.
+- 2026-10-26: status in-review → in-progress — changes requested: test/hub/registry.test.ts fails: 'the CLI commands and their options are as before the split' compares run's spec exactly, and run now has until-done/max-passes/command. Do not edit registry-before.json (K-2026-10-25). In packages/crew/test/hub/registry.test.ts (now in touches; see the spec's Registration note), change that check so for each command in BEFORE.cli, pos is equal and each option list BEFORE has is a subset of the current one; then npx vitest run test/hub/registry.test.ts passes. Everything else checks out: diff within touches, runner/dispatch/policy/docs match the spec, runner, dispatch, policy, run-check, team-2 and plugin suites pass, typecheck passes, sizes fine. The extras (text on the stop report, PASS lines on stdout) are accepted.
 
 ## Outcome
 `run --until-done [--max-passes N] [--command CMD]` is a real command (commands/team/runner.ts, registered in autonomy.reg.ts): preflight (agents rendered and loadable, guard/usage hooks fail, activity hook warns, base branch, pass command on PATH; exit 2), then one pass at a time with a runner `report` per pass, stopping on runState / empty dispatch (exit 0) or no progress in 2 passes / max passes (exit 1), with a `stopped` report and notification. Crew agents are refused. `stopped` is a notify kind. Dispatch sends idle live runs to the Director. team/SKILL.md and model.md updated.
