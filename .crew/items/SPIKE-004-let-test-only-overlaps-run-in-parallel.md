@@ -3,8 +3,8 @@ id: SPIKE-004
 type: spike
 title: Let test-only overlaps run in parallel instead of becoming depends_on
 status: triaged
-priority: P3
-goal: G-001
+priority: P1
+goal: G-007
 plan:
 created: 2026-10-24
 closed:
@@ -29,3 +29,4 @@ A recommendation recorded with `learn decision` (which overlaps qualify, how rel
 ## Notes
 Related: FEAT-025 (bundles built at release) and FEAT-028 (broad touches globs) remove the other two sources of false overlap.
 - 2026-10-24: status new → triaged — priority P3
+- 2026-10-25: re-triaged: priority P1
