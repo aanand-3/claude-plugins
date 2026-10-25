@@ -5,7 +5,7 @@ import type { Doc } from "../../core/work/doc.js";
 import { decisionProblems, fastLane, learningsProblems, readinessProblems, triageProblems } from "../../core/work/gates.js";
 import { overlapping } from "../../core/work/footprint.js";
 import { approvalReason } from "../../core/team/policy.js";
-import { evidenceProblems, writeHandoff } from "./execution.js";
+import { commitWork, evidenceProblems, writeHandoff } from "./execution.js";
 import { FORWARD, openQuestions } from "../team/questions.js";
 import { goalProblems } from "./goals.js";
 import { openPlanWorktree } from "./planning.js";
@@ -42,6 +42,7 @@ export function move(store: Store, docId: string, status: string, note?: string,
   const lane = kind === "plan" && status === "ready" && fastLane(store, doc); // the PM may make a small one ready too
   authorize(store, doc.id, via ?? `${kind}.${status}`, approvedBy, via ? undefined : old, undefined, lane ? ["pm"] : []);
   if (kind === "plan" && status === "in-progress" && !via) claimFor(store, doc, force); // the developer's claim stays
+  if (kind === "plan" && status === "in-review") commitWork(store, doc, `chore(${doc.id}): hand over to review`);
   stamp(kind!, doc, status);
   doc.set("status", status);
   if (kind === "plan" && status === "in-review" && doc.source === "worktree") writeHandoff(store, doc);
@@ -188,7 +189,7 @@ export function start(store: Store, planId: string, force = false, approvedBy?: 
     }
     claimPlan(store, planId, branch, force, takeover, approvedBy);
     store.say(`${doc.id}: work in ${store.ws.rel(home) || "this checkout"} (${branch}) — claimed by ${store.ledger.who.actor} `
-      + `(${store.ledger.who.run}); its code is committed when the plan completes`);
+      + `(${store.ledger.who.run}); checkpoints commit its code on the branch`);
     return;
   }
   const from = git.currentBranch(), sha = git.git(["rev-parse", "HEAD"])?.trim();

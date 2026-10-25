@@ -11,6 +11,13 @@ import { authorize, move } from "./workflow.js";
 /** The last commit on the plan's branch that changed anything outside .crew/ (hub bookkeeping isn't code). */
 const lastCode = (branch: string) => git.git(["log", "-1", "--format=%H", branch, "--", ".", ":(exclude).crew"])?.trim() || null;
 
+/** With plan worktrees, the plan's uncommitted code in its worktree (from any checkout); null without them. */
+function uncommitted(store: Store, plan: Doc): string[] | null {
+  if (!store.settings().plan_worktrees) return null;
+  const home = store.planHome(plan.id);
+  return home ? git.codeChanges(home, store.policy.policy.secrets.files) : [];
+}
+
 export function review(store: Store, planId: string, o: { approve?: boolean; changes?: string }): void {
   store.require();
   const plan = store.find(store.checkRef(planId, "plan"));
@@ -19,6 +26,11 @@ export function review(store: Store, planId: string, o: { approve?: boolean; cha
   authorize(store, plan.id, "plan.reviewed", undefined, undefined, `review ${plan.id}`);
   const me = store.ledger.who.run;
   if (implementers(store.ledger.events(), plan.id).has(me)) fail(`This run (${me}) implemented ${plan.id}; another role reviews it.`);
+  const open = o.approve ? uncommitted(store, plan) ?? [] : [];
+  if (open.length) { // an approval pins a commit: the code it covers must be in one
+    fail(`${plan.id}'s worktree has uncommitted code: ${open.slice(0, 10).join(", ")}${open.length > 10 ? ", …" : ""}. `
+      + `\`checkpoint ${plan.id}\` commits it on the plan's branch; then review again.`);
+  }
   const branch = plan.get("branch") ?? "";
   const sha = (branch && git.git(["rev-parse", "--verify", "-q", branch])?.trim()) || null;
   store.ledger.record("review", plan.id, { verdict: o.approve ? "approve" : "changes", sha, ...(o.changes ? { text: o.changes } : {}) });
@@ -37,8 +49,10 @@ export function reviewProblems(store: Store, plan: Doc): string[] {
   if (!last) return [`no code review yet: ${how}`];
   if (last.verdict !== "approve") return [`the last review asked for changes: ${last.text}`];
   const code = lastCode(plan.get("branch") ?? "");
-  const dirty = (git.git(["status", "--porcelain"]) ?? "").split("\n").filter((l) => l.trim() && !l.slice(3).startsWith(".crew/"));
+  // with plan worktrees, the plan's worktree from whichever checkout this runs; else this checkout, on the plan's branch
+  const dirty = uncommitted(store, plan) ?? (git.currentBranch() !== plan.get("branch") ? []
+    : (git.git(["status", "--porcelain"]) ?? "").split("\n").filter((l) => l.trim() && !l.slice(3).startsWith(".crew/")));
   const covered = !code || (!!last.sha && git.git(["merge-base", "--is-ancestor", code, String(last.sha)]) !== null);
-  return covered && !(git.currentBranch() === plan.get("branch") && dirty.length)
+  return covered && !dirty.length
     ? [] : [`the code changed since the approving review (${String(last.sha ?? "?").slice(0, 7)}): ${how} again`];
 }

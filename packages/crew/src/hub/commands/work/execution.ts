@@ -3,12 +3,14 @@
  * into the plan), and the evidence each acceptance criterion needs before `done`. */
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import type { Doc } from "../../core/work/doc.js";
 import * as git from "../../core/git.js";
 import { secretsIn } from "../../core/memory/knowledge.js";
 import type { LedgerEvent } from "../../core/memory/ledger.js";
 import type { Store } from "../../core/store.js";
-import { fail, stripComments, today } from "../../core/text.js";
+import { fail, HubError, stripComments, today } from "../../core/text.js";
 import { attempts, escalateLimit } from "../team/liveness.js";
 
 const OUTPUT_LINES = 15, OUTPUT_CHARS = 2000, RUN_TIMEOUT_MS = 10 * 60_000;
@@ -110,24 +112,25 @@ export function checkpoint(store: Store, id: string | undefined, o: CheckpointOp
     fail("Not on a plan branch: name the plan (`checkpoint P-###`).");
   }
   const home = (plan.id.startsWith("P-") && store.planHome(plan.id)) || store.ws.root; // checks run where the plan's work is
+  const acs = parseAc(o.ac, criteria(plan).length);
+  const prints = acs.map((n) => acPrint(criteria(plan)[n - 1]));
+  if (o.verify && o.result !== "pass" && o.result !== "fail") fail("--verify needs --result pass|fail.");
+  if (o.attempt && !o.why) fail("--attempt needs --why: what made it fail, so the next run doesn't retry it.");
+  const goal = plan.id.startsWith("G-");
+  if (goal && !o.run && !o.verify) fail(`A goal's checkpoint records evidence: \`checkpoint ${plan.id} --verify "<how>" --result pass|fail --ac n\`.`);
+  const step = goal ? "goal" : o.step ?? plan.tasks().find(([done]) => !done)?.[1].split(":")[0] ?? "done";
+  if (!o.auto && !goal) commitWork(store, plan, `chore(${plan.id}): checkpoint ${step}`); // auto checkpoints never commit
   const snap = snapshot(home);
   const last = checkpoints(store.ledger.events(), plan.id).at(-1);
   if (o.auto && last?.fingerprint === snap.fingerprint) return 0;
-  const acs = parseAc(o.ac, criteria(plan).length);
-  const prints = acs.map((n) => acPrint(criteria(plan)[n - 1]));
   const verify: Verify[] = [];
   if (o.run) {
     const r = spawnSync(o.run, { shell: true, cwd: home, encoding: "utf8", timeout: RUN_TIMEOUT_MS, maxBuffer: 32 << 20 });
     verify.push({ cmd: o.run, ok: r.status === 0, ac: acs, ac_text: prints, output: tail(`${r.stdout ?? ""}${r.stderr ?? ""}`, store.policy.policy.secrets.patterns), observed: true });
   }
   if (o.verify) {
-    if (o.result !== "pass" && o.result !== "fail") fail("--verify needs --result pass|fail.");
     verify.push({ cmd: o.verify, ok: o.result === "pass", ac: acs, ac_text: prints, ...(o.output ? { output: tail(o.output, store.policy.policy.secrets.patterns) } : {}), observed: false });
   }
-  if (o.attempt && !o.why) fail("--attempt needs --why: what made it fail, so the next run doesn't retry it.");
-  const goal = plan.id.startsWith("G-");
-  if (goal && !verify.length) fail(`A goal's checkpoint records evidence: \`checkpoint ${plan.id} --verify "<how>" --result pass|fail --ac n\`.`);
-  const step = goal ? "goal" : o.step ?? plan.tasks().find(([done]) => !done)?.[1].split(":")[0] ?? "done";
   store.ledger.record("checkpoint", plan.id, { step, sha: snap.sha, dirty: snap.dirty.slice(0, 50), fingerprint: snap.fingerprint,
     ...(verify.length ? { verify } : {}), ...(o.attempt ? { attempt: { what: o.attempt, why: o.why } } : {}),
     ...(o.note ? { note: o.note } : {}), ...(o.auto ? { auto: true } : {}) });
@@ -140,11 +143,43 @@ export function checkpoint(store: Store, id: string | undefined, o: CheckpointOp
 }
 
 /** The Stop/PreCompact hook runs from the main checkout, not from a plan's shared worktree: checkpoint each in-progress plan
- * that has one (an unchanged tree is skipped, as always). */
+ * that has one (an unchanged tree is skipped, as always). One plan's failure is reported and the others still get theirs. */
 function autoWorktrees(store: Store, o: CheckpointOptions): number {
   const plans = store.plans();
-  for (const pid of store.planWorktrees().keys()) if (plans.get(pid)?.get("status") === "in-progress") checkpoint(store, pid, o);
+  for (const pid of store.planWorktrees().keys()) {
+    if (plans.get(pid)?.get("status") !== "in-progress") continue;
+    try {
+      checkpoint(store, pid, o);
+    } catch (e) {
+      if (!(e instanceof HubError)) throw e;
+      store.say(`${pid}: auto checkpoint failed — ${e.message}`);
+    }
+  }
   return 0;
+}
+
+/** With plan worktrees, commit the plan's uncommitted code (`git.codeChanges`: not .crew/, generated or secret files) on its
+ * branch, in its worktree. Hooks run; one that refuses fails the command with git's message. A command refused later
+ * leaves no commit behind: the branch goes back to where it was, the changes stay in the worktree. Returns the new commit. */
+export function commitWork(store: Store, plan: Doc, subject: string): string | null {
+  const home = store.settings().plan_worktrees ? store.planHome(plan.id) : null;
+  if (!home || git.git(["-C", home, "branch", "--show-current"])?.trim() !== plan.get("branch")) return null;
+  const files = git.codeChanges(home, store.policy.policy.secrets.files);
+  if (!files.length) return null;
+  const at = (args: string[], check = false) => git.git(["-C", home, "--literal-pathspecs", ...args], check);
+  const prev = at(["rev-parse", "HEAD"])?.trim();
+  const gone = files.filter((f) => !existsSync(join(home, f))); // `add` refuses a deletion that is already staged
+  if (files.length > gone.length) at(["add", "-A", "--", ...files.filter((f) => !gone.includes(f))], true);
+  if (gone.length) at(["rm", "-q", "--cached", "--ignore-unmatch", "--", ...gone], true);
+  try {
+    at(["commit", "-q", "--only", "-m", subject, "--", ...files], true);
+  } catch (e) {
+    if (!(e instanceof HubError)) throw e;
+    at(["reset", "-q", "--", ...files]); // unstaged again, as they were
+    fail(`${plan.id}: git refused the commit (${subject}): ${e.message.slice(e.message.indexOf(" failed: ") + 9) || "no message"}`);
+  }
+  store.ws.onAbort(() => at(["reset", "-q", "--soft", prev!]));
+  return at(["rev-parse", "HEAD"])?.trim() ?? null;
 }
 
 function parseAc(spec: string | undefined, n: number): number[] {

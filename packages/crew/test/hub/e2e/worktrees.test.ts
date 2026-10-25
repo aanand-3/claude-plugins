@@ -111,8 +111,10 @@ it("plan worktrees: start, checkpoint and merge order", () => {
   expect(repo.git("status", "--porcelain", "--", ".crew/plans").stdout).toBe("");
   qaDone(repo, "P-001", "test -f src/auth/marker.txt");
   const out = tr(repo, "merge-order").stdout;
-  expect(out).toContain("commit everything in .claude/worktrees/P-001-signup once");
-  expect(out).toContain("squash-merge plan/P-001-signup");
+  // the checkpoint above committed the marker; the hand-over found nothing left to commit
+  expect(repo.git("log", "-1", "--format=%s", "plan/P-001-signup").stdout.trim()).toBe("chore(P-001): checkpoint T1");
+  expect(wt.git("status", "--porcelain").stdout).toBe("");
+  expect(out).toContain("merge plan/P-001-signup into main");
 });
 
 it("plan worktrees: the developer agent has no isolation", () => {

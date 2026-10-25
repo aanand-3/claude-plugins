@@ -7372,6 +7372,21 @@ import { pathToFileURL } from "node:url";
 import { spawnSync } from "node:child_process";
 import { resolve } from "node:path";
 
+// src/shared/secrets.ts
+var SECRET_PATTERNS = {
+  "AWS access key": /\b(AKIA|ASIA)[0-9A-Z]{16}\b/,
+  "private key": /-----BEGIN [A-Z ]*PRIVATE KEY-----/,
+  "GitHub token": /\b(gh[pousr]_[A-Za-z0-9]{36,}|github_pat_[A-Za-z0-9_]{60,})\b/,
+  "Slack token": /\bxox[abprs]-[A-Za-z0-9-]{10,}\b/,
+  "Anthropic API key": /\bsk-ant-[A-Za-z0-9_-]{20,}/,
+  "OpenAI API key": /\bsk-(proj-)?[A-Za-z0-9_-]{32,}/,
+  "Google API key": /\bAIza[0-9A-Za-z_-]{35}\b/,
+  "Stripe live key": /\b(sk|rk)_live_[0-9A-Za-z]{20,}\b/,
+  "HubSpot private app token": /\bpat-(na|eu)\d-[0-9a-f]{8}-[0-9a-f-]{27}\b/,
+  "credentials in URL": /\b[a-z][a-z0-9+.-]*:\/\/[^/\s:@]+:[^/\s:@]{8,}@(?!localhost|127\.0\.0\.1|postgres|redis|db\b)/
+};
+var ALLOW_SECRET = "pk:allow-secret";
+
 // src/hub/core/work/model.ts
 var IDEA_ID = "IDEA";
 var IDEA_FLOW = {
@@ -7531,133 +7546,6 @@ function byKey(key) {
   };
 }
 
-// src/hub/core/git.ts
-var ROOT = null;
-function useRoot(root) {
-  ROOT = root;
-}
-function git(args, check2 = false) {
-  const r = spawnSync("git", ROOT && args[0] !== "-C" ? ["-C", ROOT, ...args] : args, { encoding: "utf8" });
-  if (r.status !== 0) {
-    if (check2) fail(`git ${args.join(" ")} failed: ${(r.stderr ?? "").trim()}`);
-    return null;
-  }
-  return r.stdout;
-}
-function repoRoot() {
-  return git(["rev-parse", "--show-toplevel"])?.trim() || process.cwd();
-}
-function commonDir(root) {
-  const out = git(["-C", root, "rev-parse", "--git-common-dir"])?.trim();
-  return out ? resolve(root, out) : null;
-}
-function userName() {
-  return /^(.*?) </.exec(git(["var", "GIT_AUTHOR_IDENT"]) ?? "")?.[1].trim() || null;
-}
-function files(root) {
-  return words(git(["-C", root, "ls-files", "--cached", "--others", "--exclude-standard"]));
-}
-function currentBranch() {
-  return git(["branch", "--show-current"])?.trim() || null;
-}
-function worktrees() {
-  const out = [];
-  for (const line2 of (git(["worktree", "list", "--porcelain"]) ?? "").split("\n")) {
-    if (line2.startsWith("worktree ")) out.push({ path: line2.slice(9), branch: null });
-    else if (line2.startsWith("branch ") && out.length) out.at(-1).branch = line2.slice(7).replace(/^refs\/heads\//, "");
-  }
-  return out;
-}
-function changed(dir, paths) {
-  return (git(["-C", dir, "status", "--porcelain", "-z", "--untracked-files=all", "--no-renames", "--", ...paths]) ?? "").split("\0").filter((l) => l.length > 3).map((l) => l.slice(3));
-}
-function dirty(dir, path) {
-  return (git(["-C", dir, "status", "--porcelain", "--untracked-files=all", "--no-renames", "--", path]) ?? "").split("\n").filter((l) => l.length > 3 && !l.slice(0, 2).includes("D")).map((l) => l.slice(3));
-}
-function squashMerge(branch, base, pid) {
-  const fork = git(["merge-base", branch, base])?.trim();
-  const changed2 = fork ? (git(["diff", "--name-only", "-z", fork, branch]) ?? "").split("\0").filter(Boolean) : [];
-  if (!changed2.length) return null;
-  const names = new RegExp(`^(\\w+\\(${pid}\\)|${pid}):`);
-  for (const line2 of (git(["log", "--format=%H %s", `${fork}..${base}`]) ?? "").split("\n")) {
-    const [sha, subject] = [line2.slice(0, line2.indexOf(" ")), line2.slice(line2.indexOf(" ") + 1)];
-    if (sha && names.test(subject) && git(["--literal-pathspecs", "diff", "--quiet", branch, sha, "--", ...changed2]) !== null) return sha;
-  }
-  return null;
-}
-function planBranches() {
-  return words(git(["for-each-ref", "--format=%(refname:short)", "refs/heads/plan/", "refs/remotes/origin/plan/"]));
-}
-function allRefs() {
-  return words(git(["for-each-ref", "--format=%(refname:short)", "refs/heads/", "refs/remotes/"]));
-}
-function lsTree(ref, path) {
-  return words(git(["ls-tree", "--name-only", ref, path]));
-}
-function show(ref, path) {
-  return git(["show", `${ref}:${path}`]);
-}
-function words(out) {
-  return (out ?? "").split(/\s+/).filter(Boolean);
-}
-
-// src/hub/core/work/queries.ts
-var up = (s2) => (s2 ?? "").toUpperCase();
-function itemStatus(item, plans2) {
-  const st = item.get("status") || "new";
-  if (ITEM_CLOSED.has(st)) return st;
-  const p = plans2.get(up(item.get("plan")));
-  return p ? PLAN_TO_ITEM[p.get("status") ?? ""] ?? st : st;
-}
-function planItems(plan, items2) {
-  const linked = new Set([...items2].filter(([, it]) => up(it.get("plan")) === plan.id).map(([i]) => i));
-  for (const i of idList(plan.get("items"))) linked.add(i);
-  return [...linked].sort().filter((i) => items2.has(i)).map((i) => items2.get(i));
-}
-function planGoal(plan, items2) {
-  return up(plan.get("goal")) || planItems(plan, items2).map((i) => up(i.get("goal"))).find(Boolean) || "";
-}
-function onFocus(plan, items2, focus) {
-  if (!focus || planGoal(plan, items2) === focus) return true;
-  const linked = planItems(plan, items2);
-  return linked.length > 0 && linked.every((i) => OFF_FOCUS_OK.has(i.id.split("-")[0]));
-}
-function goalOrder(goals2) {
-  return new Map([...goals2.keys()].sort().map((e, i) => [e, i]));
-}
-function itemRank(it, goals2, focus) {
-  const eorder = goalOrder(goals2);
-  const prio = PRIORITIES.includes(it.get("priority") ?? "") ? it.get("priority") : "P9";
-  return [prio !== "P0", !focus || up(it.get("goal")) !== focus, prio, eorder.get(up(it.get("goal"))) ?? eorder.size, it.id];
-}
-function ranked(items2, goals2, focus) {
-  return [...items2.values()].sort(byKey((i) => itemRank(i, goals2, focus)));
-}
-function unmetDeps(doc, plans2) {
-  return doc.dependsOn().filter((d) => plans2.get(d)?.get("status") !== "done");
-}
-function goalItems(goalId, items2) {
-  return [...items2.values()].filter((i) => up(i.get("goal")) === goalId && !ITEM_CLOSED.has(i.get("status") ?? ""));
-}
-function goalPlans(goalId, plans2, items2) {
-  return [...plans2.values()].filter((p) => planGoal(p, items2) === goalId);
-}
-
-// src/shared/secrets.ts
-var SECRET_PATTERNS = {
-  "AWS access key": /\b(AKIA|ASIA)[0-9A-Z]{16}\b/,
-  "private key": /-----BEGIN [A-Z ]*PRIVATE KEY-----/,
-  "GitHub token": /\b(gh[pousr]_[A-Za-z0-9]{36,}|github_pat_[A-Za-z0-9_]{60,})\b/,
-  "Slack token": /\bxox[abprs]-[A-Za-z0-9-]{10,}\b/,
-  "Anthropic API key": /\bsk-ant-[A-Za-z0-9_-]{20,}/,
-  "OpenAI API key": /\bsk-(proj-)?[A-Za-z0-9_-]{32,}/,
-  "Google API key": /\bAIza[0-9A-Za-z_-]{35}\b/,
-  "Stripe live key": /\b(sk|rk)_live_[0-9A-Za-z]{20,}\b/,
-  "HubSpot private app token": /\bpat-(na|eu)\d-[0-9a-f]{8}-[0-9a-f-]{27}\b/,
-  "credentials in URL": /\b[a-z][a-z0-9+.-]*:\/\/[^/\s:@]+:[^/\s:@]{8,}@(?!localhost|127\.0\.0\.1|postgres|redis|db\b)/
-};
-var ALLOW_SECRET = "pk:allow-secret";
-
 // src/hub/core/memory/knowledge.ts
 var KNOWLEDGE_TYPES = ["decision", "learning", "gotcha", "convention", "risk"];
 var TIERS = ["project", "playbook-candidate"];
@@ -7755,6 +7643,137 @@ function knowledgeId(title, taken) {
   return id;
 }
 
+// src/hub/core/git.ts
+var ROOT = null;
+function useRoot(root) {
+  ROOT = root;
+}
+function git(args, check2 = false) {
+  const r = spawnSync("git", ROOT && args[0] !== "-C" ? ["-C", ROOT, ...args] : args, { encoding: "utf8" });
+  if (r.status !== 0) {
+    if (check2) fail(`git ${args.join(" ")} failed: ${(r.stderr ?? "").trim()}`);
+    return null;
+  }
+  return r.stdout;
+}
+function repoRoot() {
+  return git(["rev-parse", "--show-toplevel"])?.trim() || process.cwd();
+}
+function commonDir(root) {
+  const out = git(["-C", root, "rev-parse", "--git-common-dir"])?.trim();
+  return out ? resolve(root, out) : null;
+}
+function userName() {
+  return /^(.*?) </.exec(git(["var", "GIT_AUTHOR_IDENT"]) ?? "")?.[1].trim() || null;
+}
+function files(root) {
+  return words(git(["-C", root, "ls-files", "--cached", "--others", "--exclude-standard"]));
+}
+function currentBranch() {
+  return git(["branch", "--show-current"])?.trim() || null;
+}
+function worktrees() {
+  const out = [];
+  for (const line2 of (git(["worktree", "list", "--porcelain"]) ?? "").split("\n")) {
+    if (line2.startsWith("worktree ")) out.push({ path: line2.slice(9), branch: null });
+    else if (line2.startsWith("branch ") && out.length) out.at(-1).branch = line2.slice(7).replace(/^refs\/heads\//, "");
+  }
+  return out;
+}
+function changed(dir, paths) {
+  return (git(["-C", dir, "status", "--porcelain", "-z", "--untracked-files=all", "--no-renames", "--", ...paths]) ?? "").split("\0").filter((l) => l.length > 3).map((l) => l.slice(3));
+}
+function dirty(dir, path) {
+  return (git(["-C", dir, "status", "--porcelain", "--untracked-files=all", "--no-renames", "--", path]) ?? "").split("\n").filter((l) => l.length > 3 && !l.slice(0, 2).includes("D")).map((l) => l.slice(3));
+}
+function squashMerge(branch, base, pid) {
+  const fork = git(["merge-base", branch, base])?.trim();
+  const changed2 = fork ? (git(["diff", "--name-only", "-z", fork, branch]) ?? "").split("\0").filter(Boolean) : [];
+  if (!changed2.length) return null;
+  const names = new RegExp(`^(\\w+\\(${pid}\\)|${pid}):`);
+  for (const line2 of (git(["log", "--format=%H %s", `${fork}..${base}`]) ?? "").split("\n")) {
+    const [sha, subject] = [line2.slice(0, line2.indexOf(" ")), line2.slice(line2.indexOf(" ") + 1)];
+    if (sha && names.test(subject) && mergesToItself(sha, branch, changed2)) return sha;
+  }
+  return null;
+}
+function mergesToItself(sha, branch, changed2) {
+  const r = spawnSync("git", [...ROOT ? ["-C", ROOT] : [], "merge-tree", "--write-tree", sha, branch], { encoding: "utf8" });
+  if (r.status === 0) return r.stdout.split("\n")[0].trim() === git(["rev-parse", `${sha}^{tree}`])?.trim();
+  if (r.status === 1) return false;
+  return git(["--literal-pathspecs", "diff", "--quiet", branch, sha, "--", ...changed2]) !== null;
+}
+function generated(dir, files2) {
+  const out = /* @__PURE__ */ new Set();
+  if (!files2.length) return out;
+  const attrs = (git(["-C", dir, "check-attr", "-z", "linguist-generated", "--", ...files2]) ?? "").split("\0");
+  for (let i = 0; i + 2 < attrs.length; i += 3) if (attrs[i + 2] === "true" || attrs[i + 2] === "set") out.add(attrs[i]);
+  return out;
+}
+function codeChanges(dir, secretGlobs) {
+  const secret = secretGlobs.map(globRe);
+  const files2 = changed(dir, ["."]).filter((f) => !f.startsWith(".crew/") && !secret.some((re) => re.test(f)));
+  const gen = generated(dir, files2);
+  return files2.filter((f) => !gen.has(f));
+}
+function planBranches() {
+  return words(git(["for-each-ref", "--format=%(refname:short)", "refs/heads/plan/", "refs/remotes/origin/plan/"]));
+}
+function allRefs() {
+  return words(git(["for-each-ref", "--format=%(refname:short)", "refs/heads/", "refs/remotes/"]));
+}
+function lsTree(ref, path) {
+  return words(git(["ls-tree", "--name-only", ref, path]));
+}
+function show(ref, path) {
+  return git(["show", `${ref}:${path}`]);
+}
+function words(out) {
+  return (out ?? "").split(/\s+/).filter(Boolean);
+}
+
+// src/hub/core/work/queries.ts
+var up = (s2) => (s2 ?? "").toUpperCase();
+function itemStatus(item, plans2) {
+  const st = item.get("status") || "new";
+  if (ITEM_CLOSED.has(st)) return st;
+  const p = plans2.get(up(item.get("plan")));
+  return p ? PLAN_TO_ITEM[p.get("status") ?? ""] ?? st : st;
+}
+function planItems(plan, items2) {
+  const linked = new Set([...items2].filter(([, it]) => up(it.get("plan")) === plan.id).map(([i]) => i));
+  for (const i of idList(plan.get("items"))) linked.add(i);
+  return [...linked].sort().filter((i) => items2.has(i)).map((i) => items2.get(i));
+}
+function planGoal(plan, items2) {
+  return up(plan.get("goal")) || planItems(plan, items2).map((i) => up(i.get("goal"))).find(Boolean) || "";
+}
+function onFocus(plan, items2, focus) {
+  if (!focus || planGoal(plan, items2) === focus) return true;
+  const linked = planItems(plan, items2);
+  return linked.length > 0 && linked.every((i) => OFF_FOCUS_OK.has(i.id.split("-")[0]));
+}
+function goalOrder(goals2) {
+  return new Map([...goals2.keys()].sort().map((e, i) => [e, i]));
+}
+function itemRank(it, goals2, focus) {
+  const eorder = goalOrder(goals2);
+  const prio = PRIORITIES.includes(it.get("priority") ?? "") ? it.get("priority") : "P9";
+  return [prio !== "P0", !focus || up(it.get("goal")) !== focus, prio, eorder.get(up(it.get("goal"))) ?? eorder.size, it.id];
+}
+function ranked(items2, goals2, focus) {
+  return [...items2.values()].sort(byKey((i) => itemRank(i, goals2, focus)));
+}
+function unmetDeps(doc, plans2) {
+  return doc.dependsOn().filter((d) => plans2.get(d)?.get("status") !== "done");
+}
+function goalItems(goalId, items2) {
+  return [...items2.values()].filter((i) => up(i.get("goal")) === goalId && !ITEM_CLOSED.has(i.get("status") ?? ""));
+}
+function goalPlans(goalId, plans2, items2) {
+  return [...plans2.values()].filter((p) => planGoal(p, items2) === goalId);
+}
+
 // src/hub/core/work/footprint.ts
 var LIVE = /* @__PURE__ */ new Set(["ready", "in-progress", "blocked", "in-review"]);
 function overlapping(plan, plans2) {
@@ -7775,12 +7794,12 @@ function drift(plan, base, home) {
   ].filter(Boolean));
   const globs = plan.touches().map(globRe);
   const outside = [...changed2].filter((f) => !f.startsWith(".crew/") && !globs.some((g) => g.test(f)));
-  const generated = /* @__PURE__ */ new Set();
+  const generated2 = /* @__PURE__ */ new Set();
   if (outside.length) {
     const out = (at(["check-attr", "-z", "linguist-generated", "--", ...outside]) ?? "").split("\0");
-    for (let i = 0; i + 2 < out.length; i += 3) if (out[i + 2] === "true" || out[i + 2] === "set") generated.add(out[i]);
+    for (let i = 0; i + 2 < out.length; i += 3) if (out[i + 2] === "true" || out[i + 2] === "set") generated2.add(out[i]);
   }
-  return outside.filter((f) => !generated.has(f)).sort();
+  return outside.filter((f) => !generated2.has(f)).sort();
 }
 
 // src/hub/core/team/policy.ts
@@ -8101,6 +8120,8 @@ function approvalReason(p, transition) {
 // src/hub/commands/work/execution.ts
 import { spawnSync as spawnSync3 } from "node:child_process";
 import { createHash as createHash2 } from "node:crypto";
+import { existsSync as existsSync7 } from "node:fs";
+import { join as join11 } from "node:path";
 
 // src/hub/commands/team/questions.ts
 import { randomBytes as randomBytes2 } from "node:crypto";
@@ -9694,6 +9715,11 @@ function setFocus(store, goalId) {
 
 // src/hub/commands/work/review.ts
 var lastCode = (branch) => git(["log", "-1", "--format=%H", branch, "--", ".", ":(exclude).crew"])?.trim() || null;
+function uncommitted(store, plan) {
+  if (!store.settings().plan_worktrees) return null;
+  const home = store.planHome(plan.id);
+  return home ? codeChanges(home, store.policy.policy.secrets.files) : [];
+}
 function review(store, planId, o) {
   store.require();
   const plan = store.find(store.checkRef(planId, "plan"));
@@ -9702,6 +9728,10 @@ function review(store, planId, o) {
   authorize(store, plan.id, "plan.reviewed", void 0, void 0, `review ${plan.id}`);
   const me = store.ledger.who.run;
   if (implementers(store.ledger.events(), plan.id).has(me)) fail(`This run (${me}) implemented ${plan.id}; another role reviews it.`);
+  const open = o.approve ? uncommitted(store, plan) ?? [] : [];
+  if (open.length) {
+    fail(`${plan.id}'s worktree has uncommitted code: ${open.slice(0, 10).join(", ")}${open.length > 10 ? ", \u2026" : ""}. \`checkpoint ${plan.id}\` commits it on the plan's branch; then review again.`);
+  }
   const branch = plan.get("branch") ?? "";
   const sha = branch && git(["rev-parse", "--verify", "-q", branch])?.trim() || null;
   store.ledger.record("review", plan.id, { verdict: o.approve ? "approve" : "changes", sha, ...o.changes ? { text: o.changes } : {} });
@@ -9718,9 +9748,9 @@ function reviewProblems(store, plan) {
   if (!last) return [`no code review yet: ${how}`];
   if (last.verdict !== "approve") return [`the last review asked for changes: ${last.text}`];
   const code = lastCode(plan.get("branch") ?? "");
-  const dirty2 = (git(["status", "--porcelain"]) ?? "").split("\n").filter((l) => l.trim() && !l.slice(3).startsWith(".crew/"));
+  const dirty2 = uncommitted(store, plan) ?? (currentBranch() !== plan.get("branch") ? [] : (git(["status", "--porcelain"]) ?? "").split("\n").filter((l) => l.trim() && !l.slice(3).startsWith(".crew/")));
   const covered = !code || !!last.sha && git(["merge-base", "--is-ancestor", code, String(last.sha)]) !== null;
-  return covered && !(currentBranch() === plan.get("branch") && dirty2.length) ? [] : [`the code changed since the approving review (${String(last.sha ?? "?").slice(0, 7)}): ${how} again`];
+  return covered && !dirty2.length ? [] : [`the code changed since the approving review (${String(last.sha ?? "?").slice(0, 7)}): ${how} again`];
 }
 
 // src/hub/commands/work/workflow.ts
@@ -9748,6 +9778,7 @@ function move(store, docId, status2, note, force = false, approvedBy, via) {
   const lane = kind === "plan" && status2 === "ready" && fastLane(store, doc);
   authorize(store, doc.id, via ?? `${kind}.${status2}`, approvedBy, via ? void 0 : old, void 0, lane ? ["pm"] : []);
   if (kind === "plan" && status2 === "in-progress" && !via) claimFor(store, doc, force);
+  if (kind === "plan" && status2 === "in-review") commitWork(store, doc, `chore(${doc.id}): hand over to review`);
   stamp(kind, doc, status2);
   doc.set("status", status2);
   if (kind === "plan" && status2 === "in-review" && doc.source === "worktree") writeHandoff(store, doc);
@@ -10097,24 +10128,25 @@ function checkpoint(store, id, o = {}) {
     fail("Not on a plan branch: name the plan (`checkpoint P-###`).");
   }
   const home = plan.id.startsWith("P-") && store.planHome(plan.id) || store.ws.root;
+  const acs = parseAc(o.ac, criteria(plan).length);
+  const prints = acs.map((n2) => acPrint(criteria(plan)[n2 - 1]));
+  if (o.verify && o.result !== "pass" && o.result !== "fail") fail("--verify needs --result pass|fail.");
+  if (o.attempt && !o.why) fail("--attempt needs --why: what made it fail, so the next run doesn't retry it.");
+  const goal = plan.id.startsWith("G-");
+  if (goal && !o.run && !o.verify) fail(`A goal's checkpoint records evidence: \`checkpoint ${plan.id} --verify "<how>" --result pass|fail --ac n\`.`);
+  const step = goal ? "goal" : o.step ?? plan.tasks().find(([done]) => !done)?.[1].split(":")[0] ?? "done";
+  if (!o.auto && !goal) commitWork(store, plan, `chore(${plan.id}): checkpoint ${step}`);
   const snap = snapshot(home);
   const last = checkpoints(store.ledger.events(), plan.id).at(-1);
   if (o.auto && last?.fingerprint === snap.fingerprint) return 0;
-  const acs = parseAc(o.ac, criteria(plan).length);
-  const prints = acs.map((n2) => acPrint(criteria(plan)[n2 - 1]));
   const verify = [];
   if (o.run) {
     const r = spawnSync3(o.run, { shell: true, cwd: home, encoding: "utf8", timeout: RUN_TIMEOUT_MS, maxBuffer: 32 << 20 });
     verify.push({ cmd: o.run, ok: r.status === 0, ac: acs, ac_text: prints, output: tail(`${r.stdout ?? ""}${r.stderr ?? ""}`, store.policy.policy.secrets.patterns), observed: true });
   }
   if (o.verify) {
-    if (o.result !== "pass" && o.result !== "fail") fail("--verify needs --result pass|fail.");
     verify.push({ cmd: o.verify, ok: o.result === "pass", ac: acs, ac_text: prints, ...o.output ? { output: tail(o.output, store.policy.policy.secrets.patterns) } : {}, observed: false });
   }
-  if (o.attempt && !o.why) fail("--attempt needs --why: what made it fail, so the next run doesn't retry it.");
-  const goal = plan.id.startsWith("G-");
-  if (goal && !verify.length) fail(`A goal's checkpoint records evidence: \`checkpoint ${plan.id} --verify "<how>" --result pass|fail --ac n\`.`);
-  const step = goal ? "goal" : o.step ?? plan.tasks().find(([done]) => !done)?.[1].split(":")[0] ?? "done";
   store.ledger.record("checkpoint", plan.id, {
     step,
     sha: snap.sha,
@@ -10133,8 +10165,36 @@ function checkpoint(store, id, o = {}) {
 }
 function autoWorktrees(store, o) {
   const plans2 = store.plans();
-  for (const pid of store.planWorktrees().keys()) if (plans2.get(pid)?.get("status") === "in-progress") checkpoint(store, pid, o);
+  for (const pid of store.planWorktrees().keys()) {
+    if (plans2.get(pid)?.get("status") !== "in-progress") continue;
+    try {
+      checkpoint(store, pid, o);
+    } catch (e) {
+      if (!(e instanceof HubError)) throw e;
+      store.say(`${pid}: auto checkpoint failed \u2014 ${e.message}`);
+    }
+  }
   return 0;
+}
+function commitWork(store, plan, subject) {
+  const home = store.settings().plan_worktrees ? store.planHome(plan.id) : null;
+  if (!home || git(["-C", home, "branch", "--show-current"])?.trim() !== plan.get("branch")) return null;
+  const files2 = codeChanges(home, store.policy.policy.secrets.files);
+  if (!files2.length) return null;
+  const at = (args, check2 = false) => git(["-C", home, "--literal-pathspecs", ...args], check2);
+  const prev = at(["rev-parse", "HEAD"])?.trim();
+  const gone = files2.filter((f) => !existsSync7(join11(home, f)));
+  if (files2.length > gone.length) at(["add", "-A", "--", ...files2.filter((f) => !gone.includes(f))], true);
+  if (gone.length) at(["rm", "-q", "--cached", "--ignore-unmatch", "--", ...gone], true);
+  try {
+    at(["commit", "-q", "--only", "-m", subject, "--", ...files2], true);
+  } catch (e) {
+    if (!(e instanceof HubError)) throw e;
+    at(["reset", "-q", "--", ...files2]);
+    fail(`${plan.id}: git refused the commit (${subject}): ${e.message.slice(e.message.indexOf(" failed: ") + 9) || "no message"}`);
+  }
+  store.ws.onAbort(() => at(["reset", "-q", "--soft", prev]));
+  return at(["rev-parse", "HEAD"])?.trim() ?? null;
 }
 function parseAc(spec, n2) {
   if (!spec) return [];
@@ -10545,13 +10605,13 @@ var Context = class {
 
 // src/hub/commands/views/design.ts
 var import_yaml3 = __toESM(require_dist(), 1);
-import { dirname as dirname5, join as join11 } from "node:path";
+import { dirname as dirname5, join as join12 } from "node:path";
 var FRONT = /^---\n([\s\S]*?)\n---\n/;
 function designPath(store) {
-  const cfg = store.ws.read(join11(store.dir, "config.yaml")) ?? "";
-  return join11(store.ws.root, yamlBlock(cfg, "design").file ?? "docs/design/DESIGN.md");
+  const cfg = store.ws.read(join12(store.dir, "config.yaml")) ?? "";
+  return join12(store.ws.root, yamlBlock(cfg, "design").file ?? "docs/design/DESIGN.md");
 }
-var studioPath = (store) => join11(dirname5(designPath(store)), "studio.json");
+var studioPath = (store) => join12(dirname5(designPath(store)), "studio.json");
 function readDesign(store) {
   const path = designPath(store);
   const text2 = store.ws.read(path);

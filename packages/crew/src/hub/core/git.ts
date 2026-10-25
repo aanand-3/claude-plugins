@@ -1,6 +1,7 @@
 /** The hub's only access to git. */
 import { spawnSync } from "node:child_process";
 import { resolve } from "node:path";
+import { globRe } from "./memory/knowledge.js";
 import { fail } from "./text.js";
 
 let ROOT: string | null = null;
@@ -67,8 +68,9 @@ export function dirty(dir: string, path: string): string[] {
 }
 
 /** The commit on `base` that squash-merged `branch` (plan `pid`), or null: one since the two forked whose subject names the
- * plan (`P-###: …` or `<type>(P-###): …`) and that holds the branch tip's version of every file the branch changed. The
- * subject only narrows the search; a mention-only commit, or a branch that moved on after its squash, doesn't match. */
+ * plan (`P-###: …` or `<type>(P-###): …`) and into which merging the branch changes nothing — so a file main changed too, or
+ * a rename, still counts. The subject only narrows the search; a mention-only commit, or a branch that moved on after its
+ * squash, doesn't match. */
 export function squashMerge(branch: string, base: string, pid: string): string | null {
   const fork = git(["merge-base", branch, base])?.trim();
   const changed = fork ? (git(["diff", "--name-only", "-z", fork, branch]) ?? "").split("\0").filter(Boolean) : [];
@@ -76,9 +78,36 @@ export function squashMerge(branch: string, base: string, pid: string): string |
   const names = new RegExp(`^(\\w+\\(${pid}\\)|${pid}):`);
   for (const line of (git(["log", "--format=%H %s", `${fork}..${base}`]) ?? "").split("\n")) {
     const [sha, subject] = [line.slice(0, line.indexOf(" ")), line.slice(line.indexOf(" ") + 1)];
-    if (sha && names.test(subject) && git(["--literal-pathspecs", "diff", "--quiet", branch, sha, "--", ...changed]) !== null) return sha;
+    if (sha && names.test(subject) && mergesToItself(sha, branch, changed)) return sha;
   }
   return null;
+}
+
+/** Whether merging `branch` into `sha` leaves `sha`'s tree as it is (`merge-tree --write-tree`, git ≥ 2.38). An older git
+ * falls back to "`sha` holds the branch tip's version of every file the branch changed". */
+function mergesToItself(sha: string, branch: string, changed: string[]): boolean {
+  const r = spawnSync("git", [...(ROOT ? ["-C", ROOT] : []), "merge-tree", "--write-tree", sha, branch], { encoding: "utf8" });
+  if (r.status === 0) return r.stdout.split("\n")[0].trim() === git(["rev-parse", `${sha}^{tree}`])?.trim();
+  if (r.status === 1) return false; // conflicts
+  return git(["--literal-pathspecs", "diff", "--quiet", branch, sha, "--", ...changed]) !== null;
+}
+
+/** Files of `files` (relative to the root of the worktree at `dir`) that `.gitattributes` marks `linguist-generated`. */
+export function generated(dir: string, files: string[]): Set<string> {
+  const out = new Set<string>();
+  if (!files.length) return out;
+  const attrs = (git(["-C", dir, "check-attr", "-z", "linguist-generated", "--", ...files]) ?? "").split("\0");
+  for (let i = 0; i + 2 < attrs.length; i += 3) if (attrs[i + 2] === "true" || attrs[i + 2] === "set") out.add(attrs[i]);
+  return out;
+}
+
+/** A plan's uncommitted code in the worktree at `dir`: every change there except hub paths (`.crew/`), generated files and
+ * files matching `secretGlobs` (the policy's `secrets.files`). */
+export function codeChanges(dir: string, secretGlobs: string[]): string[] {
+  const secret = secretGlobs.map(globRe);
+  const files = changed(dir, ["."]).filter((f) => !f.startsWith(".crew/") && !secret.some((re) => re.test(f)));
+  const gen = generated(dir, files);
+  return files.filter((f) => !gen.has(f));
 }
 
 export function planBranches(): string[] {
