@@ -5,7 +5,7 @@ goal: G-007
 items: BUG-017, CHORE-020
 touches: packages/crew/src/hub/commands/team/guard.ts, packages/crew/src/hub/commands/team/hubcall.ts, packages/crew/test/hub/e2e/guard.test.ts, packages/crew/test/hub/hubcall.test.ts
 depends_on: P-030
-status: in-review
+status: in-progress
 branch: plan/P-042-guard-rewrites-only-the-executed-hub
 pr:
 created: 2026-10-25
@@ -63,7 +63,8 @@ injection (see Approach).
       `--verify` text) is rewritten with the identity flags exactly once, right after the executed hub path, and the
       argument reaches the hub exactly as typed (the stored knowledge body has no injected flags).
 - [ ] AC2: `bash <script> <args>` with an argument naming the hub executable is left unchanged by the guard (the
-      hook returns no decision), so the script gets its positional arguments as typed.
+      hook returns no decision), so the script gets its positional arguments as typed; the same holds when the
+      command starts with `VAR=value` assignments (`X=1 bash <script> <hub> P-001`; logged on BUG-017 2026-10-25).
 - [ ] AC3: A heredoc body that names the hub executable (`cat > f <<'EOF'` … `EOF`) is left unchanged.
 - [ ] AC4: A hub path held in a shell variable (`C="node .crew/bin/<hub>"; $C next`) is refused with a reason that
       names the variable form and says to call the hub literally.
@@ -129,7 +130,8 @@ Targeted checks only (the e2e file runs the built bundle, so build first: `cd pa
   equals the input with ` --as qa --run-id qa:a1` inserted once after the first `.crew/bin/crew.mjs`; the learn call,
   run with `sh -c` in the test repo, stores a body containing `rebuild dist/crew.mjs and dist/mcp.mjs` and no `--as`.
 - AC2 — guard.test.ts "a script's arguments are left alone": `bash .crew/drafts/x.sh /abs/.crew/bin/crew.mjs P-001`
-  and `sh x.sh .crew/bin/crew.mjs` give no decision (`hook` returns null).
+  , `sh x.sh .crew/bin/crew.mjs` and `X=1 QA_DIR=/x bash .crew/drafts/x.sh /abs/.crew/bin/crew.mjs P-001` give no
+  decision (`hook` returns null); hubcall.test.ts's AC2 list has the same `VAR=value` case.
 - AC3 — guard.test.ts "heredoc bodies are left alone": `cat > /tmp/x.sh <<'EOF'\nnode .crew/bin/crew.mjs next\nEOF`
   gives no decision.
 - AC4 — guard.test.ts "a hub path in a variable is refused": `C="node .crew/bin/crew.mjs"; $C next` is denied with a
@@ -180,6 +182,8 @@ Latest log:
 - 2026-10-25: assigned to the developer role
 - 2026-10-25: status ready → in-progress — branch plan/P-042-guard-rewrites-only-the-executed-hub
 - 2026-10-25: status in-progress → in-review
+- 2026-10-25: review: changes requested — Code is right and matches the spec: touches exact, hubcall.ts pure (node:path only), 224 and 218 lines, typecheck clean, hubcall.test.ts 10/10 and e2e guard.test.ts 18/18 after a build, AC9 base run recorded at T4, and it merges cleanly onto main (P-030 did not touch guard.ts). One change: the VAR=value shape logged on BUG-017 in 463c393 behaves correctly (I checked X=1 bash x.sh <hub path> P-001 against withIdentity: unchanged) but no test pins it. AC2 and its test plan now name it. Add X=1 QA_DIR=/x bash .crew/drafts/x.sh /abs/.crew/bin/<hub> P-001 to the AC2 loop in test/hub/e2e/guard.test.ts ('a script's arguments are left alone', expect hook null) and to the AC2 list in test/hub/hubcall.test.ts ('the hub named as an argument is left alone'). No source change needed. Rebuild and re-run both files; then back to review.
+- 2026-10-25: status in-review → in-progress — changes requested: Code is right and matches the spec: touches exact, hubcall.ts pure (node:path only), 224 and 218 lines, typecheck clean, hubcall.test.ts 10/10 and e2e guard.test.ts 18/18 after a build, AC9 base run recorded at T4, and it merges cleanly onto main (P-030 did not touch guard.ts). One change: the VAR=value shape logged on BUG-017 in 463c393 behaves correctly (I checked X=1 bash x.sh <hub path> P-001 against withIdentity: unchanged) but no test pins it. AC2 and its test plan now name it. Add X=1 QA_DIR=/x bash .crew/drafts/x.sh /abs/.crew/bin/<hub> P-001 to the AC2 loop in test/hub/e2e/guard.test.ts ('a script's arguments are left alone', expect hook null) and to the AC2 list in test/hub/hubcall.test.ts ('the hub named as an argument is left alone'). No source change needed. Rebuild and re-run both files; then back to review.
 
 ## Outcome
 Learnings: K-2026-10-25-a-plan-task-that-says-to-git-stash
