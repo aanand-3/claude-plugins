@@ -3,7 +3,7 @@ id: P-024
 title: Release refreshes the vendored hub in .crew/bin
 goal: G-007
 items: FEAT-027
-touches: packages/crew/src/hub/core/team/policy.ts, packages/crew/src/hub/commands/work/release.ts, packages/crew/src/hub/cli.ts, packages/crew/src/hub/commands/work/release.reg.ts, packages/crew/src/hub/commands/index.ts, packages/crew/test/hub/refresh-bin.test.ts, plugins/crew/skills/hub/agents/release.md, plugins/crew/skills/hub/references/model.md, .crew/config.yaml
+touches: packages/crew/src/hub/core/team/policy.ts, packages/crew/src/hub/commands/work/release.ts, packages/crew/src/hub/cli.ts, packages/crew/src/hub/commands/work/release.reg.ts, packages/crew/src/hub/commands/index.ts, packages/crew/test/hub/refresh-bin.test.ts, plugins/crew/skills/hub/agents/release.md, plugins/crew/skills/hub/references/model.md, packages/crew/src/hub/commands/team/policy.ts, .crew/config.yaml
 depends_on: P-023
 status: in-progress
 branch: plan/P-024-release-refreshes-the-vendored-hub
@@ -79,7 +79,7 @@ Follows P-023 (bundles built once at release, in the plan's one commit): the ref
 - AC1, AC2, AC3 → `npx vitest run test/hub/refresh-bin.test.ts`; `npx vitest run test/hub/e2e/guard.test.ts` and `test/hub/e2e/policy.test.ts` still pass unchanged (the guard and existing keys didn't move).
 - AC3 (wiring) → `grep -n "refresh-bin --check" .crew/config.yaml`.
 - AC4 → T4's grep and line order in release.md; `npx vitest run test/plugin`.
-- AC5 → the `policy` case in `refresh-bin.test.ts`; T4's grep in model.md.
+- AC5 → the `policy` case in `refresh-bin.test.ts` (text `policy show` rows `release.refresh_bin.from` / `.files`, and `--json`); T4's grep in model.md.
 - Module size → `wc -l` from T2.
 
 ## Rollout & rollback
@@ -121,5 +121,6 @@ Follows P-023 (bundles built once at release, in the plan's one commit): the ref
 - 2026-10-25: Architect: goal G-001 → G-007 (FEAT-027 re-goaled to G-007; P-024 is W1-a and P-032 depends on it), at the Director's request.
 - 2026-10-25: assigned to the developer role
 - 2026-10-25: status ready → in-progress — branch plan/P-024-release-refreshes-the-vendored-hub
+- 2026-10-25: Architect (Q-6949e4): touches gain packages/crew/src/hub/commands/team/policy.ts for two text rows in `policy show` (release.refresh_bin.from / .files); AC5 is tested on text and --json output.
 
 ## Outcome

@@ -6,7 +6,7 @@ status: new
 severity: S1
 priority: P1
 goal: G-007
-plan:
+plan: P-041
 created: 2026-10-25
 closed:
 ---
