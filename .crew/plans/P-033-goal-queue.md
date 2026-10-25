@@ -11,6 +11,7 @@ pr:
 created: 2026-10-25
 started:
 completed:
+assignee: developer
 ---
 
 # P-033: Goal queue
@@ -89,5 +90,6 @@ Needs no other plan's code. `crew-director.md` is P-031's (the design's open poi
 ## Progress log
 
 - 2026-10-25: status draft → ready
+- 2026-10-25: assigned to the developer role
 
 ## Outcome
