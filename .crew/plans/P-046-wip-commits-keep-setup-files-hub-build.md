@@ -46,10 +46,10 @@ Two small, independent chores in G-007, grouped to save a plan cycle.
 - Tests: in wip-commits.test.ts, change the first checkpoint case's expectations (config.yaml moves from `status(w)` into the commit) and add `it("commits setup files under .crew/ but not the hub's documents")` and `it("the review gate sees a setup file changed after the approval")`, reusing `startedInWorktree`, `inReview` and `ship`. In dist.test.ts, a helper that counts the `hub-ui-` / `hub-ref-` entries of `readdirSync(tmpdir())`, compared around each bundle call.
 
 ## Tasks
-- [ ] T1: wip-commits tests for AC1–AC3, failing on the current code → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/wip-commits.test.ts` fails on the new expectations
-- [ ] T2: `codeChanges` exclusion and the two doc comments → verify: `npm run build && npx vitest run test/hub/e2e/wip-commits.test.ts` (AC1, AC2, AC3)
-- [ ] T3: build.mjs temp-dir cleanup and the dist.test.ts checks → verify: `npx vitest run test/dist.test.ts` (AC4); count `hub-ui-*` and `hub-ref-*` in `node -p 'require("os").tmpdir()'` before and after `node build.mjs`: equal (AC5)
-- [ ] T4: types and size → verify: `npm run typecheck`; `wc -l src/hub/core/git.ts` under 300 (AC6)
+- [x] T1: wip-commits tests for AC1–AC3, failing on the current code → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/wip-commits.test.ts` fails on the new expectations
+- [x] T2: `codeChanges` exclusion and the two doc comments → verify: `npm run build && npx vitest run test/hub/e2e/wip-commits.test.ts` (AC1, AC2, AC3)
+- [x] T3: build.mjs temp-dir cleanup and the dist.test.ts checks → verify: `npx vitest run test/dist.test.ts` (AC4); count `hub-ui-*` and `hub-ref-*` in `node -p 'require("os").tmpdir()'` before and after `node build.mjs`: equal (AC5)
+- [x] T4: types and size → verify: `npm run typecheck`; `wc -l src/hub/core/git.ts` under 300 (AC6)
 
 ## Test plan
 **Targeted checks** (from `packages/crew/`; wip-commits.test.ts drives the built `dist/crew.mjs`: `npm run build` first, then discard the generated output, which Release builds):
@@ -68,6 +68,17 @@ n/a — internal. After it ships (Release builds, `refresh-bin`), plans that cha
 
 ## Handoff
 
+_Generated 2026-10-25 by `crew.mjs handoff` from the ledger._
+
+- P-046: WIP commits keep setup files; hub build removes its temp dirs [in-progress] tasks 4/4 — claimed by Arpit Anand (developer:a779ae140c18708a5)
+- last checkpoint 2026-10-25 15:10 at T4 (9ac5b92) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
+- evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —
+
+Latest log:
+- 2026-10-25: status draft → ready — Architect: specced (ACs, tasks, test plan, exact touches)
+- 2026-10-25: assigned to the developer role
+- 2026-10-25: status ready → in-progress — branch plan/P-046-wip-commits-keep-setup-files-hub-build
+
 ## Progress log
 
 - 2026-10-25: status draft → ready — Architect: specced (ACs, tasks, test plan, exact touches)
@@ -75,3 +86,5 @@ n/a — internal. After it ships (Release builds, `refresh-bin`), plans that cha
 - 2026-10-25: status ready → in-progress — branch plan/P-046-wip-commits-keep-setup-files-hub-build
 
 ## Outcome
+`git.codeChanges` now excludes only the hub's documents (`NOT_CODE` in git.ts: `STATE_RE` plus `drafts/` and `view/`), so setup files under `.crew/` (config.yaml, policy.yaml, templates/, bin/) are WIP-committed and seen by the review gate. build.mjs removes its `hub-ui-*` / `hub-ref-*` temp dirs in `finally`. Follow-up: developer.md line 20 ("`.crew/` and secret files stay out") should say "the hub's documents under `.crew/`" once P-032 lands.
+Learnings: none
