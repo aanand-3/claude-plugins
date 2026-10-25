@@ -153,6 +153,7 @@ Latest log:
 - 2026-10-26: status done → in-progress — Release's suite failed: crew init exits 1 outside git (BUG-032); reopened under the executive's standing approval on G-007
 - 2026-10-26: status in-progress → in-review — BUG-032 fixed: init writes plan_worktrees: false outside git; regression test added
 - 2026-10-26: status in-review → done
+- 2026-10-26: merged to main as 8be0bec (squash; rebuilt bundle after BUG-032 fix; full suite green: 430 tests, exit 0); no rollout steps beyond merge
 
 ## Outcome
 `crew.mjs doctor [--json]` (views/doctor.ts) runs the 10 readiness checks, among them `hub-commits`, which probes a hub commit through the repo's git hooks without touching HEAD or the working tree. It is also an MCP tool and appears in help. `init` now writes a commented default `.crew/config.yaml` (current branch, `plan_worktrees: true`) and `.crew/policy.yaml` (preset commented out) when they are missing (work/setup.ts). A hub commit refused by a hook now names the hook's message and `crew.mjs doctor`. team/SKILL.md's "Before the first run" now starts with `doctor`. The e2e `init` helper takes `defaults` and otherwise removes only the defaults `init` created. The branch has main merged in (P-031, P-046), and registry.test.ts and registry-before.json are identical to main. Note: merge commit db3a692 is missing P-031's code, because a checkpoint run mid-merge unstaged it. The next checkpoint (7b07f9f) restored it, and the plan squashes to one commit anyway.
