@@ -30,3 +30,4 @@ On 2026-10-25 main after P-033 (7c017d4): the full vitest run failed only in tes
 ## Impact
 
 ## Notes
+- 2026-10-25: Cause, measured 2026-10-25: the suite starts a fresh node process on the 527 KB dist/crew.mjs for every hub call (about 485 tr() call sites plus 82 repo.node() and the git init and commit processes each Repo.create runs) across 371 tests. vitest runs files in parallel (about 7 workers on this 8-core Mac), and three plans' suites at once gave load averages of 100-150. Options besides one-suite-at-a-time: run most hub tests in-process through cli.ts main(argv, open), keeping a small e2e set that spawns the real bundle; cap maxWorkers for hub.full_suite (e.g. 4); share one sample-project fixture per file instead of one per test.
