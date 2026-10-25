@@ -160,6 +160,7 @@ Latest log:
 - 2026-10-26: Architect: Q-637b2b — scripts/sample-project.mjs (ship(): accepted, squash-merge, done) added to touches
 - 2026-10-26: status in-progress → in-review
 - 2026-10-26: status in-review → done
+- 2026-10-26: merged to main as 2160165 (squash); full suite green in the P-032 worktree at 99e647e; no rollout steps
 
 ## Outcome
 Shipped: plan status `accepted` (in-review → accepted → done; in-review → done removed), gates moved (`plan.accepted` holds the evidence, review and task checks; `plan.done` checks only that the plan is landed), `accepted → in-progress` through the `plan.landed` role gate (keeps the claim, counts toward max_bounces), and `land [P-###]` (land.ts, CLI only): restore generated files, merge the base, `hub.build` + `refresh-bin`, `hub.full_suite` via `runSuite`, squash under the hub-commit lock with merge-tree/commit-tree/ff-only (3 rounds), remove worktree and branch, update dependants, log. `merge-order` queues accepted plans and lists legacy done ones with the manual steps; `next`, `dispatch`, `check`, status report and the UI board know `accepted`; agent docs, model.md, SKILL.md and vision.md updated.
