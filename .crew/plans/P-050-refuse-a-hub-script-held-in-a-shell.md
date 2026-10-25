@@ -87,6 +87,7 @@ Latest log:
 - 2026-10-26: status ready → in-progress — branch plan/P-050-refuse-a-hub-script-held-in-a-shell
 - 2026-10-26: status in-progress → in-review
 - 2026-10-26: status in-review → done
+- 2026-10-26: merged to main as 0344fa5; full suite green (447 tests, run in the plan worktree after merging main); no rollout beyond merge
 
 ## Outcome
 Learnings: none
