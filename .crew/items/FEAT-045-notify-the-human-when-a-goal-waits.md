@@ -5,7 +5,7 @@ title: Notify the human when a goal waits for approval
 status: triaged
 priority: P2
 goal: G-007
-plan:
+plan: P-048
 created: 2026-10-25
 closed:
 ---
