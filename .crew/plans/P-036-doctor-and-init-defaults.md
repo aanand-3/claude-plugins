@@ -94,13 +94,13 @@ Overlaps, for staffing only: P-030 on `planning.reg.ts` (the `init` registration
 - **Tests (`test/hub/e2e/doctor.test.ts`, new):** throwaway repos via `Repo.create()`. Hooks are written into `.githooks/` from `plugins/crew/skills/git-setup/assets/githooks`, plus a strict variant, with `git config core.hooksPath .githooks`.
 
 ## Tasks
-- [ ] T1: `probeHubCommit` + the `hub-commits` check → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/doctor.test.ts -t hooks` (AC5)
-- [ ] T2: checks 1–9, `doctor` command and MCP tool → verify: `npx vitest run test/hub/e2e/doctor.test.ts -t "doctor"` (AC1–AC4, AC8)
-- [ ] T3: `initDefaults` and the `init` registration → verify: `npx vitest run test/hub/e2e/doctor.test.ts -t init` (AC6)
-- [ ] T4: hubstate.ts failure message → verify: `npx vitest run test/hub/e2e/doctor.test.ts -t "commit message"`; `npx vitest run test/hub/e2e/worktrees.test.ts test/hub/e2e/branch-copies.test.ts` (AC7)
-- [ ] T5: team/SKILL.md (and hub/SKILL.md's row if the table remains) → verify: `grep -n "doctor" plugins/crew/skills/team/SKILL.md`; `npx vitest run test/plugin` (AC8)
-- [ ] T7: the helper `init` `defaults` option (helpers.ts), `doctor` in mcp.test.ts's tool list; update the branch to the base after P-031 merges → verify: `npx vitest run test/hub/e2e/basics.test.ts test/hub/e2e/worktrees.test.ts test/hub/e2e/branch-copies.test.ts test/mcp.test.ts test/hub/registry.test.ts`; `git diff --quiet main -- test/hub/registry.test.ts test/hub/registry-before.json` (AC10)
-- [ ] T6: types and sizes → verify: `npm run typecheck`; `wc -l src/hub/commands/views/doctor.ts src/hub/commands/work/setup.ts src/hub/core/work/hubstate.ts`; `npx vitest run test/hub/e2e/basics.test.ts` (AC9)
+- [x] T1: `probeHubCommit` + the `hub-commits` check → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/doctor.test.ts -t hooks` (AC5)
+- [x] T2: checks 1–9, `doctor` command and MCP tool → verify: `npx vitest run test/hub/e2e/doctor.test.ts -t "doctor"` (AC1–AC4, AC8)
+- [x] T3: `initDefaults` and the `init` registration → verify: `npx vitest run test/hub/e2e/doctor.test.ts -t init` (AC6)
+- [x] T4: hubstate.ts failure message → verify: `npx vitest run test/hub/e2e/doctor.test.ts -t "commit message"`; `npx vitest run test/hub/e2e/worktrees.test.ts test/hub/e2e/branch-copies.test.ts` (AC7)
+- [x] T5: team/SKILL.md (and hub/SKILL.md's row if the table remains) → verify: `grep -n "doctor" plugins/crew/skills/team/SKILL.md`; `npx vitest run test/plugin` (AC8)
+- [x] T7: the helper `init` `defaults` option (helpers.ts), `doctor` in mcp.test.ts's tool list; update the branch to the base after P-031 merges → verify: `npx vitest run test/hub/e2e/basics.test.ts test/hub/e2e/worktrees.test.ts test/hub/e2e/branch-copies.test.ts test/mcp.test.ts test/hub/registry.test.ts`; `git diff --quiet main -- test/hub/registry.test.ts test/hub/registry-before.json` (AC10)
+- [x] T6: types and sizes → verify: `npm run typecheck`; `wc -l src/hub/commands/views/doctor.ts src/hub/commands/work/setup.ts src/hub/core/work/hubstate.ts`; `npx vitest run test/hub/e2e/basics.test.ts` (AC9)
 
 ## Test plan
 **Targeted checks** (from `packages/crew/`; e2e suites drive the built `dist/crew.mjs`: `npm run build` first, then discard the generated output, which Release builds):
@@ -122,9 +122,8 @@ Overlaps, for staffing only: P-030 on `planning.reg.ts` (the `init` registration
 
 _Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
 
-- P-036: Doctor and init defaults [in-progress] tasks 0/7 — claimed by Arpit Anand (developer:a996d202aa6320ed0)
+- P-036: Doctor and init defaults [in-progress] tasks 7/7 — claimed by Arpit Anand (developer:a996d202aa6320ed0)
 - last checkpoint 2026-10-25 19:55 at T7 (080cd74) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
-- next: T1: `probeHubCommit` + the `hub-commits` check → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/doctor.test.ts -t hooks` (AC5)
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —, AC7 —, AC8 —, AC9 —, AC10 —
 
 Latest log:
@@ -139,3 +138,5 @@ Latest log:
 - 2026-10-25: status ready → in-progress — branch plan/P-036-doctor-and-init-defaults
 
 ## Outcome
+`crew.mjs doctor [--json]` (views/doctor.ts) runs the 10 readiness checks, among them `hub-commits`, which probes a hub commit through the repo's git hooks without touching HEAD or the working tree. It is also an MCP tool and appears in help. `init` now writes a commented default `.crew/config.yaml` (current branch, `plan_worktrees: true`) and `.crew/policy.yaml` (preset commented out) when they are missing (work/setup.ts). A hub commit refused by a hook now names the hook's message and `crew.mjs doctor`. team/SKILL.md's "Before the first run" now starts with `doctor`. The e2e `init` helper takes `defaults` and otherwise removes only the defaults `init` created. The branch has main merged in (P-031, P-046), and registry.test.ts and registry-before.json are identical to main. Note: merge commit db3a692 is missing P-031's code, because a checkpoint run mid-merge unstaged it. The next checkpoint (7b07f9f) restored it, and the plan squashes to one commit anyway.
+Learnings: K-2026-10-26-finish-a-merge-of-the-base-into-a-plan
