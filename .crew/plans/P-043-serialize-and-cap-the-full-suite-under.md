@@ -5,7 +5,7 @@ goal: G-007
 items: BUG-028
 touches: packages/crew/src/hub/commands/work/suite.ts, packages/crew/src/hub/commands/work/suite.reg.ts, packages/crew/src/hub/commands/index.ts, packages/crew/vitest.config.ts, packages/crew/test/hub/e2e/suite.test.ts, packages/crew/test/hub/registry.test.ts, packages/crew/test/mcp.test.ts, plugins/crew/skills/hub/agents/release.md, plugins/crew/skills/hub/SKILL.md, plugins/crew/skills/hub/references/model.md
 depends_on:
-status: draft
+status: ready
 branch: plan/P-043-serialize-and-cap-the-full-suite-under
 pr:
 created: 2026-10-25
@@ -61,9 +61,9 @@ BUG-028 (G-007): with several plans running, the full vitest run times out in te
 
 ## Test plan
 **Targeted checks** (from `packages/crew/`, after `npm run build`; `test/hub/e2e/suite.test.ts` (new) drives `dist/crew.mjs` in throwaway repos with `hub.full_suite` set to small shell commands; discard the build output afterwards):
-- AC1 → `-t slot`: full_suite appends `s` to `runs.log`, sleeps 3 s, appends `e`; start one `suite` in the background, a second 0.5 s later; `runs.log` reads `s e s e`, the second's stderr has the waiting line, and its record's wait_ms is over 1000.
+- AC1 → `-t slot` (the regression test for BUG-028: two full suites no longer run at once): full_suite appends `s` to `runs.log`, sleeps 3 s, appends `e`; start one `suite` in the background, a second 0.5 s later; `runs.log` reads `s e s e`, the second's stderr has the waiting line, and its record's wait_ms is over 1000.
 - AC2 → `-t slot` too: the same with `suite_slots: 2` in config; `runs.log` starts `s s`.
-- AC4 → `-t record`: two runs, then `suites --json` (two records, newest first, all fields), `--limit 1`, the text form, and the MCP tool through the mcp test helper.
+- AC4 → `-t record`: two runs, then `suites --json` (two records, newest first, all fields), `--limit 1`, the text form, and the MCP tool through `mcpCall` (test/hub/e2e/sections.ts).
 - AC5 → `-t stale`: write `slot-0.lock` holding the pid of a child that has exited and this host; `suite` runs at once (wait_ms under 1000) and the slot file is gone afterwards.
 - AC6 → `-t exit`: full_suite `exit 3` gives exit 3 and a record with exit 3; no full_suite, and `suite_slots: 0`, give the two messages, no record and no slot file.
 - AC3 → T3's grep.
@@ -83,5 +83,7 @@ Ships with the next `.crew/bin` refresh; until Release runs `crew.mjs suite`, no
 ## Handoff
 
 ## Progress log
+
+- 2026-10-25: status draft → ready
 
 ## Outcome

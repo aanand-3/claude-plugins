@@ -3,8 +3,8 @@ id: P-021
 title: Designer role: shape and review UI plans
 goal: G-003
 items: FEAT-024
-touches: packages/crew/src/hub/core/work/model.ts, packages/crew/src/hub/core/work/gates.ts, packages/crew/src/hub/core/work/footprint.ts, packages/crew/src/hub/core/store.ts, packages/crew/src/hub/core/team/presets.ts, packages/crew/src/hub/commands/work/review.ts, packages/crew/src/hub/commands/team/roles.ts, packages/crew/src/hub/cli.ts, packages/crew/src/hub/mcp.ts, packages/crew/src/tools/design/**, packages/crew/src/tools/cli.ts, packages/crew/build.mjs, packages/crew/test/hub/e2e/**, packages/crew/test/tools/**, plugins/crew/skills/hub/**, plugins/crew/skills/design/**, plugins/crew/skills/team/SKILL.md, .crew/templates/plan.md, .crew/templates/writing-guide.md, .crew/templates/agents/**, .claude/agents/**, .crew/config.yaml, docs/vision.md
-depends_on: P-020
+touches: packages/crew/src/hub/core/work/model.ts, packages/crew/src/hub/core/work/gates.ts, packages/crew/src/hub/core/work/footprint.ts, packages/crew/src/hub/core/store.ts, packages/crew/src/hub/core/team/presets.ts, packages/crew/src/hub/commands/work/review.ts, packages/crew/src/hub/commands/team/roles.ts, packages/crew/src/hub/cli.ts, packages/crew/src/hub/mcp.ts, packages/crew/src/tools/design/**, packages/crew/src/tools/cli.ts, packages/crew/build.mjs, packages/crew/test/hub/e2e/policy.test.ts, packages/crew/test/hub/e2e/team.test.ts, packages/crew/test/hub/e2e/team-2.test.ts, packages/crew/test/hub/e2e/execution.test.ts, packages/crew/test/hub/e2e/review-fixes.test.ts, packages/crew/test/hub/e2e/design-review.test.ts, packages/crew/test/hub/e2e/agents.test.ts, packages/crew/test/tools/**, plugins/crew/skills/hub/agents/designer.md, plugins/crew/skills/hub/agents/developer.md, plugins/crew/skills/hub/agents/qa.md, plugins/crew/skills/hub/SKILL.md, plugins/crew/skills/hub/references/model.md, plugins/crew/skills/hub/references/writing-guide.md, plugins/crew/skills/hub/templates/plan.md, plugins/crew/skills/design/**, plugins/crew/skills/team/SKILL.md, .crew/templates/plan.md, .crew/templates/writing-guide.md, .crew/templates/agents/**, .claude/agents/**, .crew/config.yaml, docs/vision.md
+depends_on: P-020, P-031, P-032
 status: ready
 branch: plan/P-021-designer-role-shape-and-review-ui-plans
 pr:
@@ -89,6 +89,8 @@ This plan adds a built-in `designer` role that shapes a UI plan before it is bui
 - **Protected paths.** T7 writes `.claude/agents/**` and `.crew/templates/agents/**` and needs the executive's approval while the plan is in progress.
 - **Overlap with P-020** (in progress): this plan doesn't touch the UI sources (`packages/crew/ui/**`), but both plans change tests under `packages/crew/test/**` and rebuild `plugins/crew/skills/hub/dist/**` (the CLI and MCP bundles carry this plan's gate), so touches can't be narrowed apart. `depends_on: P-020`: this plan starts after P-020 merges, rebuilds the bundles on top of it, and T8 sweeps P-020's document page too.
 - **Staleness inherits BUG-014.** The design review uses the same `lastCode` rule as the code review, so with plan worktrees (work uncommitted until Release) an approval is not invalidated by later uncommitted changes. AC3 is tested with a commit on the branch; fixing BUG-014 fixes both kinds.
+
+- **Overlap with P-031 and P-032** (presets.ts; P-032 also model.ts and .crew/config.yaml): each adds lifecycle gates or a flow edge this plan's design gate must sit beside (P-032's `land` must also honour the design review at done), so `depends_on: P-031, P-032`. The e2e and hub-skill globs are narrowed to the exact files the tasks change; the dist bundles are Release's (hub.build).
 
 ## Handoff
 

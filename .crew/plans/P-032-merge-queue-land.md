@@ -4,7 +4,7 @@ title: Merge queue: land
 goal: G-007
 items: FEAT-037
 touches: packages/crew/src/hub/commands/work/land.ts, packages/crew/src/hub/commands/work/land.reg.ts, packages/crew/src/hub/commands/index.ts, packages/crew/src/hub/commands/work/release.ts, packages/crew/src/hub/core/work/model.ts, packages/crew/src/hub/core/team/presets.ts, packages/crew/test/hub/e2e/land.test.ts, plugins/crew/skills/hub/agents/release.md, plugins/crew/skills/hub/references/model.md, plugins/crew/skills/hub/SKILL.md, .crew/config.yaml
-depends_on: P-028, P-024, P-030, P-039
+depends_on: P-028, P-024, P-030, P-039, P-031, P-043
 status: ready
 branch: plan/P-032-merge-queue-land
 pr:
@@ -33,7 +33,7 @@ W1-c of G-007 (design: `.crew/drafts/the-crew-team-was-pure-reef.md`, "W1-c: a m
   2. Restores the generated files in the worktree (`linguist-generated`: tracked ones checked out, new ones removed). Uncommitted code left in the worktree bounces the plan ("uncommitted code after done").
   3. Merges the base into the plan branch (`chore(P-###): update to <base>`). On a conflict it aborts the merge and bounces the plan with the conflicting files.
   4. Runs `hub.build` in the worktree (when set), then `refresh-bin` (when the policy sets `release.refresh_bin`). It commits what they changed (`chore(P-###): rebuild generated files`). A failing build bounces the plan with the last lines of its output.
-  5. Runs `hub.full_suite` in the worktree (when set). A failure bounces the plan with the last lines of its output.
+  5. Runs `hub.full_suite` in the worktree (when set) through P-043's `runSuite` (commands/work/suite.ts), so it waits for a suite slot and is recorded in `suites`. A failure bounces the plan with the last lines of its output.
   6. Squash-merges, under the hub-commit lock: `git merge-tree --write-tree <base> <branch>` gives the tree, `git commit-tree -p <base>` the commit, subject `<type>(P-###): <title>` (feat if the plan delivers a FEAT, else fix if a BUG, else chore). Then `git merge --ff-only` in the main checkout, which must be on the base branch. If the base gained a commit outside `.crew/` since step 3, `land` goes back to step 3 first, so what lands is what the suite ran on. The user's other uncommitted files in the main checkout are never staged; if one is in the way of the fast-forward, `land` stops with git's message and keeps the worktree.
   7. Removes the worktree and deletes the branch.
   8. Updates the worktrees of open plans that depend on it: `merge --ff-only <base>` when possible; otherwise, with no uncommitted code there, `merge --no-edit <base>`. Otherwise (dirty, or a conflict, which is aborted) it prints "update P-### by hand: <why>".
@@ -94,7 +94,7 @@ W1-c of G-007 (design: `.crew/drafts/the-crew-team-was-pure-reef.md`, "W1-c: a m
 - A long `hub.full_suite` holds no lock: only step 6 does, so hub commands keep working while the suite runs. If the base moves during the suite, `land` repeats from step 3, and a busy base can make it loop. It gives up after 3 rounds and says so.
 - Bounced plans keep QA's earlier evidence; if the fix changes behaviour, the reviewer's fresh approval (P-028) is the check. Whether QA must re-verify after a bounce is a PM/policy question for later.
 - The new `done → in-progress` edge is also reachable by a plain `move`. Under the lifecycle preset only the release role may take it (the edge gate), which is the same power `land` has. Without a preset, any run may, like every other move. workflow.ts needs no change: `authorize` already reads edge gates.
-- Touches overlap P-021 (model.ts, presets.ts; G-003) and P-031 (presets.ts, Wave 2). Staffing sequences them; neither needs this plan's code.
+- Touches overlap P-031 (presets.ts) and P-043 (release.md): this plan depends on both, P-043 also for `runSuite`. P-021 (model.ts, presets.ts, config.yaml; G-003) depends on this plan.
 
 ## Handoff
 
