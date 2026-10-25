@@ -5,7 +5,7 @@ goal: G-007
 items: FEAT-046
 touches: packages/crew/src/hub/server.ts, packages/crew/src/hub/commands/team/activity.ts, packages/crew/ui/src/api.ts, packages/crew/ui/src/views/DocPage.tsx, packages/crew/ui/src/components/PlanActivity.tsx, packages/crew/ui/src/styles/views.css, packages/crew/test/hub/e2e/live-ui.test.ts
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-040-plan-page-shows-its-live-activity
 pr:
 created: 2026-10-25
@@ -70,13 +70,13 @@ Goal G-007 (Autonomous parallel delivery); builds on P-027 (merged, ba366a1). Dr
 _Generated 2026-10-25 by `crew.mjs handoff` from the ledger._
 
 - P-040: Plan page shows its live activity [in-review] tasks 3/3 — claimed by Arpit Anand (developer:a35eab89dfb16d7c9)
-- last checkpoint 2026-10-25 10:14 at T3 (20d9f5a) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
+- last checkpoint 2026-10-25 10:24 at T3 (06feb77) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —
 
 Latest log:
-- 2026-10-25: status draft → ready
-- 2026-10-25: assigned to the developer role
-- 2026-10-25: status ready → in-progress — branch plan/P-040-plan-page-shows-its-live-activity
+- 2026-10-25: status in-progress → in-review
+- 2026-10-25: review: changes requested — packages/crew/ui/src/components/PlanActivity.tsx line 1: the doc comment carries guard-injected run flags (the role and run-id flags after crew.mjs, a known guard gotcha). Write it as 'a hub ui server' (or the bare command name without crew.mjs) and edit with the Edit tool, not a Bash heredoc. Everything else matches the spec: touches respected, typecheck clean, targeted tests (live-ui, activity e2e, activity, view, structure) pass 49/49.
+- 2026-10-25: status in-review → in-progress — changes requested: packages/crew/ui/src/components/PlanActivity.tsx line 1: the doc comment carries guard-injected run flags (the role and run-id flags after crew.mjs, a known guard gotcha). Write it as 'a hub ui server' (or the bare command name without crew.mjs) and edit with the Edit tool, not a Bash heredoc. Everything else matches the spec: touches respected, typecheck clean, targeted tests (live-ui, activity e2e, activity, view, structure) pass 49/49.
 
 ## Progress log
 
@@ -86,6 +86,7 @@ Latest log:
 - 2026-10-25: status in-progress → in-review
 - 2026-10-25: review: changes requested — packages/crew/ui/src/components/PlanActivity.tsx line 1: the doc comment carries guard-injected run flags (the role and run-id flags after crew.mjs, a known guard gotcha). Write it as 'a hub ui server' (or the bare command name without crew.mjs) and edit with the Edit tool, not a Bash heredoc. Everything else matches the spec: touches respected, typecheck clean, targeted tests (live-ui, activity e2e, activity, view, structure) pass 49/49.
 - 2026-10-25: status in-review → in-progress — changes requested: packages/crew/ui/src/components/PlanActivity.tsx line 1: the doc comment carries guard-injected run flags (the role and run-id flags after crew.mjs, a known guard gotcha). Write it as 'a hub ui server' (or the bare command name without crew.mjs) and edit with the Edit tool, not a Bash heredoc. Everything else matches the spec: touches respected, typecheck clean, targeted tests (live-ui, activity e2e, activity, view, structure) pass 49/49.
+- 2026-10-25: status in-progress → in-review
 
 ## Outcome
 Learnings: none (the guard injecting its flags into heredoc test text is already K-2026-10-25-the-guard-injects-the-agents-role)
