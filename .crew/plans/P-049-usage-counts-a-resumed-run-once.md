@@ -97,6 +97,7 @@ Latest log:
 - 2026-10-26: ticked T1-T4; work done and checkpointed earlier at a8f88a5
 - 2026-10-26: status in-review → done
 - 2026-10-26: merged to main as b249d20 (squash); full suite green on 32a3651 (exit 0, 572.6s); no rollout steps beyond merge
+- 2026-10-26: Note (session): P-049's recorded full suite ran in the main checkout (suites.jsonl 21:12Z), so it tested main, not the plan; its code is covered by later green suites of P-034 (21:23Z) and P-050 (21:37Z) run on branches that include b249d20. Filed as a bug.
 
 ## Outcome
 `countedUsage(events)` (exported, pure) in core/memory/ledger.ts returns the usage events in order with `tokens_in`, `tokens_out`, `cost` and `cache_read` replaced by what each adds: a `source: "transcript"` event adds its delta over the run's previous transcript event (in full when it is the first, or when `tokens_in`, `tokens_out` or `cache_read` dropped); any other usage event counts as recorded. `spend()` iterates it (attribution and run counting unchanged); `liveRuns` sums it for a run's `tokens`. The hook and recorded events are unchanged. Regression tests: 3 new `spend` cases in test/ledger.test.ts, 1 `liveRuns` case in test/activity.test.ts, and "usage of a resumed run counts its latest transcript once" in test/hub/e2e/team-2.test.ts (on the old code it reports 453 = 213 + 240). Awaiting QA.
