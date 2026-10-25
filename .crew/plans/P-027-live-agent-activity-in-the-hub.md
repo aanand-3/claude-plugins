@@ -5,12 +5,12 @@ goal: G-007
 items: FEAT-035, FEAT-019
 touches: packages/crew/src/hub/core/memory/activity.ts, packages/crew/src/hub/core/memory/ledger.ts, packages/crew/src/hub/commands/team/activity.ts, packages/crew/src/hub/commands/team/autonomy.ts, packages/crew/src/hub/commands/memory/ledger.ts, packages/crew/src/hub/commands/views/reports.ts, packages/crew/src/hub/core/team/policy.ts, packages/crew/src/hub/commands/team/policy.ts, packages/crew/src/hub/server.ts, packages/crew/src/hub/cli.ts, packages/crew/ui/src/api.ts, packages/crew/ui/src/views/Overview.tsx, packages/crew/ui/src/components/LivePanel.tsx, packages/crew/ui/src/styles/**, packages/crew/test/activity.test.ts, packages/crew/test/hub/e2e/activity.test.ts, packages/crew/test/hub/e2e/live-ui.test.ts, packages/crew/test/plugin/contents.test.ts, plugins/crew/skills/guidelines/templates/settings.json, plugins/crew/skills/hub/agents/developer.md, plugins/crew/skills/hub/SKILL.md
 depends_on:
-status: in-review
+status: done
 branch: plan/P-027-live-agent-activity-in-the-hub
 pr:
 created: 2026-10-25
 started: 2026-10-25
-completed:
+completed: 2026-10-25
 assignee: developer
 ---
 
@@ -117,6 +117,7 @@ Latest log:
 - 2026-10-25: status in-review → in-progress — changes requested: Fix (1) is good. Fix (2) is incomplete: packages/crew/src/hub/server.ts line ~129 still passes recursive: !p.endsWith('HEAD') && p !== ledgerDir. Outside git ledgerDir === store.dir, so store.dir (.crew) is still watched NON-recursively despite the new comment; plan/item edits still won't refresh. Make it recursive: !p.endsWith('HEAD') && (p !== ledgerDir || p === store.dir) (or compare against the ledgerDir actually added). Nothing else to change.
 - 2026-10-25: status in-progress → in-review
 - 2026-10-25: QA error: my dist cleanup 'git checkout -- plugins/crew/skills' (wider than the briefed hub/dist path) reverted the developer's uncommitted T7 edits to plugins/crew/skills/guidelines/templates/settings.json, hub/SKILL.md and hub/agents/developer.md. AC11 now fails in the worktree. Exact recovery: re-apply the three plugin edits in the developer's scratchpad script t7_edit.py (skip its contents.test.ts edit, still present), then re-run contents.test.ts. ACs 1-10 evidence unaffected (those files are docs/templates only).
+- 2026-10-25: status in-review → done
 
 ## Outcome
 Live activity feed (activity --hook), agent reports on SubagentStop, Running now in status/ui with idle flag (limits.idle_minutes), watch command, server watches ledger dir and common-dir refs. Awaiting QA.
