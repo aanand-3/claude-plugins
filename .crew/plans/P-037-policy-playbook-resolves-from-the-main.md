@@ -61,6 +61,18 @@ Follow-up to P-026 (W0-b in `.crew/drafts/the-crew-team-was-pure-reef.md`), CHOR
 
 ## Handoff
 
+_Generated 2026-10-25 by `crew.mjs handoff` from the ledger._
+
+- P-037: Policy playbook resolves from the main checkout [in-progress] tasks 0/3 — claimed by Arpit Anand (developer:a110ffe59fe21f853)
+- last checkpoint 2026-10-25 07:11 at T3 (f7c315a) by Arpit Anand; since then 0 commit(s), 5 uncommitted file(s): packages/crew/src/hub/commands/team/agents.ts, packages/crew/src/hub/commands/team/guard.ts, packages/crew/src/hub/commands/team/policy.ts, packages/crew/src/hub/core/store.ts, packages/crew/test/hub/e2e/playbook-home.test.ts
+- next: T1: the regression test file, failing on today's code for AC1–AC4 → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/playbook-home.test.ts` fails with "not found" from the worktree
+- evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —
+
+Latest log:
+- 2026-10-25: status draft → ready
+- 2026-10-25: assigned to the developer role
+- 2026-10-25: status ready → in-progress — branch plan/P-037-policy-playbook-resolves-from-the-main
+
 ## Progress log
 
 - 2026-10-25: status draft → ready
