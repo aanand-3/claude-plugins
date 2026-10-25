@@ -2,8 +2,8 @@
 id: CHORE-022
 type: chore
 title: Code formatter that formats on save
-status: new
-priority:
+status: triaged
+priority: P3
 goal:
 plan:
 created: 2026-10-25
@@ -19,3 +19,4 @@ The repo has no formatter (no prettier/biome config, no format script). The exec
 - [ ]
 
 ## Notes
+- 2026-10-26: status new → triaged — priority P3
