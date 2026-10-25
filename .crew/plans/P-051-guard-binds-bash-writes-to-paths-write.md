@@ -275,6 +275,7 @@ Latest log:
 - 2026-10-26: status ready → in-progress — branch plan/P-051-guard-binds-bash-writes-to-paths-write
 - 2026-10-26: status in-progress → in-review
 - 2026-10-26: status in-review → done
+- 2026-10-26: merged to main as 6273d49 (squash); full suite green in the P-051 worktree (441.5s, exit 0); no rollout steps; not pushed
 
 ## Outcome
 Bash write targets are bound to paths.write, inline/stdin scripts are refused for draft-only roles, variables in targets resolve or are refused, and subagents can't run crew.mjs init.
