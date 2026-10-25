@@ -2,6 +2,7 @@
  * view of what can run in parallel now: the ready, non-overlapping frontier within `budgets.max_agents`, routed to teams). */
 import type { Doc } from "../../core/work/doc.js";
 import { globsOverlap } from "../../core/memory/knowledge.js";
+import { blockingGlobs, sharedGlobs } from "../../core/work/footprint.js";
 import * as q from "../../core/work/queries.js";
 import type { Store } from "../../core/store.js";
 import { byKey, fail } from "../../core/text.js";
@@ -76,7 +77,8 @@ export function staffing(store: Store): Staffing {
     .sort(byKey((p) => [!q.onFocus(p, items, focus), rank(p), p.id]));
   const busy = [...plans.values()].filter((p) => ACTIVE.has(st(p)));
   const out: Staffing = { free, start: [], waiting: [] };
-  const clash = (p: Doc, others: Doc[]) => others.find((o) => p.touches().some((t) => o.touches().some((u) => globsOverlap(t, u))));
+  const shared = sharedGlobs(store); // overlaps only on hub.shared touches never block
+  const clash = (p: Doc, others: Doc[]) => others.find((o) => blockingGlobs(p, o, shared).length);
   for (const p of ready) {
     const deps = q.unmetDeps(p, plans), blocked = openQuestions(events, p.id).filter((x) => x.blocking);
     const hit = clash(p, [...busy, ...out.start.map((s) => plans.get(s.id)!)]);

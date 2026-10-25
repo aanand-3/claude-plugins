@@ -5,7 +5,7 @@ import type { Doc } from "../../core/work/doc.js";
 import { decisionProblems, readinessProblems, triageProblems } from "../../core/work/gates.js";
 import { ACTIVE, CLOSED, GOAL_FLOW, HUB_STATE_MARKER, IDEA_FLOW, ITEM_FLOW, MAX_WRITTEN_AHEAD, PLAN_FLOW, REQUIRED_ON_CREATE } from "../../core/work/model.js";
 import * as q from "../../core/work/queries.js";
-import { drift, overlapping } from "../../core/work/footprint.js";
+import { blockingGlobs, drift, overlapping, sharedGlobs, sharedProblem, touchHints, trackedFiles } from "../../core/work/footprint.js";
 import { globRe, K_ID_RE, KNOWLEDGE_TYPES, secretsIn } from "../../core/memory/knowledge.js";
 import { legacyHints } from "./legacy.js";
 import { agentHints } from "../team/agents.js";
@@ -22,6 +22,7 @@ class Snapshot {
   allPlans: Docs;  // plus live plan branches
   idea: Doc | null;
   focus: string;
+  shared: string[]; // hub.shared
 
   constructor(readonly store: Store) {
     this.goals = store.goals();
@@ -30,6 +31,7 @@ class Snapshot {
     this.allPlans = store.plans(true);
     this.idea = store.idea();
     this.focus = store.focus();
+    this.shared = sharedGlobs(store);
   }
 }
 
@@ -38,7 +40,7 @@ const up = (s: string | null) => (s ?? "").toUpperCase();
 
 export function findings(store: Store): Findings {
   const s = new Snapshot(store), f: Findings = { errors: [], hints: [] };
-  for (const rule of [idea, plans, lostPlans, overlaps, items, goals, ledger, knowledge, hygiene]) rule(s, f);
+  for (const rule of [idea, plans, lostPlans, overlaps, touches, items, goals, ledger, knowledge, hygiene]) rule(s, f);
   const p = policyFindings(store);
   return { errors: [...f.errors, ...p.errors], hints: [...f.hints, ...p.hints, ...agentHints(store), ...livenessHints(store)] };
 }
@@ -114,8 +116,29 @@ function lostPlans(s: Snapshot, f: Findings): void {
 function overlaps(s: Snapshot, f: Findings): void {
   for (const [pid, p] of s.allPlans) {
     if (!ACTIVE.has(p.get("status") ?? "")) continue;
-    for (const o of overlapping(p, s.allPlans).filter((x) => ACTIVE.has(s.allPlans.get(x.id)?.get("status") ?? "") && x.id > pid)) {
-      f.hints.push(`${pid} and ${o.id} are both active and overlap on ${o.globs.join(", ")} — sequence them (depends_on) or narrow touches`);
+    for (const o of overlapping(p, s.allPlans, s.shared).filter((x) => ACTIVE.has(s.allPlans.get(x.id)?.get("status") ?? "") && x.id > pid)) {
+      f.hints.push(`${pid} and ${o.id} are both active and overlap on ${o.globs.join(", ")} — narrow touches, or list the file in `
+        + "hub.shared; depends_on is only for a plan that needs the other's code");
+    }
+  }
+}
+
+/** Open plans' touches: broad globs, generated paths, and dependencies that only stand for an overlap; `hub.shared`'s type. */
+function touches(s: Snapshot, f: Findings): void {
+  const problem = sharedProblem(s.store);
+  if (problem) f.errors.push(problem);
+  const open = [...s.allPlans.values()].filter((p) => !CLOSED.has(p.get("status") ?? "") && p.touches().length);
+  if (!open.length) return;
+  const tracked = trackedFiles(s.store.home);
+  for (const p of open) {
+    f.hints.push(...touchHints(p, tracked, s.shared));
+    const said = ["Context", "Approach", "Risks & open questions"].map((n) => p.section(n)).join("\n");
+    for (const d of p.dependsOn()) {
+      const dep = s.allPlans.get(d), globs = dep ? blockingGlobs(p, dep, s.shared) : [];
+      if (globs.length && !said.includes(d)) {
+        f.hints.push(`${p.id} depends on ${d} only through an overlap (${globs.join(", ")}) — name the code it needs from ${d} `
+          + "in Context, Approach or Risks, or drop the dependency");
+      }
     }
   }
 }

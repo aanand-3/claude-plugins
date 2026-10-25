@@ -137,6 +137,7 @@ When the focus goal is done, set the next one. There is exactly one focus at a t
 | `wip_limit` | 1 | Plans `in-progress` at once |
 | `max_tasks` | 10 | A plan with more tasks must be split |
 | `plan_worktrees` | false | One shared worktree per plan, created at `new-plan`; a single commit when the plan completes (the agent team needs it) |
+| `shared` | [] | Path globs (registries, docs, test files) that plans may change side by side: two plans that meet only on shared touches don't block each other in `staff` or `check`, and their merge conflicts are resolved at release. A touch is shared when it is an exact path a shared glob matches, or equals a shared glob; a broad glob never is |
 | `full_suite` | — | The command that runs every test; Release runs it before each merge when the project has no CI |
 
 ## Item types
@@ -193,7 +194,9 @@ draft ──► ready ──► in-progress ──► in-review ──► done
 ## Size, dependencies and WIP
 - Size a plan by its tasks: more than `max_tasks`, or work in unrelated areas, means split it. Parallel work comes from splitting
   into plans with separate `touches:`, not from more people on one plan.
-- `depends_on: P-002, P-005` in the plan frontmatter. `start` refuses while a dependency isn't `done`; `status` shows `waits for …`.
+- `depends_on: P-002, P-005` in the plan frontmatter, only for a code dependency: the plan needs the other's code (name it in
+  Context, Approach or Risks). An overlap of `touches:` is not a dependency: narrow touches, or list the file in `hub.shared`.
+  `start` refuses while a dependency isn't `done`; `status` shows `waits for …`.
 - `start` refuses when *this run* already holds `wip_limit` plans in progress (in-progress plans with no claim count for every run). Finish before starting. Parallel agents each have their own WIP.
 - Prefer ordering slices so that dependencies are rare. A long chain is a sign the slices are split by layer rather than vertically.
 

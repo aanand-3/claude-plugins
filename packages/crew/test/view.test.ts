@@ -71,7 +71,8 @@ describe("graph", () => {
     expect(graph.settings).toEqual({ wip_limit: 2, max_tasks: 10, plan_worktrees: false });
     expect(graph.next.at(-1)).toMatch(/^NEXT {9}refine draft P-009/);
     expect(graph.check).toEqual({ errors: [], hints: [
-      "P-006 and P-008 are both active and overlap on src/checkins/time.py — sequence them (depends_on) or narrow touches"] });
+      "P-006 and P-008 are both active and overlap on src/checkins/time.py — narrow touches, or list the file in hub.shared; depends_on is only for a plan that needs the other's code",
+      "P-007 depends on P-006 only through an overlap (web/home/**) — name the code it needs from P-006 in Context, Approach or Risks, or drop the dependency"] });
     expect(graph.questions).toMatchObject([{ ref: "FEAT-008", to: "executive", escalation: true, blocking: true }]);
     expect(doc("P-009").sections.find((s) => s.heading === "Risks & open questions")!.markdown).toBe(""); // empty template bullet dropped
   });
