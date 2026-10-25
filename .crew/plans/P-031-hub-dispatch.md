@@ -5,7 +5,7 @@ goal: G-007
 items: FEAT-040
 touches: packages/crew/src/hub/commands/team/dispatch.ts, packages/crew/src/hub/commands/team/dispatch.reg.ts, packages/crew/src/hub/commands/index.ts, packages/crew/src/hub/cli.ts, packages/crew/src/hub/mcp.ts, packages/crew/src/hub/core/team/presets.ts, packages/crew/test/hub/e2e/dispatch.test.ts, packages/crew/test/hub/e2e/team.test.ts, packages/crew/test/hub/e2e/team-2.test.ts, plugins/crew/skills/hub/agents/director.md, plugins/crew/skills/hub/agents/pm.md, plugins/crew/skills/team/SKILL.md, plugins/crew/skills/hub/SKILL.md, plugins/crew/skills/hub/references/model.md
 depends_on:
-status: draft
+status: ready
 branch: plan/P-031-hub-dispatch
 pr:
 created: 2026-10-25
@@ -105,5 +105,7 @@ Needs no other plan's code. It reads P-029's shared-aware staffing through `staf
 ## Handoff
 
 ## Progress log
+
+- 2026-10-25: status draft → ready
 
 ## Outcome
