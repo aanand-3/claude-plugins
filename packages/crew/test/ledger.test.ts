@@ -4,7 +4,7 @@ import { existsSync, mkdtempSync, readFileSync, utimesSync, writeFileSync } from
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { acquireLock, Ledger, type LedgerEvent, releaseLock } from "../src/hub/core/memory/ledger.js";
+import { acquireLock, Ledger, type LedgerEvent, releaseLock, UNATTRIBUTED } from "../src/hub/core/memory/ledger.js";
 import type { Workspace } from "../src/hub/core/workspace.js";
 
 const lockIn = () => join(mkdtempSync(join(tmpdir(), "hub-lock-")), "ledger.jsonl.lock");
@@ -60,5 +60,29 @@ describe("spend", () => {
     const s = spend([usage("a", 10, { role: "qa" }), usage("a", 20, { role: "qa" }), usage("b", 5, { role: "qa" }), usage("c", 7)]);
     expect(s.byRole).toEqual({ qa: { tokens: 35, cost: 0, runs: 2 }, Ann: { tokens: 7, cost: 0, runs: 1 } });
     expect(s).toMatchObject({ tokensIn: 21, tokensOut: 21, cost: 0 });
+  });
+
+  // a transcript usage event is a snapshot of the run's transcript so far: it counts what it adds over the run's previous one
+  const snap = (run: string, tin: number, tout: number, ref: string | null = null) =>
+    ev("usage", ref, run, { tokens_in: tin, tokens_out: tout, cost: 0, role: "developer", source: "transcript" });
+
+  it("counts a resumed run's transcript snapshots once, each event's delta on its ref", () => {
+    const s = spend([snap("r", 100, 10), snap("r", 250, 30, "P-1"), snap("r", 400, 40, "P-1")]);
+    expect(s).toMatchObject({ tokensIn: 400, tokensOut: 40 });
+    expect(s.byRef["P-1"].tokens).toBe(330);
+    expect(s.byRef[UNATTRIBUTED].tokens).toBe(110);
+    expect(s.byRole).toEqual({ developer: { tokens: 440, cost: 0, runs: 1 } });
+  });
+
+  it("adds manual usage in full and counts each transcript run on its own", () => {
+    const manual = ev("usage", null, "r", { tokens_in: 50, tokens_out: 5, cost: 0, role: "developer" });
+    const s = spend([snap("r", 100, 10), manual, snap("r", 250, 30, "P-1"), snap("q", 1000, 100), snap("r", 400, 40, "P-1"),
+      snap("q", 2000, 200)]);
+    expect(s).toMatchObject({ tokensIn: 400 + 50 + 2000, tokensOut: 40 + 5 + 200 });
+  });
+
+  it("counts a snapshot that drops (a new transcript under the run) in full", () => {
+    const s = spend([snap("r", 100, 10), snap("r", 400, 40), snap("r", 50, 5)]);
+    expect(s).toMatchObject({ tokensIn: 450, tokensOut: 45 });
   });
 });

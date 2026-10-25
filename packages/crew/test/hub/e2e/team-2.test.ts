@@ -254,6 +254,23 @@ it("usage is captured from each agent's transcript, and budgets bite", () => {
   expect(tr(repo, "run", "--check").stdout).toContain("budget: project tokens: 213 used of 200");
 });
 
+it("usage of a resumed run counts its latest transcript once", () => {
+  lifecycle(repo);
+  repo.write(".crew/policy.yaml", LIFECYCLE + "budgets: { project: { max_tokens: 1 } }\n");
+  agent(repo, "crew-qa", "qa");
+  const more = { type: "assistant", message: { id: "m3", model: "claude-sonnet-5-5", usage: { input_tokens: 7, output_tokens: 20 } } };
+  const first = repo.write("t1.jsonl", TRANSCRIPT.map((t) => JSON.stringify(t)).join("\n") + "\n");
+  const second = repo.write("t2.jsonl", [...TRANSCRIPT, more].map((t) => JSON.stringify(t)).join("\n") + "\n");
+  for (const path of [first, second]) {
+    const payload = { hook_event_name: "SubagentStop", agent_type: "crew-qa", agent_id: "x9", agent_transcript_path: path };
+    const r = repo.run("node", [HUB_PATH, "usage", "--hook"], JSON.stringify(payload));
+    expect(r.returncode, r.stderr).toBe(0);
+  }
+  const usage = events(repo, "--type", "usage");
+  expect(usage.map((e) => [e.run, e.tokens_in, e.tokens_out])).toEqual([["qa:x9", 113, 100], ["qa:x9", 120, 120]]);
+  expect(tr(repo, "run", "--check").stdout).toContain("project tokens: 240 used of 1"); // not 213 + 240
+});
+
 it("the fast lane skips the architect but not QA", () => {
   lifecycle(repo);
   repo.write(".crew/policy.yaml", LIFECYCLE + "fast_lane: { types: [CHORE, BUG], max_tasks: 3 }\n");

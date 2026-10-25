@@ -7758,6 +7758,22 @@ import { createHash, randomBytes } from "node:crypto";
 import { appendFileSync, existsSync, linkSync, mkdirSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 var UNATTRIBUTED = "unattributed";
+var COUNTED = ["tokens_in", "tokens_out", "cost", "cache_read"];
+function countedUsage(events) {
+  const last = /* @__PURE__ */ new Map();
+  const out = [];
+  for (const ev of events) {
+    if (ev.type !== "usage") continue;
+    const n2 = (e, k) => Number(e[k]) || 0;
+    const prev = ev.source === "transcript" ? last.get(ev.run) : void 0;
+    const fresh = !prev || ["tokens_in", "tokens_out", "cache_read"].some((k) => n2(ev, k) < n2(prev, k));
+    const counted = { ...ev };
+    for (const k of COUNTED) counted[k] = n2(ev, k) - (fresh ? 0 : n2(prev, k));
+    if (ev.source === "transcript") last.set(ev.run, ev);
+    out.push(counted);
+  }
+  return out;
+}
 var LOCK_WAIT_MS = 5e3;
 var LOCK_STALE_MS = 3e4;
 function whoAmI(root) {
@@ -7836,8 +7852,7 @@ var Ledger = class _Ledger {
       if (!seen.has(run2)) u.runs++;
       runs.set(`${group}|${key}`, seen.add(run2));
     };
-    for (const ev of events) {
-      if (ev.type !== "usage") continue;
+    for (const ev of countedUsage(events)) {
       const cost = Number(ev.cost) || 0, tin = Number(ev.tokens_in) || 0, tout = Number(ev.tokens_out) || 0;
       s2.cost += cost;
       s2.tokensIn += tin;
@@ -9235,7 +9250,7 @@ function liveRuns(activity, ledger2, now = Date.now(), idleMinutes = IDLE_MINUTE
       ts: a.ts,
       minutes,
       idle: minutes > idleMinutes,
-      tokens: usage2.length ? usage2.reduce((n2, e) => n2 + (Number(e.tokens_in) || 0) + (Number(e.tokens_out) || 0), 0) : null
+      tokens: usage2.length ? countedUsage(usage2).reduce((n2, e) => n2 + (Number(e.tokens_in) || 0) + (Number(e.tokens_out) || 0), 0) : null
     });
   }
   return out.sort((x, y) => Date.parse(y.ts) - Date.parse(x.ts));

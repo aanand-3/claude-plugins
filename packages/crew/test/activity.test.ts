@@ -125,6 +125,12 @@ group("liveRuns", () => {
     expect(resumed[0].task).toBe(null);
   });
 
+  it("counts a resumed run's transcript snapshots once", () => {
+    const runs = liveRuns([ev({ ts: at(2) })], [led("usage", 40, { tokens_in: 100, tokens_out: 20, source: "transcript" }),
+      led("usage", 20, { tokens_in: 300, tokens_out: 50, source: "transcript" })], NOW);
+    expect(runs[0].tokens).toBe(350);
+  });
+
   it("forgets runs quiet for over 24 hours", () => {
     expect(liveRuns([ev({ ts: at(24 * 60 + 1) })], [], NOW)).toEqual([]);
     expect(liveRuns([ev({ ts: at(24 * 60 - 1) })], [], NOW)).toHaveLength(1);

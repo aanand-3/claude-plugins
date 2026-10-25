@@ -3,7 +3,7 @@
  * target (a repository-relative path or a command word) and the hub document it was about. Rotated by size. */
 import { appendFileSync, closeSync, existsSync, mkdirSync, openSync, readFileSync, readSync, realpathSync, renameSync, statSync } from "node:fs";
 import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
-import { acquireLock, type LedgerEvent, releaseLock } from "./ledger.js";
+import { acquireLock, countedUsage, type LedgerEvent, releaseLock } from "./ledger.js";
 
 export interface ActivityEvent { ts: string; run: string; role: string; ref: string | null; tool: string; target: string | null }
 
@@ -179,7 +179,7 @@ export function liveRuns(activity: ActivityEvent[], ledger: LedgerEvent[], now =
     const minutes = Math.max(0, (now - at) / 60_000);
     out.push({ run, role: a.role, ref: a.ref, task: step ? String(step) : null, tool: a.tool, target: a.target, ts: a.ts,
       minutes, idle: minutes > idleMinutes,
-      tokens: usage.length ? usage.reduce((n, e) => n + (Number(e.tokens_in) || 0) + (Number(e.tokens_out) || 0), 0) : null });
+      tokens: usage.length ? countedUsage(usage).reduce((n, e) => n + (Number(e.tokens_in) || 0) + (Number(e.tokens_out) || 0), 0) : null });
   }
   return out.sort((x, y) => Date.parse(y.ts) - Date.parse(x.ts));
 }

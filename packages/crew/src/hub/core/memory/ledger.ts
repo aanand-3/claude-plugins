@@ -34,6 +34,27 @@ export interface Spend {
 export interface RefUsage extends Usage { roles: Record<string, number> }  // tokens by role
 export const UNATTRIBUTED = "unattributed";
 
+const COUNTED = ["tokens_in", "tokens_out", "cost", "cache_read"] as const;
+
+/** The usage events of `events`, in order, each with the tokens and cost it adds. A `source: "transcript"` event is a snapshot
+ * of its run's transcript so far, so it adds what it has over the run's previous transcript event; if a counter dropped (a new
+ * transcript under the run) it counts in full. Any other usage event is an increment and counts as recorded. */
+export function countedUsage(events: LedgerEvent[]): LedgerEvent[] {
+  const last = new Map<string, LedgerEvent>(); // run → its previous transcript event
+  const out: LedgerEvent[] = [];
+  for (const ev of events) {
+    if (ev.type !== "usage") continue;
+    const n = (e: LedgerEvent, k: string) => Number(e[k]) || 0;
+    const prev = ev.source === "transcript" ? last.get(ev.run) : undefined;
+    const fresh = !prev || ["tokens_in", "tokens_out", "cache_read"].some((k) => n(ev, k) < n(prev, k));
+    const counted: LedgerEvent = { ...ev };
+    for (const k of COUNTED) counted[k] = n(ev, k) - (fresh ? 0 : n(prev, k));
+    if (ev.source === "transcript") last.set(ev.run, ev);
+    out.push(counted);
+  }
+  return out;
+}
+
 const LOCK_WAIT_MS = 5_000;
 const LOCK_STALE_MS = 30_000;
 
@@ -116,8 +137,7 @@ export class Ledger {
       if (!seen.has(run)) u.runs++;
       runs.set(`${group}|${key}`, seen.add(run));
     };
-    for (const ev of events) {
-      if (ev.type !== "usage") continue;
+    for (const ev of countedUsage(events)) {
       const cost = Number(ev.cost) || 0, tin = Number(ev.tokens_in) || 0, tout = Number(ev.tokens_out) || 0;
       s.cost += cost;
       s.tokensIn += tin;
