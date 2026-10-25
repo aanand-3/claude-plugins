@@ -5,7 +5,7 @@ title: Guard: a git alias with ! runs the hub with no identity
 status: triaged
 priority: P2
 goal: G-007
-plan:
+plan: P-042
 created: 2026-10-25
 closed:
 ---
