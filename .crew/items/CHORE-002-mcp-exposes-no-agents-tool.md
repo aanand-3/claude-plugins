@@ -2,8 +2,8 @@
 id: CHORE-002
 type: chore
 title: MCP exposes no agents tool
-status: new
-priority:
+status: triaged
+priority: P3
 goal: G-003
 plan:
 created: 2026-10-23
@@ -19,3 +19,4 @@ crew.mjs agents / agents --check exist only on the CLI (found in T2); an MCP too
 - [ ]
 
 ## Notes
+- 2026-10-26: status new → triaged — priority P3
