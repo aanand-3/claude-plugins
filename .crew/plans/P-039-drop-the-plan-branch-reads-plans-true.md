@@ -5,7 +5,7 @@ goal: G-007
 items: CHORE-018
 touches: packages/crew/src/hub/core/store.ts, packages/crew/src/hub/commands/memory/knowledge.ts, packages/crew/src/hub/commands/memory/context.ts, packages/crew/src/hub/commands/work/planning.ts, packages/crew/src/hub/commands/work/workflow.ts, packages/crew/src/hub/commands/work/release.ts, packages/crew/src/hub/commands/work/execution.ts, packages/crew/src/hub/commands/work/goals.ts, packages/crew/src/hub/commands/team/team.ts, packages/crew/src/hub/commands/team/roles.ts, packages/crew/src/hub/commands/views/reports.ts, packages/crew/src/hub/commands/views/advisor.ts, packages/crew/src/hub/commands/views/graph.ts, packages/crew/src/hub/commands/views/checks.ts, packages/crew/test/hub/e2e/worktrees.test.ts, packages/crew/test/hub-worktrees.test.ts, packages/crew/test/hub/e2e/branch-copies.test.ts
 depends_on: P-029
-status: draft
+status: ready
 branch: plan/P-039-drop-the-plan-branch-reads-plans-true
 pr:
 created: 2026-10-25
@@ -83,5 +83,7 @@ Code part of CHORE-018. The hub-only parts were done by the PM on 2026-10-25: `m
 ## Handoff
 
 ## Progress log
+
+- 2026-10-25: status draft → ready
 
 ## Outcome
