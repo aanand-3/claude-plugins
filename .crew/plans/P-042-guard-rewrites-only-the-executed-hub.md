@@ -180,14 +180,25 @@ revert of the plan's commit; agents keep the old workaround (avoid the hub name 
 
 _Generated 2026-10-25 by `crew.mjs handoff` from the ledger._
 
-- P-042: Guard rewrites only the executed hub program [in-review] tasks 4/4 — claimed by Arpit Anand (developer:af43f81a3a1cf42e1)
-- last checkpoint 2026-10-25 12:48 at T4 (66b385d) by Arpit Anand; since then 0 commit(s), 1 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs
-- evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —, AC7 —, AC8 —, AC9 —, AC10 —
+- P-042: Guard rewrites only the executed hub program [in-progress] tasks 4/5 — claimed by Arpit Anand (developer:a9602839fa6e2d4d5)
+- last checkpoint 2026-10-25 14:13 at T5 (178c1ed) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
+- ✓ cd packages/crew && npx vitest run test/hub/e2e/guard.test.ts -t 'executed hub program' (AC 1)
+- ✓ cd packages/crew && npx vitest run test/hub/e2e/guard.test.ts test/hub/hubcall.test.ts -t 'left alone' (AC 2)
+- ✓ cd packages/crew && npx vitest run test/hub/e2e/guard.test.ts test/hub/hubcall.test.ts -t 'variable' (AC 4)
+- ✓ cd packages/crew && npx vitest run test/hub/e2e/guard.test.ts test/hub/hubcall.test.ts -t 'nested|git alias' (AC 5)
+- ✓ cd packages/crew && npx vitest run test/hub/e2e/guard.test.ts test/hub/hubcall.test.ts -t 'visible hub calls|chained|prefixes|calls inside' (AC 6)
+- ✓ cd packages/crew && npx vitest run test/hub/e2e/guard.test.ts (AC 8)
+- ✓ cd packages/crew && npx vitest run test/hub/hubcall.test.ts -t 'pure and small' (AC 10)
+- ✓ Copied the worktree to a scratch dir, put the base guard.ts (git show aabe422:...) and no hubcall.ts there, rebuilt, ran guard.test.ts: all 5 new BUG-017 cases (AC1-AC5) fail, the 13 pre-existing pass. Worktree untouched. (AC 9) (reported)
+- ✓ wc -l: guard.ts 218, hubcall.ts 224 (both <300); hubcall.ts only import is basename from node:path (pure). (AC 10) (reported)
+- ✓ git diff vs merge-base: the only removed line in guard.test.ts is the import line (extended); no pre-existing it block edited; 18/18 pass incl. the X=1 QA_DIR=/x bash case. (AC 8) (reported)
+- next: T5: In packages/crew/test/hub-worktrees.test.ts (guard describe, ~line 246), remove the `find . -exec …` entry
+- evidence: AC1 ✓, AC2 ✓, AC3 ✓, AC4 ✓, AC5 ✓, AC6 ✓, AC7 ✓, AC8 ✓, AC9 ✓, AC10 ✓, AC11 —
 
 Latest log:
-- 2026-10-25: status in-progress → in-review
-- 2026-10-25: review: changes requested — Code is right and matches the spec: touches exact, hubcall.ts pure (node:path only), 224 and 218 lines, typecheck clean, hubcall.test.ts 10/10 and e2e guard.test.ts 18/18 after a build, AC9 base run recorded at T4, and it merges cleanly onto main (P-030 did not touch guard.ts). One change: the VAR=value shape logged on BUG-017 in 463c393 behaves correctly (I checked X=1 bash x.sh <hub path> P-001 against withIdentity: unchanged) but no test pins it. AC2 and its test plan now name it. Add X=1 QA_DIR=/x bash .crew/drafts/x.sh /abs/.crew/bin/<hub> P-001 to the AC2 loop in test/hub/e2e/guard.test.ts ('a script's arguments are left alone', expect hook null) and to the AC2 list in test/hub/hubcall.test.ts ('the hub named as an argument is left alone'). No source change needed. Rebuild and re-run both files; then back to review.
-- 2026-10-25: status in-review → in-progress — changes requested: Code is right and matches the spec: touches exact, hubcall.ts pure (node:path only), 224 and 218 lines, typecheck clean, hubcall.test.ts 10/10 and e2e guard.test.ts 18/18 after a build, AC9 base run recorded at T4, and it merges cleanly onto main (P-030 did not touch guard.ts). One change: the VAR=value shape logged on BUG-017 in 463c393 behaves correctly (I checked X=1 bash x.sh <hub path> P-001 against withIdentity: unchanged) but no test pins it. AC2 and its test plan now name it. Add X=1 QA_DIR=/x bash .crew/drafts/x.sh /abs/.crew/bin/<hub> P-001 to the AC2 loop in test/hub/e2e/guard.test.ts ('a script's arguments are left alone', expect hook null) and to the AC2 list in test/hub/hubcall.test.ts ('the hub named as an argument is left alone'). No source change needed. Rebuild and re-run both files; then back to review.
+- 2026-10-25: Release: NOT merged. Full suite on 6fc4be0 (plan branch merged with main, rebuilt, refresh-bin ok) fails: hub-worktrees.test.ts 'injects identity only where the hub runs' (line 248, a hook result lacks updatedInput.command; reproduces alone in ~2s); view.test.ts beforeAll timed out at 120s (likely load). Sent back via Director.
+- 2026-10-25: Architect diagnosis of Release's full-suite failure: test/hub-worktrees.test.ts guard test passes on main, fails on the P-042 branch only at its last case, find -exec with a hub call. That case pinned the pre-P-042 fail-closed injection; P-042's AC5 and decision K-2026-10-25-the-guard-gives-identity-only-to-a-hub refuse it instead, so the guard is right and the test is stale. The spec missed this second guard test file. Re-specced: touches add packages/crew/test/hub-worktrees.test.ts, AC11 and T5 (test-only change: assert deny with reason containing directly for that case, drop the fails-closed comment). done has no transitions without --force, so reopening waits on the Director/human.
+- 2026-10-25: status done → in-progress — full-suite failure: test/hub-worktrees.test.ts 'injects identity only where the hub runs' find -exec case is now denied by the new guard (AC5), test is stale
 
 ## Progress log
 
