@@ -5,12 +5,12 @@ goal: G-007
 items: FEAT-046
 touches: packages/crew/src/hub/server.ts, packages/crew/src/hub/commands/team/activity.ts, packages/crew/ui/src/api.ts, packages/crew/ui/src/views/DocPage.tsx, packages/crew/ui/src/components/PlanActivity.tsx, packages/crew/ui/src/styles/views.css, packages/crew/test/hub/e2e/live-ui.test.ts
 depends_on:
-status: in-review
+status: done
 branch: plan/P-040-plan-page-shows-its-live-activity
 pr:
 created: 2026-10-25
 started: 2026-10-25
-completed:
+completed: 2026-10-25
 assignee: developer
 ---
 
@@ -88,6 +88,7 @@ Latest log:
 - 2026-10-25: status in-review → in-progress — changes requested: packages/crew/ui/src/components/PlanActivity.tsx line 1: the doc comment carries guard-injected run flags (the role and run-id flags after crew.mjs, a known guard gotcha). Write it as 'a hub ui server' (or the bare command name without crew.mjs) and edit with the Edit tool, not a Bash heredoc. Everything else matches the spec: touches respected, typecheck clean, targeted tests (live-ui, activity e2e, activity, view, structure) pass 49/49.
 - 2026-10-25: status in-progress → in-review
 - 2026-10-25: QA note: the AC3 checkpoint text had guard-injected run flags spliced into a quoted action string; the card actually showed the hub-checkpoint Bash target exactly as the hook recorded it (tool Bash, target = hub script name + checkpoint), nothing else.
+- 2026-10-25: status in-review → done
 
 ## Outcome
 Learnings: none (the guard injecting its flags into heredoc test text is already K-2026-10-25-the-guard-injects-the-agents-role)
