@@ -101,5 +101,6 @@ W1-c of G-007 (design: `.crew/drafts/the-crew-team-was-pure-reef.md`, "W1-c: a m
 ## Progress log
 
 - 2026-10-25: status draft → ready
+- 2026-10-25: Architect: depends_on P-031 (presets.ts) and P-043 (runSuite for step 5, release.md) added
 
 ## Outcome
