@@ -5,11 +5,11 @@ goal: G-007
 items: FEAT-039
 touches: packages/crew/src/hub/cli.ts, packages/crew/src/hub/mcp.ts, packages/crew/src/hub/registry.ts, packages/crew/src/hub/reference.ts, packages/crew/src/hub/commands/index.ts, packages/crew/src/hub/commands/views/advisor.reg.ts, packages/crew/src/hub/commands/views/checks.reg.ts, packages/crew/src/hub/commands/views/design.reg.ts, packages/crew/src/hub/commands/views/export.reg.ts, packages/crew/src/hub/commands/views/graph.reg.ts, packages/crew/src/hub/commands/views/reports.reg.ts, packages/crew/src/hub/commands/views/ui.reg.ts, packages/crew/src/hub/commands/work/backlog.reg.ts, packages/crew/src/hub/commands/work/migrate.reg.ts, packages/crew/src/hub/commands/work/planning.reg.ts, packages/crew/src/hub/commands/work/review.reg.ts, packages/crew/src/hub/commands/work/release.reg.ts, packages/crew/src/hub/commands/work/execution.reg.ts, packages/crew/src/hub/commands/work/workflow.reg.ts, packages/crew/src/hub/commands/memory/context.reg.ts, packages/crew/src/hub/commands/memory/knowledge.reg.ts, packages/crew/src/hub/commands/memory/ledger.reg.ts, packages/crew/src/hub/commands/team/guard.reg.ts, packages/crew/src/hub/commands/team/agents.reg.ts, packages/crew/src/hub/commands/team/team.reg.ts, packages/crew/src/hub/commands/team/liveness.reg.ts, packages/crew/src/hub/commands/team/autonomy.reg.ts, packages/crew/src/hub/commands/team/questions.reg.ts, packages/crew/src/hub/commands/team/policy.reg.ts, packages/crew/src/hub/commands/team/activity.reg.ts, packages/crew/build.mjs, .gitattributes, plugins/crew/skills/hub/SKILL.md, packages/crew/test/hub/registry.test.ts, packages/crew/test/hub/registry-before.json, packages/crew/test/dist.test.ts
 depends_on:
-status: ready
+status: in-progress
 branch: plan/P-030-registries-split-per-command
 pr:
 created: 2026-10-25
-started:
+started: 2026-10-25
 completed:
 assignee: developer
 ---
@@ -88,5 +88,6 @@ Two design choices, recorded as decisions with this plan:
 - 2026-10-25: status draft → ready
 - 2026-10-25: Architect: touches list the 25 registration files exactly (a commands/*/*.reg.ts glob overlapped every command module by stem).
 - 2026-10-25: assigned to the developer role
+- 2026-10-25: status ready → in-progress — branch plan/P-030-registries-split-per-command
 
 ## Outcome
