@@ -1,0 +1,32 @@
+---
+id: BUG-032
+type: bug
+title: P-036 init defaults make crew init fail outside git
+status: new
+severity: S2
+priority: P1
+goal: G-007
+plan:
+created: 2026-10-26
+closed:
+---
+
+# BUG-032: P-036 init defaults make crew init fail outside git
+
+## Summary
+Release's full suite for P-036 (branch tip 1ba1321, 471.7s) failed 1 of 429: packages/crew/test/hub/e2e/live-ui.test.ts:113 'outside git (the ledger in .crew itself), a server still sees edits deep in .crew and ledger writes' expects crew init to exit 0 in a non-git directory; it exits 1. Repro: crew init in a plain temp dir prints Initialized .crew/, Created CLAUDE.md, the two 'Wrote .crew/... (defaults; edit it)' lines, then 'Hub state lives on main in the main checkout (...), which is on a detached HEAD: switch it back to main, or turn hub.plan_worktrees off.' and exits 1. Deterministic (fails in ~1.5s, fails again alone). P-036's init defaults appear to turn hub.plan_worktrees on, and the base-branch check then fails with no git repo. Fix in init (skip or soften that check without a git repo) or justify a test change.
+
+## Environment
+
+## Steps to reproduce
+1.
+
+## Expected
+
+## Actual
+
+## Evidence
+
+## Impact
+
+## Notes
