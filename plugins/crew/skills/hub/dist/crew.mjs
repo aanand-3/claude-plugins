@@ -10395,11 +10395,12 @@ function openPlanWorktree(store, pid, branch) {
   const main2 = worktrees()[0]?.path ?? store.ws.root;
   const path = join14(main2, ".claude", "worktrees", branch.replace(/^plan\//, ""));
   const exists = planBranches().includes(branch);
-  git(["worktree", "add", "-q", ...exists ? [path, branch] : ["-b", branch, path, store.baseBranch()]], true);
+  git(["worktree", "add", "-q", "--no-checkout", ...exists ? [path, branch] : ["-b", branch, path, store.baseBranch()]], true);
   store.ws.onAbort(() => {
     git(["worktree", "remove", "--force", path]);
     if (!exists) git(["branch", "-D", branch]);
   });
+  sparseCheckout(store, path);
   const common = commonDir(store.ws.root), exclude = common ? join14(common, "info", "exclude") : null;
   const ignored = exclude ? store.ws.read(exclude) ?? "" : null;
   if (exclude && ignored !== null && !/^\.claude\/worktrees\/?$/m.test(ignored)) {
@@ -10409,6 +10410,13 @@ function openPlanWorktree(store, pid, branch) {
   store.forgetWorktrees();
   store.say(`${pid}: worktree ${store.rel(path)} on ${branch} \u2014 the plan's team works on its code there; its hub documents stay in the main checkout`);
   return path;
+}
+function sparseCheckout(store, path) {
+  const patterns = ["/*", ...STATE_PATHS.map((p) => `!/${p}`)];
+  if (git(["-C", path, "sparse-checkout", "set", "--no-cone", ...patterns]) === null) {
+    store.say(`note: git sparse-checkout failed \u2014 ${store.rel(path)} is a full checkout, with read-only copies of the hub's documents`);
+  }
+  git(["-C", path, "checkout", "-q"], true);
 }
 function restore(store, f, root = store.ws.root) {
   const head = git(["-C", root, "show", `HEAD:${f}`]), path = join14(root, f);

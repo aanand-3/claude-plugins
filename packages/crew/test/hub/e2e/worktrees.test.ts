@@ -39,7 +39,7 @@ it("plan worktrees: new-plan opens the plan's worktree and keeps the spec in the
   expect(wt.git("branch", "--show-current").stdout.trim()).toBe("plan/P-001-signup");
   expect(read(planFile(repo, "P-001"))).toContain("status: draft");
   expect(item(repo, "BUG-001")).toContain("plan: P-001");
-  expect(readdirSync(join(wt.path, ".crew/plans")).filter((f) => /^P-.*\.md$/.test(f))).toEqual([]);
+  expect(existsSync(join(wt.path, ".crew/plans"))).toBe(false);
   expect(wt.git("status", "--porcelain", "--", ".crew").stdout).toBe("");
   const lines = new Set(repo.git("status", "--porcelain").stdout.split("\n").filter((l) => l !== "").map((l) => l.trim()));
   expect(lines).toEqual(new Set(["M .crew/config.yaml", "?? .crew/drafts/other.md"])); // setup and drafts aren't hub state

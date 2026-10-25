@@ -124,7 +124,7 @@ describe("one home", () => {
     expect(readFileSync(itemFile(r, "BUG-001")!, "utf8")).toContain("status: triaged");
     expect(r.git("log", "-1", "--format=%s").stdout.trim()).toBe("chore(hub): triage BUG-001");
     expect(w.git("status", "--porcelain").stdout).toBe("");
-    expect(readFileSync(itemFile(w, "BUG-001")!, "utf8")).not.toContain("status: triaged");
+    expect(itemFile(w, "BUG-001")).toBeNull();
   });
 
   it("hand edits to hub documents go with the next hub commit; other changes stay uncommitted", () => {

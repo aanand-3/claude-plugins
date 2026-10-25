@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import * as git from "../../core/git.js";
 import type { Doc } from "../../core/work/doc.js";
-import { requireBase } from "../../core/work/hubstate.js";
+import { requireBase, STATE_PATHS } from "../../core/work/hubstate.js";
 import { CLOSED, HUB_STATE_MARKER, HUB_STATE_RULE, ITEM_CLOSED, type Kind, REQUIRED_ON_CREATE, TEMPLATE_NAMES } from "../../core/work/model.js";
 import { SCRIPT_DIR, SCRIPT_FILE, SKILL_DIR, Store } from "../../core/store.js";
 import { fail, idList, slugify } from "../../core/text.js";
@@ -127,16 +127,18 @@ export function newPlan(store: Store, title: string, draftPath: string, o: PlanO
 }
 
 /** Give a plan its shared worktree, `.claude/worktrees/<P-###-slug>` beside the main checkout, on its branch (created
- * from the base branch unless it exists). git can't stage this, so a refusal later in the command removes it again. */
+ * from the base branch unless it exists), checked out sparse: without the hub's documents, which live in the main checkout
+ * only. git can't stage this, so a refusal later in the command removes it again. */
 export function openPlanWorktree(store: Store, pid: string, branch: string): string {
   const main = git.worktrees()[0]?.path ?? store.ws.root;
   const path = join(main, ".claude", "worktrees", branch.replace(/^plan\//, ""));
   const exists = git.planBranches().includes(branch);
-  git.git(["worktree", "add", "-q", ...(exists ? [path, branch] : ["-b", branch, path, store.baseBranch()])], true);
+  git.git(["worktree", "add", "-q", "--no-checkout", ...(exists ? [path, branch] : ["-b", branch, path, store.baseBranch()])], true);
   store.ws.onAbort(() => {
     git.git(["worktree", "remove", "--force", path]);
     if (!exists) git.git(["branch", "-D", branch]);
   });
+  sparseCheckout(store, path);
   const common = git.commonDir(store.ws.root), exclude = common ? join(common, "info", "exclude") : null;
   const ignored = exclude ? store.ws.read(exclude) ?? "" : null;
   if (exclude && ignored !== null && !/^\.claude\/worktrees\/?$/m.test(ignored)) {
@@ -145,6 +147,16 @@ export function openPlanWorktree(store: Store, pid: string, branch: string): str
   store.forgetWorktrees();
   store.say(`${pid}: worktree ${store.rel(path)} on ${branch} — the plan's team works on its code there; its hub documents stay in the main checkout`);
   return path;
+}
+
+/** Check out a new worktree without the hub's state paths (non-cone patterns: cone mode can't leave out idea.md); the
+ * patterns are the worktree's own, so the main checkout stays full. A git without sparse-checkout gets a full checkout. */
+function sparseCheckout(store: Store, path: string): void {
+  const patterns = ["/*", ...STATE_PATHS.map((p) => `!/${p}`)];
+  if (git.git(["-C", path, "sparse-checkout", "set", "--no-cone", ...patterns]) === null) {
+    store.say(`note: git sparse-checkout failed — ${store.rel(path)} is a full checkout, with read-only copies of the hub's documents`);
+  }
+  git.git(["-C", path, "checkout", "-q"], true);
 }
 
 /** Put a file of a checkout (this one by default) back as committed (or remove it when it isn't committed). */
