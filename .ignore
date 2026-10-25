@@ -1,0 +1,4 @@
+# Generated bundles: kept in git, left out of searches (Grep/ripgrep) so they never fill an agent's context.
+plugins/crew/skills/hub/dist/
+plugins/crew/skills/*/scripts/*.mjs
+.crew/bin/
