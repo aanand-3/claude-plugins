@@ -29,7 +29,10 @@ export function policyShow(store: Store, role?: string, team?: string, json = fa
     ["secrets.files", p.secrets.files, "secrets.files"], ["secrets.patterns", p.secrets.patterns, "secrets.patterns"],
     ["escalation.to", p.escalation.to, "escalation.to"], ["evidence.role", p.evidence.role, "evidence.role"],
     ["notify.command", p.notify.command, "notify.command"], ["notify.on", p.notify.on, "notify.on"],
-    ["fast_lane.types", p.fast_lane.types, "fast_lane.types"], ["fast_lane.max_tasks", p.fast_lane.max_tasks, "fast_lane.max_tasks"], ["limits.max_turns", p.limits.max_turns, "limits.max_turns"],
+    ["fast_lane.types", p.fast_lane.types, "fast_lane.types"], ["fast_lane.max_tasks", p.fast_lane.max_tasks, "fast_lane.max_tasks"],
+    ["release.refresh_bin.from", p.release.refresh_bin.from ?? "none", "release.refresh_bin.from"],
+    ["release.refresh_bin.files", p.release.refresh_bin.files.length ? p.release.refresh_bin.files : "none", "release.refresh_bin.files"],
+    ["limits.max_turns", p.limits.max_turns, "limits.max_turns"],
     ...(["stale_claim_hours", "max_bounces", "max_attempts", "idle_minutes"] as const).map((k): [string, unknown, string] => [`limits.${k}`, p.limits[k], `limits.${k}`]),
   ];
   store.say(`Effective policy${r.role ? ` for role ${r.role}` : ""}${r.team ? `, team ${r.team}` : ""}:`);

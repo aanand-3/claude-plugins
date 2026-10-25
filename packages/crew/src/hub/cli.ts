@@ -18,7 +18,7 @@ import { agents } from "./commands/team/agents.js";
 import { assign, reassign, staff } from "./commands/team/team.js";
 import { pauseTeam, resumeTeam } from "./commands/team/liveness.js";
 import { review } from "./commands/work/review.js";
-import { mergeOrderCmd } from "./commands/work/release.js";
+import { mergeOrderCmd, refreshBin } from "./commands/work/release.js";
 import { run, usageHook } from "./commands/team/autonomy.js";
 import { activityHook, watch } from "./commands/team/activity.js";
 import { recordStep, resumeWorkflow } from "./commands/team/runs.js";
@@ -64,6 +64,7 @@ Commands:
   checkpoint --workflow kickoff|onboard --step S [--skip] [--note] · resume --workflow W   a multi-step job's progress
   review P-### --approve | --changes TXT        code review of a plan in review (never by its implementer)
   merge-order [--json]                          done plans to merge, dependencies first (Release)
+  refresh-bin [--check]                         copy the policy's release.refresh_bin files into .crew/bin (Release, in a plan worktree)
   context [P-###] [--role R] [--budget CHARS] [--json]   what you need right now, within a budget (default 6000 chars)
   next [--role R] · current · check · status [--write]    (roles: executive, director, pm, architect, developer, qa, release + the policy's)
   --as ROLE · --run-id ID                       who is acting, on any command (wins over CREW_ROLE / CREW_RUN)
@@ -138,6 +139,7 @@ const COMMANDS: Record<string, Spec> = {
     run: (s, a) => (a.opt.team ? resumeTeam(s, str(a, "note")) : a.opt.workflow ? resumeWorkflow(s, str(a, "workflow")!, !!a.opt.json)
       : resume(s, a.pos[0], !!a.opt.json)) },
   "merge-order": { pos: [], flag: ["json"], run: (s, a) => mergeOrderCmd(s, !!a.opt.json) },
+  "refresh-bin": { pos: [], flag: ["check"], run: (s, a) => refreshBin(s, s.ws.root, !!a.opt.check) },
   review: { pos: ["id"], str: ["changes"], flag: ["approve"],
     run: (s, a) => review(s, a.pos[0], { approve: !!a.opt.approve, changes: str(a, "changes") }) },
   pause: { pos: [], str: ["reason"], run: (s, a) => pauseTeam(s, str(a, "reason")) },

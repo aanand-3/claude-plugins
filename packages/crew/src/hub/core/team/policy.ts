@@ -48,7 +48,7 @@ const GLOBAL: Record<string, Shape> = {
   git: { protected_branches: "list", force_push: "bool", no_verify: "bool" },
   secrets: { files: "list", patterns: "list" },
   escalation: { to: "str" }, evidence: { role: "str" }, notify: { command: "str", on: "list" },
-  fast_lane: { types: "list", max_tasks: "num" },
+  fast_lane: { types: "list", max_tasks: "num" }, release: { refresh_bin: { from: "str", files: "list" } },
   limits: { max_turns: "num", stale_claim_hours: "num", max_bounces: "num", max_attempts: "num", idle_minutes: "num" },
 };
 const UNION = new Set(["reserved", "secrets.files", "secrets.patterns", "git.protected_branches", "paths.protected", "tools.deny"]);
@@ -65,6 +65,7 @@ export interface Effective {
   git: { protected_branches: string[]; force_push: boolean; no_verify: boolean };
   secrets: { files: string[]; patterns: string[] }; escalation: { to: string }; evidence: { role: string | null };
   notify: { command: string | null; on: string[] }; fast_lane: { types: string[]; max_tasks: number | null };
+  release: { refresh_bin: { from: string | null; files: string[] } };
   limits: { max_turns: number | null; stale_claim_hours: number | null; max_bounces: number | null; max_attempts: number | null; idle_minutes: number | null };
 }
 export interface Resolved {
@@ -263,6 +264,7 @@ export function resolveLayers(layers: Layer[], roles: readonly string[] = ROLES)
     secrets: { files: get("secrets.files", []), patterns: get("secrets.patterns", []) }, escalation: { to: get("escalation.to", "executive") }, evidence: { role: ev },
     notify: { command: get("notify.command", null), on: get("notify.on", []) },
     fast_lane: { types: get<string[]>("fast_lane.types", []).map((t) => t.toUpperCase()), max_tasks: num("fast_lane.max_tasks") },
+    release: { refresh_bin: { from: get("release.refresh_bin.from", null), files: get("release.refresh_bin.files", []) } },
     limits: { max_turns: num("limits.max_turns"), stale_claim_hours: num("limits.stale_claim_hours"),
       max_bounces: num("limits.max_bounces"), max_attempts: num("limits.max_attempts"), idle_minutes: num("limits.idle_minutes") },
   };

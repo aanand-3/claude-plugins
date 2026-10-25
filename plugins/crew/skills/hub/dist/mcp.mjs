@@ -7891,6 +7891,7 @@ var GLOBAL = {
   evidence: { role: "str" },
   notify: { command: "str", on: "list" },
   fast_lane: { types: "list", max_tasks: "num" },
+  release: { refresh_bin: { from: "str", files: "list" } },
   limits: { max_turns: "num", stale_claim_hours: "num", max_bounces: "num", max_attempts: "num", idle_minutes: "num" }
 };
 var UNION = /* @__PURE__ */ new Set(["reserved", "secrets.files", "secrets.patterns", "git.protected_branches", "paths.protected", "tools.deny"]);
@@ -8087,6 +8088,7 @@ function resolveLayers(layers, roles = ROLES) {
     evidence: { role: ev },
     notify: { command: get("notify.command", null), on: get("notify.on", []) },
     fast_lane: { types: get("fast_lane.types", []).map((t) => t.toUpperCase()), max_tasks: num2("fast_lane.max_tasks") },
+    release: { refresh_bin: { from: get("release.refresh_bin.from", null), files: get("release.refresh_bin.files", []) } },
     limits: {
       max_turns: num2("limits.max_turns"),
       stale_claim_hours: num2("limits.stale_claim_hours"),
