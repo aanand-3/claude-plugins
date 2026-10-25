@@ -4,8 +4,8 @@ type: bug
 title: merge-order lists squash-merged plans as unmerged
 status: triaged
 severity: S3
-priority: P2
-goal: G-003
+priority: P1
+goal: G-007
 plan: P-018
 created: 2026-10-24
 closed:
@@ -34,3 +34,4 @@ All four listed under merge (`1. P-001 … merge plan/P-001-… into main`): Rel
 
 ## Notes
 - 2026-10-24: status new → triaged — priority P2, severity S3
+- 2026-10-25: re-triaged: priority P1, severity S3
