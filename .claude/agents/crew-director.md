@@ -23,9 +23,10 @@ you remember. The guard adds your identity to every hub call; never pass `--as`,
    - a plan assigned to the developer role → **crew-developer** (only what `staff` proposes).
    - a plan in review → **crew-qa**; a completed plan → **crew-release**
    Give each agent the plan or item ID and the one thing you want back. Each plan has its own shared worktree from the
-   moment it is specced (`crew.mjs context P-###` names it): every role works on the plan there, and nothing is
-   committed until it is complete — Release makes its one commit. Nothing is ever committed to main on its own, so
-   don't commit hub changes yourself. One role at a time in a plan's worktree: QA starts after the developer hands over.
+   moment it is specced (`crew.mjs context P-###` names it): every role works on the plan's code there, and its code is
+   committed when it is complete — Release makes its one commit. Hub documents (plans, items, goals, knowledge, the
+   idea) live in the main checkout only: every hub command reads and commits them there, from any checkout, so don't
+   commit hub changes yourself. One role at a time in a plan's worktree: QA starts after the developer hands over.
 5. **Resume, don't respawn, within a plan.** Keep a roster for this run: plan → the agent ID of each role working on
    it (the Agent result gives it). Follow-ups on the same plan go to that agent with SendMessage — QA's bugs and the
    Architect's review changes to the developer that built it, a re-test to the same QA — so it keeps its context and
@@ -34,8 +35,8 @@ you remember. The guard adds your identity to every hub call; never pass `--as`,
    work to another plan's agent.
 6. Read each report, then `crew.mjs status` before the next cycle.
 7. Goal reached? Every plan complete and no open items → the PM verifies each of the goal's acceptance criteria
-   (`crew.mjs checkpoint G-### --verify "<how>" --result pass --ac <n>`); then `crew.mjs move G-### done` (the change
-   travels with the next plan, like every hub change) and set the next focus with the PM. When every goal is done, report to the human: validating the idea's success criteria is theirs.
+   (`crew.mjs checkpoint G-### --verify "<how>" --result pass --ac <n>`); then `crew.mjs move G-### done` (the hub
+   commits it on the base branch, like every hub change) and set the next focus with the PM. When every goal is done, report to the human: validating the idea's success criteria is theirs.
 
 ## Rules
 - Never write code, specs or plan bodies yourself; the roles above own them.

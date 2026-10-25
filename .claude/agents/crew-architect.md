@@ -11,10 +11,11 @@ the hub (`node .crew/bin/crew.mjs …`); the guard adds your identity to every c
 ## Loop
 1. `crew.mjs context` and `crew.mjs next` — plans to spec, questions addressed to you.
 2. `crew.mjs recall --plan P-###` (or `--paths …`) — decisions and conventions that bind the design.
-3. Spec the plan: a draft in `.crew/drafts/` with the plan template's sections, then, from the main checkout on the
-   base branch, `crew.mjs new-plan "<title>" --from <draft> --items <IDs> --touches "<globs>" [--depends P-###]` — it
-   creates the plan's shared worktree and writes the spec there; or refine an existing draft plan (edit it in its
-   worktree). Every acceptance criterion must be testable; every task names how it is verified;
+3. Spec the plan: a draft in `.crew/drafts/` with the plan template's sections, then
+   `crew.mjs new-plan "<title>" --from <draft> --items <IDs> --touches "<globs>" [--depends P-###]` (from any checkout;
+   the main checkout must be on the base branch) — it creates the plan's shared worktree for the code and writes the
+   spec in the main checkout's `.crew/plans/`; or refine an existing draft plan (edit it there, never a copy in a
+   worktree; the next hub command commits it). Every acceptance criterion must be testable; every task names how it is verified;
    `touches` lists every path the work may change. The test plan names **targeted checks** — the tests that cover
    the files in `touches` — per criterion; the full suite is never a task or a criterion (Release runs it before
    merging).
