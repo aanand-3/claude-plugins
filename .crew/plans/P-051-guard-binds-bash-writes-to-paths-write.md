@@ -5,7 +5,7 @@ goal: G-007
 items: BUG-033, BUG-021, BUG-011, BUG-013, BUG-002
 touches: packages/crew/src/hub/commands/team/guard.ts, packages/crew/src/hub/commands/team/targets.ts, packages/crew/src/hub/commands/team/hubcall.ts, packages/crew/test/hub/targets.test.ts, packages/crew/test/hub/hubcall.test.ts, packages/crew/test/hub/e2e/guard.test.ts, packages/crew/test/hub/e2e/guard-writes.test.ts, plugins/crew/skills/hub/references/model.md
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-051-guard-binds-bash-writes-to-paths-write
 pr:
 created: 2026-10-26
@@ -259,7 +259,7 @@ Until then the old guard keeps running. Rollback: revert the plan's commit and r
 
 _Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
 
-- P-051: Guard binds Bash writes to paths.write and resolves or refuses unknown targets [in-progress] tasks 5/5 — claimed by Arpit Anand (developer:a89f364e3564eeb34)
+- P-051: Guard binds Bash writes to paths.write and resolves or refuses unknown targets [in-review] tasks 5/5 — claimed by Arpit Anand (developer:a89f364e3564eeb34)
 - last checkpoint 2026-10-25 22:04 at T5 (f673c93) by Arpit Anand; since then 0 commit(s), 2 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —, AC7 —, AC8 —, AC9 —
 
@@ -273,5 +273,9 @@ Latest log:
 - 2026-10-26: status draft → ready
 - 2026-10-26: assigned to the developer role
 - 2026-10-26: status ready → in-progress — branch plan/P-051-guard-binds-bash-writes-to-paths-write
+- 2026-10-26: status in-progress → in-review
 
 ## Outcome
+Bash write targets are bound to paths.write, inline/stdin scripts are refused for draft-only roles, variables in targets resolve or are refused, and subagents can't run crew.mjs init.
+
+Learnings: K-2026-10-26-the-guards-temp-dir-exemptions-must
