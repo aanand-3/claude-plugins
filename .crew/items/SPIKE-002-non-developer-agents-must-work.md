@@ -2,12 +2,12 @@
 id: SPIKE-002
 type: spike
 title: Non-developer agents must work on the plan's branch to move or review it
-status: new
+status: wontfix
 priority:
 goal: G-003
 plan:
 created: 2026-10-23
-closed:
+closed: 2026-10-26
 ---
 
 # SPIKE-002: Non-developer agents must work on the plan's branch to move or review it
@@ -35,3 +35,4 @@ None needed if rejected. If the PM wants the branch-per-plan residue confirmed f
 
 ## Notes
 - 2026-10-26: Architect: filled Question and Timebox. Obsolete: hub documents have one home (P-026), plan worktrees are init's default (P-036) and branch-copy reads are off with them (P-039), so any role moves or reviews from any checkout. Residue only in legacy branch-per-plan mode, which doctor warns on. Suggest rejecting.
+- 2026-10-26: status new → wontfix — Obsolete: answered by plan worktrees (P-026 hub documents have one home, P-036 init default, P-039 no branch-copy overlay). Residue only in legacy branch-per-plan mode, which doctor warns on; a new item if that mode needs it.
