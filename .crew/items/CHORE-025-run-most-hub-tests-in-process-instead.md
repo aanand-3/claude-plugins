@@ -2,8 +2,8 @@
 id: CHORE-025
 type: chore
 title: Run most hub tests in-process instead of spawning the bundle
-status: new
-priority:
+status: triaged
+priority: P3
 goal:
 plan:
 created: 2026-10-25
@@ -20,3 +20,4 @@ Most hub tests spawn a fresh node process on the 527 KB dist/crew.mjs --as pm --
 - [ ] Full suite wall time and peak load are measurably lower than the durations recorded by BUG-028's plan
 
 ## Notes
+- 2026-10-25: status new → triaged — priority P3
