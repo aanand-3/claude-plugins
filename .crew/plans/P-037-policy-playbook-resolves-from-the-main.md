@@ -5,12 +5,12 @@ goal: G-007
 items: CHORE-019
 touches: packages/crew/src/hub/core/store.ts, packages/crew/src/hub/commands/team/policy.ts, packages/crew/src/hub/commands/team/agents.ts, packages/crew/src/hub/commands/team/guard.ts, packages/crew/test/hub/e2e/playbook-home.test.ts
 depends_on:
-status: in-review
+status: done
 branch: plan/P-037-policy-playbook-resolves-from-the-main
 pr:
 created: 2026-10-25
 started: 2026-10-25
-completed:
+completed: 2026-10-25
 assignee: developer
 ---
 
@@ -78,6 +78,7 @@ Latest log:
 - 2026-10-25: assigned to the developer role
 - 2026-10-25: status ready → in-progress — branch plan/P-037-policy-playbook-resolves-from-the-main
 - 2026-10-25: status in-progress → in-review
+- 2026-10-25: status in-review → done
 
 ## Outcome
 Policy and playbook resolution (Store.policy, Store.knowledge, policy show/check, agents, the guard) pass store.home, so a relative playbook.path resolves from the main checkout in plan worktrees too. Regression test test/hub/e2e/playbook-home.test.ts. Awaiting QA.
