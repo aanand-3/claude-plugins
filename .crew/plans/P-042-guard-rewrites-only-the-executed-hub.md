@@ -5,7 +5,7 @@ goal: G-007
 items: BUG-017, CHORE-020
 touches: packages/crew/src/hub/commands/team/guard.ts, packages/crew/src/hub/commands/team/hubcall.ts, packages/crew/test/hub/e2e/guard.test.ts, packages/crew/test/hub/hubcall.test.ts, packages/crew/test/hub-worktrees.test.ts
 depends_on: P-030
-status: in-progress
+status: in-review
 branch: plan/P-042-guard-rewrites-only-the-executed-hub
 pr:
 created: 2026-10-25
@@ -180,7 +180,7 @@ revert of the plan's commit; agents keep the old workaround (avoid the hub name 
 
 _Generated 2026-10-25 by `crew.mjs handoff` from the ledger._
 
-- P-042: Guard rewrites only the executed hub program [in-progress] tasks 4/5 — claimed by Arpit Anand (developer:a9602839fa6e2d4d5)
+- P-042: Guard rewrites only the executed hub program [in-review] tasks 4/5 — claimed by Arpit Anand (developer:a9602839fa6e2d4d5)
 - last checkpoint 2026-10-25 14:13 at T5 (178c1ed) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
 - ✓ cd packages/crew && npx vitest run test/hub/e2e/guard.test.ts -t 'executed hub program' (AC 1)
 - ✓ cd packages/crew && npx vitest run test/hub/e2e/guard.test.ts test/hub/hubcall.test.ts -t 'left alone' (AC 2)
@@ -213,6 +213,7 @@ Latest log:
 - 2026-10-25: Release: NOT merged. Full suite on 6fc4be0 (plan branch merged with main, rebuilt, refresh-bin ok) fails: hub-worktrees.test.ts 'injects identity only where the hub runs' (line 248, a hook result lacks updatedInput.command; reproduces alone in ~2s); view.test.ts beforeAll timed out at 120s (likely load). Sent back via Director.
 - 2026-10-25: Architect diagnosis of Release's full-suite failure: test/hub-worktrees.test.ts guard test passes on main, fails on the P-042 branch only at its last case, find -exec with a hub call. That case pinned the pre-P-042 fail-closed injection; P-042's AC5 and decision K-2026-10-25-the-guard-gives-identity-only-to-a-hub refuse it instead, so the guard is right and the test is stale. The spec missed this second guard test file. Re-specced: touches add packages/crew/test/hub-worktrees.test.ts, AC11 and T5 (test-only change: assert deny with reason containing directly for that case, drop the fails-closed comment). done has no transitions without --force, so reopening waits on the Director/human.
 - 2026-10-25: status done → in-progress — full-suite failure: test/hub-worktrees.test.ts 'injects identity only where the hub runs' find -exec case is now denied by the new guard (AC5), test is stale
+- 2026-10-25: status in-progress → in-review
 
 ## Outcome
 Learnings: K-2026-10-25-a-plan-task-that-says-to-git-stash
