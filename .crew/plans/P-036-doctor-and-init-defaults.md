@@ -120,6 +120,18 @@ Overlaps, for staffing only: P-030 on `planning.reg.ts` (the `init` registration
 
 ## Handoff
 
+_Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
+
+- P-036: Doctor and init defaults [in-progress] tasks 0/7 — claimed by Arpit Anand (developer:a996d202aa6320ed0)
+- last checkpoint 2026-10-25 19:55 at T7 (080cd74) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
+- next: T1: `probeHubCommit` + the `hub-commits` check → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/doctor.test.ts -t hooks` (AC5)
+- evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —, AC7 —, AC8 —, AC9 —, AC10 —
+
+Latest log:
+- 2026-10-25: status draft → ready
+- 2026-10-25: assigned to the developer role
+- 2026-10-25: status ready → in-progress — branch plan/P-036-doctor-and-init-defaults
+
 ## Progress log
 
 - 2026-10-25: status draft → ready
