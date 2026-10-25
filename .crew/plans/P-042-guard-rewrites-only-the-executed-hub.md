@@ -167,14 +167,14 @@ revert of the plan's commit; agents keep the old workaround (avoid the hub name 
 
 _Generated 2026-10-25 by `crew.mjs handoff` from the ledger._
 
-- P-042: Guard rewrites only the executed hub program [in-review] tasks 4/4 — claimed by Arpit Anand (developer:ad6f27a72f3ac3841)
-- last checkpoint 2026-10-25 12:07 at T4 (cad3066) by Arpit Anand; since then 0 commit(s), 1 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs
+- P-042: Guard rewrites only the executed hub program [in-progress] tasks 4/4 — claimed by Arpit Anand (developer:af43f81a3a1cf42e1)
+- last checkpoint 2026-10-25 12:48 at T4 (66b385d) by Arpit Anand; since then 0 commit(s), 1 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —, AC7 —, AC8 —, AC9 —, AC10 —
 
 Latest log:
-- 2026-10-25: status draft → ready
-- 2026-10-25: assigned to the developer role
-- 2026-10-25: status ready → in-progress — branch plan/P-042-guard-rewrites-only-the-executed-hub
+- 2026-10-25: status in-progress → in-review
+- 2026-10-25: review: changes requested — Code is right and matches the spec: touches exact, hubcall.ts pure (node:path only), 224 and 218 lines, typecheck clean, hubcall.test.ts 10/10 and e2e guard.test.ts 18/18 after a build, AC9 base run recorded at T4, and it merges cleanly onto main (P-030 did not touch guard.ts). One change: the VAR=value shape logged on BUG-017 in 463c393 behaves correctly (I checked X=1 bash x.sh <hub path> P-001 against withIdentity: unchanged) but no test pins it. AC2 and its test plan now name it. Add X=1 QA_DIR=/x bash .crew/drafts/x.sh /abs/.crew/bin/<hub> P-001 to the AC2 loop in test/hub/e2e/guard.test.ts ('a script's arguments are left alone', expect hook null) and to the AC2 list in test/hub/hubcall.test.ts ('the hub named as an argument is left alone'). No source change needed. Rebuild and re-run both files; then back to review.
+- 2026-10-25: status in-review → in-progress — changes requested: Code is right and matches the spec: touches exact, hubcall.ts pure (node:path only), 224 and 218 lines, typecheck clean, hubcall.test.ts 10/10 and e2e guard.test.ts 18/18 after a build, AC9 base run recorded at T4, and it merges cleanly onto main (P-030 did not touch guard.ts). One change: the VAR=value shape logged on BUG-017 in 463c393 behaves correctly (I checked X=1 bash x.sh <hub path> P-001 against withIdentity: unchanged) but no test pins it. AC2 and its test plan now name it. Add X=1 QA_DIR=/x bash .crew/drafts/x.sh /abs/.crew/bin/<hub> P-001 to the AC2 loop in test/hub/e2e/guard.test.ts ('a script's arguments are left alone', expect hook null) and to the AC2 list in test/hub/hubcall.test.ts ('the hub named as an argument is left alone'). No source change needed. Rebuild and re-run both files; then back to review.
 
 ## Progress log
 
