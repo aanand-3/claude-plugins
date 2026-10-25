@@ -5,7 +5,7 @@ title: Guard ignores a variable in the middle of a Bash write target
 status: triaged
 severity: S3
 priority: P2
-goal: G-001
+goal: G-007
 plan:
 created: 2026-10-24
 closed:
@@ -44,3 +44,4 @@ A crew subagent can overwrite the policy, hook settings, agent definitions or CL
 ## Notes
 Found while re-testing P-019 round 3 (BUG-009, BUG-010 fixes).
 - 2026-10-26: status new → triaged — priority P2, severity S3
+- 2026-10-26: re-triaged: priority P2, severity S3
