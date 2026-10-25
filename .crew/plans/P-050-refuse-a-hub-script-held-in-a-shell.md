@@ -5,7 +5,7 @@ goal: G-007
 items: BUG-031
 touches: packages/crew/src/hub/commands/team/hubcall.ts, packages/crew/test/hub/hubcall.test.ts
 depends_on:
-status: draft
+status: ready
 branch: plan/P-050-refuse-a-hub-script-held-in-a-shell
 pr:
 created: 2026-10-26
@@ -25,7 +25,8 @@ prints nothing and the call runs without `--as` / `--run-id`. Expected: a hub ca
 ## Scope
 **In:**
 - `refusal()` also returns the VARIABLE message when a runtime (node, bun, deno) head runs a script word that starts with `$`
-  and the whole command names crew.mjs.
+  (`$C`, `"$C"`, `${C}`). It only runs on commands that name crew.mjs (`withIdentity` returns early otherwise), so no extra
+  input is needed.
 - Regression tests in the existing hubcall test file.
 
 **Out (explicitly not doing):**
@@ -37,13 +38,15 @@ prints nothing and the call runs without `--as` / `--run-id`. Expected: a hub ca
 ## Acceptance criteria
 - [ ] AC1: `C=<path>/crew.mjs; node $C checkpoint …` (and the `bun` / `deno` / `"$C"` / `${C}` spellings) is denied by `withIdentity` with the VARIABLE message, so it never runs unattributed.
 - [ ] AC2: the literal forms (`node .crew/bin/crew.mjs …`, absolute path, `cd … &&`, loops, a command not naming crew.mjs such as `node $X build.js`) behave as before: rewritten once, or unchanged.
-- [ ] AC3: `npm run typecheck` passes in packages/crew and the hub test files (hubcall.test.ts, guard tests) pass.
+- [ ] AC3: `npm run typecheck` passes in packages/crew, and `npx vitest run test/hub/hubcall.test.ts test/hub/e2e/guard.test.ts` passes there.
 
 ## Approach
-The assignment `C=…crew.mjs` and `node $C …` are separate simple commands, and `refusal(c)` sees one at a time, so it needs
-the whole-command fact: compute `HUB.test(cmd)` once in `withIdentity` (already true there) and pass it to `refusal(c, hub)`.
-In the RUNTIMES branch, find the first non-flag word after the head (same rule as `hubWord`); if its raw text matches
-`/^"?\$[A-Za-z_{]/` and `hub` is true, return VARIABLE. Reuse the existing regex and message; no new concepts.
+The assignment `C=…crew.mjs` and `node $C …` are separate simple commands, and `refusal(c)` sees one at a time. The
+whole-command fact is already established: `withIdentity` returns `{ command }` unchanged when `!HUB.test(cmd)`, so every
+call to `refusal` is for a command that names crew.mjs. No parameter and no assignment tracking (Architect, 2026-10-26):
+in the RUNTIMES branch, take the first non-flag word after the head (same rule as `hubWord`); if its raw text matches the
+existing `/^"?\$[A-Za-z_{]/`, return VARIABLE. Update `refusal`'s doc comment to say it is only called once the command
+names crew.mjs. Reuse the existing regex and message; no new concepts. hubcall.ts stays under 300 lines.
 
 ## Tasks
 - [ ] T1: in hubcall.ts, make `refusal()` return VARIABLE for a runtime head whose script word is a `$VAR` while the command names crew.mjs → verify: `withIdentity("C=/x/.crew/bin/crew.mjs; node $C checkpoint P-1", flags)` returns a deny containing "variable".
@@ -52,8 +55,9 @@ In the RUNTIMES branch, find the first non-flag word after the head (same rule a
 ## Test plan
 **Targeted checks:**
 - packages/crew/test/hub/hubcall.test.ts (covers `withIdentity`): new cases in "hub calls the guard can't give identity to are refused" for `C=…; node $C …`, `bun`/`deno`, `"$C"`, `${C}` (AC1); a `node $X build.js` command without crew.mjs stays unchanged and the literal forms stay rewritten (AC2). These are the regression tests: they fail before T1.
-- The guard test file that exercises `guard.ts` (find with `grep -l guard packages/crew/test/hub`), run in full (AC3).
+- packages/crew/test/hub/e2e/guard.test.ts (exercises `guard.ts`, which calls `withIdentity`), run in full; unchanged by this plan (AC3).
 - `npm run typecheck` in packages/crew (AC3).
+- No command or MCP tool is added, so test/hub/registry.test.ts and test/mcp.test.ts are unaffected and not in touches.
 
 ## Rollout & rollback
 n/a — internal guard change; revert the commit to back out.
@@ -66,5 +70,6 @@ n/a — internal guard change; revert the commit to back out.
 ## Progress log
 
 - 2026-10-26: PM: plan opened from BUG-031 fast lane; blocked at ready: BUG-031 not triaged because its Steps to reproduce, Expected and Actual sections are empty, and the pm role cannot edit .crew/items (paths.write is .crew/drafts only).
+- 2026-10-26: status draft → ready
 
 ## Outcome
