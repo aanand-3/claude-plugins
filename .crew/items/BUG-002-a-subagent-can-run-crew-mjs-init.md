@@ -2,10 +2,10 @@
 id: BUG-002
 type: bug
 title: A subagent can run crew.mjs init and rewrite .crew/bin
-status: new
-severity:
-priority:
-goal: G-003
+status: triaged
+severity: S3
+priority: P3
+goal: G-007
 plan:
 created: 2026-10-23
 closed:
@@ -53,3 +53,4 @@ The bug still reproduces, but only partly as the title says. Running the vendore
 - Fix as the Summary says: in `decide()`, deny `hubCommand(c) === "init"` for subagents, next to the `agents` check. It is a few lines with a guard test, and it fits the planned guard plan (BUG-033/BUG-021/BUG-011/BUG-013), because it touches the same `decide()` block in `guard.ts`.
 - Release's `refresh_bin` (policy `release.refresh_bin`) is the sanctioned route for updating `.crew/bin` and is out of scope here.
 - 2026-10-26: Confirmed at b39b036: guard lets crew.mjs init through for subagents (only injects identity) from .crew/bin, plugins/crew/skills/hub/dist and plugin-cache paths. Real overwrite of .crew/bin and .crew/templates/agents happens only when init runs from a non-vendored copy (vendor() returns early for .crew/bin). Filled the report sections.
+- 2026-10-26: status new → triaged — priority P3, severity S3
