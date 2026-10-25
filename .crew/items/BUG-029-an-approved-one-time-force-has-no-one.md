@@ -2,7 +2,7 @@
 id: BUG-029
 type: bug
 title: An approved one-time --force has no one who can run it
-status: new
+status: triaged
 severity: S3
 priority: P2
 goal: G-007
@@ -35,3 +35,4 @@ Step 2: Claude Code's auto-mode permission check refuses the forced move to the 
 
 ## Notes
 - 2026-10-25: Architect: superseded by P-032, not added to it. The case this bug records (reopen after a failed release suite, which needed an executive-approved forced done -> in-progress) disappears with P-032: a failed land or suite moves accepted -> in-progress through the plan.landed role gate, with no force and no human approval. The general mechanism (answer Q-... unlocking the assigned role's forced move) is not needed by any known flow after P-032, and P-032 is at the 10-task limit. PM: close BUG-029 as superseded once P-032 is done; if another executive-approved one-time force turns up, open a new item for that case.
+- 2026-10-25: status new → triaged — priority P2, severity S3
