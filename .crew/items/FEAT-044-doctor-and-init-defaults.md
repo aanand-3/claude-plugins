@@ -5,7 +5,7 @@ title: Doctor and init defaults
 status: triaged
 priority: P1
 goal: G-007
-plan:
+plan: P-036
 created: 2026-10-25
 closed:
 ---
