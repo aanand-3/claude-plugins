@@ -5,7 +5,7 @@ goal: G-007
 items: FEAT-040
 touches: packages/crew/src/hub/commands/team/dispatch.ts, packages/crew/src/hub/commands/team/dispatch.reg.ts, packages/crew/src/hub/commands/index.ts, packages/crew/src/hub/cli.ts, packages/crew/src/hub/mcp.ts, packages/crew/src/hub/core/team/presets.ts, packages/crew/test/hub/e2e/dispatch.test.ts, packages/crew/test/hub/e2e/team.test.ts, packages/crew/test/hub/e2e/team-2.test.ts, packages/crew/test/hub/registry.test.ts, packages/crew/test/mcp.test.ts, plugins/crew/skills/hub/agents/director.md, plugins/crew/skills/hub/agents/pm.md, plugins/crew/skills/team/SKILL.md, plugins/crew/skills/hub/SKILL.md, plugins/crew/skills/hub/references/model.md
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-031-hub-dispatch
 pr:
 created: 2026-10-25
@@ -108,7 +108,7 @@ Needs no other plan's code. It reads P-029's shared-aware staffing through `staf
 
 _Generated 2026-10-25 by `crew.mjs handoff` from the ledger._
 
-- P-031: Hub dispatch [in-progress] tasks 4/5 — claimed by Arpit Anand (developer:ad203d7d12e3f9fc1)
+- P-031: Hub dispatch [in-review] tasks 4/5 — claimed by Arpit Anand (developer:ad203d7d12e3f9fc1)
 - last checkpoint 2026-10-25 12:49 at T5 (0e2bd18) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
 - next: T5: types, sizes, registry tests (see Approach), unchanged suites → verify: `npm run typecheck`; `wc -l src/hub/commands/team/dispatch*.ts`; `npx vitest run test/hub/e2e/basics.test.ts test/mcp.test.ts test/hub/registry.test.ts`; `git diff --quiet main -- test/hub/registry-before.json` (AC11)
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —, AC7 —, AC8 —, AC9 —, AC10 —, AC11 —
@@ -123,5 +123,7 @@ Latest log:
 - 2026-10-25: status draft → ready
 - 2026-10-25: assigned to the developer role
 - 2026-10-25: status ready → in-progress — branch plan/P-031-hub-dispatch
+- 2026-10-25: status in-progress → in-review
 
 ## Outcome
+Learnings: K-2026-10-25-a-plan-that-adds-a-hub-command-or-mcp, K-2026-10-25-dispatch-commands-team-dispatch-ts-is, K-2026-10-25-approved-with-one-change-do-not-edit
