@@ -68,6 +68,18 @@ n/a — internal guard change; revert the commit to back out.
 
 ## Handoff
 
+_Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
+
+- P-050: Refuse a hub script held in a shell variable [in-progress] tasks 0/2 — claimed by Arpit Anand (developer:a9ea1cd409887c67c)
+- last checkpoint 2026-10-25 21:03 at T2 (d6c473e) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
+- next: T1: in hubcall.ts, make `refusal()` return VARIABLE for a runtime head whose script word is a `$VAR` while the command names crew.mjs → verify: `withIdentity("C=/x/.crew/bin/crew.mjs; node $C checkpoint P-1", flags)` returns a deny containing "variable".
+- evidence: AC1 —, AC2 —, AC3 —
+
+Latest log:
+- 2026-10-26: status draft → ready
+- 2026-10-26: assigned to the developer role
+- 2026-10-26: status ready → in-progress — branch plan/P-050-refuse-a-hub-script-held-in-a-shell
+
 ## Progress log
 
 - 2026-10-26: PM: plan opened from BUG-031 fast lane; blocked at ready: BUG-031 not triaged because its Steps to reproduce, Expected and Actual sections are empty, and the pm role cannot edit .crew/items (paths.write is .crew/drafts only).
