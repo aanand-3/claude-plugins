@@ -19,6 +19,17 @@ const GIT_ENV = {
   GIT_CONFIG_GLOBAL: devNull, GIT_CONFIG_NOSYSTEM: "1",
 };
 
+/** Temp dirs this helper made: "test" ones are removed after each test, "file" ones after the file
+ * (test/setup/cleanup.ts), each with its `<path>-*` siblings (BUG-025). */
+export const made: { path: string; scope: "test" | "file" }[] = [];
+
+/** A temp dir under os.tmpdir() that lives until the test file ends. */
+export function tempDir(prefix: string): string {
+  const path = mkdtempSync(join(tmpdir(), prefix));
+  made.push({ path, scope: "file" });
+  return path;
+}
+
 export interface Result { returncode: number; stdout: string; stderr: string }
 
 export class Repo {
@@ -34,6 +45,7 @@ export class Repo {
   /** A new repository on `main` in a temp directory; `git: false` for a plain directory. */
   static create(git = true): Repo {
     const r = new Repo(mkdtempSync(join(tmpdir(), "crew-tools-")));
+    made.push({ path: r.path, scope: "test" });
     if (git) r.git("init", "-q", "-b", "main");
     return r;
   }
