@@ -2,8 +2,8 @@
 id: FEAT-047
 type: feat
 title: Board: rename the Backlog items tab or show only unplanned items
-status: new
-priority:
+status: triaged
+priority: P3
 goal: G-001
 plan:
 created: 2026-10-25
@@ -21,3 +21,4 @@ The Board's toggle labels the item view 'Backlog items', but it shows every item
 - [ ]
 
 ## Notes
+- 2026-10-26: status new → triaged — priority P3
