@@ -5,7 +5,7 @@ goal: G-007
 items: BUG-033, BUG-021, BUG-011, BUG-013, BUG-002
 touches: packages/crew/src/hub/commands/team/guard.ts, packages/crew/src/hub/commands/team/targets.ts, packages/crew/src/hub/commands/team/hubcall.ts, packages/crew/test/hub/targets.test.ts, packages/crew/test/hub/hubcall.test.ts, packages/crew/test/hub/e2e/guard.test.ts, packages/crew/test/hub/e2e/guard-writes.test.ts, plugins/crew/skills/hub/references/model.md
 depends_on:
-status: draft
+status: ready
 branch: plan/P-051-guard-binds-bash-writes-to-paths-write
 pr:
 created: 2026-10-26
@@ -211,28 +211,11 @@ hook prints nothing, or only an `updatedInput` with identity. Role cases use a p
    keep `node -e`.
 
 ## Tasks
-- [ ] T1: `hubcall.ts` `parse()` records output redirection targets (Approach 1). Verify:
-  `cd packages/crew && npx vitest run test/hub/hubcall.test.ts` passes unmodified (AC7).
-- [ ] T2: Write `targets.ts` (`writeTargets`, `inlineScript`; Approach 2 and 4) and `test/hub/targets.test.ts`. Cover
-  each AC's command shapes at unit level: mid-path and braced variables, `for` words and globs (in a temp dir with
-  files), mktemp forms, unknowns, restores, heredoc/quoted text, and each interpreter, shell and wrapper form with its
-  allowed neighbour. Verify: `cd packages/crew && npx vitest run test/hub/targets.test.ts` (AC2–AC4, AC6, AC8).
-- [ ] T3: Wire `targets.ts` into `decide()`, removing `writeTargets` and `REDIRECT` from `guard.ts` (keep `segments`,
-  `words` and `hubCommand` for their other uses). Add the init deny and the role-section Bash `paths.write` and
-  inline-script checks (Approach 3). Verify: `cd packages/crew && npm run build && npx vitest run
-  test/hub/e2e/guard.test.ts` passes unmodified (AC7); `wc -l` on the three source files shows each under 300;
-  `npm run typecheck` passes (AC8).
-- [ ] T4: Write `test/hub/e2e/guard-writes.test.ts`, one `it` per AC1–AC6, named by item: "paths.write binds Bash
-  writes (BUG-033)", "inline scripts are refused for roles with paths.write (BUG-021)", "mid-path variables are
-  expanded or refused (BUG-011)", "mktemp and for-loop targets resolve per value (BUG-013)", "subagents can't run
-  crew.mjs init (BUG-002)", "heredoc bodies and quoted text are not write targets". Verify: after
-  `npm run build`, `npx vitest run test/hub/e2e/guard-writes.test.ts` passes. Then write the base `guard.ts` and
-  `hubcall.ts` from `git show <base>:<path>` into the worktree, rebuild, and confirm the AC1–AC5 cases fail. Restore
-  the files from `git show HEAD:<path>` and rebuild. Record both runs in the checkpoint (gotcha
-  K-2026-10-25-a-plan-task-that-says-to-git-stash).
-- [ ] T5: Document the Bash write rules and the remaining gap in `references/model.md`, in the policy paragraph after
-  "the `guard` hook enforces …" (AC9). Verify:
-  `grep -n "paths.write" plugins/crew/skills/hub/references/model.md` shows the new text.
+- [ ] T1: `hubcall.ts` `parse()` records output redirection targets (Approach 1) → verify: `cd packages/crew && npx vitest run test/hub/hubcall.test.ts` passes unmodified (AC7)
+- [ ] T2: Write `targets.ts` (`writeTargets`, `inlineScript`; Approach 2 and 4) and its unit regression test `test/hub/targets.test.ts`, covering each AC's command shapes: mid-path and braced variables, `for` words and globs (a temp dir with files), mktemp forms, unknowns, restores, heredoc/quoted text, each interpreter, shell and wrapper form with an allowed neighbour → verify: `cd packages/crew && npx vitest run test/hub/targets.test.ts` (AC2–AC4, AC6, AC8)
+- [ ] T3: Wire `targets.ts` into `decide()` (remove `writeTargets` and `REDIRECT` from `guard.ts`; keep `segments`, `words`, `hubCommand`), add the init deny and the role-section Bash `paths.write` and inline-script checks (Approach 3) → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/guard.test.ts` passes unmodified (AC7); `wc -l src/hub/commands/team/{guard,targets,hubcall}.ts` each under 300; `npm run typecheck` passes (AC8)
+- [ ] T4: Write the e2e regression test `test/hub/e2e/guard-writes.test.ts`, one `it` per AC1–AC6 named "paths.write binds Bash writes (BUG-033)", "inline scripts are refused for roles with paths.write (BUG-021)", "mid-path variables are expanded or refused (BUG-011)", "mktemp and for-loop targets resolve per value (BUG-013)", "subagents can't run crew.mjs init (BUG-002)", "heredoc bodies and quoted text are not write targets" → verify: after `npm run build`, `npx vitest run test/hub/e2e/guard-writes.test.ts` passes; then copy the new guard.ts, hubcall.ts and targets.ts to the scratchpad, write the base guard.ts and hubcall.ts from `git show <base>:<path>`, rebuild and confirm the AC1–AC5 cases fail, restore the three files from the scratchpad copies and rebuild; both runs recorded in the checkpoint
+- [ ] T5: Document the Bash write rules and the remaining gap in `references/model.md`, in the policy paragraph after "the `guard` hook enforces …" (AC9) → verify: `grep -n "inline" plugins/crew/skills/hub/references/model.md` shows the new text
 
 ## Test plan
 These are targeted checks only. The e2e files run the built bundle, so build first with
@@ -274,5 +257,7 @@ Until then the old guard keeps running. Rollback: revert the plan's commit and r
 ## Handoff
 
 ## Progress log
+
+- 2026-10-26: status draft → ready
 
 ## Outcome
