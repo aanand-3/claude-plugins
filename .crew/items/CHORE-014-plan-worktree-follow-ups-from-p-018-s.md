@@ -19,3 +19,4 @@ Non-blocking from P-018's architect review: (1) guard: git -c 'alias.x=!crew.mjs
 - [ ]
 
 ## Notes
+- 2026-10-25: P-026 hit this: from inside its plan worktree, move P-026 done was refused even after a fresh Architect approval, because the plan branch had uncommitted non-.crew changes (review.ts reviewProblems). Completed from the main checkout instead.

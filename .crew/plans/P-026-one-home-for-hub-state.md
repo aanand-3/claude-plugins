@@ -99,6 +99,7 @@ Latest log:
 - 2026-10-25: status in-progress → in-review
 - 2026-10-25: BUG-023: guard splices identity flags into quoted text that names the hub CLI (older than P-026, not an AC failure)
 - 2026-10-25: status in-review → done
+- 2026-10-25: Merged: plan commit 5d667ca squash-merged to main as 0660496; full suite green on 5d667ca (typecheck, 39 files / 279 tests, build, no bundle drift). Rollout pending human: vendored crew.mjs --as release --run-id release:a411481fd9797cebc refresh and .claude/agents re-render are protected paths; migrate --gather needs the refreshed crew.mjs.
 
 ## Outcome
 Hub documents now have one home. The store roots `.crew` at the main checkout from any checkout (`core/work/hubstate.ts`: `hubHome`). With plan_worktrees, every command that writes hub documents commits only those, on the base branch (`chore(hub): <command> <IDs>`, under a lock), and refuses before writing while the main checkout is off the base branch. `new-plan` writes the spec in the main checkout; `carryHub`, the start-time spec move and `WorktreeCopies` are gone; `start` on a legacy branch brings the branch's live plan home. `migrate --gather` (`commands/work/gather.ts`) brings worktree copies home, renumbers clashing IDs and cleans the worktrees. The guard refuses agents' writes to hub documents in other checkouts. Agent and skill text describe the new model.

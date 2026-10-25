@@ -2,7 +2,7 @@
 id: IDEA
 title: crew: an agent team from idea to ship
 status: proposed
-focus: G-001
+focus: G-006
 created: 2026-10-23
 decided:
 ---
@@ -46,3 +46,4 @@ breaking changes ship together as crew 1.0.
 - 2026-10-23: status exploring → researching — vision written: docs/vision.md
 - 2026-10-23: status researching → proposed — Workstream C built on branches; awaiting the executive's decision
 - 2026-10-23: focus — → G-001
+- 2026-10-25: focus G-001 → G-006
