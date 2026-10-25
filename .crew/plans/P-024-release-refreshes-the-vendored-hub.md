@@ -137,6 +137,7 @@ Latest log:
 - 2026-10-25: status in-progress → in-review
 - 2026-10-25: QA: the AC4 order-check failure was a false fail, BUG-017 (guard splices identity into the quoted grep pattern); re-run from .crew/drafts/p024-qa-ac4.sh passed. The first QA checkpoint committed the developer's 7 uncommitted files as cd4fb58 (P-028 behaviour); .crew/config.yaml stayed uncommitted.
 - 2026-10-25: status in-review → done
+- 2026-10-25: merged 23e2a4a (squash of a234563, rebased on 54f5212; dist rebuilt; .crew/config.yaml full_suite now ends in refresh-bin --check). Full suite green: typecheck, 47 files/338 tests, build, no skills drift, refresh-bin --check vacuous (no release.refresh_bin yet). Worktree and branch removed. Bootstrap (Rollout steps 3-4: copy dist to .crew/bin, then policy.yaml release: block, then crew.mjs --as release --run-id release:a706ae345948caef9 agents) left to executive/human.
 
 ## Outcome
 `crew.mjs refresh-bin [--check]` (release.ts `refreshBin(store, root, check)`, exported for `land`) copies the policy's `release.refresh_bin.files` from `from` over existing vendored copies in the checkout's bin dir, as release and in a plan worktree only; `--check` is read-only and ends `hub.full_suite`. Global-only policy key, shown by `policy show`; release.md and model.md document the step and key. Bootstrap (policy.yaml block, first vendored copy) stays with the executive per Rollout.
