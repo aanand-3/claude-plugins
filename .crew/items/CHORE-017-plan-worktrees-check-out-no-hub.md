@@ -2,8 +2,8 @@
 id: CHORE-017
 type: chore
 title: Plan worktrees check out no hub documents
-status: new
-priority:
+status: triaged
+priority: P2
 goal: G-007
 plan:
 created: 2026-10-25
@@ -19,3 +19,4 @@ A plan worktree still holds main's committed .crew documents as of its cut (read
 - [ ]
 
 ## Notes
+- 2026-10-25: status new → triaged — priority P2
