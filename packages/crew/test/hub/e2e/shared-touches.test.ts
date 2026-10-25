@@ -65,6 +65,18 @@ it("overlap hint: a real overlap says to narrow touches or share the file, not t
   expect(out).not.toContain("sequence them (depends_on)");
 });
 
+it("overlap hint: architect next skips ready plans that meet only on shared touches (BUG-030)", () => {
+  shared("[src/cli.ts]");
+  plan(repo, "One", "src/cli.ts, src/one.ts");
+  plan(repo, "Two", "src/cli.ts, src/two.ts");
+  plan(repo, "Three", "src/one.ts, src/three.ts");
+  ready("P-001", "P-002", "P-003");
+  const out = tr(repo, "next", "--role", "architect").stdout;
+  expect(out).not.toMatch(/P-00[12] overlaps P-00[12] /);
+  const line = out.split("\n").find((l) => /P-00[13] overlaps P-00[13] \(src\/one\.ts\)/.test(l));
+  expect(line).toContain("narrow touches or list the file in hub.shared"); // positive control
+});
+
 // ------------------------------------------------------------------ check's touches advice (AC4, AC5, AC6, AC7)
 it("check hints a broad touches glob, and none for exact paths", () => {
   for (let i = 0; i <= 10; i++) repo.write(`src/f${i}.ts`, "");
