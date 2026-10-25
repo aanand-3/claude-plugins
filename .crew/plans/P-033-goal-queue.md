@@ -5,7 +5,7 @@ goal: G-007
 items: FEAT-041
 touches: packages/crew/src/hub/commands/team/autonomy.ts, packages/crew/src/hub/core/work/queries.ts, packages/crew/test/goal-queue.test.ts, packages/crew/test/hub/e2e/goal-queue.test.ts, packages/crew/test/hub/run-check.test.ts, packages/crew/test/hub/e2e/team-2.test.ts, plugins/crew/skills/hub/references/model.md, plugins/crew/skills/team/SKILL.md
 depends_on:
-status: draft
+status: ready
 branch: plan/P-033-goal-queue
 pr:
 created: 2026-10-25
@@ -87,5 +87,7 @@ Needs no other plan's code. `crew-director.md` is P-031's (the design's open poi
 ## Handoff
 
 ## Progress log
+
+- 2026-10-25: status draft → ready
 
 ## Outcome
