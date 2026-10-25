@@ -5,7 +5,7 @@ title: Goal queue
 status: triaged
 priority: P1
 goal: G-007
-plan:
+plan: P-033
 created: 2026-10-25
 closed:
 ---
