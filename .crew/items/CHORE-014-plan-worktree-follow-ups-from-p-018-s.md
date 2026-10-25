@@ -2,9 +2,9 @@
 id: CHORE-014
 type: chore
 title: Plan-worktree follow-ups from P-018's review
-status: new
-priority:
-goal: G-003
+status: triaged
+priority: P1
+goal: G-007
 plan:
 created: 2026-10-24
 closed:
@@ -20,3 +20,4 @@ Non-blocking from P-018's architect review: (1) guard: git -c 'alias.x=!crew.mjs
 
 ## Notes
 - 2026-10-25: P-026 hit this: from inside its plan worktree, move P-026 done was refused even after a fresh Architect approval, because the plan branch had uncommitted non-.crew changes (review.ts reviewProblems). Completed from the main checkout instead.
+- 2026-10-25: status new → triaged — priority P1
