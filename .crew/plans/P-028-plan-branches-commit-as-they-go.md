@@ -5,12 +5,12 @@ goal: G-007
 items: FEAT-036, BUG-014, CHORE-014
 touches: packages/crew/src/hub/core/git.ts, packages/crew/src/hub/commands/work/execution.ts, packages/crew/src/hub/commands/work/review.ts, packages/crew/src/hub/commands/work/workflow.ts, packages/crew/test/hub/e2e/wip-commits.test.ts, packages/crew/test/hub/e2e/worktrees.test.ts, packages/crew/test/hub/squash-merge.test.ts, plugins/crew/skills/hub/agents/developer.md, plugins/crew/skills/hub/agents/director.md
 depends_on:
-status: in-review
+status: done
 branch: plan/P-028-plan-branches-commit-as-they-go
 pr:
 created: 2026-10-25
 started: 2026-10-25
-completed:
+completed: 2026-10-25
 assignee: developer
 ---
 
@@ -109,6 +109,7 @@ Latest log:
 - 2026-10-25: status ready → in-progress — branch plan/P-028-plan-branches-commit-as-they-go
 - 2026-10-25: Architect: touches += packages/crew/test/hub/e2e/worktrees.test.ts (Q-1c0a2e).
 - 2026-10-25: status in-progress → in-review
+- 2026-10-25: status in-review → done
 
 ## Outcome
 Plan branches now get the hub's WIP commits at each checkpoint and at the hand-over; review approval and the done gate see the plan's worktree from any checkout; squash detection uses merge-tree.
