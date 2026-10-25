@@ -108,9 +108,9 @@ Needs no other plan's code. It reads P-029's shared-aware staffing through `staf
 
 _Generated 2026-10-25 by `crew.mjs handoff` from the ledger._
 
-- P-031: Hub dispatch [in-progress] tasks 4/5 — claimed by Arpit Anand (developer:aaee5be447e90e0bc)
-- last checkpoint 2026-10-25 12:14 at T5 (51ba2e2) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
-- next: T5: types, sizes, unchanged suites → verify: `npm run typecheck`; `wc -l src/hub/commands/team/dispatch*.ts`; `npx vitest run test/hub/e2e/basics.test.ts test/mcp.test.ts` (AC11)
+- P-031: Hub dispatch [in-progress] tasks 4/5 — claimed by Arpit Anand (developer:ad203d7d12e3f9fc1)
+- last checkpoint 2026-10-25 12:49 at T5 (0e2bd18) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
+- next: T5: types, sizes, registry tests (see Approach), unchanged suites → verify: `npm run typecheck`; `wc -l src/hub/commands/team/dispatch*.ts`; `npx vitest run test/hub/e2e/basics.test.ts test/mcp.test.ts test/hub/registry.test.ts`; `git diff --quiet main -- test/hub/registry-before.json` (AC11)
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —, AC7 —, AC8 —, AC9 —, AC10 —, AC11 —
 
 Latest log:
