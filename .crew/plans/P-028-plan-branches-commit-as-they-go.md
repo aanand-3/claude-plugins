@@ -80,6 +80,7 @@ The same files carry two more CHORE-014 follow-ups, so they ride here: squash de
 ## Rollout & rollback
 - Plans already in progress when this merges: their next checkpoint commits what is in their worktree. Nothing to migrate.
 - This repo runs the vendored `.crew/bin/crew.mjs`: the behaviour starts once it is refreshed (P-024's `refresh-bin`, or the human's copy). The rendered `.claude/agents/crew-developer.md` and `crew-director.md` are protected: the human re-renders them (`crew.mjs agents`) after the merge.
+- The gotcha K-2026-10-24-with-plan-worktrees-run-move-p-done-from no longer holds once this lands: record its replacement with `learn … --supersedes` (QA's or the developer's learning at review).
 - Rollback: revert the plan's commit. WIP commits already on plan branches are harmless: Release squashes them.
 
 ## Risks & open questions
