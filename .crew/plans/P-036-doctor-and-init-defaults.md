@@ -5,11 +5,11 @@ goal: G-007
 items: FEAT-044
 touches: packages/crew/src/hub/commands/views/doctor.ts, packages/crew/src/hub/commands/views/doctor.reg.ts, packages/crew/src/hub/commands/work/setup.ts, packages/crew/src/hub/commands/work/planning.reg.ts, packages/crew/src/hub/commands/index.ts, packages/crew/src/hub/cli.ts, packages/crew/src/hub/mcp.ts, packages/crew/src/hub/core/work/hubstate.ts, packages/crew/test/hub/e2e/doctor.test.ts, plugins/crew/skills/team/SKILL.md, plugins/crew/skills/hub/SKILL.md
 depends_on: P-029
-status: ready
+status: in-progress
 branch: plan/P-036-doctor-and-init-defaults
 pr:
 created: 2026-10-25
-started:
+started: 2026-10-25
 completed:
 assignee: developer
 ---
@@ -117,5 +117,6 @@ Overlaps, for staffing only: P-030 on `planning.reg.ts` (the `init` registration
 
 - 2026-10-25: status draft → ready
 - 2026-10-25: assigned to the developer role
+- 2026-10-25: status ready → in-progress — branch plan/P-036-doctor-and-init-defaults
 
 ## Outcome
