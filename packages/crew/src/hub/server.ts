@@ -35,6 +35,7 @@ export function runAction(open: () => Store, name: string, body: Body): { status
   const action = ACTIONS[name];
   if (!action) return { status: 404, output: [], error: `Unknown action '${name}'.` };
   const store = open();
+  store.label = name;
   try {
     action(store, body);
     store.ws.flush();

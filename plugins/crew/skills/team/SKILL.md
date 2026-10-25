@@ -27,10 +27,12 @@ you ── this session ── crew-director ─┬─ crew-pm ─ crew-architec
    start a new session (or `/agents` reload) before the first run.
 5. **Plan worktrees.** The team works one shared worktree per plan: `hub:` in `.crew/config.yaml` must have
    `plan_worktrees: true` (add it, and re-render the agents: the developer then has no worktree of its own). `new-plan`
-   creates each plan's branch and worktree; every role works on the plan there; nothing is committed until the plan is
-   complete, when Release makes its one commit and squash-merges. Nothing is committed to main on its own.
-6. **Commit the setup.** Plan worktrees start from the last commit: commit the hub's setup (idea, goals, policy, config,
-   agents) once, `chore(hub): …`. After that, uncommitted items, goals and knowledge travel with the next plan.
+   creates each plan's branch and worktree; every role works on the plan's code there, and Release makes its one commit
+   and squash-merges when the plan is complete. Hub documents live in the main checkout only: every hub command, from
+   any checkout, writes them there and commits them on the base branch (`chore(hub): …`), so keep the main checkout on
+   the base branch. `migrate --gather` brings back copies that older worktrees still hold.
+6. **Commit the setup.** Plan worktrees start from the last commit: commit the hub's setup (policy, config, agents)
+   once, `chore(hub): …`. Hub documents commit themselves after that.
 
 ## Each run
 1. `node .crew/bin/crew.mjs context --as executive` — show the user, in a few lines, what the team will start from.

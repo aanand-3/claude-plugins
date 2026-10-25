@@ -7568,17 +7568,20 @@ function worktrees() {
   }
   return out;
 }
+function changed(dir, paths) {
+  return (git(["-C", dir, "status", "--porcelain", "-z", "--untracked-files=all", "--no-renames", "--", ...paths]) ?? "").split("\0").filter((l) => l.length > 3).map((l) => l.slice(3));
+}
 function dirty(dir, path) {
   return (git(["-C", dir, "status", "--porcelain", "--untracked-files=all", "--no-renames", "--", path]) ?? "").split("\n").filter((l) => l.length > 3 && !l.slice(0, 2).includes("D")).map((l) => l.slice(3));
 }
 function squashMerge(branch, base, pid) {
   const fork = git(["merge-base", branch, base])?.trim();
-  const changed = fork ? (git(["diff", "--name-only", "-z", fork, branch]) ?? "").split("\0").filter(Boolean) : [];
-  if (!changed.length) return null;
+  const changed2 = fork ? (git(["diff", "--name-only", "-z", fork, branch]) ?? "").split("\0").filter(Boolean) : [];
+  if (!changed2.length) return null;
   const names = new RegExp(`^(\\w+\\(${pid}\\)|${pid}):`);
   for (const line2 of (git(["log", "--format=%H %s", `${fork}..${base}`]) ?? "").split("\n")) {
     const [sha, subject] = [line2.slice(0, line2.indexOf(" ")), line2.slice(line2.indexOf(" ") + 1)];
-    if (sha && names.test(subject) && git(["--literal-pathspecs", "diff", "--quiet", branch, sha, "--", ...changed]) !== null) return sha;
+    if (sha && names.test(subject) && git(["--literal-pathspecs", "diff", "--quiet", branch, sha, "--", ...changed2]) !== null) return sha;
   }
   return null;
 }
@@ -7766,12 +7769,12 @@ function drift(plan, base, home) {
   const at = (args) => git(["-C", home, ...args]);
   const fork = at(["merge-base", base, "HEAD"])?.trim();
   if (!fork) return null;
-  const changed = new Set([
+  const changed2 = new Set([
     ...at(["diff", "--name-only", fork])?.split("\n") ?? [],
     ...at(["ls-files", "--others", "--exclude-standard"])?.split("\n") ?? []
   ].filter(Boolean));
   const globs = plan.touches().map(globRe);
-  const outside = [...changed].filter((f) => !f.startsWith(".crew/") && !globs.some((g) => g.test(f)));
+  const outside = [...changed2].filter((f) => !f.startsWith(".crew/") && !globs.some((g) => g.test(f)));
   const generated = /* @__PURE__ */ new Set();
   if (outside.length) {
     const out = (at(["check-attr", "-z", "linguist-generated", "--", ...outside]) ?? "").split("\0");
@@ -8364,117 +8367,14 @@ ${body2.trim()}
 `;
 }
 
-// src/hub/core/work/gates.ts
-function triageProblems(item) {
-  const prefix = item.id.split("-")[0];
-  const problems = item.missing(TRIAGE_SECTIONS[prefix]).map((n2) => `empty section: ${n2}`);
-  if (!PRIORITIES.includes(item.get("priority") ?? "")) problems.push("no priority (P0\u2013P3)");
-  if (prefix === "BUG" && !Object.hasOwn(SEVERITY_PRIORITY, item.get("severity") ?? "")) problems.push("no severity (S1\u2013S4)");
-  return problems;
-}
-function fastLane(store, plan) {
-  const { types, max_tasks } = store.policy.policy.fast_lane;
-  const items2 = planItems(plan, store.items());
-  return types.length > 0 && items2.length > 0 && items2.every((i) => types.includes(i.id.split("-")[0])) && (max_tasks === null || plan.tasks().length <= max_tasks);
-}
-function readinessProblems(store, plan) {
-  return [
-    ...plan.missing(READY_SECTIONS).map((n2) => `empty section: ${n2}`),
-    ...plan.touches().length ? [] : ["no touches: (the paths this plan will change)"],
-    ...taskProblems(store, plan),
-    ...itemProblems(store, plan)
-  ];
-}
-function learningsProblems(plan, known) {
-  const m = /^\s*[-*]?\s*\**learnings?\**\s*:\**\s*(.*)$/im.exec(stripComments(plan.section("Outcome")));
-  if (!m) return ["Outcome has no `Learnings:` line \u2014 list the K-\u2026 entries captured with `learn`, or write `Learnings: none`"];
-  const ids = m[1].match(K_ID_RE) ?? [];
-  if (!ids.length && !/^none\b/i.test(m[1].trim())) return ["`Learnings:` must list K-\u2026 entries or say none"];
-  return ids.filter((i) => !known.has(i)).map((i) => `Learnings: ${i} does not exist`);
-}
-function decisionProblems(idea2) {
-  const problems = idea2.missing(DECIDED_SECTIONS).map((n2) => `empty section: ${n2}`);
-  if (idea2.hasContent("Success criteria") && !idea2.checklist("Success criteria").length) {
-    problems.push("Success criteria must be a checklist (`- [ ] \u2026`) so each one can be verified");
-  }
-  return problems;
-}
-function taskProblems(store, plan) {
-  const tasks = plan.tasks();
-  const max = store.settings().max_tasks;
-  const problems = tasks.length ? [] : ["no tasks"];
-  const noVerify = tasks.filter(([, t]) => !t.toLowerCase().includes("verify")).map(([, t]) => t.split("\u2192")[0].trim());
-  if (noVerify.length) problems.push(`tasks without '\u2192 verify:': ${noVerify.join("; ")}`);
-  if (tasks.length > max) problems.push(`${tasks.length} tasks (> max_tasks ${max}) \u2014 split the plan`);
-  return problems;
-}
-function itemProblems(store, plan) {
-  const items2 = store.items();
-  const linked = idList(plan.get("items"));
-  const problems = [];
-  for (const i of linked) {
-    if (!items2.has(i)) problems.push(`unknown item ${i}`);
-    else if (items2.get(i).get("status") === "new") problems.push(`item ${i} is not triaged`);
-  }
-  if (linked.some((i) => i.startsWith("BUG-"))) {
-    const text2 = (plan.section("Acceptance criteria") + plan.section("Tasks") + plan.section("Test plan")).toLowerCase();
-    if (!text2.includes("regression")) {
-      problems.push("fixes a bug but names no regression test (acceptance criteria, tasks or test plan)");
-    }
-  }
-  return problems;
-}
-
-// src/hub/commands/views/checks.ts
-import { join as join9 } from "node:path";
-
-// src/hub/commands/views/legacy.ts
-import { isAbsolute, join as join3, relative } from "node:path";
-var LEGACY = ["check_secrets", "check_structure", "check_design", "format_on_edit", "track_plan_draft"];
-var REFRESH = "`/crew:guidelines --refresh` moves crew's hooks and settings to the .mjs scripts and removes the .py once nothing calls it";
-function legacyHints(store) {
-  const { ws } = store;
-  const at = (...p) => join3(ws.root, ...p);
-  const hints = [];
-  const leftovers = LEGACY.filter((n2) => ws.isFile(at(".crew", "bin", `${n2}.py`)));
-  if (leftovers.length) hints.push(`.crew/bin/ still has the Python scripts ${leftovers.map((n2) => `${n2}.py`).join(", ")} \u2014 ${REFRESH}`);
-  const hookDirs = [git(["rev-parse", "--git-path", "hooks"])?.trim(), git(["config", "core.hooksPath"])?.trim()].filter((d) => !!d).map((d) => isAbsolute(d) ? d : at(d));
-  const inDir = (dir) => ws.list(dir).filter((f) => !f.endsWith(".sample")).map((f) => relative(ws.root, join3(dir, f)));
-  const files2 = [.../* @__PURE__ */ new Set([
-    ...inDir(at(".githooks")),
-    ...hookDirs.flatMap(inDir),
-    ".claude/settings.json",
-    ".claude/settings.local.json",
-    ...inDir(at(".github", "workflows")),
-    ".gitlab-ci.yml",
-    "Makefile",
-    ".pre-commit-config.yaml",
-    "package.json",
-    ...inDir(at(".husky"))
-  ])];
-  for (const file of files2) {
-    const text2 = ws.read(join3(ws.root, file));
-    const calls = text2 ? LEGACY.filter((n2) => text2.includes(`.crew/bin/${n2}.py`)) : [];
-    if (calls.length) hints.push(`${file} still runs ${calls.map((n2) => `.crew/bin/${n2}.py`).join(", ")} \u2014 use node .crew/bin/<name>.mjs (${REFRESH})`);
-  }
-  if (/^modules:/m.test(ws.read(at(".crew", "config.yaml")) ?? "")) {
-    hints.push("`.crew/config.yaml` still has a `modules:` block \u2014 nothing in crew is optional any more, so delete it");
-  }
-  return hints;
-}
-
-// src/hub/commands/team/agents.ts
-import { join as join8 } from "node:path";
-
-// src/hub/core/store.ts
-import { existsSync as existsSync4, realpathSync } from "node:fs";
-import { dirname as dirname3, join as join7, resolve as resolve3 } from "node:path";
-import { fileURLToPath } from "node:url";
+// src/hub/core/work/hubstate.ts
+import { existsSync as existsSync3, mkdirSync as mkdirSync2, realpathSync } from "node:fs";
+import { join as join4 } from "node:path";
 
 // src/hub/core/memory/ledger.ts
 import { createHash, randomBytes } from "node:crypto";
 import { appendFileSync, existsSync as existsSync2, linkSync, mkdirSync, readFileSync as readFileSync2, renameSync, statSync as statSync2, unlinkSync, writeFileSync } from "node:fs";
-import { basename, dirname, join as join4 } from "node:path";
+import { basename, dirname, join as join3 } from "node:path";
 var UNATTRIBUTED = "unattributed";
 var LOCK_WAIT_MS = 5e3;
 var LOCK_STALE_MS = 3e4;
@@ -8502,7 +8402,7 @@ var Ledger = class _Ledger {
   /** `<git common dir>/crew/ledger.jsonl`; `.crew/ledger.jsonl` outside git. */
   static at(ws, crewDir) {
     const common = commonDir(ws.root);
-    return new _Ledger(ws, common ? join4(common, "crew", "ledger.jsonl") : join4(crewDir, "ledger.jsonl"), whoAmI(ws.root));
+    return new _Ledger(ws, common ? join3(common, "crew", "ledger.jsonl") : join3(crewDir, "ledger.jsonl"), whoAmI(ws.root));
   }
   /** Every event on disk, then the ones this command has staged. */
   events() {
@@ -8647,9 +8547,147 @@ function releaseLock(lock, token) {
   }
 }
 
+// src/hub/core/work/hubstate.ts
+var STATE_PATHS = [".crew/plans", ".crew/items", ".crew/goals", ".crew/knowledge", ".crew/idea.md"];
+var STATE_RE = /^\.crew\/((plans|items|goals|knowledge)\/|idea\.md$)/;
+var real = (p) => existsSync3(p) ? realpathSync(p) : p;
+function hubHome(root) {
+  const main = worktrees()[0]?.path;
+  return !main || real(main) === real(root) ? root : main;
+}
+function requireBase(home, base) {
+  const at = git(["-C", home, "branch", "--show-current"])?.trim();
+  if (at !== base) {
+    fail(`Hub state lives on ${base} in the main checkout (${home}), which is on ${at || "a detached HEAD"}: switch it back to ${base}, or turn hub.plan_worktrees off.`);
+  }
+}
+function commitState(home, message) {
+  const common = commonDir(home);
+  if (!common) return null;
+  mkdirSync2(join4(common, "crew"), { recursive: true });
+  const lock = join4(common, "crew", "hub-commit.lock"), token = acquireLock(lock);
+  try {
+    const changed2 = changed(home, STATE_PATHS);
+    if (!changed2.length) return null;
+    git(["-C", home, "add", "-A", "--", ...changed2], true);
+    const r = git(["-C", home, "commit", "-q", "--only", "-m", message, "--", ...changed2]);
+    if (r === null) fail(`The hub's files are written but not committed (git commit failed in ${home}); the next hub command commits them.`);
+    return git(["-C", home, "rev-parse", "--short", "HEAD"])?.trim() ?? null;
+  } finally {
+    releaseLock(lock, token);
+  }
+}
+
+// src/hub/core/work/gates.ts
+function triageProblems(item) {
+  const prefix = item.id.split("-")[0];
+  const problems = item.missing(TRIAGE_SECTIONS[prefix]).map((n2) => `empty section: ${n2}`);
+  if (!PRIORITIES.includes(item.get("priority") ?? "")) problems.push("no priority (P0\u2013P3)");
+  if (prefix === "BUG" && !Object.hasOwn(SEVERITY_PRIORITY, item.get("severity") ?? "")) problems.push("no severity (S1\u2013S4)");
+  return problems;
+}
+function fastLane(store, plan) {
+  const { types, max_tasks } = store.policy.policy.fast_lane;
+  const items2 = planItems(plan, store.items());
+  return types.length > 0 && items2.length > 0 && items2.every((i) => types.includes(i.id.split("-")[0])) && (max_tasks === null || plan.tasks().length <= max_tasks);
+}
+function readinessProblems(store, plan) {
+  return [
+    ...plan.missing(READY_SECTIONS).map((n2) => `empty section: ${n2}`),
+    ...plan.touches().length ? [] : ["no touches: (the paths this plan will change)"],
+    ...taskProblems(store, plan),
+    ...itemProblems(store, plan)
+  ];
+}
+function learningsProblems(plan, known) {
+  const m = /^\s*[-*]?\s*\**learnings?\**\s*:\**\s*(.*)$/im.exec(stripComments(plan.section("Outcome")));
+  if (!m) return ["Outcome has no `Learnings:` line \u2014 list the K-\u2026 entries captured with `learn`, or write `Learnings: none`"];
+  const ids = m[1].match(K_ID_RE) ?? [];
+  if (!ids.length && !/^none\b/i.test(m[1].trim())) return ["`Learnings:` must list K-\u2026 entries or say none"];
+  return ids.filter((i) => !known.has(i)).map((i) => `Learnings: ${i} does not exist`);
+}
+function decisionProblems(idea2) {
+  const problems = idea2.missing(DECIDED_SECTIONS).map((n2) => `empty section: ${n2}`);
+  if (idea2.hasContent("Success criteria") && !idea2.checklist("Success criteria").length) {
+    problems.push("Success criteria must be a checklist (`- [ ] \u2026`) so each one can be verified");
+  }
+  return problems;
+}
+function taskProblems(store, plan) {
+  const tasks = plan.tasks();
+  const max = store.settings().max_tasks;
+  const problems = tasks.length ? [] : ["no tasks"];
+  const noVerify = tasks.filter(([, t]) => !t.toLowerCase().includes("verify")).map(([, t]) => t.split("\u2192")[0].trim());
+  if (noVerify.length) problems.push(`tasks without '\u2192 verify:': ${noVerify.join("; ")}`);
+  if (tasks.length > max) problems.push(`${tasks.length} tasks (> max_tasks ${max}) \u2014 split the plan`);
+  return problems;
+}
+function itemProblems(store, plan) {
+  const items2 = store.items();
+  const linked = idList(plan.get("items"));
+  const problems = [];
+  for (const i of linked) {
+    if (!items2.has(i)) problems.push(`unknown item ${i}`);
+    else if (items2.get(i).get("status") === "new") problems.push(`item ${i} is not triaged`);
+  }
+  if (linked.some((i) => i.startsWith("BUG-"))) {
+    const text2 = (plan.section("Acceptance criteria") + plan.section("Tasks") + plan.section("Test plan")).toLowerCase();
+    if (!text2.includes("regression")) {
+      problems.push("fixes a bug but names no regression test (acceptance criteria, tasks or test plan)");
+    }
+  }
+  return problems;
+}
+
+// src/hub/commands/views/checks.ts
+import { join as join9 } from "node:path";
+
+// src/hub/commands/views/legacy.ts
+import { isAbsolute, join as join5, relative } from "node:path";
+var LEGACY = ["check_secrets", "check_structure", "check_design", "format_on_edit", "track_plan_draft"];
+var REFRESH = "`/crew:guidelines --refresh` moves crew's hooks and settings to the .mjs scripts and removes the .py once nothing calls it";
+function legacyHints(store) {
+  const { ws } = store;
+  const at = (...p) => join5(ws.root, ...p);
+  const hints = [];
+  const leftovers = LEGACY.filter((n2) => ws.isFile(at(".crew", "bin", `${n2}.py`)));
+  if (leftovers.length) hints.push(`.crew/bin/ still has the Python scripts ${leftovers.map((n2) => `${n2}.py`).join(", ")} \u2014 ${REFRESH}`);
+  const hookDirs = [git(["rev-parse", "--git-path", "hooks"])?.trim(), git(["config", "core.hooksPath"])?.trim()].filter((d) => !!d).map((d) => isAbsolute(d) ? d : at(d));
+  const inDir = (dir) => ws.list(dir).filter((f) => !f.endsWith(".sample")).map((f) => relative(ws.root, join5(dir, f)));
+  const files2 = [.../* @__PURE__ */ new Set([
+    ...inDir(at(".githooks")),
+    ...hookDirs.flatMap(inDir),
+    ".claude/settings.json",
+    ".claude/settings.local.json",
+    ...inDir(at(".github", "workflows")),
+    ".gitlab-ci.yml",
+    "Makefile",
+    ".pre-commit-config.yaml",
+    "package.json",
+    ...inDir(at(".husky"))
+  ])];
+  for (const file of files2) {
+    const text2 = ws.read(join5(ws.root, file));
+    const calls = text2 ? LEGACY.filter((n2) => text2.includes(`.crew/bin/${n2}.py`)) : [];
+    if (calls.length) hints.push(`${file} still runs ${calls.map((n2) => `.crew/bin/${n2}.py`).join(", ")} \u2014 use node .crew/bin/<name>.mjs (${REFRESH})`);
+  }
+  if (/^modules:/m.test(ws.read(at(".crew", "config.yaml")) ?? "")) {
+    hints.push("`.crew/config.yaml` still has a `modules:` block \u2014 nothing in crew is optional any more, so delete it");
+  }
+  return hints;
+}
+
+// src/hub/commands/team/agents.ts
+import { join as join8 } from "node:path";
+
+// src/hub/core/store.ts
+import { existsSync as existsSync5, realpathSync as realpathSync2 } from "node:fs";
+import { dirname as dirname3, join as join7, relative as relative3, resolve as resolve3 } from "node:path";
+import { fileURLToPath } from "node:url";
+
 // src/hub/core/workspace.ts
-import { chmodSync, copyFileSync, existsSync as existsSync3, mkdirSync as mkdirSync2, readdirSync as readdirSync2, readFileSync as readFileSync3, rmSync, statSync as statSync3, writeFileSync as writeFileSync2 } from "node:fs";
-import { dirname as dirname2, join as join5, relative as relative2, sep } from "node:path";
+import { chmodSync, copyFileSync, existsSync as existsSync4, mkdirSync as mkdirSync3, readdirSync as readdirSync2, readFileSync as readFileSync3, rmSync, statSync as statSync3, writeFileSync as writeFileSync2 } from "node:fs";
+import { dirname as dirname2, join as join6, relative as relative2, sep } from "node:path";
 var Workspace = class {
   constructor(root) {
     this.root = root;
@@ -8658,6 +8696,7 @@ var Workspace = class {
   pending = /* @__PURE__ */ new Map();
   hooks = [];
   aborts = [];
+  watchers = [];
   output = [];
   /** A line for stdout (shown even when the command later refuses). */
   say(line2) {
@@ -8684,12 +8723,12 @@ var Workspace = class {
     return this.pending.has(path) ? this.pending.get(path) !== null : this.isFileOnDisk(path);
   }
   isDir(path) {
-    if (existsSync3(path) && statSync3(path).isDirectory()) return true;
+    if (existsSync4(path) && statSync3(path).isDirectory()) return true;
     return [...this.pending].some(([p, v]) => v !== null && p.startsWith(path + sep));
   }
   /** File names directly inside dir (staged files included, staged removals excluded), sorted. */
   list(dir) {
-    const names = new Set(existsSync3(dir) && statSync3(dir).isDirectory() ? readdirSync2(dir, { withFileTypes: true }).filter((e) => e.isFile()).map((e) => e.name) : []);
+    const names = new Set(existsSync4(dir) && statSync3(dir).isDirectory() ? readdirSync2(dir, { withFileTypes: true }).filter((e) => e.isFile()).map((e) => e.name) : []);
     for (const [p, v] of this.pending) {
       if (dirname2(p) !== dir) continue;
       const name = p.slice(dir.length + 1);
@@ -8702,7 +8741,7 @@ var Workspace = class {
     return relative2(this.root, path).split(sep).join("/");
   }
   join(...parts) {
-    return join5(...parts);
+    return join6(...parts);
   }
   /** Run fn at the start of flush(), before any file is written; a HubError there aborts the whole flush. */
   beforeFlush(fn) {
@@ -8719,19 +8758,22 @@ var Workspace = class {
     for (const fn of this.aborts.splice(0).reverse()) fn();
   }
   flush() {
+    const paths = () => [...this.pending.keys()];
     try {
+      for (const w of this.watchers) w.before(paths());
       for (const hook of this.hooks.splice(0)) hook();
     } catch (e) {
       this.abort();
       throw e;
     }
+    const written = paths();
     this.aborts = [];
     for (const [path, v] of this.pending) {
       if (v === null) {
         rmSync(path, { force: true, recursive: true });
         continue;
       }
-      mkdirSync2(dirname2(path), { recursive: true });
+      mkdirSync3(dirname2(path), { recursive: true });
       if ("from" in v) {
         copyFileSync(v.from, path);
         continue;
@@ -8740,52 +8782,15 @@ var Workspace = class {
       if (v.mode !== void 0) chmodSync(path, v.mode);
     }
     this.pending.clear();
+    for (const w of this.watchers) w.after(written);
+  }
+  /** Watch every flush: `before` sees the paths about to be written ahead of the beforeFlush hooks (a HubError there
+   * aborts, so nothing is written or appended); `after` sees them once they are (a HubError there leaves them written). */
+  watchWrites(before, after) {
+    this.watchers.push({ before, after });
   }
   isFileOnDisk(path) {
-    return existsSync3(path) && statSync3(path).isFile();
-  }
-};
-
-// src/hub/core/work/worktrees.ts
-import { statSync as statSync4 } from "node:fs";
-import { join as join6 } from "node:path";
-var WorktreeCopies = class {
-  /** `hub`: the hub directory, relative to the repository root (`.crew`). */
-  constructor(root, hub) {
-    this.root = root;
-    this.hub = hub;
-  }
-  root;
-  hub;
-  dirty = /* @__PURE__ */ new Map();
-  /** Files were written, or worktrees added or removed: read git again. */
-  forget() {
-    this.dirty.clear();
-  }
-  /** The worktrees' uncommitted copies of the hub files that match, one per file: the most recently written, whatever the
-   * worktree order. This checkout's copy wins where it changed the file too, or committed it after that copy was written
-   * (another plan merged). */
-  pick(worktrees2, match) {
-    const mine = new Set(this.dirtyIn(this.root)), newest = /* @__PURE__ */ new Map();
-    for (const wt of worktrees2) {
-      for (const f of this.dirtyIn(wt).filter((x) => match(x) && !mine.has(x))) {
-        const path = join6(wt, f), mtime = statSync4(path, { throwIfNoEntry: false })?.mtimeMs ?? -1;
-        if (mtime >= 0 && mtime > (newest.get(f)?.mtime ?? -1) && !this.committedSince(wt, f, mtime)) newest.set(f, { path, mtime });
-      }
-    }
-    return [...newest.values()].map((c) => c.path);
-  }
-  /** A checkout's uncommitted hub files: one `git status` per checkout until something is written. */
-  dirtyIn(dir) {
-    let d = this.dirty.get(dir);
-    if (!d) this.dirty.set(dir, d = dirty(dir, this.hub));
-    return d;
-  }
-  /** This checkout committed `f` after a worktree's copy was written (at `mtime`), and differently from what that worktree
-   * started from. */
-  committedSince(wt, f, mtime) {
-    if (show("HEAD", f) === git(["-C", wt, "show", `HEAD:${f}`])) return false;
-    return Number(git(["log", "-1", "--format=%ct", "HEAD", "--", f])?.trim() || 0) * 1e3 > mtime;
+    return existsSync4(path) && statSync3(path).isFile();
   }
 };
 
@@ -8809,13 +8814,22 @@ var Store = class _Store {
   constructor(ws) {
     this.ws = ws;
     useRoot(ws.root);
-    this.dir = join7(ws.root, ".crew");
+    this.home = hubHome(ws.root);
+    this.dir = join7(this.home, ".crew");
     this.dirs = Object.fromEntries(Object.entries(DIRS).map(([k, v]) => [k, join7(this.dir, v)]));
     this.ideaPath = join7(this.dir, "idea.md");
     this.knowledgeDir = join7(this.dir, "knowledge");
-    this.copies = new WorktreeCopies(ws.root, this.rel(this.dir));
+    ws.watchWrites((paths) => {
+      if (this.commitsState(paths)) requireBase(this.home, this.baseBranch());
+    }, (paths) => {
+      if (!this.commitsState(paths)) return;
+      const sha = commitState(this.home, `chore(hub): ${this.label}`.slice(0, 100));
+      if (sha) this.say(`hub: committed on ${this.baseBranch()} (${sha})`);
+    });
   }
   ws;
+  /** The main checkout: where the hub's documents live, whichever checkout the command runs in (`ws.root`). */
+  home;
   dir;
   dirs;
   ideaPath;
@@ -8823,7 +8837,12 @@ var Store = class _Store {
   ledgerCache = null;
   policyCache = null;
   worktreeCache = null;
-  copies;
+  /** What the hub commit says the command was (`chore(hub): <label>`). */
+  label = "update";
+  /** With plan worktrees, a command that writes hub documents commits them on the base branch in the home. */
+  commitsState(paths) {
+    return paths.some((p) => STATE_RE.test(relative3(this.home, p))) && this.settings().plan_worktrees;
+  }
   static open(root = repoRoot()) {
     return new _Store(new Workspace(root));
   }
@@ -8835,8 +8854,9 @@ var Store = class _Store {
   get policy() {
     return this.policyCache ??= resolvePolicy(this.ws.root, this.dir, this.ledger.who.role, this.ledger.who.team);
   }
+  /** A path for messages: hub files relative to the home, so they read `.crew/…` from any checkout. */
   rel(p) {
-    return this.ws.rel(p);
+    return p === this.dir || p.startsWith(`${this.dir}/`) ? relative3(this.home, p) : this.ws.rel(p);
   }
   say(line2) {
     this.ws.say(line2);
@@ -8861,7 +8881,7 @@ var Store = class _Store {
   }
   // -- loading
   attach(doc) {
-    doc.sink = (path, text2) => (this.ws.write(path, text2), this.copies.forget());
+    doc.sink = (path, text2) => this.ws.write(path, text2);
     return doc;
   }
   loadDir(d) {
@@ -8874,45 +8894,34 @@ var Store = class _Store {
     return docs;
   }
   goals() {
-    return this.overlay(this.dirs.goal, this.loadDir(this.dirs.goal));
+    return this.loadDir(this.dirs.goal);
   }
   items() {
-    return this.overlay(this.dirs.item, this.loadDir(this.dirs.item));
+    return this.loadDir(this.dirs.item);
   }
   /** Worktrees of plan branches other than this checkout, by plan ID: where each plan's team works. */
   planWorktrees() {
     if (this.worktreeCache) return this.worktreeCache;
-    const real = (p) => existsSync4(p) ? realpathSync(p) : p;
-    const here = real(this.ws.root), out = /* @__PURE__ */ new Map();
+    const real2 = (p) => existsSync5(p) ? realpathSync2(p) : p;
+    const here = real2(this.ws.root), out = /* @__PURE__ */ new Map();
     for (const w of worktrees()) {
       const m = /^plan\/(P-\d+)/.exec(w.branch ?? "");
-      if (m && existsSync4(w.path) && real(w.path) !== here) out.set(m[1], w.path);
+      if (m && existsSync5(w.path) && real2(w.path) !== here) out.set(m[1], w.path);
     }
     return this.worktreeCache = out;
   }
   /** A worktree was added or removed: look again. */
   forgetWorktrees() {
     this.worktreeCache = null;
-    this.copies.forget();
   }
   /** Where a plan's work is: this checkout when it is on the plan's branch, else the plan's worktree, else null. */
   planHome(pid) {
     if (new RegExp(`^plan/${pid}-`).test(currentBranch() ?? "")) return this.ws.root;
     return this.planWorktrees().get(pid) ?? null;
   }
-  /** One directory's documents, overlaid with those changed (uncommitted) in plan worktrees — a plan's items, goals and
-   * knowledge live there until it completes. */
-  overlay(d, docs) {
-    const rel = `${this.rel(d)}/`, inDir = (f) => f.startsWith(rel) && f.endsWith(".md") && !f.slice(rel.length).includes("/");
-    for (const path of this.copies.pick(this.planWorktrees().values(), inDir)) {
-      const text2 = this.ws.read(path), doc = text2 === null ? null : this.attach(Doc.parse(text2, path));
-      if (doc?.id) docs.set(doc.id, doc);
-    }
-    return docs;
-  }
   /** Project knowledge, plus the org playbook's lessons (`lessons/**.md`, read-only) when a playbook is configured. */
   knowledge(withPlaybook = true) {
-    const project = [...this.overlay(this.knowledgeDir, this.loadDir(this.knowledgeDir)).values()].map((d) => toEntry(d, "project"));
+    const project = [...this.loadDir(this.knowledgeDir).values()].map((d) => toEntry(d, "project"));
     const pb = withPlaybook ? playbook(this.ws.root, this.dir) : { read: null };
     const lessons = pb.read && pb.list ? pb.list("lessons").filter((f) => f.endsWith(".md")).flatMap((f) => {
       const text2 = pb.read(f);
@@ -8929,26 +8938,17 @@ var Store = class _Store {
   }
   /** The project's idea (.crew/idea.md), if it has been written. */
   idea() {
-    const rel = this.rel(this.ideaPath), path = this.copies.pick(this.planWorktrees().values(), (f) => f === rel)[0] ?? this.ideaPath;
-    const text2 = this.ws.read(path);
-    return text2 === null ? null : this.attach(Doc.parse(text2, path));
+    const text2 = this.ws.read(this.ideaPath);
+    return text2 === null ? null : this.attach(Doc.parse(text2, this.ideaPath));
   }
   /** The focus goal's ID, as set on the idea (`focus G-###`). */
   focus() {
     return (this.idea()?.get("focus") ?? "").toUpperCase();
   }
-  /** Plans on the worktree, with each plan worktree's copy of its own plan (the live one); with includeBranches, live
-   * copies from every other plan/* branch too. Either wins unless main already closed the plan (merged or dropped). */
+  /** The plans in the home; with includeBranches, copies committed on plan/* branches too (specced before hub state had
+   * one home), unless the home already closed the plan (merged or dropped). */
   plans(includeBranches = false) {
     const plans2 = this.loadDir(this.dirs.plan);
-    for (const [pid, wt] of this.planWorktrees()) {
-      const dir = join7(wt, this.rel(this.dirs.plan));
-      const name = this.ws.list(dir).find((n2) => n2.startsWith(`${pid}-`) && n2.endsWith(".md"));
-      const base = plans2.get(pid);
-      if (name && (!base || !CLOSED.has(base.get("status") ?? ""))) {
-        plans2.set(pid, this.attach(Doc.parse(this.ws.read(join7(dir, name)), join7(dir, name))));
-      }
-    }
     if (includeBranches) {
       for (const [pid, doc] of this.branchPlans()) {
         const base = plans2.get(pid);
@@ -8965,7 +8965,7 @@ var Store = class _Store {
       const local = ref.replace(/^origin\//, "");
       if (local === here || ref !== local && refs.includes(local)) continue;
       const m = /^plan\/(P-\d+)/.exec(local);
-      if (!m || this.planWorktrees().has(m[1])) continue;
+      if (!m) continue;
       for (const name of lsTree(ref, ".crew/plans/")) {
         if (name.split("/").pop().startsWith(`${m[1]}-`)) {
           const text2 = show(ref, name);
@@ -8983,7 +8983,7 @@ var Store = class _Store {
     const doc = this.docs(kind).get(docId);
     return doc ?? fail(`${docId} not found in ${this.rel(this.dirs[kind])}`);
   }
-  /** A kind's documents as the hub sees them: this checkout's, plus what plan worktrees hold. */
+  /** A kind's documents, from the home. */
   docs(kind) {
     return kind === "plan" ? this.plans() : kind === "item" ? this.items() : this.goals();
   }
@@ -9008,8 +9008,8 @@ var Store = class _Store {
     return [file, text2];
   }
   consume(draftFile, keep = false) {
-    const real = (p) => existsSync4(p) ? realpathSync(p) : p;
-    if (!keep && real(draftFile).startsWith(real(resolve3(this.dir, "drafts")) + "/")) this.ws.remove(draftFile);
+    const real2 = (p) => existsSync5(p) ? realpathSync2(p) : p;
+    if (!keep && real2(draftFile).startsWith(real2(resolve3(this.dir, "drafts")) + "/")) this.ws.remove(draftFile);
   }
   build(template2, draft, fields) {
     const tmpl = fill(stripComments(this.template(template2)), { date: today(), ...fields }).replace(/^(\w+): $/gm, "$1:");
@@ -11099,7 +11099,7 @@ function callTool(open, name, args = {}) {
   if (typeof args.as === "string" && args.as) process.env.CREW_ROLE = args.as;
   if (typeof args.run_id === "string" && args.run_id) process.env.CREW_RUN = args.run_id;
   try {
-    return runTool(open, tool, args, result);
+    return runTool(open, name, tool, args, result);
   } finally {
     for (const [k, v] of [["CREW_ROLE", saved.role], ["CREW_RUN", saved.run]]) {
       if (v === void 0) delete process.env[k];
@@ -11107,8 +11107,9 @@ function callTool(open, name, args = {}) {
     }
   }
 }
-function runTool(open, tool, args, result) {
+function runTool(open, name, tool, args, result) {
   const store = open();
+  store.label = name;
   try {
     const code = tool.run(store, args) ?? 0;
     store.ws.flush();

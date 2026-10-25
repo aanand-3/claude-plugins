@@ -8,7 +8,7 @@ import { approvalReason } from "../../core/team/policy.js";
 import { evidenceProblems, writeHandoff } from "./execution.js";
 import { FORWARD, openQuestions } from "../team/questions.js";
 import { goalProblems } from "./goals.js";
-import { openPlanWorktree, restore } from "./planning.js";
+import { openPlanWorktree } from "./planning.js";
 import { reviewProblems } from "./review.js";
 import { bounces, escalateLimit, refuseWhilePaused } from "../team/liveness.js";
 import { notify } from "../team/autonomy.js";
@@ -176,24 +176,19 @@ export function start(store: Store, planId: string, force = false, approvedBy?: 
   for (const o of overlapping(doc, store.plans(true)).filter((x) => store.plans(true).get(x.id)?.get("status") !== "ready")) {
     store.say(`warning: ${planId} overlaps ${o.id} (in progress) on ${o.globs.join(", ")} — expect conflicts; coordinate or add depends_on`);
   }
-  if (shared) { // the plan's shared worktree: no branch switch here, nothing to commit until the plan completes
+  if (shared) { // the plan's shared worktree: no branch switch here
     let home = store.planHome(doc.id);
     if (!home) { // specced before plan_worktrees: it gets its worktree now
-      const existed = git.planBranches().includes(branch); // its branch holds the live plan: keep it as it is
-      if (!existed && git.currentBranch() !== store.baseBranch()) {
-        fail(`With plan_worktrees, start ${doc.id} from a checkout of ${store.baseBranch()}: its spec moves from there to the plan's worktree.`);
-      }
+      const live = git.planBranches().includes(branch) && doc.path ? git.show(branch, store.rel(doc.path)) : null;
       home = openPlanWorktree(store, doc.id, branch);
-      if (!existed && doc.path?.startsWith(store.dir)) { // a new branch: the spec moves from this checkout
-        const f = store.rel(doc.path);
-        restore(store, f);
-        doc.path = join(home, f);
-        doc.save();
+      if (live !== null && live !== store.ws.read(doc.path!)) { // its branch holds the live plan: that copy comes home
+        store.ws.write(doc.path!, live);
+        store.say(`${doc.id}: took the plan from ${branch}, where its progress is`);
       }
     }
     claimPlan(store, planId, branch, force, takeover, approvedBy);
-    store.say(`${doc.id}: work in ${store.rel(home)} (${branch}) — claimed by ${store.ledger.who.actor} (${store.ledger.who.run}); `
-      + "nothing to commit until the plan completes");
+    store.say(`${doc.id}: work in ${store.ws.rel(home) || "this checkout"} (${branch}) — claimed by ${store.ledger.who.actor} `
+      + `(${store.ledger.who.run}); its code is committed when the plan completes`);
     return;
   }
   const from = git.currentBranch(), sha = git.git(["rev-parse", "HEAD"])?.trim();

@@ -9,6 +9,7 @@ import { basename, dirname, isAbsolute, join, relative, resolve } from "node:pat
 import { Doc } from "../../core/work/doc.js";
 import * as git from "../../core/git.js";
 import { globRe } from "../../core/memory/knowledge.js";
+import { STATE_RE } from "../../core/work/hubstate.js";
 import { resolvePolicy } from "../../core/team/policy.js";
 import type { Store } from "../../core/store.js";
 
@@ -144,10 +145,21 @@ export function decide(store: Store, h: HookInput): Decision {
   const HUB_STATE = "project state stays in the hub (CLAUDE.md, crew:hub-state): use crew.mjs handoff, log, new-item, learn "
     + "or ask, and keep only a pointer to the hub ID elsewhere";
   const input = h.tool_input ?? {};
+  // hub documents have one home, the main checkout (BUG-018): a copy written in another checkout forks the state
+  const home = real(store.home), shared = store.settings().plan_worktrees;
+  const forked = (p: string) => {
+    if (!shared) return null;
+    const a = abs(p), d = checkouts().find((c) => within(c, a)) ?? top;
+    const r = relative(d, a), m = /^\.claude\/worktrees\/[^/]+\/(.*)$/.exec(r);
+    return (d !== home || m) && STATE_RE.test(m ? m[1] : r) ? join(home, m ? m[1] : r) : null;
+  };
+  const ONE_HOME = "hub documents live in the main checkout only: change them with crew.mjs from any checkout, or edit";
 
   // every subagent: protected paths, writes outside the repository, secret files, no approvals
   const path = EDITS[h.tool_name] ? String(input[EDITS[h.tool_name]] ?? "") : "";
   if (path && hits(policy.paths.protected, path)) return { deny: `${rel(path)} is protected by the crew policy (paths.protected)` };
+  const elsewhere = path ? forked(path) : null;
+  if (elsewhere) return { deny: `${abs(path)} is a copy of hub state; ${ONE_HOME} ${elsewhere}` };
   if (path && outside(path)) return { deny: `${abs(path)} is outside the repository; ${HUB_STATE}` };
   if (h.tool_name === "Read" && hits(policy.secrets.files, String(input.file_path ?? ""))) {
     return { deny: `${rel(String(input.file_path))} is a secret file (secrets.files); agents never read it` };
@@ -159,6 +171,8 @@ export function decide(store: Store, h: HookInput): Decision {
     if (target) return { deny: `the command writes to ${rel(target)}, which the crew policy protects (paths.protected)` };
     const unknown = targets.find((t) => t.startsWith("$"));
     if (unknown) return { deny: `the command writes to ${unknown}, which the guard can't resolve (an unknown variable); use a literal path` };
+    const copy = targets.find((t) => forked(t));
+    if (copy) return { deny: `the command writes to ${abs(copy)}, a copy of hub state; ${ONE_HOME} ${forked(copy)}` };
     const away = targets.find(outside);
     if (away) return { deny: `the command writes to ${abs(away)}, outside the repository; ${HUB_STATE}` };
     if (words(cmd).some((w) => hits(policy.secrets.files, w))) return { deny: "the command touches a secret file (secrets.files)" };

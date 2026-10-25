@@ -1,8 +1,9 @@
 /** Creating tracked documents: init, the idea, goals, plans; setting the focus goal. */
 import { readFileSync } from "node:fs";
-import { join, relative, resolve } from "node:path";
+import { join, resolve } from "node:path";
 import * as git from "../../core/git.js";
 import type { Doc } from "../../core/work/doc.js";
+import { requireBase } from "../../core/work/hubstate.js";
 import { CLOSED, HUB_STATE_MARKER, HUB_STATE_RULE, ITEM_CLOSED, type Kind, REQUIRED_ON_CREATE, TEMPLATE_NAMES } from "../../core/work/model.js";
 import { SCRIPT_DIR, SCRIPT_FILE, SKILL_DIR, Store } from "../../core/store.js";
 import { fail, idList, slugify } from "../../core/text.js";
@@ -98,44 +99,31 @@ export interface PlanOptions { goal?: string; depends?: string; items?: string; 
 export function newPlan(store: Store, title: string, draftPath: string, o: PlanOptions = {}): void {
   store.require();
   const [draftFile, draft] = store.readDraft(draftPath, "plan");
-  const shared = store.settings().plan_worktrees, base = store.baseBranch();
-  if (shared && git.currentBranch() !== base) {
-    fail(`With plan_worktrees, spec plans from a checkout of ${base}: each plan gets its own worktree, and this checkout's `
-      + "uncommitted hub files go with it.");
-  }
+  const shared = store.settings().plan_worktrees;
+  if (shared) requireBase(store.home, store.baseBranch()); // before the worktree exists: the spec is committed there
   const goal = store.checkRef(o.goal, "goal");
   const deps = checkDeps(store, idList(o.depends));
   const linked = idList(o.items);
   const items = checkLinkable(store, linked);
   const touches = (o.touches ?? "").split(",").map((t) => t.trim()).filter(Boolean);
   const pid = store.nextId("P", "plan");
+  store.label = `new-plan ${[pid, ...linked].join(" ")}`;
   const slug = slugify(title), branch = `plan/${pid}-${slug}`;
   const doc = store.build("plan.md", draft, {
     id: pid, title, goal, branch,
     depends_on: deps.join(", "), items: linked.join(", "), touches: touches.join(", "),
   });
   requireSections(doc, "plan");
-  const wt = shared ? openPlanWorktree(store, pid, branch) : null;
-  store.writeNew(doc, join(wt ? join(wt, store.rel(store.dirs.plan)) : store.dirs.plan, `${pid}-${slug}.md`));
-  const moved = new Set<string>();
+  if (shared) openPlanWorktree(store, pid, branch);
+  store.writeNew(doc, join(store.dirs.plan, `${pid}-${slug}.md`));
   for (const i of linked) {
     const item = items.get(i)!;
     item.set("plan", pid);
-    // the link travels with the plan, from this checkout or from the plan worktree the item was carried to
-    const from = !wt || !item.path ? null : item.path.startsWith(store.dir) ? store.ws.root
-      : [...store.planWorktrees().values()].find((w) => w !== wt && item.path!.startsWith(`${w}/`)) ?? null;
-    if (wt && from) {
-      const f = relative(from, item.path!);
-      restore(store, f, from);
-      item.path = join(wt, f);
-      moved.add(f);
-    }
     item.save();
     store.say(`${i} → ${pid}`);
   }
   if (goal && !linked.length) hintUnplanned(store, goal, items);
   store.consume(draftFile, o.keep);
-  if (wt) carryHub(store, wt, moved);
 }
 
 /** Give a plan its shared worktree, `.claude/worktrees/<P-###-slug>` beside the main checkout, on its branch (created
@@ -155,20 +143,8 @@ export function openPlanWorktree(store: Store, pid: string, branch: string): str
     store.ws.write(exclude, `${ignored}${ignored && !ignored.endsWith("\n") ? "\n" : ""}.claude/worktrees/\n`);
   }
   store.forgetWorktrees();
-  store.say(`${pid}: worktree ${store.rel(path)} on ${branch} — the plan's team works there; nothing is committed until it completes`);
+  store.say(`${pid}: worktree ${store.rel(path)} on ${branch} — the plan's team works on its code there; its hub documents stay in the main checkout`);
   return path;
-}
-
-/** Move this checkout's uncommitted items, goals, knowledge and idea (a new focus) into a plan's worktree: they are
- * committed with that plan, so nothing is committed to the base branch on its own, and every checkout still sees them
- * (the store overlays them). Config and policy stay: plan worktrees read those as committed. */
-function carryHub(store: Store, wt: string, done: Set<string>): void {
-  const carried = [...[store.dirs.item, store.dirs.goal, store.knowledgeDir].map((d) => `${store.rel(d)}/`), store.rel(store.ideaPath)];
-  for (const f of git.dirty(store.ws.root, store.rel(store.dir))) {
-    if (done.has(f) || !carried.some((d) => f.startsWith(d))) continue;
-    store.ws.write(join(wt, f), store.ws.read(join(store.ws.root, f)) ?? "");
-    restore(store, f);
-  }
 }
 
 /** Put a file of a checkout (this one by default) back as committed (or remove it when it isn't committed). */

@@ -53,6 +53,12 @@ export function worktrees(): { path: string; branch: string | null }[] {
   return out;
 }
 
+/** Files under `paths` with uncommitted changes in the worktree at `dir` (deletions too), relative to its root. */
+export function changed(dir: string, paths: string[]): string[] {
+  return (git(["-C", dir, "status", "--porcelain", "-z", "--untracked-files=all", "--no-renames", "--", ...paths]) ?? "")
+    .split("\0").filter((l) => l.length > 3).map((l) => l.slice(3));
+}
+
 /** Files under `path` with uncommitted changes (added, modified or untracked; not deleted) in the worktree at `dir`,
  * relative to its root. */
 export function dirty(dir: string, path: string): string[] {

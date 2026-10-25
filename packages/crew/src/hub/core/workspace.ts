@@ -9,6 +9,7 @@ export class Workspace {
   private pending = new Map<string, Pending>();
   private hooks: (() => void)[] = [];
   private aborts: (() => void)[] = [];
+  private watchers: { before: (paths: string[]) => void; after: (paths: string[]) => void }[] = [];
   readonly output: string[] = [];
 
   constructor(readonly root: string) {}
@@ -86,12 +87,15 @@ export class Workspace {
   }
 
   flush(): void {
+    const paths = () => [...this.pending.keys()];
     try {
+      for (const w of this.watchers) w.before(paths()); // first: hooks act outside the staged files (the ledger, notify)
       for (const hook of this.hooks.splice(0)) hook();
     } catch (e) {
       this.abort();
       throw e;
     }
+    const written = paths();
     this.aborts = [];
     for (const [path, v] of this.pending) {
       if (v === null) {
@@ -107,6 +111,13 @@ export class Workspace {
       if (v.mode !== undefined) chmodSync(path, v.mode);
     }
     this.pending.clear();
+    for (const w of this.watchers) w.after(written);
+  }
+
+  /** Watch every flush: `before` sees the paths about to be written ahead of the beforeFlush hooks (a HubError there
+   * aborts, so nothing is written or appended); `after` sees them once they are (a HubError there leaves them written). */
+  watchWrites(before: (paths: string[]) => void, after: (paths: string[]) => void): void {
+    this.watchers.push({ before, after });
   }
 
   private isFileOnDisk(path: string): boolean {

@@ -1,0 +1,21 @@
+---
+id: CHORE-017
+type: chore
+title: Plan worktrees check out no hub documents
+status: new
+priority:
+goal: G-007
+plan:
+created: 2026-10-25
+closed:
+---
+
+# CHORE-017: Plan worktrees check out no hub documents
+
+## Summary
+A plan worktree still holds main's committed .crew documents as of its cut (read-only, stale since P-026). An agent that reads them instead of using crew.mjs sees old state. Use sparse-checkout to leave .crew/{plans,items,goals,knowledge,idea.md} out of plan worktrees.
+
+## Done when
+- [ ]
+
+## Notes

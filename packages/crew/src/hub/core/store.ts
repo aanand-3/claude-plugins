@@ -1,6 +1,6 @@
 /** Reading and writing tracked documents in .crew/: loading, IDs, templates, settings, drafts. */
 import { existsSync, realpathSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as git from "./git.js";
 import { assemble, Doc, fill } from "./work/doc.js";
@@ -10,7 +10,7 @@ import { playbook, type Resolved, resolvePolicy } from "./team/policy.js";
 import { CLOSED, DEFAULT_SETTINGS, DIRS, type Kind, PRIORITIES } from "./work/model.js";
 import { fail, kindOf, stripComments, today } from "./text.js";
 import { Workspace } from "./workspace.js";
-import { WorktreeCopies } from "./work/worktrees.js";
+import { commitState, hubHome, requireBase, STATE_RE } from "./work/hubstate.js";
 
 /** dist/ in the plugin, or .crew/bin/ when running the vendored copy. */
 export const SCRIPT_FILE = fileURLToPath(import.meta.url);
@@ -41,6 +41,8 @@ export function yamlBlock(text: string, block: string): Record<string, string> {
 }
 
 export class Store {
+  /** The main checkout: where the hub's documents live, whichever checkout the command runs in (`ws.root`). */
+  readonly home: string;
   readonly dir: string;
   readonly dirs: Record<DirKind, string>;
   readonly ideaPath: string;
@@ -48,15 +50,28 @@ export class Store {
   private ledgerCache: Ledger | null = null;
   private policyCache: Resolved | null = null;
   private worktreeCache: Map<string, string> | null = null;
-  private readonly copies: WorktreeCopies;
+  /** What the hub commit says the command was (`chore(hub): <label>`). */
+  label = "update";
 
   constructor(readonly ws: Workspace) {
     git.useRoot(ws.root);
-    this.dir = join(ws.root, ".crew");
+    this.home = hubHome(ws.root);
+    this.dir = join(this.home, ".crew");
     this.dirs = Object.fromEntries(Object.entries(DIRS).map(([k, v]) => [k, join(this.dir, v)])) as Record<DirKind, string>;
     this.ideaPath = join(this.dir, "idea.md");
     this.knowledgeDir = join(this.dir, "knowledge");
-    this.copies = new WorktreeCopies(ws.root, this.rel(this.dir));
+    ws.watchWrites((paths) => {
+      if (this.commitsState(paths)) requireBase(this.home, this.baseBranch());
+    }, (paths) => {
+      if (!this.commitsState(paths)) return;
+      const sha = commitState(this.home, `chore(hub): ${this.label}`.slice(0, 100));
+      if (sha) this.say(`hub: committed on ${this.baseBranch()} (${sha})`);
+    });
+  }
+
+  /** With plan worktrees, a command that writes hub documents commits them on the base branch in the home. */
+  private commitsState(paths: string[]): boolean {
+    return paths.some((p) => STATE_RE.test(relative(this.home, p))) && this.settings().plan_worktrees;
   }
 
   static open(root = git.repoRoot()): Store {
@@ -73,8 +88,9 @@ export class Store {
     return (this.policyCache ??= resolvePolicy(this.ws.root, this.dir, this.ledger.who.role, this.ledger.who.team));
   }
 
+  /** A path for messages: hub files relative to the home, so they read `.crew/…` from any checkout. */
   rel(p: string): string {
-    return this.ws.rel(p);
+    return p === this.dir || p.startsWith(`${this.dir}/`) ? relative(this.home, p) : this.ws.rel(p);
   }
 
   say(line: string): void {
@@ -104,7 +120,7 @@ export class Store {
 
   // -- loading
   private attach(doc: Doc): Doc {
-    doc.sink = (path, text) => (this.ws.write(path, text), this.copies.forget()); // git sees new uncommitted files
+    doc.sink = (path, text) => this.ws.write(path, text);
     return doc;
   }
 
@@ -118,8 +134,8 @@ export class Store {
     return docs;
   }
 
-  goals(): Docs { return this.overlay(this.dirs.goal, this.loadDir(this.dirs.goal)); }
-  items(): Docs { return this.overlay(this.dirs.item, this.loadDir(this.dirs.item)); }
+  goals(): Docs { return this.loadDir(this.dirs.goal); }
+  items(): Docs { return this.loadDir(this.dirs.item); }
 
   /** Worktrees of plan branches other than this checkout, by plan ID: where each plan's team works. */
   planWorktrees(): Map<string, string> {
@@ -136,7 +152,6 @@ export class Store {
   /** A worktree was added or removed: look again. */
   forgetWorktrees(): void {
     this.worktreeCache = null;
-    this.copies.forget();
   }
 
   /** Where a plan's work is: this checkout when it is on the plan's branch, else the plan's worktree, else null. */
@@ -145,20 +160,9 @@ export class Store {
     return this.planWorktrees().get(pid) ?? null;
   }
 
-  /** One directory's documents, overlaid with those changed (uncommitted) in plan worktrees — a plan's items, goals and
-   * knowledge live there until it completes. */
-  private overlay(d: string, docs: Docs): Docs {
-    const rel = `${this.rel(d)}/`, inDir = (f: string) => f.startsWith(rel) && f.endsWith(".md") && !f.slice(rel.length).includes("/");
-    for (const path of this.copies.pick(this.planWorktrees().values(), inDir)) {
-      const text = this.ws.read(path), doc = text === null ? null : this.attach(Doc.parse(text, path));
-      if (doc?.id) docs.set(doc.id, doc);
-    }
-    return docs;
-  }
-
   /** Project knowledge, plus the org playbook's lessons (`lessons/**.md`, read-only) when a playbook is configured. */
   knowledge(withPlaybook = true): Entry[] {
-    const project = [...this.overlay(this.knowledgeDir, this.loadDir(this.knowledgeDir)).values()].map((d) => toEntry(d, "project"));
+    const project = [...this.loadDir(this.knowledgeDir).values()].map((d) => toEntry(d, "project"));
     const pb = withPlaybook ? playbook(this.ws.root, this.dir) : { read: null };
     const lessons = pb.read && pb.list ? pb.list("lessons").filter((f) => f.endsWith(".md")).flatMap((f) => {
       const text = pb.read!(f);
@@ -177,9 +181,8 @@ export class Store {
 
   /** The project's idea (.crew/idea.md), if it has been written. */
   idea(): Doc | null {
-    const rel = this.rel(this.ideaPath), path = this.copies.pick(this.planWorktrees().values(), (f) => f === rel)[0] ?? this.ideaPath; // a new focus travels with a plan
-    const text = this.ws.read(path);
-    return text === null ? null : this.attach(Doc.parse(text, path));
+    const text = this.ws.read(this.ideaPath);
+    return text === null ? null : this.attach(Doc.parse(text, this.ideaPath));
   }
 
   /** The focus goal's ID, as set on the idea (`focus G-###`). */
@@ -187,18 +190,10 @@ export class Store {
     return (this.idea()?.get("focus") ?? "").toUpperCase();
   }
 
-  /** Plans on the worktree, with each plan worktree's copy of its own plan (the live one); with includeBranches, live
-   * copies from every other plan/* branch too. Either wins unless main already closed the plan (merged or dropped). */
+  /** The plans in the home; with includeBranches, copies committed on plan/* branches too (specced before hub state had
+   * one home), unless the home already closed the plan (merged or dropped). */
   plans(includeBranches = false): Docs {
     const plans = this.loadDir(this.dirs.plan);
-    for (const [pid, wt] of this.planWorktrees()) {
-      const dir = join(wt, this.rel(this.dirs.plan));
-      const name = this.ws.list(dir).find((n) => n.startsWith(`${pid}-`) && n.endsWith(".md"));
-      const base = plans.get(pid);
-      if (name && (!base || !CLOSED.has(base.get("status") ?? ""))) {
-        plans.set(pid, this.attach(Doc.parse(this.ws.read(join(dir, name))!, join(dir, name))));
-      }
-    }
     if (includeBranches) {
       for (const [pid, doc] of this.branchPlans()) {
         const base = plans.get(pid);
@@ -216,7 +211,7 @@ export class Store {
       const local = ref.replace(/^origin\//, "");
       if (local === here || (ref !== local && refs.includes(local))) continue; // the worktree / prefer local copy
       const m = /^plan\/(P-\d+)/.exec(local);
-      if (!m || this.planWorktrees().has(m[1])) continue; // a plan worktree's copy is read from disk
+      if (!m) continue;
       for (const name of git.lsTree(ref, ".crew/plans/")) {
         if (name.split("/").pop()!.startsWith(`${m[1]}-`)) {
           const text = git.show(ref, name);
@@ -236,7 +231,7 @@ export class Store {
     return doc ?? fail(`${docId} not found in ${this.rel(this.dirs[kind])}`);
   }
 
-  /** A kind's documents as the hub sees them: this checkout's, plus what plan worktrees hold. */
+  /** A kind's documents, from the home. */
   docs(kind: DirKind): Docs {
     return kind === "plan" ? this.plans() : kind === "item" ? this.items() : this.goals();
   }

@@ -177,7 +177,7 @@ export function callTool(open: () => Store, name: string, args: Args = {}): Tool
   if (typeof args.as === "string" && args.as) process.env.CREW_ROLE = args.as; // this call only; restored below
   if (typeof args.run_id === "string" && args.run_id) process.env.CREW_RUN = args.run_id;
   try {
-    return runTool(open, tool, args, result);
+    return runTool(open, name, tool, args, result);
   } finally {
     for (const [k, v] of [["CREW_ROLE", saved.role], ["CREW_RUN", saved.run]] as const) {
       if (v === undefined) delete process.env[k]; else process.env[k] = v;
@@ -185,8 +185,9 @@ export function callTool(open: () => Store, name: string, args: Args = {}): Tool
   }
 }
 
-function runTool(open: () => Store, tool: Tool, args: Args, result: (lines: string[], isError: boolean) => ToolResult): ToolResult {
+function runTool(open: () => Store, name: string, tool: Tool, args: Args, result: (lines: string[], isError: boolean) => ToolResult): ToolResult {
   const store = open();
+  store.label = name;
   try {
     const code = tool.run(store, args) ?? 0;
     store.ws.flush();

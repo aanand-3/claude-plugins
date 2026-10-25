@@ -6,6 +6,7 @@ import { current, nextStep } from "./commands/views/advisor.js";
 import { newItem, triage } from "./commands/work/backlog.js";
 import { check } from "./commands/views/checks.js";
 import { migrate } from "./commands/work/migrate.js";
+import { gather } from "./commands/work/gather.js";
 import { designDone, designShow, designWait } from "./commands/views/design.js";
 import { exportGraph } from "./commands/views/export.js";
 import { serve } from "./server.js";
@@ -35,6 +36,7 @@ to a draft file, then create the tracked document from it with --from.
 Commands:
   init                                          create the .crew/ structure
   migrate                                       convert a project-kit .project/ directory into .crew/
+  migrate --gather                              bring hub documents other checkouts hold into the main checkout
   new-idea TITLE --from DRAFT                   the project's idea (problem, outcome, success criteria)
   new-goal TITLE --from DRAFT [--priority P1]   an outcome; each Breakdown line becomes a FEAT item
   focus G-###                                   the goal the team works toward now
@@ -95,7 +97,7 @@ const DRAFTED = { str: ["from"], flag: ["keep-draft"], required: ["from"] };
 
 const COMMANDS: Record<string, Spec> = {
   init: { pos: [], run: (s) => init(s) },
-  migrate: { pos: [], run: (s) => migrate(s) },
+  migrate: { pos: [], flag: ["gather"], run: (s, a) => (a.opt.gather ? gather(s) : migrate(s)) },
   "new-idea": { pos: ["title"], ...DRAFTED,
     run: (s, a) => newIdea(s, a.pos[0], str(a, "from")!, !!a.opt["keep-draft"]) },
   "new-goal": { pos: ["title"], ...DRAFTED, str: ["from", "priority"],
@@ -256,6 +258,7 @@ export function main(argv: string[], open: () => Store = () => Store.open()): nu
     return 2;
   }
   const store = open();
+  store.label = [parsed.cmd, ...argv.filter((a) => /^(IDEA|G|P|FEAT|BUG|CHORE|SPIKE|Q|K)-[\w-]+$/i.test(a))].join(" ");
   let code = 0;
   try {
     code = parsed.spec.run(store, parsed.args) ?? 0;
