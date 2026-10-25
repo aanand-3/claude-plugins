@@ -38,3 +38,4 @@ Every agent that follows the documented loop (`context` / `resume`) reads stale 
 ## Notes
 The branch override looks like a migration path for plans specced before hub state had one home (P-026). Possibly it should apply only when main has no doc for the plan.
 - 2026-10-25: status new → triaged — priority P1, severity S2
+- 2026-10-25: Triaged S2/P1 under G-007; fixed by P-039 (drop plans(true)). Asked the Architect to add it to P-039's items.
