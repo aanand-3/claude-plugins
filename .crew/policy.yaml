@@ -1,15 +1,1 @@
-# crew policy for the crew repository itself (see docs/vision.md → Policy; `crew.mjs policy show`).
-# Lifecycle preset: each step belongs to one role (PM, Architect, Developer, QA, Director); the executive approves the goal set.
-preset: lifecycle
-budgets:
-  max_agents: 3
-release:
-  refresh_bin: { from: plugins/crew/skills/hub/dist, files: [crew.mjs, ui.html] }
-# Model per role: judgement-heavy work (specs, reviews, code) on Opus; routing, triage, testing and merging on Sonnet.
-roles:
-  architect: { models: { default: opus } }
-  developer: { models: { default: opus } }
-  director: { models: { default: sonnet } }
-  pm: { models: { default: sonnet } }
-  qa: { models: { default: sonnet } }
-  release: { models: { default: sonnet } }
+mode: ai-native
