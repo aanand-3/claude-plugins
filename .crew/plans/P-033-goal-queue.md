@@ -5,7 +5,7 @@ goal: G-007
 items: FEAT-041
 touches: packages/crew/src/hub/commands/team/autonomy.ts, packages/crew/src/hub/core/work/queries.ts, packages/crew/test/goal-queue.test.ts, packages/crew/test/hub/e2e/goal-queue.test.ts, packages/crew/test/hub/run-check.test.ts, packages/crew/test/hub/e2e/team-2.test.ts, plugins/crew/skills/hub/references/model.md, plugins/crew/skills/team/SKILL.md
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-033-goal-queue
 pr:
 created: 2026-10-25
@@ -63,11 +63,11 @@ Needs no other plan's code. `crew-director.md` is P-031's (the design's open poi
 - **team-2.test.ts:** the closing expectation `toContain("G-001 is done")` becomes the new no-goal-left message. (P-031 edits the line above it, the closing role; the second to land resolves it, and test files are shared.)
 
 ## Tasks
-- [ ] T1: `goalQueue` in queries.ts → verify: `cd packages/crew && npx vitest run test/goal-queue.test.ts` (AC1)
-- [ ] T2: `advanceFocus`, the new focus reasons and `Stop` fields in autonomy.ts; the FOCUS/QUEUE lines → verify: `npm run build && npx vitest run test/hub/e2e/goal-queue.test.ts` (AC2–AC6)
-- [ ] T3: existing suites follow the new message → verify: `npx vitest run test/hub/run-check.test.ts test/hub/e2e/team-2.test.ts` (AC6)
-- [ ] T4: model.md and team/SKILL.md → verify: `grep -n "Goal queue" plugins/crew/skills/hub/references/model.md`; `grep -c "done or missing focus goal" plugins/crew/skills/team/SKILL.md` prints 0; `npx vitest run test/plugin` (AC7)
-- [ ] T5: types and sizes → verify: `npm run typecheck`; `wc -l src/hub/commands/team/autonomy.ts src/hub/core/work/queries.ts` (AC8)
+- [x] T1: `goalQueue` in queries.ts → verify: `cd packages/crew && npx vitest run test/goal-queue.test.ts` (AC1)
+- [x] T2: `advanceFocus`, the new focus reasons and `Stop` fields in autonomy.ts; the FOCUS/QUEUE lines → verify: `npm run build && npx vitest run test/hub/e2e/goal-queue.test.ts` (AC2–AC6)
+- [x] T3: existing suites follow the new message → verify: `npx vitest run test/hub/run-check.test.ts test/hub/e2e/team-2.test.ts` (AC6)
+- [x] T4: model.md and team/SKILL.md → verify: `grep -n "Goal queue" plugins/crew/skills/hub/references/model.md`; `grep -c "done or missing focus goal" plugins/crew/skills/team/SKILL.md` prints 0; `npx vitest run test/plugin` (AC7)
+- [x] T5: types and sizes → verify: `npm run typecheck`; `wc -l src/hub/commands/team/autonomy.ts src/hub/core/work/queries.ts` (AC8)
 
 ## Test plan
 **Targeted checks** (from `packages/crew/`; e2e suites drive the built `dist/crew.mjs`: `npm run build` first, then discard the generated output, which Release builds):
@@ -89,9 +89,8 @@ Needs no other plan's code. `crew-director.md` is P-031's (the design's open poi
 
 _Generated 2026-10-25 by `crew.mjs handoff` from the ledger._
 
-- P-033: Goal queue [in-progress] tasks 0/5 — claimed by Arpit Anand (developer:aaa443329dcc8698a)
+- P-033: Goal queue [in-review] tasks 5/5 — claimed by Arpit Anand (developer:aaa443329dcc8698a)
 - last checkpoint 2026-10-25 09:45 at T5 (9f1b4a9) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
-- next: T1: `goalQueue` in queries.ts → verify: `cd packages/crew && npx vitest run test/goal-queue.test.ts` (AC1)
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —, AC7 —, AC8 —
 
 Latest log:
@@ -104,5 +103,13 @@ Latest log:
 - 2026-10-25: status draft → ready
 - 2026-10-25: assigned to the developer role
 - 2026-10-25: status ready → in-progress — branch plan/P-033-goal-queue
+- 2026-10-25: status in-progress → in-review
 
 ## Outcome
+`goalQueue` (queries.ts) orders the active goals by priority, then ID, focus first. `runState` calls `advanceFocus` first:
+a done, dropped, unknown or empty focus moves to the queue's first goal through `setFocus` (its own say lines dropped;
+`run --check` prints `FOCUS  from → to (why)` and `QUEUE  …` on GO). With an empty queue the stop reason is
+`all approved goals done: …` or `no approved goal: the executive approves one (…)`, plus `; waiting for approval: …`.
+`Stop` has `queue` and `moved`. team-2's runner test changed in two places: the done-goal line, and its opening no-focus
+step (an approved goal with no focus is now focused by the queue, so that step can no longer stop on "no focus goal").
+Learnings: K-2026-10-25-run-check-json-can-print-a-second-line
