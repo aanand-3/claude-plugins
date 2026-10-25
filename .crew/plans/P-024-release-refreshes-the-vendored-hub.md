@@ -5,7 +5,7 @@ goal: G-007
 items: FEAT-027
 touches: packages/crew/src/hub/core/team/policy.ts, packages/crew/src/hub/commands/work/release.ts, packages/crew/src/hub/cli.ts, packages/crew/src/hub/commands/work/release.reg.ts, packages/crew/src/hub/commands/index.ts, packages/crew/test/hub/refresh-bin.test.ts, plugins/crew/skills/hub/agents/release.md, plugins/crew/skills/hub/references/model.md, packages/crew/src/hub/commands/team/policy.ts, .crew/config.yaml
 depends_on: P-023
-status: in-progress
+status: in-review
 branch: plan/P-024-release-refreshes-the-vendored-hub
 pr:
 created: 2026-10-24
@@ -116,7 +116,7 @@ Follows P-023 (bundles built once at release, in the plan's one commit): the ref
 
 _Generated 2026-10-25 by `crew.mjs handoff` from the ledger._
 
-- P-024: Release refreshes the vendored hub in .crew/bin [in-progress] tasks 4/4 — claimed by Arpit Anand (developer:af588eed65e640684)
+- P-024: Release refreshes the vendored hub in .crew/bin [in-review] tasks 4/4 — claimed by Arpit Anand (developer:af588eed65e640684)
 - last checkpoint 2026-10-25 08:42 at T4 (def8a26) by Arpit Anand; since then 0 commit(s), 8 uncommitted file(s): .crew/config.yaml, packages/crew/src/hub/cli.ts, packages/crew/src/hub/commands/team/policy.ts, packages/crew/src/hub/commands/work/release.ts, packages/crew/src/hub/core/team/policy.ts, plugins/crew/skills/hub/agents/release.md, plugins/crew/skills/hub/references/model.md, packages/crew/test/hub/refresh-bin.test.ts
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —
 
@@ -134,6 +134,7 @@ Latest log:
 - 2026-10-25: status ready → in-progress — branch plan/P-024-release-refreshes-the-vendored-hub
 - 2026-10-25: Architect (Q-6949e4): touches gain packages/crew/src/hub/commands/team/policy.ts for two text rows in `policy show` (release.refresh_bin.from / .files); AC5 is tested on text and --json output.
 - 2026-10-25: Developer notes: (1) 'a plan's worktree' = the checkout's current branch is the branch: of a plan not dropped (done counts, since Release refreshes after done). (2) copyFileSync copies the source mode, so refresh-bin chmods the target back to its own mode. (3) policy show prints 'none' for an unset key (Q-6949e4). (4) .crew/config.yaml edited in the plan worktree (in touches; ships in the plan commit). Bootstrap (policy.yaml release block, .crew/bin copy) not done: human-reserved per Rollout.
+- 2026-10-25: status in-progress → in-review
 
 ## Outcome
 `crew.mjs refresh-bin [--check]` (release.ts `refreshBin(store, root, check)`, exported for `land`) copies the policy's `release.refresh_bin.files` from `from` over existing vendored copies in the checkout's bin dir, as release and in a plan worktree only; `--check` is read-only and ends `hub.full_suite`. Global-only policy key, shown by `policy show`; release.md and model.md document the step and key. Bootstrap (policy.yaml block, first vendored copy) stays with the executive per Rollout.
