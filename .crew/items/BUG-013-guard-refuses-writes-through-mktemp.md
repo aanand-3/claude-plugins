@@ -2,10 +2,10 @@
 id: BUG-013
 type: bug
 title: Guard refuses writes through $(mktemp) and loop variables
-status: new
-severity:
-priority:
-goal: G-001
+status: triaged
+severity: S3
+priority: P2
+goal: G-007
 plan:
 created: 2026-10-24
 closed:
@@ -54,3 +54,4 @@ This is a false positive, not a hole: nothing unsafe gets through. But common su
 - `hubcall.ts` already has a real shell tokenizer (`parse()`), and the target resolver could reuse it instead of the `segments()`/`words()` split.
 - The goal is G-001, but the related guard bugs sit under G-007. The PM may want to re-goal it at triage.
 - 2026-10-26: Confirmed at b39b036 via crew.mjs guard payloads (crew-developer): $(mktemp) vars, bare $(mktemp) targets and for-loop vars are all refused as unresolvable; filled Steps/Expected/Actual/Evidence/Impact/Notes. Recommend folding into the guard plan with BUG-033/BUG-021/BUG-011.
+- 2026-10-26: status new → triaged — priority P2, severity S3
