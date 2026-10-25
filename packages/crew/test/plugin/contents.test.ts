@@ -69,11 +69,13 @@ it("the settings template wires the hooks", () => {
     .toBe(s.hooks.PostToolUse.length - 1); // after format_on_edit and the plan hook
 });
 
-it("the developer checkpoints when it starts a task, and the hub skill lists the live commands", () => {
+it("the developer checkpoints when it starts a task, and the command reference lists the live commands", () => {
   expect(read(join(SKILLS, "hub", "agents", "developer.md"))).toMatch(/checkpoint P-### --step T<n> --note "starting: /);
-  const skill = read(join(SKILLS, "hub", "SKILL.md"));
-  expect(skill).toContain("| `watch [--ref ID]");
-  expect(skill).toContain("| `activity --hook` |");
+  const commands = read(join(SKILLS, "hub", "references", "commands.md"));
+  expect(commands).toContain("| `watch` |");
+  expect(commands).toContain("| `activity` |");
+  expect(commands).toContain("watch [--ref ID] [--limit 20]");
+  expect(commands).toContain("activity --hook");
 });
 
 it("yaml and toml templates parse", () => {

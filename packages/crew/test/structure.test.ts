@@ -37,7 +37,7 @@ it("shared/ imports nothing else in src/: the hub and the skill scripts both bui
 
 it("hub sources sit in their domain folders", () => {
   const loose = (dir: string) => readdirSync(new URL(dir, SRC)).filter((f) => /\.ts$/.test(f));
-  expect(loose("hub/commands/")).toEqual([]);
+  expect(loose("hub/commands/")).toEqual(["index.ts"]);
   expect(loose("hub/core/").sort()).toEqual(["git.ts", "store.ts", "text.ts", "workspace.ts"]);
 });
 

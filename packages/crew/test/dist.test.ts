@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, it } from "vitest";
 // @ts-expect-error build.mjs is plain JS
-import { bundleCli, bundleMcp, bundleStudio, bundleTool, bundleUi, DIST, TOOLS, toolPath } from "../build.mjs";
+import { bundleCli, bundleMcp, bundleReference, bundleStudio, bundleTool, bundleUi, DIST, REFERENCE, TOOLS, toolPath } from "../build.mjs";
 
 const tmp = () => mkdtempSync(join(tmpdir(), "hub-"));
 
@@ -33,3 +33,8 @@ it("the committed skill scripts are built from the current source (run `npm run 
     expect(readFileSync(fresh, "utf8") === readFileSync(toolPath(skill, name), "utf8"), `${skill}/${name}`).toBe(true);
   }
 }, 60_000);
+
+it("the committed skills/hub/references/commands.md is rendered from the current registrations (run `npm run build`)", async () => {
+  const fresh = await bundleReference(join(tmp(), "commands.md"));
+  expect(readFileSync(fresh, "utf8") === readFileSync(REFERENCE, "utf8")).toBe(true);
+}, 30_000);

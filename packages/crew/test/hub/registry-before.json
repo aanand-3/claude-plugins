@@ -1,0 +1,1449 @@
+{
+  "cli": {
+    "init": {
+      "pos": []
+    },
+    "migrate": {
+      "pos": [],
+      "flag": [
+        "gather"
+      ]
+    },
+    "new-idea": {
+      "pos": [
+        "title"
+      ],
+      "str": [
+        "from"
+      ],
+      "flag": [
+        "keep-draft"
+      ],
+      "required": [
+        "from"
+      ]
+    },
+    "new-goal": {
+      "pos": [
+        "title"
+      ],
+      "str": [
+        "from",
+        "priority"
+      ],
+      "flag": [
+        "keep-draft"
+      ],
+      "required": [
+        "from"
+      ]
+    },
+    "focus": {
+      "pos": [
+        "goal"
+      ]
+    },
+    "new-item": {
+      "pos": [
+        "type",
+        "title"
+      ],
+      "str": [
+        "from",
+        "why",
+        "goal",
+        "priority",
+        "severity"
+      ],
+      "flag": [
+        "keep-draft"
+      ]
+    },
+    "triage": {
+      "pos": [
+        "id"
+      ],
+      "str": [
+        "priority",
+        "severity",
+        "goal",
+        "note",
+        "reject",
+        "approved-by"
+      ],
+      "choices": {
+        "reject": [
+          "duplicate",
+          "wontfix"
+        ]
+      }
+    },
+    "new-plan": {
+      "pos": [
+        "title"
+      ],
+      "str": [
+        "from",
+        "goal",
+        "depends",
+        "items",
+        "touches"
+      ],
+      "flag": [
+        "keep-draft"
+      ],
+      "required": [
+        "from"
+      ]
+    },
+    "start": {
+      "pos": [
+        "id"
+      ],
+      "str": [
+        "approved-by"
+      ],
+      "flag": [
+        "force"
+      ]
+    },
+    "move": {
+      "pos": [
+        "id",
+        "status"
+      ],
+      "str": [
+        "note",
+        "approved-by"
+      ],
+      "flag": [
+        "force"
+      ]
+    },
+    "learn": {
+      "pos": [
+        "type",
+        "title"
+      ],
+      "str": [
+        "why",
+        "from",
+        "scope",
+        "source",
+        "supersedes",
+        "likelihood",
+        "impact",
+        "owner"
+      ],
+      "flag": [
+        "candidate",
+        "keep-draft"
+      ]
+    },
+    "recall": {
+      "pos": [],
+      "str": [
+        "paths",
+        "plan",
+        "topic",
+        "type"
+      ],
+      "flag": [
+        "all",
+        "json"
+      ]
+    },
+    "checkpoint": {
+      "pos": [],
+      "rest": true,
+      "str": [
+        "step",
+        "run",
+        "verify",
+        "result",
+        "ac",
+        "output",
+        "attempt",
+        "why",
+        "note",
+        "workflow"
+      ],
+      "flag": [
+        "auto",
+        "skip"
+      ],
+      "choices": {
+        "result": [
+          "pass",
+          "fail"
+        ]
+      }
+    },
+    "resume": {
+      "pos": [],
+      "rest": true,
+      "str": [
+        "note",
+        "workflow"
+      ],
+      "flag": [
+        "json",
+        "team"
+      ]
+    },
+    "merge-order": {
+      "pos": [],
+      "flag": [
+        "json"
+      ]
+    },
+    "refresh-bin": {
+      "pos": [],
+      "flag": [
+        "check"
+      ]
+    },
+    "review": {
+      "pos": [
+        "id"
+      ],
+      "str": [
+        "changes"
+      ],
+      "flag": [
+        "approve"
+      ]
+    },
+    "pause": {
+      "pos": [],
+      "str": [
+        "reason"
+      ]
+    },
+    "reassign": {
+      "pos": [
+        "id"
+      ],
+      "str": [
+        "to",
+        "note",
+        "approved-by"
+      ],
+      "flag": [
+        "force"
+      ]
+    },
+    "handoff": {
+      "pos": [],
+      "rest": true
+    },
+    "guard": {
+      "pos": []
+    },
+    "assign": {
+      "pos": [
+        "id"
+      ],
+      "str": [
+        "to",
+        "team",
+        "note",
+        "approved-by"
+      ],
+      "required": [
+        "to"
+      ]
+    },
+    "staff": {
+      "pos": [],
+      "flag": [
+        "json"
+      ]
+    },
+    "agents": {
+      "pos": [],
+      "flag": [
+        "check"
+      ]
+    },
+    "policy": {
+      "pos": [
+        "action"
+      ],
+      "str": [
+        "role",
+        "team"
+      ],
+      "flag": [
+        "json"
+      ],
+      "choices": {
+        "action": [
+          "show",
+          "check"
+        ]
+      }
+    },
+    "log": {
+      "pos": [
+        "id",
+        "text"
+      ]
+    },
+    "release": {
+      "pos": [
+        "id"
+      ],
+      "str": [
+        "note"
+      ],
+      "flag": [
+        "force"
+      ]
+    },
+    "usage": {
+      "pos": [],
+      "str": [
+        "cost",
+        "model",
+        "ref"
+      ],
+      "int": [
+        "tokens-in",
+        "tokens-out"
+      ],
+      "flag": [
+        "hook"
+      ]
+    },
+    "activity": {
+      "pos": [],
+      "flag": [
+        "hook"
+      ],
+      "required": [
+        "hook"
+      ]
+    },
+    "watch": {
+      "pos": [],
+      "str": [
+        "ref"
+      ],
+      "int": [
+        "limit"
+      ]
+    },
+    "run": {
+      "pos": [],
+      "flag": [
+        "check",
+        "json"
+      ]
+    },
+    "ledger": {
+      "pos": [],
+      "str": [
+        "ref",
+        "type"
+      ],
+      "int": [
+        "limit"
+      ],
+      "flag": [
+        "json"
+      ]
+    },
+    "current": {
+      "pos": []
+    },
+    "next": {
+      "pos": [],
+      "str": [
+        "role"
+      ]
+    },
+    "context": {
+      "pos": [],
+      "rest": true,
+      "str": [
+        "role"
+      ],
+      "int": [
+        "budget"
+      ],
+      "flag": [
+        "json"
+      ]
+    },
+    "ask": {
+      "pos": [
+        "text"
+      ],
+      "rest": true,
+      "str": [
+        "to"
+      ],
+      "flag": [
+        "fyi"
+      ],
+      "required": [
+        "to"
+      ]
+    },
+    "escalate": {
+      "pos": [
+        "text"
+      ],
+      "rest": true
+    },
+    "answer": {
+      "pos": [
+        "id",
+        "text"
+      ],
+      "str": [
+        "scope",
+        "approved-by"
+      ],
+      "flag": [
+        "decision"
+      ]
+    },
+    "questions": {
+      "pos": [],
+      "str": [
+        "to",
+        "ref"
+      ],
+      "flag": [
+        "all",
+        "json"
+      ]
+    },
+    "check": {
+      "pos": []
+    },
+    "status": {
+      "pos": [],
+      "flag": [
+        "write"
+      ]
+    },
+    "export": {
+      "pos": [],
+      "str": [
+        "out"
+      ],
+      "flag": [
+        "json"
+      ]
+    },
+    "design": {
+      "pos": [
+        "action"
+      ],
+      "rest": true,
+      "int": [
+        "timeout"
+      ],
+      "flag": [
+        "json"
+      ],
+      "choices": {
+        "action": [
+          "show",
+          "wait",
+          "done"
+        ]
+      }
+    },
+    "ui": {
+      "pos": [],
+      "int": [
+        "port"
+      ],
+      "flag": [
+        "no-open",
+        "design"
+      ]
+    }
+  },
+  "usage": [
+    "crew hub: the team's shared context — the idea, goals, backlog items, plans and tasks.",
+    "Nothing is created as an empty skeleton: write the content first (sections as in the templates)",
+    "to a draft file, then create the tracked document from it with --from.",
+    "Commands:",
+    "  init                                          create the .crew/ structure",
+    "  migrate                                       convert a project-kit .project/ directory into .crew/",
+    "  migrate --gather                              bring hub documents other checkouts hold into the main checkout",
+    "  new-idea TITLE --from DRAFT                   the project's idea (problem, outcome, success criteria)",
+    "  new-goal TITLE --from DRAFT [--priority P1]   an outcome; each Breakdown line becomes a FEAT item",
+    "  focus G-###                                   the goal the team works toward now",
+    "  new-item feat|bug|chore|spike TITLE (--from DRAFT | --why TEXT) [--goal] [--priority] [--severity]",
+    "  triage ID [--priority P1] [--severity S2] [--goal G-001] [--approved-by NAME]",
+    "  triage ID --reject wontfix|duplicate --note TXT",
+    "  new-plan TITLE --from DRAFT [--goal] [--items FEAT-001,BUG-002] [--touches \"src/a/**, docs/b.md\"] [--depends P-002]",
+    "  start PLAN_ID · move ID STATUS [--note] · log ID TEXT      (ID: IDEA, G-###, P-###, FEAT/BUG/CHORE/SPIKE-###)",
+    "           start/move/triage take --approved-by NAME: a human approving a gated or reserved step (never an agent)",
+    "  policy show [--role R] [--team T] [--json] · policy check      the effective policy and where each value comes from",
+    "  release PLAN_ID [--note TXT] [--force]        give up a claim (another run's claim needs --force)",
+    "  usage [--tokens-in N] [--tokens-out N] [--cost USD] [--model M] [--ref ID]   record what a run used",
+    "  usage --hook                                  SubagentStop hook: a crew agent's tokens and final report from its transcript",
+    "  activity --hook                               PostToolUse hook: one activity event per tool call of a crew agent",
+    "  watch [--ref ID] [--limit 20]                 the live feed (tool calls and ledger events), followed until Ctrl-C",
+    "  run [--check] [--json]                        run the team unattended: the loop, and whether it may go on (exit 1: stop)",
+    "  ledger [--ref ID] [--type T] [--limit 20] [--json]   the shared event log (who/what/when) and live claims",
+    "  learn decision|learning|gotcha|convention|risk FACT (--why TEXT | --from DRAFT) [--scope \"src/a/**, b.md\"]",
+    "        [--source P-###] [--supersedes K-…] [--candidate] [--likelihood H|M|L --impact H|M|L --owner WHO]",
+    "  recall [--paths a,b] [--plan P-###] [--topic WORDS] [--type T] [--all] [--json]   the knowledge that applies",
+    "  checkpoint [P-###] [--step T3] [--run CMD | --verify CMD --result pass|fail] [--ac 1,2|all] [--output TXT]",
+    "             [--attempt WHAT --why WHY] [--note TXT] [--auto]   record where the work is (the plan of this branch by default)",
+    "  resume [P-###] [--json] · handoff [P-###]     where the work stopped vs git now · write it into the plan's Handoff",
+    "  checkpoint --workflow kickoff|onboard --step S [--skip] [--note] · resume --workflow W   a multi-step job's progress",
+    "  review P-### --approve | --changes TXT        code review of a plan in review (never by its implementer)",
+    "  merge-order [--json]                          done plans to merge, dependencies first (Release)",
+    "  refresh-bin [--check]                         copy the policy's release.refresh_bin files into .crew/bin (Release, in a plan worktree)",
+    "  context [P-###] [--role R] [--budget CHARS] [--json]   what you need right now, within a budget (default 6000 chars)",
+    "  next [--role R] · current · check · status [--write]    (roles: executive, director, pm, architect, developer, qa, release + the policy's)",
+    "  --as ROLE · --run-id ID                       who is acting, on any command (wins over CREW_ROLE / CREW_RUN)",
+    "  guard                                         PreToolUse hook: reads the hook JSON on stdin, prints the decision",
+    "  assign PLAN_ID --to ROLE [--team T] [--note TXT]   open a ready plan for a role (start then needs it)",
+    "  staff [--json]                                what can run in parallel now, within budgets.max_agents",
+    "  reassign PLAN_ID [--to ROLE] [--note TXT] [--force]   release a stale claim and assign the plan again",
+    "  pause [--reason TXT] · resume --team [--note TXT]     stop / restart staffing and starts (executive or director)",
+    "  agents [--check]                              render the role agents (.claude/agents/crew-<role>.md) from the policy",
+    "  ask [ID] --to ROLE TEXT [--fyi] · escalate [ID] TEXT · answer Q-… TEXT [--decision [--scope GLOBS]] [--approved-by NAME]",
+    "  questions [--to ROLE] [--ref ID] [--all] [--json]       questions between roles; an open one blocks only its document",
+    "  export [--json] [--out FILE]                  interactive HTML view (.crew/view/index.html) or the graph as JSON",
+    "  ui [--port 8765] [--no-open] [--design]       serve the view live on 127.0.0.1 (updates as files change);",
+    "                                                --design opens the design studio (/design)",
+    "  design show [--json] · design wait [--timeout 1800] · design done ID|all",
+    "                                                the design studio's state; wait blocks until the page hands a",
+    "                                                step to Claude (run it in the background); done clears one"
+  ],
+  "tools": {
+    "next": {
+      "description": "The single best next step (`crew.mjs next`); with a role, that role's own queue, questions to it first.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "description": "a role: executive, director, pm, architect, developer, qa, release, or one the policy defines"
+          },
+          "as": {
+            "type": "string",
+            "description": "your role (set by the guard for agents)"
+          },
+          "run_id": {
+            "type": "string",
+            "description": "your run id (set by the guard for agents)"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "context": {
+      "description": "What you need right now (`crew.mjs context`): for a plan, where the work stands, its goal, criteria with evidence, tasks, blockers and questions, knowledge in scope; without one, the idea, focus, your next steps and the team. Sliced for your role and kept within a budget. Call it at the start of every session.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "plan": {
+            "type": "string",
+            "description": "e.g. P-004; default: the plan of this branch"
+          },
+          "role": {
+            "type": "string",
+            "description": "a role: executive, director, pm, architect, developer, qa, release, or one the policy defines"
+          },
+          "budget": {
+            "type": "number",
+            "description": "characters, default 6000"
+          },
+          "as": {
+            "type": "string",
+            "description": "your role (set by the guard for agents)"
+          },
+          "run_id": {
+            "type": "string",
+            "description": "your run id (set by the guard for agents)"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "ask": {
+      "description": "Ask another role a question (`crew.mjs ask`), recorded so it isn't lost. It blocks the document it is about from moving forward until answered (fyi: true doesn't block).",
+      "input": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "string",
+            "description": "the document it is about, e.g. P-004"
+          },
+          "to": {
+            "type": "string",
+            "description": "a role: executive, director, pm, architect, developer, qa, release, or one the policy defines"
+          },
+          "text": {
+            "type": "string",
+            "description": "the question"
+          },
+          "fyi": {
+            "type": "boolean"
+          },
+          "as": {
+            "type": "string",
+            "description": "your role (set by the guard for agents)"
+          },
+          "run_id": {
+            "type": "string",
+            "description": "your run id (set by the guard for agents)"
+          }
+        },
+        "required": [
+          "to",
+          "text"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "escalate": {
+      "description": "Escalate to the executive (`crew.mjs escalate`): reserved decisions, a goal at risk, anything only a human can settle. Blocks the document until a human answers.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "string",
+            "description": "the document it is about"
+          },
+          "text": {
+            "type": "string",
+            "description": "what needs deciding, with the options"
+          },
+          "as": {
+            "type": "string",
+            "description": "your role (set by the guard for agents)"
+          },
+          "run_id": {
+            "type": "string",
+            "description": "your run id (set by the guard for agents)"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "answer": {
+      "description": "Answer a question addressed to your role (`crew.mjs answer`); decision: true also records it as a decision entry. Escalations can't be answered here — only a human, on the CLI.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Q-…"
+          },
+          "text": {
+            "type": "string",
+            "description": "the answer"
+          },
+          "decision": {
+            "type": "boolean"
+          },
+          "scope": {
+            "type": "string",
+            "description": "globs for the decision entry"
+          },
+          "as": {
+            "type": "string",
+            "description": "your role (set by the guard for agents)"
+          },
+          "run_id": {
+            "type": "string",
+            "description": "your run id (set by the guard for agents)"
+          }
+        },
+        "required": [
+          "id",
+          "text"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "questions": {
+      "description": "Open questions between roles (`crew.mjs questions --json`).",
+      "input": {
+        "type": "object",
+        "properties": {
+          "to": {
+            "type": "string",
+            "description": "a role: executive, director, pm, architect, developer, qa, release, or one the policy defines"
+          },
+          "ref": {
+            "type": "string",
+            "description": "only about this document"
+          },
+          "all": {
+            "type": "boolean"
+          },
+          "as": {
+            "type": "string",
+            "description": "your role (set by the guard for agents)"
+          },
+          "run_id": {
+            "type": "string",
+            "description": "your run id (set by the guard for agents)"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "current": {
+      "description": "Where work stands: the focus goal and the plan on the current branch (`crew.mjs current`).",
+      "input": {
+        "type": "object",
+        "properties": {
+          "as": {
+            "type": "string",
+            "description": "your role (set by the guard for agents)"
+          },
+          "run_id": {
+            "type": "string",
+            "description": "your run id (set by the guard for agents)"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "status": {
+      "description": "Status report for the project (`crew.mjs status`); write=true also saves it to .crew/status.md.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "write": {
+            "type": "boolean"
+          },
+          "as": {
+            "type": "string",
+            "description": "your role (set by the guard for agents)"
+          },
+          "run_id": {
+            "type": "string",
+            "description": "your run id (set by the guard for agents)"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "check": {
+      "description": "Validate .crew/ (`crew.mjs check`): ERROR and HINT lines; an error result means problems were found.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "as": {
+            "type": "string",
+            "description": "your role (set by the guard for agents)"
+          },
+          "run_id": {
+            "type": "string",
+            "description": "your run id (set by the guard for agents)"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "graph": {
+      "description": "Every tracked document (idea, goals, items, plans) with status, gates, relations and the focus, as JSON (`crew.mjs export --json`).",
+      "input": {
+        "type": "object",
+        "properties": {
+          "as": {
+            "type": "string",
+            "description": "your role (set by the guard for agents)"
+          },
+          "run_id": {
+            "type": "string",
+            "description": "your run id (set by the guard for agents)"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "new_item": {
+      "description": "Capture a backlog item (`crew.mjs new-item`). Give exactly one of `from` (a draft file with the item template's sections) or `why` (one-paragraph summary). Priority or severity at intake triage it if the triage gate passes.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "feat",
+              "bug",
+              "chore",
+              "spike"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "description": "short title"
+          },
+          "from": {
+            "type": "string",
+            "description": "path to a draft file"
+          },
+          "why": {
+            "type": "string",
+            "description": "summary, instead of a draft"
+          },
+          "priority": {
+            "type": "string",
+            "description": "P0–P3"
+          },
+          "severity": {
+            "type": "string",
+            "description": "bugs only: S1–S4"
+          },
+          "goal": {
+            "type": "string",
+            "description": "e.g. G-002"
+          },
+          "as": {
+            "type": "string",
+            "description": "your role (set by the guard for agents)"
+          },
+          "run_id": {
+            "type": "string",
+            "description": "your run id (set by the guard for agents)"
+          }
+        },
+        "required": [
+          "type",
+          "title"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "triage": {
+      "description": "Triage a new item (`crew.mjs triage`): set priority/severity/goal, or reject it with a note.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "e.g. FEAT-003"
+          },
+          "priority": {
+            "type": "string",
+            "description": "P0–P3"
+          },
+          "severity": {
+            "type": "string",
+            "description": "bugs only: S1–S4"
+          },
+          "goal": {
+            "type": "string",
+            "description": "e.g. G-002"
+          },
+          "reject": {
+            "type": "string",
+            "enum": [
+              "duplicate",
+              "wontfix"
+            ]
+          },
+          "note": {
+            "type": "string",
+            "description": "required with reject"
+          },
+          "as": {
+            "type": "string",
+            "description": "your role (set by the guard for agents)"
+          },
+          "run_id": {
+            "type": "string",
+            "description": "your run id (set by the guard for agents)"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "move": {
+      "description": "Move a document to a new status (`crew.mjs move`). Gates (Definition of Ready, WIP limit, policy role gates) apply; there is no force. Steps the policy reserves for a human (human gates, reserved decisions) are refused here: escalate to the human, who approves on the CLI with --approved-by.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "e.g. P-004"
+          },
+          "status": {
+            "type": "string",
+            "description": "target status, e.g. ready, in-review, done"
+          },
+          "note": {
+            "type": "string",
+            "description": "optional note"
+          },
+          "as": {
+            "type": "string",
+            "description": "your role (set by the guard for agents)"
+          },
+          "run_id": {
+            "type": "string",
+            "description": "your run id (set by the guard for agents)"
+          }
+        },
+        "required": [
+          "id",
+          "status"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "assign": {
+      "description": "Open a ready plan for a role (`crew.mjs assign`): records who implements it; `start` then needs the assignment. Under the lifecycle preset only the PM assigns.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "e.g. P-004"
+          },
+          "to": {
+            "type": "string",
+            "description": "the role that implements it, usually developer"
+          },
+          "team": {
+            "type": "string",
+            "description": "optional team from the policy"
+          },
+          "note": {
+            "type": "string",
+            "description": "optional note"
+          },
+          "as": {
+            "type": "string",
+            "description": "your role (set by the guard for agents)"
+          },
+          "run_id": {
+            "type": "string",
+            "description": "your run id (set by the guard for agents)"
+          }
+        },
+        "required": [
+          "id",
+          "to"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "staff": {
+      "description": "What can run in parallel now (`crew.mjs staff`): ready plans whose dependencies are done, that overlap nothing in progress or each other, within budgets.max_agents, each routed to a team; and why the others wait.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "json": {
+            "type": "boolean"
+          },
+          "as": {
+            "type": "string",
+            "description": "your role (set by the guard for agents)"
+          },
+          "run_id": {
+            "type": "string",
+            "description": "your run id (set by the guard for agents)"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "reassign": {
+      "description": "Move stuck work to another run (`crew.mjs reassign`): releases a stale claim (limits.stale_claim_hours) and assigns the plan again; the next agent takes it over with start, which resumes its branch. Under the lifecycle preset, the Director's.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "e.g. P-004"
+          },
+          "to": {
+            "type": "string",
+            "description": "role, default: the current assignment"
+          },
+          "note": {
+            "type": "string",
+            "description": "why"
+          },
+          "as": {
+            "type": "string",
+            "description": "your role (set by the guard for agents)"
+          },
+          "run_id": {
+            "type": "string",
+            "description": "your run id (set by the guard for agents)"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "pause": {
+      "description": "Pause the team (`crew.mjs pause`), or resume it with resume: true: while paused, staff and start refuse. The executive's or the Director's call.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "description": "why (pause) or a note (resume)"
+          },
+          "resume": {
+            "type": "boolean"
+          },
+          "as": {
+            "type": "string",
+            "description": "your role (set by the guard for agents)"
+          },
+          "run_id": {
+            "type": "string",
+            "description": "your run id (set by the guard for agents)"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "log": {
+      "description": "Append a dated line to a document's log (`crew.mjs log`).",
+      "input": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "e.g. P-004"
+          },
+          "text": {
+            "type": "string",
+            "description": "the log entry"
+          },
+          "as": {
+            "type": "string",
+            "description": "your role (set by the guard for agents)"
+          },
+          "run_id": {
+            "type": "string",
+            "description": "your run id (set by the guard for agents)"
+          }
+        },
+        "required": [
+          "id",
+          "text"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "focus": {
+      "description": "Set the focus goal the team works toward now (`crew.mjs focus`).",
+      "input": {
+        "type": "object",
+        "properties": {
+          "goal": {
+            "type": "string",
+            "description": "e.g. G-002"
+          },
+          "as": {
+            "type": "string",
+            "description": "your role (set by the guard for agents)"
+          },
+          "run_id": {
+            "type": "string",
+            "description": "your run id (set by the guard for agents)"
+          }
+        },
+        "required": [
+          "goal"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "usage": {
+      "description": "Record tokens and cost this run used (`crew.mjs usage`); feeds budgets and the executive view.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "tokens_in": {
+            "type": "number",
+            "description": "input tokens"
+          },
+          "tokens_out": {
+            "type": "number",
+            "description": "output tokens"
+          },
+          "cost": {
+            "type": "number",
+            "description": "USD"
+          },
+          "model": {
+            "type": "string",
+            "description": "model id"
+          },
+          "ref": {
+            "type": "string",
+            "description": "the document the work was for, e.g. P-004"
+          },
+          "as": {
+            "type": "string",
+            "description": "your role (set by the guard for agents)"
+          },
+          "run_id": {
+            "type": "string",
+            "description": "your run id (set by the guard for agents)"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "learn": {
+      "description": "Record one fact the team should remember (`crew.mjs learn`): a decision, learning, gotcha, convention or risk, with why, scoped to the paths it applies to. Refused if it looks like a secret.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "decision",
+              "learning",
+              "gotcha",
+              "convention",
+              "risk"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "description": "the fact, one line"
+          },
+          "why": {
+            "type": "string",
+            "description": "the reason or evidence"
+          },
+          "scope": {
+            "type": "string",
+            "description": "comma-separated path globs; omit for everywhere"
+          },
+          "source": {
+            "type": "string",
+            "description": "the plan or item it came from"
+          },
+          "supersedes": {
+            "type": "string",
+            "description": "a K-… entry this replaces"
+          },
+          "likelihood": {
+            "type": "string",
+            "description": "risks: H/M/L"
+          },
+          "impact": {
+            "type": "string",
+            "description": "risks: H/M/L"
+          },
+          "owner": {
+            "type": "string",
+            "description": "risks: who watches it"
+          },
+          "as": {
+            "type": "string",
+            "description": "your role (set by the guard for agents)"
+          },
+          "run_id": {
+            "type": "string",
+            "description": "your run id (set by the guard for agents)"
+          }
+        },
+        "required": [
+          "type",
+          "title",
+          "why"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "recall": {
+      "description": "The knowledge that applies (`crew.mjs recall --json`): to a plan's touches, to paths, or to a topic. Call it before working in an area.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "plan": {
+            "type": "string",
+            "description": "e.g. P-004: match its touches"
+          },
+          "paths": {
+            "type": "string",
+            "description": "comma-separated paths"
+          },
+          "topic": {
+            "type": "string",
+            "description": "words to match"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "decision",
+              "learning",
+              "gotcha",
+              "convention",
+              "risk"
+            ]
+          },
+          "all": {
+            "type": "boolean"
+          },
+          "as": {
+            "type": "string",
+            "description": "your role (set by the guard for agents)"
+          },
+          "run_id": {
+            "type": "string",
+            "description": "your run id (set by the guard for agents)"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "checkpoint": {
+      "description": "Record where the work on a plan stands (`crew.mjs checkpoint`): the step, the commit and dirty files, a check you ran with its result and the acceptance criteria it covers, or an approach that failed and why. Call it after each task or check, and whenever an approach fails. A failed check returns an error result but is still recorded.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "plan": {
+            "type": "string",
+            "description": "e.g. P-004; default: the plan of this branch"
+          },
+          "step": {
+            "type": "string",
+            "description": "e.g. T3"
+          },
+          "verify": {
+            "type": "string",
+            "description": "the check you ran"
+          },
+          "result": {
+            "type": "string",
+            "enum": [
+              "pass",
+              "fail"
+            ]
+          },
+          "ac": {
+            "type": "string",
+            "description": "criteria it covers: 1,2 or all"
+          },
+          "output": {
+            "type": "string",
+            "description": "the end of its output"
+          },
+          "attempt": {
+            "type": "string",
+            "description": "an approach that failed"
+          },
+          "why": {
+            "type": "string",
+            "description": "why it failed"
+          },
+          "note": {
+            "type": "string",
+            "description": "anything else"
+          },
+          "workflow": {
+            "type": "string",
+            "description": "instead of a plan: a workflow run (kickoff, onboard) whose step just finished"
+          },
+          "skip": {
+            "type": "boolean"
+          },
+          "as": {
+            "type": "string",
+            "description": "your role (set by the guard for agents)"
+          },
+          "run_id": {
+            "type": "string",
+            "description": "your run id (set by the guard for agents)"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "resume": {
+      "description": "Where a plan's work stopped (`crew.mjs resume`): last checkpoint vs git now, check results, approaches not to retry, the next task and each criterion's evidence. Call it first when picking work up.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "plan": {
+            "type": "string",
+            "description": "e.g. P-004; default: the plan of this branch"
+          },
+          "workflow": {
+            "type": "string",
+            "description": "instead: a workflow run (kickoff, onboard)"
+          },
+          "as": {
+            "type": "string",
+            "description": "your role (set by the guard for agents)"
+          },
+          "run_id": {
+            "type": "string",
+            "description": "your run id (set by the guard for agents)"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "merge_order": {
+      "description": "What Release merges next (`crew.mjs merge-order`): done plans with unmerged branches, dependencies first; plans waiting on an unmerged dependency; merged branches to delete.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "json": {
+            "type": "boolean"
+          },
+          "as": {
+            "type": "string",
+            "description": "your role (set by the guard for agents)"
+          },
+          "run_id": {
+            "type": "string",
+            "description": "your run id (set by the guard for agents)"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "review": {
+      "description": "Code review of a plan in review (`crew.mjs review`): approve, or request changes, which sends it back to the developer. Never by the plan's implementer; under the lifecycle preset the Architect's, and done needs an approval of the current code.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "e.g. P-004"
+          },
+          "approve": {
+            "type": "boolean"
+          },
+          "changes": {
+            "type": "string",
+            "description": "what must change"
+          },
+          "as": {
+            "type": "string",
+            "description": "your role (set by the guard for agents)"
+          },
+          "run_id": {
+            "type": "string",
+            "description": "your run id (set by the guard for agents)"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "handoff": {
+      "description": "Write the resume view into the plan's Handoff section (`crew.mjs handoff`), before ending a session.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "plan": {
+            "type": "string",
+            "description": "e.g. P-004; default: the plan of this branch"
+          },
+          "as": {
+            "type": "string",
+            "description": "your role (set by the guard for agents)"
+          },
+          "run_id": {
+            "type": "string",
+            "description": "your run id (set by the guard for agents)"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "design": {
+      "description": "The design studio's live state (`crew.mjs design show`): DESIGN.md's direction, status and revision, the page's stage, shortlist, pinned variants, screen reviews, and the steps it handed to Claude. With done: clear a hand-off you dealt with.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "json": {
+            "type": "boolean",
+            "description": "the full DESIGN.md tokens and studio.json"
+          },
+          "done": {
+            "type": "string",
+            "description": "a hand-off id (h3) or all"
+          },
+          "as": {
+            "type": "string",
+            "description": "your role (set by the guard for agents)"
+          },
+          "run_id": {
+            "type": "string",
+            "description": "your run id (set by the guard for agents)"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "ledger": {
+      "description": "Recent events from the shared ledger and the live claims (`crew.mjs ledger --json`).",
+      "input": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "string",
+            "description": "only events about this ID"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "claim",
+              "release",
+              "move",
+              "log",
+              "learn",
+              "checkpoint",
+              "ask",
+              "answer",
+              "assign",
+              "review",
+              "notify",
+              "pause",
+              "resume",
+              "report",
+              "usage"
+            ]
+          },
+          "limit": {
+            "type": "number",
+            "description": "how many, newest last (default 20)"
+          },
+          "as": {
+            "type": "string",
+            "description": "your role (set by the guard for agents)"
+          },
+          "run_id": {
+            "type": "string",
+            "description": "your run id (set by the guard for agents)"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  }
+}

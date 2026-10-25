@@ -4,11 +4,13 @@
 //   dist/ui.html     — the interactive view (Vite + React, JS/CSS/fonts inlined); `export` embeds the graph in it
 //   dist/studio.html — the design studio (same setup, the design skill's catalog.json inlined); `ui` serves it at /design
 //   skills/<skill>/scripts/<name>.mjs — the skill scripts (esbuild, one standalone file each; projects vendor some of them)
+//   skills/hub/references/commands.md — the command reference, rendered from the command registrations
 // `node build.mjs` writes them; the freshness test builds into a temp dir and compares.
 import { build } from "esbuild";
-import { chmodSync, copyFileSync, mkdirSync, mkdtempSync, readFileSync } from "node:fs";
+import { chmodSync, copyFileSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 import { build as viteBuild } from "vite";
 
 export const DIST = new URL("../../plugins/crew/skills/hub/dist/", import.meta.url).pathname;
@@ -48,6 +50,15 @@ async function bundleNode(entry, outfile) {
   return outfile;
 }
 
+export const REFERENCE = new URL("../../plugins/crew/skills/hub/references/commands.md", import.meta.url).pathname;
+/** Bundle reference.ts to a temp file, import it and write the command reference it renders. */
+export async function bundleReference(outfile = REFERENCE) {
+  const mod = await bundleNode("src/hub/reference.ts", join(mkdtempSync(join(tmpdir(), "hub-ref-")), "reference.mjs"));
+  const { commandReference } = await import(pathToFileURL(mod).href);
+  writeFileSync(outfile, commandReference());
+  return outfile;
+}
+
 export const bundleUi = (outfile = join(DIST, "ui.html")) => bundlePage("index.html", outfile);
 export const bundleStudio = (outfile = join(DIST, "studio.html")) => bundlePage("studio.html", outfile);
 
@@ -72,4 +83,5 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   console.log(`built ${await bundleUi()}`);
   console.log(`built ${await bundleStudio()}`);
   for (const [skill, name] of TOOLS) console.log(`built ${await bundleTool(skill, name)}`);
+  console.log(`built ${await bundleReference()}`);
 }

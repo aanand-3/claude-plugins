@@ -1,202 +1,29 @@
-/** Command-line interface: argument parsing and dispatch to the command modules. */
+/** Command-line interface: argument parsing and dispatch to the command modules, whose CLI commands and help lines
+ * are registered in commands/index.ts. */
 import { parseArgs } from "node:util";
+import { REGISTRY } from "./commands/index.js";
 import { Store } from "./core/store.js";
 import { HubError } from "./core/text.js";
-import { current, nextStep } from "./commands/views/advisor.js";
-import { newItem, triage } from "./commands/work/backlog.js";
-import { check } from "./commands/views/checks.js";
-import { migrate } from "./commands/work/migrate.js";
-import { gather } from "./commands/work/gather.js";
-import { designDone, designShow, designWait } from "./commands/views/design.js";
-import { exportGraph } from "./commands/views/export.js";
-import { serve } from "./server.js";
-import { init, newGoal, newIdea, newPlan, setFocus } from "./commands/work/planning.js";
-import { status } from "./commands/views/reports.js";
-import { context } from "./commands/memory/context.js";
-import { guard } from "./commands/team/guard.js";
-import { agents } from "./commands/team/agents.js";
-import { assign, reassign, staff } from "./commands/team/team.js";
-import { pauseTeam, resumeTeam } from "./commands/team/liveness.js";
-import { review } from "./commands/work/review.js";
-import { mergeOrderCmd, refreshBin } from "./commands/work/release.js";
-import { run, usageHook } from "./commands/team/autonomy.js";
-import { activityHook, watch } from "./commands/team/activity.js";
-import { recordStep, resumeWorkflow } from "./commands/team/runs.js";
-import { checkpoint, handoff, resume } from "./commands/work/execution.js";
-import { answer, ask, escalate, listQuestions } from "./commands/team/questions.js";
-import { learn, recallCmd } from "./commands/memory/knowledge.js";
-import { showLedger } from "./commands/memory/ledger.js";
-import { policyCheck, policyShow } from "./commands/team/policy.js";
-import { log, move, release, start, usage } from "./commands/work/workflow.js";
+import type { CliArgs, CliSpec } from "./registry.js";
 
-export const USAGE = `crew hub: the team's shared context — the idea, goals, backlog items, plans and tasks.
+const HEADER = `crew hub: the team's shared context — the idea, goals, backlog items, plans and tasks.
 
 Nothing is created as an empty skeleton: write the content first (sections as in the templates)
 to a draft file, then create the tracked document from it with --from.
 
 Commands:
-  init                                          create the .crew/ structure
-  migrate                                       convert a project-kit .project/ directory into .crew/
-  migrate --gather                              bring hub documents other checkouts hold into the main checkout
-  new-idea TITLE --from DRAFT                   the project's idea (problem, outcome, success criteria)
-  new-goal TITLE --from DRAFT [--priority P1]   an outcome; each Breakdown line becomes a FEAT item
-  focus G-###                                   the goal the team works toward now
-  new-item feat|bug|chore|spike TITLE (--from DRAFT | --why TEXT) [--goal] [--priority] [--severity]
-  triage ID [--priority P1] [--severity S2] [--goal G-001] [--approved-by NAME]
-  triage ID --reject wontfix|duplicate --note TXT
-  new-plan TITLE --from DRAFT [--goal] [--items FEAT-001,BUG-002] [--touches "src/a/**, docs/b.md"] [--depends P-002]
-  start PLAN_ID · move ID STATUS [--note] · log ID TEXT      (ID: IDEA, G-###, P-###, FEAT/BUG/CHORE/SPIKE-###)
-           start/move/triage take --approved-by NAME: a human approving a gated or reserved step (never an agent)
-  policy show [--role R] [--team T] [--json] · policy check      the effective policy and where each value comes from
-  release PLAN_ID [--note TXT] [--force]        give up a claim (another run's claim needs --force)
-  usage [--tokens-in N] [--tokens-out N] [--cost USD] [--model M] [--ref ID]   record what a run used
-  usage --hook                                  SubagentStop hook: a crew agent's tokens and final report from its transcript
-  activity --hook                               PostToolUse hook: one activity event per tool call of a crew agent
-  watch [--ref ID] [--limit 20]                 the live feed (tool calls and ledger events), followed until Ctrl-C
-  run [--check] [--json]                        run the team unattended: the loop, and whether it may go on (exit 1: stop)
-  ledger [--ref ID] [--type T] [--limit 20] [--json]   the shared event log (who/what/when) and live claims
-  learn decision|learning|gotcha|convention|risk FACT (--why TEXT | --from DRAFT) [--scope "src/a/**, b.md"]
-        [--source P-###] [--supersedes K-…] [--candidate] [--likelihood H|M|L --impact H|M|L --owner WHO]
-  recall [--paths a,b] [--plan P-###] [--topic WORDS] [--type T] [--all] [--json]   the knowledge that applies
-  checkpoint [P-###] [--step T3] [--run CMD | --verify CMD --result pass|fail] [--ac 1,2|all] [--output TXT]
-             [--attempt WHAT --why WHY] [--note TXT] [--auto]   record where the work is (the plan of this branch by default)
-  resume [P-###] [--json] · handoff [P-###]     where the work stopped vs git now · write it into the plan's Handoff
-  checkpoint --workflow kickoff|onboard --step S [--skip] [--note] · resume --workflow W   a multi-step job's progress
-  review P-### --approve | --changes TXT        code review of a plan in review (never by its implementer)
-  merge-order [--json]                          done plans to merge, dependencies first (Release)
-  refresh-bin [--check]                         copy the policy's release.refresh_bin files into .crew/bin (Release, in a plan worktree)
-  context [P-###] [--role R] [--budget CHARS] [--json]   what you need right now, within a budget (default 6000 chars)
-  next [--role R] · current · check · status [--write]    (roles: executive, director, pm, architect, developer, qa, release + the policy's)
-  --as ROLE · --run-id ID                       who is acting, on any command (wins over CREW_ROLE / CREW_RUN)
-  guard                                         PreToolUse hook: reads the hook JSON on stdin, prints the decision
-  assign PLAN_ID --to ROLE [--team T] [--note TXT]   open a ready plan for a role (start then needs it)
-  staff [--json]                                what can run in parallel now, within budgets.max_agents
-  reassign PLAN_ID [--to ROLE] [--note TXT] [--force]   release a stale claim and assign the plan again
-  pause [--reason TXT] · resume --team [--note TXT]     stop / restart staffing and starts (executive or director)
-  agents [--check]                              render the role agents (.claude/agents/crew-<role>.md) from the policy
-  ask [ID] --to ROLE TEXT [--fyi] · escalate [ID] TEXT · answer Q-… TEXT [--decision [--scope GLOBS]] [--approved-by NAME]
-  questions [--to ROLE] [--ref ID] [--all] [--json]       questions between roles; an open one blocks only its document
-  export [--json] [--out FILE]                  interactive HTML view (.crew/view/index.html) or the graph as JSON
-  ui [--port 8765] [--no-open] [--design]       serve the view live on 127.0.0.1 (updates as files change);
-                                                --design opens the design studio (/design)
-  design show [--json] · design wait [--timeout 1800] · design done ID|all
-                                                the design studio's state; wait blocks until the page hands a
-                                                step to Claude (run it in the background); done clears one
 `;
+const AS_LINE = "  --as ROLE · --run-id ID                       who is acting, on any command (wins over CREW_ROLE / CREW_RUN)\n";
 
-type Args = { pos: string[]; opt: Record<string, string | boolean | undefined>; num: Record<string, number | undefined> };
+/** name → command, as the registrations declare them. */
+export const COMMANDS: Record<string, CliSpec> = REGISTRY.cli;
 
-interface Spec {
-  pos: string[];             // required positionals
-  rest?: boolean;            // extra positionals allowed
-  str?: string[];            // string options (without --)
-  int?: string[];            // integer options
-  flag?: string[];           // boolean options
-  required?: string[];       // required options
-  choices?: Record<string, string[]>;
-  run: (s: Store, a: Args) => number | void;
-}
+/** The help text: the header, every registration's help lines in index order, and who is acting. */
+export const help = (): string => `${HEADER}${REGISTRY.usage.map((l) => `${l}\n`).join("")}${AS_LINE}`;
+export const USAGE = help();
 
-const DRAFTED = { str: ["from"], flag: ["keep-draft"], required: ["from"] };
-
-const COMMANDS: Record<string, Spec> = {
-  init: { pos: [], run: (s) => init(s) },
-  migrate: { pos: [], flag: ["gather"], run: (s, a) => (a.opt.gather ? gather(s) : migrate(s)) },
-  "new-idea": { pos: ["title"], ...DRAFTED,
-    run: (s, a) => newIdea(s, a.pos[0], str(a, "from")!, !!a.opt["keep-draft"]) },
-  "new-goal": { pos: ["title"], ...DRAFTED, str: ["from", "priority"],
-    run: (s, a) => newGoal(s, a.pos[0], str(a, "from")!, str(a, "priority"), !!a.opt["keep-draft"]) },
-  focus: { pos: ["goal"], run: (s, a) => setFocus(s, a.pos[0]) },
-  "new-item": { pos: ["type", "title"], str: ["from", "why", "goal", "priority", "severity"], flag: ["keep-draft"],
-    run: (s, a) => newItem(s, a.pos[0], a.pos[1], str(a, "from"), str(a, "why"), {
-      goal: str(a, "goal"), priority: str(a, "priority"), severity: str(a, "severity"), keep: !!a.opt["keep-draft"] }) },
-  triage: { pos: ["id"], str: ["priority", "severity", "goal", "note", "reject", "approved-by"],
-    choices: { reject: ["duplicate", "wontfix"] },
-    run: (s, a) => triage(s, a.pos[0].toUpperCase(), {
-      priority: str(a, "priority"), severity: str(a, "severity"), goal: str(a, "goal"), reject: str(a, "reject"),
-      note: str(a, "note"), approvedBy: str(a, "approved-by") }) },
-  "new-plan": { pos: ["title"], ...DRAFTED, str: ["from", "goal", "depends", "items", "touches"],
-    run: (s, a) => newPlan(s, a.pos[0], str(a, "from")!, {
-      goal: str(a, "goal"), depends: str(a, "depends"), items: str(a, "items"), touches: str(a, "touches"),
-      keep: !!a.opt["keep-draft"] }) },
-  start: { pos: ["id"], str: ["approved-by"], flag: ["force"],
-    run: (s, a) => start(s, a.pos[0].toUpperCase(), !!a.opt.force, str(a, "approved-by")) },
-  move: { pos: ["id", "status"], str: ["note", "approved-by"], flag: ["force"],
-    run: (s, a) => { move(s, a.pos[0], a.pos[1], str(a, "note"), !!a.opt.force, str(a, "approved-by")); } },
-  learn: { pos: ["type", "title"], str: ["why", "from", "scope", "source", "supersedes", "likelihood", "impact", "owner"],
-    flag: ["candidate", "keep-draft"],
-    run: (s, a) => { learn(s, a.pos[0], a.pos[1], { why: str(a, "why"), from: str(a, "from"), scope: str(a, "scope"),
-      source: str(a, "source"), supersedes: str(a, "supersedes"), candidate: !!a.opt.candidate, likelihood: str(a, "likelihood"),
-      impact: str(a, "impact"), owner: str(a, "owner"), keep: !!a.opt["keep-draft"] }); } },
-  recall: { pos: [], str: ["paths", "plan", "topic", "type"], flag: ["all", "json"],
-    run: (s, a) => recallCmd(s, { paths: str(a, "paths"), plan: str(a, "plan"), topic: str(a, "topic"), type: str(a, "type"),
-      all: !!a.opt.all, json: !!a.opt.json }) },
-  checkpoint: { pos: [], rest: true, str: ["step", "run", "verify", "result", "ac", "output", "attempt", "why", "note", "workflow"],
-    flag: ["auto", "skip"], choices: { result: ["pass", "fail"] },
-    run: (s, a) => (a.opt.workflow ? recordStep(s, str(a, "workflow")!, str(a, "step"), { skip: !!a.opt.skip, note: str(a, "note") }) : checkpoint(s, a.pos[0], { step: str(a, "step"), run: str(a, "run"), verify: str(a, "verify"), result: str(a, "result"),
-      ac: str(a, "ac"), output: str(a, "output"), attempt: str(a, "attempt"), why: str(a, "why"), note: str(a, "note"), auto: !!a.opt.auto })) },
-  resume: { pos: [], rest: true, str: ["note", "workflow"], flag: ["json", "team"],
-    run: (s, a) => (a.opt.team ? resumeTeam(s, str(a, "note")) : a.opt.workflow ? resumeWorkflow(s, str(a, "workflow")!, !!a.opt.json)
-      : resume(s, a.pos[0], !!a.opt.json)) },
-  "merge-order": { pos: [], flag: ["json"], run: (s, a) => mergeOrderCmd(s, !!a.opt.json) },
-  "refresh-bin": { pos: [], flag: ["check"], run: (s, a) => refreshBin(s, s.ws.root, !!a.opt.check) },
-  review: { pos: ["id"], str: ["changes"], flag: ["approve"],
-    run: (s, a) => review(s, a.pos[0], { approve: !!a.opt.approve, changes: str(a, "changes") }) },
-  pause: { pos: [], str: ["reason"], run: (s, a) => pauseTeam(s, str(a, "reason")) },
-  reassign: { pos: ["id"], str: ["to", "note", "approved-by"], flag: ["force"],
-    run: (s, a) => reassign(s, a.pos[0], str(a, "to"), str(a, "note"), !!a.opt.force, str(a, "approved-by")) },
-  handoff: { pos: [], rest: true, run: (s, a) => handoff(s, a.pos[0]) },
-  guard: { pos: [], run: (s) => guard(s) },
-  assign: { pos: ["id"], str: ["to", "team", "note", "approved-by"], required: ["to"],
-    run: (s, a) => assign(s, a.pos[0], str(a, "to")!, str(a, "team"), str(a, "note"), str(a, "approved-by")) },
-  staff: { pos: [], flag: ["json"], run: (s, a) => staff(s, !!a.opt.json) },
-  agents: { pos: [], flag: ["check"], run: (s, a) => agents(s, !!a.opt.check) },
-  policy: { pos: ["action"], str: ["role", "team"], flag: ["json"], choices: { action: ["show", "check"] },
-    run: (s, a) => (a.pos[0] === "show" ? policyShow(s, str(a, "role"), str(a, "team"), !!a.opt.json) : policyCheck(s)) },
-  log: { pos: ["id", "text"], run: (s, a) => log(s, a.pos[0].toUpperCase(), a.pos[1]) },
-  release: { pos: ["id"], str: ["note"], flag: ["force"], run: (s, a) => release(s, a.pos[0], str(a, "note"), !!a.opt.force) },
-  usage: { pos: [], str: ["cost", "model", "ref"], int: ["tokens-in", "tokens-out"], flag: ["hook"],
-    run: (s, a) => (a.opt.hook ? usageHook(s) : usage(s, { tokensIn: a.num["tokens-in"], tokensOut: a.num["tokens-out"],
-      cost: str(a, "cost") === undefined ? undefined : Number(str(a, "cost")), model: str(a, "model"), ref: str(a, "ref") })) },
-  activity: { pos: [], flag: ["hook"], required: ["hook"], run: (s) => activityHook(s) },
-  watch: { pos: [], str: ["ref"], int: ["limit"], run: (s, a) => watch(s, { ref: str(a, "ref"), limit: a.num.limit }) },
-  run: { pos: [], flag: ["check", "json"], run: (s, a) => run(s, !!a.opt.check, !!a.opt.json) },
-  ledger: { pos: [], str: ["ref", "type"], int: ["limit"], flag: ["json"],
-    run: (s, a) => showLedger(s, { ref: str(a, "ref"), type: str(a, "type"), limit: a.num.limit, json: !!a.opt.json }) },
-  current: { pos: [], run: (s) => current(s) },
-  next: { pos: [], str: ["role"], run: (s, a) => nextStep(s, str(a, "role") ?? s.ledger.who.role ?? undefined) },
-  context: { pos: [], rest: true, str: ["role"], int: ["budget"], flag: ["json"],
-    run: (s, a) => context(s, { id: a.pos[0], role: str(a, "role"), budget: a.num.budget, json: !!a.opt.json }) },
-  ask: { pos: ["text"], rest: true, str: ["to"], flag: ["fyi"], required: ["to"],
-    run: (s, a) => { const [ref, text] = a.pos.length > 1 ? [a.pos[0], a.pos[1]] : [undefined, a.pos[0]];
-      ask(s, ref, str(a, "to")!, text, { fyi: !!a.opt.fyi }); } },
-  escalate: { pos: ["text"], rest: true,
-    run: (s, a) => { const [ref, text] = a.pos.length > 1 ? [a.pos[0], a.pos[1]] : [undefined, a.pos[0]]; escalate(s, ref, text); } },
-  answer: { pos: ["id", "text"], str: ["scope", "approved-by"], flag: ["decision"],
-    run: (s, a) => answer(s, a.pos[0], a.pos[1], { decision: !!a.opt.decision, scope: str(a, "scope"), approvedBy: str(a, "approved-by") }) },
-  questions: { pos: [], str: ["to", "ref"], flag: ["all", "json"],
-    run: (s, a) => listQuestions(s, { to: str(a, "to"), ref: str(a, "ref"), all: !!a.opt.all, json: !!a.opt.json }) },
-  check: { pos: [], run: (s) => check(s) },
-  status: { pos: [], flag: ["write"], run: (s, a) => status(s, !!a.opt.write) },
-  export: { pos: [], str: ["out"], flag: ["json"],
-    run: (s, a) => exportGraph(s, a.opt.json ? "json" : "html", str(a, "out")) },
-  design: { pos: ["action"], rest: true, int: ["timeout"], flag: ["json"], choices: { action: ["show", "wait", "done"] },
-    run: (s, a) => {
-      if (a.pos[0] === "show") return designShow(s, !!a.opt.json);
-      if (a.pos[0] === "wait") return designWait(s, a.num.timeout ?? 1800);
-      designDone(s, a.pos[1] ?? "all");
-    } },
-  ui: { pos: [], int: ["port"], flag: ["no-open", "design"], run: (s, a) => {
-    serve(s, { port: a.num.port ?? 8765, open: !a.opt["no-open"], page: a.opt.design ? "design" : undefined }).then(
-      ({ url }) => process.stdout.write(`Hub UI at ${url} — live while this runs (Ctrl-C to stop)\n`),
-      (e: Error) => { process.stderr.write(`${e.message}\n`); process.exit(1); });
-  } },
-};
-
-function str(a: Args, key: string): string | undefined {
-  const v = a.opt[key];
-  return typeof v === "string" ? v : undefined;
-}
+type Args = CliArgs;
+type Spec = CliSpec;
 
 class UsageError extends Error {}
 
@@ -254,7 +81,7 @@ export function identity(argv: string[]): string[] {
 export function main(argv: string[], open: () => Store = () => Store.open()): number {
   argv = identity(argv);
   if (!argv.length || argv[0] === "--help" || argv[0] === "-h" || argv[0] === "help") {
-    process.stdout.write(USAGE);
+    process.stdout.write(help());
     return argv.length ? 0 : 2;
   }
   let parsed;

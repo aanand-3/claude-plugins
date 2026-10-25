@@ -25,36 +25,9 @@ All state changes go through the script. Never hand-edit `status`, dates, IDs, `
 - In a project: `node .crew/bin/crew.mjs <cmd>` (vendored single-file copy — prefer this). Needs Node.js ≥ 20; nothing to install.
 - Not yet initialized: `node "${CLAUDE_SKILL_DIR}/dist/crew.mjs" init` at the repo root.
 - A project-kit project (`.project/`): `node "${CLAUDE_SKILL_DIR}/dist/crew.mjs" migrate` on a clean `main`, then follow the `next:` lines it prints, and commit `chore(hub): migrate to crew`.
-- **Tools first.** When the plugin's `hub` MCP tools are available (`next`, `context`, `ask`, `escalate`, `answer`, `questions`, `current`, `status`, `check`, `graph`, `new_item`, `triage`, `move`, `log`, `focus`, `usage`, `learn`, `recall`, `checkpoint`, `resume`, `handoff`, `ledger`, `design`), call them instead of the matching commands. They run the same code with the same gates; a refusal comes back as a tool error with the CLI's text, and nothing is written. Everything else (`init`, `migrate`, `new-idea`, `new-goal`, `new-plan`, `start`, `release`, `export`, `ui`) and any `--force` stays in the CLI. Use the CLI too when the tools are missing.
+- **Tools first.** When the plugin's `hub` MCP tools are available, call them instead of the matching commands. They run the same code with the same gates; a refusal comes back as a tool error with the CLI's text, and nothing is written. Commands without a tool, and any `--force`, stay in the CLI. Use the CLI too when the tools are missing.
 
-| Command | Purpose |
-|---|---|
-| `new-idea TITLE --from DRAFT` | the idea, once: problem, outcome, success criteria (checklist), research, direction, constraints |
-| `new-goal TITLE --from DRAFT [--priority P1]` | an outcome; each Breakdown line becomes a FEAT item |
-| `focus G-###` | the one goal the team works toward now |
-| `new-item feat\|bug\|chore\|spike TITLE (--from DRAFT \| --why TEXT) [--goal] [--priority] [--severity]` | capture backlog work |
-| `triage ID [--priority] [--severity] [--goal]` · `triage ID --reject wontfix\|duplicate --note …` | triage gate → `triaged`, or close |
-| `new-plan TITLE --from DRAFT [--goal] [--items FEAT-001,BUG-002] [--touches "src/a/**, docs/b.md"] [--depends P-###]` | a plan that delivers items |
-| `move ID STATUS [--note] [--approved-by NAME]` | validated transition (`ready` enforces DoR; IDEA `decided` needs success criteria); policy gates need a human's approval |
-| `policy show [--role R] [--team T] [--json]` · `policy check` | the effective policy and its source layers · validation (CI) |
-| `start P-###` | claim the plan, branch `plan/P-###-<slug>`, `in-progress` (checks the claim, dependencies and this run's WIP) |
-| `log ID TEXT` | progress log / item notes (also a ledger event) |
-| `release P-### [--note] [--force]` | give up a claim; another run's claim needs `--force` |
-| `usage [--tokens-in N] [--tokens-out N] [--cost USD] [--model M] [--ref ID]` | record what this run used |
-| `ledger [--ref ID] [--type T] [--limit N] [--json]` | the shared event log and the live claims |
-| `watch [--ref ID] [--limit 20]` | the live feed — agents' tool calls and ledger events, merged by time — then follows it until Ctrl-C |
-| `activity --hook` | the PostToolUse hook: one compact event per tool call of a crew agent (`<git common dir>/crew/activity.jsonl`, rotated at 2 MB; no arguments stored); `status` and `ui` show who is running now, idle after `limits.idle_minutes` (default 20) |
-| `checkpoint [P-###] [--run CMD \| --verify CMD --result pass\|fail] [--ac 1,2\|all] [--attempt WHAT --why WHY] [--step T3]` | record where the work stands: the commit and dirty files, a check and the criteria it covers (`--run` executes it and records the real result), an approach that failed |
-| `resume [P-###]` · `handoff [P-###]` | where the work stopped vs git now (checks, attempts not to retry, next task, evidence) · the same written into the plan's Handoff |
-| `learn decision\|learning\|gotcha\|convention\|risk FACT --why TEXT [--scope GLOBS] [--source ID] [--supersedes K-…]` | record one fact the team should remember (risks also take `--likelihood`, `--impact`, `--owner`) |
-| `recall [--plan P-###] [--paths a,b] [--topic WORDS] [--type T] [--all]` | the knowledge that applies to a plan's touches, some paths or a topic (project + playbook) |
-| `context [P-###] [--role R] [--budget N]` | what you need right now, sliced for your role, within a budget (the SessionStart hook runs it) |
-| `next [--role R]` · `current` · `check` | the single best next step (or your role's queue, questions to you first) · where am I · consistency (CI runs `check`) |
-| `ask [ID] --to ROLE TEXT [--fyi]` · `escalate [ID] TEXT` · `answer Q-… TEXT [--decision]` · `questions` | questions between roles; an open one blocks only its document; escalations are answered by a human |
-| `status [--write]` | where the work stands: idea and focus, now, blocked, ready, top of the backlog, open bugs, recently done |
-| `migrate` | convert a project-kit `.project/` folder into `.crew/` |
-| `export [--json] [--out FILE]` · `ui [--port 8765] [--no-open] [--design]` | the interactive view: a self-contained page (`.crew/view/index.html`, gitignored) or a live local server; `--json` is the graph for scripts; `--design` opens the design studio (`/design`) |
-| `design show [--json]` · `design wait [--timeout 1800]` · `design done ID\|all` | the design studio's state, and its hand-offs to Claude (see the design skill) |
+Every command, its options and the MCP tool it maps to: [references/commands.md](references/commands.md) (generated from the command registrations by `npm run build`).
 
 **Roles and questions.** Set `CREW_ROLE` to your role (`director`, `pm`, `architect`, `developer`, `qa`, `release`; the human is the `executive`). `next --role` is your queue and `context --role` your brief. Don't guess across roles: `ask P-### --to architect "…"` records the question and blocks only that plan until it's answered; Only the role a question was sent to answers it (`CREW_ROLE`), never the run that asked; a human can answer for a role with `--approved-by`. `answer Q-… "…" --decision` turns a durable answer into a decision entry. Reserved decisions, a goal at risk, or anything only a human can settle: `escalate`. Only a human answers an escalation.
 
