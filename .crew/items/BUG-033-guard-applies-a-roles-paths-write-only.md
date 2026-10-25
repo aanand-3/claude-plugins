@@ -2,9 +2,9 @@
 id: BUG-033
 type: bug
 title: Guard applies a role's paths.write only to Edit/Write, not Bash writes
-status: new
-severity:
-priority:
+status: triaged
+severity: S2
+priority: P1
 goal: G-007
 plan:
 created: 2026-10-26
@@ -65,3 +65,4 @@ There are two separate causes:
   Splitting them would put three plans on the same function. BUG-012 and BUG-013 are parser-shape fixes in the same function and could join, or follow as a second plan with `--depends`, if the first plan should stay small.
 - **Goals differ.** BUG-011 is filed under G-001, BUG-021 under G-003 and BUG-033 under G-007. The PM should choose the plan's goal.
 - 2026-10-26: Architect completed the report: probed the vendored guard as crew-pm. Write to .crew/items is denied (paths.write); Bash redirect, cat heredoc, tee, cp, sed -i, python3 heredoc and node -e into .crew/items all pass. Two causes: decide() applies paths.write only when path is set (EDITS tools), never to writeTargets() output; interpreter scripts yield no targets (BUG-021, also bypasses paths.protected). Fix must exempt /dev/* and temp dirs. Recommend one plan with BUG-011 and BUG-021 (same writeTargets/decide and guard.test.ts); suggested S2/P1.
+- 2026-10-26: status new → triaged — priority P1, severity S2
