@@ -2,9 +2,9 @@
 id: CHORE-005
 type: chore
 title: Team skill checks crew-director is loaded before handing over
-status: new
-priority:
-goal: G-003
+status: triaged
+priority: P1
+goal: G-007
 plan:
 created: 2026-10-23
 closed:
@@ -19,3 +19,4 @@ agents --check only compares files on disk; the first BUG-001 run found the file
 - [ ]
 
 ## Notes
+- 2026-10-25: status new → triaged — priority P1
