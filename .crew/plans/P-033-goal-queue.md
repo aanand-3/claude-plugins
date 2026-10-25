@@ -5,12 +5,12 @@ goal: G-007
 items: FEAT-041
 touches: packages/crew/src/hub/commands/team/autonomy.ts, packages/crew/src/hub/core/work/queries.ts, packages/crew/test/goal-queue.test.ts, packages/crew/test/hub/e2e/goal-queue.test.ts, packages/crew/test/hub/run-check.test.ts, packages/crew/test/hub/e2e/team-2.test.ts, plugins/crew/skills/hub/references/model.md, plugins/crew/skills/team/SKILL.md
 depends_on:
-status: in-review
+status: done
 branch: plan/P-033-goal-queue
 pr:
 created: 2026-10-25
 started: 2026-10-25
-completed:
+completed: 2026-10-25
 assignee: developer
 ---
 
@@ -107,6 +107,7 @@ Latest log:
 - 2026-10-25: status in-progress → in-review
 - 2026-10-25: Review: AC6 amended — team-2's runner test also changes its opening step, because an approved goal with no focus is now auto-focused by the queue (Scope: 'or there is none'); the old 'no focus goal' stop is unreachable there, so the step now checks 'no approved goal' before approval and 'FOCUS — → G-001' after. Intended behaviour, not a regression.
 - 2026-10-25: Review: AC6 wording restored to the checkpointed text so it matches the branch copy's fingerprint (BUG-026; the guard forbids editing the branch copy). The accepted extra team-2 step is recorded under Risks & open questions instead.
+- 2026-10-25: status in-review → done
 
 ## Outcome
 `goalQueue` (queries.ts) orders the active goals by priority, then ID, focus first. `runState` calls `advanceFocus` first:
