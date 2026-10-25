@@ -5,7 +5,7 @@ goal: G-007
 items: FEAT-039
 touches: packages/crew/src/hub/cli.ts, packages/crew/src/hub/mcp.ts, packages/crew/src/hub/registry.ts, packages/crew/src/hub/reference.ts, packages/crew/src/hub/commands/index.ts, packages/crew/src/hub/commands/views/advisor.reg.ts, packages/crew/src/hub/commands/views/checks.reg.ts, packages/crew/src/hub/commands/views/design.reg.ts, packages/crew/src/hub/commands/views/export.reg.ts, packages/crew/src/hub/commands/views/graph.reg.ts, packages/crew/src/hub/commands/views/reports.reg.ts, packages/crew/src/hub/commands/views/ui.reg.ts, packages/crew/src/hub/commands/work/backlog.reg.ts, packages/crew/src/hub/commands/work/migrate.reg.ts, packages/crew/src/hub/commands/work/planning.reg.ts, packages/crew/src/hub/commands/work/review.reg.ts, packages/crew/src/hub/commands/work/release.reg.ts, packages/crew/src/hub/commands/work/execution.reg.ts, packages/crew/src/hub/commands/work/workflow.reg.ts, packages/crew/src/hub/commands/memory/context.reg.ts, packages/crew/src/hub/commands/memory/knowledge.reg.ts, packages/crew/src/hub/commands/memory/ledger.reg.ts, packages/crew/src/hub/commands/team/guard.reg.ts, packages/crew/src/hub/commands/team/agents.reg.ts, packages/crew/src/hub/commands/team/team.reg.ts, packages/crew/src/hub/commands/team/liveness.reg.ts, packages/crew/src/hub/commands/team/autonomy.reg.ts, packages/crew/src/hub/commands/team/questions.reg.ts, packages/crew/src/hub/commands/team/policy.reg.ts, packages/crew/src/hub/commands/team/activity.reg.ts, packages/crew/build.mjs, .gitattributes, plugins/crew/skills/hub/SKILL.md, packages/crew/test/hub/registry.test.ts, packages/crew/test/hub/registry-before.json, packages/crew/test/dist.test.ts, packages/crew/test/mcp.test.ts, packages/crew/test/plugin/contents.test.ts
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-030-registries-split-per-command
 pr:
 created: 2026-10-25
@@ -85,7 +85,7 @@ Two design choices, recorded as decisions with this plan:
 
 _Generated 2026-10-25 by `crew.mjs handoff` from the ledger._
 
-- P-030: Registries split per command [in-progress] tasks 0/6 — claimed by Arpit Anand (developer:a8a3af55f477f0cbc)
+- P-030: Registries split per command [in-review] tasks 0/6 — claimed by Arpit Anand (developer:a8a3af55f477f0cbc)
 - last checkpoint 2026-10-25 09:39 at T6 (d8f479a) by Arpit Anand; since then 0 commit(s), 3 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs, plugins/crew/skills/hub/references/commands.md
 - ✓ cd packages/crew && npx vitest run test/hub/registry.test.ts (AC 1,2,3,4) (reported)
 - ✓ npm run typecheck && npx vitest run test/mcp.test.ts test/hub/registry.test.ts (reported)
@@ -108,5 +108,8 @@ Latest log:
 - 2026-10-25: assigned to the developer role
 - 2026-10-25: status ready → in-progress — branch plan/P-030-registries-split-per-command
 - 2026-10-25: Architect: touches widened with packages/crew/test/mcp.test.ts (tools/list order is per-registration now, AC3 'order aside'; compare names order-free, Q-ed2ef3) and packages/crew/test/plugin/contents.test.ts (AC5 removes SKILL.md's table; the watch/activity assertions move to references/commands.md, Q-71466c). AC6 amended. No live plan lists either file.
+- 2026-10-25: status in-progress → in-review
 
 ## Outcome
+Each hub command's CLI spec, help lines and MCP tool now live in `commands/<area>/<module>.reg.ts` (25 files), listed in `commands/index.ts`. `cli.ts` and `mcp.ts` load them, and a duplicate name fails at load. `npm run build` generates `plugins/crew/skills/hub/references/commands.md`, which SKILL.md links to in place of its table. The help text has the same lines, now grouped by registration, and `tools/list` the same tools, now in registration order.
+Learnings: K-2026-10-25-the-crew-guard-reads-text-inside-a-bash
