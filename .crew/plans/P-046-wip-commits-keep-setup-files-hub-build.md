@@ -5,7 +5,7 @@ goal: G-007
 items: CHORE-023, CHORE-024
 touches: packages/crew/src/hub/core/git.ts, packages/crew/src/hub/commands/work/execution.ts, packages/crew/build.mjs, packages/crew/test/hub/e2e/wip-commits.test.ts, packages/crew/test/dist.test.ts
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-046-wip-commits-keep-setup-files-hub-build
 pr:
 created: 2026-10-25
@@ -70,7 +70,7 @@ n/a — internal. After it ships (Release builds, `refresh-bin`), plans that cha
 
 _Generated 2026-10-25 by `crew.mjs handoff` from the ledger._
 
-- P-046: WIP commits keep setup files; hub build removes its temp dirs [in-progress] tasks 4/4 — claimed by Arpit Anand (developer:a779ae140c18708a5)
+- P-046: WIP commits keep setup files; hub build removes its temp dirs [in-review] tasks 4/4 — claimed by Arpit Anand (developer:a779ae140c18708a5)
 - last checkpoint 2026-10-25 15:10 at T4 (9ac5b92) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —
 
@@ -84,6 +84,7 @@ Latest log:
 - 2026-10-25: status draft → ready — Architect: specced (ACs, tasks, test plan, exact touches)
 - 2026-10-25: assigned to the developer role
 - 2026-10-25: status ready → in-progress — branch plan/P-046-wip-commits-keep-setup-files-hub-build
+- 2026-10-25: status in-progress → in-review
 
 ## Outcome
 `git.codeChanges` now excludes only the hub's documents (`NOT_CODE` in git.ts: `STATE_RE` plus `drafts/` and `view/`), so setup files under `.crew/` (config.yaml, policy.yaml, templates/, bin/) are WIP-committed and seen by the review gate. build.mjs removes its `hub-ui-*` / `hub-ref-*` temp dirs in `finally`. Follow-up: developer.md line 20 ("`.crew/` and secret files stay out") should say "the hub's documents under `.crew/`" once P-032 lands.
