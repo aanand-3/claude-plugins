@@ -2,10 +2,10 @@
 id: BUG-021
 type: bug
 title: Guard lets a role write outside paths.write through an inline interpreter script
-status: new
-severity:
-priority:
-goal: G-003
+status: triaged
+severity: S2
+priority: P1
+goal: G-007
 plan:
 created: 2026-10-25
 closed:
@@ -36,3 +36,4 @@ CHORE-016's Done-when section was written by step 1 (its last line held the inje
 `paths.write` is a guardrail the policy promises ("a role cannot use a tool or write a path its policy denies", G-003's acceptance criterion); any role can sidestep it with an inline interpreter, deliberately or (as here) when no hub command does what it needs. Suggested severity S2. Related: BUG-011/012/013 (other writeTargets gaps), BUG-017 (flag injection), and the missing hub command for editing an item's checklist that sent the PM to Bash.
 
 ## Notes
+- 2026-10-26: status new → triaged — priority P1, severity S2
