@@ -1,0 +1,23 @@
+---
+id: FEAT-047
+type: feat
+title: Board: rename the Backlog items tab or show only unplanned items
+status: new
+priority:
+goal: G-001
+plan:
+created: 2026-10-25
+closed:
+---
+
+# FEAT-047: Board: rename the Backlog items tab or show only unplanned items
+
+## Summary
+The Board's toggle labels the item view 'Backlog items', but it shows every item in every state (new, triaged, planned, in-progress, done), so an item whose plan is being built reads as still sitting in the backlog. Either rename the tab (for example 'Items') or make the backlog view mean items no plan links yet. Seen in packages/crew/ui/src/views/Board.tsx (ITEM_COLUMNS and the toggle label). Raised by the executive on 2026-10-25.
+
+## User story
+
+## Acceptance criteria
+- [ ]
+
+## Notes
