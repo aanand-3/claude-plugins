@@ -11,6 +11,7 @@ pr:
 created: 2026-10-25
 started:
 completed:
+assignee: developer
 ---
 
 # P-046: WIP commits keep setup files; hub build removes its temp dirs
@@ -70,5 +71,6 @@ n/a — internal. After it ships (Release builds, `refresh-bin`), plans that cha
 ## Progress log
 
 - 2026-10-25: status draft → ready — Architect: specced (ACs, tasks, test plan, exact touches)
+- 2026-10-25: assigned to the developer role
 
 ## Outcome
