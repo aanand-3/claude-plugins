@@ -5,12 +5,12 @@ goal: G-007
 items: CHORE-017
 touches: packages/crew/src/hub/commands/work/planning.ts, packages/crew/test/hub/e2e/sparse-worktrees.test.ts, packages/crew/test/hub/e2e/worktrees.test.ts, packages/crew/test/hub-worktrees.test.ts
 depends_on:
-status: in-review
+status: done
 branch: plan/P-038-plan-worktrees-check-out-no-hub
 pr:
 created: 2026-10-25
 started: 2026-10-25
-completed:
+completed: 2026-10-25
 assignee: developer
 ---
 
@@ -90,6 +90,7 @@ Latest log:
 - 2026-10-25: status in-progress → in-review
 - 2026-10-25: QA at ede2672: AC1-AC5 verified (sparse-worktrees.test.ts 6/6 + scratch replay); AC6 tests pass 9/9 and 10/10 and typecheck clean, but two assertions changed vs 'unchanged' in AC6 — Q-ca72af to architect. Note: sparse-checkout set in a worktree adds extensions.worktreeConfig=true to the shared repo config.
 - 2026-10-25: BUG-026: context/status show the plan branch's stale copy of an open plan over main's document (why QA saw the pre-amendment AC6)
+- 2026-10-25: status in-review → done
 
 ## Outcome
 Plan worktrees are sparse checkouts without .crew/plans, items, goals, knowledge and idea.md (non-cone patterns from STATE_PATHS, full-checkout fallback if sparse-checkout fails); main checkout unchanged. Two existing worktree assertions now assert absence (Q-5e93cb).
