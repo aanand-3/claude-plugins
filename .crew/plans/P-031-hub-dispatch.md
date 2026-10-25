@@ -5,12 +5,12 @@ goal: G-007
 items: FEAT-040
 touches: packages/crew/src/hub/commands/team/dispatch.ts, packages/crew/src/hub/commands/team/dispatch.reg.ts, packages/crew/src/hub/commands/index.ts, packages/crew/src/hub/cli.ts, packages/crew/src/hub/mcp.ts, packages/crew/src/hub/core/team/presets.ts, packages/crew/test/hub/e2e/dispatch.test.ts, packages/crew/test/hub/e2e/team.test.ts, packages/crew/test/hub/e2e/team-2.test.ts, packages/crew/test/hub/registry.test.ts, packages/crew/test/mcp.test.ts, plugins/crew/skills/hub/agents/director.md, plugins/crew/skills/hub/agents/pm.md, plugins/crew/skills/team/SKILL.md, plugins/crew/skills/hub/SKILL.md, plugins/crew/skills/hub/references/model.md
 depends_on:
-status: in-review
+status: done
 branch: plan/P-031-hub-dispatch
 pr:
 created: 2026-10-25
 started: 2026-10-25
-completed:
+completed: 2026-10-25
 assignee: developer
 ---
 
@@ -125,6 +125,7 @@ Latest log:
 - 2026-10-25: status in-progress → in-review
 - 2026-10-25: architect review: approved at 0e2bd18. Owed in the plan file (developer, no code change): tick T5 (its checks pass: typecheck, wc -l 161/18, basics/mcp/registry green, registry-before.json unchanged) and complete the Outcome with what shipped and the one deviation — AC5's 'no max_agents' case is not reachable through policy (default 4, no null override), so the test uses a cap above the work; the null path in dispatch() is covered by code reading only.
 - 2026-10-25: developer: ticked T5 and completed the Outcome (what shipped, AC5 deviation) as the architect review asked; no code change
+- 2026-10-25: status in-review → done
 
 ## Outcome
 Shipped: the hub command `dispatch [--json]` and the MCP tool `dispatch` (same JSON) in `commands/team/dispatch.ts` (rows 1–11, held/paused handling, the `max_agents` cap with `more`, the spec frontier), registered via `dispatch.reg.ts`; `goal.done: pm` in the lifecycle preset; director.md, pm.md, team/SKILL.md "Each run", model.md and hub/SKILL.md's row updated to the dispatch loop; registry.test.ts compares only the pre-split commands/tools with the frozen `registry-before.json`; `dispatch` added to mcp.test.ts's tool list; new e2e `dispatch.test.ts`. T5 checks pass: typecheck, `wc -l` 161/18, basics/mcp/registry green, `registry-before.json` unchanged.
