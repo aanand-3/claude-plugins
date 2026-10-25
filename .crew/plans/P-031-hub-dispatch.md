@@ -83,7 +83,7 @@ Needs no other plan's code. It reads P-029's shared-aware staffing through `staf
 - [x] T2: registration (`dispatch.reg.ts` + index line, or cli.ts + mcp.ts) and the text form → verify: `npx vitest run test/hub/e2e/dispatch.test.ts -t mcp` and `node plugins/crew/skills/hub/dist/crew.mjs help | grep dispatch` (AC9)
 - [x] T3: `goal.done: pm` in presets.ts; team/team-2 assertions → verify: `npx vitest run test/hub/e2e/team.test.ts test/hub/e2e/team-2.test.ts test/hub/e2e/dispatch.test.ts -t goal` (AC8)
 - [x] T4: director.md, pm.md, team/SKILL.md "Each run", model.md (and hub/SKILL.md's row if the table still exists) → verify: `grep -c "hand each to the role" plugins/crew/skills/hub/agents/director.md` prints 0; `grep -n "dispatch --json" plugins/crew/skills/team/SKILL.md plugins/crew/skills/hub/agents/director.md`; `grep -n "goal.done.*pm" plugins/crew/skills/hub/references/model.md`; `npx vitest run test/plugin` (AC10)
-- [ ] T5: types, sizes, registry tests (see Approach), unchanged suites → verify: `npm run typecheck`; `wc -l src/hub/commands/team/dispatch*.ts`; `npx vitest run test/hub/e2e/basics.test.ts test/mcp.test.ts test/hub/registry.test.ts`; `git diff --quiet main -- test/hub/registry-before.json` (AC11)
+- [x] T5: types, sizes, registry tests (see Approach), unchanged suites → verify: `npm run typecheck`; `wc -l src/hub/commands/team/dispatch*.ts`; `npx vitest run test/hub/e2e/basics.test.ts test/mcp.test.ts test/hub/registry.test.ts`; `git diff --quiet main -- test/hub/registry-before.json` (AC11)
 
 ## Test plan
 **Targeted checks** (from `packages/crew/`; the e2e suites drive the built `dist/crew.mjs`, so run `npm run build` first, then discard the generated output — `git checkout -- ../../plugins/crew/skills` and `git clean` of new dist files — since Release builds it):
@@ -125,6 +125,10 @@ Latest log:
 - 2026-10-25: status ready → in-progress — branch plan/P-031-hub-dispatch
 - 2026-10-25: status in-progress → in-review
 - 2026-10-25: architect review: approved at 0e2bd18. Owed in the plan file (developer, no code change): tick T5 (its checks pass: typecheck, wc -l 161/18, basics/mcp/registry green, registry-before.json unchanged) and complete the Outcome with what shipped and the one deviation — AC5's 'no max_agents' case is not reachable through policy (default 4, no null override), so the test uses a cap above the work; the null path in dispatch() is covered by code reading only.
+- 2026-10-25: developer: ticked T5 and completed the Outcome (what shipped, AC5 deviation) as the architect review asked; no code change
 
 ## Outcome
+Shipped: the hub command `dispatch [--json]` and the MCP tool `dispatch` (same JSON) in `commands/team/dispatch.ts` (rows 1–11, held/paused handling, the `max_agents` cap with `more`, the spec frontier), registered via `dispatch.reg.ts`; `goal.done: pm` in the lifecycle preset; director.md, pm.md, team/SKILL.md "Each run", model.md and hub/SKILL.md's row updated to the dispatch loop; registry.test.ts compares only the pre-split commands/tools with the frozen `registry-before.json`; `dispatch` added to mcp.test.ts's tool list; new e2e `dispatch.test.ts`. T5 checks pass: typecheck, `wc -l` 161/18, basics/mcp/registry green, `registry-before.json` unchanged.
+Deviations: AC5's "no `max_agents`" case can't be set through policy (the default is 4 and nothing overrides it to null), so the test uses a cap above the work instead; the null path in `dispatch()` is checked only by reading the code.
+Follow-ups: none beyond those listed under Scope "Out".
 Learnings: K-2026-10-25-a-plan-that-adds-a-hub-command-or-mcp, K-2026-10-25-dispatch-commands-team-dispatch-ts-is, K-2026-10-25-approved-with-one-change-do-not-edit
