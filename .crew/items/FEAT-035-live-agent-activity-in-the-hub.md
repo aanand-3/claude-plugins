@@ -5,7 +5,7 @@ title: Live agent activity in the hub
 status: triaged
 priority: P1
 goal: G-007
-plan:
+plan: P-027
 created: 2026-10-25
 closed:
 ---

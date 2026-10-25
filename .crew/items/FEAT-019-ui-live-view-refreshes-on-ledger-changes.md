@@ -5,7 +5,7 @@ title: UI live view refreshes on ledger changes
 status: triaged
 priority: P1
 goal: G-007
-plan:
+plan: P-027
 created: 2026-10-23
 closed:
 ---
