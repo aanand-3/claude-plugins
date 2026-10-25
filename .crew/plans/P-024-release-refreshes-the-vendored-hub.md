@@ -69,10 +69,10 @@ Follows P-023 (bundles built once at release, in the plan's one commit): the ref
 - **Ordering.** depends_on P-023: both rewrite release.md step 3 and the `hub` block of `.crew/config.yaml`, and the refresh step only makes sense after P-023's `hub.build`. P-020 is done (merged in 78a3edf), so P-024 has no dependency on it, directly or through P-023. P-021 (ready, G-003) overlaps on `cli.ts`, `plugins/crew/skills/hub/**` and `.crew/config.yaml`, with no depends_on: staffing makes whichever starts second wait, and whichever lands second takes the other's text when it updates to the base. cli.ts is 276 lines; together the two plans' entries stay under 300.
 
 ## Tasks
-- [ ] T1: policy.ts gains the global-only `release.refresh_bin` shape and `Effective.release` → verify: `cd packages/crew && npx vitest run test/hub/refresh-bin.test.ts -t policy` (AC2's `roles.release` error, AC5's `policy show` output) and `npx vitest run test/hub/e2e/policy.test.ts` unchanged
-- [ ] T2: `refresh-bin [--check]` in release.ts plus the cli.ts entry and help line → verify: `npx vitest run test/hub/refresh-bin.test.ts` (AC1, AC2, AC3) after `npm run build`; `wc -l src/hub/core/team/policy.ts src/hub/commands/work/release.ts src/hub/cli.ts` each under 300
-- [ ] T3: `test/hub/refresh-bin.test.ts` drives the built `dist/crew.mjs` in a throwaway repo (reuse `test/helpers/repo.js`, `test/hub/e2e/helpers.ts`, `sections.ts`: `agent`, `bash`, `hook`). It sets up a plan worktree with `.crew/bin/{crew.mjs,ui.html}` (no studio.html) and a fake `from` dir holding changed `crew.mjs`, `ui.html`, `studio.html`. Cases: release refresh with `files: [crew.mjs, ui.html]` → both Buffer-equal and studio.html not created (AC1); `--as developer` → exit 1 naming release, no change; no key → exit 1 naming `release.refresh_bin`; run from the base checkout → exit 1; `from: /abs`, `from: ../x`, `from: .crew/bin`, `files: [../policy.yaml]` → exit 1, nothing written; guard `hook` for `crew-release` on `cp …/crew.mjs .crew/bin/crew.mjs` and on Edit `.crew/bin/crew.mjs` → deny naming `paths.protected` (AC2); `--check` → exit 1 naming the stale file before the refresh, exit 0 after; exit 0 with no key (AC3) → verify: the file fails against the current bundle (`unknown command 'refresh-bin'`) and passes after `npm run build`
-- [ ] T4: `.crew/config.yaml` `hub.full_suite` ends with `&& node plugins/crew/skills/hub/dist/crew.mjs refresh-bin --check`; release.md gets the step; references/model.md gets a `release.refresh_bin` row in the policy table → verify: `grep -n "refresh-bin" .crew/config.yaml plugins/crew/skills/hub/agents/release.md` finds each and the release.md line sits between the `hub.build` line and the "one commit" line (AC3, AC4); `grep -n "refresh_bin" plugins/crew/skills/hub/references/model.md` (AC5); `npx vitest run test/plugin` passes (agent templates)
+- [x] T1: policy.ts gains the global-only `release.refresh_bin` shape and `Effective.release` → verify: `cd packages/crew && npx vitest run test/hub/refresh-bin.test.ts -t policy` (AC2's `roles.release` error, AC5's `policy show` output) and `npx vitest run test/hub/e2e/policy.test.ts` unchanged
+- [x] T2: `refresh-bin [--check]` in release.ts plus the cli.ts entry and help line → verify: `npx vitest run test/hub/refresh-bin.test.ts` (AC1, AC2, AC3) after `npm run build`; `wc -l src/hub/core/team/policy.ts src/hub/commands/work/release.ts src/hub/cli.ts` each under 300
+- [x] T3: `test/hub/refresh-bin.test.ts` drives the built `dist/crew.mjs` in a throwaway repo (reuse `test/helpers/repo.js`, `test/hub/e2e/helpers.ts`, `sections.ts`: `agent`, `bash`, `hook`). It sets up a plan worktree with `.crew/bin/{crew.mjs,ui.html}` (no studio.html) and a fake `from` dir holding changed `crew.mjs`, `ui.html`, `studio.html`. Cases: release refresh with `files: [crew.mjs, ui.html]` → both Buffer-equal and studio.html not created (AC1); `--as developer` → exit 1 naming release, no change; no key → exit 1 naming `release.refresh_bin`; run from the base checkout → exit 1; `from: /abs`, `from: ../x`, `from: .crew/bin`, `files: [../policy.yaml]` → exit 1, nothing written; guard `hook` for `crew-release` on `cp …/crew.mjs .crew/bin/crew.mjs` and on Edit `.crew/bin/crew.mjs` → deny naming `paths.protected` (AC2); `--check` → exit 1 naming the stale file before the refresh, exit 0 after; exit 0 with no key (AC3) → verify: the file fails against the current bundle (`unknown command 'refresh-bin'`) and passes after `npm run build`
+- [x] T4: `.crew/config.yaml` `hub.full_suite` ends with `&& node plugins/crew/skills/hub/dist/crew.mjs refresh-bin --check`; release.md gets the step; references/model.md gets a `release.refresh_bin` row in the policy table → verify: `grep -n "refresh-bin" .crew/config.yaml plugins/crew/skills/hub/agents/release.md` finds each and the release.md line sits between the `hub.build` line and the "one commit" line (AC3, AC4); `grep -n "refresh_bin" plugins/crew/skills/hub/references/model.md` (AC5); `npx vitest run test/plugin` passes (agent templates)
 
 ## Test plan
 **Targeted checks** (from `packages/crew/`, after `npm run build`):
@@ -113,6 +113,17 @@ Follows P-023 (bundles built once at release, in the plan's one commit): the ref
 - Protected paths (`.crew/policy.yaml`, `.crew/bin/**`, `.claude/agents/**`, `.crew/templates/agents/**`) are not touches: the executive and the human apply those (Rollout).
 
 ## Handoff
+
+_Generated 2026-10-25 by `crew.mjs handoff` from the ledger._
+
+- P-024: Release refreshes the vendored hub in .crew/bin [in-progress] tasks 4/4 — claimed by Arpit Anand (developer:af588eed65e640684)
+- last checkpoint 2026-10-25 08:42 at T4 (def8a26) by Arpit Anand; since then 0 commit(s), 8 uncommitted file(s): .crew/config.yaml, packages/crew/src/hub/cli.ts, packages/crew/src/hub/commands/team/policy.ts, packages/crew/src/hub/commands/work/release.ts, packages/crew/src/hub/core/team/policy.ts, plugins/crew/skills/hub/agents/release.md, plugins/crew/skills/hub/references/model.md, packages/crew/test/hub/refresh-bin.test.ts
+- evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —
+
+Latest log:
+- 2026-10-25: assigned to the developer role
+- 2026-10-25: status ready → in-progress — branch plan/P-024-release-refreshes-the-vendored-hub
+- 2026-10-25: Architect (Q-6949e4): touches gain packages/crew/src/hub/commands/team/policy.ts for two text rows in `policy show` (release.refresh_bin.from / .files); AC5 is tested on text and --json output.
 
 ## Progress log
 
