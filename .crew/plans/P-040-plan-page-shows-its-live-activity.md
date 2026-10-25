@@ -47,9 +47,9 @@ Goal G-007 (Autonomous parallel delivery); builds on P-027 (merged, ba366a1). Dr
 - UI: `PlanActivity.tsx` (new) loads `api/activity?ref=<id>` the way LivePanel does (`onHubChange` + 30 s timer) and renders the card; `DocPage` renders it for `doc.kind === "plan"` when `ix.served`, and passes the live runs' tasks to `TaskList` for the marker (one shared fetch: PlanActivity exposes the data through a small hook `usePlanActivity(id)` that both use). `api.ts` gains the `ref` parameter and the `FeedEntry` type. Reuse `Card`, `Chip`, `IdLink`, `Empty` and the `live__*` styles from P-027; new CSS only where needed. DocPage (225 lines) stays under 300.
 
 ## Tasks
-- [ ] T1: `feedEntries` in commands/team/activity.ts; `watch` built on it. → verify: `npx vitest run test/hub/e2e/activity.test.ts` (watch cases unchanged) — AC2.
-- [ ] T2: `/api/activity?ref=` in server.ts. → verify: new cases in `test/hub/e2e/live-ui.test.ts` — ref filter excludes another plan's activity, `feed` holds a tool entry and a ledger checkpoint entry in time order with the expected text, lower-case ref works, `?ref=bad` is 400, no-ref response unchanged — AC1.
-- [ ] T3: `api.ts` + `PlanActivity.tsx` + DocPage card and task marker + CSS. → verify: `npm run typecheck`; manual check below — AC3–AC6.
+- [x] T1: `feedEntries` in commands/team/activity.ts; `watch` built on it. → verify: `npx vitest run test/hub/e2e/activity.test.ts` (watch cases unchanged) — AC2.
+- [x] T2: `/api/activity?ref=` in server.ts. → verify: new cases in `test/hub/e2e/live-ui.test.ts` — ref filter excludes another plan's activity, `feed` holds a tool entry and a ledger checkpoint entry in time order with the expected text, lower-case ref works, `?ref=bad` is 400, no-ref response unchanged — AC1.
+- [x] T3: `api.ts` + `PlanActivity.tsx` + DocPage card and task marker + CSS. → verify: `npm run typecheck`; manual check below — AC3–AC6.
 
 ## Test plan
 **Targeted checks:** (the e2e suites drive the built bundle: `cd packages/crew && npm run build` first, then discard the generated output, which Release builds)
@@ -66,6 +66,17 @@ Goal G-007 (Autonomous parallel delivery); builds on P-027 (merged, ba366a1). Dr
 - `server.ts` is also in P-035's touches (other routes); the edit is confined to the `/api/activity` route, so the merge queue resolves it — no `depends_on`.
 
 ## Handoff
+
+_Generated 2026-10-25 by `crew.mjs handoff` from the ledger._
+
+- P-040: Plan page shows its live activity [in-progress] tasks 3/3 — claimed by Arpit Anand (developer:a35eab89dfb16d7c9)
+- last checkpoint 2026-10-25 10:14 at T3 (20d9f5a) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
+- evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —
+
+Latest log:
+- 2026-10-25: status draft → ready
+- 2026-10-25: assigned to the developer role
+- 2026-10-25: status ready → in-progress — branch plan/P-040-plan-page-shows-its-live-activity
 
 ## Progress log
 
