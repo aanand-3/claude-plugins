@@ -137,6 +137,17 @@ draft → ready → in-progress → in-review → accepted → done
 
 ## Handoff
 
+_Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
+
+- P-032: Merge queue: land [in-progress] tasks 10/10 — claimed by Arpit Anand (developer:a2348741d7d0604d7)
+- last checkpoint 2026-10-25 22:01 at T10 (d58107a) by Arpit Anand; since then 0 commit(s), 5 uncommitted file(s): packages/crew/src/hub/commands/work/suite.ts, plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs, plugins/crew/skills/hub/dist/ui.html, plugins/crew/skills/hub/references/commands.md
+- evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —, AC7 —, AC8 —, AC9 —, AC10 —, AC11 —, AC12 —
+
+Latest log:
+- 2026-10-26: assigned to the developer role
+- 2026-10-26: status ready → in-progress — branch plan/P-032-merge-queue-land
+- 2026-10-26: Architect: Q-4f7208 — suite.ts (runSuite `capture` option) and suite.test.ts added to touches
+
 ## Progress log
 
 - 2026-10-25: status draft → ready
@@ -148,3 +159,7 @@ draft → ready → in-progress → in-review → accepted → done
 - 2026-10-26: Architect: Q-4f7208 — suite.ts (runSuite `capture` option) and suite.test.ts added to touches
 
 ## Outcome
+Shipped: plan status `accepted` (in-review → accepted → done; in-review → done removed), gates moved (`plan.accepted` holds the evidence, review and task checks; `plan.done` checks only that the plan is landed), `accepted → in-progress` through the `plan.landed` role gate (keeps the claim, counts toward max_bounces), and `land [P-###]` (land.ts, CLI only): restore generated files, merge the base, `hub.build` + `refresh-bin`, `hub.full_suite` via `runSuite`, squash under the hub-commit lock with merge-tree/commit-tree/ff-only (3 rounds), remove worktree and branch, update dependants, log. `merge-order` queues accepted plans and lists legacy done ones with the manual steps; `next`, `dispatch`, `check`, status report and the UI board know `accepted`; agent docs, model.md, SKILL.md and vision.md updated.
+Deviations: `runSuite` gained a `capture` option (suite.ts, added to touches by Q-4f7208). team-helpers `finish` ends at `accepted` on the unmerged branch rather than "accepted, merge, done": its only callers are team-2's merge-order tests, which need unmerged plans. `scripts/sample-project.mjs` (outside touches, Q-637b2b open) now accepts, squash-merges, then moves done. A bounce makes `land` exit 1.
+Follow-ups: `.claude/agents/crew-{pm,release,developer,qa}.md` need re-rendering and `.crew/bin` a refresh after the merge (human).
+Learnings: K-2026-10-26-packages-crew-scripts-sample-project-mjs
