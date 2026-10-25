@@ -16,7 +16,7 @@ completed:
 # P-039: Drop the plan-branch reads (plans(true))
 
 ## Context
-Code part of CHORE-018. The hub-only parts were done by the PM on 2026-10-25: `migrate --gather` found nothing to gather; BUG-015 and SPIKE-003 were already closed as duplicates; K-2026-10-23-a-plan-file-on-main-can-lag-its-branch and K-2026-10-23-commit-hub-changes-before-staffing were superseded by K-2026-10-25-plan-status-lives-in-the-main-checkout and K-2026-10-25-hub-writes-are-committed-on-the-base.
+Code part of CHORE-018. The hub-only parts were done by the PM on 2026-10-25: `migrate --gather` found nothing to gather; BUG-015 and SPIKE-003 were already closed as duplicates; the two overlay-era knowledge entries were superseded by K-2026-10-25-plan-status-lives-in-the-main-checkout and K-2026-10-25-hub-writes-are-committed-on-the-base.
 
 `Store.plans(true)` (store.ts `branchPlans`) still overlays the plan file committed on each `plan/*` branch over the main checkout's copy, unless main already closed the plan. It existed for plans specced on their branch before hub state had one home (P-026). Fifteen call sites use it: `status`, `staff`, `context`, `next`, `check`, `merge-order`, `export`/`ui`, `recall --plan`, `checkpoint`/`resume`, `start` and `new-plan`.
 
