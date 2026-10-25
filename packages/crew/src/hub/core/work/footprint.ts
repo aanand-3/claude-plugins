@@ -17,6 +17,7 @@ export function overlapping(plan: Doc, plans: Docs): { id: string; globs: string
 }
 
 /** Files changed on the plan's branch (since it left the base branch, plus uncommitted) that no `touches:` glob covers.
+ * Files `.gitattributes` marks `linguist-generated` are no plan's footprint (Release rebuilds them) and are left out.
  * Only answerable where the plan's work is (`home`: its worktree, or this checkout on its branch); else null. */
 export function drift(plan: Doc, base: string, home: string | null): string[] | null {
   if (!home || !plan.touches().length) return null;
@@ -26,5 +27,11 @@ export function drift(plan: Doc, base: string, home: string | null): string[] | 
   const changed = new Set([...(at(["diff", "--name-only", fork])?.split("\n") ?? []),
     ...(at(["ls-files", "--others", "--exclude-standard"])?.split("\n") ?? [])].filter(Boolean));
   const globs = plan.touches().map(globRe);
-  return [...changed].filter((f) => !f.startsWith(".crew/") && !globs.some((g) => g.test(f))).sort();
+  const outside = [...changed].filter((f) => !f.startsWith(".crew/") && !globs.some((g) => g.test(f)));
+  const generated = new Set<string>();
+  if (outside.length) { // `check-attr -z` prints path NUL attribute NUL value NUL per file
+    const out = (at(["check-attr", "-z", "linguist-generated", "--", ...outside]) ?? "").split("\0");
+    for (let i = 0; i + 2 < out.length; i += 3) if (out[i + 2] === "true" || out[i + 2] === "set") generated.add(out[i]);
+  }
+  return outside.filter((f) => !generated.has(f)).sort();
 }
