@@ -11,6 +11,7 @@ pr:
 created: 2026-10-25
 started:
 completed:
+assignee: developer
 ---
 
 # P-041: Test suite removes its temp dirs
@@ -137,5 +138,6 @@ n/a — test-only change; revert the commit to back out.
 ## Progress log
 
 - 2026-10-25: status draft → ready
+- 2026-10-25: assigned to the developer role
 
 ## Outcome
