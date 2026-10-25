@@ -85,21 +85,29 @@ Two design choices, recorded as decisions with this plan:
 
 _Generated 2026-10-25 by `crew.mjs handoff` from the ledger._
 
-- P-030: Registries split per command [in-review] tasks 0/6 — claimed by Arpit Anand (developer:a8a3af55f477f0cbc)
-- last checkpoint 2026-10-25 09:39 at T6 (d8f479a) by Arpit Anand; since then 0 commit(s), 3 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs, plugins/crew/skills/hub/references/commands.md
+- P-030: Registries split per command [in-progress] tasks 6/6 — claimed by Arpit Anand (wt:claude-plugins-d1fe5f59)
+- last checkpoint 2026-10-25 11:15 at T6 (a6de546) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
 - ✓ cd packages/crew && npx vitest run test/hub/registry.test.ts (AC 1,2,3,4) (reported)
 - ✓ npm run typecheck && npx vitest run test/mcp.test.ts test/hub/registry.test.ts (reported)
 - ✓ npm run build && npx vitest run test/dist.test.ts; git check-attr linguist-generated -- plugins/crew/skills/hub/references/commands.md (AC 5) (reported)
 - ✓ npx vitest run test/plugin (AC 5) (reported)
 - ✗ npm run build; npx vitest run test/mcp.test.ts test/hub/e2e/basics.test.ts test/hub/e2e/items.test.ts test/hub/e2e/execution.test.ts test/hub/e2e/team.test.ts; npm run typecheck; wc -l (AC 6,7) (reported) — 46 passed, 1 failed (mcp.test.ts 'lists the hub tools': order only, Q-ed2ef3); typecheck clean; largest file cli.ts 113 lines
 - ✓ npm run build; npx vitest run test/mcp.test.ts test/dist.test.ts test/hub/e2e/basics.test.ts test/hub/e2e/items.test.ts test/hub/e2e/execution.test.ts test/hub/e2e/team.test.ts test/hub/registry.test.ts test/plugin; npm run typecheck (AC 6,7) (reported)
-- next: T1: `test/hub/registry.test.ts` and `registry-before.json` from today's code → verify: `cd packages/crew && npx vitest run test/hub/registry.test.ts` passes on today's code (AC2, AC3 baselines)
-- evidence: AC1 ✓ (self), AC2 ✓ (self), AC3 ✓ (self), AC4 ✓ (self), AC5 ✓ (self), AC6 ✓ (self), AC7 ✓ (self)
+- ✓ AC1 grep on cli.ts/mcp.ts finds nothing (exit 1); 25 commands/*/*.reg.ts on disk; npx vitest run test/hub/registry.test.ts 6/6 pass incl. AC1 case (index lists exactly the on-disk .reg.ts files, each cli/tool name in one registration) (AC 1) (reported)
+- ✓ npx vitest run test/hub/registry.test.ts 6/6 (CLI inventory and every USAGE line equal registry-before.json). Independently re-dumped COMMANDS/USAGE from T1 source (4089989, only change: export COMMANDS): 44 commands and 51 usage lines deep-equal registry-before.json. Built dist/crew.mjs --as qa --run-id qa:a1e4dd7091c9d9c03 --help: same 53 lines as main's dist (sorted diff empty) (AC 2) (reported)
+- ✓ npx vitest run test/hub/registry.test.ts: tools/list names, descriptions, input schemas equal registry-before.json; independently re-dumped tools/list via handle() from T1 source: 29 tools deep-equal the snapshot (AC 3) (reported)
+- ✓ npx vitest run test/hub/registry.test.ts: fake registration via register() reaches parse, help() and tools/list and is removed after; duplicate cli/tool names throw at load naming both files (pass) (AC 4) (reported)
+- ✓ npm run build writes references/commands.md (all 44 CLI commands and 29 tools present); git check-attr: linguist-generated true; npx vitest run test/dist.test.ts 6/6 after build, freshness case fails with the file appended-to (stale) and with it removed; SKILL.md line 30 links references/commands.md, 0 new-idea rows, table and tool list removed, rest unchanged; npx vitest run test/plugin/contents.test.ts 9/9 (AC 5) (reported)
+- ✓ after npm run build, one file at a time: test/mcp.test.ts 6/6, test/dist.test.ts 6/6, e2e basics 17/17, items 8/8, execution 5/5, team 11/11. git diff main on test/: only mcp.test.ts order-free name compare (Q-ed2ef3), contents.test.ts watch/activity moved to commands.md (Q-71466c), dist.test.ts new freshness case, plus the new registry test and snapshot; e2e suites unchanged (AC 6) (reported)
+- ✓ npm run typecheck exit 0; wc -l cli.ts 113, mcp.ts 106, registry.ts 75, reference.ts and all 25 .reg.ts below that (all under 300); command modules untouched (diff main on src/hub/commands is only index.ts and new .reg.ts files) (AC 7) (reported)
+- ✓ mcp 6/6, dist 6/6, basics 17/17, items 8/8, execution 5/5, team 11/11 after build; test diffs only the allowed edits (AC 6) (reported)
+- ✓ npx vitest run test/structure.test.ts test/hub/registry.test.ts; npm run typecheck (AC 6,7) (reported)
+- evidence: AC1 ✓, AC2 ✓, AC3 ✓, AC4 ✓, AC5 ✓, AC6 ✓ (self), AC7 ✓ (self)
 
 Latest log:
-- 2026-10-25: assigned to the developer role
-- 2026-10-25: status ready → in-progress — branch plan/P-030-registries-split-per-command
-- 2026-10-25: Architect: touches widened with packages/crew/test/mcp.test.ts (tools/list order is per-registration now, AC3 'order aside'; compare names order-free, Q-ed2ef3) and packages/crew/test/plugin/contents.test.ts (AC5 removes SKILL.md's table; the watch/activity assertions move to references/commands.md, Q-71466c). AC6 amended. No live plan lists either file.
+- 2026-10-25: Architect: structure.test.ts failure (loose hub/commands/index.ts) — fix by widening the test, not moving the file: 'hub sources sit in their domain folders' allows exactly ['index.ts'] in hub/commands/ (the registration index is the commands directory's barrel; P-031, P-032, P-035 and P-036 specs and index.ts's own header name commands/index.ts, so moving it would ripple). On reopen, add packages/crew/test/structure.test.ts to touches (no live plan lists it) and change line 40 to expect(loose('hub/commands/')).toEqual(['index.ts']); verify with npx vitest run test/structure.test.ts test/hub/registry.test.ts.
+- 2026-10-25: status done → in-progress — release suite: structure.test.ts rejects commands/index.ts; one-time --force approved by the executive (Q-81948c)
+- 2026-10-25: Architect: touches widened with packages/crew/test/structure.test.ts (line 40 allows exactly ['index.ts'] in hub/commands/; decision logged at 54647cc).
 
 ## Progress log
 

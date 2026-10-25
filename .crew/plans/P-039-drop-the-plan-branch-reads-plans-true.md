@@ -67,10 +67,10 @@ Code part of CHORE-018, and the fix for BUG-026 (`context`, `resume` and `status
 
 ## Tasks
 - [x] T1: `test/hub/e2e/branch-copies.test.ts` with AC1, AC3, AC4, AC5 and AC7, failing on today's code for AC1, AC3 and AC7 → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/branch-copies.test.ts` (fails before the change)
-- [ ] T2: store.ts gates the overlay on `!plan_worktrees`; call sites back to `plans(true)` → verify: `npm run typecheck`; `npm run build && npx vitest run test/hub/e2e/branch-copies.test.ts -t "stale|mode"` (AC1, AC2, AC7)
+- [x] T2: store.ts gates the overlay on `!plan_worktrees`; call sites back to `plans(true)` → verify: `npm run typecheck`; `npm run build && npx vitest run test/hub/e2e/branch-copies.test.ts -t "stale|mode"` (AC1, AC2, AC7)
 - [x] T3: `start` without the branch-copy path, with the shared-aware warning; `move`'s handoff condition; the "start keeps an existing branch's progress" case rewritten → verify: `npx vitest run test/hub/e2e/branch-copies.test.ts -t start test/hub/e2e/worktrees.test.ts` (AC3, AC5)
-- [ ] T4: checks.ts `lostPlans` (keeps `allPlans`); execution.ts, reports.ts and workflow.ts `move` as on main → verify: `npx vitest run test/hub/e2e/branch-copies.test.ts -t lost test/hub/e2e/context.test.ts test/view.test.ts` (AC4, AC8)
-- [ ] T5: the covering suites → verify: `npx vitest run test/hub-worktrees.test.ts test/hub/e2e/team.test.ts test/hub/e2e/context.test.ts test/hub/e2e/basics.test.ts test/view.test.ts`; `wc -l` of each touched module under 300 (AC6)
+- [x] T4: checks.ts `lostPlans` (keeps `allPlans`); execution.ts, reports.ts and workflow.ts `move` as on main → verify: `npx vitest run test/hub/e2e/branch-copies.test.ts -t lost test/hub/e2e/context.test.ts test/view.test.ts` (AC4, AC8)
+- [x] T5: the covering suites → verify: `npx vitest run test/hub-worktrees.test.ts test/hub/e2e/team.test.ts test/hub/e2e/context.test.ts test/hub/e2e/basics.test.ts test/view.test.ts`; `wc -l` of each touched module under 300 (AC6)
 
 ## Test plan
 **Targeted checks** (from `packages/crew/`, after `npm run build`):
