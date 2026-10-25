@@ -5,7 +5,7 @@ goal: G-007
 items: FEAT-044
 touches: packages/crew/src/hub/commands/views/doctor.ts, packages/crew/src/hub/commands/views/doctor.reg.ts, packages/crew/src/hub/commands/work/setup.ts, packages/crew/src/hub/commands/work/planning.reg.ts, packages/crew/src/hub/commands/index.ts, packages/crew/src/hub/cli.ts, packages/crew/src/hub/mcp.ts, packages/crew/src/hub/core/work/hubstate.ts, packages/crew/test/hub/e2e/doctor.test.ts, packages/crew/test/hub/e2e/helpers.ts, packages/crew/test/hub/e2e/basics.test.ts, packages/crew/test/mcp.test.ts, plugins/crew/skills/team/SKILL.md, plugins/crew/skills/hub/SKILL.md
 depends_on: P-029, P-031
-status: in-progress
+status: in-review
 branch: plan/P-036-doctor-and-init-defaults
 pr:
 created: 2026-10-25
@@ -122,7 +122,7 @@ Overlaps, for staffing only: P-030 on `planning.reg.ts` (the `init` registration
 
 _Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
 
-- P-036: Doctor and init defaults [in-progress] tasks 7/7 — claimed by Arpit Anand (developer:a996d202aa6320ed0)
+- P-036: Doctor and init defaults [in-review] tasks 7/7 — claimed by Arpit Anand (developer:a996d202aa6320ed0)
 - last checkpoint 2026-10-25 19:55 at T7 (080cd74) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —, AC7 —, AC8 —, AC9 —, AC10 —
 
@@ -136,6 +136,7 @@ Latest log:
 - 2026-10-25: status draft → ready
 - 2026-10-25: assigned to the developer role
 - 2026-10-25: status ready → in-progress — branch plan/P-036-doctor-and-init-defaults
+- 2026-10-26: status in-progress → in-review
 
 ## Outcome
 `crew.mjs doctor [--json]` (views/doctor.ts) runs the 10 readiness checks, among them `hub-commits`, which probes a hub commit through the repo's git hooks without touching HEAD or the working tree. It is also an MCP tool and appears in help. `init` now writes a commented default `.crew/config.yaml` (current branch, `plan_worktrees: true`) and `.crew/policy.yaml` (preset commented out) when they are missing (work/setup.ts). A hub commit refused by a hook now names the hook's message and `crew.mjs doctor`. team/SKILL.md's "Before the first run" now starts with `doctor`. The e2e `init` helper takes `defaults` and otherwise removes only the defaults `init` created. The branch has main merged in (P-031, P-046), and registry.test.ts and registry-before.json are identical to main. Note: merge commit db3a692 is missing P-031's code, because a checkpoint run mid-merge unstaged it. The next checkpoint (7b07f9f) restored it, and the plan squashes to one commit anyway.
