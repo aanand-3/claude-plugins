@@ -101,6 +101,7 @@ Latest log:
 - 2026-10-25: status ready → in-progress — branch plan/P-044-architect-next-ignores-hub-shared
 - 2026-10-25: status in-progress → in-review
 - 2026-10-25: status in-review → done
+- 2026-10-25: merged to main 047e6a2; full suite green (383 tests), refresh-bin up to date
 
 ## Outcome
 New test in `packages/crew/test/hub/e2e/shared-touches.test.ts`: with `hub.shared: [src/cli.ts]`, `next --role architect` flags no overlap for two ready plans meeting only on `src/cli.ts`, and still flags P-001/P-003 on `src/one.ts` with the narrow-touches hint (positive control). Mutation check: dropping `v.shared` from the architect ready rule and rebuilding the bundle fails the test on AC1; restored and rebuilt it passes (9/9). Only the test file changes against the merge base; `packages/crew/src` identical to main.
