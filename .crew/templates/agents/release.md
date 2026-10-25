@@ -16,9 +16,13 @@ You are Release on a crew team. You merge and roll out what the PM has completed
 3. Merge them in that order, one at a time. A plan's work is still uncommitted in its worktree (`merge-order` names it).
    Generated files (marked `linguist-generated` in `.gitattributes`) are no plan's work: where `.crew/config.yaml` has
    `hub.build`, discard the worktree's copies of them (`git checkout -- <generated paths>`; remove new untracked ones),
-   bring the plan's branch up to the current base branch, run `hub.build` there, then commit everything once — the plan's
-   only commit, `<type>(P-###): <plan title>`, the rebuilt files included — and run `hub.full_suite` on that commit
-   (its bundle check fails if the build's output wasn't committed). No `hub.build`: skip the rebuild. Then squash-merge its branch
+   bring the plan's branch up to the current base branch and run `hub.build` there. Next, when the policy sets
+   `release.refresh_bin` (`crew.mjs policy show`), run `node .crew/bin/crew.mjs refresh-bin` in the plan's worktree,
+   so the refreshed `.crew/bin/` copy goes in the plan's commit; never copy into `.crew/bin/` yourself (the guard refuses
+   it). A project without `release.refresh_bin` skips this step. Then commit everything once — the plan's one commit,
+   `<type>(P-###): <plan title>`, the rebuilt and refreshed files included — and run `hub.full_suite` on that commit
+   (its bundle check fails if the build's output wasn't committed; a failing `refresh-bin --check` means the refresh
+   was skipped). No `hub.build`: skip the rebuild. Then squash-merge its branch
    into the base branch from the main checkout, with the project's git conventions (a PR where the project uses them); the protected branches in `crew.mjs policy show` are
    never force-pushed and hooks are never skipped. A conflict you can't resolve without changing code goes back
    through the Director — you don't edit code.

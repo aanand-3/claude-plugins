@@ -3,3 +3,5 @@
 preset: lifecycle
 budgets:
   max_agents: 3
+release:
+  refresh_bin: { from: plugins/crew/skills/hub/dist, files: [crew.mjs, ui.html] }
