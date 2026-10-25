@@ -5,7 +5,7 @@ goal: G-007
 items: CHORE-018, BUG-026
 touches: packages/crew/src/hub/core/store.ts, packages/crew/src/hub/commands/memory/knowledge.ts, packages/crew/src/hub/commands/memory/context.ts, packages/crew/src/hub/commands/work/planning.ts, packages/crew/src/hub/commands/work/workflow.ts, packages/crew/src/hub/commands/work/release.ts, packages/crew/src/hub/commands/work/execution.ts, packages/crew/src/hub/commands/work/goals.ts, packages/crew/src/hub/commands/team/team.ts, packages/crew/src/hub/commands/team/roles.ts, packages/crew/src/hub/commands/views/reports.ts, packages/crew/src/hub/commands/views/advisor.ts, packages/crew/src/hub/commands/views/graph.ts, packages/crew/src/hub/commands/views/checks.ts, packages/crew/test/hub/e2e/worktrees.test.ts, packages/crew/test/hub-worktrees.test.ts, packages/crew/test/hub/e2e/branch-copies.test.ts
 depends_on: P-029, P-038
-status: in-progress
+status: in-review
 branch: plan/P-039-drop-the-plan-branch-reads-plans-true
 pr:
 created: 2026-10-25
@@ -94,7 +94,7 @@ Code part of CHORE-018, and the fix for BUG-026 (`context`, `resume` and `status
 
 _Generated 2026-10-25 by `crew.mjs handoff` from the ledger._
 
-- P-039: Drop the plan-branch reads (plans(true)) [in-progress] tasks 5/5 — claimed by Arpit Anand (developer:aa36891f95c4f8d92)
+- P-039: Drop the plan-branch reads (plans(true)) [in-review] tasks 5/5 — claimed by Arpit Anand (developer:aa36891f95c4f8d92)
 - last checkpoint 2026-10-25 11:15 at T5 (4d4c5e2) by Arpit Anand; since then 0 commit(s), 2 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —, AC7 —, AC8 —
 
@@ -112,5 +112,8 @@ Latest log:
 - 2026-10-25: assigned to the developer role
 - 2026-10-25: status ready → in-progress — branch plan/P-039-drop-the-plan-branch-reads-plans-true
 - 2026-10-25: Architect (Q-16112d): branch reads go only with plan worktrees. Without them (the default mode, other projects) a started plan's hub state is committed on its branch, so `plans(true)` stays and `branchPlans` is gated on `!plan_worktrees`; call sites, `allPlans` and the `source` handling stay as on main. T2 and T4 reopened, AC2 rewritten, AC8 added. Touches unchanged.
+- 2026-10-25: status in-progress → in-review
 
 ## Outcome
+With plan worktrees, `Store.plans(true)` reads only the main checkout. In branch-per-plan mode (the default), it still overlays branch copies (Q-16112d). `start` no longer takes a branch copy home, and its overlap warning (like `context`'s list and the advice in roles.ts) ignores `hub.shared` and never suggests depends_on. `check` gives an origin-only plan branch its own hint. `git.show` keeps its caller (`branchPlans`). `GraphDoc.source` (graph-types.ts, outside touches) is always "worktree" in plan-worktree mode.
+Learnings: K-2026-10-25-without-hub-plan-worktrees-the-default
