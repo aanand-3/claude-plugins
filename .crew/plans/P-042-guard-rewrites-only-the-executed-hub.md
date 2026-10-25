@@ -186,6 +186,7 @@ Latest log:
 - 2026-10-25: status in-review → in-progress — changes requested: Code is right and matches the spec: touches exact, hubcall.ts pure (node:path only), 224 and 218 lines, typecheck clean, hubcall.test.ts 10/10 and e2e guard.test.ts 18/18 after a build, AC9 base run recorded at T4, and it merges cleanly onto main (P-030 did not touch guard.ts). One change: the VAR=value shape logged on BUG-017 in 463c393 behaves correctly (I checked X=1 bash x.sh <hub path> P-001 against withIdentity: unchanged) but no test pins it. AC2 and its test plan now name it. Add X=1 QA_DIR=/x bash .crew/drafts/x.sh /abs/.crew/bin/<hub> P-001 to the AC2 loop in test/hub/e2e/guard.test.ts ('a script's arguments are left alone', expect hook null) and to the AC2 list in test/hub/hubcall.test.ts ('the hub named as an argument is left alone'). No source change needed. Rebuild and re-run both files; then back to review.
 - 2026-10-25: status in-progress → in-review
 - 2026-10-25: status in-review → done
+- 2026-10-25: Release: NOT merged. Full suite on 6fc4be0 (plan branch merged with main, rebuilt, refresh-bin ok) fails: hub-worktrees.test.ts 'injects identity only where the hub runs' (line 248, a hook result lacks updatedInput.command; reproduces alone in ~2s); view.test.ts beforeAll timed out at 120s (likely load). Sent back via Director.
 
 ## Outcome
 Learnings: K-2026-10-25-a-plan-task-that-says-to-git-stash

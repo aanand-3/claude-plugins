@@ -59,13 +59,13 @@ If the test fails on unmodified source, stop and ask the architect (`ask P-044 -
 `roles.ts` — that would mean the fix on main is incomplete and the plan's touches must change.
 
 ## Tasks
-- [ ] T1: add the regression test → verify: `npx vitest run test/hub/e2e/shared-touches.test.ts` in `packages/crew`
+- [x] T1: add the regression test → verify: `npx vitest run test/hub/e2e/shared-touches.test.ts` in `packages/crew`
   passes (AC1, AC2).
-- [ ] T2: mutation check → verify: in the plan worktree, temporarily change the architect rule's
+- [x] T2: mutation check → verify: in the plan worktree, temporarily change the architect rule's
   `overlapping(p, v.plans, v.shared)` (the `v.status("ready")` line) to `overlapping(p, v.plans)` with the Edit tool or
   `node -e` (not `sed -i`), run the test and see it fail on AC1, then `git checkout -- packages/crew/src/hub/commands/team/roles.ts`
   and see it pass again (AC3).
-- [ ] T3: footprint → verify: `git add -N . && git diff --name-only main` in the worktree lists only the test file, and
+- [x] T3: footprint → verify: `git add -N . && git diff --name-only main` in the worktree lists only the test file, and
   `git diff --quiet main -- packages/crew/src` exits 0 (AC4).
 
 ## Test plan
@@ -102,3 +102,5 @@ Latest log:
 - 2026-10-25: status ready → in-progress — branch plan/P-044-architect-next-ignores-hub-shared
 
 ## Outcome
+New test in `packages/crew/test/hub/e2e/shared-touches.test.ts`: with `hub.shared: [src/cli.ts]`, `next --role architect` flags no overlap for two ready plans meeting only on `src/cli.ts`, and still flags P-001/P-003 on `src/one.ts` with the narrow-touches hint (positive control). Mutation check: dropping `v.shared` from the architect ready rule and rebuilding the bundle fails the test on AC1; restored and rebuilt it passes (9/9). Only the test file changes against the merge base; `packages/crew/src` identical to main.
+Learnings: K-2026-10-25-hub-e2e-tests-tr-hub-in-test-helpers
