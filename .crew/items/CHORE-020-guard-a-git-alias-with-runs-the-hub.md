@@ -2,8 +2,8 @@
 id: CHORE-020
 type: chore
 title: Guard: a git alias with ! runs the hub with no identity
-status: new
-priority:
+status: triaged
+priority: P2
 goal: G-007
 plan:
 created: 2026-10-25
@@ -19,3 +19,4 @@ Split from CHORE-014 item 1 (P-018's architect review): an agent can run the hub
 - [ ]
 
 ## Notes
+- 2026-10-25: status new → triaged — priority P2
