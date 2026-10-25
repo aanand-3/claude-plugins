@@ -94,9 +94,9 @@ _Generated 2026-10-25 by `crew.mjs handoff` from the ledger._
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —, AC7 —, AC8 —
 
 Latest log:
-- 2026-10-25: status draft → ready
 - 2026-10-25: assigned to the developer role
 - 2026-10-25: status ready → in-progress — branch plan/P-033-goal-queue
+- 2026-10-25: status in-progress → in-review
 
 ## Progress log
 
