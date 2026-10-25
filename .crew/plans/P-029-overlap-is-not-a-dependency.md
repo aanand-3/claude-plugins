@@ -11,6 +11,7 @@ pr:
 created: 2026-10-25
 started:
 completed:
+assignee: developer
 ---
 
 # P-029: Overlap is not a dependency
@@ -103,5 +104,6 @@ SPIKE-004's answer is recorded as K-2026-10-25-overlaps-on-hub-shared-paths-incl
 
 - 2026-10-25: status draft → ready
 - 2026-10-25: Architect: `plugins/crew/skills/team/SKILL.md` added to this repo's hub.shared list (P-031, P-033, P-034 and P-035 each edit a different section of it).
+- 2026-10-25: assigned to the developer role
 
 ## Outcome
