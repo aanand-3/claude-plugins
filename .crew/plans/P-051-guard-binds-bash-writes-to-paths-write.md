@@ -5,12 +5,12 @@ goal: G-007
 items: BUG-033, BUG-021, BUG-011, BUG-013, BUG-002
 touches: packages/crew/src/hub/commands/team/guard.ts, packages/crew/src/hub/commands/team/targets.ts, packages/crew/src/hub/commands/team/hubcall.ts, packages/crew/test/hub/targets.test.ts, packages/crew/test/hub/hubcall.test.ts, packages/crew/test/hub/e2e/guard.test.ts, packages/crew/test/hub/e2e/guard-writes.test.ts, plugins/crew/skills/hub/references/model.md
 depends_on:
-status: in-review
+status: done
 branch: plan/P-051-guard-binds-bash-writes-to-paths-write
 pr:
 created: 2026-10-26
 started: 2026-10-26
-completed:
+completed: 2026-10-26
 assignee: developer
 ---
 
@@ -274,6 +274,7 @@ Latest log:
 - 2026-10-26: assigned to the developer role
 - 2026-10-26: status ready → in-progress — branch plan/P-051-guard-binds-bash-writes-to-paths-write
 - 2026-10-26: status in-progress → in-review
+- 2026-10-26: status in-review → done
 
 ## Outcome
 Bash write targets are bound to paths.write, inline/stdin scripts are refused for draft-only roles, variables in targets resolve or are refused, and subagents can't run crew.mjs init.
