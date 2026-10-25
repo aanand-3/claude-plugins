@@ -5,12 +5,12 @@ goal: G-007
 items: CHORE-023, CHORE-024
 touches: packages/crew/src/hub/core/git.ts, packages/crew/src/hub/commands/work/execution.ts, packages/crew/build.mjs, packages/crew/test/hub/e2e/wip-commits.test.ts, packages/crew/test/dist.test.ts
 depends_on:
-status: in-review
+status: done
 branch: plan/P-046-wip-commits-keep-setup-files-hub-build
 pr:
 created: 2026-10-25
 started: 2026-10-25
-completed:
+completed: 2026-10-25
 assignee: developer
 ---
 
@@ -85,6 +85,7 @@ Latest log:
 - 2026-10-25: assigned to the developer role
 - 2026-10-25: status ready → in-progress — branch plan/P-046-wip-commits-keep-setup-files-hub-build
 - 2026-10-25: status in-progress → in-review
+- 2026-10-25: status in-review → done
 
 ## Outcome
 `git.codeChanges` now excludes only the hub's documents (`NOT_CODE` in git.ts: `STATE_RE` plus `drafts/` and `view/`), so setup files under `.crew/` (config.yaml, policy.yaml, templates/, bin/) are WIP-committed and seen by the review gate. build.mjs removes its `hub-ui-*` / `hub-ref-*` temp dirs in `finally`. Follow-up: developer.md line 20 ("`.crew/` and secret files stay out") should say "the hub's documents under `.crew/`" once P-032 lands.
