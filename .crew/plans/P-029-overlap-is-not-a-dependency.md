@@ -5,11 +5,11 @@ goal: G-007
 items: FEAT-038, FEAT-028, SPIKE-004
 touches: packages/crew/src/hub/core/work/footprint.ts, packages/crew/src/hub/commands/team/team.ts, packages/crew/src/hub/commands/views/checks.ts, packages/crew/test/hub/e2e/shared-touches.test.ts, .crew/config.yaml, plugins/crew/skills/hub/agents/architect.md, plugins/crew/skills/hub/references/model.md
 depends_on:
-status: ready
+status: in-progress
 branch: plan/P-029-overlap-is-not-a-dependency
 pr:
 created: 2026-10-25
-started:
+started: 2026-10-25
 completed:
 assignee: developer
 ---
@@ -105,5 +105,6 @@ SPIKE-004's answer is recorded as K-2026-10-25-overlaps-on-hub-shared-paths-incl
 - 2026-10-25: status draft → ready
 - 2026-10-25: Architect: `plugins/crew/skills/team/SKILL.md` added to this repo's hub.shared list (P-031, P-033, P-034 and P-035 each edit a different section of it).
 - 2026-10-25: assigned to the developer role
+- 2026-10-25: status ready → in-progress — branch plan/P-029-overlap-is-not-a-dependency
 
 ## Outcome
