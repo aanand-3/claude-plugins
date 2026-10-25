@@ -134,6 +134,7 @@ Latest log:
 - 2026-10-25: status done → in-progress — release suite: update view.test.ts expectation (log 3e2919e); one-time --force approved by the executive
 - 2026-10-25: status in-progress → in-review — view.test.ts expectation updated (c1e3c32); .crew/config.yaml hub.shared change is still uncommitted in the worktree (checkpoint skips .crew/) and must go into the plan's commit
 - 2026-10-25: status in-review → done
+- 2026-10-25: release blocked (2nd attempt): branch rebased on main (dd59086; checkpoint now 2126b05), config.yaml merged (main's full_suite + hub.shared), npm ci + hub.build ok, typecheck + tests 346/346 pass. refresh-bin and refresh-bin --check were denied by the session's permission system (.crew/bin is protected; the user's brief says the executive's session refreshes it), so hub.full_suite cannot complete. Not committed, not merged; work left in its worktree.
 
 ## Outcome
 `hub.shared` (a YAML list under `hub:` in .crew/config.yaml) makes overlaps on shared touches non-blocking in `staff` and in `check`'s overlap hint; the hint now says to narrow touches or share the file, not to add depends_on. New `check` touches rule: ERROR for a `hub.shared` that isn't a list; hints for broad wildcard touches (> 10 tracked files or covering a shared file), touches that list generated paths, and depends_on that only stands for an overlap. This repo's config lists the 8 shared paths; model.md and architect.md document it.
