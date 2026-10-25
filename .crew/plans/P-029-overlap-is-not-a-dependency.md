@@ -100,6 +100,18 @@ SPIKE-004's answer is recorded as K-2026-10-25-overlaps-on-hub-shared-paths-incl
 
 ## Handoff
 
+_Generated 2026-10-25 by `crew.mjs handoff` from the ledger._
+
+- P-029: Overlap is not a dependency [in-progress] tasks 0/6 — claimed by Arpit Anand (developer:a241674714d74a684)
+- last checkpoint 2026-10-25 07:16 at T6 (f7c315a) by Arpit Anand; since then 0 commit(s), 7 uncommitted file(s): .crew/config.yaml, packages/crew/src/hub/commands/team/team.ts, packages/crew/src/hub/commands/views/checks.ts, packages/crew/src/hub/core/work/footprint.ts, plugins/crew/skills/hub/agents/architect.md, plugins/crew/skills/hub/references/model.md, packages/crew/test/hub/e2e/shared-touches.test.ts
+- next: T1: footprint.ts `sharedGlobs`, `isShared`, `blockingGlobs`, shared-aware `overlapping` → verify: `cd packages/crew && npx vitest run test/hub/e2e/shared-touches.test.ts -t overlap` (AC1, AC2, AC3)
+- evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —, AC7 —, AC8 —, AC9 —
+
+Latest log:
+- 2026-10-25: Architect: `plugins/crew/skills/team/SKILL.md` added to this repo's hub.shared list (P-031, P-033, P-034 and P-035 each edit a different section of it).
+- 2026-10-25: assigned to the developer role
+- 2026-10-25: status ready → in-progress — branch plan/P-029-overlap-is-not-a-dependency
+
 ## Progress log
 
 - 2026-10-25: status draft → ready
