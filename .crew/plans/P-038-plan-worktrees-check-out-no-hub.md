@@ -69,6 +69,19 @@ The fix: plan worktrees are sparse checkouts that leave those paths out. The set
 
 ## Handoff
 
+_Generated 2026-10-25 by `crew.mjs handoff` from the ledger._
+
+- P-038: Plan worktrees check out no hub documents [in-progress] tasks 0/3 — claimed by Arpit Anand (developer:aac1317208fc9d5b5)
+- last checkpoint 2026-10-25 08:55 at T3 (def8a26) by Arpit Anand; since then 0 commit(s), 4 uncommitted file(s): packages/crew/src/hub/commands/work/planning.ts, packages/crew/test/hub-worktrees.test.ts, packages/crew/test/hub/e2e/worktrees.test.ts, packages/crew/test/hub/e2e/sparse-worktrees.test.ts
+- don't retry: run existing worktree tests unchanged (AC6) — 2 of 19 fail by design: worktrees.test.ts:42 and hub-worktrees.test.ts:127 read hub documents inside the plan worktree, which AC1 removes; typecheck passes
+- next: T1: the test file with AC1–AC5, failing on today's code (the worktree holds `.crew/plans`) → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/sparse-worktrees.test.ts` fails on AC1
+- evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —
+
+Latest log:
+- 2026-10-25: assigned to the developer role
+- 2026-10-25: status ready → in-progress — branch plan/P-038-plan-worktrees-check-out-no-hub
+- 2026-10-25: Spec amended for Q-5e93cb: touches widened to test/hub/e2e/worktrees.test.ts and test/hub-worktrees.test.ts; AC6 now allows exactly two one-line edits turning hub-document reads in the worktree into absence assertions, since AC1 removes those documents and the tests' intent (no plan docs in the worktree, worktree copy never written) holds more strongly. No overlap with P-041; P-039 already lists both files and is sequenced after P-038.
+
 ## Progress log
 
 - 2026-10-25: status draft → ready
