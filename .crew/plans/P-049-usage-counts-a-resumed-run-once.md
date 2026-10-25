@@ -93,6 +93,7 @@ Latest log:
 - 2026-10-26: assigned to the developer role
 - 2026-10-26: status ready → in-progress — branch plan/P-049-usage-counts-a-resumed-run-once
 - 2026-10-26: status in-progress → in-review
+- 2026-10-26: Executive authorized (team session, 2026-10-26): QA re-records P-049's AC2, AC3, AC5 and AC6 checkpoints under the qa identity, one direct checkpoint call each, appending ledger entries and editing nothing. Earlier QA checks passed but were recorded by a run with no role.
 
 ## Outcome
 `countedUsage(events)` (exported, pure) in core/memory/ledger.ts returns the usage events in order with `tokens_in`, `tokens_out`, `cost` and `cache_read` replaced by what each adds: a `source: "transcript"` event adds its delta over the run's previous transcript event (in full when it is the first, or when `tokens_in`, `tokens_out` or `cache_read` dropped); any other usage event counts as recorded. `spend()` iterates it (attribution and run counting unchanged); `liveRuns` sums it for a run's `tokens`. The hook and recorded events are unchanged. Regression tests: 3 new `spend` cases in test/ledger.test.ts, 1 `liveRuns` case in test/activity.test.ts, and "usage of a resumed run counts its latest transcript once" in test/hub/e2e/team-2.test.ts (on the old code it reports 453 = 213 + 240). Awaiting QA.
