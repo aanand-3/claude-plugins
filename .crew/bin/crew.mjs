@@ -7376,6 +7376,21 @@ import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import { resolve } from "node:path";
 
+// src/shared/secrets.ts
+var SECRET_PATTERNS = {
+  "AWS access key": /\b(AKIA|ASIA)[0-9A-Z]{16}\b/,
+  "private key": /-----BEGIN [A-Z ]*PRIVATE KEY-----/,
+  "GitHub token": /\b(gh[pousr]_[A-Za-z0-9]{36,}|github_pat_[A-Za-z0-9_]{60,})\b/,
+  "Slack token": /\bxox[abprs]-[A-Za-z0-9-]{10,}\b/,
+  "Anthropic API key": /\bsk-ant-[A-Za-z0-9_-]{20,}/,
+  "OpenAI API key": /\bsk-(proj-)?[A-Za-z0-9_-]{32,}/,
+  "Google API key": /\bAIza[0-9A-Za-z_-]{35}\b/,
+  "Stripe live key": /\b(sk|rk)_live_[0-9A-Za-z]{20,}\b/,
+  "HubSpot private app token": /\bpat-(na|eu)\d-[0-9a-f]{8}-[0-9a-f-]{27}\b/,
+  "credentials in URL": /\b[a-z][a-z0-9+.-]*:\/\/[^/\s:@]+:[^/\s:@]{8,}@(?!localhost|127\.0\.0\.1|postgres|redis|db\b)/
+};
+var ALLOW_SECRET = "pk:allow-secret";
+
 // src/hub/core/work/model.ts
 var TEMPLATE_NAMES = [
   "idea.md",
@@ -7544,6 +7559,103 @@ function byKey(key) {
   };
 }
 
+// src/hub/core/memory/knowledge.ts
+var KNOWLEDGE_TYPES = ["decision", "learning", "gotcha", "convention", "risk"];
+var TIERS = ["project", "playbook-candidate"];
+var K_ID_RE = /\bK-\d{4}-\d{2}-\d{2}-[a-z0-9-]+\b/g;
+var RISK_LEVELS = ["H", "M", "L"];
+function secretsIn(text, extra = []) {
+  const lines = text.split("\n").filter((l) => !l.includes(ALLOW_SECRET)).join("\n");
+  const custom = Object.fromEntries(extra.flatMap((p, i) => {
+    try {
+      return [[`policy secrets.patterns[${i}]`, new RegExp(p)]];
+    } catch {
+      return [];
+    }
+  }));
+  return Object.entries({ ...SECRET_PATTERNS, ...custom }).filter(([, re]) => re.test(lines)).map(([name]) => name);
+}
+function globRe(glob) {
+  const g = glob.replace(/^\.\//, "").replace(/\/$/, "/**");
+  let re = "";
+  for (let i = 0; i < g.length; i++) {
+    const c = g[i];
+    if (c === "*" && g[i + 1] === "*") {
+      re += g[i + 2] === "/" ? "(?:.*/)?" : ".*";
+      i += g[i + 2] === "/" ? 2 : 1;
+    } else if (c === "*") re += "[^/]*";
+    else if (c === "?") re += "[^/]";
+    else re += c.replace(/[.+^${}()|[\]\\]/g, "\\$&");
+  }
+  return new RegExp(`^${re}(?:/.*)?$`);
+}
+var stem = (glob) => glob.replace(/^\.\//, "").split(/[*?[]/)[0];
+function globsOverlap(a, b) {
+  const [x, y] = [stem(a), stem(b)];
+  return x.startsWith(y) || y.startsWith(x) || globRe(a).test(stem(b)) || globRe(b).test(stem(a));
+}
+function toEntry(doc, origin) {
+  return {
+    doc,
+    id: doc.id,
+    type: doc.get("type") ?? "",
+    title: doc.get("title") ?? "",
+    origin,
+    scope: (doc.get("scope") ?? "").split(",").map((s) => s.trim()).filter(Boolean),
+    tier: doc.get("tier") || "project",
+    source: doc.get("source") ?? "",
+    supersedes: (doc.get("supersedes") || "").trim() || null,
+    supersededBy: null
+  };
+}
+function linkSupersession(entries) {
+  const by = new Map(entries.map((e) => [e.id, e]));
+  for (const e of entries) if (e.supersedes && by.has(e.supersedes)) by.get(e.supersedes).supersededBy = e.id;
+  return entries;
+}
+function recall(entries, q) {
+  const words3 = (q.topic ?? "").toLowerCase().split(/\s+/).filter(Boolean);
+  return entries.filter((e) => {
+    if (!q.all && e.supersededBy) return false;
+    if (q.type && e.type !== q.type) return false;
+    if (words3.length) {
+      const text = `${e.title}
+${stripComments(e.doc.text)}`.toLowerCase();
+      if (!words3.every((w) => text.includes(w))) return false;
+    }
+    if (!q.paths?.length && !q.globs?.length) return true;
+    if (!e.scope.length) return true;
+    return e.scope.some((s) => (q.paths ?? []).some((p) => globRe(s).test(p)) || (q.globs ?? []).some((g) => globsOverlap(s, g)));
+  });
+}
+function entryText(f) {
+  const risk = f.type === "risk" ? `likelihood: ${f.risk?.likelihood ?? ""}
+impact: ${f.risk?.impact ?? ""}
+owner: ${f.risk?.owner ?? ""}
+` : "";
+  return `---
+id: ${f.id}
+type: ${f.type}
+title: ${f.title}
+scope: ${f.scope.join(", ")}
+source: ${f.source}
+` + `supersedes: ${f.supersedes}
+tier: ${f.tier}
+${risk}created: ${today()}
+---
+
+# ${f.title}
+
+${f.why.trim()}
+`.replace(/: \n/g, ":\n");
+}
+function knowledgeId(title, taken) {
+  const base = `K-${today()}-${slugify(title).slice(0, 40).replace(/-+$/, "")}`;
+  let id = base, n = 2;
+  while (taken(id)) id = `${base}-${n++}`;
+  return id;
+}
+
 // src/hub/core/git.ts
 var ROOT = null;
 function useRoot(root) {
@@ -7594,9 +7706,28 @@ function squashMerge(branch, base, pid) {
   const names = new RegExp(`^(\\w+\\(${pid}\\)|${pid}):`);
   for (const line2 of (git(["log", "--format=%H %s", `${fork}..${base}`]) ?? "").split("\n")) {
     const [sha, subject] = [line2.slice(0, line2.indexOf(" ")), line2.slice(line2.indexOf(" ") + 1)];
-    if (sha && names.test(subject) && git(["--literal-pathspecs", "diff", "--quiet", branch, sha, "--", ...changed2]) !== null) return sha;
+    if (sha && names.test(subject) && mergesToItself(sha, branch, changed2)) return sha;
   }
   return null;
+}
+function mergesToItself(sha, branch, changed2) {
+  const r = spawnSync("git", [...ROOT ? ["-C", ROOT] : [], "merge-tree", "--write-tree", sha, branch], { encoding: "utf8" });
+  if (r.status === 0) return r.stdout.split("\n")[0].trim() === git(["rev-parse", `${sha}^{tree}`])?.trim();
+  if (r.status === 1) return false;
+  return git(["--literal-pathspecs", "diff", "--quiet", branch, sha, "--", ...changed2]) !== null;
+}
+function generated(dir, files2) {
+  const out = /* @__PURE__ */ new Set();
+  if (!files2.length) return out;
+  const attrs = (git(["-C", dir, "check-attr", "-z", "linguist-generated", "--", ...files2]) ?? "").split("\0");
+  for (let i = 0; i + 2 < attrs.length; i += 3) if (attrs[i + 2] === "true" || attrs[i + 2] === "set") out.add(attrs[i]);
+  return out;
+}
+function codeChanges(dir, secretGlobs) {
+  const secret = secretGlobs.map(globRe);
+  const files2 = changed(dir, ["."]).filter((f) => !f.startsWith(".crew/") && !secret.some((re) => re.test(f)));
+  const gen = generated(dir, files2);
+  return files2.filter((f) => !gen.has(f));
 }
 function planBranches() {
   return words(git(["for-each-ref", "--format=%(refname:short)", "refs/heads/plan/", "refs/remotes/origin/plan/"]));
@@ -7979,118 +8110,6 @@ function releaseLock(lock, token) {
     if (readFileSync(lock, "utf8") === token) unlinkSync(lock);
   } catch {
   }
-}
-
-// src/shared/secrets.ts
-var SECRET_PATTERNS = {
-  "AWS access key": /\b(AKIA|ASIA)[0-9A-Z]{16}\b/,
-  "private key": /-----BEGIN [A-Z ]*PRIVATE KEY-----/,
-  "GitHub token": /\b(gh[pousr]_[A-Za-z0-9]{36,}|github_pat_[A-Za-z0-9_]{60,})\b/,
-  "Slack token": /\bxox[abprs]-[A-Za-z0-9-]{10,}\b/,
-  "Anthropic API key": /\bsk-ant-[A-Za-z0-9_-]{20,}/,
-  "OpenAI API key": /\bsk-(proj-)?[A-Za-z0-9_-]{32,}/,
-  "Google API key": /\bAIza[0-9A-Za-z_-]{35}\b/,
-  "Stripe live key": /\b(sk|rk)_live_[0-9A-Za-z]{20,}\b/,
-  "HubSpot private app token": /\bpat-(na|eu)\d-[0-9a-f]{8}-[0-9a-f-]{27}\b/,
-  "credentials in URL": /\b[a-z][a-z0-9+.-]*:\/\/[^/\s:@]+:[^/\s:@]{8,}@(?!localhost|127\.0\.0\.1|postgres|redis|db\b)/
-};
-var ALLOW_SECRET = "pk:allow-secret";
-
-// src/hub/core/memory/knowledge.ts
-var KNOWLEDGE_TYPES = ["decision", "learning", "gotcha", "convention", "risk"];
-var TIERS = ["project", "playbook-candidate"];
-var K_ID_RE = /\bK-\d{4}-\d{2}-\d{2}-[a-z0-9-]+\b/g;
-var RISK_LEVELS = ["H", "M", "L"];
-function secretsIn(text, extra = []) {
-  const lines = text.split("\n").filter((l) => !l.includes(ALLOW_SECRET)).join("\n");
-  const custom = Object.fromEntries(extra.flatMap((p, i) => {
-    try {
-      return [[`policy secrets.patterns[${i}]`, new RegExp(p)]];
-    } catch {
-      return [];
-    }
-  }));
-  return Object.entries({ ...SECRET_PATTERNS, ...custom }).filter(([, re]) => re.test(lines)).map(([name]) => name);
-}
-function globRe(glob) {
-  const g = glob.replace(/^\.\//, "").replace(/\/$/, "/**");
-  let re = "";
-  for (let i = 0; i < g.length; i++) {
-    const c = g[i];
-    if (c === "*" && g[i + 1] === "*") {
-      re += g[i + 2] === "/" ? "(?:.*/)?" : ".*";
-      i += g[i + 2] === "/" ? 2 : 1;
-    } else if (c === "*") re += "[^/]*";
-    else if (c === "?") re += "[^/]";
-    else re += c.replace(/[.+^${}()|[\]\\]/g, "\\$&");
-  }
-  return new RegExp(`^${re}(?:/.*)?$`);
-}
-var stem = (glob) => glob.replace(/^\.\//, "").split(/[*?[]/)[0];
-function globsOverlap(a, b) {
-  const [x, y] = [stem(a), stem(b)];
-  return x.startsWith(y) || y.startsWith(x) || globRe(a).test(stem(b)) || globRe(b).test(stem(a));
-}
-function toEntry(doc, origin) {
-  return {
-    doc,
-    id: doc.id,
-    type: doc.get("type") ?? "",
-    title: doc.get("title") ?? "",
-    origin,
-    scope: (doc.get("scope") ?? "").split(",").map((s) => s.trim()).filter(Boolean),
-    tier: doc.get("tier") || "project",
-    source: doc.get("source") ?? "",
-    supersedes: (doc.get("supersedes") || "").trim() || null,
-    supersededBy: null
-  };
-}
-function linkSupersession(entries) {
-  const by = new Map(entries.map((e) => [e.id, e]));
-  for (const e of entries) if (e.supersedes && by.has(e.supersedes)) by.get(e.supersedes).supersededBy = e.id;
-  return entries;
-}
-function recall(entries, q) {
-  const words3 = (q.topic ?? "").toLowerCase().split(/\s+/).filter(Boolean);
-  return entries.filter((e) => {
-    if (!q.all && e.supersededBy) return false;
-    if (q.type && e.type !== q.type) return false;
-    if (words3.length) {
-      const text = `${e.title}
-${stripComments(e.doc.text)}`.toLowerCase();
-      if (!words3.every((w) => text.includes(w))) return false;
-    }
-    if (!q.paths?.length && !q.globs?.length) return true;
-    if (!e.scope.length) return true;
-    return e.scope.some((s) => (q.paths ?? []).some((p) => globRe(s).test(p)) || (q.globs ?? []).some((g) => globsOverlap(s, g)));
-  });
-}
-function entryText(f) {
-  const risk = f.type === "risk" ? `likelihood: ${f.risk?.likelihood ?? ""}
-impact: ${f.risk?.impact ?? ""}
-owner: ${f.risk?.owner ?? ""}
-` : "";
-  return `---
-id: ${f.id}
-type: ${f.type}
-title: ${f.title}
-scope: ${f.scope.join(", ")}
-source: ${f.source}
-` + `supersedes: ${f.supersedes}
-tier: ${f.tier}
-${risk}created: ${today()}
----
-
-# ${f.title}
-
-${f.why.trim()}
-`.replace(/: \n/g, ":\n");
-}
-function knowledgeId(title, taken) {
-  const base = `K-${today()}-${slugify(title).slice(0, 40).replace(/-+$/, "")}`;
-  let id = base, n = 2;
-  while (taken(id)) id = `${base}-${n++}`;
-  return id;
 }
 
 // src/hub/core/team/policy.ts
@@ -8854,17 +8873,19 @@ function drift(plan, base, home) {
   ].filter(Boolean));
   const globs = plan.touches().map(globRe);
   const outside = [...changed2].filter((f) => !f.startsWith(".crew/") && !globs.some((g) => g.test(f)));
-  const generated = /* @__PURE__ */ new Set();
+  const generated2 = /* @__PURE__ */ new Set();
   if (outside.length) {
     const out = (at(["check-attr", "-z", "linguist-generated", "--", ...outside]) ?? "").split("\0");
-    for (let i = 0; i + 2 < out.length; i += 3) if (out[i + 2] === "true" || out[i + 2] === "set") generated.add(out[i]);
+    for (let i = 0; i + 2 < out.length; i += 3) if (out[i + 2] === "true" || out[i + 2] === "set") generated2.add(out[i]);
   }
-  return outside.filter((f) => !generated.has(f)).sort();
+  return outside.filter((f) => !generated2.has(f)).sort();
 }
 
 // src/hub/commands/work/execution.ts
 import { spawnSync as spawnSync3 } from "node:child_process";
 import { createHash as createHash2 } from "node:crypto";
+import { existsSync as existsSync8 } from "node:fs";
+import { join as join14 } from "node:path";
 
 // src/hub/commands/team/questions.ts
 import { randomBytes as randomBytes2 } from "node:crypto";
@@ -10354,6 +10375,11 @@ function hintUnplanned(store, goal, items2) {
 
 // src/hub/commands/work/review.ts
 var lastCode = (branch) => git(["log", "-1", "--format=%H", branch, "--", ".", ":(exclude).crew"])?.trim() || null;
+function uncommitted(store, plan) {
+  if (!store.settings().plan_worktrees) return null;
+  const home = store.planHome(plan.id);
+  return home ? codeChanges(home, store.policy.policy.secrets.files) : [];
+}
 function review(store, planId, o) {
   store.require();
   const plan = store.find(store.checkRef(planId, "plan"));
@@ -10362,6 +10388,10 @@ function review(store, planId, o) {
   authorize(store, plan.id, "plan.reviewed", void 0, void 0, `review ${plan.id}`);
   const me = store.ledger.who.run;
   if (implementers(store.ledger.events(), plan.id).has(me)) fail(`This run (${me}) implemented ${plan.id}; another role reviews it.`);
+  const open = o.approve ? uncommitted(store, plan) ?? [] : [];
+  if (open.length) {
+    fail(`${plan.id}'s worktree has uncommitted code: ${open.slice(0, 10).join(", ")}${open.length > 10 ? ", \u2026" : ""}. \`checkpoint ${plan.id}\` commits it on the plan's branch; then review again.`);
+  }
   const branch = plan.get("branch") ?? "";
   const sha = branch && git(["rev-parse", "--verify", "-q", branch])?.trim() || null;
   store.ledger.record("review", plan.id, { verdict: o.approve ? "approve" : "changes", sha, ...o.changes ? { text: o.changes } : {} });
@@ -10378,9 +10408,9 @@ function reviewProblems(store, plan) {
   if (!last) return [`no code review yet: ${how}`];
   if (last.verdict !== "approve") return [`the last review asked for changes: ${last.text}`];
   const code = lastCode(plan.get("branch") ?? "");
-  const dirty2 = (git(["status", "--porcelain"]) ?? "").split("\n").filter((l) => l.trim() && !l.slice(3).startsWith(".crew/"));
+  const dirty2 = uncommitted(store, plan) ?? (currentBranch() !== plan.get("branch") ? [] : (git(["status", "--porcelain"]) ?? "").split("\n").filter((l) => l.trim() && !l.slice(3).startsWith(".crew/")));
   const covered = !code || !!last.sha && git(["merge-base", "--is-ancestor", code, String(last.sha)]) !== null;
-  return covered && !(currentBranch() === plan.get("branch") && dirty2.length) ? [] : [`the code changed since the approving review (${String(last.sha ?? "?").slice(0, 7)}): ${how} again`];
+  return covered && !dirty2.length ? [] : [`the code changed since the approving review (${String(last.sha ?? "?").slice(0, 7)}): ${how} again`];
 }
 
 // src/hub/commands/work/workflow.ts
@@ -10408,6 +10438,7 @@ function move(store, docId, status2, note, force = false, approvedBy, via) {
   const lane = kind === "plan" && status2 === "ready" && fastLane(store, doc);
   authorize(store, doc.id, via ?? `${kind}.${status2}`, approvedBy, via ? void 0 : old, void 0, lane ? ["pm"] : []);
   if (kind === "plan" && status2 === "in-progress" && !via) claimFor(store, doc, force);
+  if (kind === "plan" && status2 === "in-review") commitWork(store, doc, `chore(${doc.id}): hand over to review`);
   stamp(kind, doc, status2);
   doc.set("status", status2);
   if (kind === "plan" && status2 === "in-review" && doc.source === "worktree") writeHandoff(store, doc);
@@ -10549,7 +10580,7 @@ function start(store, planId, force = false, approvedBy) {
       }
     }
     claimPlan(store, planId, branch, force, takeover, approvedBy);
-    store.say(`${doc.id}: work in ${store.ws.rel(home) || "this checkout"} (${branch}) \u2014 claimed by ${store.ledger.who.actor} (${store.ledger.who.run}); its code is committed when the plan completes`);
+    store.say(`${doc.id}: work in ${store.ws.rel(home) || "this checkout"} (${branch}) \u2014 claimed by ${store.ledger.who.actor} (${store.ledger.who.run}); checkpoints commit its code on the branch`);
     return;
   }
   const from = currentBranch(), sha = git(["rev-parse", "HEAD"])?.trim();
@@ -10970,24 +11001,25 @@ function checkpoint(store, id, o = {}) {
     fail("Not on a plan branch: name the plan (`checkpoint P-###`).");
   }
   const home = plan.id.startsWith("P-") && store.planHome(plan.id) || store.ws.root;
+  const acs = parseAc(o.ac, criteria(plan).length);
+  const prints = acs.map((n) => acPrint(criteria(plan)[n - 1]));
+  if (o.verify && o.result !== "pass" && o.result !== "fail") fail("--verify needs --result pass|fail.");
+  if (o.attempt && !o.why) fail("--attempt needs --why: what made it fail, so the next run doesn't retry it.");
+  const goal = plan.id.startsWith("G-");
+  if (goal && !o.run && !o.verify) fail(`A goal's checkpoint records evidence: \`checkpoint ${plan.id} --verify "<how>" --result pass|fail --ac n\`.`);
+  const step = goal ? "goal" : o.step ?? plan.tasks().find(([done]) => !done)?.[1].split(":")[0] ?? "done";
+  if (!o.auto && !goal) commitWork(store, plan, `chore(${plan.id}): checkpoint ${step}`);
   const snap = snapshot(home);
   const last = checkpoints(store.ledger.events(), plan.id).at(-1);
   if (o.auto && last?.fingerprint === snap.fingerprint) return 0;
-  const acs = parseAc(o.ac, criteria(plan).length);
-  const prints = acs.map((n) => acPrint(criteria(plan)[n - 1]));
   const verify = [];
   if (o.run) {
     const r = spawnSync3(o.run, { shell: true, cwd: home, encoding: "utf8", timeout: RUN_TIMEOUT_MS, maxBuffer: 32 << 20 });
     verify.push({ cmd: o.run, ok: r.status === 0, ac: acs, ac_text: prints, output: tail2(`${r.stdout ?? ""}${r.stderr ?? ""}`, store.policy.policy.secrets.patterns), observed: true });
   }
   if (o.verify) {
-    if (o.result !== "pass" && o.result !== "fail") fail("--verify needs --result pass|fail.");
     verify.push({ cmd: o.verify, ok: o.result === "pass", ac: acs, ac_text: prints, ...o.output ? { output: tail2(o.output, store.policy.policy.secrets.patterns) } : {}, observed: false });
   }
-  if (o.attempt && !o.why) fail("--attempt needs --why: what made it fail, so the next run doesn't retry it.");
-  const goal = plan.id.startsWith("G-");
-  if (goal && !verify.length) fail(`A goal's checkpoint records evidence: \`checkpoint ${plan.id} --verify "<how>" --result pass|fail --ac n\`.`);
-  const step = goal ? "goal" : o.step ?? plan.tasks().find(([done]) => !done)?.[1].split(":")[0] ?? "done";
   store.ledger.record("checkpoint", plan.id, {
     step,
     sha: snap.sha,
@@ -11006,8 +11038,36 @@ function checkpoint(store, id, o = {}) {
 }
 function autoWorktrees(store, o) {
   const plans2 = store.plans();
-  for (const pid of store.planWorktrees().keys()) if (plans2.get(pid)?.get("status") === "in-progress") checkpoint(store, pid, o);
+  for (const pid of store.planWorktrees().keys()) {
+    if (plans2.get(pid)?.get("status") !== "in-progress") continue;
+    try {
+      checkpoint(store, pid, o);
+    } catch (e) {
+      if (!(e instanceof HubError)) throw e;
+      store.say(`${pid}: auto checkpoint failed \u2014 ${e.message}`);
+    }
+  }
   return 0;
+}
+function commitWork(store, plan, subject) {
+  const home = store.settings().plan_worktrees ? store.planHome(plan.id) : null;
+  if (!home || git(["-C", home, "branch", "--show-current"])?.trim() !== plan.get("branch")) return null;
+  const files2 = codeChanges(home, store.policy.policy.secrets.files);
+  if (!files2.length) return null;
+  const at = (args, check2 = false) => git(["-C", home, "--literal-pathspecs", ...args], check2);
+  const prev = at(["rev-parse", "HEAD"])?.trim();
+  const gone = files2.filter((f) => !existsSync8(join14(home, f)));
+  if (files2.length > gone.length) at(["add", "-A", "--", ...files2.filter((f) => !gone.includes(f))], true);
+  if (gone.length) at(["rm", "-q", "--cached", "--ignore-unmatch", "--", ...gone], true);
+  try {
+    at(["commit", "-q", "--only", "-m", subject, "--", ...files2], true);
+  } catch (e) {
+    if (!(e instanceof HubError)) throw e;
+    at(["reset", "-q", "--", ...files2]);
+    fail(`${plan.id}: git refused the commit (${subject}): ${e.message.slice(e.message.indexOf(" failed: ") + 9) || "no message"}`);
+  }
+  store.ws.onAbort(() => at(["reset", "-q", "--soft", prev]));
+  return at(["rev-parse", "HEAD"])?.trim() ?? null;
 }
 function parseAc(spec, n) {
   if (!spec) return [];
@@ -11417,8 +11477,8 @@ var Context = class {
 };
 
 // src/hub/commands/work/migrate.ts
-import { existsSync as existsSync8, readdirSync as readdirSync3, statSync as statSync6 } from "node:fs";
-import { join as join14 } from "node:path";
+import { existsSync as existsSync9, readdirSync as readdirSync3, statSync as statSync6 } from "node:fs";
+import { join as join15 } from "node:path";
 var DROPPED = /^(bin|templates|view)\/|^(ROADMAP|BACKLOG|STATUS|README)\.md$/;
 var ARCHIVED = /^(milestones|sprints|releases)\/|^(project-plan|raid)\.md$/;
 var DOCS = { epics: "goals", items: "items", plans: "plans" };
@@ -11435,7 +11495,7 @@ var OLD_REFS = [
   ".github/workflows/ci.yml"
 ];
 function walk(dir, prefix = "") {
-  return readdirSync3(dir, { withFileTypes: true }).flatMap((e) => e.isDirectory() ? walk(join14(dir, e.name), `${prefix}${e.name}/`) : [`${prefix}${e.name}`]);
+  return readdirSync3(dir, { withFileTypes: true }).flatMap((e) => e.isDirectory() ? walk(join15(dir, e.name), `${prefix}${e.name}/`) : [`${prefix}${e.name}`]);
 }
 function renamed(text) {
   return text.replace(/\bEP-(\d+)/g, "G-$1").replace(/\.project\//g, ".crew/").replace(/\btracker\.mjs\b/g, "crew.mjs").replace(/project-kit:tracker/g, "crew:hub");
@@ -11446,11 +11506,11 @@ function leanDoc(text, kind) {
   return t;
 }
 function migrate(store) {
-  const root = store.ws.root, old = join14(root, ".project");
-  if (!existsSync8(old) || !statSync6(old).isDirectory()) fail("No .project/ directory to migrate.");
-  if (existsSync8(store.dir)) fail(`${store.rel(store.dir)}/ already exists \u2014 move it aside first; nothing was changed.`);
+  const root = store.ws.root, old = join15(root, ".project");
+  if (!existsSync9(old) || !statSync6(old).isDirectory()) fail("No .project/ directory to migrate.");
+  if (existsSync9(store.dir)) fail(`${store.rel(store.dir)}/ already exists \u2014 move it aside first; nothing was changed.`);
   const files2 = walk(old);
-  const read = (rel) => store.ws.read(join14(old, rel)) ?? "";
+  const read = (rel) => store.ws.read(join15(old, rel)) ?? "";
   const exitCriteria = milestoneCriteria(files2.filter((f) => f.startsWith("milestones/")).map(read));
   let counts = { docs: 0, archived: 0, knowledge: 0, issues: 0, drafted: 0 };
   const targets = /* @__PURE__ */ new Map();
@@ -11464,12 +11524,12 @@ function migrate(store) {
     const [dir, name] = [rel.split("/")[0], rel.split("/").pop()];
     const topLevelDoc = DOCS[dir] && name.endsWith(".md") && rel.split("/").length === 2;
     if (!TEXT.test(rel)) {
-      const to = join14(store.dir, ARCHIVED.test(rel) ? "archive" : "", rel);
+      const to = join15(store.dir, ARCHIVED.test(rel) ? "archive" : "", rel);
       put(rel, to);
-      store.ws.copy(join14(old, rel), to);
+      store.ws.copy(join15(old, rel), to);
     } else if (ARCHIVED.test(rel)) {
-      put(rel, join14(store.dir, "archive", rel));
-      store.ws.write(join14(store.dir, "archive", rel), renamed(read(rel)));
+      put(rel, join15(store.dir, "archive", rel));
+      store.ws.write(join15(store.dir, "archive", rel), renamed(read(rel)));
       counts.archived++;
     } else if (topLevelDoc) {
       const doc = Doc.parse(leanDoc(read(rel), dir));
@@ -11479,21 +11539,21 @@ function migrate(store) {
         doc.appendLog("status ready \u2192 draft \u2014 migrated to crew: declare `touches:` before moving it back to ready");
         counts.drafted++;
       }
-      put(rel, join14(store.dir, DOCS[dir], name.replace(/^EP-/, "G-")));
-      store.ws.write(join14(store.dir, DOCS[dir], name.replace(/^EP-/, "G-")), `${doc.text.trimEnd()}
+      put(rel, join15(store.dir, DOCS[dir], name.replace(/^EP-/, "G-")));
+      store.ws.write(join15(store.dir, DOCS[dir], name.replace(/^EP-/, "G-")), `${doc.text.trimEnd()}
 `);
       counts.docs++;
     } else if (rel === "config.yaml") {
-      put(rel, join14(store.dir, rel));
-      store.ws.write(join14(store.dir, rel), renamed(read(rel)).replace(/^[ \t]+tracker:.*\n/m, "").replace(/^modules:[ \t]*\n(?![ \t])/m, ""));
+      put(rel, join15(store.dir, rel));
+      store.ws.write(join15(store.dir, rel), renamed(read(rel)).replace(/^[ \t]+tracker:.*\n/m, "").replace(/^modules:[ \t]*\n(?![ \t])/m, ""));
     } else {
-      const to = join14(store.dir, rel.replace(/^epics\//, "goals/"));
+      const to = join15(store.dir, rel.replace(/^epics\//, "goals/"));
       put(rel, to);
       store.ws.write(to, renamed(read(rel)));
     }
   }
   if (files2.includes("project-plan.md")) {
-    const config = join14(store.dir, "config.yaml");
+    const config = join15(store.dir, "config.yaml");
     store.ws.write(config, hubSettings(store.ws.read(config) ?? "", read("project-plan.md")));
   }
   store.ws.remove(old);
@@ -11508,7 +11568,7 @@ function migrate(store) {
   if (branches.length) {
     store.say(`note: plan branches still hold .project/ (${branches.join(", ")}) \u2014 finish them on the old layout, or merge this commit into each and run \`crew.mjs migrate\` there too; until then their live status is not visible from main`);
   }
-  const stale = OLD_REFS.filter((f) => /\.project\/|tracker\.mjs/.test(store.ws.read(join14(root, f)) ?? ""));
+  const stale = OLD_REFS.filter((f) => /\.project\/|tracker\.mjs/.test(store.ws.read(join15(root, f)) ?? ""));
   if (stale.length) {
     store.say(`next: these still mention .project/ or tracker.mjs \u2014 re-render them (/crew:guidelines --refresh, /crew:git-setup): ${stale.join(", ")}`);
   }
@@ -11541,9 +11601,9 @@ function raid(store, text) {
       const title = row.decision || row.assumption || row.risk || Object.values(row).find((v) => v && !/^[A-Z]+-?\d+$/.test(v)) || "";
       if (!title) continue;
       const fields = Object.entries(row).filter(([, v]) => v).map(([k, v]) => `- **${k}:** ${v}`).join("\n");
-      const id = knowledgeId(title, (k) => store.ws.isFile(join14(store.knowledgeDir, `${k}.md`)));
+      const id = knowledgeId(title, (k) => store.ws.isFile(join15(store.knowledgeDir, `${k}.md`)));
       const level = (v) => (v ?? "").trim().slice(0, 1).toUpperCase();
-      store.ws.write(join14(store.knowledgeDir, `${id}.md`), entryText({
+      store.ws.write(join15(store.knowledgeDir, `${id}.md`), entryText({
         id,
         type,
         title,
@@ -11574,20 +11634,20 @@ ${details}
 }
 
 // src/hub/commands/work/gather.ts
-import { existsSync as existsSync9, realpathSync as realpathSync5, statSync as statSync7 } from "node:fs";
-import { basename as basename5, dirname as dirname6, join as join15 } from "node:path";
-var real4 = (p) => existsSync9(p) ? realpathSync5(p) : p;
+import { existsSync as existsSync10, realpathSync as realpathSync5, statSync as statSync7 } from "node:fs";
+import { basename as basename5, dirname as dirname6, join as join16 } from "node:path";
+var real4 = (p) => existsSync10(p) ? realpathSync5(p) : p;
 var mtimeOf = (p) => statSync7(p, { throwIfNoEntry: false })?.mtimeMs ?? 0;
 function copies(store) {
   const out = [], base = store.baseBranch();
   for (const { path: wt } of worktrees()) {
-    if (!existsSync9(wt) || real4(wt) === real4(store.home)) continue;
+    if (!existsSync10(wt) || real4(wt) === real4(store.home)) continue;
     const dirty2 = new Set(dirty(wt, ".crew").filter((f) => STATE_RE.test(f)));
     const ahead = (git(["-C", wt, "diff", "--name-only", "--diff-filter=AM", `${base}...HEAD`, "--", ".crew"]) ?? "").split("\n").filter((f) => STATE_RE.test(f) && !dirty2.has(f));
     for (const f of [...dirty2, ...ahead]) {
-      const text = store.ws.read(join15(wt, f));
-      if (text !== null && text !== store.ws.read(join15(store.home, f))) {
-        out.push({ wt, f, text, mtime: mtimeOf(join15(wt, f)), committed: !dirty2.has(f) });
+      const text = store.ws.read(join16(wt, f));
+      if (text !== null && text !== store.ws.read(join16(store.home, f))) {
+        out.push({ wt, f, text, mtime: mtimeOf(join16(wt, f)), committed: !dirty2.has(f) });
       }
     }
   }
@@ -11602,7 +11662,7 @@ function gather(store) {
   const seen = /* @__PURE__ */ new Map();
   let n = 0;
   for (const c of copies(store)) {
-    const from = `${store.ws.rel(c.wt) || c.wt}`, target = join15(store.home, c.f);
+    const from = `${store.ws.rel(c.wt) || c.wt}`, target = join16(store.home, c.f);
     const doc = Doc.parse(c.text, target), key = `${doc.id} ${doc.get("title")}`;
     const prior = seen.get(c.f) ?? (doc.id ? seen.get(key) : void 0);
     if (prior) {
@@ -11615,7 +11675,7 @@ function gather(store) {
       } else if (same && same.path !== target && same.get("title") !== doc.get("title")) {
         const id = store.nextId(doc.id.replace(/-\d+$/, ""), kindOf(doc.id));
         const text = c.text.replace(new RegExp(`^id: ${doc.id}$`, "m"), `id: ${id}`).replace(new RegExp(`^# ${doc.id}:`, "m"), `# ${id}:`);
-        const path = join15(dirname6(target), basename5(target).replace(doc.id, id));
+        const path = join16(dirname6(target), basename5(target).replace(doc.id, id));
         store.ws.write(path, text);
         store.say(`${doc.id} in ${from} clashes with ${same.id} "${same.get("title")}": gathered as ${id} (${store.rel(path)}); check what refers to ${doc.id}`);
       } else {
@@ -11635,18 +11695,18 @@ function gather(store) {
 
 // src/hub/commands/views/design.ts
 var import_yaml3 = __toESM(require_dist(), 1);
-import { existsSync as existsSync10, readFileSync as readFileSync9 } from "node:fs";
-import { dirname as dirname7, join as join16 } from "node:path";
+import { existsSync as existsSync11, readFileSync as readFileSync9 } from "node:fs";
+import { dirname as dirname7, join as join17 } from "node:path";
 var HANDOFF_KINDS = ["finalise", "locked", "revision", "screen-change", "screens-done", "screens-skipped"];
 var STAGES = ["palette", "directions", "tune", "finalise", "screens", "done"];
 var STATE_KEYS = ["stage", "shortlist", "variants", "current", "reviews"];
 var REQUIRED_COLORS = ["background", "foreground", "primary", "primary-foreground"];
 var FRONT = /^---\n([\s\S]*?)\n---\n/;
 function designPath(store) {
-  const cfg = store.ws.read(join16(store.dir, "config.yaml")) ?? "";
-  return join16(store.ws.root, yamlBlock(cfg, "design").file ?? "docs/design/DESIGN.md");
+  const cfg = store.ws.read(join17(store.dir, "config.yaml")) ?? "";
+  return join17(store.ws.root, yamlBlock(cfg, "design").file ?? "docs/design/DESIGN.md");
 }
-var studioPath = (store) => join16(dirname7(designPath(store)), "studio.json");
+var studioPath = (store) => join17(dirname7(designPath(store)), "studio.json");
 function readDesign(store) {
   const path = designPath(store);
   const text = store.ws.read(path);
@@ -11800,7 +11860,7 @@ function designWait(store, timeoutSec) {
   const path = studioPath(store);
   const pending = () => {
     try {
-      return existsSync10(path) ? JSON.parse(readFileSync9(path, "utf8")).handoffs ?? [] : [];
+      return existsSync11(path) ? JSON.parse(readFileSync9(path, "utf8")).handoffs ?? [] : [];
     } catch {
       return [];
     }
@@ -11828,9 +11888,9 @@ Do each, then \`crew.mjs design done <id>\` (the page updates live) and run \`de
 // src/hub/server.ts
 import { spawn } from "node:child_process";
 import { randomBytes as randomBytes3 } from "node:crypto";
-import { existsSync as existsSync11, mkdirSync as mkdirSync5, watch as watch2 } from "node:fs";
+import { existsSync as existsSync12, mkdirSync as mkdirSync5, watch as watch2 } from "node:fs";
 import { createServer } from "node:http";
-import { basename as basename6, dirname as dirname8, join as join17 } from "node:path";
+import { basename as basename6, dirname as dirname8, join as join18 } from "node:path";
 var str = (b, k) => typeof b[k] === "string" && b[k] ? b[k] : void 0;
 var ACTIONS2 = {
   move: (s, b) => {
@@ -11937,9 +11997,9 @@ function serve(store, o) {
     store.dir,
     dirname8(designPath(store)),
     ...ledgerDir !== store.dir ? [ledgerDir] : [],
-    ...common ? [join17(common, "refs"), join17(common, "HEAD")] : []
+    ...common ? [join18(common, "refs"), join18(common, "HEAD")] : []
   ];
-  const watchers = [...new Set(watched)].filter((p) => existsSync11(p)).map((p) => watch2(p, { recursive: !p.endsWith("HEAD") && (p !== ledgerDir || p === store.dir) }, (_, file) => {
+  const watchers = [...new Set(watched)].filter((p) => existsSync12(p)).map((p) => watch2(p, { recursive: !p.endsWith("HEAD") && (p !== ledgerDir || p === store.dir) }, (_, file) => {
     const f = String(file ?? "");
     if (/\.lock$|\.stale-/.test(basename6(f))) return;
     if (!(p === store.dir && f.startsWith("view"))) notify2();

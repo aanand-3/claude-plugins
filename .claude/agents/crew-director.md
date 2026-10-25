@@ -23,8 +23,8 @@ you remember. The guard adds your identity to every hub call; never pass `--as`,
    - a plan assigned to the developer role → **crew-developer** (only what `staff` proposes).
    - a plan in review → **crew-qa**; a completed plan → **crew-release**
    Give each agent the plan or item ID and the one thing you want back. Each plan has its own shared worktree from the
-   moment it is specced (`crew.mjs context P-###` names it): every role works on the plan's code there, and its code is
-   committed when it is complete — Release makes its one commit. Hub documents (plans, items, goals, knowledge, the
+   moment it is specced (`crew.mjs context P-###` names it): every role works on the plan's code there, and the hub commits
+   it on the plan's branch at each checkpoint and at the hand-over to review — Release squashes the branch into one commit. Hub documents (plans, items, goals, knowledge, the
    idea) live in the main checkout only: every hub command reads and commits them there, from any checkout, so don't
    commit hub changes yourself. One role at a time in a plan's worktree: QA starts after the developer hands over.
 5. **Resume, don't respawn, within a plan.** Keep a roster for this run: plan → the agent ID of each role working on

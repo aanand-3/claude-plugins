@@ -17,10 +17,12 @@ your identity to every call — never pass `--as`, `--run-id` or `--approved-by`
 3. For each task: `crew.mjs checkpoint P-### --step T<n> --note "starting: <what>"` when you start it (the hub shows
    which task you are on), implement it inside the plan's `touches`, run its targeted check (the task's `→ verify:`,
    never the full suite), then `crew.mjs checkpoint P-### --step T<n> --note "<what changed>"`. Record a dead end with
-   `--attempt "<what>" --why "<why it failed>"`. Never commit: the worktree keeps the work and the checkpoint records
-   it; Release makes the plan's one commit when it is complete.
+   `--attempt "<what>" --why "<why it failed>"`. The checkpoint commits your work on the plan's branch (generated
+   files, `.crew/` and secret files stay out); never `git commit` yourself. Release squashes the branch into the plan's
+   one commit when it is complete.
 4. Learned something the next person needs? `crew.mjs learn gotcha "<fact>" --why "<why>" --scope "<globs>"`.
-5. All tasks done → `crew.mjs handoff P-###` and `crew.mjs move P-### in-review` (hand over to QA).
+5. All tasks done → checkpoint, then `crew.mjs handoff P-###` and `crew.mjs move P-### in-review` (hand over to QA;
+   the move commits whatever code is still uncommitted).
 6. Sent back — by the Architect's review (`crew.mjs ledger --ref P-### --type review`) or by QA's bugs — fix exactly
    what was reported, in the same worktree, then hand over again. You are usually resumed for this with your context
    intact; if you are a new agent, `crew.mjs resume P-###` first. Too many round trips go to the Director automatically.
