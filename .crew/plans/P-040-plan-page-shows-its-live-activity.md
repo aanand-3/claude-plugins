@@ -5,11 +5,11 @@ goal: G-007
 items: FEAT-046
 touches: packages/crew/src/hub/server.ts, packages/crew/src/hub/commands/team/activity.ts, packages/crew/ui/src/api.ts, packages/crew/ui/src/views/DocPage.tsx, packages/crew/ui/src/components/PlanActivity.tsx, packages/crew/ui/src/styles/views.css, packages/crew/test/hub/e2e/live-ui.test.ts
 depends_on:
-status: ready
+status: in-progress
 branch: plan/P-040-plan-page-shows-its-live-activity
 pr:
 created: 2026-10-25
-started:
+started: 2026-10-25
 completed:
 assignee: developer
 ---
@@ -71,5 +71,6 @@ Goal G-007 (Autonomous parallel delivery); builds on P-027 (merged, ba366a1). Dr
 
 - 2026-10-25: status draft → ready
 - 2026-10-25: assigned to the developer role
+- 2026-10-25: status ready → in-progress — branch plan/P-040-plan-page-shows-its-live-activity
 
 ## Outcome
