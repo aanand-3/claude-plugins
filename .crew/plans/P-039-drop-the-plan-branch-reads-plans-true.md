@@ -113,6 +113,7 @@ Latest log:
 - 2026-10-25: status ready → in-progress — branch plan/P-039-drop-the-plan-branch-reads-plans-true
 - 2026-10-25: Architect (Q-16112d): branch reads go only with plan worktrees. Without them (the default mode, other projects) a started plan's hub state is committed on its branch, so `plans(true)` stays and `branchPlans` is gated on `!plan_worktrees`; call sites, `allPlans` and the `source` handling stay as on main. T2 and T4 reopened, AC2 rewritten, AC8 added. Touches unchanged.
 - 2026-10-25: status in-progress → in-review
+- 2026-10-25: Architect: approved at 4d4c5e2 (targeted suites pass; view.test.ts timed out under parallel load, passes alone). K-2026-10-25-plan-branch-reads-store-plans-true-apply supersedes the duplicate K-2026-10-25-no-keep-branch-reads-when-hub-plan.
 
 ## Outcome
 With plan worktrees, `Store.plans(true)` reads only the main checkout. In branch-per-plan mode (the default), it still overlays branch copies (Q-16112d). `start` no longer takes a branch copy home, and its overlap warning (like `context`'s list and the advice in roles.ts) ignores `hub.shared` and never suggests depends_on. `check` gives an origin-only plan branch its own hint. `git.show` keeps its caller (`branchPlans`). `GraphDoc.source` (graph-types.ts, outside touches) is always "worktree" in plan-worktree mode.

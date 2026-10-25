@@ -4,7 +4,7 @@ type: decision
 title: Plan-branch reads (Store.plans(true)) apply only in branch-per-plan mode (hub.plan_worktrees false); with plan worktrees the main checkout is the only copy read
 scope: packages/crew/src/hub/core/store.ts
 source: 
-supersedes:
+supersedes: K-2026-10-25-no-keep-branch-reads-when-hub-plan
 tier: project
 created: 2026-10-25
 ---
