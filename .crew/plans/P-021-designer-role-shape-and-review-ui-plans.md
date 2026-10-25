@@ -97,5 +97,6 @@ This plan adds a built-in `designer` role that shapes a UI plan before it is bui
 ## Progress log
 
 - 2026-10-24: status draft → ready
+- 2026-10-25: Architect: depends_on P-031, P-032 added (presets.ts, model.ts, config.yaml); e2e, hub-skill, test/tools and design-skill globs narrowed to exact files
 
 ## Outcome
