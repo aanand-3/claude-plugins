@@ -118,6 +118,7 @@ Latest log:
 - 2026-10-25: status in-progress → in-review
 - 2026-10-25: QA error: my dist cleanup 'git checkout -- plugins/crew/skills' (wider than the briefed hub/dist path) reverted the developer's uncommitted T7 edits to plugins/crew/skills/guidelines/templates/settings.json, hub/SKILL.md and hub/agents/developer.md. AC11 now fails in the worktree. Exact recovery: re-apply the three plugin edits in the developer's scratchpad script t7_edit.py (skip its contents.test.ts edit, still present), then re-run contents.test.ts. ACs 1-10 evidence unaffected (those files are docs/templates only).
 - 2026-10-25: status in-review → done
+- 2026-10-25: PM 2026-10-25: completed. Note: after the 06:47 approval, QA's too-wide checkout reverted three T7 doc/template edits and the developer re-applied them at 06:55 (fingerprint 909942c01e41 -> ab5f9d59b6ef). AC11 was re-verified at 06:57, but the review approval, which is pinned to HEAD f9cf69b, predates the re-applied files (BUG-014).
 
 ## Outcome
 Live activity feed (activity --hook), agent reports on SubagentStop, Running now in status/ui with idle flag (limits.idle_minutes), watch command, server watches ledger dir and common-dir refs. Awaiting QA.
