@@ -110,6 +110,7 @@ Latest log:
 - 2026-10-25: Architect: touches += packages/crew/test/hub/e2e/worktrees.test.ts (Q-1c0a2e).
 - 2026-10-25: status in-progress → in-review
 - 2026-10-25: status in-review → done
+- 2026-10-25: merged: full suite green on f9d74b3 (45 files, 324 tests, bundle check clean; first run hit hook timeouts under load avg ~240, the failing files passed alone and the full rerun was green); squash-merged to main as 6a13850. Rollout: nothing to deploy; the behaviour starts once .crew/bin/crew.mjs --as release --run-id release:aee656ca231d3d33f is refreshed (P-024 refresh-bin or the human), and the human re-renders the protected .claude/agents/crew-developer.md and crew-director.md (crew.mjs --as release --run-id release:aee656ca231d3d33f agents). Rollback: revert 6a13850.
 
 ## Outcome
 Plan branches now get the hub's WIP commits at each checkpoint and at the hand-over; review approval and the done gate see the plan's worktree from any checkout; squash detection uses merge-tree.
