@@ -11,6 +11,7 @@ pr:
 created: 2026-10-25
 started:
 completed:
+assignee: developer
 ---
 
 # P-027: Live agent activity in the hub
@@ -94,5 +95,6 @@ It is the first plan the team builds after Wave 0 (P-026, merged), alone, so eve
 ## Progress log
 
 - 2026-10-25: status draft → ready
+- 2026-10-25: assigned to the developer role
 
 ## Outcome
