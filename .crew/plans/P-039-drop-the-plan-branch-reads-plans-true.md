@@ -5,11 +5,11 @@ goal: G-007
 items: CHORE-018, BUG-026
 touches: packages/crew/src/hub/core/store.ts, packages/crew/src/hub/commands/memory/knowledge.ts, packages/crew/src/hub/commands/memory/context.ts, packages/crew/src/hub/commands/work/planning.ts, packages/crew/src/hub/commands/work/workflow.ts, packages/crew/src/hub/commands/work/release.ts, packages/crew/src/hub/commands/work/execution.ts, packages/crew/src/hub/commands/work/goals.ts, packages/crew/src/hub/commands/team/team.ts, packages/crew/src/hub/commands/team/roles.ts, packages/crew/src/hub/commands/views/reports.ts, packages/crew/src/hub/commands/views/advisor.ts, packages/crew/src/hub/commands/views/graph.ts, packages/crew/src/hub/commands/views/checks.ts, packages/crew/test/hub/e2e/worktrees.test.ts, packages/crew/test/hub-worktrees.test.ts, packages/crew/test/hub/e2e/branch-copies.test.ts
 depends_on: P-029, P-038
-status: ready
+status: in-progress
 branch: plan/P-039-drop-the-plan-branch-reads-plans-true
 pr:
 created: 2026-10-25
-started:
+started: 2026-10-25
 completed:
 assignee: developer
 ---
@@ -94,5 +94,6 @@ Code part of CHORE-018, and the fix for BUG-026 (`context`, `resume` and `status
 - 2026-10-25: Architect (Q-60f72b): items += BUG-026 (this plan removes its cause, `plans(true)`); AC7 added as its regression test (`context`/`resume` show main's status, criteria and tasks; AC1 checked status but not criteria or `resume`). depends_on += P-038: it changes planning.ts and two of the suites here; re-checked, no conflict with this plan's edits.
 - 2026-10-25: Architect (Q-60f72b): BUG-026 linked; AC7 regression added; depends_on += P-038 after re-check of its planning.ts and test edits
 - 2026-10-25: assigned to the developer role
+- 2026-10-25: status ready → in-progress — branch plan/P-039-drop-the-plan-branch-reads-plans-true
 
 ## Outcome
