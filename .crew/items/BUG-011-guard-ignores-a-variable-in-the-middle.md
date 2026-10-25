@@ -2,9 +2,9 @@
 id: BUG-011
 type: bug
 title: Guard ignores a variable in the middle of a Bash write target
-status: new
-severity:
-priority:
+status: triaged
+severity: S3
+priority: P2
 goal: G-001
 plan:
 created: 2026-10-24
@@ -43,3 +43,4 @@ A crew subagent can overwrite the policy, hook settings, agent definitions or CL
 
 ## Notes
 Found while re-testing P-019 round 3 (BUG-009, BUG-010 fixes).
+- 2026-10-26: status new → triaged — priority P2, severity S3
