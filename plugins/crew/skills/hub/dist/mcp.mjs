@@ -9483,6 +9483,8 @@ function refusal(c) {
   if (RUNTIMES.has(name)) {
     const k = opt(/^(-[ep]|-pe|--eval|--print)(=|$)/);
     if (k >= 0 && later(k)) return NESTED;
+    const script = rest.find((w) => !w.value.startsWith("-"));
+    if (script && /^"?\$[A-Za-z_{]/.test(script.raw)) return VARIABLE;
   }
   if (name === "git" && rest.some((w) => /^!|=!/.test(w.value) && HUB.test(w.value))) return NESTED;
   return null;

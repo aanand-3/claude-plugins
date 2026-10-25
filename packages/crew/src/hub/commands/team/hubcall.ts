@@ -182,7 +182,8 @@ function hubWord(c: Simple): Word | null {
   return base(script) === "crew.mjs" ? script! : null;
 }
 
-/** Why the guard can't give a simple command's hub call identity, or null. */
+/** Why the guard can't give a simple command's hub call identity, or null. Only called once the command names crew.mjs, so
+ * a runtime running a `$VAR` script there is a hub path held in a variable (BUG-031). */
 function refusal(c: Simple): string | null {
   const h = headAt(c), head = c.words[h];
   if (!head) return null;
@@ -203,6 +204,8 @@ function refusal(c: Simple): string | null {
   if (RUNTIMES.has(name)) {
     const k = opt(/^(-[ep]|-pe|--eval|--print)(=|$)/);
     if (k >= 0 && later(k)) return NESTED;
+    const script = rest.find((w) => !w.value.startsWith("-"));
+    if (script && /^"?\$[A-Za-z_{]/.test(script.raw)) return VARIABLE;
   }
   if (name === "git" && rest.some((w) => /^!|=!/.test(w.value) && HUB.test(w.value))) return NESTED;
   return null;
