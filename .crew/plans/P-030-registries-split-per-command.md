@@ -5,7 +5,7 @@ goal: G-007
 items: FEAT-039
 touches: packages/crew/src/hub/cli.ts, packages/crew/src/hub/mcp.ts, packages/crew/src/hub/registry.ts, packages/crew/src/hub/reference.ts, packages/crew/src/hub/commands/index.ts, packages/crew/src/hub/commands/*/*.reg.ts, packages/crew/build.mjs, .gitattributes, plugins/crew/skills/hub/SKILL.md, packages/crew/test/hub/registry.test.ts, packages/crew/test/hub/registry-before.json, packages/crew/test/dist.test.ts
 depends_on:
-status: draft
+status: ready
 branch: plan/P-030-registries-split-per-command
 pr:
 created: 2026-10-25
@@ -83,5 +83,7 @@ Two design choices, recorded as decisions with this plan:
 ## Handoff
 
 ## Progress log
+
+- 2026-10-25: status draft → ready
 
 ## Outcome
