@@ -5,7 +5,7 @@ title: Policy playbook resolves from the main checkout
 status: triaged
 priority: P1
 goal: G-007
-plan:
+plan: P-037
 created: 2026-10-25
 closed:
 ---
