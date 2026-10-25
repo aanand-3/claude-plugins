@@ -154,6 +154,7 @@ Latest log:
 - 2026-10-25: status in-progress → in-review
 - 2026-10-25: T3 mutation check (developer, once): cleanup.ts afterEach body commented out -> case (b) fails; tmp-root teardown rmSync commented out -> case (d) fails, (e) cascades. Both restored; the mutated run's leftover root was swept by the next run.
 - 2026-10-25: status in-review → done
+- 2026-10-25: Merged: squash f59be50 fix(P-041) on main (tree = rebased branch c7634bd). Full suite green (46 files/330 tests). Rollout n/a (test-only). Worktree and branch removed.
 
 ## Outcome
 Run-scoped temp root: test/setup/tmp-root.ts (globalSetup) points TMPDIR/TMP/TEMP at crew-test-run-<pid>-* and removes it on teardown, sweeping roots of dead pids first. test/helpers/repo.ts tracks Repo.create (per test) and tempDir() (per file) dirs; test/setup/cleanup.ts (setupFiles) removes them with their <path>-* siblings. Regression test test/setup/tmp-cleanup.test.ts (cases a-e). Awaiting QA.
