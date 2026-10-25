@@ -5,7 +5,7 @@ goal: G-007
 items: BUG-031
 touches: packages/crew/src/hub/commands/team/hubcall.ts, packages/crew/test/hub/hubcall.test.ts
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-050-refuse-a-hub-script-held-in-a-shell
 pr:
 created: 2026-10-26
@@ -50,8 +50,8 @@ existing `/^"?\$[A-Za-z_{]/`, return VARIABLE. Update `refusal`'s doc comment to
 names crew.mjs. Reuse the existing regex and message; no new concepts. hubcall.ts stays under 300 lines.
 
 ## Tasks
-- [ ] T1: in hubcall.ts, make `refusal()` return VARIABLE for a runtime head whose script word is a `$VAR` while the command names crew.mjs → verify: `withIdentity("C=/x/.crew/bin/crew.mjs; node $C checkpoint P-1", flags)` returns a deny containing "variable".
-- [ ] T2: in the existing hubcall tests, add the variable-script cases (denied, VARIABLE message) and keep literal-form cases green → verify: `npx vitest run test/hub/hubcall.test.ts` passes; the new cases fail without T1.
+- [x] T1: in hubcall.ts, make `refusal()` return VARIABLE for a runtime head whose script word is a `$VAR` while the command names crew.mjs → verify: `withIdentity("C=/x/.crew/bin/crew.mjs; node $C checkpoint P-1", flags)` returns a deny containing "variable".
+- [x] T2: in the existing hubcall tests, add the variable-script cases (denied, VARIABLE message) and keep literal-form cases green → verify: `npx vitest run test/hub/hubcall.test.ts` passes; the new cases fail without T1.
 
 ## Test plan
 **Targeted checks:**
@@ -70,9 +70,8 @@ n/a — internal guard change; revert the commit to back out.
 
 _Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
 
-- P-050: Refuse a hub script held in a shell variable [in-progress] tasks 0/2 — claimed by Arpit Anand (developer:a9ea1cd409887c67c)
+- P-050: Refuse a hub script held in a shell variable [in-review] tasks 2/2 — claimed by Arpit Anand (developer:a9ea1cd409887c67c)
 - last checkpoint 2026-10-25 21:03 at T2 (d6c473e) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
-- next: T1: in hubcall.ts, make `refusal()` return VARIABLE for a runtime head whose script word is a `$VAR` while the command names crew.mjs → verify: `withIdentity("C=/x/.crew/bin/crew.mjs; node $C checkpoint P-1", flags)` returns a deny containing "variable".
 - evidence: AC1 —, AC2 —, AC3 —
 
 Latest log:
@@ -86,5 +85,7 @@ Latest log:
 - 2026-10-26: status draft → ready
 - 2026-10-26: assigned to the developer role
 - 2026-10-26: status ready → in-progress — branch plan/P-050-refuse-a-hub-script-held-in-a-shell
+- 2026-10-26: status in-progress → in-review
 
 ## Outcome
+Learnings: none
