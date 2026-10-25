@@ -5,11 +5,11 @@ goal: G-007
 items: FEAT-035, FEAT-019
 touches: packages/crew/src/hub/core/memory/activity.ts, packages/crew/src/hub/core/memory/ledger.ts, packages/crew/src/hub/commands/team/activity.ts, packages/crew/src/hub/commands/team/autonomy.ts, packages/crew/src/hub/commands/memory/ledger.ts, packages/crew/src/hub/commands/views/reports.ts, packages/crew/src/hub/core/team/policy.ts, packages/crew/src/hub/server.ts, packages/crew/src/hub/cli.ts, packages/crew/ui/src/api.ts, packages/crew/ui/src/views/Overview.tsx, packages/crew/ui/src/components/LivePanel.tsx, packages/crew/ui/src/styles/**, packages/crew/test/activity.test.ts, packages/crew/test/hub/e2e/activity.test.ts, packages/crew/test/hub/e2e/live-ui.test.ts, packages/crew/test/plugin/contents.test.ts, plugins/crew/skills/guidelines/templates/settings.json, plugins/crew/skills/hub/agents/developer.md, plugins/crew/skills/hub/SKILL.md
 depends_on:
-status: ready
+status: in-progress
 branch: plan/P-027-live-agent-activity-in-the-hub
 pr:
 created: 2026-10-25
-started:
+started: 2026-10-25
 completed:
 assignee: developer
 ---
@@ -96,5 +96,6 @@ It is the first plan the team builds after Wave 0 (P-026, merged), alone, so eve
 
 - 2026-10-25: status draft → ready
 - 2026-10-25: assigned to the developer role
+- 2026-10-25: status ready → in-progress — branch plan/P-027-live-agent-activity-in-the-hub
 
 ## Outcome
