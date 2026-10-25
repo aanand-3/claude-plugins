@@ -102,14 +102,24 @@ SPIKE-004's answer is recorded as K-2026-10-25-overlaps-on-hub-shared-paths-incl
 
 _Generated 2026-10-25 by `crew.mjs handoff` from the ledger._
 
-- P-029: Overlap is not a dependency [in-review] tasks 6/6 — claimed by Arpit Anand (developer:a241674714d74a684)
-- last checkpoint 2026-10-25 07:16 at T6 (f7c315a) by Arpit Anand; since then 0 commit(s), 7 uncommitted file(s): .crew/config.yaml, packages/crew/src/hub/commands/team/team.ts, packages/crew/src/hub/commands/views/checks.ts, packages/crew/src/hub/core/work/footprint.ts, plugins/crew/skills/hub/agents/architect.md, plugins/crew/skills/hub/references/model.md, packages/crew/test/hub/e2e/shared-touches.test.ts
-- evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —, AC7 —, AC8 —, AC9 —
+- P-029: Overlap is not a dependency [in-progress] tasks 6/6 — claimed by Arpit Anand (developer:a60138d3f67a3e5f0)
+- last checkpoint 2026-10-25 09:12 at T7 (c1e3c32) by Arpit Anand; since then 0 commit(s), 1 uncommitted file(s): .crew/config.yaml
+- ✓ cd packages/crew && npx vitest run test/hub/e2e/shared-touches.test.ts -t staff (AC 1,2)
+- ✓ cd packages/crew && npx vitest run test/hub/e2e/shared-touches.test.ts -t overlap (AC 3)
+- ✓ cd packages/crew && npx vitest run test/hub/e2e/shared-touches.test.ts -t check (AC 4,5,6,7)
+- ✓ cd packages/crew && npx vitest run test/hub/e2e/team.test.ts test/hub/e2e/team-2.test.ts test/hub/e2e/basics.test.ts (AC 1,3)
+- ✓ cd packages/crew && npm run build >/dev/null && cd ../.. && test "$(node plugins/crew/skills/hub/dist/crew.mjs --as qa --run-id qa:ac760e38266cbd4bc check | grep -c "ERROR.*hub.shared")" = 0 (AC 8)
+- ✓ Scratch clone of main (git clone) with the worktree's .crew/config.yaml copied in; ran the worktree's built plugins/crew/skills/hub/dist/crew.mjs --as qa --run-id qa:ac760e38266cbd4bc check from the clone root: exit 0, 0 lines matching ERROR.*hub.shared, and hub.shared is read (P-021 packages/crew/test/tools/** flagged broad with 8 files because it covers the shared test glob) (AC 8) (reported)
+- ✓ grep -q "^| \`shared\` |" plugins/crew/skills/hub/references/model.md && grep -q "only for a code dependency" plugins/crew/skills/hub/references/model.md && grep -q "as exact files" plugins/crew/skills/hub/agents/architect.md && grep -q "only when the plan needs" plugins/crew/skills/hub/agents/architect.md (AC 9)
+- ✓ cd packages/crew && npx vitest run test/plugin (AC 9)
+- ✓ cd packages/crew && npm run typecheck (AC 1,2,3,4,5,6,7,8,9)
+- ✓ QA probe (scratchpad probe.mjs) driving the built hub in a throwaway repo, two ready plans overlapping only on src/cli.ts: hub.shared [src/cli.ts, 3] and {a: src/cli.ts} -> check exit 1 with 'hub.shared: expected a list of path globs' and staff still blocks P-002 (safe fallback); [] and empty -> check exit 0, P-002 waits as today; ["src/*.ts"] -> staff proposes both (AC 1,7) (reported)
+- evidence: AC1 ✓, AC2 ✓, AC3 ✓, AC4 ✓, AC5 ✓, AC6 ✓, AC7 ✓, AC8 ✓, AC9 ✓
 
 Latest log:
-- 2026-10-25: Architect: `plugins/crew/skills/team/SKILL.md` added to this repo's hub.shared list (P-031, P-033, P-034 and P-035 each edit a different section of it).
-- 2026-10-25: assigned to the developer role
-- 2026-10-25: status ready → in-progress — branch plan/P-029-overlap-is-not-a-dependency
+- 2026-10-25: release blocked: hub.full_suite failed on the plan's work (brought up to main 3e879d0, rebuilt). test/view.test.ts > graph > matches the CLI expects the old overlap hint ('sequence them (depends_on) or narrow touches') and no 'P-007 depends on P-006 only through an overlap (web/home/**)' hint; P-029's new hints change that output. 1 failed / 319 passed. Not merged; plan commit 9401708 undone, work left uncommitted in its worktree. Back to the Director as a bug.
+- 2026-10-25: Architect: release full suite failed in test/view.test.ts 'matches the CLI' (def8a26). Both new hints on the sample project are correct behaviour: the reworded overlap hint, and P-007 depends on P-006 only through web/home/** without naming it (AC6). Fix: update that expectation to the two hints; touches += packages/crew/test/view.test.ts. Back to the developer for this one-line test change, then re-review.
+- 2026-10-25: status done → in-progress — release suite: update view.test.ts expectation (log 3e2919e); one-time --force approved by the executive
 
 ## Progress log
 
