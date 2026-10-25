@@ -5,11 +5,11 @@ goal: G-007
 items: BUG-028
 touches: packages/crew/src/hub/commands/work/suite.ts, packages/crew/src/hub/commands/work/suite.reg.ts, packages/crew/src/hub/commands/index.ts, packages/crew/vitest.config.ts, packages/crew/test/hub/e2e/suite.test.ts, packages/crew/test/hub/registry.test.ts, packages/crew/test/mcp.test.ts, plugins/crew/skills/hub/agents/release.md, plugins/crew/skills/hub/SKILL.md, plugins/crew/skills/hub/references/model.md
 depends_on:
-status: ready
+status: in-progress
 branch: plan/P-043-serialize-and-cap-the-full-suite-under
 pr:
 created: 2026-10-25
-started:
+started: 2026-10-25
 completed:
 assignee: developer
 ---
@@ -87,5 +87,6 @@ Ships with the next `.crew/bin` refresh; until Release runs `crew.mjs suite`, no
 
 - 2026-10-25: status draft → ready
 - 2026-10-25: assigned to the developer role
+- 2026-10-25: status ready → in-progress — branch plan/P-043-serialize-and-cap-the-full-suite-under
 
 ## Outcome
