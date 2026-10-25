@@ -2,10 +2,10 @@
 id: BUG-014
 type: bug
 title: Review approval is pinned to HEAD, so uncommitted changes after it go unnoticed
-status: new
-severity:
-priority:
-goal: G-001
+status: triaged
+severity: S3
+priority: P1
+goal: G-007
 plan: P-028
 created: 2026-10-24
 closed:
@@ -43,3 +43,4 @@ This repo, main at f07709f (after P-026); `preset: lifecycle`, `hub.plan_worktre
 S3: the review gate on done doesn't hold for any plan-worktree plan. Today the Architect re-reviews by habit, so no unreviewed code is known to have shipped; an unattended run (G-007) would ship it. Fixed by P-028 (WIP commits on the plan branch; the approval pins a commit that holds the code, and the gate checks the plan's worktree from any checkout).
 
 ## Notes
+- 2026-10-25: status new → triaged — priority P1, severity S3
