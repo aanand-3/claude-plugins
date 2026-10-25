@@ -5,7 +5,7 @@ goal: G-007
 items: CHORE-019
 touches: packages/crew/src/hub/core/store.ts, packages/crew/src/hub/commands/team/policy.ts, packages/crew/src/hub/commands/team/agents.ts, packages/crew/src/hub/commands/team/guard.ts, packages/crew/test/hub/e2e/playbook-home.test.ts
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-037-policy-playbook-resolves-from-the-main
 pr:
 created: 2026-10-25
@@ -41,9 +41,9 @@ Follow-up to P-026 (W0-b in `.crew/drafts/the-crew-team-was-pure-reef.md`), CHOR
 - New test file `test/hub/e2e/playbook-home.test.ts`: reuse the playbook setup from `policy.test.ts` (a sibling repo with `policy/global.yaml` and `lessons/…`), plus a plan worktree created through `new-plan` with `hub.plan_worktrees: true` (as `test/hub/e2e/worktrees.test.ts` does). Run `policy show`, `recall --all`, `policy check`, `agents --check` and the guard (`hook()` from `sections.ts`) with `cwd` inside the worktree.
 
 ## Tasks
-- [ ] T1: the regression test file, failing on today's code for AC1–AC4 → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/playbook-home.test.ts` fails with "not found" from the worktree
-- [ ] T2: the six calls pass the home → verify: `npm run build && npx vitest run test/hub/e2e/playbook-home.test.ts` passes (AC1, AC2, AC3, AC4)
-- [ ] T3: nothing else moved → verify: `npx vitest run test/hub/e2e/policy.test.ts test/hub/e2e/knowledge.test.ts test/hub/e2e/guard.test.ts test/hub/e2e/agents.test.ts`; `npm run typecheck`; `grep -n "ws.root" src/hub/core/store.ts src/hub/commands/team/policy.ts src/hub/commands/team/agents.ts | grep -i "polic\|playbook"` finds nothing (AC5)
+- [x] T1: the regression test file, failing on today's code for AC1–AC4 → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/playbook-home.test.ts` fails with "not found" from the worktree
+- [x] T2: the six calls pass the home → verify: `npm run build && npx vitest run test/hub/e2e/playbook-home.test.ts` passes (AC1, AC2, AC3, AC4)
+- [x] T3: nothing else moved → verify: `npx vitest run test/hub/e2e/policy.test.ts test/hub/e2e/knowledge.test.ts test/hub/e2e/guard.test.ts test/hub/e2e/agents.test.ts`; `npm run typecheck`; `grep -n "ws.root" src/hub/core/store.ts src/hub/commands/team/policy.ts src/hub/commands/team/agents.ts | grep -i "polic\|playbook"` finds nothing (AC5)
 
 ## Test plan
 **Targeted checks** (from `packages/crew/`, after `npm run build`):
@@ -63,9 +63,8 @@ Follow-up to P-026 (W0-b in `.crew/drafts/the-crew-team-was-pure-reef.md`), CHOR
 
 _Generated 2026-10-25 by `crew.mjs handoff` from the ledger._
 
-- P-037: Policy playbook resolves from the main checkout [in-progress] tasks 0/3 — claimed by Arpit Anand (developer:a110ffe59fe21f853)
+- P-037: Policy playbook resolves from the main checkout [in-review] tasks 3/3 — claimed by Arpit Anand (developer:a110ffe59fe21f853)
 - last checkpoint 2026-10-25 07:11 at T3 (f7c315a) by Arpit Anand; since then 0 commit(s), 5 uncommitted file(s): packages/crew/src/hub/commands/team/agents.ts, packages/crew/src/hub/commands/team/guard.ts, packages/crew/src/hub/commands/team/policy.ts, packages/crew/src/hub/core/store.ts, packages/crew/test/hub/e2e/playbook-home.test.ts
-- next: T1: the regression test file, failing on today's code for AC1–AC4 → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/playbook-home.test.ts` fails with "not found" from the worktree
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —
 
 Latest log:
@@ -78,5 +77,8 @@ Latest log:
 - 2026-10-25: status draft → ready
 - 2026-10-25: assigned to the developer role
 - 2026-10-25: status ready → in-progress — branch plan/P-037-policy-playbook-resolves-from-the-main
+- 2026-10-25: status in-progress → in-review
 
 ## Outcome
+Policy and playbook resolution (Store.policy, Store.knowledge, policy show/check, agents, the guard) pass store.home, so a relative playbook.path resolves from the main checkout in plan worktrees too. Regression test test/hub/e2e/playbook-home.test.ts. Awaiting QA.
+Learnings: K-2026-10-25-the-guard-reads-a-sed-i-expression-s-old
