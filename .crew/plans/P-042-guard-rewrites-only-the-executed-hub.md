@@ -5,11 +5,11 @@ goal: G-007
 items: BUG-017, CHORE-020
 touches: packages/crew/src/hub/commands/team/guard.ts, packages/crew/src/hub/commands/team/hubcall.ts, packages/crew/test/hub/e2e/guard.test.ts, packages/crew/test/hub/hubcall.test.ts
 depends_on: P-030
-status: ready
+status: in-progress
 branch: plan/P-042-guard-rewrites-only-the-executed-hub
 pr:
 created: 2026-10-25
-started:
+started: 2026-10-25
 completed:
 assignee: developer
 ---
@@ -167,5 +167,6 @@ revert of the plan's commit; agents keep the old workaround (avoid the hub name 
 
 - 2026-10-25: status draft → ready
 - 2026-10-25: assigned to the developer role
+- 2026-10-25: status ready → in-progress — branch plan/P-042-guard-rewrites-only-the-executed-hub
 
 ## Outcome
