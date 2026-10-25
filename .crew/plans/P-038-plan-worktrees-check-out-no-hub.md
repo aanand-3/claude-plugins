@@ -91,6 +91,7 @@ Latest log:
 - 2026-10-25: QA at ede2672: AC1-AC5 verified (sparse-worktrees.test.ts 6/6 + scratch replay); AC6 tests pass 9/9 and 10/10 and typecheck clean, but two assertions changed vs 'unchanged' in AC6 — Q-ca72af to architect. Note: sparse-checkout set in a worktree adds extensions.worktreeConfig=true to the shared repo config.
 - 2026-10-25: BUG-026: context/status show the plan branch's stale copy of an open plan over main's document (why QA saw the pre-amendment AC6)
 - 2026-10-25: status in-review → done
+- 2026-10-25: Merged to main as 4df8fca (squash of 5f26279, rebased on 11b4b7c, hub.build rebuilt dist/crew.mjs). hub.full_suite on 5f26279: typecheck ok, 49 files / 352 tests passed, build output committed. Rollout: takes effect once the executive refreshes .crew/bin; existing worktrees stay full checkouts until converted by hand per Rollout (not applied by Release).
 
 ## Outcome
 Plan worktrees are sparse checkouts without .crew/plans, items, goals, knowledge and idea.md (non-cone patterns from STATE_PATHS, full-checkout fallback if sparse-checkout fails); main checkout unchanged. Two existing worktree assertions now assert absence (Q-5e93cb).
