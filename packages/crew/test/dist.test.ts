@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync } from "node:fs";
+import { mkdtempSync, readdirSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, it } from "vitest";
@@ -6,6 +6,8 @@ import { expect, it } from "vitest";
 import { bundleCli, bundleMcp, bundleReference, bundleStudio, bundleTool, bundleUi, DIST, REFERENCE, TOOLS, toolPath } from "../build.mjs";
 
 const tmp = () => mkdtempSync(join(tmpdir(), "hub-"));
+/** The build's temp dirs left in tmpdir() (CHORE-024: each bundle removes its own). */
+const leftovers = () => readdirSync(tmpdir()).filter((n) => n.startsWith("hub-ui-") || n.startsWith("hub-ref-")).length;
 
 it("the committed dist/crew.mjs is built from the current source (run `npm run build`)", async () => {
   const fresh = await bundleCli(join(tmp(), "crew.mjs"));
@@ -18,12 +20,16 @@ it("the committed dist/mcp.mjs is built from the current source (run `npm run bu
 }, 30_000);
 
 it("the committed dist/ui.html is built from the current source (run `npm run build`)", async () => {
+  const before = leftovers();
   const fresh = await bundleUi(join(tmp(), "ui.html"));
+  expect(leftovers()).toBe(before);
   expect(readFileSync(fresh, "utf8") === readFileSync(join(DIST, "ui.html"), "utf8")).toBe(true);
 }, 60_000);
 
 it("the committed dist/studio.html is built from the current source (run `npm run build`)", async () => {
+  const before = leftovers();
   const fresh = await bundleStudio(join(tmp(), "studio.html"));
+  expect(leftovers()).toBe(before);
   expect(readFileSync(fresh, "utf8") === readFileSync(join(DIST, "studio.html"), "utf8")).toBe(true);
 }, 60_000);
 
@@ -35,6 +41,8 @@ it("the committed skill scripts are built from the current source (run `npm run 
 }, 60_000);
 
 it("the committed skills/hub/references/commands.md is rendered from the current registrations (run `npm run build`)", async () => {
+  const before = leftovers();
   const fresh = await bundleReference(join(tmp(), "commands.md"));
+  expect(leftovers()).toBe(before);
   expect(readFileSync(fresh, "utf8") === readFileSync(REFERENCE, "utf8")).toBe(true);
 }, 30_000);

@@ -1,5 +1,5 @@
 /** P-028: with plan worktrees the hub commits a plan's code on its branch at each checkpoint and at the hand-over to review
- * (generated files, .crew/ and secret files stay out); the review gate then sees the plan's worktree from any checkout. */
+ * (generated files, the hub's documents under .crew/ and secret files stay out; P-046: setup files under .crew/ are code); the review gate then sees the plan's worktree from any checkout. */
 import { readdirSync } from "node:fs";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -36,6 +36,9 @@ function hub(): Repo {
 
 const log = (r: Repo, ref = BRANCH) => r.git("log", "--format=%s", ref).stdout.trim().split("\n");
 const tip = (r: Repo, ref = BRANCH) => r.git("rev-parse", ref).stdout.trim();
+const files = (r: Repo, ref = BRANCH) => r.git("show", "--name-only", "--format=", ref).stdout.split("\n").filter(Boolean).sort();
+/** The hub's documents (P-046): state the hub commits on the base branch, drafts and export output. */
+const HUB_DOCS = [".crew/drafts/feat.md", ".crew/view/index.html", ".crew/plans/scratch.txt", ".crew/knowledge/scratch.txt", ".crew/idea.md"];
 const status = (w: Repo) => w.git("status", "--porcelain", "--untracked-files=all").stdout.split("\n").filter(Boolean).map((l) => l.slice(3)).sort();
 const events = (r: Repo, type: string) => tr(r, "ledger", "--json", "--limit", "1000", "--type", type).stdout
   .split("\n").filter((l) => l.trim()).map((l) => JSON.parse(l) as Record<string, unknown>);
@@ -49,15 +52,16 @@ describe("checkpoint", () => {
     const w = startedInWorktree(repo);
     w.write("src/auth/signup.py", "def signup(): ...\n");
     w.write("dist/app.mjs", "// rebuilt\n"); // generated
-    w.write(".crew/config.yaml", "hub:\n  plan_worktrees: true\n  wip_limit: 2\n"); // hub path
+    w.write(".crew/config.yaml", "hub:\n  plan_worktrees: true\n  wip_limit: 2\n"); // a setup file: code
+    w.write(".crew/templates/plan.md", "# {title}\n"); // a setup file: code
     w.write(".env", "TOKEN=x\n"); // secrets.files
     const before = log(repo).length;
     const r = as(w, "developer", "checkpoint", "P-001", "--step", "T1");
     expect(r.returncode, r.stderr).toBe(0);
     expect(log(repo).length).toBe(before + 1);
     expect(log(repo)[0]).toBe("chore(P-001): checkpoint T1");
-    expect(repo.git("show", "--name-only", "--format=", BRANCH).stdout.trim()).toBe("src/auth/signup.py");
-    expect(status(w)).toEqual([".crew/config.yaml", ".env", "dist/app.mjs"]);
+    expect(files(repo)).toEqual([".crew/config.yaml", ".crew/templates/plan.md", "src/auth/signup.py"]);
+    expect(status(w)).toEqual([".env", "dist/app.mjs"]);
     expect(events(repo, "checkpoint").at(-1)!.sha).toBe(tip(repo));
     expect(as(repo, "developer", "checkpoint", "P-001", "--step", "T1").returncode).toBe(0); // nothing new: no commit
     expect(log(repo).length).toBe(before + 1);
@@ -66,6 +70,17 @@ describe("checkpoint", () => {
     expect(log(repo)[0]).toBe("chore(P-001): checkpoint T2");
     expect(repo.git("show", "--name-only", "--format=", BRANCH).stdout.trim()).toBe("src/auth/service.py");
     expect(events(repo, "checkpoint").at(-1)!.sha).toBe(tip(repo));
+  });
+
+  it("commits setup files under .crew/ but not the hub's documents", () => {
+    const w = startedInWorktree(repo);
+    w.write(".crew/templates/plan.md", "# {title}\n");
+    for (const f of HUB_DOCS) w.write(f, "scratch\n");
+    const r = as(w, "developer", "checkpoint", "P-001", "--step", "T1");
+    expect(r.returncode, r.stderr).toBe(0);
+    expect(log(repo)[0]).toBe("chore(P-001): checkpoint T1");
+    expect(files(repo)).toEqual([".crew/templates/plan.md"]);
+    expect(status(w)).toEqual([...HUB_DOCS].sort());
   });
 
   it("commits nothing without plan worktrees", () => {
@@ -163,6 +178,25 @@ describe("review", () => {
     expect(ok.returncode, ok.stderr).toBe(0);
     expect(ok.stdout).toContain(`approved at ${tip(repo).slice(0, 7)}`);
     expect(events(repo, "review").at(-1)!.sha).toBe(tip(repo));
+  });
+
+  it("approve doesn't report the hub's documents as uncommitted code", () => {
+    const w = inReview();
+    for (const f of HUB_DOCS) w.write(f, "scratch\n");
+    repo.env.CREW_RUN = "arch";
+    const r = as(repo, "architect", "review", "P-001", "--approve");
+    expect(r.returncode, r.stderr).toBe(0);
+  });
+
+  it("the review gate sees a setup file changed after the approval", () => {
+    const w = inReview();
+    repo.env.CREW_RUN = "arch";
+    expect(as(repo, "architect", "review", "P-001", "--approve").returncode).toBe(0);
+    w.write(".crew/config.yaml", "hub:\n  plan_worktrees: true\n  wip_limit: 2\n");
+    repo.env.CREW_RUN = "pm";
+    const r = as(repo, "pm", "move", "P-001", "done");
+    expect(r.returncode).not.toBe(0);
+    expect(r.stderr).toContain("the code changed since the approving review");
   });
 
   it("BUG-014: done from the main checkout sees a change made after the approval, uncommitted or checkpointed", () => {

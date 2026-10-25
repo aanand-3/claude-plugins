@@ -7722,9 +7722,10 @@ function generated(dir, files2) {
   for (let i = 0; i + 2 < attrs.length; i += 3) if (attrs[i + 2] === "true" || attrs[i + 2] === "set") out.add(attrs[i]);
   return out;
 }
+var NOT_CODE = /^\.crew\/((plans|items|goals|knowledge|drafts|view)\/|idea\.md$)/;
 function codeChanges(dir, secretGlobs) {
   const secret = secretGlobs.map(globRe);
-  const files2 = changed(dir, ["."]).filter((f) => !f.startsWith(".crew/") && !secret.some((re) => re.test(f)));
+  const files2 = changed(dir, ["."]).filter((f) => !NOT_CODE.test(f) && !secret.some((re) => re.test(f)));
   const gen = generated(dir, files2);
   return files2.filter((f) => !gen.has(f));
 }
