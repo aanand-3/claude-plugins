@@ -89,6 +89,7 @@ Latest log:
 - 2026-10-25: status in-progress → in-review
 - 2026-10-25: QA note: the AC3 checkpoint text had guard-injected run flags spliced into a quoted action string; the card actually showed the hub-checkpoint Bash target exactly as the hook recorded it (tool Bash, target = hub script name + checkpoint), nothing else.
 - 2026-10-25: status in-review → done
+- 2026-10-25: Squash-merged to main as cc98a10 (single commit, rebuilt generated files). Full suite green on one run: typecheck, 361 tests/51 files, build, bundle check. First run failed only on load timeouts (hook timeouts at load ~230); reran whole suite on quiet machine. No rollout steps beyond merge.
 
 ## Outcome
 Learnings: none (the guard injecting its flags into heredoc test text is already K-2026-10-25-the-guard-injects-the-agents-role)
