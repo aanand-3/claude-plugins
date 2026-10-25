@@ -3,7 +3,7 @@ id: P-038
 title: Plan worktrees check out no hub documents
 goal: G-007
 items: CHORE-017
-touches: packages/crew/src/hub/commands/work/planning.ts, packages/crew/test/hub/e2e/sparse-worktrees.test.ts
+touches: packages/crew/src/hub/commands/work/planning.ts, packages/crew/test/hub/e2e/sparse-worktrees.test.ts, packages/crew/test/hub/e2e/worktrees.test.ts, packages/crew/test/hub-worktrees.test.ts
 depends_on:
 status: in-progress
 branch: plan/P-038-plan-worktrees-check-out-no-hub
@@ -39,18 +39,18 @@ The fix: plan worktrees are sparse checkouts that leave those paths out. The set
 - [ ] AC3 · Hub commands run from inside the sparse worktree work as before: `context`, `checkpoint` and `log` on the plan, and `new-item`, all read and write the main checkout's documents.
 - [ ] AC4 · A commit made on the plan branch in the sparse worktree and merged (or squash-merged) into main leaves main's `.crew/plans` and `.crew/items` exactly as they were. The excluded paths are neither deleted nor changed by it.
 - [ ] AC5 · `start` of a plan specced before plan worktrees (no worktree yet) opens its worktree sparse too; a `new-plan` refused after the worktree was created (e.g. an unknown item) leaves no worktree and no branch behind.
-- [ ] AC6 · The existing worktree tests pass unchanged: `test/hub/e2e/worktrees.test.ts` and `test/hub-worktrees.test.ts`.
+- [ ] AC6 · The existing worktree tests pass: `test/hub/e2e/worktrees.test.ts` and `test/hub-worktrees.test.ts`. Only the two assertions that read hub documents inside the worktree change, and they now assert those documents are absent (worktrees.test.ts: `existsSync` of the worktree's `.crew/plans` is false; hub-worktrees.test.ts: `itemFile(w, "BUG-001")` is null). No other line of either file changes (Q-5e93cb).
 
 ## Approach
 - In `openPlanWorktree`: `git worktree add --no-checkout …` (same arguments as today), then in the new worktree `git sparse-checkout set --no-cone '/*' '!/.crew/plans/' '!/.crew/items/' '!/.crew/goals/' '!/.crew/knowledge/' '!/.crew/idea.md'` (patterns built from `STATE_PATHS`), then `git checkout` there to populate it. In a linked worktree git keeps the sparse patterns per worktree (`<gitdir>/info/sparse-checkout`, `core.sparseCheckout` in its `config.worktree`, enabling `extensions.worktreeConfig` once), so the main checkout isn't affected. Check AC2 against git 2.39 (this repo's version) in the test.
 - If `sparse-checkout` fails (very old git), fall back to a full checkout and print one line saying so; the worktree still works, with stale copies, as today.
 - planning.ts is 181 lines; the change stays a few lines plus a small helper.
-- **Reuse:** `STATE_PATHS` (hubstate.ts, imported only), `git.git`, the plan-worktree setup in `test/hub/e2e/worktrees.test.ts` (copy it into the new test file; don't edit that file).
+- **Reuse:** `STATE_PATHS` (hubstate.ts, imported only), `git.git`, the plan-worktree setup in `test/hub/e2e/worktrees.test.ts` (copy it into the new test file; edit that file only as AC6 allows).
 
 ## Tasks
 - [ ] T1: the test file with AC1–AC5, failing on today's code (the worktree holds `.crew/plans`) → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/sparse-worktrees.test.ts` fails on AC1
 - [ ] T2: sparse `openPlanWorktree` with the fallback → verify: `npm run build && npx vitest run test/hub/e2e/sparse-worktrees.test.ts` passes (AC1–AC5)
-- [ ] T3: nothing else moved → verify: `npx vitest run test/hub/e2e/worktrees.test.ts test/hub-worktrees.test.ts`; `npm run typecheck` (AC6)
+- [ ] T3: the two hub-document assertions in the existing worktree tests assert absence; nothing else moved → verify: `npx vitest run test/hub/e2e/worktrees.test.ts test/hub-worktrees.test.ts`; `npm run typecheck` (AC6)
 
 ## Test plan
 **Targeted checks** (from `packages/crew/`, after `npm run build`):
@@ -65,7 +65,7 @@ The fix: plan worktrees are sparse checkouts that leave those paths out. The set
 ## Risks & open questions
 - Non-cone sparse patterns are deprecated-in-favour-of-cone but supported; cone mode can't exclude a single file (`idea.md`) below the root. If git ever drops non-cone, the fallback keeps worktrees working.
 - `extensions.worktreeConfig` gets set in the repository's shared config the first time; it is harmless for the main checkout and for git ≥ 2.20.
-- Shares no file with P-027, P-028, P-029, P-030 or P-037, so it runs beside any of them. Overlaps P-039 on planning.ts (different functions); staffing sequences them, and neither needs the other's code.
+- Shares no file with P-027, P-028, P-029, P-030 or P-037, so it runs beside any of them. Overlaps P-039 on planning.ts (different functions) and on the two existing worktree test files (one assertion each here); staffing sequences them, and neither needs the other's code.
 
 ## Handoff
 
@@ -74,5 +74,6 @@ The fix: plan worktrees are sparse checkouts that leave those paths out. The set
 - 2026-10-25: status draft → ready
 - 2026-10-25: assigned to the developer role
 - 2026-10-25: status ready → in-progress — branch plan/P-038-plan-worktrees-check-out-no-hub
+- 2026-10-25: Spec amended for Q-5e93cb: touches widened to test/hub/e2e/worktrees.test.ts and test/hub-worktrees.test.ts; AC6 now allows exactly two one-line edits turning hub-document reads in the worktree into absence assertions, since AC1 removes those documents and the tests' intent (no plan docs in the worktree, worktree copy never written) holds more strongly. No overlap with P-041; P-039 already lists both files and is sequenced after P-038.
 
 ## Outcome
