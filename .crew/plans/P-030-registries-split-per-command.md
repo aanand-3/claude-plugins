@@ -110,6 +110,7 @@ Latest log:
 - 2026-10-25: Architect: touches widened with packages/crew/test/mcp.test.ts (tools/list order is per-registration now, AC3 'order aside'; compare names order-free, Q-ed2ef3) and packages/crew/test/plugin/contents.test.ts (AC5 removes SKILL.md's table; the watch/activity assertions move to references/commands.md, Q-71466c). AC6 amended. No live plan lists either file.
 - 2026-10-25: status in-progress → in-review
 - 2026-10-25: status in-review → done
+- 2026-10-25: Release: not merged. hub.full_suite failed on the plan's work brought up to main 31a1a1b (+hub.build): test/structure.test.ts 'hub sources sit in their domain folders' expects no loose files in src/hub/commands/, got ['index.ts'] (added by P-030). 358/359 tests passed, typecheck ok. Branch restored to c9c6deb; worktree kept. Back to the Director as a bug against P-030.
 
 ## Outcome
 Each hub command's CLI spec, help lines and MCP tool now live in `commands/<area>/<module>.reg.ts` (25 files), listed in `commands/index.ts`. `cli.ts` and `mcp.ts` load them, and a duplicate name fails at load. `npm run build` generates `plugins/crew/skills/hub/references/commands.md`, which SKILL.md links to in place of its table. The help text has the same lines, now grouped by registration, and `tools/list` the same tools, now in registration order.
