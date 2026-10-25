@@ -5,7 +5,7 @@ title: Plan worktrees check out no hub documents
 status: triaged
 priority: P2
 goal: G-007
-plan:
+plan: P-038
 created: 2026-10-25
 closed:
 ---
