@@ -36,3 +36,4 @@ Experiments in a scratch repo (git 2.39.5), 2026-10-25:
 ## Notes
 - 2026-10-25: Spike done (Architect): Findings recorded; decision K-2026-10-25-hub-commits-stay-ordinary-git-commits; its work (doctor's hook probe, clearer hub-commit failure message) folded into P-036; no new item
 - 2026-10-25: status new → triaged — priority P1
+- 2026-10-25: PM 2026-10-25: findings complete; follow-up work folded into P-036. Left triaged: items have no closing status (BUG-024).
