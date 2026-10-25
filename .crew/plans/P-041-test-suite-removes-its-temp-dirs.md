@@ -5,12 +5,12 @@ goal: G-007
 items: BUG-025
 touches: packages/crew/test/helpers/**, packages/crew/test/setup/**, packages/crew/vitest.config.ts
 depends_on:
-status: in-review
+status: done
 branch: plan/P-041-test-suite-removes-its-temp-dirs
 pr:
 created: 2026-10-25
 started: 2026-10-25
-completed:
+completed: 2026-10-25
 assignee: developer
 ---
 
@@ -153,6 +153,7 @@ Latest log:
 - 2026-10-25: status ready → in-progress — branch plan/P-041-test-suite-removes-its-temp-dirs
 - 2026-10-25: status in-progress → in-review
 - 2026-10-25: T3 mutation check (developer, once): cleanup.ts afterEach body commented out -> case (b) fails; tmp-root teardown rmSync commented out -> case (d) fails, (e) cascades. Both restored; the mutated run's leftover root was swept by the next run.
+- 2026-10-25: status in-review → done
 
 ## Outcome
 Run-scoped temp root: test/setup/tmp-root.ts (globalSetup) points TMPDIR/TMP/TEMP at crew-test-run-<pid>-* and removes it on teardown, sweeping roots of dead pids first. test/helpers/repo.ts tracks Repo.create (per test) and tempDir() (per file) dirs; test/setup/cleanup.ts (setupFiles) removes them with their <path>-* siblings. Regression test test/setup/tmp-cleanup.test.ts (cases a-e). Awaiting QA.
