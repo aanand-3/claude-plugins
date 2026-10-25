@@ -11,6 +11,7 @@ pr:
 created: 2026-10-25
 started:
 completed:
+assignee: developer
 ---
 
 # P-028: Plan branches commit as they go
@@ -93,5 +94,6 @@ The same files carry two more CHORE-014 follow-ups, so they ride here: squash de
 ## Progress log
 
 - 2026-10-25: status draft → ready
+- 2026-10-25: assigned to the developer role
 
 ## Outcome
