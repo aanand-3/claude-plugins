@@ -11,6 +11,7 @@ pr:
 created: 2026-10-25
 started:
 completed:
+assignee: developer
 ---
 
 # P-043: Serialize and cap the full suite under parallel plans
@@ -85,5 +86,6 @@ Ships with the next `.crew/bin` refresh; until Release runs `crew.mjs suite`, no
 ## Progress log
 
 - 2026-10-25: status draft → ready
+- 2026-10-25: assigned to the developer role
 
 ## Outcome
