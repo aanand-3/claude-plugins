@@ -35,3 +35,4 @@ All four listed under merge (`1. P-001 … merge plan/P-001-… into main`): Rel
 ## Notes
 - 2026-10-24: status new → triaged — priority P2, severity S3
 - 2026-10-25: re-triaged: priority P1, severity S3
+- 2026-10-25: PM 2026-10-25: delivered by P-018 (done, QA evidence AC1) but still triaged; not folded into P-032 (new-plan refused: already planned in P-018). Re-goaled to G-007 in error from G-003 — Director to decide whether to close it with P-018 and restore G-003.
