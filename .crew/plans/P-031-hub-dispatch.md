@@ -85,7 +85,7 @@ Needs no other plan's code. It reads P-029's shared-aware staffing through `staf
 - [x] T3: `goal.done: pm` in presets.ts; team/team-2 assertions → verify: `npx vitest run test/hub/e2e/team.test.ts test/hub/e2e/team-2.test.ts test/hub/e2e/dispatch.test.ts -t goal` (AC8)
 - [x] T4: director.md, pm.md, team/SKILL.md "Each run", model.md (and hub/SKILL.md's row if the table still exists) → verify: `grep -c "hand each to the role" plugins/crew/skills/hub/agents/director.md` prints 0; `grep -n "dispatch --json" plugins/crew/skills/team/SKILL.md plugins/crew/skills/hub/agents/director.md`; `grep -n "goal.done.*pm" plugins/crew/skills/hub/references/model.md`; `npx vitest run test/plugin` (AC10)
 - [x] T5: types, sizes, registry tests (see Approach), unchanged suites → verify: `npm run typecheck`; `wc -l src/hub/commands/team/dispatch*.ts`; `npx vitest run test/hub/e2e/basics.test.ts test/mcp.test.ts test/hub/registry.test.ts`; `git diff --quiet main -- test/hub/registry-before.json` (AC11)
-- [ ] T6: `goal-queue.test.ts` line 20, `close()`: `as(repo, "director", …)` → `as(repo, "pm", …)` (P-033's goal-queue test closes goals as the director, which the new `goal.done: pm` gate refuses; Release's full suite caught it on 7515f1b) → verify: `npm run build && npx vitest run test/hub/e2e/goal-queue.test.ts` (5 passed); T6's grep in AC12 (AC12)
+- [x] T6: `goal-queue.test.ts` line 20, `close()`: `as(repo, "director", …)` → `as(repo, "pm", …)` (P-033's goal-queue test closes goals as the director, which the new `goal.done: pm` gate refuses; Release's full suite caught it on 7515f1b) → verify: `npm run build && npx vitest run test/hub/e2e/goal-queue.test.ts` (5 passed); T6's grep in AC12 (AC12)
 
 ## Test plan
 **Targeted checks** (from `packages/crew/`; the e2e suites drive the built `dist/crew.mjs`, so run `npm run build` first, then discard the generated output — `git checkout -- ../../plugins/crew/skills` and `git clean` of new dist files — since Release builds it):
@@ -111,14 +111,33 @@ Needs no other plan's code. It reads P-029's shared-aware staffing through `staf
 
 _Generated 2026-10-25 by `crew.mjs handoff` from the ledger._
 
-- P-031: Hub dispatch [in-review] tasks 5/5 — claimed by Arpit Anand (developer:ad203d7d12e3f9fc1)
-- last checkpoint 2026-10-25 12:49 at T5 (0e2bd18) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
-- evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —, AC7 —, AC8 —, AC9 —, AC10 —, AC11 —
+- P-031: Hub dispatch [in-progress] tasks 6/6 — claimed by Arpit Anand (developer:a9de166b4a3040f9f)
+- last checkpoint 2026-10-25 15:08 at T6 (4da1e87) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
+- ✓ npx vitest run test/hub/e2e/dispatch.test.ts -t 'AC1\)' (AC 1)
+- ✗ npx vitest run test/hub/e2e/dispatch.test.ts -t 'AC2\)' (AC 2) — ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+- ✓ npx vitest run test/hub/e2e/dispatch.test.ts -t 'AC3\)' (AC 3)
+- ✓ npx vitest run test/hub/e2e/dispatch.test.ts -t 'AC4\)' (AC 4)
+- ✓ npx vitest run test/hub/e2e/dispatch.test.ts -t 'the plan pipeline' (AC 2)
+- ✗ npx vitest run test/hub/e2e/dispatch.test.ts -t 'in review: architect' (AC 2) — ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+- ✗ npx vitest run test/hub/e2e/dispatch.test.ts -t 'approved with evidence missing' (AC 2) — ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+- ✗ npx vitest run test/hub/e2e/dispatch.test.ts -t 'a done, unmerged' (AC 2) — ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+- ✓ env | grep -i crew; npx vitest run test/hub/e2e/dispatch.test.ts -t 'a done, unmerged' 2>&1 | head -60 (AC 2)
+- ✓ sh /private/tmp/claude-502/-Users-aanand-Documents-Projects-Personal-claude-plugins/a0656153-a37f-49d7-8e02-2a018492b918/scratchpad/t.sh (AC 2)
+- ✓ sh /private/tmp/claude-502/-Users-aanand-Documents-Projects-Personal-claude-plugins/a0656153-a37f-49d7-8e02-2a018492b918/scratchpad/c-2.sh (AC 2)
+- ✓ sh /private/tmp/claude-502/-Users-aanand-Documents-Projects-Personal-claude-plugins/a0656153-a37f-49d7-8e02-2a018492b918/scratchpad/c-5.sh (AC 5)
+- ✓ sh /private/tmp/claude-502/-Users-aanand-Documents-Projects-Personal-claude-plugins/a0656153-a37f-49d7-8e02-2a018492b918/scratchpad/c-6.sh (AC 6)
+- ✓ sh /private/tmp/claude-502/-Users-aanand-Documents-Projects-Personal-claude-plugins/a0656153-a37f-49d7-8e02-2a018492b918/scratchpad/c-7.sh (AC 7)
+- ✓ sh /private/tmp/claude-502/-Users-aanand-Documents-Projects-Personal-claude-plugins/a0656153-a37f-49d7-8e02-2a018492b918/scratchpad/c-8.sh (AC 8)
+- ✓ sh /private/tmp/claude-502/-Users-aanand-Documents-Projects-Personal-claude-plugins/a0656153-a37f-49d7-8e02-2a018492b918/scratchpad/c-9.sh (AC 9)
+- ✓ sh /private/tmp/claude-502/-Users-aanand-Documents-Projects-Personal-claude-plugins/a0656153-a37f-49d7-8e02-2a018492b918/scratchpad/c-9b.sh (AC 9)
+- ✓ sh /private/tmp/claude-502/-Users-aanand-Documents-Projects-Personal-claude-plugins/a0656153-a37f-49d7-8e02-2a018492b918/scratchpad/c-10.sh (AC 10)
+- ✓ sh /private/tmp/claude-502/-Users-aanand-Documents-Projects-Personal-claude-plugins/a0656153-a37f-49d7-8e02-2a018492b918/scratchpad/c-11.sh (AC 11)
+- evidence: AC1 ✓, AC2 ✓, AC3 ✓, AC4 ✓, AC5 ✓, AC6 ✓, AC7 ✓, AC8 ✓, AC9 ✓, AC10 ✓, AC11 ✓, AC12 —
 
 Latest log:
-- 2026-10-25: status in-progress → in-review
-- 2026-10-25: architect review: approved at 0e2bd18. Owed in the plan file (developer, no code change): tick T5 (its checks pass: typecheck, wc -l 161/18, basics/mcp/registry green, registry-before.json unchanged) and complete the Outcome with what shipped and the one deviation — AC5's 'no max_agents' case is not reachable through policy (default 4, no null override), so the test uses a cap above the work; the null path in dispatch() is covered by code reading only.
-- 2026-10-25: developer: ticked T5 and completed the Outcome (what shipped, AC5 deviation) as the architect review asked; no code change
+- 2026-10-25: architect: diagnosed Release's goal-queue failure on 7515f1b — goal-queue.test.ts close() closes goals as the director, refused by P-031's goal.done: pm gate. Fix (verified with a temporary copy: 5/5 pass): close() runs as pm. Spec updated: goal-queue.test.ts added to touches, AC12, T6, test-plan line. Re-review needed after the change.
+- 2026-10-25: status done → in-progress — full-suite failure: test/hub/e2e/goal-queue.test.ts close() runs director move done, refused by the new pm-only goal.done gate
+- 2026-10-25: developer: T6 done in the worktree but not committed. git merge main is in progress: all conflicts resolved and staged (registry.test.ts keeps the arrayContaining subset line, mcp.test.ts lists dispatch and suites, hub dist takes main's side) except .crew/bin/crew.mjs, which the policy protects from the developer, so the merge and the T6 checkpoint cannot be committed. goal-queue.test.ts close() now runs as pm (unstaged, one line); build + goal-queue 5/5 pass; AC12 greps: only dispatch.test.ts:221 and team.test.ts:173, count 0. Needs Release (refresh-bin) or the Director to resolve .crew/bin/crew.mjs --as developer --run-id developer:a9de166b4a3040f9f to main's side, then re-run the T6 checkpoint. Unstaged change to .claude/agents/crew-release.md in the worktree is not the developer's.
 
 ## Progress log
 
@@ -135,7 +154,7 @@ Latest log:
 - 2026-10-25: developer: T6 done in the worktree but not committed. git merge main is in progress: all conflicts resolved and staged (registry.test.ts keeps the arrayContaining subset line, mcp.test.ts lists dispatch and suites, hub dist takes main's side) except .crew/bin/crew.mjs, which the policy protects from the developer, so the merge and the T6 checkpoint cannot be committed. goal-queue.test.ts close() now runs as pm (unstaged, one line); build + goal-queue 5/5 pass; AC12 greps: only dispatch.test.ts:221 and team.test.ts:173, count 0. Needs Release (refresh-bin) or the Director to resolve .crew/bin/crew.mjs --as developer --run-id developer:a9de166b4a3040f9f to main's side, then re-run the T6 checkpoint. Unstaged change to .claude/agents/crew-release.md in the worktree is not the developer's.
 
 ## Outcome
-Shipped: the hub command `dispatch [--json]` and the MCP tool `dispatch` (same JSON) in `commands/team/dispatch.ts` (rows 1–11, held/paused handling, the `max_agents` cap with `more`, the spec frontier), registered via `dispatch.reg.ts`; `goal.done: pm` in the lifecycle preset; director.md, pm.md, team/SKILL.md "Each run", model.md and hub/SKILL.md's row updated to the dispatch loop; registry.test.ts compares only the pre-split commands/tools with the frozen `registry-before.json`; `dispatch` added to mcp.test.ts's tool list; new e2e `dispatch.test.ts`. T5 checks pass: typecheck, `wc -l` 161/18, basics/mcp/registry green, `registry-before.json` unchanged.
+Shipped: the hub command `dispatch [--json]` and the MCP tool `dispatch` (same JSON) in `commands/team/dispatch.ts` (rows 1–11, held/paused handling, the `max_agents` cap with `more`, the spec frontier), registered via `dispatch.reg.ts`; `goal.done: pm` in the lifecycle preset; director.md, pm.md, team/SKILL.md "Each run", model.md and hub/SKILL.md's row updated to the dispatch loop; registry.test.ts compares only the pre-split commands/tools with the frozen `registry-before.json`; `dispatch` added to mcp.test.ts's tool list; new e2e `dispatch.test.ts`. T5 checks pass: typecheck, `wc -l` 161/18, basics/mcp/registry green, `registry-before.json` unchanged. Reopened for the full-suite failure: T6 makes `goal-queue.test.ts`'s `close()` run as the pm (5/5 pass); AC12 greps list only dispatch.test.ts and team.test.ts, `"director"` count 0 in goal-queue.test.ts. Branch merged with main up to 6b426a4 (P-042, P-043, P-044); diff vs main is P-031's files only.
 Deviations: AC5's "no `max_agents`" case can't be set through policy (the default is 4 and nothing overrides it to null), so the test uses a cap above the work instead; the null path in `dispatch()` is checked only by reading the code.
 Follow-ups: none beyond those listed under Scope "Out".
 Learnings: K-2026-10-25-a-plan-that-adds-a-hub-command-or-mcp, K-2026-10-25-dispatch-commands-team-dispatch-ts-is, K-2026-10-25-approved-with-one-change-do-not-edit
