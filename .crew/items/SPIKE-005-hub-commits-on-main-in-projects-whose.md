@@ -2,8 +2,8 @@
 id: SPIKE-005
 type: spike
 title: Hub commits on main in projects whose git hooks protect main
-status: new
-priority:
+status: triaged
+priority: P1
 goal: G-007
 plan:
 created: 2026-10-25
@@ -35,3 +35,4 @@ Experiments in a scratch repo (git 2.39.5), 2026-10-25:
 
 ## Notes
 - 2026-10-25: Spike done (Architect): Findings recorded; decision K-2026-10-25-hub-commits-stay-ordinary-git-commits; its work (doctor's hook probe, clearer hub-commit failure message) folded into P-036; no new item
+- 2026-10-25: status new → triaged — priority P1
