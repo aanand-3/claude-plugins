@@ -5,7 +5,7 @@ goal: G-007
 items: FEAT-037
 touches: packages/crew/src/hub/commands/work/land.ts, packages/crew/src/hub/commands/work/land.reg.ts, packages/crew/src/hub/commands/index.ts, packages/crew/src/hub/commands/work/release.ts, packages/crew/src/hub/core/work/model.ts, packages/crew/src/hub/core/team/presets.ts, packages/crew/test/hub/e2e/land.test.ts, plugins/crew/skills/hub/agents/release.md, plugins/crew/skills/hub/references/model.md, plugins/crew/skills/hub/SKILL.md, .crew/config.yaml
 depends_on: P-028, P-024, P-030, P-039, P-031, P-043
-status: ready
+status: draft
 branch: plan/P-032-merge-queue-land
 pr:
 created: 2026-10-25
@@ -102,5 +102,6 @@ W1-c of G-007 (design: `.crew/drafts/the-crew-team-was-pure-reef.md`, "W1-c: a m
 
 - 2026-10-25: status draft → ready
 - 2026-10-25: Architect: depends_on P-031 (presets.ts) and P-043 (runSuite for step 5, release.md) added
+- 2026-10-25: status ready → draft — Architect: re-spec for the executive decision (accepted status, PM owns done)
 
 ## Outcome
