@@ -5,11 +5,11 @@ goal: G-007
 items: FEAT-042, CHORE-005
 touches: packages/crew/src/hub/commands/team/runner.ts, packages/crew/src/hub/commands/team/dispatch.ts, packages/crew/src/hub/commands/team/autonomy.reg.ts, packages/crew/src/hub/cli.ts, packages/crew/src/hub/core/team/policy.ts, packages/crew/test/hub/e2e/runner.test.ts, packages/crew/test/hub/e2e/dispatch.test.ts, plugins/crew/skills/team/SKILL.md, plugins/crew/skills/hub/references/model.md
 depends_on: P-031, P-027
-status: ready
+status: in-progress
 branch: plan/P-034-local-runner-run-until-done
 pr:
 created: 2026-10-25
-started:
+started: 2026-10-26
 completed:
 assignee: developer
 ---
@@ -114,5 +114,6 @@ Overlaps, for staffing only: P-030 on `autonomy.reg.ts` (the `run` registration 
 
 - 2026-10-25: status draft → ready
 - 2026-10-26: assigned to the developer role
+- 2026-10-26: status ready → in-progress — branch plan/P-034-local-runner-run-until-done
 
 ## Outcome
