@@ -8064,20 +8064,20 @@ ${line3}`;
     }
     return out;
   }
-  appendTo(name, entry) {
+  appendTo(name, entry2) {
     const m = sectionRe(name).exec(this.text);
     if (!m) {
       this.text = `${rstrip(this.text)}
 
 ## ${name}
-${entry}
+${entry2}
 `;
       return;
     }
     const [start2, end] = m.indices[1];
     const block = rstrip(m[1]);
     this.text = this.text.slice(0, start2) + (block ? `${block}
-` : "") + `${entry}
+` : "") + `${entry2}
 
 ` + this.text.slice(end);
   }
@@ -8177,10 +8177,10 @@ var PRESETS = {
         "plan.done": "pm",
         // the PM completes, against QA's evidence
         "plan.dropped": "pm",
-        "goal.done": "director",
-        // the Director closes a goal the PM has verified
+        "goal.done": "pm",
+        // the PM verifies a goal's criteria and closes it
         "plan.reassigned": "director",
-        // … and moves stuck work to someone else
+        // the Director moves stuck work to someone else
         "plan.reviewed": "architect"
         // code review against the spec; done needs an approval of the current code
       },
@@ -13007,8 +13007,160 @@ var registration17 = {
   }
 };
 
-// src/hub/commands/team/liveness.reg.ts
+// src/hub/commands/team/dispatch.ts
+var View2 = class {
+  constructor(store) {
+    this.store = store;
+    this.plans = store.plans();
+    this.items = store.items();
+    this.goals = store.goals();
+    this.focus = store.focus();
+    this.events = store.ledger.events();
+    this.max = store.policy.policy.budgets.max_agents;
+    this.moved = store.ledger.lastStatus(this.events);
+  }
+  store;
+  plans;
+  items;
+  goals;
+  focus;
+  events;
+  max;
+  moved;
+  /** A plan's status: the ledger knows it moved on even where its file doesn't yet. */
+  status(p) {
+    return this.moved.get(p.id) ?? p.get("status") ?? "";
+  }
+  withStatus(st) {
+    return [...this.plans.values()].filter((p) => this.status(p) === st).sort(byKey((p) => [!onFocus(p, this.items, this.focus), p.id]));
+  }
+  ranked(st) {
+    return ranked(this.items, this.goals, this.focus).filter((i) => itemStatus(i, this.plans) === st);
+  }
+  get claims() {
+    return this.store.ledger.claims(this.events);
+  }
+  /** The run of the last event of `type` on a plan (by `role`, when given), or null. */
+  lastRun(ref, type, role) {
+    return this.events.filter((e) => e.ref === ref && e.type === type && (!role || e.role === role)).at(-1)?.run ?? null;
+  }
+};
+var entry = (role, ref, task2, resume2 = null) => ({ role, ref, task: task2, resume: resume2 });
+var urgent = (i) => i.id.startsWith("BUG-") && (i.get("severity") === "S1" || i.get("priority") === "P0");
+var ROWS = [
+  // 1. questions to a role (escalations to the executive are the human's)
+  (v) => openQuestions(v.events).filter((x) => !x.escalation && x.to !== v.store.policy.policy.escalation.to).map((x) => entry(x.to, x.id, `answer ${x.id}${x.ref ? ` about ${x.ref}` : ""}: ${x.text}`)),
+  // 2. Director exceptions: stale claims, blocked plans, a focus goal that is gone while another goal is active
+  (v) => staleClaims(v.store, v.events).map((s2) => entry(
+    "director",
+    s2.ref,
+    `reassign ${s2.ref}: its claim by ${s2.actor} (${s2.run}) has had no activity for ${s2.hours}h`
+  )),
+  (v) => v.withStatus("blocked").map((p) => entry("director", p.id, `unblock ${p.id}: ${p.get("title")}`)),
+  (v) => {
+    const g = v.goals.get(v.focus), next = goalQueue(v.goals, v.focus)[0];
+    return (!g || CLOSED.has(g.get("status") ?? "")) && next && next !== v.focus ? [entry("director", next, `focus ${next}: the focus goal ${v.focus || "(none)"} is ${g ? g.get("status") : "not set"}`)] : [];
+  },
+  // 3. urgent bugs
+  (v) => v.ranked("new").filter(urgent).map((i) => entry("pm", i.id, `triage ${i.id}: ${i.get("title")} (urgent)`)),
+  // 4. release: merging is serial
+  (v) => mergeOrder(v.store).merge.slice(0, 1).map((p) => entry("release", p.id, `merge ${p.id}: ${p.branch} (first in merge-order)`)),
+  // 5. in review: a failing check, then the review, then QA's evidence, then completion
+  (v) => v.withStatus("in-review").map((p) => {
+    const ev = evidence(v.store, p);
+    if (ev.some((e) => e.verify && !e.verify.ok)) return entry("developer", p.id, `fix ${p.id}: a check failed`, v.lastRun(p.id, "claim"));
+    if (reviewProblems(v.store, p).length) return entry("architect", p.id, `review ${p.id}: ${p.get("title")}`);
+    if (ev.some((e) => !(e.verify?.ok && e.independent))) return entry("qa", p.id, `test ${p.id}: ${p.get("title")}`, v.lastRun(p.id, "checkpoint", "qa"));
+    return entry("pm", p.id, `complete ${p.id}: move ${p.id} done`);
+  }),
+  // 6. goal closure
+  (v) => {
+    const g = v.goals.get(v.focus);
+    if (g?.get("status") !== "active") return [];
+    const open = goalPlans(g.id, v.plans, v.items).some((p) => !CLOSED.has(v.status(p))) || goalItems(g.id, v.items).some((i) => itemStatus(i, v.plans) !== "done");
+    return open ? [] : [entry("pm", g.id, `close ${g.id}: verify each criterion, then move ${g.id} done`)];
+  },
+  // 7. in progress
+  (v) => v.withStatus("in-progress").map((p) => {
+    const claim = v.claims.get(p.id);
+    return claim ? entry("developer", p.id, `continue ${p.id}: resume ${p.id}`, claim.run) : entry("developer", p.id, `start ${p.id}: take over its branch`, v.lastRun(p.id, "claim"));
+  }),
+  // 8. ready to start
+  (v) => staffing(v.store).start.filter((p) => v.plans.has(p.id)).map((p) => p.assigned ? entry(p.assigned, p.id, `start ${p.id}: ${p.title}`) : entry("pm", p.id, `assign ${p.id} --to developer${p.team ? ` --team ${p.team}` : ""}: ${p.title}`)),
+  // 9. triage
+  (v) => v.ranked("new").filter((i) => !urgent(i)).map((i) => entry("pm", i.id, `triage ${i.id}: ${i.get("title")}`)),
+  // 10. spec, while fewer plans are ready and unclaimed than max_agents
+  (v, added) => {
+    const claims = v.claims, ready = v.withStatus("ready").filter((p) => !claims.has(p.id)).length;
+    const out = [], room = () => v.max === null || ready + out.length < v.max;
+    const drafts = v.withStatus("draft").map((p) => entry("architect", p.id, `spec ${p.id} to ready: ${p.get("title")}`));
+    const items2 = v.ranked("triaged").filter((i) => !i.get("plan") && (!v.focus || (i.get("goal") ?? "").toUpperCase() === v.focus || OFF_FOCUS_OK.has(i.id.split("-")[0]))).map((i) => entry("architect", i.id, `write a plan for ${i.id}: ${i.get("title")}`));
+    const taken = new Set(added.map((e) => e.ref));
+    for (const e of [...drafts, ...items2]) if (!taken.has(e.ref) && room()) out.push(e);
+    return out;
+  }
+];
+function dispatch(store) {
+  const v = new View2(store), p = paused(v.events);
+  if (p) return { max_agents: v.max, paused: String(p.reason ?? "no reason given"), entries: [], more: 0 };
+  const { held } = escalationHolds(v.events);
+  const asked = new Set(openQuestions(v.events).filter((x) => x.blocking && x.ref).map((x) => x.ref));
+  const all = [], seen = /* @__PURE__ */ new Set();
+  for (const row of ROWS) {
+    for (const e of row(v, all)) {
+      if (e.ref && (held.has(e.ref) || seen.has(e.ref) || asked.has(e.ref) && !e.task.startsWith("answer "))) continue;
+      if (e.ref) seen.add(e.ref);
+      all.push(e);
+    }
+  }
+  if (!all.length) all.push(...stall(v, held));
+  const cut = v.max === null ? all.length : Math.min(v.max, all.length);
+  return { max_agents: v.max, paused: null, entries: all.slice(0, cut), more: all.length - cut };
+}
+function stall(v, held) {
+  const open = [...v.plans.values()].some((p) => !CLOSED.has(v.status(p))) || [...v.items.values()].some((i) => itemStatus(i, v.plans) !== "done" && !ITEM_CLOSED.has(itemStatus(i, v.plans)));
+  if (!open) return [];
+  const why = [
+    ...staffing(v.store).waiting.map((w) => `${w.id}: ${w.why}`),
+    ...[...held].map(([ref, qs]) => `${ref}: held by ${qs.join(", ")}`)
+  ];
+  return [entry("director", null, `stall: nothing can move${why.length ? ` \u2014 ${why.join("; ")}` : ""}`)];
+}
+function dispatchCmd(store, json = false) {
+  store.require();
+  const d = dispatch(store);
+  if (json) {
+    store.say(JSON.stringify(d, null, 2));
+    return;
+  }
+  if (d.paused !== null) {
+    store.say(`nothing to dispatch: the team is paused (${d.paused}) \u2014 \`resume\` first`);
+    return;
+  }
+  if (!d.entries.length) store.say("nothing to dispatch: no open work");
+  for (const e of d.entries) store.say(`DISPATCH  ${e.role}  ${e.ref ?? "-"}  ${e.task}${e.resume ? `  (resume ${e.resume})` : ""}`);
+  if (d.more) store.say(`\u2026 and ${d.more} more (budgets.max_agents)`);
+}
+
+// src/hub/commands/team/dispatch.reg.ts
 var registration18 = {
+  usage: [
+    "  dispatch [--json]                             who works on what next: one {role, ref, task, resume} per entry, within budgets.max_agents"
+  ],
+  cli: {
+    dispatch: { pos: [], flag: ["json"], run: (s2, a) => dispatchCmd(s2, !!a.opt.json) }
+  },
+  tools: {
+    dispatch: {
+      description: "Who works on what next (`crew.mjs dispatch`): one entry {role, ref, task, resume} per actionable document \u2014 questions, Director exceptions, urgent bugs, release, review, goal closure, in progress, ready, triage, specs, a stall \u2014 cut to budgets.max_agents (`more` counts the rest). `/crew:team` launches one agent per entry.",
+      input: obj({ json: { type: "boolean" } }),
+      run: (st) => dispatchCmd(st, true)
+    }
+  }
+};
+
+// src/hub/commands/team/liveness.reg.ts
+var registration19 = {
   usage: [
     "  pause [--reason TXT] \xB7 resume --team [--note TXT]     stop / restart staffing and starts (executive or director)"
   ],
@@ -13025,7 +13177,7 @@ var registration18 = {
 };
 
 // src/hub/commands/team/agents.reg.ts
-var registration19 = {
+var registration20 = {
   usage: [
     "  agents [--check]                              render the role agents (.claude/agents/crew-<role>.md) from the policy"
   ],
@@ -13035,7 +13187,7 @@ var registration19 = {
 };
 
 // src/hub/commands/team/questions.reg.ts
-var registration20 = {
+var registration21 = {
   usage: [
     "  ask [ID] --to ROLE TEXT [--fyi] \xB7 escalate [ID] TEXT \xB7 answer Q-\u2026 TEXT [--decision [--scope GLOBS]] [--approved-by NAME]",
     "  questions [--to ROLE] [--ref ID] [--all] [--json]       questions between roles; an open one blocks only its document"
@@ -13110,7 +13262,7 @@ var registration20 = {
 };
 
 // src/hub/commands/views/export.reg.ts
-var registration21 = {
+var registration22 = {
   usage: [
     "  export [--json] [--out FILE]                  interactive HTML view (.crew/view/index.html) or the graph as JSON"
   ],
@@ -13493,7 +13645,7 @@ function openBrowser(url) {
 }
 
 // src/hub/commands/views/ui.reg.ts
-var registration22 = {
+var registration23 = {
   usage: [
     "  ui [--port 8765] [--no-open] [--design]       serve the view live on 127.0.0.1 (updates as files change);",
     "                                                --design opens the design studio (/design)"
@@ -13514,7 +13666,7 @@ var registration22 = {
 };
 
 // src/hub/commands/views/design.reg.ts
-var registration23 = {
+var registration24 = {
   usage: [
     "  design show [--json] \xB7 design wait [--timeout 1800] \xB7 design done ID|all",
     "                                                the design studio's state; wait blocks until the page hands a",
@@ -13544,7 +13696,7 @@ var registration23 = {
 };
 
 // src/hub/commands/views/checks.reg.ts
-var registration24 = {
+var registration25 = {
   cli: {
     check: { pos: [], run: (s2) => check(s2) }
   },
@@ -13658,7 +13810,7 @@ function recentlyDone(plans2) {
 }
 
 // src/hub/commands/views/reports.reg.ts
-var registration25 = {
+var registration26 = {
   cli: {
     status: { pos: [], flag: ["write"], run: (s2, a) => status(s2, !!a.opt.write) }
   },
@@ -13672,7 +13824,7 @@ var registration25 = {
 };
 
 // src/hub/commands/views/graph.reg.ts
-var registration26 = {
+var registration27 = {
   tools: {
     graph: {
       description: "Every tracked document (idea, goals, items, plans) with status, gates, relations and the focus, as JSON (`crew.mjs export --json`).",
@@ -13704,15 +13856,16 @@ var REGISTRATIONS = [
   ["views/advisor.reg.ts", registration15],
   ["team/guard.reg.ts", registration16],
   ["team/team.reg.ts", registration17],
-  ["team/liveness.reg.ts", registration18],
-  ["team/agents.reg.ts", registration19],
-  ["team/questions.reg.ts", registration20],
-  ["views/export.reg.ts", registration21],
-  ["views/ui.reg.ts", registration22],
-  ["views/design.reg.ts", registration23],
-  ["views/checks.reg.ts", registration24],
-  ["views/reports.reg.ts", registration25],
-  ["views/graph.reg.ts", registration26]
+  ["team/dispatch.reg.ts", registration18],
+  ["team/liveness.reg.ts", registration19],
+  ["team/agents.reg.ts", registration20],
+  ["team/questions.reg.ts", registration21],
+  ["views/export.reg.ts", registration22],
+  ["views/ui.reg.ts", registration23],
+  ["views/design.reg.ts", registration24],
+  ["views/checks.reg.ts", registration25],
+  ["views/reports.reg.ts", registration26],
+  ["views/graph.reg.ts", registration27]
 ];
 var REGISTRY = load(REGISTRATIONS);
 

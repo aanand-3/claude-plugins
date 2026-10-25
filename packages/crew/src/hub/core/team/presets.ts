@@ -18,8 +18,8 @@ export const PRESETS: Record<string, { global: Raw; roles: Record<string, Raw> }
         "plan.in-review": "developer",   // … and hands over to test
         "plan.done": "pm",               // the PM completes, against QA's evidence
         "plan.dropped": "pm",
-        "goal.done": "director",         // the Director closes a goal the PM has verified
-        "plan.reassigned": "director",   // … and moves stuck work to someone else
+        "goal.done": "pm",               // the PM verifies a goal's criteria and closes it
+        "plan.reassigned": "director",   // the Director moves stuck work to someone else
         "plan.reviewed": "architect",    // code review against the spec; done needs an approval of the current code
       },
       // liveness: a claim quiet for a day is stale; a third bounce or a sixth failed attempt goes to the Director

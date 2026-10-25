@@ -17,7 +17,7 @@ function setup(): Repo {
   return repo;
 }
 const approve = (repo: Repo, g: string) => expect(tr(repo, "move", g, "active", "--approved-by", "Amit").returncode).toBe(0);
-const close = (repo: Repo, g: string, to = "done") => expect(as(repo, "director", "move", g, to, "--force").returncode).toBe(0);
+const close = (repo: Repo, g: string, to = "done") => expect(as(repo, "pm", "move", g, to, "--force").returncode).toBe(0);
 
 it("a done focus goal moves the focus to the next approved goal (AC2)", () => {
   const repo = setup();

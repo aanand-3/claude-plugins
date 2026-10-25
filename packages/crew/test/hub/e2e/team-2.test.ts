@@ -212,7 +212,7 @@ it("the runner stops on escalation, pause, budget and no approved goal left", ()
   expect(tr(repo, "run", "--check").stdout).toContain("budget: project tokens");
   repo.write(".crew/policy.yaml", LIFECYCLE);
   expect(tr(repo, "run", "--check").returncode).toBe(0);
-  expect(as(repo, "director", "move", "G-001", "done", "--force").returncode).toBe(0);
+  expect(as(repo, "pm", "move", "G-001", "done", "--force").returncode).toBe(0);
   expect(tr(repo, "run", "--check").stdout).toContain("all approved goals done: G-001");
 });
 

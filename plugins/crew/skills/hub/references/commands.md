@@ -248,6 +248,18 @@ reassign PLAN_ID [--to ROLE] [--note TXT] [--force]   release a stale claim and 
 - `staff`: What can run in parallel now (`crew.mjs staff`): ready plans whose dependencies are done, that overlap nothing in progress or each other, within budgets.max_agents, each routed to a team; and why the others wait.
 - `reassign`: Move stuck work to another run (`crew.mjs reassign`): releases a stale claim (limits.stale_claim_hours) and assigns the plan again; the next agent takes it over with start, which resumes its branch. Under the lifecycle preset, the Director's.
 
+## team/dispatch
+
+```text
+dispatch [--json]                             who works on what next: one {role, ref, task, resume} per entry, within budgets.max_agents
+```
+
+| Command | MCP tool |
+|---|---|
+| `dispatch` | `dispatch` |
+
+- `dispatch`: Who works on what next (`crew.mjs dispatch`): one entry {role, ref, task, resume} per actionable document — questions, Director exceptions, urgent bugs, release, review, goal closure, in progress, ready, triage, specs, a stall — cut to budgets.max_agents (`more` counts the rest). `/crew:team` launches one agent per entry.
+
 ## team/liveness
 
 ```text

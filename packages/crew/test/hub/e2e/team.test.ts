@@ -149,14 +149,14 @@ it("a goal is done only when the PM verified it and nothing is left", () => {
   expect(newGoal(repo).returncode).toBe(0);
   tr(repo, "move", "G-001", "active", "--approved-by", "Amit");
   expect(newPlan(repo, "Signup endpoint", PLAN_DRAFT, "--goal", "G-001").returncode).toBe(0);
-  let r = as(repo, "director", "move", "G-001", "done");
+  let r = as(repo, "pm", "move", "G-001", "done");
   expect(r.returncode).not.toBe(0);
   expect(r.stderr).toContain("AC1 is not verified");
   expect(r.stderr).toContain("P-001 is draft");
   expect(as(repo, "pm", "move", "P-001", "dropped").returncode).toBe(0);
   repo.env.CREW_RUN = "qa";
   expect(as(repo, "qa", "checkpoint", "G-001", "--verify", "signed up as a new user", "--result", "pass", "--ac", "1").returncode).toBe(0);
-  r = as(repo, "director", "move", "G-001", "done");
+  r = as(repo, "pm", "move", "G-001", "done");
   expect(r.returncode).not.toBe(0);
   expect(r.stderr).toContain("verified by the qa role; the pm verifies goals");
   r = as(repo, "pm", "checkpoint", "G-001");
@@ -164,16 +164,16 @@ it("a goal is done only when the PM verified it and nothing is left", () => {
   expect(r.stderr).toContain("A goal's checkpoint records evidence");
   repo.env.CREW_RUN = "pm";
   expect(as(repo, "pm", "checkpoint", "G-001", "--verify", "signed up as a new user", "--result", "pass", "--ac", "all").returncode).toBe(0);
-  r = as(repo, "director", "move", "G-001", "done");
+  r = as(repo, "pm", "move", "G-001", "done");
   expect(r.returncode).not.toBe(0);
   expect(r.stderr).toContain("FEAT-001 is still open"); // the goal's breakdown items
   for (const i of ["FEAT-001", "FEAT-002"]) {
     expect(as(repo, "pm", "triage", i, "--reject", "wontfix", "--note", "out of this goal").returncode).toBe(0);
   }
-  r = as(repo, "pm", "move", "G-001", "done");
+  r = as(repo, "director", "move", "G-001", "done");
   expect(r.returncode).not.toBe(0);
-  expect(r.stderr).toContain("for the director role"); // the PM verifies, the Director closes
-  expect(as(repo, "director", "move", "G-001", "done").returncode).toBe(0);
+  expect(r.stderr).toContain("for the pm role"); // the PM verifies and closes
+  expect(as(repo, "pm", "move", "G-001", "done").returncode).toBe(0);
 });
 
 it("a stale claim is flagged and reassigned", () => {

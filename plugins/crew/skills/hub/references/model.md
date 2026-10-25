@@ -117,11 +117,21 @@ The hub enforces gates, reserved transitions and budgets; models and tools reach
 An invalid policy blocks every move until `policy check` passes.
 
 `preset: lifecycle`: mode `ai-native`; the executive approves `goal.active`; role gates `item.triaged`, `plan.assigned`,
-`plan.done`, `plan.dropped` → pm; `plan.ready`, `plan.reviewed` → architect; `plan.in-progress`, `plan.in-review` →
-developer; `goal.done`, `plan.reassigned` → director; `evidence.role: qa`; `limits: {stale_claim_hours: 24, max_bounces:
+`plan.done`, `plan.dropped`, `goal.done` → pm; `plan.ready`, `plan.reviewed` → architect; `plan.in-progress`,
+`plan.in-review` → developer; `plan.reassigned` → director; `evidence.role: qa`; `limits: {stale_claim_hours: 24, max_bounces:
 2, max_attempts: 5}`; the director, pm, qa and release roles write only `.crew/drafts/`. Under a policy that gates
 `plan.assigned`, `start` needs an assignment; under one that gates `plan.reviewed`, `done` needs an approving review that
 covers the last code change; under one that gates `goal.done`, the PM verifies a goal's criteria.
+
+**Dispatch.** `dispatch [--json]` decides who works on what next, from the gates and the state above: one
+`{role, ref, task, resume}` entry per document, highest priority first — questions to a role; Director exceptions (a
+stale claim, a blocked plan, the focus goal done while another is active); urgent bugs (S1 or P0); the first plan in
+`merge-order`; plans in review (a failing check → the implementer, no approving review → the Architect, missing evidence
+→ QA, else the PM completes); a focus goal with nothing open → the PM closes it; plans in progress; ready plans `staff`
+can start (assigned → that role, else the PM assigns); triage; specs and new plans while fewer plans are ready than
+`budgets.max_agents`; and, when nothing can move but work is open, one stall entry for the Director. Documents an
+escalation holds get no entry; a paused team gets none. Entries are cut to `max_agents` (`more` counts the rest);
+`resume` names the run to continue (`<role>:<agent id>`). `/crew:team` launches one agent per entry.
 
 ## Focus
 `focus G-###` records one goal on the idea. Everything orients to it:
