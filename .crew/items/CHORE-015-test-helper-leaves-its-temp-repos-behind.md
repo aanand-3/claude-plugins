@@ -2,8 +2,8 @@
 id: CHORE-015
 type: chore
 title: Test helper leaves its temp repos behind
-status: new
-priority:
+status: triaged
+priority: P3
 goal:
 plan:
 created: 2026-10-24
@@ -19,3 +19,4 @@ Repo.create() in packages/crew/test/helpers/repo.ts makes a git repo in the temp
 - [ ]
 
 ## Notes
+- 2026-10-26: status new → triaged — priority P3
