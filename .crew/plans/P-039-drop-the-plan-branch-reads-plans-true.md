@@ -94,15 +94,14 @@ Code part of CHORE-018, and the fix for BUG-026 (`context`, `resume` and `status
 
 _Generated 2026-10-25 by `crew.mjs handoff` from the ledger._
 
-- P-039: Drop the plan-branch reads (plans(true)) [in-progress] tasks 4/5 — claimed by Arpit Anand (developer:aa36891f95c4f8d92)
-- last checkpoint 2026-10-25 10:50 at T5 (6c1015d) by Arpit Anand; since then 0 commit(s), 2 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs
-- next: T5: the covering suites → verify: `npx vitest run test/hub-worktrees.test.ts test/hub/e2e/team.test.ts test/hub/e2e/context.test.ts test/hub/e2e/basics.test.ts test/view.test.ts`; `wc -l` of each touched module under 300 (AC6)
-- evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —, AC7 —
+- P-039: Drop the plan-branch reads (plans(true)) [in-progress] tasks 5/5 — claimed by Arpit Anand (developer:aa36891f95c4f8d92)
+- last checkpoint 2026-10-25 11:15 at T5 (4d4c5e2) by Arpit Anand; since then 0 commit(s), 2 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs
+- evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —, AC7 —, AC8 —
 
 Latest log:
-- 2026-10-25: Architect (Q-60f72b): BUG-026 linked; AC7 regression added; depends_on += P-038 after re-check of its planning.ts and test edits
 - 2026-10-25: assigned to the developer role
 - 2026-10-25: status ready → in-progress — branch plan/P-039-drop-the-plan-branch-reads-plans-true
+- 2026-10-25: Architect (Q-16112d): branch reads go only with plan worktrees. Without them (the default mode, other projects) a started plan's hub state is committed on its branch, so `plans(true)` stays and `branchPlans` is gated on `!plan_worktrees`; call sites, `allPlans` and the `source` handling stay as on main. T2 and T4 reopened, AC2 rewritten, AC8 added. Touches unchanged.
 
 ## Progress log
 
