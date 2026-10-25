@@ -1,7 +1,7 @@
 ---
 id: G-007
 title: Autonomous parallel delivery
-status: proposed
+status: active
 priority: P1
 created: 2026-10-25
 completed:
@@ -57,3 +57,4 @@ Once the human approves a set of goals, the crew team works the backlog to done 
 - Design: `.crew/drafts/the-crew-team-was-pure-reef.md` (Wave 0 by hand; Waves 1–2 as parallel plans with disjoint touches).
 
 ## Progress log
+- 2026-10-25: status proposed → active (approved by Arpit Anand)
