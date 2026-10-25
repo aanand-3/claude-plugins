@@ -44,11 +44,14 @@ you ── this session ── dispatch ─┬─ crew-director ─ crew-pm ─ 
 2. A pass:
    1. `node .crew/bin/crew.mjs run --check` — STOP → report why to the user and end.
    2. `node .crew/bin/crew.mjs dispatch --json` — its `entries`, each `{role, ref, task, resume}`.
-   3. For each entry, in parallel: launch `crew-<role>` (an Agent call) with the ref and the task — or, when `resume`
+   3. Before launching anything: every `crew-<role>` the entries name must be an agent type this session can launch. If
+      one is missing, run `node .crew/bin/crew.mjs pause --reason "crew agents not loaded in this session: render them
+      and start a new session"` and stop (an unattended runner then stops on the pause).
+   4. For each entry, in parallel: launch `crew-<role>` (an Agent call) with the ref and the task — or, when `resume`
       names a run whose agent this session's roster holds (the agent ID follows the colon in the run), resume that
       agent with SendMessage instead. Keep the roster (run → agent ID) from each Agent result.
-   4. Wait for the reports.
-   5. Repeat until dispatch has no entries or `run --check` says STOP.
+   5. Wait for the reports.
+   6. Repeat until dispatch has no entries or `run --check` says STOP.
 
    This session never chooses the routing: it runs what dispatch gives, nothing else.
 3. Relay what moved, what is blocked, usage. For each **escalation** (`crew.mjs questions --to executive`),
@@ -60,14 +63,29 @@ you ── this session ── dispatch ─┬─ crew-director ─ crew-pm ─ 
    start a fresh agent; the hub has everything it needs (`resume P-###`).
 
 ## Unattended
-`node .crew/bin/crew.mjs run` prints a loop that hands "continue" to the Director until `run --check` says stop (an
-escalation with no plan or item to hold — an escalation about one holds only that document — or escalations holding
-everything open, a pause, an exhausted project budget, no approved goal left — a done focus goal moves on to the next approved one), and a one-shot form for a scheduler.
-Offer it when the user wants the team to keep going without them. With `notify:` in the policy
-(`{command: "<shell>", on: [escalation, budget, stale, goal-done, paused]}`) the hub runs that command with each event
-as JSON on stdin — ntfy, a Slack webhook, mail: the user's choice, and a policy change, so theirs to make. A
-SubagentStop hook (`crew.mjs usage --hook`, in the guidelines settings template) records each agent's tokens, so
-token budgets apply.
+`node .crew/bin/crew.mjs run --until-done [--max-passes N] [--command CMD]` is the local runner, started by a human
+from a terminal (a crew agent can't start it). Offer it when the user wants the team to keep going without them; run one
+per repository.
+- **Preflight, once:** the crew agents are rendered, current and loadable (front matter parses, `name` is the file
+  name); `.claude/settings.json` has the guard (PreToolUse `crew.mjs guard`) and usage (SubagentStop `crew.mjs usage
+  --hook`) hooks; with plan worktrees, the main checkout is on the base branch; the pass command is on PATH. Each
+  problem prints `PREFLIGHT  <problem> → <fix>` and the runner exits 2 having run nothing. A missing activity hook
+  (PostToolUse `crew.mjs activity --hook`) only warns: idle runs then go unseen.
+- **Each pass** runs `--command` (default `claude -p "/crew:team continue"`) through the shell from the repository root,
+  and records a ledger `report` (`source: runner`: pass, exit, dispatched, progress in ledger events).
+- **It stops** when `run --check` would (an escalation with no plan or item to hold — an escalation about one holds only
+  that document — or escalations holding everything open, a pause, an exhausted project budget, no approved goal left —
+  a done focus goal moves on to the next approved one) or dispatch is empty: exit 0; after two passes in a row with no
+  ledger progress, or at `--max-passes` (default 20): exit 1. It prints `STOP  <reason>`, records the stop as a
+  `report` and notifies `stopped`.
+- `claude -p` must be able to run the agents' tools without prompting: the user's permission settings, or a
+  permission-mode flag in their own `--command`. The runner doesn't choose it.
+
+`node .crew/bin/crew.mjs run` still prints a hand-written shell loop and a one-shot form for a scheduler. With `notify:`
+in the policy (`{command: "<shell>", on: [escalation, budget, stale, goal-done, paused, stopped]}`) the hub runs that
+command with each event as JSON on stdin — ntfy, a Slack webhook, mail: the user's choice, and a policy change, so
+theirs to make. A SubagentStop hook (`crew.mjs usage --hook`, in the guidelines settings template) records each agent's
+tokens, so token budgets apply.
 
 ## Rules
 - This session never does the roles' work itself and never approves on the user's behalf.

@@ -101,6 +101,7 @@ watch [--ref ID] [--limit 20]                 the live feed (tool calls and ledg
 
 ```text
 run [--check] [--json]                        run the team unattended: the loop, and whether it may go on (exit 1: stop)
+run --until-done [--max-passes N] [--command CMD]  the local runner: preflight, then one pass at a time until it stops (default 20 passes; 0 done, 1 no progress or limit, 2 preflight)
 ```
 
 | Command | MCP tool |

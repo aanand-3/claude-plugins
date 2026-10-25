@@ -114,6 +114,17 @@ it("a blocked plan → director unblock (AC3)", () => {
   expect(brief(dispatch())).toEqual(["director P-001 unblock"]);
 });
 
+it("an idle run → director: resume or reassign (P-034 AC10)", () => {
+  started(repo);
+  const ago = (min: number) => new Date(Date.now() - min * 60_000).toISOString();
+  repo.write(".git/crew/activity.jsonl", `${JSON.stringify({ ts: ago(30), run: "developer:a1", role: "developer", ref: "P-001", tool: "Edit", target: "src/a.ts" })}\n`);
+  const d = dispatch();
+  expect(d.entries[0]).toMatchObject({ role: "director", ref: "P-001" });
+  expect(d.entries[0].task).toMatch(/^run developer:a1 on P-001 idle for 30 min: resume or reassign$/);
+  policy("limits: { idle_minutes: 45 }\n"); // not idle yet: the developer continues
+  expect(brief(dispatch())).toEqual(["developer P-001 continue"]);
+});
+
 it("a focus goal that is done while another goal is active → director focus (AC3)", () => {
   lifecycle(repo);
   ok(newIdea(repo));
