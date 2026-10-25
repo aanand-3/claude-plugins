@@ -38,3 +38,4 @@ All four listed under merge (`1. P-001 … merge plan/P-001-… into main`): Rel
 - 2026-10-25: PM 2026-10-25: delivered by P-018 (done, QA evidence AC1) but still triaged; not folded into P-032 (new-plan refused: already planned in P-018). Re-goaled to G-007 in error from G-003 — Director to decide whether to close it with P-018 and restore G-003.
 - 2026-10-25: Director: P-018 delivered the squash detection (QA AC1 pass). Close BUG-005 with P-018 and keep it on G-003; any remaining squash gap is CHORE-014 item (6) in P-028.
 - 2026-10-25: re-triaged: priority P2, severity S3
+- 2026-10-25: PM 2026-10-25: goal restored to G-003 (P2). Could not close it: items take only new/triaged/wontfix/duplicate, and closing with P-018 (already done) did not happen automatically.
