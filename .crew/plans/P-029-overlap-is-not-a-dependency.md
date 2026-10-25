@@ -70,12 +70,12 @@ SPIKE-004's answer is recorded as K-2026-10-25-overlaps-on-hub-shared-paths-incl
 - **Reuse:** `globRe`, `globsOverlap` (knowledge.ts), `LIVE` (footprint.ts), the `check-attr -z` parsing in `drift`, `init`/`readyPlan`-style helpers in `test/hub/e2e/helpers.ts` and `team-helpers.ts`.
 
 ## Tasks
-- [ ] T1: footprint.ts `sharedGlobs`, `isShared`, `blockingGlobs`, shared-aware `overlapping` → verify: `cd packages/crew && npx vitest run test/hub/e2e/shared-touches.test.ts -t overlap` (AC1, AC2, AC3)
-- [ ] T2: team.ts `staffing` uses the blocking overlap → verify: `npx vitest run test/hub/e2e/shared-touches.test.ts -t staff` and `npx vitest run test/hub/e2e/team.test.ts test/hub/e2e/team-2.test.ts` still pass (AC1, AC2)
-- [ ] T3: checks.ts: shared-aware overlap hint and its new wording, the `touches` rule (broad, generated, overlap-only depends_on), the `hub.shared` type error → verify: `npx vitest run test/hub/e2e/shared-touches.test.ts -t check` (AC3, AC4, AC5, AC6, AC7)
-- [ ] T4: `hub.shared` in this repo's config.yaml → verify: `npm run build && cd ../.. && node plugins/crew/skills/hub/dist/crew.mjs check | grep -c "ERROR.*hub.shared"` prints 0 (AC8)
-- [ ] T5: model.md and architect.md; `log SPIKE-004` with the decision ID → verify: `grep -n "shared" plugins/crew/skills/hub/references/model.md plugins/crew/skills/hub/agents/architect.md` finds the row and the guidance; `npx vitest run test/plugin` passes (AC9)
-- [ ] T6: types and module size → verify: `npm run typecheck`; `wc -l src/hub/core/work/footprint.ts src/hub/commands/team/team.ts src/hub/commands/views/checks.ts` each under 300
+- [x] T1: footprint.ts `sharedGlobs`, `isShared`, `blockingGlobs`, shared-aware `overlapping` → verify: `cd packages/crew && npx vitest run test/hub/e2e/shared-touches.test.ts -t overlap` (AC1, AC2, AC3)
+- [x] T2: team.ts `staffing` uses the blocking overlap → verify: `npx vitest run test/hub/e2e/shared-touches.test.ts -t staff` and `npx vitest run test/hub/e2e/team.test.ts test/hub/e2e/team-2.test.ts` still pass (AC1, AC2)
+- [x] T3: checks.ts: shared-aware overlap hint and its new wording, the `touches` rule (broad, generated, overlap-only depends_on), the `hub.shared` type error → verify: `npx vitest run test/hub/e2e/shared-touches.test.ts -t check` (AC3, AC4, AC5, AC6, AC7)
+- [x] T4: `hub.shared` in this repo's config.yaml → verify: `npm run build && cd ../.. && node plugins/crew/skills/hub/dist/crew.mjs check | grep -c "ERROR.*hub.shared"` prints 0 (AC8)
+- [x] T5: model.md and architect.md; `log SPIKE-004` with the decision ID → verify: `grep -n "shared" plugins/crew/skills/hub/references/model.md plugins/crew/skills/hub/agents/architect.md` finds the row and the guidance; `npx vitest run test/plugin` passes (AC9)
+- [x] T6: types and module size → verify: `npm run typecheck`; `wc -l src/hub/core/work/footprint.ts src/hub/commands/team/team.ts src/hub/commands/views/checks.ts` each under 300
 
 ## Test plan
 **Targeted checks** (from `packages/crew/`, after `npm run build`; the e2e tests drive the built `dist/crew.mjs` in throwaway repos):
@@ -102,9 +102,8 @@ SPIKE-004's answer is recorded as K-2026-10-25-overlaps-on-hub-shared-paths-incl
 
 _Generated 2026-10-25 by `crew.mjs handoff` from the ledger._
 
-- P-029: Overlap is not a dependency [in-progress] tasks 0/6 — claimed by Arpit Anand (developer:a241674714d74a684)
+- P-029: Overlap is not a dependency [in-progress] tasks 6/6 — claimed by Arpit Anand (developer:a241674714d74a684)
 - last checkpoint 2026-10-25 07:16 at T6 (f7c315a) by Arpit Anand; since then 0 commit(s), 7 uncommitted file(s): .crew/config.yaml, packages/crew/src/hub/commands/team/team.ts, packages/crew/src/hub/commands/views/checks.ts, packages/crew/src/hub/core/work/footprint.ts, plugins/crew/skills/hub/agents/architect.md, plugins/crew/skills/hub/references/model.md, packages/crew/test/hub/e2e/shared-touches.test.ts
-- next: T1: footprint.ts `sharedGlobs`, `isShared`, `blockingGlobs`, shared-aware `overlapping` → verify: `cd packages/crew && npx vitest run test/hub/e2e/shared-touches.test.ts -t overlap` (AC1, AC2, AC3)
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —, AC7 —, AC8 —, AC9 —
 
 Latest log:
@@ -120,3 +119,7 @@ Latest log:
 - 2026-10-25: status ready → in-progress — branch plan/P-029-overlap-is-not-a-dependency
 
 ## Outcome
+`hub.shared` (a YAML list under `hub:` in .crew/config.yaml) makes overlaps on shared touches non-blocking in `staff` and in `check`'s overlap hint; the hint now says to narrow touches or share the file, not to add depends_on. New `check` touches rule: ERROR for a `hub.shared` that isn't a list; hints for broad wildcard touches (> 10 tracked files or covering a shared file), touches that list generated paths, and depends_on that only stands for an overlap. This repo's config lists the 8 shared paths; model.md and architect.md document it.
+Deviation: a pair of overlapping touches is ignored only when BOTH are shared (Scope said either side; AC2 needs a broad test/** to keep blocking test/a.test.ts) — Q-acbff5 to the Architect. Generated paths are found with `git ls-files ':(attr:linguist-generated)'` rather than check-attr.
+Follow-ups: roles.ts and context.ts still call `overlapping` without the shared globs (roles.ts still suggests depends_on), like workflow.ts's start warning (P-039).
+Learnings: K-2026-10-25-a-plans-edit-to-crew-config-yaml-in-its
