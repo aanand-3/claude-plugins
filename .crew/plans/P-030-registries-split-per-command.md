@@ -11,6 +11,7 @@ pr:
 created: 2026-10-25
 started:
 completed:
+assignee: developer
 ---
 
 # P-030: Registries split per command
@@ -86,5 +87,6 @@ Two design choices, recorded as decisions with this plan:
 
 - 2026-10-25: status draft → ready
 - 2026-10-25: Architect: touches list the 25 registration files exactly (a commands/*/*.reg.ts glob overlapped every command module by stem).
+- 2026-10-25: assigned to the developer role
 
 ## Outcome
