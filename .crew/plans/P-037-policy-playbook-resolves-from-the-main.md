@@ -79,6 +79,7 @@ Latest log:
 - 2026-10-25: status ready → in-progress — branch plan/P-037-policy-playbook-resolves-from-the-main
 - 2026-10-25: status in-progress → in-review
 - 2026-10-25: status in-review → done
+- 2026-10-25: merged: plan commit 8300033 squash-merged into main as bef3058; npm ci + hub.build in the worktree, hub.full_suite green on 8300033 (typecheck, 43 files / 312 tests, build, bundle check clean). Rollout: takes effect once .crew/bin is refreshed (executive's session); no playbook set here, so no behaviour change in this repo. Not pushed.
 
 ## Outcome
 Policy and playbook resolution (Store.policy, Store.knowledge, policy show/check, agents, the guard) pass store.home, so a relative playbook.path resolves from the main checkout in plan worktrees too. Regression test test/hub/e2e/playbook-home.test.ts. Awaiting QA.
