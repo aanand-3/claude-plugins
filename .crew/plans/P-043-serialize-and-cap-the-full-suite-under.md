@@ -54,11 +54,11 @@ BUG-028 (G-007): with several plans running, the full vitest run times out in te
 - Generated files (`plugins/crew/skills/hub/dist/**`, `references/commands.md`): Release builds them. Developers run `npm run build` for the e2e tests and discard its output.
 
 ## Tasks
-- [ ] T1: `runSuite` with slots, stale takeover and the record; the `suite` CLI → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/suite.test.ts -t "slot|stale|exit"` (AC1, AC2, AC5, AC6)
-- [ ] T2: `suites` CLI and MCP tool; registration → verify: `npx vitest run test/hub/e2e/suite.test.ts -t record test/hub/registry.test.ts test/mcp.test.ts` (AC4, AC8)
-- [ ] T3: vitest `maxWorkers: "50%"` → verify: `grep -n 'maxWorkers: "50%"' packages/crew/vitest.config.ts` (AC3)
-- [ ] T4: release.md, SKILL.md, model.md → verify: `grep -n "crew.mjs suite" plugins/crew/skills/hub/agents/release.md plugins/crew/skills/hub/SKILL.md`; `grep -n suite_slots plugins/crew/skills/hub/references/model.md`; `npx vitest run test/plugin` (AC7)
-- [ ] T5: types and size → verify: `npm run typecheck`; `wc -l src/hub/commands/work/suite*.ts` each under 300 (AC8)
+- [x] T1: `runSuite` with slots, stale takeover and the record; the `suite` CLI → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/suite.test.ts -t "slot|stale|exit"` (AC1, AC2, AC5, AC6)
+- [x] T2: `suites` CLI and MCP tool; registration → verify: `npx vitest run test/hub/e2e/suite.test.ts -t record test/hub/registry.test.ts test/mcp.test.ts` (AC4, AC8)
+- [x] T3: vitest `maxWorkers: "50%"` → verify: `grep -n 'maxWorkers: "50%"' packages/crew/vitest.config.ts` (AC3)
+- [x] T4: release.md, SKILL.md, model.md → verify: `grep -n "crew.mjs suite" plugins/crew/skills/hub/agents/release.md plugins/crew/skills/hub/SKILL.md`; `grep -n suite_slots plugins/crew/skills/hub/references/model.md`; `npx vitest run test/plugin` (AC7)
+- [x] T5: types and size → verify: `npm run typecheck`; `wc -l src/hub/commands/work/suite*.ts` each under 300 (AC8)
 
 ## Test plan
 **Targeted checks** (from `packages/crew/`, after `npm run build`; `test/hub/e2e/suite.test.ts` (new) drives `dist/crew.mjs` in throwaway repos with `hub.full_suite` set to small shell commands; discard the build output afterwards):
@@ -90,3 +90,5 @@ Ships with the next `.crew/bin` refresh; until Release runs `crew.mjs suite`, no
 - 2026-10-25: status ready → in-progress — branch plan/P-043-serialize-and-cap-the-full-suite-under
 
 ## Outcome
+New `suite [--ref P-###]` command (`commands/work/suite.ts`, exporting `runSuite` for P-032) runs `hub.full_suite` under one of `hub.suite_slots` slot files in the git common dir's `crew/suite/` (shared by every worktree), waits with one stderr line naming the holders, takes over a dead holder's slot (same host, ESRCH), exits with the suite's code and appends a record to `crew/suites.jsonl`; `suites [--limit] [--json]` and the MCP tool `suites` read them newest first. vitest runs at `maxWorkers: "50%"`; release.md, SKILL.md and model.md send Release through `crew.mjs suite`. registry.test.ts now leaves names added after P-030 (an `ADDED` list) out of its frozen comparisons.
+Learnings: the guard rewrites every `crew.mjs` word in a Bash command, heredoc bodies included, so source text that mentions `crew.mjs <command>` must be written with the Write/Edit tools, not a shell heredoc.
