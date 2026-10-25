@@ -11,6 +11,7 @@ pr:
 created: 2026-10-25
 started:
 completed:
+assignee: developer
 ---
 
 # P-039: Drop the plan-branch reads (plans(true))
@@ -92,5 +93,6 @@ Code part of CHORE-018, and the fix for BUG-026 (`context`, `resume` and `status
 - 2026-10-25: Architect: scope += P-029 review follow-up: context.ts and roles.ts pass hub.shared to overlapping; roles.ts advice no longer suggests depends_on (AC5 extended). Both files were already in touches.
 - 2026-10-25: Architect (Q-60f72b): items += BUG-026 (this plan removes its cause, `plans(true)`); AC7 added as its regression test (`context`/`resume` show main's status, criteria and tasks; AC1 checked status but not criteria or `resume`). depends_on += P-038: it changes planning.ts and two of the suites here; re-checked, no conflict with this plan's edits.
 - 2026-10-25: Architect (Q-60f72b): BUG-026 linked; AC7 regression added; depends_on += P-038 after re-check of its planning.ts and test edits
+- 2026-10-25: assigned to the developer role
 
 ## Outcome
