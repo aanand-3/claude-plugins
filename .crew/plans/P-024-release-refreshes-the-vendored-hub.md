@@ -133,5 +133,6 @@ Latest log:
 - 2026-10-25: assigned to the developer role
 - 2026-10-25: status ready → in-progress — branch plan/P-024-release-refreshes-the-vendored-hub
 - 2026-10-25: Architect (Q-6949e4): touches gain packages/crew/src/hub/commands/team/policy.ts for two text rows in `policy show` (release.refresh_bin.from / .files); AC5 is tested on text and --json output.
+- 2026-10-25: Developer notes: (1) 'a plan's worktree' = the checkout's current branch is the branch: of a plan not dropped (done counts, since Release refreshes after done). (2) copyFileSync copies the source mode, so refresh-bin chmods the target back to its own mode. (3) policy show prints 'none' for an unset key (Q-6949e4). (4) .crew/config.yaml edited in the plan worktree (in touches; ships in the plan commit). Bootstrap (policy.yaml release block, .crew/bin copy) not done: human-reserved per Rollout.
 
 ## Outcome
