@@ -83,6 +83,18 @@ n/a — test-only change; revert the commit to roll back.
 
 ## Handoff
 
+_Generated 2026-10-25 by `crew.mjs handoff` from the ledger._
+
+- P-044: Architect next ignores hub.shared overlaps [in-progress] tasks 0/3 — claimed by Arpit Anand (developer:a62f33636f74e4a3c)
+- last checkpoint 2026-10-25 13:26 at T3 (afdc288) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
+- next: T1: add the regression test → verify: `npx vitest run test/hub/e2e/shared-touches.test.ts` in `packages/crew`
+- evidence: AC1 —, AC2 —, AC3 —, AC4 —
+
+Latest log:
+- 2026-10-25: status draft → ready
+- 2026-10-25: assigned to the developer role
+- 2026-10-25: status ready → in-progress — branch plan/P-044-architect-next-ignores-hub-shared
+
 ## Progress log
 
 - 2026-10-25: status draft → ready
