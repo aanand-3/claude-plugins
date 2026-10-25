@@ -5,11 +5,11 @@ goal: G-007
 items: BUG-027
 touches: packages/crew/src/hub/core/memory/ledger.ts, packages/crew/src/hub/core/memory/activity.ts, packages/crew/test/ledger.test.ts, packages/crew/test/activity.test.ts, packages/crew/test/hub/e2e/team-2.test.ts
 depends_on:
-status: ready
+status: in-progress
 branch: plan/P-049-usage-counts-a-resumed-run-once
 pr:
 created: 2026-10-25
-started:
+started: 2026-10-26
 completed:
 assignee: developer
 ---
@@ -79,5 +79,6 @@ n/a — internal; ships in the bundle (Release builds it) and reaches this repo 
 
 - 2026-10-25: status draft → ready
 - 2026-10-26: assigned to the developer role
+- 2026-10-26: status ready → in-progress — branch plan/P-049-usage-counts-a-resumed-run-once
 
 ## Outcome
