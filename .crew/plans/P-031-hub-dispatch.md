@@ -108,15 +108,14 @@ Needs no other plan's code. It reads P-029's shared-aware staffing through `staf
 
 _Generated 2026-10-25 by `crew.mjs handoff` from the ledger._
 
-- P-031: Hub dispatch [in-review] tasks 4/5 — claimed by Arpit Anand (developer:ad203d7d12e3f9fc1)
+- P-031: Hub dispatch [in-review] tasks 5/5 — claimed by Arpit Anand (developer:ad203d7d12e3f9fc1)
 - last checkpoint 2026-10-25 12:49 at T5 (0e2bd18) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
-- next: T5: types, sizes, registry tests (see Approach), unchanged suites → verify: `npm run typecheck`; `wc -l src/hub/commands/team/dispatch*.ts`; `npx vitest run test/hub/e2e/basics.test.ts test/mcp.test.ts test/hub/registry.test.ts`; `git diff --quiet main -- test/hub/registry-before.json` (AC11)
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —, AC7 —, AC8 —, AC9 —, AC10 —, AC11 —
 
 Latest log:
-- 2026-10-25: status draft → ready
-- 2026-10-25: assigned to the developer role
-- 2026-10-25: status ready → in-progress — branch plan/P-031-hub-dispatch
+- 2026-10-25: status in-progress → in-review
+- 2026-10-25: architect review: approved at 0e2bd18. Owed in the plan file (developer, no code change): tick T5 (its checks pass: typecheck, wc -l 161/18, basics/mcp/registry green, registry-before.json unchanged) and complete the Outcome with what shipped and the one deviation — AC5's 'no max_agents' case is not reachable through policy (default 4, no null override), so the test uses a cap above the work; the null path in dispatch() is covered by code reading only.
+- 2026-10-25: developer: ticked T5 and completed the Outcome (what shipped, AC5 deviation) as the architect review asked; no code change
 
 ## Progress log
 
