@@ -91,6 +91,18 @@ The same files carry two more CHORE-014 follow-ups, so they ride here: squash de
 
 ## Handoff
 
+_Generated 2026-10-25 by `crew.mjs handoff` from the ledger._
+
+- P-028: Plan branches commit as they go [in-progress] tasks 0/6 — claimed by Arpit Anand (developer:a1c98a9dbee8039d1)
+- last checkpoint 2026-10-25 07:23 at T6 (f7c315a) by Arpit Anand; since then 0 commit(s), 8 uncommitted file(s): packages/crew/src/hub/commands/work/execution.ts, packages/crew/src/hub/commands/work/review.ts, packages/crew/src/hub/commands/work/workflow.ts, packages/crew/src/hub/core/git.ts, plugins/crew/skills/hub/agents/developer.md, plugins/crew/skills/hub/agents/director.md, packages/crew/test/hub/e2e/wip-commits.test.ts, packages/crew/test/hub/squash-merge.test.ts
+- next: T1: git.ts `generated`, `codeChanges` and the merge-tree `squashMerge`; `test/hub/squash-merge.test.ts` with the main-also-changed, rename, mention-only and moved-on cases → verify: `cd packages/crew && npx vitest run test/hub/squash-merge.test.ts test/hub-worktrees.test.ts -t merge_order` (AC6)
+- evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —, AC7 —, AC8 —
+
+Latest log:
+- 2026-10-25: status draft → ready
+- 2026-10-25: assigned to the developer role
+- 2026-10-25: status ready → in-progress — branch plan/P-028-plan-branches-commit-as-they-go
+
 ## Progress log
 
 - 2026-10-25: status draft → ready
