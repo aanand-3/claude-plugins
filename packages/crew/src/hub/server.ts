@@ -7,7 +7,7 @@ import { randomBytes } from "node:crypto";
 import { existsSync, mkdirSync, watch } from "node:fs";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { basename, dirname, join } from "node:path";
-import { feedPath, running } from "./commands/team/activity.js";
+import { feedEntries, feedPath, running } from "./commands/team/activity.js";
 import { readActivity } from "./core/memory/activity.js";
 import * as git from "./core/git.js";
 import { triage } from "./commands/work/backlog.js";
@@ -89,8 +89,12 @@ export function serve(store: Store, o: ServeOptions): Promise<{ url: string; clo
     if (req.method === "GET" && path === "/api/graph") return send(res, 200, buildGraph(open()));
     if (req.method === "GET" && path === "/api/design") return send(res, 200, designPayload(open()));
     if (req.method === "GET" && path === "/api/activity") {
-      const s = open();
-      return send(res, 200, { running: running(s), recent: readActivity(feedPath(s)).slice(-50) });
+      const s = open(), ref = new URLSearchParams((req.url ?? "").split("?")[1] ?? "").get("ref");
+      if (ref === null) return send(res, 200, { running: running(s), recent: readActivity(feedPath(s)).slice(-50) });
+      if (!/^[A-Z]+-\d+$/i.test(ref)) return send(res, 400, { error: `Not a hub ID: ${ref}` });
+      const id = ref.toUpperCase(), mine = (e: { ref: string | null }) => e.ref?.toUpperCase() === id;
+      return send(res, 200, { running: running(s).filter(mine), recent: readActivity(feedPath(s)).filter(mine).slice(-50),
+        feed: feedEntries(s, id, 30) });
     }
     if (req.method === "GET" && path === "/api/events") {
       res.writeHead(200, { "content-type": "text/event-stream", "cache-control": "no-store", connection: "keep-alive" });

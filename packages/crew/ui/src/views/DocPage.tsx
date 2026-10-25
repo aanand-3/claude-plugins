@@ -3,12 +3,14 @@
 import { Check, Circle, GitBranch, X } from "lucide-react";
 import { ActionForms, ActionMenu, Result, useActions } from "../components/Actions";
 import { Markdown } from "../components/Markdown";
+import { PlanActivity, usePlanActivity } from "../components/PlanActivity";
 import {
   Card, Chip, CollapsiblePanel, Empty, FileList, fmtDate, fmtTokens, IdLink, PriorityChip, ProgressBar, StatusChip, Tabs,
 } from "../components/primitives";
 import { RelationsPanel } from "../components/Relations";
 import { type GraphDoc, type Index, useData } from "../data";
 import type { Task } from "../../../src/hub/graph-types";
+import type { LiveRun } from "../api";
 
 const KIND_LABEL: Record<string, string> = { FEAT: "feature", BUG: "bug", CHORE: "chore", SPIKE: "spike" };
 const NEXT_STATUS: Record<string, string> = { draft: "ready", new: "triaged", proposed: "decided" };
@@ -94,8 +96,8 @@ function Verify({ cmd }: { cmd: string }) {
   );
 }
 
-/** A plan's tasks by `###` phase: ✓/○, the mono id, the text and its verify command. */
-function TaskList({ list }: { list: Task[] }) {
+/** A plan's tasks by `###` phase: ✓/○, the mono id, the text and its verify command; a task a live run is on carries its role. */
+function TaskList({ list, live }: { list: Task[]; live: LiveRun[] }) {
   const phases = new Map<string, Task[]>();
   for (const t of list) phases.set(t.phase ?? "", [...phases.get(t.phase ?? "") ?? [], t]);
   return (
@@ -109,6 +111,9 @@ function TaskList({ list }: { list: Task[] }) {
                 {t.done ? <Check size={14} className="tone-success" aria-label="done" /> : <Circle size={14} className="muted" aria-label="open" />}
                 <span className="id">{t.id ?? ""}</span>
                 <div className="tasks__text">
+                  {live.filter((r) => t.id && r.task === t.id).map((r) => (
+                    <span key={r.run} className="tasks__live" title={r.run}><Chip tone={r.idle ? "warning" : "primary"} dot>{r.role}</Chip></span>
+                  ))}
                   <Markdown text={t.text} />
                   {t.verify && <Verify cmd={t.verify.replace(/`/g, "")} />}
                 </div>
@@ -161,6 +166,9 @@ function ChildIssues({ doc }: { doc: GraphDoc }) {
 
 function Doc({ doc }: { doc: GraphDoc }) {
   const act = useActions();
+  const ix = useData();
+  const showLive = doc.kind === "plan" && ix.served;
+  const live = usePlanActivity(doc.id, showLive);
   const sections = doc.sections.filter((s) => s.markdown);
   const tabbed = TABBED[doc.kind] ?? [];
   const panels = sections.filter((s) => !tabbed.includes(s.heading));
@@ -188,11 +196,12 @@ function Doc({ doc }: { doc: GraphDoc }) {
       </header>
       <article className="docpage__main">
         <Gate doc={doc} />
+        {showLive && <PlanActivity live={live} />}
         <ChildIssues doc={doc} />
         {sections.length ? panels.map((s) => s.heading === "Tasks" && tasks ? (
           <CollapsiblePanel key={s.heading} title="Tasks"
             aside={<span className="docpage__progress"><ProgressBar value={tasks.done} total={tasks.total} label="tasks done" /><span className="muted">{tasks.done}/{tasks.total}</span></span>}>
-            <TaskList list={tasks.list} />
+            <TaskList list={tasks.list} live={showLive ? live.a?.running ?? [] : []} />
           </CollapsiblePanel>
         ) : (
           <CollapsiblePanel key={s.heading} title={s.heading}>

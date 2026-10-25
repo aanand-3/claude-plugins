@@ -42,18 +42,28 @@ export function runningLines(store: Store): string[] {
     + `${action(r.tool, r.target)} ${ago(r.minutes)} · tokens ${r.tokens === null ? "—" : r.tokens}`);
 }
 
-// -- watch
-type Line = { ts: string; ref: string | null; text: string };
+// -- feed (watch and /api/activity?ref=)
+/** One feed entry: a tool call (`type` "tool", text = tool and target) or a ledger event (its type and detail). */
+export interface FeedEntry { ts: string; type: string; run: string; ref: string | null; text: string }
+
+const fromActivity = (e: ActivityEvent): FeedEntry => ({ ts: e.ts, type: "tool", run: e.run, ref: e.ref, text: action(e.tool, e.target) });
+const fromLedger = (e: LedgerEvent): FeedEntry => ({ ts: e.ts, type: e.type, run: e.run, ref: e.ref, text: detail(e) });
+const byTime = (a: FeedEntry, b: FeedEntry) => Date.parse(a.ts) - Date.parse(b.ts);
+const forRef = (ref?: string) => (e: FeedEntry) => !ref || e.ref?.toUpperCase() === ref.toUpperCase();
+
+/** The last `limit` feed entries (activity and ledger events by time, oldest first), for one ref or all. */
+export function feedEntries(store: Store, ref?: string, limit = 20): FeedEntry[] {
+  return [...readActivity(feedPath(store)).map(fromActivity), ...store.ledger.events().map(fromLedger)]
+    .filter(forRef(ref)).sort(byTime).slice(-limit);
+}
+
 const clock = (ts: string) => ts.slice(0, 19).replace("T", " ");
 const oneLine = (s: string) => {
   const first = s.split("\n")[0];
   return first.length > 140 ? `${first.slice(0, 140)}…` : first === s ? s : `${first} …`;
 };
-
-const fromActivity = (e: ActivityEvent): Line =>
-  ({ ts: e.ts, ref: e.ref, text: `${clock(e.ts)}  ${"tool".padEnd(10)}  ${(e.ref ?? "—").padEnd(9)}  ${e.run}  ${action(e.tool, e.target)}` });
-const fromLedger = (e: LedgerEvent): Line =>
-  ({ ts: e.ts, ref: e.ref, text: `${clock(e.ts)}  ${e.type.padEnd(10)}  ${(e.ref ?? "—").padEnd(9)}  ${e.run}  ${oneLine(detail(e))}` });
+const line = (e: FeedEntry) =>
+  `${clock(e.ts)}  ${e.type.padEnd(10)}  ${(e.ref ?? "—").padEnd(9)}  ${e.run}  ${e.type === "tool" ? e.text : oneLine(e.text)}`;
 
 /** New complete lines of a growing JSONL file since `offset` (from the start again if it shrank: a rotation). */
 function follow(path: string, at: { offset: number; rest: string }): unknown[] {
@@ -84,19 +94,16 @@ export interface WatchOptions { ref?: string; limit?: number; intervalMs?: numbe
 /** `watch`: the last N feed lines (activity and ledger events by time), then every new one as it lands, until interrupted. */
 export function watch(store: Store, o: WatchOptions = {}): number {
   store.require();
-  const ref = o.ref?.toUpperCase(), out = (l: Line) => process.stdout.write(`${l.text}\n`);
-  const keep = (l: Line) => !ref || l.ref === ref;
+  const ref = o.ref?.toUpperCase(), out = (e: FeedEntry) => process.stdout.write(`${line(e)}\n`);
   const feed = feedPath(store), ledger = store.ledger.path;
   const size = (p: string) => (existsSync(p) ? statSync(p).size : 0);
   const pos = { feed: { offset: size(feed), rest: "" }, ledger: { offset: size(ledger), rest: "" } };
-  const recent = [...readActivity(feed).map(fromActivity), ...store.ledger.events().map(fromLedger)].filter(keep)
-    .sort((a, b) => Date.parse(a.ts) - Date.parse(b.ts)).slice(-(o.limit ?? 20));
-  recent.forEach(out);
+  feedEntries(store, ref, o.limit ?? 20).forEach(out);
   process.stdout.write(`— following ${store.rel(feed)} and the ledger${ref ? ` for ${ref}` : ""} (Ctrl-C to stop) —\n`);
   setInterval(() => {
     const fresh = [...(follow(feed, pos.feed) as ActivityEvent[]).map(fromActivity),
       ...(follow(ledger, pos.ledger) as LedgerEvent[]).map(fromLedger)];
-    fresh.filter(keep).sort((a, b) => Date.parse(a.ts) - Date.parse(b.ts)).forEach(out);
+    fresh.filter(forRef(ref)).sort(byTime).forEach(out);
   }, o.intervalMs ?? 500);
   return 0;
 }

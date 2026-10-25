@@ -214,3 +214,10 @@
 .actionmenu__item code { font-size: var(--text-xs); }
 .result--error { background: var(--accent); color: var(--foreground); border-left: 3px solid var(--destructive); }
 .btn:disabled { opacity: 0.5; cursor: default; }
+
+/* ---- plan page: live activity (PlanActivity) */
+.planlive__feed { margin-top: var(--space-3); border-top: 1px solid var(--border); padding-top: var(--space-2); }
+.rows .planlive__row { display: flex; align-items: baseline; gap: var(--space-2); min-width: 0; flex-wrap: wrap; font-size: var(--text-xs); }
+.planlive__type { font: 600 var(--text-xs) var(--font-mono); }
+.planlive__text { flex: 1 1 12rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tasks__live { align-self: flex-start; }

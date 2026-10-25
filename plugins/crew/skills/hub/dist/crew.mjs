@@ -304,13 +304,13 @@ var require_directives = __commonJS({
        * @param onError - May be called even if the action was successful
        * @returns `true` on success
        */
-      add(line2, onError) {
+      add(line3, onError) {
         if (this.atNextDocument) {
           this.yaml = { explicit: _Directives.defaultYaml.explicit, version: "1.1" };
           this.tags = Object.assign({}, _Directives.defaultTags);
           this.atNextDocument = false;
         }
-        const parts = line2.trim().split(/[ \t]+/);
+        const parts = line3.trim().split(/[ \t]+/);
         const name = parts.shift();
         switch (name) {
           case "%TAG": {
@@ -1905,9 +1905,9 @@ var require_stringifyCollection = __commonJS({
       } else {
         str3 = lines[0];
         for (let i = 1; i < lines.length; ++i) {
-          const line2 = lines[i];
-          str3 += line2 ? `
-${indent}${line2}` : "\n";
+          const line3 = lines[i];
+          str3 += line3 ? `
+${indent}${line3}` : "\n";
         }
       }
       if (comment) {
@@ -1965,7 +1965,7 @@ ${indent}${line2}` : "\n";
           str3 += ",";
         } else if (ctx.options.trailingComma) {
           if (ctx.options.lineWidth > 0) {
-            reqNewline || (reqNewline = lines.reduce((sum, line2) => sum + line2.length + 2, 2) + (str3.length + 2) > ctx.options.lineWidth);
+            reqNewline || (reqNewline = lines.reduce((sum, line3) => sum + line3.length + 2, 2) + (str3.length + 2) > ctx.options.lineWidth);
           }
           if (reqNewline) {
             str3 += ",";
@@ -1981,14 +1981,14 @@ ${indent}${line2}` : "\n";
         return start2 + end;
       } else {
         if (!reqNewline) {
-          const len = lines.reduce((sum, line2) => sum + line2.length + 2, 2);
+          const len = lines.reduce((sum, line3) => sum + line3.length + 2, 2);
           reqNewline = ctx.options.lineWidth > 0 && len > ctx.options.lineWidth;
         }
         if (reqNewline) {
           let str3 = start2;
-          for (const line2 of lines)
-            str3 += line2 ? `
-${indentStep}${indent}${line2}` : "\n";
+          for (const line3 of lines)
+            str3 += line3 ? `
+${indentStep}${indent}${line3}` : "\n";
           return `${str3}
 ${indent}${end}`;
         } else {
@@ -3731,10 +3731,10 @@ var require_errors = __commonJS({
       if (error.pos[0] === -1)
         return;
       error.linePos = error.pos.map((pos) => lc.linePos(pos));
-      const { line: line2, col } = error.linePos[0];
-      error.message += ` at line ${line2}, column ${col}`;
+      const { line: line3, col } = error.linePos[0];
+      error.message += ` at line ${line3}, column ${col}`;
       let ci = col - 1;
-      let lineStr = src.substring(lc.lineStarts[line2 - 1], lc.lineStarts[line2]).replace(/[\n\r]+$/, "");
+      let lineStr = src.substring(lc.lineStarts[line3 - 1], lc.lineStarts[line3]).replace(/[\n\r]+$/, "");
       if (ci >= 60 && lineStr.length > 80) {
         const trimStart = Math.min(ci - 39, lineStr.length - 79);
         lineStr = "\u2026" + lineStr.substring(trimStart);
@@ -3742,8 +3742,8 @@ var require_errors = __commonJS({
       }
       if (lineStr.length > 80)
         lineStr = lineStr.substring(0, 79) + "\u2026";
-      if (line2 > 1 && /^ *$/.test(lineStr.substring(0, ci))) {
-        let prev = src.substring(lc.lineStarts[line2 - 2], lc.lineStarts[line2 - 1]);
+      if (line3 > 1 && /^ *$/.test(lineStr.substring(0, ci))) {
+        let prev = src.substring(lc.lineStarts[line3 - 2], lc.lineStarts[line3 - 1]);
         if (prev.length > 80)
           prev = prev.substring(0, 79) + "\u2026\n";
         lineStr = prev + lineStr;
@@ -3751,7 +3751,7 @@ var require_errors = __commonJS({
       if (/[^ ]/.test(lineStr)) {
         let count = 1;
         const end = error.linePos[1];
-        if (end?.line === line2 && end.col > col) {
+        if (end?.line === line3 && end.col > col) {
           count = Math.max(1, Math.min(end.col - col, 80 - ci));
         }
         const pointer = " ".repeat(ci) + "^".repeat(count);
@@ -4700,13 +4700,13 @@ var require_resolve_flow_scalar = __commonJS({
       return foldLines(source.slice(1, -1)).replace(/''/g, "'");
     }
     function foldLines(source) {
-      let first, line2;
+      let first, line3;
       try {
         first = new RegExp("(.*?)(?<![ 	])[ 	]*\r?\n", "sy");
-        line2 = new RegExp("[ 	]*(.*?)(?:(?<![ 	])[ 	]*)?\r?\n", "sy");
+        line3 = new RegExp("[ 	]*(.*?)(?:(?<![ 	])[ 	]*)?\r?\n", "sy");
       } catch {
         first = /(.*?)[ \t]*\r?\n/sy;
-        line2 = /[ \t]*(.*?)[ \t]*\r?\n/sy;
+        line3 = /[ \t]*(.*?)[ \t]*\r?\n/sy;
       }
       let match = first.exec(source);
       if (!match)
@@ -4714,8 +4714,8 @@ var require_resolve_flow_scalar = __commonJS({
       let res = match[1];
       let sep2 = " ";
       let pos = first.lastIndex;
-      line2.lastIndex = pos;
-      while (match = line2.exec(source)) {
+      line3.lastIndex = pos;
+      while (match = line3.exec(source)) {
         if (match[1] === "") {
           if (sep2 === "\n")
             res += sep2;
@@ -4725,7 +4725,7 @@ var require_resolve_flow_scalar = __commonJS({
           res += sep2 + match[1];
           sep2 = " ";
         }
-        pos = line2.lastIndex;
+        pos = line3.lastIndex;
       }
       const last = /[ \t]*(.*)/sy;
       last.lastIndex = pos;
@@ -5855,40 +5855,40 @@ var require_lexer = __commonJS({
         }
       }
       *parseStream() {
-        let line2 = this.getLine();
-        if (line2 === null)
+        let line3 = this.getLine();
+        if (line3 === null)
           return this.setNext("stream");
-        if (line2[0] === cst.BOM) {
+        if (line3[0] === cst.BOM) {
           yield* this.pushCount(1);
-          line2 = line2.substring(1);
+          line3 = line3.substring(1);
         }
-        if (line2[0] === "%") {
-          let dirEnd = line2.length;
-          let cs = line2.indexOf("#");
+        if (line3[0] === "%") {
+          let dirEnd = line3.length;
+          let cs = line3.indexOf("#");
           while (cs !== -1) {
-            const ch = line2[cs - 1];
+            const ch = line3[cs - 1];
             if (ch === " " || ch === "	") {
               dirEnd = cs - 1;
               break;
             } else {
-              cs = line2.indexOf("#", cs + 1);
+              cs = line3.indexOf("#", cs + 1);
             }
           }
           while (true) {
-            const ch = line2[dirEnd - 1];
+            const ch = line3[dirEnd - 1];
             if (ch === " " || ch === "	")
               dirEnd -= 1;
             else
               break;
           }
           const n = (yield* this.pushCount(dirEnd)) + (yield* this.pushSpaces(true));
-          yield* this.pushCount(line2.length - n);
+          yield* this.pushCount(line3.length - n);
           this.pushNewline();
           return "stream";
         }
         if (this.atLineEnd()) {
           const sp = yield* this.pushSpaces(true);
-          yield* this.pushCount(line2.length - sp);
+          yield* this.pushCount(line3.length - sp);
           yield* this.pushNewline();
           return "stream";
         }
@@ -5929,13 +5929,13 @@ var require_lexer = __commonJS({
       }
       *parseDocument() {
         yield* this.pushSpaces(true);
-        const line2 = this.getLine();
-        if (line2 === null)
+        const line3 = this.getLine();
+        if (line3 === null)
           return this.setNext("doc");
         let n = yield* this.pushIndicators();
-        switch (line2[n]) {
+        switch (line3[n]) {
           case "#":
-            yield* this.pushCount(line2.length - n);
+            yield* this.pushCount(line3.length - n);
           // fallthrough
           case void 0:
             yield* this.pushNewline();
@@ -5960,7 +5960,7 @@ var require_lexer = __commonJS({
           case ">":
             n += yield* this.parseBlockScalarHeader();
             n += yield* this.pushSpaces(true);
-            yield* this.pushCount(line2.length - n);
+            yield* this.pushCount(line3.length - n);
             yield* this.pushNewline();
             return yield* this.parseBlockScalar();
           default:
@@ -5980,11 +5980,11 @@ var require_lexer = __commonJS({
           }
           sp += yield* this.pushSpaces(true);
         } while (nl + sp > 0);
-        const line2 = this.getLine();
-        if (line2 === null)
+        const line3 = this.getLine();
+        if (line3 === null)
           return this.setNext("flow");
-        if (indent !== -1 && indent < this.indentNext && line2[0] !== "#" || indent === 0 && (line2.startsWith("---") || line2.startsWith("...")) && isEmpty(line2[3])) {
-          const atFlowEndMarker = indent === this.indentNext - 1 && this.flowLevel === 1 && (line2[0] === "]" || line2[0] === "}");
+        if (indent !== -1 && indent < this.indentNext && line3[0] !== "#" || indent === 0 && (line3.startsWith("---") || line3.startsWith("...")) && isEmpty(line3[3])) {
+          const atFlowEndMarker = indent === this.indentNext - 1 && this.flowLevel === 1 && (line3[0] === "]" || line3[0] === "}");
           if (!atFlowEndMarker) {
             this.flowLevel = 0;
             yield cst.FLOW_END;
@@ -5992,17 +5992,17 @@ var require_lexer = __commonJS({
           }
         }
         let n = 0;
-        while (line2[n] === ",") {
+        while (line3[n] === ",") {
           n += yield* this.pushCount(1);
           n += yield* this.pushSpaces(true);
           this.flowKey = false;
         }
         n += yield* this.pushIndicators();
-        switch (line2[n]) {
+        switch (line3[n]) {
           case void 0:
             return "flow";
           case "#":
-            yield* this.pushCount(line2.length - n);
+            yield* this.pushCount(line3.length - n);
             return "flow";
           case "{":
           case "[":
@@ -7687,9 +7687,9 @@ function currentBranch() {
 }
 function worktrees() {
   const out = [];
-  for (const line2 of (git(["worktree", "list", "--porcelain"]) ?? "").split("\n")) {
-    if (line2.startsWith("worktree ")) out.push({ path: line2.slice(9), branch: null });
-    else if (line2.startsWith("branch ") && out.length) out.at(-1).branch = line2.slice(7).replace(/^refs\/heads\//, "");
+  for (const line3 of (git(["worktree", "list", "--porcelain"]) ?? "").split("\n")) {
+    if (line3.startsWith("worktree ")) out.push({ path: line3.slice(9), branch: null });
+    else if (line3.startsWith("branch ") && out.length) out.at(-1).branch = line3.slice(7).replace(/^refs\/heads\//, "");
   }
   return out;
 }
@@ -7704,8 +7704,8 @@ function squashMerge(branch, base, pid) {
   const changed2 = fork ? (git(["diff", "--name-only", "-z", fork, branch]) ?? "").split("\0").filter(Boolean) : [];
   if (!changed2.length) return null;
   const names = new RegExp(`^(\\w+\\(${pid}\\)|${pid}):`);
-  for (const line2 of (git(["log", "--format=%H %s", `${fork}..${base}`]) ?? "").split("\n")) {
-    const [sha, subject] = [line2.slice(0, line2.indexOf(" ")), line2.slice(line2.indexOf(" ") + 1)];
+  for (const line3 of (git(["log", "--format=%H %s", `${fork}..${base}`]) ?? "").split("\n")) {
+    const [sha, subject] = [line3.slice(0, line3.indexOf(" ")), line3.slice(line3.indexOf(" ") + 1)];
     if (sha && names.test(subject) && mergesToItself(sha, branch, changed2)) return sha;
   }
   return null;
@@ -7774,10 +7774,10 @@ var Doc = class _Doc {
     const meta = {};
     const m = /^---\n([\s\S]*?)\n---\n/.exec(text);
     if (m) {
-      for (const line2 of m[1].split("\n")) {
-        if (line2.includes(":") && !line2.startsWith(" ")) {
-          const i = line2.indexOf(":");
-          meta[line2.slice(0, i).trim()] = line2.slice(i + 1).trim() || null;
+      for (const line3 of m[1].split("\n")) {
+        if (line3.includes(":") && !line3.startsWith(" ")) {
+          const i = line3.indexOf(":");
+          meta[line3.slice(0, i).trim()] = line3.slice(i + 1).trim() || null;
         }
       }
     }
@@ -7795,10 +7795,10 @@ var Doc = class _Doc {
     const at = this.text.indexOf("\n---\n");
     let head = at < 0 ? this.text : this.text.slice(0, at);
     const rest = at < 0 ? "" : this.text.slice(at);
-    const line2 = rstrip(`${key}: ${value ?? ""}`);
+    const line3 = rstrip(`${key}: ${value ?? ""}`);
     const re = new RegExp(`^${escapeRe(key)}:.*$`, "m");
-    head = re.test(head) ? head.replace(re, () => line2) : `${head}
-${line2}`;
+    head = re.test(head) ? head.replace(re, () => line3) : `${head}
+${line3}`;
     this.text = head + rest;
   }
   /** Paths (globs) a plan expects to change, as written: not upper-cased like IDs. */
@@ -7816,7 +7816,7 @@ ${line2}`;
   hasContent(name) {
     const body2 = stripComments(this.section(name));
     if (mdTable(body2).length) return true;
-    return body2.split("\n").map((l) => l.trim()).some((line2) => line2 && !EMPTY_LINES.has(line2) && !line2.startsWith("|") && !/^\*\*[^*]+:\*\*$/.test(line2));
+    return body2.split("\n").map((l) => l.trim()).some((line3) => line3 && !EMPTY_LINES.has(line3) && !line3.startsWith("|") && !/^\*\*[^*]+:\*\*$/.test(line3));
   }
   missing(names) {
     return names.filter((n) => !this.hasContent(n));
@@ -7826,8 +7826,8 @@ ${line2}`;
   }
   checklist(name) {
     const out = [];
-    for (const line2 of stripComments(this.section(name)).split("\n")) {
-      const m = TASK_RE.exec(line2);
+    for (const line3 of stripComments(this.section(name)).split("\n")) {
+      const m = TASK_RE.exec(line3);
       const label = m?.[2].trim();
       if (m && label && label !== "T1: \u2026 \u2192 verify: \u2026") out.push([m[1] !== " ", label]);
     }
@@ -7840,10 +7840,10 @@ ${line2}`;
   taskGroups(name = "Tasks") {
     const out = [];
     let phase = null;
-    for (const line2 of stripComments(this.section(name)).split("\n")) {
-      const h = /^###\s+(.+?)\s*$/.exec(line2);
+    for (const line3 of stripComments(this.section(name)).split("\n")) {
+      const h = /^###\s+(.+?)\s*$/.exec(line3);
       if (h) phase = h[1];
-      const m = TASK_RE.exec(line2);
+      const m = TASK_RE.exec(line3);
       const label = m?.[2].trim();
       if (m && label && label !== "T1: \u2026 \u2192 verify: \u2026") out.push([m[1] !== " ", label, phase]);
     }
@@ -8443,8 +8443,8 @@ var Workspace = class {
   watchers = [];
   output = [];
   /** A line for stdout (shown even when the command later refuses). */
-  say(line2) {
-    this.output.push(line2);
+  say(line3) {
+    this.output.push(line3);
   }
   read(path) {
     if (this.pending.has(path)) {
@@ -8578,10 +8578,10 @@ var SKILL_DIR = dirname3(SCRIPT_DIR);
 function yamlBlock(text, block) {
   const out = {};
   let inside = false;
-  for (const line2 of text.split("\n")) {
-    if (/^\S/.test(line2)) inside = line2.replace(/#.*/, "").trim() === `${block}:`;
+  for (const line3 of text.split("\n")) {
+    if (/^\S/.test(line3)) inside = line3.replace(/#.*/, "").trim() === `${block}:`;
     else if (inside) {
-      const m = /^\s+([\w-]+):\s*([^#]*)/.exec(line2);
+      const m = /^\s+([\w-]+):\s*([^#]*)/.exec(line3);
       if (m && m[2].trim()) out[m[1]] = m[2].trim().replace(/^["']|["']$/g, "");
     }
   }
@@ -8635,8 +8635,8 @@ var Store = class _Store {
   rel(p) {
     return p === this.dir || p.startsWith(`${this.dir}/`) ? relative2(this.home, p) : this.ws.rel(p);
   }
-  say(line2) {
-    this.ws.say(line2);
+  say(line3) {
+    this.ws.say(line3);
   }
   require() {
     if (!this.ws.isDir(this.dir)) fail("No .crew/ directory. Run `crew.mjs init` first.");
@@ -9410,13 +9410,19 @@ var action = (tool, target) => target ? `${tool} ${target}` : tool;
 function runningLines(store) {
   return running(store).map((r) => `- ${r.idle ? "**idle** " : ""}${r.role} (${r.run}) \u2014 ${r.ref ?? "\u2014"} \xB7 task ${r.task ?? "\u2014"} \xB7 ${action(r.tool, r.target)} ${ago(r.minutes)} \xB7 tokens ${r.tokens === null ? "\u2014" : r.tokens}`);
 }
+var fromActivity = (e) => ({ ts: e.ts, type: "tool", run: e.run, ref: e.ref, text: action(e.tool, e.target) });
+var fromLedger = (e) => ({ ts: e.ts, type: e.type, run: e.run, ref: e.ref, text: detail(e) });
+var byTime = (a, b) => Date.parse(a.ts) - Date.parse(b.ts);
+var forRef = (ref) => (e) => !ref || e.ref?.toUpperCase() === ref.toUpperCase();
+function feedEntries(store, ref, limit = 20) {
+  return [...readActivity(feedPath(store)).map(fromActivity), ...store.ledger.events().map(fromLedger)].filter(forRef(ref)).sort(byTime).slice(-limit);
+}
 var clock = (ts) => ts.slice(0, 19).replace("T", " ");
 var oneLine = (s) => {
   const first = s.split("\n")[0];
   return first.length > 140 ? `${first.slice(0, 140)}\u2026` : first === s ? s : `${first} \u2026`;
 };
-var fromActivity = (e) => ({ ts: e.ts, ref: e.ref, text: `${clock(e.ts)}  ${"tool".padEnd(10)}  ${(e.ref ?? "\u2014").padEnd(9)}  ${e.run}  ${action(e.tool, e.target)}` });
-var fromLedger = (e) => ({ ts: e.ts, ref: e.ref, text: `${clock(e.ts)}  ${e.type.padEnd(10)}  ${(e.ref ?? "\u2014").padEnd(9)}  ${e.run}  ${oneLine(detail(e))}` });
+var line = (e) => `${clock(e.ts)}  ${e.type.padEnd(10)}  ${(e.ref ?? "\u2014").padEnd(9)}  ${e.run}  ${e.type === "tool" ? e.text : oneLine(e.text)}`;
 function follow(path, at) {
   if (!existsSync7(path)) return [];
   const size = statSync5(path).size;
@@ -9441,14 +9447,12 @@ function follow(path, at) {
 }
 function watch(store, o = {}) {
   store.require();
-  const ref = o.ref?.toUpperCase(), out = (l) => process.stdout.write(`${l.text}
+  const ref = o.ref?.toUpperCase(), out = (e) => process.stdout.write(`${line(e)}
 `);
-  const keep = (l) => !ref || l.ref === ref;
   const feed = feedPath(store), ledger2 = store.ledger.path;
   const size = (p) => existsSync7(p) ? statSync5(p).size : 0;
   const pos = { feed: { offset: size(feed), rest: "" }, ledger: { offset: size(ledger2), rest: "" } };
-  const recent = [...readActivity(feed).map(fromActivity), ...store.ledger.events().map(fromLedger)].filter(keep).sort((a, b) => Date.parse(a.ts) - Date.parse(b.ts)).slice(-(o.limit ?? 20));
-  recent.forEach(out);
+  feedEntries(store, ref, o.limit ?? 20).forEach(out);
   process.stdout.write(`\u2014 following ${store.rel(feed)} and the ledger${ref ? ` for ${ref}` : ""} (Ctrl-C to stop) \u2014
 `);
   setInterval(() => {
@@ -9456,7 +9460,7 @@ function watch(store, o = {}) {
       ...follow(feed, pos.feed).map(fromActivity),
       ...follow(ledger2, pos.ledger).map(fromLedger)
     ];
-    fresh.filter(keep).sort((a, b) => Date.parse(a.ts) - Date.parse(b.ts)).forEach(out);
+    fresh.filter(forRef(ref)).sort(byTime).forEach(out);
   }, o.intervalMs ?? 500);
   return 0;
 }
@@ -10452,8 +10456,8 @@ function toDoc(store, d, kind, all) {
   };
 }
 var TASK_LINE = /^(?:(T\d+):\s*)?(.*?)(?:\s*→\s*verify:\s*(.*))?$/;
-function task([done, line2, phase]) {
-  const [, id = null, text = line2, verify = null] = TASK_LINE.exec(line2) ?? [];
+function task([done, line3, phase]) {
+  const [, id = null, text = line3, verify = null] = TASK_LINE.exec(line3) ?? [];
   return { id, text: text.trim(), verify: verify?.trim() || null, done, phase };
 }
 function knowledgeDoc(store, e) {
@@ -10815,9 +10819,9 @@ function movedWhy(store, from) {
 }
 function transcriptUsage(text) {
   const byMessage = /* @__PURE__ */ new Map();
-  text.split("\n").forEach((line2, i) => {
+  text.split("\n").forEach((line3, i) => {
     try {
-      const m = JSON.parse(line2).message;
+      const m = JSON.parse(line3).message;
       if (m?.usage) byMessage.set(m.id ?? `line-${i}`, m);
     } catch {
     }
@@ -10836,10 +10840,10 @@ var REPORT_CAP = 2e4;
 var MASKS = Object.values(SECRET_PATTERNS).map((re) => new RegExp(re.source, `${re.flags.replace("g", "")}g`));
 function transcriptReport(text) {
   let handback = null, said = null;
-  for (const line2 of text.split("\n")) {
+  for (const line3 of text.split("\n")) {
     let m;
     try {
-      const rec = JSON.parse(line2);
+      const rec = JSON.parse(line3);
       m = rec.type === "assistant" || rec.message?.role === "assistant" ? rec.message : void 0;
     } catch {
       continue;
@@ -11214,7 +11218,7 @@ function resume(store, id, json = false) {
   store.require();
   const plan = planFromBranch(store, id) ?? fail("Not on a plan branch: name the plan (`resume P-###`).");
   if (json) store.say(JSON.stringify({ plan: plan.id, lines: recovery(store, plan) }));
-  else for (const line2 of recovery(store, plan)) store.say(line2);
+  else for (const line3 of recovery(store, plan)) store.say(line3);
 }
 function writeHandoff(store, plan) {
   const logs = stripComments(plan.section("Progress log")).split("\n").filter((l) => l.trim().startsWith("- ")).slice(-3);
@@ -11532,14 +11536,14 @@ function current(store) {
 }
 function nextStep(store, role) {
   store.require();
-  for (const line2 of role ? roleLines(store, role) : nextLines(store)) store.say(line2);
+  for (const line3 of role ? roleLines(store, role) : nextLines(store)) store.say(line3);
 }
 function nextLines(store) {
   const ctx = new Context(store);
   for (const p of ctx.active) ctx.lines.push(`IN PROGRESS  ${p.id}: ${p.get("title")} [${p.get("status")}]`);
   for (const rule of [ctx.expedite, ctx.wipFull, ctx.startReady, ctx.refineDraft, ctx.triage, ctx.planItem, ctx.idea, ctx.goal]) {
-    const line2 = rule.call(ctx);
-    if (line2) return [...ctx.lines, `NEXT         ${line2}`];
+    const line3 = rule.call(ctx);
+    if (line3) return [...ctx.lines, `NEXT         ${line3}`];
   }
   return [...ctx.lines, "NEXT         nothing planned \u2014 write a goal for the next outcome, or capture items"];
 }
@@ -12104,8 +12108,15 @@ function serve(store, o) {
     if (req.method === "GET" && path === "/api/graph") return send(res, 200, buildGraph(open()));
     if (req.method === "GET" && path === "/api/design") return send(res, 200, designPayload(open()));
     if (req.method === "GET" && path === "/api/activity") {
-      const s = open();
-      return send(res, 200, { running: running(s), recent: readActivity(feedPath(s)).slice(-50) });
+      const s = open(), ref = new URLSearchParams((req.url ?? "").split("?")[1] ?? "").get("ref");
+      if (ref === null) return send(res, 200, { running: running(s), recent: readActivity(feedPath(s)).slice(-50) });
+      if (!/^[A-Z]+-\d+$/i.test(ref)) return send(res, 400, { error: `Not a hub ID: ${ref}` });
+      const id = ref.toUpperCase(), mine = (e) => e.ref?.toUpperCase() === id;
+      return send(res, 200, {
+        running: running(s).filter(mine),
+        recent: readActivity(feedPath(s)).filter(mine).slice(-50),
+        feed: feedEntries(s, id, 30)
+      });
     }
     if (req.method === "GET" && path === "/api/events") {
       res.writeHead(200, { "content-type": "text/event-stream", "cache-control": "no-store", connection: "keep-alive" });
@@ -12334,7 +12345,7 @@ function planSections(store, plan, role) {
   ] };
   const order = TYPES[role] ?? TYPES.developer;
   const known = recall(store.knowledge(), { globs: plan.touches() }).sort((a, b) => order.indexOf(a.type) - order.indexOf(b.type));
-  const memory = { title: "Knowledge in scope", more: `crew.mjs recall --plan ${plan.id}`, lines: known.map(line) };
+  const memory = { title: "Knowledge in scope", more: `crew.mjs recall --plan ${plan.id}`, lines: known.map(line2) };
   const recover = { title: "Where the work stands", more: `crew.mjs resume ${plan.id}`, lines: recovery(store, plan) };
   const handoff3 = { title: "Handoff & log", more: `crew.mjs ledger --ref ${plan.id}`, lines: [
     ...para(plan.section("Handoff"), 6),
@@ -12353,7 +12364,7 @@ function planSections(store, plan, role) {
       return [recover, questions2, why, ac, tasks, blockers, memory, handoff3];
   }
 }
-var line = (e) => `${e.id} [${e.type}${e.origin === "playbook" ? ", playbook" : ""}] ${e.title}`;
+var line2 = (e) => `${e.id} [${e.type}${e.origin === "playbook" ? ", playbook" : ""}] ${e.title}`;
 function projectSections(store, role) {
   const idea2 = store.idea(), focus = store.goals().get(store.focus());
   const crit = idea2?.checklist("Success criteria") ?? [];
@@ -12373,7 +12384,7 @@ function projectSections(store, role) {
   ] };
   const spend = store.ledger.spend(events);
   if (spend.cost) team.lines.push(`spend so far $${spend.cost.toFixed(2)}`);
-  const memory = { title: "Recent knowledge", more: "crew.mjs recall", lines: store.knowledge(false).filter((e) => !e.supersededBy).sort((a, b) => (b.doc.get("created") ?? "").localeCompare(a.doc.get("created") ?? "")).slice(0, 5).map(line) };
+  const memory = { title: "Recent knowledge", more: "crew.mjs recall", lines: store.knowledge(false).filter((e) => !e.supersededBy).sort((a, b) => (b.doc.get("created") ?? "").localeCompare(a.doc.get("created") ?? "")).slice(0, 5).map(line2) };
   return [head, next, team, memory];
 }
 function assemble2(header, sections2, budget) {

@@ -68,6 +68,30 @@ it("serves the running runs and the recent activity", async () => {
   expect(a.running).toEqual([expect.objectContaining({ run: "developer:a1", role: "developer", ref: "P-001", idle: false, tokens: null })]);
 }, 20_000);
 
+it("filters the activity to one ref and adds its feed of tool calls and ledger events", async () => {
+  const url = await serve();
+  hook("node .crew/bin/crew.mjs checkpoint P-001 --step T1");
+  repo.run("node", [HUB, "activity", "--hook"], JSON.stringify({ hook_event_name: "PostToolUse", agent_type: "crew-developer",
+    agent_id: "b2", tool_name: "Bash", tool_input: { command: "node .crew/bin/crew.mjs checkpoint P-002 --step T3" }, cwd: repo.path }));
+  const later = new Date(Date.now() + 1_000).toISOString();
+  appendFileSync(join(repo.path, ".git/crew/ledger.jsonl"), `${JSON.stringify({ ts: later, type: "checkpoint", ref: "P-001",
+    run: "developer:a1", actor: "dev", role: "developer", team: null, worktree: repo.path, step: "T1", sha: "abcdef0123" })}\n`);
+  for (const ref of ["P-001", "p-001"]) {
+    const a = await (await fetch(`${url}api/activity?ref=${ref}`)).json();
+    expect(Object.keys(a).sort()).toEqual(["feed", "recent", "running"]);
+    expect(a.running).toEqual([expect.objectContaining({ run: "developer:a1", ref: "P-001" })]);
+    expect(a.recent.map((e: { run: string }) => e.run)).toEqual(["developer:a1"]);
+    expect(a.feed).toEqual([
+      { ts: expect.any(String), type: "tool", run: "developer:a1", ref: "P-001", text: "Bash crew.mjs checkpoint" },
+      { ts: later, type: "checkpoint", run: "developer:a1", ref: "P-001", text: "at T1 (abcdef0)" },
+    ]);
+  }
+  expect((await fetch(`${url}api/activity?ref=bad`)).status).toBe(400);
+  const all = await (await fetch(`${url}api/activity`)).json();
+  expect(Object.keys(all).sort()).toEqual(["recent", "running"]);
+  expect(all.recent).toHaveLength(2);
+}, 20_000);
+
 it("sends a change for a ledger-only write and an activity append, not for a lock file", async () => {
   const url = await serve();
   const c = await changes(url);

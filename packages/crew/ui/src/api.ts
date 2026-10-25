@@ -27,9 +27,14 @@ export interface LiveRun {
 }
 export interface ActivityEvent { ts: string; run: string; role: string; ref: string | null; tool: string; target: string | null }
 export interface Activity { running: LiveRun[]; recent: ActivityEvent[] }
+/** One feed entry for a ref (`GET api/activity?ref=`): a tool call (`type` "tool") or a ledger event, with its text. */
+export interface FeedEntry { ts: string; type: string; run: string; ref: string | null; text: string }
+export interface RefActivity extends Activity { feed: FeedEntry[] }
 
-export async function loadActivity(): Promise<Activity> {
-  const res = await fetch("api/activity", { cache: "no-store" });
+export async function loadActivity(): Promise<Activity>;
+export async function loadActivity(ref: string): Promise<RefActivity>;
+export async function loadActivity(ref?: string): Promise<Activity | RefActivity> {
+  const res = await fetch(ref ? `api/activity?ref=${encodeURIComponent(ref)}` : "api/activity", { cache: "no-store" });
   if (!res.ok) throw new Error(`The server answered ${res.status}.`);
   return (await res.json()) as Activity;
 }
