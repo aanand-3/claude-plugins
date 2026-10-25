@@ -5,7 +5,7 @@ title: Hub build leaks its hub-ui temp dirs
 status: triaged
 priority: P2
 goal: G-007
-plan:
+plan: P-046
 created: 2026-10-25
 closed:
 ---
