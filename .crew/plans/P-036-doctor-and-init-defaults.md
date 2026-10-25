@@ -3,8 +3,8 @@ id: P-036
 title: Doctor and init defaults
 goal: G-007
 items: FEAT-044
-touches: packages/crew/src/hub/commands/views/doctor.ts, packages/crew/src/hub/commands/views/doctor.reg.ts, packages/crew/src/hub/commands/work/setup.ts, packages/crew/src/hub/commands/work/planning.reg.ts, packages/crew/src/hub/commands/index.ts, packages/crew/src/hub/cli.ts, packages/crew/src/hub/mcp.ts, packages/crew/src/hub/core/work/hubstate.ts, packages/crew/test/hub/e2e/doctor.test.ts, plugins/crew/skills/team/SKILL.md, plugins/crew/skills/hub/SKILL.md
-depends_on: P-029
+touches: packages/crew/src/hub/commands/views/doctor.ts, packages/crew/src/hub/commands/views/doctor.reg.ts, packages/crew/src/hub/commands/work/setup.ts, packages/crew/src/hub/commands/work/planning.reg.ts, packages/crew/src/hub/commands/index.ts, packages/crew/src/hub/cli.ts, packages/crew/src/hub/mcp.ts, packages/crew/src/hub/core/work/hubstate.ts, packages/crew/test/hub/e2e/doctor.test.ts, packages/crew/test/hub/e2e/helpers.ts, packages/crew/test/hub/e2e/basics.test.ts, packages/crew/test/mcp.test.ts, plugins/crew/skills/team/SKILL.md, plugins/crew/skills/hub/SKILL.md
+depends_on: P-029, P-031
 status: in-progress
 branch: plan/P-036-doctor-and-init-defaults
 pr:
@@ -34,6 +34,10 @@ Today nothing checks these in one place, and `init` writes none of the config. A
 - The hub's commit-failure message names the hook's refusal and points to `doctor`.
 
 **Code dependency: P-029.** `doctor` reads `hub.shared` with P-029's `sharedGlobs` (core/work/footprint.ts) and reports the same type error `check` does.
+
+**Code dependency: P-031** (Q-d084f1). Adding `doctor` breaks `test/hub/registry.test.ts` as it is on main (an exact compare with `registry-before.json`). P-031 rewrites it into subset checks (decision K-2026-10-25-approved-with-one-change-do-not-edit), so later command-adding plans need no edit there. P-036 therefore builds on P-031: update the branch to the base once P-031 has merged, and never edit `registry.test.ts` or `registry-before.json`. `test/mcp.test.ts` keeps an exact sorted tool list, so this plan adds `doctor` to it (after P-031, the list already has `dispatch`).
+
+**Test default** (Q-f37203). `init` writing `plan_worktrees: true` would switch every e2e suite that calls the shared `init` helper to plan-worktree mode. The suites keep today's branch-per-plan default instead: the helper `init` in `test/hub/e2e/helpers.ts` takes `defaults = false`; it notes which of `.crew/config.yaml` and `.crew/policy.yaml` exist before running `init`, and afterwards removes those `init` created, unless `defaults: true`. A file the test wrote before `init` is never removed. The doctor suite's `init` tests run `crew.mjs --as architect --run-id architect:a9fcb966f29e84cca init` directly or pass `defaults: true`. AC6 is unchanged.
 
 Overlaps, for staffing only: P-030 on `planning.reg.ts` (the `init` registration once P-030 lands; cli.ts before). `cli.ts`, `mcp.ts`, `commands/index.ts`, both `SKILL.md`s and the test files are `hub.shared`.
 
@@ -73,6 +77,7 @@ Overlaps, for staffing only: P-030 on `planning.reg.ts` (the `init` registration
 - [ ] AC6 · `init` in a fresh repo writes `.crew/config.yaml` (with `default_branch` set to the current branch and `plan_worktrees: true`) and `.crew/policy.yaml` (preset commented out), and reports both. Running `init` again changes neither. An existing config or policy is left byte-for-byte unchanged. `policy check` passes on the generated policy.
 - [ ] AC7 · With `plan_worktrees` on and a pre-commit that refuses main commits, a hub write (`new-item … --why x`) fails. Its stderr has the hook's message and "`crew.mjs doctor`", and the item file is written but not committed (today's behaviour, clearer message).
 - [ ] AC8 · The MCP tool `doctor` returns the JSON of `doctor --json`; `doctor` is in `crew.mjs help`; `team/SKILL.md`'s "Before the first run" starts with `doctor`.
+- [ ] AC10 · The e2e `init` helper removes only the defaults `init` created (a config or policy the test wrote first survives), and `defaults: true` keeps them; with it, the basics, worktrees and branch-copies suites pass unchanged in behaviour. `test/mcp.test.ts` lists `doctor`. `git diff --quiet <base> -- packages/crew/test/hub/registry.test.ts packages/crew/test/hub/registry-before.json` holds (after the branch is updated onto a base that has P-031).
 - [ ] AC9 · `npm run typecheck` passes; doctor.ts, setup.ts and hubstate.ts stay under 300 lines; the worktrees, basics and branch-copies suites pass.
 
 ## Approach
@@ -94,6 +99,7 @@ Overlaps, for staffing only: P-030 on `planning.reg.ts` (the `init` registration
 - [ ] T3: `initDefaults` and the `init` registration → verify: `npx vitest run test/hub/e2e/doctor.test.ts -t init` (AC6)
 - [ ] T4: hubstate.ts failure message → verify: `npx vitest run test/hub/e2e/doctor.test.ts -t "commit message"`; `npx vitest run test/hub/e2e/worktrees.test.ts test/hub/e2e/branch-copies.test.ts` (AC7)
 - [ ] T5: team/SKILL.md (and hub/SKILL.md's row if the table remains) → verify: `grep -n "doctor" plugins/crew/skills/team/SKILL.md`; `npx vitest run test/plugin` (AC8)
+- [ ] T7: the helper `init` `defaults` option (helpers.ts), `doctor` in mcp.test.ts's tool list; update the branch to the base after P-031 merges → verify: `npx vitest run test/hub/e2e/basics.test.ts test/hub/e2e/worktrees.test.ts test/hub/e2e/branch-copies.test.ts test/mcp.test.ts test/hub/registry.test.ts`; `git diff --quiet main -- test/hub/registry.test.ts test/hub/registry-before.json` (AC10)
 - [ ] T6: types and sizes → verify: `npm run typecheck`; `wc -l src/hub/commands/views/doctor.ts src/hub/commands/work/setup.ts src/hub/core/work/hubstate.ts`; `npx vitest run test/hub/e2e/basics.test.ts` (AC9)
 
 ## Test plan
@@ -101,6 +107,7 @@ Overlaps, for staffing only: P-030 on `planning.reg.ts` (the `init` registration
 - AC1–AC5, AC8 → `npx vitest run test/hub/e2e/doctor.test.ts`
 - AC6 → `npx vitest run test/hub/e2e/doctor.test.ts -t init`
 - AC7 → `npx vitest run test/hub/e2e/doctor.test.ts -t "commit message" test/hub/e2e/worktrees.test.ts test/hub/e2e/branch-copies.test.ts`
+- AC10 → `npx vitest run test/hub/e2e/basics.test.ts test/hub/e2e/worktrees.test.ts test/hub/e2e/branch-copies.test.ts test/mcp.test.ts test/hub/registry.test.ts`; `git diff --quiet main -- test/hub/registry.test.ts test/hub/registry-before.json`
 - AC9 → `npm run typecheck`; T6's `wc -l`; `npx vitest run test/hub/e2e/basics.test.ts`
 
 ## Rollout & rollback
