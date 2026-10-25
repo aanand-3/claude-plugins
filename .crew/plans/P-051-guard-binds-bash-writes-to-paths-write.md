@@ -11,6 +11,7 @@ pr:
 created: 2026-10-26
 started:
 completed:
+assignee: developer
 ---
 
 # P-051: Guard binds Bash writes to paths.write and resolves or refuses unknown targets
@@ -259,5 +260,6 @@ Until then the old guard keeps running. Rollback: revert the plan's commit and r
 ## Progress log
 
 - 2026-10-26: status draft → ready
+- 2026-10-26: assigned to the developer role
 
 ## Outcome
