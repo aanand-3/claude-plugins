@@ -1,7 +1,7 @@
 ---
 id: P-024
 title: Release refreshes the vendored hub in .crew/bin
-goal: G-001
+goal: G-007
 items: FEAT-027
 touches: packages/crew/src/hub/core/team/policy.ts, packages/crew/src/hub/commands/work/release.ts, packages/crew/src/hub/cli.ts, packages/crew/src/hub/commands/work/release.reg.ts, packages/crew/src/hub/commands/index.ts, packages/crew/test/hub/refresh-bin.test.ts, plugins/crew/skills/hub/agents/release.md, plugins/crew/skills/hub/references/model.md, .crew/config.yaml
 depends_on: P-023
@@ -117,5 +117,6 @@ Follows P-023 (bundles built once at release, in the plan's one commit): the ref
 
 - 2026-10-24: status draft → ready
 - 2026-10-25: Architect refinement after P-026: refresh target is the plan worktree's .crew/bin (root param), not store.dir (now the main checkout); refreshBin(store, root, check) exported for P-032's land; registration may go to release.reg.ts if P-030 lands first (touches widened).
+- 2026-10-25: Architect: goal G-001 → G-007 (FEAT-027 re-goaled to G-007; P-024 is W1-a and P-032 depends on it), at the Director's request.
 
 ## Outcome
