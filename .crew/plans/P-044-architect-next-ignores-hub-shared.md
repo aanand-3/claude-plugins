@@ -11,6 +11,7 @@ pr:
 created: 2026-10-25
 started:
 completed:
+assignee: developer
 ---
 
 # P-044: Architect next ignores hub.shared overlaps
@@ -85,5 +86,6 @@ n/a — test-only change; revert the commit to roll back.
 ## Progress log
 
 - 2026-10-25: status draft → ready
+- 2026-10-25: assigned to the developer role
 
 ## Outcome
