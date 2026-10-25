@@ -5,7 +5,7 @@ goal: G-007
 items: CHORE-017
 touches: packages/crew/src/hub/commands/work/planning.ts, packages/crew/test/hub/e2e/sparse-worktrees.test.ts
 depends_on:
-status: draft
+status: ready
 branch: plan/P-038-plan-worktrees-check-out-no-hub
 pr:
 created: 2026-10-25
@@ -69,5 +69,7 @@ The fix: plan worktrees are sparse checkouts that leave those paths out. The set
 ## Handoff
 
 ## Progress log
+
+- 2026-10-25: status draft → ready
 
 ## Outcome
