@@ -30,7 +30,7 @@ SPIKE-004's answer is recorded as K-2026-10-25-overlaps-on-hub-shared-paths-incl
   - **overlap-only `depends_on`**: a dependency whose touches overlap this plan's (a blocking overlap) and whose ID appears nowhere in this plan's Context, Approach or Risks & open questions. The hint says to name the code it needs there, or drop the dependency.
 - `check` reports `hub.shared` that isn't a list of strings as an ERROR.
 - `check`'s overlap hint text no longer suggests `depends_on` ("narrow touches, or list the file in hub.shared; depends_on is only for a plan that needs the other's code").
-- This repo's `hub.shared`: `packages/crew/src/hub/cli.ts`, `packages/crew/src/hub/mcp.ts`, `packages/crew/src/hub/commands/index.ts` (the registration index P-030 creates), `plugins/crew/skills/hub/SKILL.md`, `plugins/crew/skills/hub/references/model.md`, `README.md`, `packages/crew/test/**/*.test.ts`.
+- This repo's `hub.shared`: `packages/crew/src/hub/cli.ts`, `packages/crew/src/hub/mcp.ts`, `packages/crew/src/hub/commands/index.ts` (the registration index P-030 creates), `plugins/crew/skills/hub/SKILL.md`, `plugins/crew/skills/hub/references/model.md`, `plugins/crew/skills/team/SKILL.md`, `README.md`, `packages/crew/test/**/*.test.ts`.
 - Docs: model.md (a `shared` row in the Settings table; "Size, dependencies and WIP" says depends_on is for code dependencies only) and architect.md (list exact files in touches; use depends_on only when the plan needs the other plan's code; shared paths don't block).
 - SPIKE-004's Findings: a `log SPIKE-004` line pointing to the decision and this plan's tests.
 
@@ -63,7 +63,7 @@ SPIKE-004's answer is recorded as K-2026-10-25-overlaps-on-hub-shared-paths-incl
 - **config.yaml.** Add under `hub:` (with a one-line comment):
   ```yaml
   # hub.shared: overlaps on these never block staffing; the merge queue resolves them (exact files, not directories).
-  shared: [packages/crew/src/hub/cli.ts, packages/crew/src/hub/mcp.ts, packages/crew/src/hub/commands/index.ts, plugins/crew/skills/hub/SKILL.md, plugins/crew/skills/hub/references/model.md, README.md, "packages/crew/test/**/*.test.ts"]
+  shared: [packages/crew/src/hub/cli.ts, packages/crew/src/hub/mcp.ts, packages/crew/src/hub/commands/index.ts, plugins/crew/skills/hub/SKILL.md, plugins/crew/skills/hub/references/model.md, plugins/crew/skills/team/SKILL.md, README.md, "packages/crew/test/**/*.test.ts"]
   ```
   `Store.settings()` (store.ts, flat `key: value` lines) never reads it; footprint.ts parses the YAML itself, so store.ts stays out of this plan.
 - **Reuse:** `globRe`, `globsOverlap` (knowledge.ts), `LIVE` (footprint.ts), the `check-attr -z` parsing in `drift`, `init`/`readyPlan`-style helpers in `test/hub/e2e/helpers.ts` and `team-helpers.ts`.
@@ -102,5 +102,6 @@ SPIKE-004's answer is recorded as K-2026-10-25-overlaps-on-hub-shared-paths-incl
 ## Progress log
 
 - 2026-10-25: status draft → ready
+- 2026-10-25: Architect: `plugins/crew/skills/team/SKILL.md` added to this repo's hub.shared list (P-031, P-033, P-034 and P-035 each edit a different section of it).
 
 ## Outcome
