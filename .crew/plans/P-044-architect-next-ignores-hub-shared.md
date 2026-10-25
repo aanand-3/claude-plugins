@@ -5,7 +5,7 @@ goal: G-007
 items: BUG-030
 touches: packages/crew/test/hub/e2e/shared-touches.test.ts
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-044-architect-next-ignores-hub-shared
 pr:
 created: 2026-10-25
@@ -85,7 +85,7 @@ n/a — test-only change; revert the commit to roll back.
 
 _Generated 2026-10-25 by `crew.mjs handoff` from the ledger._
 
-- P-044: Architect next ignores hub.shared overlaps [in-progress] tasks 3/3 — claimed by Arpit Anand (developer:a62f33636f74e4a3c)
+- P-044: Architect next ignores hub.shared overlaps [in-review] tasks 3/3 — claimed by Arpit Anand (developer:a62f33636f74e4a3c)
 - last checkpoint 2026-10-25 13:26 at T3 (afdc288) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —
 
@@ -99,6 +99,7 @@ Latest log:
 - 2026-10-25: status draft → ready
 - 2026-10-25: assigned to the developer role
 - 2026-10-25: status ready → in-progress — branch plan/P-044-architect-next-ignores-hub-shared
+- 2026-10-25: status in-progress → in-review
 
 ## Outcome
 New test in `packages/crew/test/hub/e2e/shared-touches.test.ts`: with `hub.shared: [src/cli.ts]`, `next --role architect` flags no overlap for two ready plans meeting only on `src/cli.ts`, and still flags P-001/P-003 on `src/one.ts` with the narrow-touches hint (positive control). Mutation check: dropping `v.shared` from the architect ready rule and rebuilding the bundle fails the test on AC1; restored and rebuilt it passes (9/9). Only the test file changes against the merge base; `packages/crew/src` identical to main.
