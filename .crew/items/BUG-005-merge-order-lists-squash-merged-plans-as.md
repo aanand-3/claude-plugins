@@ -4,8 +4,8 @@ type: bug
 title: merge-order lists squash-merged plans as unmerged
 status: triaged
 severity: S3
-priority: P1
-goal: G-007
+priority: P2
+goal: G-003
 plan: P-018
 created: 2026-10-24
 closed:
@@ -37,3 +37,4 @@ All four listed under merge (`1. P-001 … merge plan/P-001-… into main`): Rel
 - 2026-10-25: re-triaged: priority P1, severity S3
 - 2026-10-25: PM 2026-10-25: delivered by P-018 (done, QA evidence AC1) but still triaged; not folded into P-032 (new-plan refused: already planned in P-018). Re-goaled to G-007 in error from G-003 — Director to decide whether to close it with P-018 and restore G-003.
 - 2026-10-25: Director: P-018 delivered the squash detection (QA AC1 pass). Close BUG-005 with P-018 and keep it on G-003; any remaining squash gap is CHORE-014 item (6) in P-028.
+- 2026-10-25: re-triaged: priority P2, severity S3
