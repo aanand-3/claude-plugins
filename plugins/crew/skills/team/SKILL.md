@@ -51,7 +51,7 @@ you ── this session ── crew-director ─┬─ crew-pm ─ crew-architec
 ## Unattended
 `node .crew/bin/crew.mjs run` prints a loop that hands "continue" to the Director until `run --check` says stop (an
 escalation with no plan or item to hold — an escalation about one holds only that document — or escalations holding
-everything open, a pause, an exhausted project budget, a done or missing focus goal), and a one-shot form for a scheduler.
+everything open, a pause, an exhausted project budget, no approved goal left — a done focus goal moves on to the next approved one), and a one-shot form for a scheduler.
 Offer it when the user wants the team to keep going without them. With `notify:` in the policy
 (`{command: "<shell>", on: [escalation, budget, stale, goal-done, paused]}`) the hub runs that command with each event
 as JSON on stdin — ntfy, a Slack webhook, mail: the user's choice, and a policy change, so theirs to make. A

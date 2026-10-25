@@ -4,6 +4,7 @@
 import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import type { Store } from "../../core/store.js";
+import type { Doc } from "../../core/work/doc.js";
 import { previousRef } from "../../core/memory/activity.js";
 import { SECRET_PATTERNS } from "../../../shared/secrets.js";
 import { feedPath } from "./activity.js";
@@ -11,6 +12,9 @@ import { agentRole } from "./guard.js";
 import { paused, staleClaims } from "./liveness.js";
 import { escalationHolds } from "./questions.js";
 import { CLOSED, ITEM_CLOSED } from "../../core/work/model.js";
+import { goalQueue } from "../../core/work/queries.js";
+import { byKey } from "../../core/text.js";
+import { setFocus } from "../work/planning.js";
 import { budgetProblems } from "../work/workflow.js";
 
 // -- notify
@@ -30,13 +34,28 @@ export function notify(store: Store, kind: string, ref: string | null, text: str
 }
 
 // -- the runner
-export interface Stop { stop: boolean; reasons: string[]; held: string[] }
+type Move = { from: string; to: string };
+export interface Stop { stop: boolean; reasons: string[]; held: string[]; queue: string[]; moved: Move | null }
+
+/** The goal queue moves the focus on: when the focus is empty, unknown, done or dropped and an approved goal is queued,
+ * the first one becomes the focus (`setFocus`, logged on the idea). A proposed focus stays. */
+export function advanceFocus(store: Store): Move | null {
+  const goals = store.goals(), from = store.focus(), status = goals.get(from)?.get("status");
+  if ((status && !CLOSED.has(status)) || !store.idea()) return null;
+  const to = goalQueue(goals, "")[0];
+  if (!to) return null;
+  const mark = store.ws.output.length;
+  setFocus(store, to);
+  store.ws.output.splice(mark); // run() reports the move itself
+  return { from, to };
+}
 
 /** Whether an unattended run should go on: it stops on an open escalation that isn't about one plan or item, on
- * escalations that hold every open plan and item, a pause, an exhausted project budget, or when the focus goal is done (or
- * there is none). An escalation about a plan or item holds only that document (`held`). Stale claims don't stop it — the
- * Director reassigns them — but they alert. */
+ * escalations that hold every open plan and item, a pause, an exhausted project budget, or when no approved goal is left
+ * (the focus moves on through the goal queue first). An escalation about a plan or item holds only that document (`held`).
+ * Stale claims don't stop it — the Director reassigns them — but they alert. */
 export function runState(store: Store): Stop {
+  const moved = advanceFocus(store);
   const events = store.ledger.events(), reasons: string[] = [];
   const { held, stops } = escalationHolds(events);
   if (stops.length) reasons.push(`waiting for the executive: ${stops.map((x) => `${x.id} ${x.text}`).join("; ")}`);
@@ -52,12 +71,21 @@ export function runState(store: Store): Stop {
   if (halt) reasons.push(`paused by ${halt.actor}: ${halt.reason ?? "no reason given"}`);
   const over = budgetProblems(store).filter((b) => b.startsWith("project"));
   if (over.length) reasons.push(`budget: ${over.join("; ")}`);
-  const focus = store.focus(), goal = focus ? store.goals().get(focus) : undefined;
-  if (!goal) reasons.push("no focus goal: the executive or the director sets one (`focus G-###`)");
-  else if (goal.get("status") === "done") reasons.push(`${focus} is done: the executive validates it and sets the next goals`);
+  const goals = store.goals(), focus = store.focus(), goal = goals.get(focus), queue = goalQueue(goals, focus);
+  if (!goal && queue.length) reasons.push("no focus goal: the executive or the director sets one (`focus G-###`)");
+  else if (!goal || CLOSED.has(goal.get("status") ?? "")) reasons.push(noGoalLeft([...goals.values()]));
   for (const s of staleClaims(store, events)) notify(store, "stale", s.ref, `${s.ref}: no activity for ${s.hours}h from ${s.actor}`, s.run);
   for (const b of over) notify(store, "budget", null, b, b.split(":")[0]);
-  return { stop: reasons.length > 0, reasons, held: holds };
+  return { stop: reasons.length > 0, reasons, held: holds, queue, moved };
+}
+
+/** Why the team stops with an empty queue: what was finished (by completion date), and what still waits for approval. */
+function noGoalLeft(goals: Doc[]): string {
+  const done = goals.filter((g) => g.get("status") === "done").sort(byKey((g) => [g.get("completed") ?? "", g.id])).map((g) => g.id);
+  const waiting = goals.filter((g) => g.get("status") === "proposed").map((g) => g.id).sort();
+  const tail = waiting.length ? `; waiting for approval: ${waiting.join(", ")}` : "";
+  return done.length ? `all approved goals done: ${done.join(", ")}${tail}`
+    : `no approved goal: the executive approves one (\`move G-### active --approved-by <name>\`)${tail}`;
 }
 
 const LOOP = `while node .crew/bin/crew.mjs run --check; do claude -p "/crew:team continue" || break; done`;
@@ -67,17 +95,24 @@ export function run(store: Store, check = false, json = false): number {
   const s = runState(store);
   if (json) store.say(JSON.stringify(s));
   else if (check) {
+    if (s.moved) store.say(`FOCUS  ${s.moved.from || "—"} → ${s.moved.to} (${movedWhy(store, s.moved.from)})`);
     store.say(s.stop ? `STOP  ${s.reasons.join("\nSTOP  ")}` : "GO    the team can continue");
+    if (!s.stop && s.queue.length) store.say(`QUEUE  ${s.queue.join(", ")}`);
     for (const h of s.held) store.say(`HELD  ${h}: waiting for the executive`);
   }
   else {
     store.say("Run the team unattended (from the project root): each pass hands \"continue\" to the Director; the loop stops");
-    store.say("on an escalation that holds everything, a pause, an exhausted budget or a done goal (`run --check` exits 1).");
+    store.say("on an escalation that holds everything, a pause, an exhausted budget or no approved goal left (`run --check` exits 1).");
     store.say(`  ${LOOP}`);
     store.say("Scheduled instead (cron, a CI schedule): `node .crew/bin/crew.mjs run --check && claude -p \"/crew:team continue\"`.");
     store.say(s.stop ? `Now: stopped — ${s.reasons.join("; ")}` : "Now: the team can continue.");
   }
   return check && s.stop ? 1 : 0;
+}
+
+function movedWhy(store: Store, from: string): string {
+  const status = from ? store.goals().get(from)?.get("status") : undefined;
+  return !from ? "no focus goal" : status ? `${from} is ${status}` : `${from} is not a goal`;
 }
 
 // -- usage capture

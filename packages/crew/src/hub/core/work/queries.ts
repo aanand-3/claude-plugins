@@ -36,6 +36,15 @@ export function goalOrder(goals: Docs): Map<string, number> {
   return new Map([...goals.keys()].sort().map((e, i) => [e, i]));
 }
 
+/** The goal queue: the approved (`active`) goals by priority (P0 first, none last), then ID; the focus first when active. */
+export function goalQueue(goals: Docs, focus: string): string[] {
+  const rank = (g: Doc): SortKey => {
+    const p = PRIORITIES.indexOf(g.get("priority") ?? "");
+    return [g.id !== focus, p < 0 ? PRIORITIES.length : p, g.id];
+  };
+  return [...goals.values()].filter((g) => g.get("status") === "active").sort(byKey(rank)).map((g) => g.id);
+}
+
 /** Backlog ranking: P0 first, then the focus goal, then priority → goal → ID. */
 export function itemRank(it: Doc, goals: Docs, focus: string): SortKey {
   const eorder = goalOrder(goals);

@@ -129,7 +129,13 @@ covers the last code change; under one that gates `goal.done`, the PM verifies a
 - `check` warns when a ready or active plan does not serve the focus goal. Bugs and chores may run off focus;
 - the overview (executive view) leads with the focus goal's outcome and progress.
 
-When the focus goal is done, set the next one. There is exactly one focus at a time.
+There is exactly one focus at a time.
+
+**Goal queue.** The goals the executive approved (`active`, behind the `goal.active` gate) form the queue, ordered by
+priority (P0 first, none last), then ID, with the focus first while it is open. When the focus goal is done or dropped (or
+there is none), `run --check` moves the focus to the next goal in the queue (`FOCUS  G-001 → G-002`, logged on the idea);
+the team stops only when no approved goal is left (`all approved goals done: …`). A `proposed` focus is not replaced.
+There is no stored order: set priorities when approving, and `focus G-###` jumps the queue.
 
 ## Settings (`hub:` in `.crew/config.yaml`)
 | Key | Default | Meaning |

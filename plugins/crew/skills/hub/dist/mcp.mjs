@@ -8746,116 +8746,14 @@ function runningLines(store) {
   return running(store).map((r) => `- ${r.idle ? "**idle** " : ""}${r.role} (${r.run}) \u2014 ${r.ref ?? "\u2014"} \xB7 task ${r.task ?? "\u2014"} \xB7 ${action(r.tool, r.target)} ${ago(r.minutes)} \xB7 tokens ${r.tokens === null ? "\u2014" : r.tokens}`);
 }
 
-// src/hub/core/work/gates.ts
-function triageProblems(item) {
-  const prefix = item.id.split("-")[0];
-  const problems = item.missing(TRIAGE_SECTIONS[prefix]).map((n2) => `empty section: ${n2}`);
-  if (!PRIORITIES.includes(item.get("priority") ?? "")) problems.push("no priority (P0\u2013P3)");
-  if (prefix === "BUG" && !Object.hasOwn(SEVERITY_PRIORITY, item.get("severity") ?? "")) problems.push("no severity (S1\u2013S4)");
-  return problems;
-}
-function fastLane(store, plan) {
-  const { types, max_tasks } = store.policy.policy.fast_lane;
-  const items2 = planItems(plan, store.items());
-  return types.length > 0 && items2.length > 0 && items2.every((i) => types.includes(i.id.split("-")[0])) && (max_tasks === null || plan.tasks().length <= max_tasks);
-}
-function readinessProblems(store, plan) {
-  return [
-    ...plan.missing(READY_SECTIONS).map((n2) => `empty section: ${n2}`),
-    ...plan.touches().length ? [] : ["no touches: (the paths this plan will change)"],
-    ...taskProblems(store, plan),
-    ...itemProblems(store, plan)
-  ];
-}
-function learningsProblems(plan, known) {
-  const m = /^\s*[-*]?\s*\**learnings?\**\s*:\**\s*(.*)$/im.exec(stripComments(plan.section("Outcome")));
-  if (!m) return ["Outcome has no `Learnings:` line \u2014 list the K-\u2026 entries captured with `learn`, or write `Learnings: none`"];
-  const ids = m[1].match(K_ID_RE) ?? [];
-  if (!ids.length && !/^none\b/i.test(m[1].trim())) return ["`Learnings:` must list K-\u2026 entries or say none"];
-  return ids.filter((i) => !known.has(i)).map((i) => `Learnings: ${i} does not exist`);
-}
-function decisionProblems(idea2) {
-  const problems = idea2.missing(DECIDED_SECTIONS).map((n2) => `empty section: ${n2}`);
-  if (idea2.hasContent("Success criteria") && !idea2.checklist("Success criteria").length) {
-    problems.push("Success criteria must be a checklist (`- [ ] \u2026`) so each one can be verified");
-  }
-  return problems;
-}
-function taskProblems(store, plan) {
-  const tasks = plan.tasks();
-  const max = store.settings().max_tasks;
-  const problems = tasks.length ? [] : ["no tasks"];
-  const noVerify = tasks.filter(([, t]) => !t.toLowerCase().includes("verify")).map(([, t]) => t.split("\u2192")[0].trim());
-  if (noVerify.length) problems.push(`tasks without '\u2192 verify:': ${noVerify.join("; ")}`);
-  if (tasks.length > max) problems.push(`${tasks.length} tasks (> max_tasks ${max}) \u2014 split the plan`);
-  return problems;
-}
-function itemProblems(store, plan) {
-  const items2 = store.items();
-  const linked = idList(plan.get("items"));
-  const problems = [];
-  for (const i of linked) {
-    if (!items2.has(i)) problems.push(`unknown item ${i}`);
-    else if (items2.get(i).get("status") === "new") problems.push(`item ${i} is not triaged`);
-  }
-  if (linked.some((i) => i.startsWith("BUG-"))) {
-    const text2 = (plan.section("Acceptance criteria") + plan.section("Tasks") + plan.section("Test plan")).toLowerCase();
-    if (!text2.includes("regression")) {
-      problems.push("fixes a bug but names no regression test (acceptance criteria, tasks or test plan)");
-    }
-  }
-  return problems;
-}
-
-// src/hub/commands/views/checks.ts
-import { join as join11 } from "node:path";
-
-// src/hub/commands/views/legacy.ts
-import { isAbsolute as isAbsolute2, join as join7, relative as relative2 } from "node:path";
-var LEGACY = ["check_secrets", "check_structure", "check_design", "format_on_edit", "track_plan_draft"];
-var REFRESH = "`/crew:guidelines --refresh` moves crew's hooks and settings to the .mjs scripts and removes the .py once nothing calls it";
-function legacyHints(store) {
-  const { ws } = store;
-  const at = (...p) => join7(ws.root, ...p);
-  const hints = [];
-  const leftovers = LEGACY.filter((n2) => ws.isFile(at(".crew", "bin", `${n2}.py`)));
-  if (leftovers.length) hints.push(`.crew/bin/ still has the Python scripts ${leftovers.map((n2) => `${n2}.py`).join(", ")} \u2014 ${REFRESH}`);
-  const hookDirs = [git(["rev-parse", "--git-path", "hooks"])?.trim(), git(["config", "core.hooksPath"])?.trim()].filter((d) => !!d).map((d) => isAbsolute2(d) ? d : at(d));
-  const inDir = (dir) => ws.list(dir).filter((f) => !f.endsWith(".sample")).map((f) => relative2(ws.root, join7(dir, f)));
-  const files2 = [.../* @__PURE__ */ new Set([
-    ...inDir(at(".githooks")),
-    ...hookDirs.flatMap(inDir),
-    ".claude/settings.json",
-    ".claude/settings.local.json",
-    ...inDir(at(".github", "workflows")),
-    ".gitlab-ci.yml",
-    "Makefile",
-    ".pre-commit-config.yaml",
-    "package.json",
-    ...inDir(at(".husky"))
-  ])];
-  for (const file of files2) {
-    const text2 = ws.read(join7(ws.root, file));
-    const calls = text2 ? LEGACY.filter((n2) => text2.includes(`.crew/bin/${n2}.py`)) : [];
-    if (calls.length) hints.push(`${file} still runs ${calls.map((n2) => `.crew/bin/${n2}.py`).join(", ")} \u2014 use node .crew/bin/<name>.mjs (${REFRESH})`);
-  }
-  if (/^modules:/m.test(ws.read(at(".crew", "config.yaml")) ?? "")) {
-    hints.push("`.crew/config.yaml` still has a `modules:` block \u2014 nothing in crew is optional any more, so delete it");
-  }
-  return hints;
-}
-
-// src/hub/commands/team/agents.ts
-import { join as join10 } from "node:path";
-
 // src/hub/core/store.ts
 import { existsSync as existsSync6, realpathSync as realpathSync3 } from "node:fs";
-import { dirname as dirname4, join as join9, relative as relative4, resolve as resolve4 } from "node:path";
+import { dirname as dirname4, join as join8, relative as relative3, resolve as resolve4 } from "node:path";
 import { fileURLToPath } from "node:url";
 
 // src/hub/core/workspace.ts
 import { chmodSync, copyFileSync, existsSync as existsSync5, mkdirSync as mkdirSync4, readdirSync as readdirSync2, readFileSync as readFileSync4, rmSync, statSync as statSync4, writeFileSync as writeFileSync2 } from "node:fs";
-import { dirname as dirname3, join as join8, relative as relative3, sep } from "node:path";
+import { dirname as dirname3, join as join7, relative as relative2, sep } from "node:path";
 var Workspace = class {
   constructor(root) {
     this.root = root;
@@ -8906,10 +8804,10 @@ var Workspace = class {
     return [...names].sort();
   }
   rel(path) {
-    return relative3(this.root, path).split(sep).join("/");
+    return relative2(this.root, path).split(sep).join("/");
   }
   join(...parts) {
-    return join8(...parts);
+    return join7(...parts);
   }
   /** Run fn at the start of flush(), before any file is written; a HubError there aborts the whole flush. */
   beforeFlush(fn) {
@@ -8983,10 +8881,10 @@ var Store = class _Store {
     this.ws = ws;
     useRoot(ws.root);
     this.home = hubHome(ws.root);
-    this.dir = join9(this.home, ".crew");
-    this.dirs = Object.fromEntries(Object.entries(DIRS).map(([k, v]) => [k, join9(this.dir, v)]));
-    this.ideaPath = join9(this.dir, "idea.md");
-    this.knowledgeDir = join9(this.dir, "knowledge");
+    this.dir = join8(this.home, ".crew");
+    this.dirs = Object.fromEntries(Object.entries(DIRS).map(([k, v]) => [k, join8(this.dir, v)]));
+    this.ideaPath = join8(this.dir, "idea.md");
+    this.knowledgeDir = join8(this.dir, "knowledge");
     ws.watchWrites((paths) => {
       if (this.commitsState(paths)) requireBase(this.home, this.baseBranch());
     }, (paths) => {
@@ -9009,7 +8907,7 @@ var Store = class _Store {
   label = "update";
   /** With plan worktrees, a command that writes hub documents commits them on the base branch in the home. */
   commitsState(paths) {
-    return paths.some((p) => STATE_RE.test(relative4(this.home, p))) && this.settings().plan_worktrees;
+    return paths.some((p) => STATE_RE.test(relative3(this.home, p))) && this.settings().plan_worktrees;
   }
   static open(root = repoRoot()) {
     return new _Store(new Workspace(root));
@@ -9024,7 +8922,7 @@ var Store = class _Store {
   }
   /** A path for messages: hub files relative to the home, so they read `.crew/…` from any checkout. */
   rel(p) {
-    return p === this.dir || p.startsWith(`${this.dir}/`) ? relative4(this.home, p) : this.ws.rel(p);
+    return p === this.dir || p.startsWith(`${this.dir}/`) ? relative3(this.home, p) : this.ws.rel(p);
   }
   say(line2) {
     this.ws.say(line2);
@@ -9034,15 +8932,15 @@ var Store = class _Store {
   }
   /** Project copy wins (so a cloned repo works without the plugin); fall back to the skill's. */
   template(name) {
-    for (const d of [join9(this.dir, "templates"), join9(SKILL_DIR, "templates")]) {
-      const text2 = this.ws.read(join9(d, name));
+    for (const d of [join8(this.dir, "templates"), join8(SKILL_DIR, "templates")]) {
+      const text2 = this.ws.read(join8(d, name));
       if (text2 !== null) return text2;
     }
     return fail(`Template ${name} not found.`);
   }
   /** Hub settings from the `hub:` block of .crew/config.yaml, with defaults. */
   settings() {
-    const text2 = this.ws.read(join9(this.dir, "config.yaml"));
+    const text2 = this.ws.read(join8(this.dir, "config.yaml"));
     const s2 = { ...DEFAULT_SETTINGS, ...text2 === null ? {} : yamlBlock(text2, "hub") };
     const int = (k) => /^\d+$/.test(s2[k]) ? parseInt(s2[k], 10) : parseInt(DEFAULT_SETTINGS[k], 10);
     return { wip_limit: int("wip_limit"), max_tasks: int("max_tasks"), plan_worktrees: s2.plan_worktrees === "true" };
@@ -9055,7 +8953,7 @@ var Store = class _Store {
   loadDir(d) {
     const docs = /* @__PURE__ */ new Map();
     for (const name of this.ws.list(d).filter((n2) => n2.endsWith(".md"))) {
-      const path = join9(d, name);
+      const path = join8(d, name);
       const doc = this.attach(Doc.parse(this.ws.read(path), path));
       if (doc.id) docs.set(doc.id, doc);
     }
@@ -9100,7 +8998,7 @@ var Store = class _Store {
   }
   /** The branch plans start from: `git.default_branch` in .crew/config.yaml, else the policy's first protected branch. */
   baseBranch() {
-    const text2 = this.ws.read(join9(this.dir, "config.yaml"));
+    const text2 = this.ws.read(join8(this.dir, "config.yaml"));
     const configured = text2 === null ? void 0 : yamlBlock(text2, "git").default_branch;
     return configured || this.policy.policy.git.protected_branches[0] || "main";
   }
@@ -9162,7 +9060,7 @@ var Store = class _Store {
     const names = this.ws.list(d);
     const rel = `${this.rel(d)}/`;
     for (const ref of allRefs()) names.push(...lsTree(ref, rel).map((n2) => n2.split("/").pop()));
-    for (const w of worktrees()) names.push(...this.ws.list(join9(w.path, this.rel(d))));
+    for (const w of worktrees()) names.push(...this.ws.list(join8(w.path, this.rel(d))));
     const nums = names.map((n2) => new RegExp(`^${prefix}-(\\d+)`).exec(n2)).filter((m) => m).map((m) => parseInt(m[1], 10));
     return `${prefix}-${String(Math.max(0, ...nums) + 1).padStart(width, "0")}`;
   }
@@ -9204,7 +9102,107 @@ var Store = class _Store {
   }
 };
 
+// src/hub/core/work/gates.ts
+function triageProblems(item) {
+  const prefix = item.id.split("-")[0];
+  const problems = item.missing(TRIAGE_SECTIONS[prefix]).map((n2) => `empty section: ${n2}`);
+  if (!PRIORITIES.includes(item.get("priority") ?? "")) problems.push("no priority (P0\u2013P3)");
+  if (prefix === "BUG" && !Object.hasOwn(SEVERITY_PRIORITY, item.get("severity") ?? "")) problems.push("no severity (S1\u2013S4)");
+  return problems;
+}
+function fastLane(store, plan) {
+  const { types, max_tasks } = store.policy.policy.fast_lane;
+  const items2 = planItems(plan, store.items());
+  return types.length > 0 && items2.length > 0 && items2.every((i) => types.includes(i.id.split("-")[0])) && (max_tasks === null || plan.tasks().length <= max_tasks);
+}
+function readinessProblems(store, plan) {
+  return [
+    ...plan.missing(READY_SECTIONS).map((n2) => `empty section: ${n2}`),
+    ...plan.touches().length ? [] : ["no touches: (the paths this plan will change)"],
+    ...taskProblems(store, plan),
+    ...itemProblems(store, plan)
+  ];
+}
+function learningsProblems(plan, known) {
+  const m = /^\s*[-*]?\s*\**learnings?\**\s*:\**\s*(.*)$/im.exec(stripComments(plan.section("Outcome")));
+  if (!m) return ["Outcome has no `Learnings:` line \u2014 list the K-\u2026 entries captured with `learn`, or write `Learnings: none`"];
+  const ids = m[1].match(K_ID_RE) ?? [];
+  if (!ids.length && !/^none\b/i.test(m[1].trim())) return ["`Learnings:` must list K-\u2026 entries or say none"];
+  return ids.filter((i) => !known.has(i)).map((i) => `Learnings: ${i} does not exist`);
+}
+function decisionProblems(idea2) {
+  const problems = idea2.missing(DECIDED_SECTIONS).map((n2) => `empty section: ${n2}`);
+  if (idea2.hasContent("Success criteria") && !idea2.checklist("Success criteria").length) {
+    problems.push("Success criteria must be a checklist (`- [ ] \u2026`) so each one can be verified");
+  }
+  return problems;
+}
+function taskProblems(store, plan) {
+  const tasks = plan.tasks();
+  const max = store.settings().max_tasks;
+  const problems = tasks.length ? [] : ["no tasks"];
+  const noVerify = tasks.filter(([, t]) => !t.toLowerCase().includes("verify")).map(([, t]) => t.split("\u2192")[0].trim());
+  if (noVerify.length) problems.push(`tasks without '\u2192 verify:': ${noVerify.join("; ")}`);
+  if (tasks.length > max) problems.push(`${tasks.length} tasks (> max_tasks ${max}) \u2014 split the plan`);
+  return problems;
+}
+function itemProblems(store, plan) {
+  const items2 = store.items();
+  const linked = idList(plan.get("items"));
+  const problems = [];
+  for (const i of linked) {
+    if (!items2.has(i)) problems.push(`unknown item ${i}`);
+    else if (items2.get(i).get("status") === "new") problems.push(`item ${i} is not triaged`);
+  }
+  if (linked.some((i) => i.startsWith("BUG-"))) {
+    const text2 = (plan.section("Acceptance criteria") + plan.section("Tasks") + plan.section("Test plan")).toLowerCase();
+    if (!text2.includes("regression")) {
+      problems.push("fixes a bug but names no regression test (acceptance criteria, tasks or test plan)");
+    }
+  }
+  return problems;
+}
+
+// src/hub/commands/views/checks.ts
+import { join as join11 } from "node:path";
+
+// src/hub/commands/views/legacy.ts
+import { isAbsolute as isAbsolute2, join as join9, relative as relative4 } from "node:path";
+var LEGACY = ["check_secrets", "check_structure", "check_design", "format_on_edit", "track_plan_draft"];
+var REFRESH = "`/crew:guidelines --refresh` moves crew's hooks and settings to the .mjs scripts and removes the .py once nothing calls it";
+function legacyHints(store) {
+  const { ws } = store;
+  const at = (...p) => join9(ws.root, ...p);
+  const hints = [];
+  const leftovers = LEGACY.filter((n2) => ws.isFile(at(".crew", "bin", `${n2}.py`)));
+  if (leftovers.length) hints.push(`.crew/bin/ still has the Python scripts ${leftovers.map((n2) => `${n2}.py`).join(", ")} \u2014 ${REFRESH}`);
+  const hookDirs = [git(["rev-parse", "--git-path", "hooks"])?.trim(), git(["config", "core.hooksPath"])?.trim()].filter((d) => !!d).map((d) => isAbsolute2(d) ? d : at(d));
+  const inDir = (dir) => ws.list(dir).filter((f) => !f.endsWith(".sample")).map((f) => relative4(ws.root, join9(dir, f)));
+  const files2 = [.../* @__PURE__ */ new Set([
+    ...inDir(at(".githooks")),
+    ...hookDirs.flatMap(inDir),
+    ".claude/settings.json",
+    ".claude/settings.local.json",
+    ...inDir(at(".github", "workflows")),
+    ".gitlab-ci.yml",
+    "Makefile",
+    ".pre-commit-config.yaml",
+    "package.json",
+    ...inDir(at(".husky"))
+  ])];
+  for (const file of files2) {
+    const text2 = ws.read(join9(ws.root, file));
+    const calls = text2 ? LEGACY.filter((n2) => text2.includes(`.crew/bin/${n2}.py`)) : [];
+    if (calls.length) hints.push(`${file} still runs ${calls.map((n2) => `.crew/bin/${n2}.py`).join(", ")} \u2014 use node .crew/bin/<name>.mjs (${REFRESH})`);
+  }
+  if (/^modules:/m.test(ws.read(at(".crew", "config.yaml")) ?? "")) {
+    hints.push("`.crew/config.yaml` still has a `modules:` block \u2014 nothing in crew is optional any more, so delete it");
+  }
+  return hints;
+}
+
 // src/hub/commands/team/agents.ts
+import { join as join10 } from "node:path";
 var HUMAN = "executive";
 var PLAIN = /^[\w-]+$/;
 var agentsDir = (store) => join10(store.ws.root, ".claude", "agents");
@@ -9541,6 +9539,200 @@ function goalProblems(store, goal) {
   return problems;
 }
 
+// src/hub/commands/work/review.ts
+var lastCode = (branch) => git(["log", "-1", "--format=%H", branch, "--", ".", ":(exclude).crew"])?.trim() || null;
+function uncommitted(store, plan) {
+  if (!store.settings().plan_worktrees) return null;
+  const home = store.planHome(plan.id);
+  return home ? codeChanges(home, store.policy.policy.secrets.files) : [];
+}
+function review(store, planId, o) {
+  store.require();
+  const plan = store.find(store.checkRef(planId, "plan"));
+  if (!!o.approve === !!o.changes) fail('Give one verdict: --approve, or --changes "<what to change>".');
+  if (plan.get("status") !== "in-review") fail(`${plan.id} is '${plan.get("status")}': only a plan in review is reviewed.`);
+  authorize(store, plan.id, "plan.reviewed", void 0, void 0, `review ${plan.id}`);
+  const me = store.ledger.who.run;
+  if (implementers(store.ledger.events(), plan.id).has(me)) fail(`This run (${me}) implemented ${plan.id}; another role reviews it.`);
+  const open = o.approve ? uncommitted(store, plan) ?? [] : [];
+  if (open.length) {
+    fail(`${plan.id}'s worktree has uncommitted code: ${open.slice(0, 10).join(", ")}${open.length > 10 ? ", \u2026" : ""}. \`checkpoint ${plan.id}\` commits it on the plan's branch; then review again.`);
+  }
+  const branch = plan.get("branch") ?? "";
+  const sha = branch && git(["rev-parse", "--verify", "-q", branch])?.trim() || null;
+  store.ledger.record("review", plan.id, { verdict: o.approve ? "approve" : "changes", sha, ...o.changes ? { text: o.changes } : {} });
+  if (o.changes) {
+    plan.appendLog(`review: changes requested \u2014 ${o.changes}`, "Progress log");
+    plan.save();
+    move(store, plan.id, "in-progress", `changes requested: ${o.changes}`, false, void 0, "plan.reviewed");
+  } else store.say(`${plan.id}: approved${sha ? ` at ${sha.slice(0, 7)}` : ""}`);
+}
+function reviewProblems(store, plan) {
+  if (!store.policy.policy.role_gates["plan.reviewed"]) return [];
+  const last = store.ledger.events().filter((e) => e.type === "review" && e.ref === plan.id).at(-1);
+  const how = `\`review ${plan.id} --approve\` by the ${store.policy.policy.role_gates["plan.reviewed"]}`;
+  if (!last) return [`no code review yet: ${how}`];
+  if (last.verdict !== "approve") return [`the last review asked for changes: ${last.text}`];
+  const code = lastCode(plan.get("branch") ?? "");
+  const dirty2 = uncommitted(store, plan) ?? (currentBranch() !== plan.get("branch") ? [] : (git(["status", "--porcelain"]) ?? "").split("\n").filter((l) => l.trim() && !l.slice(3).startsWith(".crew/")));
+  const covered = !code || !!last.sha && git(["merge-base", "--is-ancestor", code, String(last.sha)]) !== null;
+  return covered && !dirty2.length ? [] : [`the code changed since the approving review (${String(last.sha ?? "?").slice(0, 7)}): ${how} again`];
+}
+
+// src/hub/commands/work/workflow.ts
+var LOG_SECTION = { item: "Notes" };
+function move(store, docId, status2, note, force = false, approvedBy, via) {
+  store.require();
+  docId = docId.toUpperCase();
+  const kind = kindOf(docId);
+  const doc = store.find(docId);
+  const flow = FLOWS[kind];
+  const old = doc.get("status") ?? "";
+  if (!Object.hasOwn(flow, status2)) fail(`Unknown status '${status2}'. Valid: ${Object.keys(flow).join(", ")}`);
+  if (!(flow[old] ?? []).includes(status2) && !force) {
+    const allowed = [...flow[old] ?? []].sort().join(", ") || "none";
+    fail(`${docId}: ${old} \u2192 ${status2} not allowed (from ${old}: ${allowed}). Use --force to override.`);
+  }
+  if (!force) guard(store, kind, doc, status2, approvedBy);
+  const waiting = FORWARD.has(status2) ? openQuestions(store.ledger.events(), doc.id).filter((x) => x.blocking) : [];
+  if (waiting.length && !force) {
+    fail(`${doc.id} waits for an answer before it moves on:
+  - ${waiting.map((x) => `${x.id} \u2192 ${x.to}: ${x.text}`).join("\n  - ")}
+(\`crew.mjs questions\`; --force to move anyway)`);
+  }
+  if (kind === "plan" && status2 === "in-progress" && !via) assignedHere(store, doc.id);
+  const lane = kind === "plan" && status2 === "ready" && fastLane(store, doc);
+  authorize(store, doc.id, via ?? `${kind}.${status2}`, approvedBy, via ? void 0 : old, void 0, lane ? ["pm"] : []);
+  if (kind === "plan" && status2 === "in-progress" && !via) claimFor(store, doc, force);
+  if (kind === "plan" && status2 === "in-review") commitWork(store, doc, `chore(${doc.id}): hand over to review`);
+  stamp(kind, doc, status2);
+  doc.set("status", status2);
+  if (kind === "plan" && status2 === "in-review" && doc.source === "worktree") writeHandoff(store, doc);
+  if (kind === "plan" && old === "in-review" && status2 === "in-progress") {
+    escalateLimit(store, doc.id, bounces(store.ledger.events(), doc.id) + 1, store.policy.policy.limits.max_bounces, "came back from review");
+  }
+  const approval = approvedBy ? ` (approved by ${approvedBy})` : "";
+  doc.appendLog(`status ${old} \u2192 ${status2}` + (note ? ` \u2014 ${note}` : "") + approval, LOG_SECTION[kind] ?? "Progress log");
+  doc.save();
+  store.ledger.record("move", doc.id, {
+    from: old,
+    to: status2,
+    ...note ? { note } : {},
+    ...approvedBy ? { approved_by: approvedBy } : {},
+    ...via ? { via } : {}
+  });
+  if (CLOSED.has(status2) && store.ledger.claims().has(doc.id)) store.ledger.record("release", doc.id, { reason: status2 });
+  if (kind === "goal" && status2 === "done") notify(store, "goal-done", doc.id, `${doc.id} is done: ${doc.get("title")}`);
+  store.say(`${doc.id}: ${old} \u2192 ${status2}`);
+  return doc;
+}
+function authorize(store, id, transition, approvedBy, from, cmd = `move ${id} ${transition.split(".")[1]}`, also = []) {
+  const { policy, errors } = store.policy;
+  if (errors.length) fail(`The policy is invalid, so nothing moves until it is fixed (\`crew.mjs policy check\`):
+  - ${errors.join("\n  - ")}`);
+  if (approvedBy !== void 0 && !approvedBy.trim()) fail("--approved-by needs the approving person's name.");
+  if (approvedBy) return;
+  const reason = approvalReason(policy, transition);
+  const [, status2] = transition.split(".");
+  if (reason) {
+    fail(`${id} \u2192 ${status2} is ${reason}: a human approves it with \`crew.mjs ${cmd} --approved-by <name>\` (agents over MCP can't). Ask the ${policy.escalation.to} first.`);
+  }
+  const [kind] = transition.split(".");
+  const role = (from ? policy.role_gates[`${kind}.${from}>${status2}`] : void 0) ?? policy.role_gates[transition];
+  const mine = store.ledger.who.role;
+  if (role && mine !== role && !also.includes(mine ?? "")) fail(`${id} \u2192 ${status2} is for the ${role} role; this run is ${mine ? `the ${mine} role` : "in no role"} (CREW_ROLE).`);
+}
+function claimFor(store, doc, force) {
+  const held = store.ledger.claims().get(doc.id);
+  if (held?.run === store.ledger.who.run) return;
+  if (held && !force) {
+    fail(`${doc.id} is claimed by ${held.actor} (${held.run}, ${held.worktree}) since ${held.ts.slice(0, 10)}. Coordinate with them, or \`release ${doc.id} --force\` if that run is gone.`);
+  }
+  store.ledger.record("claim", doc.id, { branch: doc.get("branch") ?? "", ...force ? { force: true } : {} });
+}
+function budgetProblems(store) {
+  const { budgets } = store.policy.policy;
+  const events = store.ledger.events(), me = store.ledger.who.run;
+  const mine = store.ledger.spend(events.filter((e) => e.run === me)), all = store.ledger.spend(events);
+  const over = (what, used, cap, unit = "") => cap !== null && used >= cap ? [`${what}: ${unit}${+used.toFixed(2)} used of ${unit}${cap}`] : [];
+  const holders = new Set([...store.ledger.claims(events).values()].map((c) => c.run));
+  const agents = budgets.max_agents !== null && !holders.has(me) && holders.size >= budgets.max_agents ? [`max_agents: ${holders.size} runs already hold work (limit ${budgets.max_agents})`] : [];
+  return [
+    ...over("run cost", mine.cost, budgets.run.max_cost, "$"),
+    ...over("run tokens", mine.tokensIn + mine.tokensOut, budgets.run.max_tokens),
+    ...over("project cost", all.cost, budgets.project.max_cost, "$"),
+    ...over("project tokens", all.tokensIn + all.tokensOut, budgets.project.max_tokens),
+    ...agents
+  ];
+}
+function guard(store, kind, doc, status2, approvedBy) {
+  let problems = [];
+  let label = "";
+  if (kind === "plan" && status2 === "ready") {
+    problems = readinessProblems(store, doc);
+    label = "is not ready (Definition of Ready)";
+  } else if (kind === "plan" && status2 === "in-review") {
+    problems = learningsProblems(doc, new Set(store.knowledge().map((e) => e.id)));
+    label = "can't go to review";
+  } else if (kind === "plan" && status2 === "done") {
+    problems = [
+      ...doc.tasks().filter(([done]) => !done).map(([, t]) => `unchecked task: ${t}`),
+      ...evidenceProblems(store, doc, approvedBy),
+      ...reviewProblems(store, doc)
+    ];
+    label = "can't be done";
+  } else if (kind === "goal" && status2 === "done") {
+    problems = goalProblems(store, doc);
+    label = "isn't reached";
+  } else if (kind === "goal" && status2 === "active") {
+    problems = doc.missing(["Outcome", "Acceptance criteria"]).map((n2) => `empty section: ${n2}`);
+    label = "can't be active";
+  } else if (kind === "item" && status2 === "triaged") {
+    problems = triageProblems(doc);
+    label = "can't be triaged";
+  } else if (kind === "idea" && status2 === "decided") {
+    problems = decisionProblems(doc);
+    label = "can't be decided";
+  }
+  if (problems.length) fail(`${doc.id} ${label}:
+  - ${problems.join("\n  - ")}
+(--force to override)`);
+}
+function stamp(kind, doc, status2) {
+  if (kind === "plan" && status2 === "in-progress" && !doc.get("started")) doc.set("started", today());
+  if (kind === "idea" && status2 === "decided") doc.set("decided", today());
+  if (kind === "item" && ITEM_CLOSED.has(status2)) doc.set("closed", today());
+  if (status2 === "done") doc.set("completed", today());
+}
+function assignedHere(store, id) {
+  const a = store.ledger.assignments().get(id), me = store.ledger.who.role, by = store.policy.policy.role_gates["plan.assigned"];
+  if (!a && by) fail(`${id} isn't assigned yet: the ${by} opens it with \`assign ${id} --to developer\`.`);
+  if (a && a.to !== me) fail(`${id} is assigned to the ${a.to} role; this run is ${me ? `the ${me} role` : "in no role"}.`);
+}
+function usage(store, u) {
+  store.require();
+  if (u.tokensIn === void 0 && u.tokensOut === void 0 && u.cost === void 0) fail("Give --tokens-in, --tokens-out or --cost.");
+  if (u.cost !== void 0 && !(Number.isFinite(u.cost) && u.cost >= 0)) fail("--cost must be a number \u2265 0.");
+  for (const [flag, n2] of [["--tokens-in", u.tokensIn], ["--tokens-out", u.tokensOut]]) {
+    if (n2 !== void 0 && !(Number.isInteger(n2) && n2 >= 0)) fail(`${flag} must be a whole number \u2265 0.`);
+  }
+  store.ledger.record("usage", u.ref ? u.ref.toUpperCase() : null, {
+    tokens_in: u.tokensIn ?? 0,
+    tokens_out: u.tokensOut ?? 0,
+    cost: u.cost ?? 0,
+    ...u.model ? { model: u.model } : {}
+  });
+  store.say(`usage recorded for ${store.ledger.who.actor} (${store.ledger.who.run})`);
+  const over = budgetProblems(store);
+  if (over.length) store.say(`warning: over budget \u2014 new work needs a human's approval: ${over.join("; ")}`);
+}
+function log(store, docId, text2) {
+  const doc = store.find(docId);
+  doc.appendLog(text2, LOG_SECTION[kindOf(docId) ?? "plan"] ?? "Progress log");
+  doc.save();
+  store.ledger.record("log", doc.id, { text: text2 });
+}
+
 // src/hub/commands/work/backlog.ts
 function createItem(store, prefix, title, body2, fields) {
   const iid = store.nextId(prefix, "item");
@@ -9774,200 +9966,6 @@ function setFocus(store, goalId) {
   idea2.save();
   store.say(`focus: ${gid} (${goal.get("title")})`);
   if (goal.get("status") === "proposed") store.say(`note: ${gid} is still proposed \u2014 \`move ${gid} active\` when its first plan starts`);
-}
-
-// src/hub/commands/work/review.ts
-var lastCode = (branch) => git(["log", "-1", "--format=%H", branch, "--", ".", ":(exclude).crew"])?.trim() || null;
-function uncommitted(store, plan) {
-  if (!store.settings().plan_worktrees) return null;
-  const home = store.planHome(plan.id);
-  return home ? codeChanges(home, store.policy.policy.secrets.files) : [];
-}
-function review(store, planId, o) {
-  store.require();
-  const plan = store.find(store.checkRef(planId, "plan"));
-  if (!!o.approve === !!o.changes) fail('Give one verdict: --approve, or --changes "<what to change>".');
-  if (plan.get("status") !== "in-review") fail(`${plan.id} is '${plan.get("status")}': only a plan in review is reviewed.`);
-  authorize(store, plan.id, "plan.reviewed", void 0, void 0, `review ${plan.id}`);
-  const me = store.ledger.who.run;
-  if (implementers(store.ledger.events(), plan.id).has(me)) fail(`This run (${me}) implemented ${plan.id}; another role reviews it.`);
-  const open = o.approve ? uncommitted(store, plan) ?? [] : [];
-  if (open.length) {
-    fail(`${plan.id}'s worktree has uncommitted code: ${open.slice(0, 10).join(", ")}${open.length > 10 ? ", \u2026" : ""}. \`checkpoint ${plan.id}\` commits it on the plan's branch; then review again.`);
-  }
-  const branch = plan.get("branch") ?? "";
-  const sha = branch && git(["rev-parse", "--verify", "-q", branch])?.trim() || null;
-  store.ledger.record("review", plan.id, { verdict: o.approve ? "approve" : "changes", sha, ...o.changes ? { text: o.changes } : {} });
-  if (o.changes) {
-    plan.appendLog(`review: changes requested \u2014 ${o.changes}`, "Progress log");
-    plan.save();
-    move(store, plan.id, "in-progress", `changes requested: ${o.changes}`, false, void 0, "plan.reviewed");
-  } else store.say(`${plan.id}: approved${sha ? ` at ${sha.slice(0, 7)}` : ""}`);
-}
-function reviewProblems(store, plan) {
-  if (!store.policy.policy.role_gates["plan.reviewed"]) return [];
-  const last = store.ledger.events().filter((e) => e.type === "review" && e.ref === plan.id).at(-1);
-  const how = `\`review ${plan.id} --approve\` by the ${store.policy.policy.role_gates["plan.reviewed"]}`;
-  if (!last) return [`no code review yet: ${how}`];
-  if (last.verdict !== "approve") return [`the last review asked for changes: ${last.text}`];
-  const code = lastCode(plan.get("branch") ?? "");
-  const dirty2 = uncommitted(store, plan) ?? (currentBranch() !== plan.get("branch") ? [] : (git(["status", "--porcelain"]) ?? "").split("\n").filter((l) => l.trim() && !l.slice(3).startsWith(".crew/")));
-  const covered = !code || !!last.sha && git(["merge-base", "--is-ancestor", code, String(last.sha)]) !== null;
-  return covered && !dirty2.length ? [] : [`the code changed since the approving review (${String(last.sha ?? "?").slice(0, 7)}): ${how} again`];
-}
-
-// src/hub/commands/work/workflow.ts
-var LOG_SECTION = { item: "Notes" };
-function move(store, docId, status2, note, force = false, approvedBy, via) {
-  store.require();
-  docId = docId.toUpperCase();
-  const kind = kindOf(docId);
-  const doc = store.find(docId);
-  const flow = FLOWS[kind];
-  const old = doc.get("status") ?? "";
-  if (!Object.hasOwn(flow, status2)) fail(`Unknown status '${status2}'. Valid: ${Object.keys(flow).join(", ")}`);
-  if (!(flow[old] ?? []).includes(status2) && !force) {
-    const allowed = [...flow[old] ?? []].sort().join(", ") || "none";
-    fail(`${docId}: ${old} \u2192 ${status2} not allowed (from ${old}: ${allowed}). Use --force to override.`);
-  }
-  if (!force) guard(store, kind, doc, status2, approvedBy);
-  const waiting = FORWARD.has(status2) ? openQuestions(store.ledger.events(), doc.id).filter((x) => x.blocking) : [];
-  if (waiting.length && !force) {
-    fail(`${doc.id} waits for an answer before it moves on:
-  - ${waiting.map((x) => `${x.id} \u2192 ${x.to}: ${x.text}`).join("\n  - ")}
-(\`crew.mjs questions\`; --force to move anyway)`);
-  }
-  if (kind === "plan" && status2 === "in-progress" && !via) assignedHere(store, doc.id);
-  const lane = kind === "plan" && status2 === "ready" && fastLane(store, doc);
-  authorize(store, doc.id, via ?? `${kind}.${status2}`, approvedBy, via ? void 0 : old, void 0, lane ? ["pm"] : []);
-  if (kind === "plan" && status2 === "in-progress" && !via) claimFor(store, doc, force);
-  if (kind === "plan" && status2 === "in-review") commitWork(store, doc, `chore(${doc.id}): hand over to review`);
-  stamp(kind, doc, status2);
-  doc.set("status", status2);
-  if (kind === "plan" && status2 === "in-review" && doc.source === "worktree") writeHandoff(store, doc);
-  if (kind === "plan" && old === "in-review" && status2 === "in-progress") {
-    escalateLimit(store, doc.id, bounces(store.ledger.events(), doc.id) + 1, store.policy.policy.limits.max_bounces, "came back from review");
-  }
-  const approval = approvedBy ? ` (approved by ${approvedBy})` : "";
-  doc.appendLog(`status ${old} \u2192 ${status2}` + (note ? ` \u2014 ${note}` : "") + approval, LOG_SECTION[kind] ?? "Progress log");
-  doc.save();
-  store.ledger.record("move", doc.id, {
-    from: old,
-    to: status2,
-    ...note ? { note } : {},
-    ...approvedBy ? { approved_by: approvedBy } : {},
-    ...via ? { via } : {}
-  });
-  if (CLOSED.has(status2) && store.ledger.claims().has(doc.id)) store.ledger.record("release", doc.id, { reason: status2 });
-  if (kind === "goal" && status2 === "done") notify(store, "goal-done", doc.id, `${doc.id} is done: ${doc.get("title")}`);
-  store.say(`${doc.id}: ${old} \u2192 ${status2}`);
-  return doc;
-}
-function authorize(store, id, transition, approvedBy, from, cmd = `move ${id} ${transition.split(".")[1]}`, also = []) {
-  const { policy, errors } = store.policy;
-  if (errors.length) fail(`The policy is invalid, so nothing moves until it is fixed (\`crew.mjs policy check\`):
-  - ${errors.join("\n  - ")}`);
-  if (approvedBy !== void 0 && !approvedBy.trim()) fail("--approved-by needs the approving person's name.");
-  if (approvedBy) return;
-  const reason = approvalReason(policy, transition);
-  const [, status2] = transition.split(".");
-  if (reason) {
-    fail(`${id} \u2192 ${status2} is ${reason}: a human approves it with \`crew.mjs ${cmd} --approved-by <name>\` (agents over MCP can't). Ask the ${policy.escalation.to} first.`);
-  }
-  const [kind] = transition.split(".");
-  const role = (from ? policy.role_gates[`${kind}.${from}>${status2}`] : void 0) ?? policy.role_gates[transition];
-  const mine = store.ledger.who.role;
-  if (role && mine !== role && !also.includes(mine ?? "")) fail(`${id} \u2192 ${status2} is for the ${role} role; this run is ${mine ? `the ${mine} role` : "in no role"} (CREW_ROLE).`);
-}
-function claimFor(store, doc, force) {
-  const held = store.ledger.claims().get(doc.id);
-  if (held?.run === store.ledger.who.run) return;
-  if (held && !force) {
-    fail(`${doc.id} is claimed by ${held.actor} (${held.run}, ${held.worktree}) since ${held.ts.slice(0, 10)}. Coordinate with them, or \`release ${doc.id} --force\` if that run is gone.`);
-  }
-  store.ledger.record("claim", doc.id, { branch: doc.get("branch") ?? "", ...force ? { force: true } : {} });
-}
-function budgetProblems(store) {
-  const { budgets } = store.policy.policy;
-  const events = store.ledger.events(), me = store.ledger.who.run;
-  const mine = store.ledger.spend(events.filter((e) => e.run === me)), all = store.ledger.spend(events);
-  const over = (what, used, cap, unit = "") => cap !== null && used >= cap ? [`${what}: ${unit}${+used.toFixed(2)} used of ${unit}${cap}`] : [];
-  const holders = new Set([...store.ledger.claims(events).values()].map((c) => c.run));
-  const agents = budgets.max_agents !== null && !holders.has(me) && holders.size >= budgets.max_agents ? [`max_agents: ${holders.size} runs already hold work (limit ${budgets.max_agents})`] : [];
-  return [
-    ...over("run cost", mine.cost, budgets.run.max_cost, "$"),
-    ...over("run tokens", mine.tokensIn + mine.tokensOut, budgets.run.max_tokens),
-    ...over("project cost", all.cost, budgets.project.max_cost, "$"),
-    ...over("project tokens", all.tokensIn + all.tokensOut, budgets.project.max_tokens),
-    ...agents
-  ];
-}
-function guard(store, kind, doc, status2, approvedBy) {
-  let problems = [];
-  let label = "";
-  if (kind === "plan" && status2 === "ready") {
-    problems = readinessProblems(store, doc);
-    label = "is not ready (Definition of Ready)";
-  } else if (kind === "plan" && status2 === "in-review") {
-    problems = learningsProblems(doc, new Set(store.knowledge().map((e) => e.id)));
-    label = "can't go to review";
-  } else if (kind === "plan" && status2 === "done") {
-    problems = [
-      ...doc.tasks().filter(([done]) => !done).map(([, t]) => `unchecked task: ${t}`),
-      ...evidenceProblems(store, doc, approvedBy),
-      ...reviewProblems(store, doc)
-    ];
-    label = "can't be done";
-  } else if (kind === "goal" && status2 === "done") {
-    problems = goalProblems(store, doc);
-    label = "isn't reached";
-  } else if (kind === "goal" && status2 === "active") {
-    problems = doc.missing(["Outcome", "Acceptance criteria"]).map((n2) => `empty section: ${n2}`);
-    label = "can't be active";
-  } else if (kind === "item" && status2 === "triaged") {
-    problems = triageProblems(doc);
-    label = "can't be triaged";
-  } else if (kind === "idea" && status2 === "decided") {
-    problems = decisionProblems(doc);
-    label = "can't be decided";
-  }
-  if (problems.length) fail(`${doc.id} ${label}:
-  - ${problems.join("\n  - ")}
-(--force to override)`);
-}
-function stamp(kind, doc, status2) {
-  if (kind === "plan" && status2 === "in-progress" && !doc.get("started")) doc.set("started", today());
-  if (kind === "idea" && status2 === "decided") doc.set("decided", today());
-  if (kind === "item" && ITEM_CLOSED.has(status2)) doc.set("closed", today());
-  if (status2 === "done") doc.set("completed", today());
-}
-function assignedHere(store, id) {
-  const a = store.ledger.assignments().get(id), me = store.ledger.who.role, by = store.policy.policy.role_gates["plan.assigned"];
-  if (!a && by) fail(`${id} isn't assigned yet: the ${by} opens it with \`assign ${id} --to developer\`.`);
-  if (a && a.to !== me) fail(`${id} is assigned to the ${a.to} role; this run is ${me ? `the ${me} role` : "in no role"}.`);
-}
-function usage(store, u) {
-  store.require();
-  if (u.tokensIn === void 0 && u.tokensOut === void 0 && u.cost === void 0) fail("Give --tokens-in, --tokens-out or --cost.");
-  if (u.cost !== void 0 && !(Number.isFinite(u.cost) && u.cost >= 0)) fail("--cost must be a number \u2265 0.");
-  for (const [flag, n2] of [["--tokens-in", u.tokensIn], ["--tokens-out", u.tokensOut]]) {
-    if (n2 !== void 0 && !(Number.isInteger(n2) && n2 >= 0)) fail(`${flag} must be a whole number \u2265 0.`);
-  }
-  store.ledger.record("usage", u.ref ? u.ref.toUpperCase() : null, {
-    tokens_in: u.tokensIn ?? 0,
-    tokens_out: u.tokensOut ?? 0,
-    cost: u.cost ?? 0,
-    ...u.model ? { model: u.model } : {}
-  });
-  store.say(`usage recorded for ${store.ledger.who.actor} (${store.ledger.who.run})`);
-  const over = budgetProblems(store);
-  if (over.length) store.say(`warning: over budget \u2014 new work needs a human's approval: ${over.join("; ")}`);
-}
-function log(store, docId, text2) {
-  const doc = store.find(docId);
-  doc.appendLog(text2, LOG_SECTION[kindOf(docId) ?? "plan"] ?? "Progress log");
-  doc.save();
-  store.ledger.record("log", doc.id, { text: text2 });
 }
 
 // src/hub/commands/team/autonomy.ts

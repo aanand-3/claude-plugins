@@ -186,16 +186,17 @@ it("a plan waits for its unmerged dependency", () => {
 });
 
 // ------------------------------------------------------------------ T7: autonomy
-it("the runner stops on escalation, pause, budget and a done goal", () => {
+it("the runner stops on escalation, pause, budget and no approved goal left", () => {
   lifecycle(repo);
   expect(newIdea(repo).returncode).toBe(0);
   expect(newGoal(repo).returncode).toBe(0);
-  tr(repo, "move", "G-001", "active", "--approved-by", "Amit");
   let r = tr(repo, "run", "--check");
   expect(r.returncode).toBe(1);
-  expect(r.stdout).toContain("no focus goal");
-  tr(repo, "focus", "G-001");
-  expect(tr(repo, "run", "--check").returncode).toBe(0);
+  expect(r.stdout).toContain("no approved goal");
+  tr(repo, "move", "G-001", "active", "--approved-by", "Amit");
+  r = tr(repo, "run", "--check"); // the goal queue focuses the approved goal
+  expect(r.returncode).toBe(0);
+  expect(r.stdout).toContain("FOCUS  — → G-001");
   expect(tr(repo, "run").stdout).toContain("while node .crew/bin/crew.mjs run --check");
   expect(as(repo, "director", "escalate", "G-001", "Ship to production?").returncode).toBe(0);
   r = tr(repo, "run", "--check");
@@ -212,7 +213,7 @@ it("the runner stops on escalation, pause, budget and a done goal", () => {
   repo.write(".crew/policy.yaml", LIFECYCLE);
   expect(tr(repo, "run", "--check").returncode).toBe(0);
   expect(as(repo, "director", "move", "G-001", "done", "--force").returncode).toBe(0);
-  expect(tr(repo, "run", "--check").stdout).toContain("G-001 is done");
+  expect(tr(repo, "run", "--check").stdout).toContain("all approved goals done: G-001");
 });
 
 it("notify runs the policy command once per event", () => {
