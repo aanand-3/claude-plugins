@@ -5,12 +5,12 @@ goal: G-007
 items: FEAT-037
 touches: packages/crew/src/hub/commands/work/land.ts, packages/crew/src/hub/commands/work/land.reg.ts, packages/crew/src/hub/commands/index.ts, packages/crew/src/hub/commands/work/release.ts, packages/crew/src/hub/commands/work/suite.ts, packages/crew/src/hub/commands/work/workflow.ts, packages/crew/src/hub/core/work/model.ts, packages/crew/src/hub/core/work/footprint.ts, packages/crew/src/hub/core/team/presets.ts, packages/crew/src/hub/core/team/policy.ts, packages/crew/src/hub/commands/team/liveness.ts, packages/crew/src/hub/commands/team/questions.ts, packages/crew/src/hub/commands/team/roles.ts, packages/crew/src/hub/commands/team/dispatch.ts, packages/crew/src/hub/commands/views/checks.ts, packages/crew/src/hub/commands/views/reports.ts, packages/crew/ui/src/views/Board.tsx, packages/crew/ui/src/views/Overview.tsx, packages/crew/ui/src/views/DocPage.tsx, packages/crew/ui/src/components/Actions.tsx, packages/crew/ui/src/components/primitives.tsx, packages/crew/test/hub/e2e/land.test.ts, packages/crew/test/hub/e2e/suite.test.ts, packages/crew/test/hub/e2e/helpers.ts, packages/crew/test/hub/e2e/team-helpers.ts, packages/crew/test/hub/e2e/policy.test.ts, packages/crew/test/hub/e2e/team.test.ts, packages/crew/test/hub/e2e/team-2.test.ts, packages/crew/test/hub/e2e/execution.test.ts, packages/crew/test/hub/e2e/review-fixes.test.ts, packages/crew/test/hub/e2e/review-fixes-2.test.ts, packages/crew/test/hub/e2e/wip-commits.test.ts, packages/crew/test/hub/e2e/context.test.ts, packages/crew/test/hub/e2e/basics.test.ts, packages/crew/test/hub/e2e/ledger.test.ts, packages/crew/test/hub/e2e/worktrees.test.ts, packages/crew/test/hub/e2e/items.test.ts, packages/crew/test/hub/e2e/dispatch.test.ts, packages/crew/test/hub-worktrees.test.ts, packages/crew/test/hub/squash-merge.test.ts, plugins/crew/skills/hub/agents/release.md, plugins/crew/skills/hub/agents/pm.md, plugins/crew/skills/hub/agents/developer.md, plugins/crew/skills/hub/agents/qa.md, plugins/crew/skills/hub/references/model.md, plugins/crew/skills/hub/SKILL.md, packages/crew/scripts/sample-project.mjs, docs/vision.md
 depends_on: P-028, P-024, P-030, P-039, P-031, P-043
-status: in-review
+status: done
 branch: plan/P-032-merge-queue-land
 pr:
 created: 2026-10-25
 started: 2026-10-26
-completed:
+completed: 2026-10-26
 assignee: developer
 ---
 
@@ -159,6 +159,7 @@ Latest log:
 - 2026-10-26: Architect: Q-4f7208 — suite.ts (runSuite `capture` option) and suite.test.ts added to touches
 - 2026-10-26: Architect: Q-637b2b — scripts/sample-project.mjs (ship(): accepted, squash-merge, done) added to touches
 - 2026-10-26: status in-progress → in-review
+- 2026-10-26: status in-review → done
 
 ## Outcome
 Shipped: plan status `accepted` (in-review → accepted → done; in-review → done removed), gates moved (`plan.accepted` holds the evidence, review and task checks; `plan.done` checks only that the plan is landed), `accepted → in-progress` through the `plan.landed` role gate (keeps the claim, counts toward max_bounces), and `land [P-###]` (land.ts, CLI only): restore generated files, merge the base, `hub.build` + `refresh-bin`, `hub.full_suite` via `runSuite`, squash under the hub-commit lock with merge-tree/commit-tree/ff-only (3 rounds), remove worktree and branch, update dependants, log. `merge-order` queues accepted plans and lists legacy done ones with the manual steps; `next`, `dispatch`, `check`, status report and the UI board know `accepted`; agent docs, model.md, SKILL.md and vision.md updated.
