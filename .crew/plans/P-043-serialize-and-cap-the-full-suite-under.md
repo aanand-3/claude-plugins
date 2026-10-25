@@ -5,12 +5,12 @@ goal: G-007
 items: BUG-028
 touches: packages/crew/src/hub/commands/work/suite.ts, packages/crew/src/hub/commands/work/suite.reg.ts, packages/crew/src/hub/commands/index.ts, packages/crew/vitest.config.ts, packages/crew/test/hub/e2e/suite.test.ts, packages/crew/test/hub/registry.test.ts, packages/crew/test/mcp.test.ts, plugins/crew/skills/hub/agents/release.md, plugins/crew/skills/hub/SKILL.md, plugins/crew/skills/hub/references/model.md
 depends_on:
-status: in-review
+status: done
 branch: plan/P-043-serialize-and-cap-the-full-suite-under
 pr:
 created: 2026-10-25
 started: 2026-10-25
-completed:
+completed: 2026-10-25
 assignee: developer
 ---
 
@@ -103,6 +103,7 @@ Latest log:
 - 2026-10-25: review: changes requested — packages/crew/test/hub/registry.test.ts goes against the binding decision K-2026-10-25-approved-with-one-change-do-not-edit: the new ADDED list (lines 19-21, 56-57, 87) makes every later command-adding plan edit this file again, and it collides with P-031 (in review), which rewrites the same assertions. Replace it with the decision's form: inventory() restricted to BEFORE's keys compared with BEFORE (cli and tools), and BEFORE's command and tool names a subset of REGISTRY.from's and of COMMANDS (expect.arrayContaining), with no list of added names; registry-before.json stays untouched. Minor, same pass: in plugins/crew/skills/hub/agents/release.md step 2, rewrap the 'Never run hub.full_suite directly. This is the only place...' line to the file's ~120-column width. Everything else (suite.ts, suite.reg.ts, index.ts, suite.test.ts, mcp.test.ts, vitest.config.ts, SKILL.md, model.md) matches the spec: targeted tests (suite, registry, mcp, test/plugin) pass, typecheck clean, suite.ts 185 lines.
 - 2026-10-25: status in-review → in-progress — changes requested: packages/crew/test/hub/registry.test.ts goes against the binding decision K-2026-10-25-approved-with-one-change-do-not-edit: the new ADDED list (lines 19-21, 56-57, 87) makes every later command-adding plan edit this file again, and it collides with P-031 (in review), which rewrites the same assertions. Replace it with the decision's form: inventory() restricted to BEFORE's keys compared with BEFORE (cli and tools), and BEFORE's command and tool names a subset of REGISTRY.from's and of COMMANDS (expect.arrayContaining), with no list of added names; registry-before.json stays untouched. Minor, same pass: in plugins/crew/skills/hub/agents/release.md step 2, rewrap the 'Never run hub.full_suite directly. This is the only place...' line to the file's ~120-column width. Everything else (suite.ts, suite.reg.ts, index.ts, suite.test.ts, mcp.test.ts, vitest.config.ts, SKILL.md, model.md) matches the spec: targeted tests (suite, registry, mcp, test/plugin) pass, typecheck clean, suite.ts 185 lines.
 - 2026-10-25: status in-progress → in-review
+- 2026-10-25: status in-review → done
 
 ## Outcome
 New `suite [--ref P-###]` command (`commands/work/suite.ts`, exporting `runSuite` for P-032) runs `hub.full_suite` under one of `hub.suite_slots` slot files in the git common dir's `crew/suite/` (shared by every worktree), waits with one stderr line naming the holders, takes over a dead holder's slot (same host, ESRCH), exits with the suite's code and appends a record to `crew/suites.jsonl`; `suites [--limit] [--json]` and the MCP tool `suites` read them newest first. vitest runs at `maxWorkers: "50%"`; release.md, SKILL.md and model.md send Release through `crew.mjs suite`. registry.test.ts compares only registry-before.json's commands and tools (inventory picked to BEFORE's keys; BEFORE's names a subset of REGISTRY.from and COMMANDS), per K-2026-10-25-approved-with-one-change-do-not-edit and in the same form as P-031, so later plans that add commands don't edit it.
