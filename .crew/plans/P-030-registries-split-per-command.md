@@ -3,7 +3,7 @@ id: P-030
 title: Registries split per command
 goal: G-007
 items: FEAT-039
-touches: packages/crew/src/hub/cli.ts, packages/crew/src/hub/mcp.ts, packages/crew/src/hub/registry.ts, packages/crew/src/hub/reference.ts, packages/crew/src/hub/commands/index.ts, packages/crew/src/hub/commands/*/*.reg.ts, packages/crew/build.mjs, .gitattributes, plugins/crew/skills/hub/SKILL.md, packages/crew/test/hub/registry.test.ts, packages/crew/test/hub/registry-before.json, packages/crew/test/dist.test.ts
+touches: packages/crew/src/hub/cli.ts, packages/crew/src/hub/mcp.ts, packages/crew/src/hub/registry.ts, packages/crew/src/hub/reference.ts, packages/crew/src/hub/commands/index.ts, packages/crew/src/hub/commands/views/advisor.reg.ts, packages/crew/src/hub/commands/views/checks.reg.ts, packages/crew/src/hub/commands/views/design.reg.ts, packages/crew/src/hub/commands/views/export.reg.ts, packages/crew/src/hub/commands/views/graph.reg.ts, packages/crew/src/hub/commands/views/reports.reg.ts, packages/crew/src/hub/commands/views/ui.reg.ts, packages/crew/src/hub/commands/work/backlog.reg.ts, packages/crew/src/hub/commands/work/migrate.reg.ts, packages/crew/src/hub/commands/work/planning.reg.ts, packages/crew/src/hub/commands/work/review.reg.ts, packages/crew/src/hub/commands/work/release.reg.ts, packages/crew/src/hub/commands/work/execution.reg.ts, packages/crew/src/hub/commands/work/workflow.reg.ts, packages/crew/src/hub/commands/memory/context.reg.ts, packages/crew/src/hub/commands/memory/knowledge.reg.ts, packages/crew/src/hub/commands/memory/ledger.reg.ts, packages/crew/src/hub/commands/team/guard.reg.ts, packages/crew/src/hub/commands/team/agents.reg.ts, packages/crew/src/hub/commands/team/team.reg.ts, packages/crew/src/hub/commands/team/liveness.reg.ts, packages/crew/src/hub/commands/team/autonomy.reg.ts, packages/crew/src/hub/commands/team/questions.reg.ts, packages/crew/src/hub/commands/team/policy.reg.ts, packages/crew/src/hub/commands/team/activity.reg.ts, packages/crew/build.mjs, .gitattributes, plugins/crew/skills/hub/SKILL.md, packages/crew/test/hub/registry.test.ts, packages/crew/test/hub/registry-before.json, packages/crew/test/dist.test.ts
 depends_on:
 status: ready
 branch: plan/P-030-registries-split-per-command
@@ -25,7 +25,7 @@ Two design choices, recorded as decisions with this plan:
 ## Scope
 **In:**
 - `src/hub/registry.ts`: the types (`CliSpec`, the CLI option spec as today's `Spec`; `ToolSpec`, as today's `Tool`; `Registration = { usage?: string[]; cli?: Record<string, CliSpec>; tools?: Record<string, ToolSpec> }`) and the helpers both sides use now (`str`, `DRAFTED` from cli.ts; `text`, `obj`, `s`, `up`, `num`, `n`, `ITEM_FIELDS` from mcp.ts).
-- One `commands/<area>/<module>.reg.ts` per command module that has a CLI command or MCP tool, exporting its `Registration`: the CLI specs, the `USAGE` lines and the MCP tools moved verbatim from cli.ts and mcp.ts. `ui` (server.ts) registers from `commands/views/ui.reg.ts`.
+- One `commands/<area>/<module>.reg.ts` per command module that has a CLI command or MCP tool (the 25 files listed in touches; `activity.reg.ts` holds P-027's commands; `gather` registers in migrate.reg.ts, the `runs` functions in execution.reg.ts), exporting its `Registration`: the CLI specs, the `USAGE` lines and the MCP tools moved verbatim from cli.ts and mcp.ts. `ui` (server.ts) registers from `commands/views/ui.reg.ts`.
 - `src/hub/commands/index.ts`: the list of registrations in help order (one import per file). It is in P-029's `hub.shared`.
 - `cli.ts` keeps `parse`, `identity`, `main`, the USAGE header and the `--as`/`--run-id` line. It builds `COMMANDS` and the help text from the index, failing at load on a duplicate command name. `mcp.ts` keeps the JSON-RPC server, `callTool` and `handle`, and builds `TOOLS` from the index. Both keep their exports (`USAGE`, `parse`, `main`, `TOOLS`, `callTool`, `handle`, `serveStdio`).
 - `src/hub/reference.ts`: `commandReference()` renders the reference markdown from the index: per registration its usage lines, each CLI command, and the MCP tool name it maps to.
@@ -85,5 +85,6 @@ Two design choices, recorded as decisions with this plan:
 ## Progress log
 
 - 2026-10-25: status draft → ready
+- 2026-10-25: Architect: touches list the 25 registration files exactly (a commands/*/*.reg.ts glob overlapped every command module by stem).
 
 ## Outcome
