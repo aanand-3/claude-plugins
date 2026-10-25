@@ -215,6 +215,7 @@ Latest log:
 - 2026-10-25: status done → in-progress — full-suite failure: test/hub-worktrees.test.ts 'injects identity only where the hub runs' find -exec case is now denied by the new guard (AC5), test is stale
 - 2026-10-25: status in-progress → in-review
 - 2026-10-25: status in-review → done
+- 2026-10-25: merged to main as 7594b48 (squash); full suite green on the plan commit (suite exit 0); no rollout needed, vendored .crew/bin refreshed in the plan commit
 
 ## Outcome
 Learnings: K-2026-10-25-a-plan-task-that-says-to-git-stash
