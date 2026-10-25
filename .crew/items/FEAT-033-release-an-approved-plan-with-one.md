@@ -2,8 +2,8 @@
 id: FEAT-033
 type: feat
 title: Release an approved plan with one scripted command
-status: new
-priority:
+status: triaged
+priority: P2
 goal: G-001
 plan:
 created: 2026-10-25
@@ -21,3 +21,4 @@ Releasing an approved plan is mechanical: discard the generated files, update to
 - [ ]
 
 ## Notes
+- 2026-10-26: status new → triaged — priority P2
