@@ -5,7 +5,7 @@ title: Team skill checks crew-director is loaded before handing over
 status: triaged
 priority: P1
 goal: G-007
-plan:
+plan: P-034
 created: 2026-10-23
 closed:
 ---
