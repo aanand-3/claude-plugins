@@ -5,7 +5,7 @@ goal: G-007
 items: FEAT-040
 touches: packages/crew/src/hub/commands/team/dispatch.ts, packages/crew/src/hub/commands/team/dispatch.reg.ts, packages/crew/src/hub/commands/index.ts, packages/crew/src/hub/cli.ts, packages/crew/src/hub/mcp.ts, packages/crew/src/hub/core/team/presets.ts, packages/crew/test/hub/e2e/dispatch.test.ts, packages/crew/test/hub/e2e/team.test.ts, packages/crew/test/hub/e2e/team-2.test.ts, packages/crew/test/hub/e2e/goal-queue.test.ts, packages/crew/test/hub/registry.test.ts, packages/crew/test/mcp.test.ts, plugins/crew/skills/hub/agents/director.md, plugins/crew/skills/hub/agents/pm.md, plugins/crew/skills/team/SKILL.md, plugins/crew/skills/hub/SKILL.md, plugins/crew/skills/hub/references/model.md
 depends_on:
-status: done
+status: in-progress
 branch: plan/P-031-hub-dispatch
 pr:
 created: 2026-10-25
@@ -131,6 +131,7 @@ Latest log:
 - 2026-10-25: status in-review → done
 - 2026-10-25: Release: NOT merged. Full suite failed on 7515f1b: test/hub/e2e/goal-queue.test.ts 3 tests (AC2, AC3, AC6) - director 'move G-001 done --force' refused: 'G-001 -> done is for the pm role; this run is the director role'. Passes on main.
 - 2026-10-25: architect: diagnosed Release's goal-queue failure on 7515f1b — goal-queue.test.ts close() closes goals as the director, refused by P-031's goal.done: pm gate. Fix (verified with a temporary copy: 5/5 pass): close() runs as pm. Spec updated: goal-queue.test.ts added to touches, AC12, T6, test-plan line. Re-review needed after the change.
+- 2026-10-25: status done → in-progress — full-suite failure: test/hub/e2e/goal-queue.test.ts close() runs director move done, refused by the new pm-only goal.done gate
 
 ## Outcome
 Shipped: the hub command `dispatch [--json]` and the MCP tool `dispatch` (same JSON) in `commands/team/dispatch.ts` (rows 1–11, held/paused handling, the `max_agents` cap with `more`, the spec frontier), registered via `dispatch.reg.ts`; `goal.done: pm` in the lifecycle preset; director.md, pm.md, team/SKILL.md "Each run", model.md and hub/SKILL.md's row updated to the dispatch loop; registry.test.ts compares only the pre-split commands/tools with the frozen `registry-before.json`; `dispatch` added to mcp.test.ts's tool list; new e2e `dispatch.test.ts`. T5 checks pass: typecheck, `wc -l` 161/18, basics/mcp/registry green, `registry-before.json` unchanged.
