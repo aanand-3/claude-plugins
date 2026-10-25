@@ -5,7 +5,7 @@ goal: G-007
 items: BUG-017, CHORE-020
 touches: packages/crew/src/hub/commands/team/guard.ts, packages/crew/src/hub/commands/team/hubcall.ts, packages/crew/test/hub/e2e/guard.test.ts, packages/crew/test/hub/hubcall.test.ts
 depends_on: P-030
-status: in-progress
+status: in-review
 branch: plan/P-042-guard-rewrites-only-the-executed-hub
 pr:
 created: 2026-10-25
@@ -165,7 +165,7 @@ revert of the plan's commit; agents keep the old workaround (avoid the hub name 
 
 _Generated 2026-10-25 by `crew.mjs handoff` from the ledger._
 
-- P-042: Guard rewrites only the executed hub program [in-progress] tasks 4/4 — claimed by Arpit Anand (developer:ad6f27a72f3ac3841)
+- P-042: Guard rewrites only the executed hub program [in-review] tasks 4/4 — claimed by Arpit Anand (developer:ad6f27a72f3ac3841)
 - last checkpoint 2026-10-25 12:07 at T4 (cad3066) by Arpit Anand; since then 0 commit(s), 1 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —, AC7 —, AC8 —, AC9 —, AC10 —
 
@@ -179,5 +179,7 @@ Latest log:
 - 2026-10-25: status draft → ready
 - 2026-10-25: assigned to the developer role
 - 2026-10-25: status ready → in-progress — branch plan/P-042-guard-rewrites-only-the-executed-hub
+- 2026-10-25: status in-progress → in-review
 
 ## Outcome
+Learnings: K-2026-10-25-a-plan-task-that-says-to-git-stash
