@@ -5,7 +5,7 @@ goal: G-007
 items: FEAT-038, FEAT-028, SPIKE-004
 touches: packages/crew/src/hub/core/work/footprint.ts, packages/crew/src/hub/commands/team/team.ts, packages/crew/src/hub/commands/views/checks.ts, packages/crew/test/hub/e2e/shared-touches.test.ts, .crew/config.yaml, plugins/crew/skills/hub/agents/architect.md, plugins/crew/skills/hub/references/model.md
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-029-overlap-is-not-a-dependency
 pr:
 created: 2026-10-25
@@ -102,7 +102,7 @@ SPIKE-004's answer is recorded as K-2026-10-25-overlaps-on-hub-shared-paths-incl
 
 _Generated 2026-10-25 by `crew.mjs handoff` from the ledger._
 
-- P-029: Overlap is not a dependency [in-progress] tasks 6/6 — claimed by Arpit Anand (developer:a241674714d74a684)
+- P-029: Overlap is not a dependency [in-review] tasks 6/6 — claimed by Arpit Anand (developer:a241674714d74a684)
 - last checkpoint 2026-10-25 07:16 at T6 (f7c315a) by Arpit Anand; since then 0 commit(s), 7 uncommitted file(s): .crew/config.yaml, packages/crew/src/hub/commands/team/team.ts, packages/crew/src/hub/commands/views/checks.ts, packages/crew/src/hub/core/work/footprint.ts, plugins/crew/skills/hub/agents/architect.md, plugins/crew/skills/hub/references/model.md, packages/crew/test/hub/e2e/shared-touches.test.ts
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —, AC7 —, AC8 —, AC9 —
 
@@ -117,6 +117,7 @@ Latest log:
 - 2026-10-25: Architect: `plugins/crew/skills/team/SKILL.md` added to this repo's hub.shared list (P-031, P-033, P-034 and P-035 each edit a different section of it).
 - 2026-10-25: assigned to the developer role
 - 2026-10-25: status ready → in-progress — branch plan/P-029-overlap-is-not-a-dependency
+- 2026-10-25: status in-progress → in-review
 
 ## Outcome
 `hub.shared` (a YAML list under `hub:` in .crew/config.yaml) makes overlaps on shared touches non-blocking in `staff` and in `check`'s overlap hint; the hint now says to narrow touches or share the file, not to add depends_on. New `check` touches rule: ERROR for a `hub.shared` that isn't a list; hints for broad wildcard touches (> 10 tracked files or covering a shared file), touches that list generated paths, and depends_on that only stands for an overlap. This repo's config lists the 8 shared paths; model.md and architect.md document it.
