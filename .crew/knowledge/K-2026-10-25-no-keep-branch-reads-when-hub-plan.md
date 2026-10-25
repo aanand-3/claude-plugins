@@ -1,0 +1,14 @@
+---
+id: K-2026-10-25-no-keep-branch-reads-when-hub-plan
+type: decision
+title: No: keep branch reads when hub.plan_worktrees is false (the default and other projects' mode, where a started plan's hub state is committed on its branch). Gate the overlay in store.ts: overlay only if includeBranches && !settings().plan_worktrees; branchPlans stays. Revert the call sites to plans(true), and restore Snapshot.allPlans, the source handling in execution.ts/reports.ts and move's source === 'worktree' condition (T2 and T4 reopened). Keep T3's start changes (took-the-plan-from removal in the shared path, sharedGlobs warning) and the origin-only lostPlans hint. Don't edit context.test.ts, view.test.ts or sample-project.mjs; touches unchanged. AC2 rewritten (mode test: worktree mode shows main's copy, default mode still the branch copy, -t mode), AC8 added (default mode unchanged). Spec updated.
+scope: 
+source: P-039
+supersedes:
+tier: project
+created: 2026-10-25
+---
+
+# No: keep branch reads when hub.plan_worktrees is false (the default and other projects' mode, where a started plan's hub state is committed on its branch). Gate the overlay in store.ts: overlay only if includeBranches && !settings().plan_worktrees; branchPlans stays. Revert the call sites to plans(true), and restore Snapshot.allPlans, the source handling in execution.ts/reports.ts and move's source === 'worktree' condition (T2 and T4 reopened). Keep T3's start changes (took-the-plan-from removal in the shared path, sharedGlobs warning) and the origin-only lostPlans hint. Don't edit context.test.ts, view.test.ts or sample-project.mjs; touches unchanged. AC2 rewritten (mode test: worktree mode shows main's copy, default mode still the branch copy, -t mode), AC8 added (default mode unchanged). Spec updated.
+
+Answer to Q-16112d (architect): T5: two covering suites outside touches fail, both because they rely on branch copies in the DEFAULT mode (hub.plan_worktrees defaults to false, model.ts DEFAULT_SETTINGS). Without plan worktrees, start switches the checkout to the plan branch and the status/ticks land there; branchPlans was what let main see them. (1) test/hub/e2e/context.test.ts 'overlapping plans warn and drift is flagged': P-001 started on its branch, back on main its main copy is still ready, so start P-002's overlap warning (which skips ready plans) no longer fires. (2) test/view.test.ts graph cases ('reads live plan branches', tasks done 2/4, 'matches the CLI'): scripts/sample-project.mjs puts P-006's progress only on plan/P-006-daily-check-in. Is dropping branch reads intended for non-worktree projects too? If yes: may I change these two tests (and scripts/sample-project.mjs) to put the state in main, and add them to touches? If no: should plans() keep branch reads when plan_worktrees is false?
