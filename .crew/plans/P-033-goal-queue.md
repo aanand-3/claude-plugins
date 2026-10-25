@@ -52,7 +52,7 @@ Needs no other plan's code. `crew-director.md` is P-031's (the design's open poi
 - [ ] AC3 · With G-001 done (focus) and G-002 only proposed, `run --check` exits 1 with `STOP  all approved goals done: G-001; waiting for approval: G-002`, and the focus is unchanged.
 - [ ] AC4 · With no goal done and none active (G-001 proposed, no focus), `run --check` exits 1 with `no approved goal: the executive approves one`.
 - [ ] AC5 · A dropped focus goal advances like a done one. A `proposed` focus goal is not replaced, and `run --check` keeps today's behaviour for it.
-- [ ] AC6 · `run --check --json` has `queue` and `moved` (`{"from":"G-001","to":"G-002"}` in AC2's setup, null when nothing moved). The escalation, held, pause and budget cases in `run-check.test.ts` and `team-2.test.ts` pass, with only the done-focus expectation changed.
+- [ ] AC6 · `run --check --json` has `queue` and `moved` (`{"from":"G-001","to":"G-002"}` in AC2's setup, null when nothing moved). The escalation, held, pause and budget cases in `run-check.test.ts` and `team-2.test.ts` pass, with only the done-focus expectation and team-2's opening no-focus step changed (an approved goal with no focus is now focused by the queue: that step expects `no approved goal` before approval and `FOCUS  — → G-001` after).
 - [ ] AC7 · `model.md` has the "Goal queue" paragraph; `team/SKILL.md` no longer lists "a done or missing focus goal" as a stop.
 - [ ] AC8 · `npm run typecheck` passes; autonomy.ts and queries.ts stay under 300 lines.
 
@@ -104,6 +104,7 @@ Latest log:
 - 2026-10-25: assigned to the developer role
 - 2026-10-25: status ready → in-progress — branch plan/P-033-goal-queue
 - 2026-10-25: status in-progress → in-review
+- 2026-10-25: Review: AC6 amended — team-2's runner test also changes its opening step, because an approved goal with no focus is now auto-focused by the queue (Scope: 'or there is none'); the old 'no focus goal' stop is unreachable there, so the step now checks 'no approved goal' before approval and 'FOCUS — → G-001' after. Intended behaviour, not a regression.
 
 ## Outcome
 `goalQueue` (queries.ts) orders the active goals by priority, then ID, focus first. `runState` calls `advanceFocus` first:
