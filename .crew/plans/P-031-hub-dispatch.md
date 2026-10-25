@@ -3,7 +3,7 @@ id: P-031
 title: Hub dispatch
 goal: G-007
 items: FEAT-040
-touches: packages/crew/src/hub/commands/team/dispatch.ts, packages/crew/src/hub/commands/team/dispatch.reg.ts, packages/crew/src/hub/commands/index.ts, packages/crew/src/hub/cli.ts, packages/crew/src/hub/mcp.ts, packages/crew/src/hub/core/team/presets.ts, packages/crew/test/hub/e2e/dispatch.test.ts, packages/crew/test/hub/e2e/team.test.ts, packages/crew/test/hub/e2e/team-2.test.ts, packages/crew/test/hub/registry.test.ts, packages/crew/test/mcp.test.ts, plugins/crew/skills/hub/agents/director.md, plugins/crew/skills/hub/agents/pm.md, plugins/crew/skills/team/SKILL.md, plugins/crew/skills/hub/SKILL.md, plugins/crew/skills/hub/references/model.md
+touches: packages/crew/src/hub/commands/team/dispatch.ts, packages/crew/src/hub/commands/team/dispatch.reg.ts, packages/crew/src/hub/commands/index.ts, packages/crew/src/hub/cli.ts, packages/crew/src/hub/mcp.ts, packages/crew/src/hub/core/team/presets.ts, packages/crew/test/hub/e2e/dispatch.test.ts, packages/crew/test/hub/e2e/team.test.ts, packages/crew/test/hub/e2e/team-2.test.ts, packages/crew/test/hub/e2e/goal-queue.test.ts, packages/crew/test/hub/registry.test.ts, packages/crew/test/mcp.test.ts, plugins/crew/skills/hub/agents/director.md, plugins/crew/skills/hub/agents/pm.md, plugins/crew/skills/team/SKILL.md, plugins/crew/skills/hub/SKILL.md, plugins/crew/skills/hub/references/model.md
 depends_on:
 status: done
 branch: plan/P-031-hub-dispatch
@@ -69,6 +69,7 @@ Needs no other plan's code. It reads P-029's shared-aware staffing through `staf
 - [ ] AC9 · The MCP tool `dispatch` returns the same JSON as `dispatch --json`; `dispatch` appears in `crew.mjs help`.
 - [ ] AC10 · `director.md` no longer has the hand-off loop (no "hand each to the role" or roster step) and says the Director acts on dispatch entries; `pm.md` has goal closure; `team/SKILL.md`'s "Each run" runs `run --check` → `dispatch --json` → one agent per entry; `model.md` says `goal.done → pm`.
 - [ ] AC11 · `npm run typecheck` passes; `dispatch.ts` and every touched module stay under 300 lines; the team, team-2, basics and mcp suites pass with only the goal-closer role changed in their assertions and `dispatch` added to mcp.test.ts's tool list; `npx vitest run test/hub/registry.test.ts` passes with `registry-before.json` unchanged (`git diff --quiet main -- test/hub/registry-before.json`).
+- [ ] AC12 · Every test that closes a goal under `preset: lifecycle` does so as the pm: `goal-queue.test.ts`'s `close()` helper runs `as(repo, "pm", "move", g, to, "--force")` (for `done` and `dropped`; `goal.dropped` is ungated), and `npx vitest run test/hub/e2e/goal-queue.test.ts` passes all 5 tests (AC2–AC6 of P-033) with no other line of that file changed. No test outside `dispatch.test.ts` / `team.test.ts` (which assert the refusal on purpose) moves a goal to `done` as the director (`grep -rnE '"director", "move", [^)]*"done"' test/hub` lists only those two), and `grep -c '"director"' test/hub/e2e/goal-queue.test.ts` prints 0.
 
 ## Approach
 - **`commands/team/dispatch.ts` (new):** `dispatch(store): Dispatch` (pure over the stores and ledger) and `dispatchCmd(store, json)`. Reuse, never copy: `staffing` (team.ts), `staleClaims`/`paused` (liveness.ts), `openQuestions`/`escalationHolds` (questions.ts), `evidence`/`implementers` (execution.ts), `reviewProblems` (review.ts), `mergeOrder` (release.ts), `ranked`/`itemStatus`/`goalPlans`/`goalItems`/`onFocus` (core/work/queries.ts), `OFF_FOCUS_OK`/`CLOSED` (model.ts). Read plans with `store.plans()` (main checkout, P-026). Each row is a small function `(view) => Entry[]`; `dispatch` concatenates them in table order, drops held refs and repeated refs (the first entry wins), then cuts to `max_agents`. If dispatch.ts nears 300 lines, the rows move to `dispatch-rows.ts`.
@@ -84,6 +85,7 @@ Needs no other plan's code. It reads P-029's shared-aware staffing through `staf
 - [x] T3: `goal.done: pm` in presets.ts; team/team-2 assertions → verify: `npx vitest run test/hub/e2e/team.test.ts test/hub/e2e/team-2.test.ts test/hub/e2e/dispatch.test.ts -t goal` (AC8)
 - [x] T4: director.md, pm.md, team/SKILL.md "Each run", model.md (and hub/SKILL.md's row if the table still exists) → verify: `grep -c "hand each to the role" plugins/crew/skills/hub/agents/director.md` prints 0; `grep -n "dispatch --json" plugins/crew/skills/team/SKILL.md plugins/crew/skills/hub/agents/director.md`; `grep -n "goal.done.*pm" plugins/crew/skills/hub/references/model.md`; `npx vitest run test/plugin` (AC10)
 - [x] T5: types, sizes, registry tests (see Approach), unchanged suites → verify: `npm run typecheck`; `wc -l src/hub/commands/team/dispatch*.ts`; `npx vitest run test/hub/e2e/basics.test.ts test/mcp.test.ts test/hub/registry.test.ts`; `git diff --quiet main -- test/hub/registry-before.json` (AC11)
+- [ ] T6: `goal-queue.test.ts` line 20, `close()`: `as(repo, "director", …)` → `as(repo, "pm", …)` (P-033's goal-queue test closes goals as the director, which the new `goal.done: pm` gate refuses; Release's full suite caught it on 7515f1b) → verify: `npm run build && npx vitest run test/hub/e2e/goal-queue.test.ts` (5 passed); T6's grep in AC12 (AC12)
 
 ## Test plan
 **Targeted checks** (from `packages/crew/`; the e2e suites drive the built `dist/crew.mjs`, so run `npm run build` first, then discard the generated output — `git checkout -- ../../plugins/crew/skills` and `git clean` of new dist files — since Release builds it):
@@ -92,6 +94,7 @@ Needs no other plan's code. It reads P-029's shared-aware staffing through `staf
 - AC9 → `npx vitest run test/hub/e2e/dispatch.test.ts -t mcp`; the `help | grep dispatch` check
 - AC10 → T4's greps; `npx vitest run test/plugin`
 - AC11 → `npm run typecheck`; T5's `wc -l`; `npx vitest run test/hub/e2e/basics.test.ts test/mcp.test.ts test/hub/registry.test.ts`; T5's `git diff --quiet`
+- AC12 → `npx vitest run test/hub/e2e/goal-queue.test.ts`; `grep -rnE '"director", "move", [^)]*"done"' test/hub` (only dispatch.test.ts and team.test.ts, both asserting the refusal)
 
 ## Rollout & rollback
 - Ships in the plugin (bundle built by Release, agent sources, team skill).
@@ -127,6 +130,7 @@ Latest log:
 - 2026-10-25: developer: ticked T5 and completed the Outcome (what shipped, AC5 deviation) as the architect review asked; no code change
 - 2026-10-25: status in-review → done
 - 2026-10-25: Release: NOT merged. Full suite failed on 7515f1b: test/hub/e2e/goal-queue.test.ts 3 tests (AC2, AC3, AC6) - director 'move G-001 done --force' refused: 'G-001 -> done is for the pm role; this run is the director role'. Passes on main.
+- 2026-10-25: architect: diagnosed Release's goal-queue failure on 7515f1b — goal-queue.test.ts close() closes goals as the director, refused by P-031's goal.done: pm gate. Fix (verified with a temporary copy: 5/5 pass): close() runs as pm. Spec updated: goal-queue.test.ts added to touches, AC12, T6, test-plan line. Re-review needed after the change.
 
 ## Outcome
 Shipped: the hub command `dispatch [--json]` and the MCP tool `dispatch` (same JSON) in `commands/team/dispatch.ts` (rows 1–11, held/paused handling, the `max_agents` cap with `more`, the spec frontier), registered via `dispatch.reg.ts`; `goal.done: pm` in the lifecycle preset; director.md, pm.md, team/SKILL.md "Each run", model.md and hub/SKILL.md's row updated to the dispatch loop; registry.test.ts compares only the pre-split commands/tools with the frozen `registry-before.json`; `dispatch` added to mcp.test.ts's tool list; new e2e `dispatch.test.ts`. T5 checks pass: typecheck, `wc -l` 161/18, basics/mcp/registry green, `registry-before.json` unchanged.
