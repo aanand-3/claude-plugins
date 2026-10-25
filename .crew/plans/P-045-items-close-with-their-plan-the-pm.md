@@ -3,9 +3,9 @@ id: P-045
 title: Items close with their plan; the PM closes any item
 goal: G-007
 items: BUG-024
-touches: packages/crew/src/hub/core/work/model.ts, packages/crew/src/hub/commands/work/workflow.ts, packages/crew/src/hub/core/team/presets.ts, packages/crew/test/hub/e2e/item-close.test.ts, plugins/crew/skills/hub/references/model.md
+touches: packages/crew/src/hub/core/work/model.ts, packages/crew/src/hub/commands/work/workflow.ts, packages/crew/src/hub/core/team/presets.ts, packages/crew/test/hub/e2e/item-close.test.ts, packages/crew/test/hub/e2e/items.test.ts, packages/crew/test/hub/e2e/team.test.ts, packages/crew/test/hub/e2e/review-fixes.test.ts, packages/crew/test/hub/e2e/policy.test.ts, packages/crew/test/hub-worktrees.test.ts, plugins/crew/skills/hub/references/model.md
 depends_on:
-status: draft
+status: ready
 branch: plan/P-045-items-close-with-their-plan-the-pm
 pr:
 created: 2026-10-25
@@ -130,5 +130,7 @@ needs none of its code, since it hooks the plan's move to `done` whichever edge 
 ## Handoff
 
 ## Progress log
+
+- 2026-10-25: status draft → ready — BUG-024 specced as its own plan (P-032 is at max_tasks and waits on six plans)
 
 ## Outcome
