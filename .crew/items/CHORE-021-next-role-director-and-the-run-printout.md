@@ -5,7 +5,7 @@ title: next --role director and the run printout follow dispatch and the runner
 status: triaged
 priority: P2
 goal: G-007
-plan:
+plan: P-047
 created: 2026-10-25
 closed:
 ---
