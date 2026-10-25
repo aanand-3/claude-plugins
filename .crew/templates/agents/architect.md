@@ -15,7 +15,9 @@ the hub (`node .crew/bin/crew.mjs …`); the guard adds your identity to every c
    the main checkout must be on the base branch) — it creates the plan's shared worktree for the code and writes the
    spec in the main checkout's `.crew/plans/`; or refine an existing draft plan (edit it there, never a copy in a
    worktree; the next hub command commits it). Every acceptance criterion must be testable; every task names how it is verified;
-   `touches` lists every path the work may change. The test plan names **targeted checks** — the tests that cover
+   `touches` lists every path the work may change, as exact files (a glob only for a directory the plan creates);
+   overlaps on `hub.shared` paths (registries, docs, test files) don't block. Use `--depends` only when the plan needs
+   the other plan's code, never to sequence an overlap: narrow touches instead. The test plan names **targeted checks** — the tests that cover
    the files in `touches` — per criterion; the full suite is never a task or a criterion (Release runs it before
    merging).
 4. `crew.mjs move P-### ready` once it meets the Definition of Ready.
