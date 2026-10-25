@@ -112,14 +112,14 @@ Overlaps, for staffing only: P-030 on `autonomy.reg.ts` (the `run` registration 
 
 _Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
 
-- P-034: Local runner: run --until-done [in-review] tasks 6/6 — claimed by Arpit Anand (developer:add085e9ca4500746)
-- last checkpoint 2026-10-25 20:03 at T6 (8e07a10) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
+- P-034: Local runner: run --until-done [in-progress] tasks 6/6 — claimed by Arpit Anand (developer:add085e9ca4500746)
+- last checkpoint 2026-10-25 20:13 at T2 (d5e8f1f) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —, AC7 —, AC8 —, AC9 —, AC10 —, AC11 —, AC12 —
 
 Latest log:
-- 2026-10-25: status draft → ready
-- 2026-10-26: assigned to the developer role
-- 2026-10-26: status ready → in-progress — branch plan/P-034-local-runner-run-until-done
+- 2026-10-26: status in-progress → in-review
+- 2026-10-26: review: changes requested — test/hub/registry.test.ts fails: 'the CLI commands and their options are as before the split' compares run's spec exactly, and run now has until-done/max-passes/command. Do not edit registry-before.json (K-2026-10-25). In packages/crew/test/hub/registry.test.ts (now in touches; see the spec's Registration note), change that check so for each command in BEFORE.cli, pos is equal and each option list BEFORE has is a subset of the current one; then npx vitest run test/hub/registry.test.ts passes. Everything else checks out: diff within touches, runner/dispatch/policy/docs match the spec, runner, dispatch, policy, run-check, team-2 and plugin suites pass, typecheck passes, sizes fine. The extras (text on the stop report, PASS lines on stdout) are accepted.
+- 2026-10-26: status in-review → in-progress — changes requested: test/hub/registry.test.ts fails: 'the CLI commands and their options are as before the split' compares run's spec exactly, and run now has until-done/max-passes/command. Do not edit registry-before.json (K-2026-10-25). In packages/crew/test/hub/registry.test.ts (now in touches; see the spec's Registration note), change that check so for each command in BEFORE.cli, pos is equal and each option list BEFORE has is a subset of the current one; then npx vitest run test/hub/registry.test.ts passes. Everything else checks out: diff within touches, runner/dispatch/policy/docs match the spec, runner, dispatch, policy, run-check, team-2 and plugin suites pass, typecheck passes, sizes fine. The extras (text on the stop report, PASS lines on stdout) are accepted.
 
 ## Progress log
 
