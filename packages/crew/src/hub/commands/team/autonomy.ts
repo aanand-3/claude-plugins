@@ -4,6 +4,9 @@
 import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import type { Store } from "../../core/store.js";
+import { previousRef } from "../../core/memory/activity.js";
+import { SECRET_PATTERNS } from "../../../shared/secrets.js";
+import { feedPath } from "./activity.js";
 import { agentRole } from "./guard.js";
 import { paused, staleClaims } from "./liveness.js";
 import { escalationHolds } from "./questions.js";
@@ -100,8 +103,33 @@ export function transcriptUsage(text: string): { tokensIn: number; tokensOut: nu
   return sum;
 }
 
-/** `usage --hook`: the SubagentStop hook. Records a crew agent's tokens under its role and run (`<role>:<agent_id>`, the
- * run the guard gave it). Cost isn't known from tokens alone; budgets on tokens apply. Never fails the hook. */
+const REPORT_CAP = 20_000;
+const MASKS = Object.values(SECRET_PATTERNS).map((re) => new RegExp(re.source, `${re.flags.replace("g", "")}g`));
+type Block = { type?: string; name?: string; text?: string; input?: { message?: unknown } };
+
+/** An agent's final report: the last SubagentHandback call's message, else its last text; capped, secrets withheld. */
+export function transcriptReport(text: string): string | null {
+  let handback: string | null = null, said: string | null = null;
+  for (const line of text.split("\n")) {
+    let m: { role?: string; content?: unknown } | undefined;
+    try {
+      const rec = JSON.parse(line) as { type?: string; message?: { role?: string; content?: unknown } };
+      m = rec.type === "assistant" || rec.message?.role === "assistant" ? rec.message : undefined;
+    } catch { continue; } // a torn or non-JSON line
+    if (!m) continue;
+    const blocks: Block[] = typeof m.content === "string" ? [{ type: "text", text: m.content }] : Array.isArray(m.content) ? m.content : [];
+    for (const b of blocks) {
+      if (b?.type === "tool_use" && b.name === "SubagentHandback" && typeof b.input?.message === "string") handback = b.input.message;
+    }
+    const prose = blocks.filter((b) => b?.type === "text" && typeof b.text === "string" && b.text.trim()).map((b) => b.text).join("\n");
+    if (prose) said = prose;
+  }
+  const report = (handback ?? said)?.trim();
+  return report ? MASKS.reduce((t, re) => t.replace(re, "[secret withheld]"), report).slice(0, REPORT_CAP) : null;
+}
+
+/** `usage --hook`: the SubagentStop hook. Records a crew agent's final report and its tokens under its role and run
+ * (`<role>:<agent_id>`, the run the guard gave it). Cost isn't known from tokens alone; budgets on tokens apply. Never fails the hook. */
 export function usageHook(store: Store): number {
   let h: { agent_type?: string; agent_id?: string; agent_transcript_path?: string };
   try {
@@ -118,11 +146,14 @@ export function usageHook(store: Store): number {
     return 0;
   }
   const u = transcriptUsage(text);
-  if (!u.tokensIn && !u.tokensOut) return 0;
   Object.assign(store.ledger.who, { role, run: `${role}:${h.agent_id ?? "unknown"}` });
   // a run that worked on one document carries it; otherwise spend() splits the usage over the run's documents at read time
   const refs = new Set(store.ledger.events().filter((e) => e.run === store.ledger.who.run && e.type !== "usage" && e.ref).map((e) => e.ref));
-  store.ledger.record("usage", refs.size === 1 ? [...refs][0] : null, { tokens_in: u.tokensIn, tokens_out: u.tokensOut, cost: 0, cache_read: u.cacheRead,
+  const ref = refs.size === 1 ? [...refs][0] : null;
+  const report = transcriptReport(text);
+  if (report) store.ledger.record("report", ref ?? previousRef(feedPath(store), store.ledger.who.run), { text: report });
+  if (!u.tokensIn && !u.tokensOut) return 0;
+  store.ledger.record("usage", ref, { tokens_in: u.tokensIn, tokens_out: u.tokensOut, cost: 0, cache_read: u.cacheRead,
     ...(u.model ? { model: u.model } : {}), source: "transcript" });
   if (budgetProblems(store).some((b) => b.startsWith("project"))) notify(store, "budget", null, budgetProblems(store).join("; "), "project");
   return 0;

@@ -1,6 +1,7 @@
 /** Overview, the executive view: the idea and its success criteria, the focus goal, what's next, what needs attention. */
 import { ArrowRight, Ban, Hourglass } from "lucide-react";
 import { Card, Chip, DocTitle, Empty, fmtTokens, IdLink, Kpi, ProgressBar, StatusChip } from "../components/primitives";
+import { LivePanel } from "../components/LivePanel";
 import { Markdown } from "../components/Markdown";
 import { docsOf, focusGoal, idea, useData } from "../data";
 import { docHref } from "../router";
@@ -42,6 +43,8 @@ export function Overview() {
         <Kpi value={blocked.length + serious.length} tone={blocked.length + serious.length ? "destructive" : "success"}
           caption="blocked plans + open S1/S2 bugs" />
       </div>
+
+      {ix.served && <LivePanel />}
 
       {escalations.length > 0 && (
         <Card title={`Waiting on you — ${escalations.length} escalation${escalations.length === 1 ? "" : "s"}`}>

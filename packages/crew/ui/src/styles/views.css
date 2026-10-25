@@ -58,6 +58,11 @@
 .rows .spend__row .progress { grid-column: 1 / -1; }
 .spend__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
 .spend__num { font: 500 var(--text-xs) var(--font-mono); color: var(--muted-foreground); }
+.live__row { justify-content: space-between; }
+.live__who, .live__what { display: flex; align-items: center; gap: var(--space-2); min-width: 0; flex-wrap: wrap; }
+.live__run { font: 500 var(--text-xs) var(--font-mono); overflow-wrap: anywhere; }
+.live__action { font-size: var(--text-xs); overflow-wrap: anywhere; min-width: 0; }
+.live__num { font: 500 var(--text-xs) var(--font-mono); color: var(--muted-foreground); white-space: nowrap; }
 .nextlist__tag { font-size: var(--text-xs); font-weight: 600; color: var(--muted-foreground); padding-top: 2px; text-transform: lowercase; }
 
 /* ---- doc page */

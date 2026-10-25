@@ -20,6 +20,7 @@ import { pauseTeam, resumeTeam } from "./commands/team/liveness.js";
 import { review } from "./commands/work/review.js";
 import { mergeOrderCmd } from "./commands/work/release.js";
 import { run, usageHook } from "./commands/team/autonomy.js";
+import { activityHook, watch } from "./commands/team/activity.js";
 import { recordStep, resumeWorkflow } from "./commands/team/runs.js";
 import { checkpoint, handoff, resume } from "./commands/work/execution.js";
 import { answer, ask, escalate, listQuestions } from "./commands/team/questions.js";
@@ -49,7 +50,9 @@ Commands:
   policy show [--role R] [--team T] [--json] · policy check      the effective policy and where each value comes from
   release PLAN_ID [--note TXT] [--force]        give up a claim (another run's claim needs --force)
   usage [--tokens-in N] [--tokens-out N] [--cost USD] [--model M] [--ref ID]   record what a run used
-  usage --hook                                  SubagentStop hook: a crew agent's tokens from its transcript
+  usage --hook                                  SubagentStop hook: a crew agent's tokens and final report from its transcript
+  activity --hook                               PostToolUse hook: one activity event per tool call of a crew agent
+  watch [--ref ID] [--limit 20]                 the live feed (tool calls and ledger events), followed until Ctrl-C
   run [--check] [--json]                        run the team unattended: the loop, and whether it may go on (exit 1: stop)
   ledger [--ref ID] [--type T] [--limit 20] [--json]   the shared event log (who/what/when) and live claims
   learn decision|learning|gotcha|convention|risk FACT (--why TEXT | --from DRAFT) [--scope "src/a/**, b.md"]
@@ -153,6 +156,8 @@ const COMMANDS: Record<string, Spec> = {
   usage: { pos: [], str: ["cost", "model", "ref"], int: ["tokens-in", "tokens-out"], flag: ["hook"],
     run: (s, a) => (a.opt.hook ? usageHook(s) : usage(s, { tokensIn: a.num["tokens-in"], tokensOut: a.num["tokens-out"],
       cost: str(a, "cost") === undefined ? undefined : Number(str(a, "cost")), model: str(a, "model"), ref: str(a, "ref") })) },
+  activity: { pos: [], flag: ["hook"], required: ["hook"], run: (s) => activityHook(s) },
+  watch: { pos: [], str: ["ref"], int: ["limit"], run: (s, a) => watch(s, { ref: str(a, "ref"), limit: a.num.limit }) },
   run: { pos: [], flag: ["check", "json"], run: (s, a) => run(s, !!a.opt.check, !!a.opt.json) },
   ledger: { pos: [], str: ["ref", "type"], int: ["limit"], flag: ["json"],
     run: (s, a) => showLedger(s, { ref: str(a, "ref"), type: str(a, "type"), limit: a.num.limit, json: !!a.opt.json }) },

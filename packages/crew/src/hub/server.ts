@@ -1,12 +1,15 @@
-/** `crew.mjs ui`: serves the view live on 127.0.0.1. The page reads /api/graph, listens on /api/events
- * (re-sent whenever .crew/, docs/design/ or a git ref changes) and runs a few commands through the same
+/** `crew.mjs ui`: serves the view live on 127.0.0.1. The page reads /api/graph and /api/activity, listens on /api/events
+ * (re-sent whenever .crew/, docs/design/, the ledger or activity feed, or a git ref changes) and runs a few commands through the same
  * functions the CLI uses, so every gate still applies. No --force, no document creation from the browser.
  * /design is the design studio: it reads /api/design and saves through the design-* commands. */
 import { spawn } from "node:child_process";
 import { randomBytes } from "node:crypto";
-import { existsSync, watch } from "node:fs";
+import { existsSync, mkdirSync, watch } from "node:fs";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
+import { feedPath, running } from "./commands/team/activity.js";
+import { readActivity } from "./core/memory/activity.js";
+import * as git from "./core/git.js";
 import { triage } from "./commands/work/backlog.js";
 import { designPath, designPayload, saveDesign, updateStudio } from "./commands/views/design.js";
 import { DATA_SLOT, renderHtmlShell, renderStudioShell, STUDIO_SLOT } from "./commands/views/export.js";
@@ -85,6 +88,10 @@ export function serve(store: Store, o: ServeOptions): Promise<{ url: string; clo
     }
     if (req.method === "GET" && path === "/api/graph") return send(res, 200, buildGraph(open()));
     if (req.method === "GET" && path === "/api/design") return send(res, 200, designPayload(open()));
+    if (req.method === "GET" && path === "/api/activity") {
+      const s = open();
+      return send(res, 200, { running: running(s), recent: readActivity(feedPath(s)).slice(-50) });
+    }
     if (req.method === "GET" && path === "/api/events") {
       res.writeHead(200, { "content-type": "text/event-stream", "cache-control": "no-store", connection: "keep-alive" });
       res.write("retry: 1000\n\n");
@@ -112,10 +119,17 @@ export function serve(store: Store, o: ServeOptions): Promise<{ url: string; clo
     if (timer) clearTimeout(timer);
     timer = setTimeout(() => { for (const c of clients) c.write("event: change\ndata: {}\n\n"); }, 150);
   }
-  const watchers = [store.dir, dirname(designPath(store)), join(store.ws.root, ".git", "refs"), join(store.ws.root, ".git", "HEAD")]
-    .filter((p) => existsSync(p))
-    .map((p) => watch(p, { recursive: !p.endsWith("HEAD") }, (_, file) => {
-      if (!String(file ?? "").startsWith("view")) notify(); // our own export output is not a change
+  // the ledger's directory (ledger and activity feed) and the common dir's refs: a linked worktree has no .git/refs of its own
+  const ledgerDir = dirname(store.ledger.path), common = git.commonDir(store.ws.root);
+  mkdirSync(ledgerDir, { recursive: true });
+  // outside git the ledger lives in .crew itself, which is already watched recursively
+  const watched = [store.dir, dirname(designPath(store)), ...(ledgerDir !== store.dir ? [ledgerDir] : []),
+    ...(common ? [join(common, "refs"), join(common, "HEAD")] : [])];
+  const watchers = [...new Set(watched)].filter((p) => existsSync(p))
+    .map((p) => watch(p, { recursive: !p.endsWith("HEAD") && (p !== ledgerDir || p === store.dir) }, (_, file) => {
+      const f = String(file ?? "");
+      if (/\.lock$|\.stale-/.test(basename(f))) return; // a writer's lock, not a change
+      if (!(p === store.dir && f.startsWith("view"))) notify(); // our own export output is not a change
     }));
 
   return new Promise((resolve, reject) => {

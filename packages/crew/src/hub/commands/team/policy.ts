@@ -30,7 +30,7 @@ export function policyShow(store: Store, role?: string, team?: string, json = fa
     ["escalation.to", p.escalation.to, "escalation.to"], ["evidence.role", p.evidence.role, "evidence.role"],
     ["notify.command", p.notify.command, "notify.command"], ["notify.on", p.notify.on, "notify.on"],
     ["fast_lane.types", p.fast_lane.types, "fast_lane.types"], ["fast_lane.max_tasks", p.fast_lane.max_tasks, "fast_lane.max_tasks"], ["limits.max_turns", p.limits.max_turns, "limits.max_turns"],
-    ...(["stale_claim_hours", "max_bounces", "max_attempts"] as const).map((k): [string, unknown, string] => [`limits.${k}`, p.limits[k], `limits.${k}`]),
+    ...(["stale_claim_hours", "max_bounces", "max_attempts", "idle_minutes"] as const).map((k): [string, unknown, string] => [`limits.${k}`, p.limits[k], `limits.${k}`]),
   ];
   store.say(`Effective policy${r.role ? ` for role ${r.role}` : ""}${r.team ? `, team ${r.team}` : ""}:`);
   const width = Math.max(...rows.map(([k]) => k.length));

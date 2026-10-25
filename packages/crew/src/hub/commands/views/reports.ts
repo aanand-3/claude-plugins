@@ -1,5 +1,6 @@
 /** `status`: one report of where the work stands, for agents and the executive (STATUS.md with --write). */
 import type { Doc } from "../../core/work/doc.js";
+import { runningLines } from "../team/activity.js";
 import { paused, staleClaims } from "../team/liveness.js";
 import type { LedgerEvent } from "../../core/memory/ledger.js";
 import { ITEM_CLOSED } from "../../core/work/model.js";
@@ -20,6 +21,8 @@ export function status(store: Store, write: boolean): void {
   lines.push("## Idea and focus", "", ...ideaLines(store, goals, plans, items, focus), "");
   const stale = staleClaims(store);
   if (stale.length) lines.push("## Stale claims", "", ...stale.map((s) => `- ${s.ref} — ${s.actor} (${s.run}), no activity for ${s.hours}h`), "");
+  const live = runningLines(store);
+  if (live.length) lines.push("## Running now", "", ...live, "");
   const claims = store.ledger.claims();
   lines.push("## Now", "", ...planTable(byStatus(plans, ["in-progress", "in-review"]), plans, items, claims), "");
   lines.push("## Blocked", "", ...blocked(plans), "");

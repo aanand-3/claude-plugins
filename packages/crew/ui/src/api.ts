@@ -19,3 +19,17 @@ export function onHubChange(onChange: () => void): () => void {
   es.addEventListener("change", onChange);
   return () => es.close();
 }
+
+/** A live agent run and a feed event, as `GET api/activity` serves them (core/memory/activity.ts). */
+export interface LiveRun {
+  run: string; role: string; ref: string | null; task: string | null; tool: string; target: string | null;
+  ts: string; minutes: number; idle: boolean; tokens: number | null;
+}
+export interface ActivityEvent { ts: string; run: string; role: string; ref: string | null; tool: string; target: string | null }
+export interface Activity { running: LiveRun[]; recent: ActivityEvent[] }
+
+export async function loadActivity(): Promise<Activity> {
+  const res = await fetch("api/activity", { cache: "no-store" });
+  if (!res.ok) throw new Error(`The server answered ${res.status}.`);
+  return (await res.json()) as Activity;
+}

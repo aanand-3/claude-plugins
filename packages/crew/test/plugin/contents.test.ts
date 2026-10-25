@@ -61,6 +61,19 @@ it("the settings template wires the hooks", () => {
   const planHook = s.hooks.PostToolUse.find((h: { matcher: string }) => h.matcher === "ExitPlanMode");
   expect(planHook.hooks[0].command).toContain("track_plan_draft.mjs");
   expect(sessionStart).toContain("track_plan_draft.mjs --session");
+  const activity = s.hooks.PostToolUse.at(-1);
+  expect(activity.matcher).toBe("*");
+  expect(activity.hooks[0].command).toBe("cd \"$CLAUDE_PROJECT_DIR\" 2>/dev/null || exit 0; [ -f .crew/bin/crew.mjs ] && "
+    + "node .crew/bin/crew.mjs activity --hook >/dev/null 2>&1; exit 0");
+  expect(s.hooks.PostToolUse.findIndex((h: { hooks: { command: string }[] }) => h.hooks[0].command.includes("activity --hook")))
+    .toBe(s.hooks.PostToolUse.length - 1); // after format_on_edit and the plan hook
+});
+
+it("the developer checkpoints when it starts a task, and the hub skill lists the live commands", () => {
+  expect(read(join(SKILLS, "hub", "agents", "developer.md"))).toMatch(/checkpoint P-### --step T<n> --note "starting: /);
+  const skill = read(join(SKILLS, "hub", "SKILL.md"));
+  expect(skill).toContain("| `watch [--ref ID]");
+  expect(skill).toContain("| `activity --hook` |");
 });
 
 it("yaml and toml templates parse", () => {

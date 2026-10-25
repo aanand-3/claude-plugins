@@ -49,7 +49,7 @@ const GLOBAL: Record<string, Shape> = {
   secrets: { files: "list", patterns: "list" },
   escalation: { to: "str" }, evidence: { role: "str" }, notify: { command: "str", on: "list" },
   fast_lane: { types: "list", max_tasks: "num" },
-  limits: { max_turns: "num", stale_claim_hours: "num", max_bounces: "num", max_attempts: "num" },
+  limits: { max_turns: "num", stale_claim_hours: "num", max_bounces: "num", max_attempts: "num", idle_minutes: "num" },
 };
 const UNION = new Set(["reserved", "secrets.files", "secrets.patterns", "git.protected_branches", "paths.protected", "tools.deny"]);
 const TIGHTEN = new Set(["git.force_push", "git.no_verify"]);
@@ -65,7 +65,7 @@ export interface Effective {
   git: { protected_branches: string[]; force_push: boolean; no_verify: boolean };
   secrets: { files: string[]; patterns: string[] }; escalation: { to: string }; evidence: { role: string | null };
   notify: { command: string | null; on: string[] }; fast_lane: { types: string[]; max_tasks: number | null };
-  limits: { max_turns: number | null; stale_claim_hours: number | null; max_bounces: number | null; max_attempts: number | null };
+  limits: { max_turns: number | null; stale_claim_hours: number | null; max_bounces: number | null; max_attempts: number | null; idle_minutes: number | null };
 }
 export interface Resolved {
   policy: Effective; sources: Map<string, string>; errors: string[]; hints: string[]; role: string | null; team: string | null;
@@ -264,7 +264,7 @@ export function resolveLayers(layers: Layer[], roles: readonly string[] = ROLES)
     notify: { command: get("notify.command", null), on: get("notify.on", []) },
     fast_lane: { types: get<string[]>("fast_lane.types", []).map((t) => t.toUpperCase()), max_tasks: num("fast_lane.max_tasks") },
     limits: { max_turns: num("limits.max_turns"), stale_claim_hours: num("limits.stale_claim_hours"),
-      max_bounces: num("limits.max_bounces"), max_attempts: num("limits.max_attempts") },
+      max_bounces: num("limits.max_bounces"), max_attempts: num("limits.max_attempts"), idle_minutes: num("limits.idle_minutes") },
   };
   return { policy, sources, errors };
 }

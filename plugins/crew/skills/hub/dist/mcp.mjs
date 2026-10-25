@@ -7264,7 +7264,7 @@ var require_public_api = __commonJS({
       }
       return doc;
     }
-    function parse4(src, reviver, options) {
+    function parse5(src, reviver, options) {
       let _reviver = void 0;
       if (typeof reviver === "function") {
         _reviver = reviver;
@@ -7305,7 +7305,7 @@ var require_public_api = __commonJS({
         return value.toString(options);
       return new Document.Document(value, _replacer, options).toString(options);
     }
-    exports.parse = parse4;
+    exports.parse = parse5;
     exports.parseAllDocuments = parseAllDocuments;
     exports.parseDocument = parseDocument;
     exports.stringify = stringify2;
@@ -7872,7 +7872,7 @@ var GLOBAL = {
   evidence: { role: "str" },
   notify: { command: "str", on: "list" },
   fast_lane: { types: "list", max_tasks: "num" },
-  limits: { max_turns: "num", stale_claim_hours: "num", max_bounces: "num", max_attempts: "num" }
+  limits: { max_turns: "num", stale_claim_hours: "num", max_bounces: "num", max_attempts: "num", idle_minutes: "num" }
 };
 var UNION = /* @__PURE__ */ new Set(["reserved", "secrets.files", "secrets.patterns", "git.protected_branches", "paths.protected", "tools.deny"]);
 var TIGHTEN = /* @__PURE__ */ new Set(["git.force_push", "git.no_verify"]);
@@ -8072,7 +8072,8 @@ function resolveLayers(layers, roles = ROLES) {
       max_turns: num2("limits.max_turns"),
       stale_claim_hours: num2("limits.stale_claim_hours"),
       max_bounces: num2("limits.max_bounces"),
-      max_attempts: num2("limits.max_attempts")
+      max_attempts: num2("limits.max_attempts"),
+      idle_minutes: num2("limits.idle_minutes")
     }
   };
   return { policy, sources, errors };
@@ -8178,6 +8179,276 @@ function view(e, store) {
 
 // src/hub/commands/team/autonomy.ts
 import { spawnSync as spawnSync2 } from "node:child_process";
+
+// src/hub/core/memory/activity.ts
+import { appendFileSync as appendFileSync2, closeSync, existsSync as existsSync3, mkdirSync as mkdirSync2, openSync, readFileSync as readFileSync3, readSync, realpathSync, renameSync as renameSync2, statSync as statSync3 } from "node:fs";
+import { basename as basename2, dirname as dirname2, isAbsolute, join as join4, relative, resolve as resolve3 } from "node:path";
+
+// src/hub/core/memory/ledger.ts
+import { createHash, randomBytes } from "node:crypto";
+import { appendFileSync, existsSync as existsSync2, linkSync, mkdirSync, readFileSync as readFileSync2, renameSync, statSync as statSync2, unlinkSync, writeFileSync } from "node:fs";
+import { basename, dirname, join as join3 } from "node:path";
+var UNATTRIBUTED = "unattributed";
+var LOCK_WAIT_MS = 5e3;
+var LOCK_STALE_MS = 3e4;
+function whoAmI(root) {
+  const hash = createHash("sha1").update(root).digest("hex").slice(0, 8);
+  return {
+    run: process.env.CREW_RUN || `wt:${basename(root)}-${hash}`,
+    actor: process.env.CREW_ACTOR || userName() || "unknown",
+    role: process.env.CREW_ROLE || null,
+    team: process.env.CREW_TEAM || null,
+    worktree: root
+  };
+}
+var Ledger = class _Ledger {
+  constructor(ws, path, who) {
+    this.ws = ws;
+    this.path = path;
+    this.who = who;
+  }
+  ws;
+  path;
+  who;
+  staged = [];
+  hooked = false;
+  /** `<git common dir>/crew/ledger.jsonl`; `.crew/ledger.jsonl` outside git. */
+  static at(ws, crewDir) {
+    const common = commonDir(ws.root);
+    return new _Ledger(ws, common ? join3(common, "crew", "ledger.jsonl") : join3(crewDir, "ledger.jsonl"), whoAmI(ws.root));
+  }
+  /** Every event on disk, then the ones this command has staged. */
+  events() {
+    return [...this.onDisk(), ...this.staged];
+  }
+  record(type, ref, fields = {}) {
+    const ev = { ts: (/* @__PURE__ */ new Date()).toISOString(), type, ref, ...this.who, ...fields };
+    this.staged.push(ev);
+    if (!this.hooked) {
+      this.hooked = true;
+      this.ws.beforeFlush(() => this.commit());
+    }
+    return ev;
+  }
+  /** ref → its live claim (a claim not followed by a release of the same ref). */
+  claims(events = this.events()) {
+    const live = /* @__PURE__ */ new Map();
+    for (const ev of events) {
+      if (!ev.ref) continue;
+      if (ev.type === "claim") live.set(ev.ref, ev);
+      else if (ev.type === "release") live.delete(ev.ref);
+    }
+    return live;
+  }
+  /** plan → its current assignment (the last `assign` event: `to` a role, optionally a `team`). */
+  assignments(events = this.events()) {
+    const out = /* @__PURE__ */ new Map();
+    for (const ev of events) if (ev.type === "assign" && ev.ref) out.set(ev.ref, ev);
+    return out;
+  }
+  /** ref → the status its last `move` event set. */
+  lastStatus(events = this.events()) {
+    const out = /* @__PURE__ */ new Map();
+    for (const ev of events) if (ev.type === "move" && ev.ref) out.set(ev.ref, String(ev.to));
+    return out;
+  }
+  spend(events = this.events()) {
+    const s2 = { cost: 0, tokensIn: 0, tokensOut: 0, byActor: {}, byRole: {}, byRef: {} };
+    const touched = /* @__PURE__ */ new Map();
+    for (const ev of events) {
+      if (ev.type !== "usage" && ev.ref) touched.set(ev.run, (touched.get(ev.run) ?? /* @__PURE__ */ new Set()).add(ev.ref));
+    }
+    const runs = /* @__PURE__ */ new Map();
+    const add = (group, key, tokens, cost, run) => {
+      const u = s2[group][key] ??= group === "byRef" ? { tokens: 0, cost: 0, runs: 0, roles: {} } : { tokens: 0, cost: 0, runs: 0 };
+      u.tokens += tokens;
+      u.cost += cost;
+      const seen = runs.get(`${group}|${key}`) ?? /* @__PURE__ */ new Set();
+      if (!seen.has(run)) u.runs++;
+      runs.set(`${group}|${key}`, seen.add(run));
+    };
+    for (const ev of events) {
+      if (ev.type !== "usage") continue;
+      const cost = Number(ev.cost) || 0, tin = Number(ev.tokens_in) || 0, tout = Number(ev.tokens_out) || 0;
+      s2.cost += cost;
+      s2.tokensIn += tin;
+      s2.tokensOut += tout;
+      s2.byActor[ev.actor] = (s2.byActor[ev.actor] ?? 0) + cost;
+      add("byRole", ev.role ?? ev.actor, tin + tout, cost, ev.run);
+      const refs = ev.ref ? [ev.ref] : [...touched.get(ev.run) ?? []];
+      if (!refs.length) refs.push(UNATTRIBUTED);
+      const role = ev.role ?? ev.actor;
+      for (const ref of refs) {
+        add("byRef", ref, (tin + tout) / refs.length, cost / refs.length, ev.run);
+        s2.byRef[ref].roles[role] = (s2.byRef[ref].roles[role] ?? 0) + (tin + tout) / refs.length;
+      }
+    }
+    return s2;
+  }
+  onDisk() {
+    if (!existsSync2(this.path)) return [];
+    return readFileSync2(this.path, "utf8").split("\n").filter((l) => l.trim()).flatMap((l) => {
+      try {
+        return [JSON.parse(l)];
+      } catch {
+        return [];
+      }
+    });
+  }
+  /** Under the lock: re-check staged claims against what other runs wrote meanwhile, then append. */
+  commit() {
+    if (!this.staged.length) return;
+    mkdirSync(dirname(this.path), { recursive: true });
+    const lock = `${this.path}.lock`;
+    const token = acquireLock(lock);
+    try {
+      const live = this.claims(this.onDisk());
+      for (const ev of this.staged.filter((e) => e.type === "claim" && e.ref && !e.force)) {
+        const held = live.get(ev.ref);
+        if (held && held.run !== ev.run) fail(`${ev.ref} was just claimed by ${held.actor} (${held.run}). Nothing was changed.`);
+      }
+      const torn = existsSync2(this.path) && statSync2(this.path).size > 0 && !readFileSync2(this.path, "utf8").endsWith("\n");
+      appendFileSync(this.path, (torn ? "\n" : "") + this.staged.map((e) => `${JSON.stringify(e)}
+`).join(""));
+      this.staged = [];
+    } finally {
+      releaseLock(lock, token);
+    }
+  }
+};
+function acquireLock(lock, waitMs = LOCK_WAIT_MS, staleMs = LOCK_STALE_MS) {
+  const token = `${process.pid}-${randomBytes(6).toString("hex")}`;
+  const deadline = Date.now() + waitMs;
+  for (; ; ) {
+    try {
+      writeFileSync(lock, token, { flag: "wx" });
+      return token;
+    } catch (e) {
+      if (e.code !== "EEXIST") throw e;
+      takeOverIfStale(lock, staleMs, token);
+      if (Date.now() > deadline) fail(`The ledger is locked (${lock}). Another crew command is writing; retry.`);
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 20);
+    }
+  }
+}
+function takeOverIfStale(lock, staleMs, token) {
+  let seen;
+  try {
+    if (Date.now() - statSync2(lock).mtimeMs <= staleMs) return;
+    seen = readFileSync2(lock, "utf8");
+  } catch {
+    return;
+  }
+  const aside = `${lock}.stale-${token}`;
+  try {
+    renameSync(lock, aside);
+  } catch {
+    return;
+  }
+  if (readFileSync2(aside, "utf8") !== seen) {
+    try {
+      linkSync(aside, lock);
+    } catch {
+    }
+  }
+  unlinkSync(aside);
+}
+function releaseLock(lock, token) {
+  try {
+    if (readFileSync2(lock, "utf8") === token) unlinkSync(lock);
+  } catch {
+  }
+}
+
+// src/hub/core/memory/activity.ts
+var ROTATE_BYTES = 2 * 1024 * 1024;
+var TAIL_BYTES = 64 * 1024;
+var DAY_MS = 24 * 36e5;
+var IDLE_MINUTES = 20;
+var activityPath = (ledgerPath) => join4(dirname2(ledgerPath), "activity.jsonl");
+var rotated = (path) => path.replace(/\.jsonl$/, ".1.jsonl");
+var parse2 = (text2) => text2.split("\n").filter((l) => l.trim()).flatMap((l) => {
+  try {
+    const e = JSON.parse(l);
+    return e && typeof e.ts === "string" && typeof e.run === "string" ? [e] : [];
+  } catch {
+    return [];
+  }
+});
+function readActivity(path) {
+  return [rotated(path), path].flatMap((p) => existsSync3(p) ? parse2(readFileSync3(p, "utf8")) : []);
+}
+var STOPS = /* @__PURE__ */ new Set(["usage", "report"]);
+function liveRuns(activity, ledger2, now = Date.now(), idleMinutes = IDLE_MINUTES) {
+  const last = /* @__PURE__ */ new Map();
+  for (const e of activity) {
+    const prev = last.get(e.run);
+    if (!prev || Date.parse(e.ts) >= Date.parse(prev.ts)) last.set(e.run, e);
+  }
+  const out = [];
+  for (const [run, a] of last) {
+    const at = Date.parse(a.ts);
+    if (!(now - at <= DAY_MS)) continue;
+    const mine = ledger2.filter((e) => e.run === run);
+    if (mine.some((e) => STOPS.has(e.type) && Date.parse(e.ts) > at)) continue;
+    const step = mine.filter((e) => e.type === "checkpoint" && e.ref === a.ref && e.step && !e.workflow).at(-1)?.step;
+    const usage2 = mine.filter((e) => e.type === "usage");
+    const minutes = Math.max(0, (now - at) / 6e4);
+    out.push({
+      run,
+      role: a.role,
+      ref: a.ref,
+      task: step ? String(step) : null,
+      tool: a.tool,
+      target: a.target,
+      ts: a.ts,
+      minutes,
+      idle: minutes > idleMinutes,
+      tokens: usage2.length ? usage2.reduce((n2, e) => n2 + (Number(e.tokens_in) || 0) + (Number(e.tokens_out) || 0), 0) : null
+    });
+  }
+  return out.sort((x, y) => Date.parse(y.ts) - Date.parse(x.ts));
+}
+
+// src/hub/commands/memory/ledger.ts
+var DETAIL = {
+  claim: (e) => `branch ${e.branch ?? "?"}${e.force ? " (forced)" : ""}`,
+  release: (e) => String(e.reason ?? ""),
+  move: (e) => `${e.from} \u2192 ${e.to}${e.note ? ` \u2014 ${e.note}` : ""}`,
+  log: (e) => String(e.text ?? ""),
+  learn: (e) => `${e.kind}: ${e.title}${e.supersedes ? ` (supersedes ${e.supersedes})` : ""}`,
+  checkpoint: (e) => e.workflow ? `${e.workflow}: ${e.step} ${e.state}` : `at ${e.step}${e.sha ? ` (${String(e.sha).slice(0, 7)})` : ""}` + (e.verify ?? []).map((v) => ` ${v.ok ? "\u2713" : "\u2717"} ${v.cmd}`).join("") + (e.attempt ? ` \u2014 tried: ${e.attempt.what}` : ""),
+  ask: (e) => `${e.qid} \u2192 ${e.to}${e.escalation ? " (escalation)" : ""}: ${e.text}`,
+  answer: (e) => `${e.qid}: ${e.text}${e.approved_by ? ` (by ${e.approved_by})` : ""}`,
+  assign: (e) => `to the ${e.to} role${e.team ? `, team ${e.team}` : ""}${e.note ? ` \u2014 ${e.note}` : ""}`,
+  review: (e) => `${e.verdict === "approve" ? "approved" : `changes: ${e.text}`}${e.sha ? ` (${String(e.sha).slice(0, 7)})` : ""}`,
+  notify: (e) => `${e.kind}: ${e.text}`,
+  pause: (e) => String(e.reason ?? "paused"),
+  resume: (e) => String(e.note ?? "resumed"),
+  report: (e) => String(e.text ?? ""),
+  usage: (e) => `${e.tokens_in} in / ${e.tokens_out} out tokens, $${Number(e.cost ?? 0).toFixed(2)}${e.model ? ` (${e.model})` : ""}`
+};
+var EVENT_TYPES = Object.keys(DETAIL);
+var detail = (e) => Object.hasOwn(DETAIL, e.type) ? DETAIL[e.type](e) : "";
+function showLedger(store, o = {}) {
+  store.require();
+  if (o.type && !DETAIL[o.type]) fail(`Unknown event type '${o.type}'. Valid: ${Object.keys(DETAIL).join(", ")}`);
+  const ref = o.ref?.toUpperCase();
+  const all = store.ledger.events();
+  const events = all.filter((e) => (!ref || e.ref === ref) && (!o.type || e.type === o.type)).slice(-(o.limit ?? 20));
+  if (o.json) {
+    for (const e of events) store.say(JSON.stringify(e));
+    return;
+  }
+  if (!events.length) store.say(`No events${ref ? ` for ${ref}` : ""} in ${store.ledger.path}.`);
+  for (const e of events) {
+    store.say(`${e.ts.slice(0, 16).replace("T", " ")}  ${e.type.padEnd(7)}  ${(e.ref ?? "\u2014").padEnd(9)}  ${e.actor} (${e.run})  ${detail(e)}`);
+  }
+  const claims = [...store.ledger.claims(all).values()];
+  if (!ref && !o.type && claims.length) {
+    store.say(`claims: ${claims.map((c) => `${c.ref} ${c.actor}`).join(", ")}`);
+  }
+}
 
 // src/hub/core/work/doc.ts
 var EMPTY_LINES = /* @__PURE__ */ new Set(["-", "- [ ]", "1."]);
@@ -8368,189 +8639,11 @@ ${body2.trim()}
 }
 
 // src/hub/core/work/hubstate.ts
-import { existsSync as existsSync3, mkdirSync as mkdirSync2, realpathSync } from "node:fs";
-import { join as join4 } from "node:path";
-
-// src/hub/core/memory/ledger.ts
-import { createHash, randomBytes } from "node:crypto";
-import { appendFileSync, existsSync as existsSync2, linkSync, mkdirSync, readFileSync as readFileSync2, renameSync, statSync as statSync2, unlinkSync, writeFileSync } from "node:fs";
-import { basename, dirname, join as join3 } from "node:path";
-var UNATTRIBUTED = "unattributed";
-var LOCK_WAIT_MS = 5e3;
-var LOCK_STALE_MS = 3e4;
-function whoAmI(root) {
-  const hash = createHash("sha1").update(root).digest("hex").slice(0, 8);
-  return {
-    run: process.env.CREW_RUN || `wt:${basename(root)}-${hash}`,
-    actor: process.env.CREW_ACTOR || userName() || "unknown",
-    role: process.env.CREW_ROLE || null,
-    team: process.env.CREW_TEAM || null,
-    worktree: root
-  };
-}
-var Ledger = class _Ledger {
-  constructor(ws, path, who) {
-    this.ws = ws;
-    this.path = path;
-    this.who = who;
-  }
-  ws;
-  path;
-  who;
-  staged = [];
-  hooked = false;
-  /** `<git common dir>/crew/ledger.jsonl`; `.crew/ledger.jsonl` outside git. */
-  static at(ws, crewDir) {
-    const common = commonDir(ws.root);
-    return new _Ledger(ws, common ? join3(common, "crew", "ledger.jsonl") : join3(crewDir, "ledger.jsonl"), whoAmI(ws.root));
-  }
-  /** Every event on disk, then the ones this command has staged. */
-  events() {
-    return [...this.onDisk(), ...this.staged];
-  }
-  record(type, ref, fields = {}) {
-    const ev = { ts: (/* @__PURE__ */ new Date()).toISOString(), type, ref, ...this.who, ...fields };
-    this.staged.push(ev);
-    if (!this.hooked) {
-      this.hooked = true;
-      this.ws.beforeFlush(() => this.commit());
-    }
-    return ev;
-  }
-  /** ref → its live claim (a claim not followed by a release of the same ref). */
-  claims(events = this.events()) {
-    const live = /* @__PURE__ */ new Map();
-    for (const ev of events) {
-      if (!ev.ref) continue;
-      if (ev.type === "claim") live.set(ev.ref, ev);
-      else if (ev.type === "release") live.delete(ev.ref);
-    }
-    return live;
-  }
-  /** plan → its current assignment (the last `assign` event: `to` a role, optionally a `team`). */
-  assignments(events = this.events()) {
-    const out = /* @__PURE__ */ new Map();
-    for (const ev of events) if (ev.type === "assign" && ev.ref) out.set(ev.ref, ev);
-    return out;
-  }
-  /** ref → the status its last `move` event set. */
-  lastStatus(events = this.events()) {
-    const out = /* @__PURE__ */ new Map();
-    for (const ev of events) if (ev.type === "move" && ev.ref) out.set(ev.ref, String(ev.to));
-    return out;
-  }
-  spend(events = this.events()) {
-    const s2 = { cost: 0, tokensIn: 0, tokensOut: 0, byActor: {}, byRole: {}, byRef: {} };
-    const touched = /* @__PURE__ */ new Map();
-    for (const ev of events) {
-      if (ev.type !== "usage" && ev.ref) touched.set(ev.run, (touched.get(ev.run) ?? /* @__PURE__ */ new Set()).add(ev.ref));
-    }
-    const runs = /* @__PURE__ */ new Map();
-    const add = (group, key, tokens, cost, run) => {
-      const u = s2[group][key] ??= group === "byRef" ? { tokens: 0, cost: 0, runs: 0, roles: {} } : { tokens: 0, cost: 0, runs: 0 };
-      u.tokens += tokens;
-      u.cost += cost;
-      const seen = runs.get(`${group}|${key}`) ?? /* @__PURE__ */ new Set();
-      if (!seen.has(run)) u.runs++;
-      runs.set(`${group}|${key}`, seen.add(run));
-    };
-    for (const ev of events) {
-      if (ev.type !== "usage") continue;
-      const cost = Number(ev.cost) || 0, tin = Number(ev.tokens_in) || 0, tout = Number(ev.tokens_out) || 0;
-      s2.cost += cost;
-      s2.tokensIn += tin;
-      s2.tokensOut += tout;
-      s2.byActor[ev.actor] = (s2.byActor[ev.actor] ?? 0) + cost;
-      add("byRole", ev.role ?? ev.actor, tin + tout, cost, ev.run);
-      const refs = ev.ref ? [ev.ref] : [...touched.get(ev.run) ?? []];
-      if (!refs.length) refs.push(UNATTRIBUTED);
-      const role = ev.role ?? ev.actor;
-      for (const ref of refs) {
-        add("byRef", ref, (tin + tout) / refs.length, cost / refs.length, ev.run);
-        s2.byRef[ref].roles[role] = (s2.byRef[ref].roles[role] ?? 0) + (tin + tout) / refs.length;
-      }
-    }
-    return s2;
-  }
-  onDisk() {
-    if (!existsSync2(this.path)) return [];
-    return readFileSync2(this.path, "utf8").split("\n").filter((l) => l.trim()).flatMap((l) => {
-      try {
-        return [JSON.parse(l)];
-      } catch {
-        return [];
-      }
-    });
-  }
-  /** Under the lock: re-check staged claims against what other runs wrote meanwhile, then append. */
-  commit() {
-    if (!this.staged.length) return;
-    mkdirSync(dirname(this.path), { recursive: true });
-    const lock = `${this.path}.lock`;
-    const token = acquireLock(lock);
-    try {
-      const live = this.claims(this.onDisk());
-      for (const ev of this.staged.filter((e) => e.type === "claim" && e.ref && !e.force)) {
-        const held = live.get(ev.ref);
-        if (held && held.run !== ev.run) fail(`${ev.ref} was just claimed by ${held.actor} (${held.run}). Nothing was changed.`);
-      }
-      const torn = existsSync2(this.path) && statSync2(this.path).size > 0 && !readFileSync2(this.path, "utf8").endsWith("\n");
-      appendFileSync(this.path, (torn ? "\n" : "") + this.staged.map((e) => `${JSON.stringify(e)}
-`).join(""));
-      this.staged = [];
-    } finally {
-      releaseLock(lock, token);
-    }
-  }
-};
-function acquireLock(lock, waitMs = LOCK_WAIT_MS, staleMs = LOCK_STALE_MS) {
-  const token = `${process.pid}-${randomBytes(6).toString("hex")}`;
-  const deadline = Date.now() + waitMs;
-  for (; ; ) {
-    try {
-      writeFileSync(lock, token, { flag: "wx" });
-      return token;
-    } catch (e) {
-      if (e.code !== "EEXIST") throw e;
-      takeOverIfStale(lock, staleMs, token);
-      if (Date.now() > deadline) fail(`The ledger is locked (${lock}). Another crew command is writing; retry.`);
-      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 20);
-    }
-  }
-}
-function takeOverIfStale(lock, staleMs, token) {
-  let seen;
-  try {
-    if (Date.now() - statSync2(lock).mtimeMs <= staleMs) return;
-    seen = readFileSync2(lock, "utf8");
-  } catch {
-    return;
-  }
-  const aside = `${lock}.stale-${token}`;
-  try {
-    renameSync(lock, aside);
-  } catch {
-    return;
-  }
-  if (readFileSync2(aside, "utf8") !== seen) {
-    try {
-      linkSync(aside, lock);
-    } catch {
-    }
-  }
-  unlinkSync(aside);
-}
-function releaseLock(lock, token) {
-  try {
-    if (readFileSync2(lock, "utf8") === token) unlinkSync(lock);
-  } catch {
-  }
-}
-
-// src/hub/core/work/hubstate.ts
+import { existsSync as existsSync4, mkdirSync as mkdirSync3, realpathSync as realpathSync2 } from "node:fs";
+import { join as join5 } from "node:path";
 var STATE_PATHS = [".crew/plans", ".crew/items", ".crew/goals", ".crew/knowledge", ".crew/idea.md"];
 var STATE_RE = /^\.crew\/((plans|items|goals|knowledge)\/|idea\.md$)/;
-var real = (p) => existsSync3(p) ? realpathSync(p) : p;
+var real = (p) => existsSync4(p) ? realpathSync2(p) : p;
 function hubHome(root) {
   const main = worktrees()[0]?.path;
   return !main || real(main) === real(root) ? root : main;
@@ -8564,8 +8657,8 @@ function requireBase(home, base) {
 function commitState(home, message) {
   const common = commonDir(home);
   if (!common) return null;
-  mkdirSync2(join4(common, "crew"), { recursive: true });
-  const lock = join4(common, "crew", "hub-commit.lock"), token = acquireLock(lock);
+  mkdirSync3(join5(common, "crew"), { recursive: true });
+  const lock = join5(common, "crew", "hub-commit.lock"), token = acquireLock(lock);
   try {
     const changed2 = changed(home, STATE_PATHS);
     if (!changed2.length) return null;
@@ -8576,6 +8669,17 @@ function commitState(home, message) {
   } finally {
     releaseLock(lock, token);
   }
+}
+
+// src/hub/commands/team/activity.ts
+var feedPath = (store) => activityPath(store.ledger.path);
+function running(store, now = Date.now()) {
+  return liveRuns(readActivity(feedPath(store)), store.ledger.events(), now, store.policy.policy.limits.idle_minutes ?? IDLE_MINUTES);
+}
+var ago = (minutes) => minutes < 1 ? "just now" : minutes < 60 ? `${Math.floor(minutes)}m ago` : `${Math.floor(minutes / 60)}h ${Math.floor(minutes % 60)}m ago`;
+var action = (tool, target) => target ? `${tool} ${target}` : tool;
+function runningLines(store) {
+  return running(store).map((r) => `- ${r.idle ? "**idle** " : ""}${r.role} (${r.run}) \u2014 ${r.ref ?? "\u2014"} \xB7 task ${r.task ?? "\u2014"} \xB7 ${action(r.tool, r.target)} ${ago(r.minutes)} \xB7 tokens ${r.tokens === null ? "\u2014" : r.tokens}`);
 }
 
 // src/hub/core/work/gates.ts
@@ -8640,20 +8744,20 @@ function itemProblems(store, plan) {
 }
 
 // src/hub/commands/views/checks.ts
-import { join as join9 } from "node:path";
+import { join as join10 } from "node:path";
 
 // src/hub/commands/views/legacy.ts
-import { isAbsolute, join as join5, relative } from "node:path";
+import { isAbsolute as isAbsolute2, join as join6, relative as relative2 } from "node:path";
 var LEGACY = ["check_secrets", "check_structure", "check_design", "format_on_edit", "track_plan_draft"];
 var REFRESH = "`/crew:guidelines --refresh` moves crew's hooks and settings to the .mjs scripts and removes the .py once nothing calls it";
 function legacyHints(store) {
   const { ws } = store;
-  const at = (...p) => join5(ws.root, ...p);
+  const at = (...p) => join6(ws.root, ...p);
   const hints = [];
   const leftovers = LEGACY.filter((n2) => ws.isFile(at(".crew", "bin", `${n2}.py`)));
   if (leftovers.length) hints.push(`.crew/bin/ still has the Python scripts ${leftovers.map((n2) => `${n2}.py`).join(", ")} \u2014 ${REFRESH}`);
-  const hookDirs = [git(["rev-parse", "--git-path", "hooks"])?.trim(), git(["config", "core.hooksPath"])?.trim()].filter((d) => !!d).map((d) => isAbsolute(d) ? d : at(d));
-  const inDir = (dir) => ws.list(dir).filter((f) => !f.endsWith(".sample")).map((f) => relative(ws.root, join5(dir, f)));
+  const hookDirs = [git(["rev-parse", "--git-path", "hooks"])?.trim(), git(["config", "core.hooksPath"])?.trim()].filter((d) => !!d).map((d) => isAbsolute2(d) ? d : at(d));
+  const inDir = (dir) => ws.list(dir).filter((f) => !f.endsWith(".sample")).map((f) => relative2(ws.root, join6(dir, f)));
   const files2 = [.../* @__PURE__ */ new Set([
     ...inDir(at(".githooks")),
     ...hookDirs.flatMap(inDir),
@@ -8667,7 +8771,7 @@ function legacyHints(store) {
     ...inDir(at(".husky"))
   ])];
   for (const file of files2) {
-    const text2 = ws.read(join5(ws.root, file));
+    const text2 = ws.read(join6(ws.root, file));
     const calls = text2 ? LEGACY.filter((n2) => text2.includes(`.crew/bin/${n2}.py`)) : [];
     if (calls.length) hints.push(`${file} still runs ${calls.map((n2) => `.crew/bin/${n2}.py`).join(", ")} \u2014 use node .crew/bin/<name>.mjs (${REFRESH})`);
   }
@@ -8678,16 +8782,16 @@ function legacyHints(store) {
 }
 
 // src/hub/commands/team/agents.ts
-import { join as join8 } from "node:path";
+import { join as join9 } from "node:path";
 
 // src/hub/core/store.ts
-import { existsSync as existsSync5, realpathSync as realpathSync2 } from "node:fs";
-import { dirname as dirname3, join as join7, relative as relative3, resolve as resolve3 } from "node:path";
+import { existsSync as existsSync6, realpathSync as realpathSync3 } from "node:fs";
+import { dirname as dirname4, join as join8, relative as relative4, resolve as resolve4 } from "node:path";
 import { fileURLToPath } from "node:url";
 
 // src/hub/core/workspace.ts
-import { chmodSync, copyFileSync, existsSync as existsSync4, mkdirSync as mkdirSync3, readdirSync as readdirSync2, readFileSync as readFileSync3, rmSync, statSync as statSync3, writeFileSync as writeFileSync2 } from "node:fs";
-import { dirname as dirname2, join as join6, relative as relative2, sep } from "node:path";
+import { chmodSync, copyFileSync, existsSync as existsSync5, mkdirSync as mkdirSync4, readdirSync as readdirSync2, readFileSync as readFileSync4, rmSync, statSync as statSync4, writeFileSync as writeFileSync2 } from "node:fs";
+import { dirname as dirname3, join as join7, relative as relative3, sep } from "node:path";
 var Workspace = class {
   constructor(root) {
     this.root = root;
@@ -8705,9 +8809,9 @@ var Workspace = class {
   read(path) {
     if (this.pending.has(path)) {
       const p = this.pending.get(path);
-      return p === null || p === void 0 ? null : "from" in p ? readFileSync3(p.from, "utf8") : p.text;
+      return p === null || p === void 0 ? null : "from" in p ? readFileSync4(p.from, "utf8") : p.text;
     }
-    return this.isFileOnDisk(path) ? readFileSync3(path, "utf8") : null;
+    return this.isFileOnDisk(path) ? readFileSync4(path, "utf8") : null;
   }
   write(path, text2, mode) {
     this.pending.set(path, { text: text2, mode });
@@ -8723,14 +8827,14 @@ var Workspace = class {
     return this.pending.has(path) ? this.pending.get(path) !== null : this.isFileOnDisk(path);
   }
   isDir(path) {
-    if (existsSync4(path) && statSync3(path).isDirectory()) return true;
+    if (existsSync5(path) && statSync4(path).isDirectory()) return true;
     return [...this.pending].some(([p, v]) => v !== null && p.startsWith(path + sep));
   }
   /** File names directly inside dir (staged files included, staged removals excluded), sorted. */
   list(dir) {
-    const names = new Set(existsSync4(dir) && statSync3(dir).isDirectory() ? readdirSync2(dir, { withFileTypes: true }).filter((e) => e.isFile()).map((e) => e.name) : []);
+    const names = new Set(existsSync5(dir) && statSync4(dir).isDirectory() ? readdirSync2(dir, { withFileTypes: true }).filter((e) => e.isFile()).map((e) => e.name) : []);
     for (const [p, v] of this.pending) {
-      if (dirname2(p) !== dir) continue;
+      if (dirname3(p) !== dir) continue;
       const name = p.slice(dir.length + 1);
       if (v === null) names.delete(name);
       else names.add(name);
@@ -8738,10 +8842,10 @@ var Workspace = class {
     return [...names].sort();
   }
   rel(path) {
-    return relative2(this.root, path).split(sep).join("/");
+    return relative3(this.root, path).split(sep).join("/");
   }
   join(...parts) {
-    return join6(...parts);
+    return join7(...parts);
   }
   /** Run fn at the start of flush(), before any file is written; a HubError there aborts the whole flush. */
   beforeFlush(fn) {
@@ -8773,7 +8877,7 @@ var Workspace = class {
         rmSync(path, { force: true, recursive: true });
         continue;
       }
-      mkdirSync3(dirname2(path), { recursive: true });
+      mkdirSync4(dirname3(path), { recursive: true });
       if ("from" in v) {
         copyFileSync(v.from, path);
         continue;
@@ -8790,14 +8894,14 @@ var Workspace = class {
     this.watchers.push({ before, after });
   }
   isFileOnDisk(path) {
-    return existsSync4(path) && statSync3(path).isFile();
+    return existsSync5(path) && statSync4(path).isFile();
   }
 };
 
 // src/hub/core/store.ts
 var SCRIPT_FILE = fileURLToPath(import.meta.url);
-var SCRIPT_DIR = dirname3(SCRIPT_FILE);
-var SKILL_DIR = dirname3(SCRIPT_DIR);
+var SCRIPT_DIR = dirname4(SCRIPT_FILE);
+var SKILL_DIR = dirname4(SCRIPT_DIR);
 function yamlBlock(text2, block) {
   const out = {};
   let inside = false;
@@ -8815,10 +8919,10 @@ var Store = class _Store {
     this.ws = ws;
     useRoot(ws.root);
     this.home = hubHome(ws.root);
-    this.dir = join7(this.home, ".crew");
-    this.dirs = Object.fromEntries(Object.entries(DIRS).map(([k, v]) => [k, join7(this.dir, v)]));
-    this.ideaPath = join7(this.dir, "idea.md");
-    this.knowledgeDir = join7(this.dir, "knowledge");
+    this.dir = join8(this.home, ".crew");
+    this.dirs = Object.fromEntries(Object.entries(DIRS).map(([k, v]) => [k, join8(this.dir, v)]));
+    this.ideaPath = join8(this.dir, "idea.md");
+    this.knowledgeDir = join8(this.dir, "knowledge");
     ws.watchWrites((paths) => {
       if (this.commitsState(paths)) requireBase(this.home, this.baseBranch());
     }, (paths) => {
@@ -8841,7 +8945,7 @@ var Store = class _Store {
   label = "update";
   /** With plan worktrees, a command that writes hub documents commits them on the base branch in the home. */
   commitsState(paths) {
-    return paths.some((p) => STATE_RE.test(relative3(this.home, p))) && this.settings().plan_worktrees;
+    return paths.some((p) => STATE_RE.test(relative4(this.home, p))) && this.settings().plan_worktrees;
   }
   static open(root = repoRoot()) {
     return new _Store(new Workspace(root));
@@ -8856,7 +8960,7 @@ var Store = class _Store {
   }
   /** A path for messages: hub files relative to the home, so they read `.crew/…` from any checkout. */
   rel(p) {
-    return p === this.dir || p.startsWith(`${this.dir}/`) ? relative3(this.home, p) : this.ws.rel(p);
+    return p === this.dir || p.startsWith(`${this.dir}/`) ? relative4(this.home, p) : this.ws.rel(p);
   }
   say(line2) {
     this.ws.say(line2);
@@ -8866,15 +8970,15 @@ var Store = class _Store {
   }
   /** Project copy wins (so a cloned repo works without the plugin); fall back to the skill's. */
   template(name) {
-    for (const d of [join7(this.dir, "templates"), join7(SKILL_DIR, "templates")]) {
-      const text2 = this.ws.read(join7(d, name));
+    for (const d of [join8(this.dir, "templates"), join8(SKILL_DIR, "templates")]) {
+      const text2 = this.ws.read(join8(d, name));
       if (text2 !== null) return text2;
     }
     return fail(`Template ${name} not found.`);
   }
   /** Hub settings from the `hub:` block of .crew/config.yaml, with defaults. */
   settings() {
-    const text2 = this.ws.read(join7(this.dir, "config.yaml"));
+    const text2 = this.ws.read(join8(this.dir, "config.yaml"));
     const s2 = { ...DEFAULT_SETTINGS, ...text2 === null ? {} : yamlBlock(text2, "hub") };
     const int = (k) => /^\d+$/.test(s2[k]) ? parseInt(s2[k], 10) : parseInt(DEFAULT_SETTINGS[k], 10);
     return { wip_limit: int("wip_limit"), max_tasks: int("max_tasks"), plan_worktrees: s2.plan_worktrees === "true" };
@@ -8887,7 +8991,7 @@ var Store = class _Store {
   loadDir(d) {
     const docs = /* @__PURE__ */ new Map();
     for (const name of this.ws.list(d).filter((n2) => n2.endsWith(".md"))) {
-      const path = join7(d, name);
+      const path = join8(d, name);
       const doc = this.attach(Doc.parse(this.ws.read(path), path));
       if (doc.id) docs.set(doc.id, doc);
     }
@@ -8902,11 +9006,11 @@ var Store = class _Store {
   /** Worktrees of plan branches other than this checkout, by plan ID: where each plan's team works. */
   planWorktrees() {
     if (this.worktreeCache) return this.worktreeCache;
-    const real2 = (p) => existsSync5(p) ? realpathSync2(p) : p;
+    const real2 = (p) => existsSync6(p) ? realpathSync3(p) : p;
     const here = real2(this.ws.root), out = /* @__PURE__ */ new Map();
     for (const w of worktrees()) {
       const m = /^plan\/(P-\d+)/.exec(w.branch ?? "");
-      if (m && existsSync5(w.path) && real2(w.path) !== here) out.set(m[1], w.path);
+      if (m && existsSync6(w.path) && real2(w.path) !== here) out.set(m[1], w.path);
     }
     return this.worktreeCache = out;
   }
@@ -8932,7 +9036,7 @@ var Store = class _Store {
   }
   /** The branch plans start from: `git.default_branch` in .crew/config.yaml, else the policy's first protected branch. */
   baseBranch() {
-    const text2 = this.ws.read(join7(this.dir, "config.yaml"));
+    const text2 = this.ws.read(join8(this.dir, "config.yaml"));
     const configured = text2 === null ? void 0 : yamlBlock(text2, "git").default_branch;
     return configured || this.policy.policy.git.protected_branches[0] || "main";
   }
@@ -8994,13 +9098,13 @@ var Store = class _Store {
     const names = this.ws.list(d);
     const rel = `${this.rel(d)}/`;
     for (const ref of allRefs()) names.push(...lsTree(ref, rel).map((n2) => n2.split("/").pop()));
-    for (const w of worktrees()) names.push(...this.ws.list(join7(w.path, this.rel(d))));
+    for (const w of worktrees()) names.push(...this.ws.list(join8(w.path, this.rel(d))));
     const nums = names.map((n2) => new RegExp(`^${prefix}-(\\d+)`).exec(n2)).filter((m) => m).map((m) => parseInt(m[1], 10));
     return `${prefix}-${String(Math.max(0, ...nums) + 1).padStart(width, "0")}`;
   }
   // -- creating documents from drafts
   readDraft(draftPath, what) {
-    const file = resolve3(draftPath);
+    const file = resolve4(draftPath);
     const text2 = this.ws.read(file);
     if (text2 === null) {
       fail(`Draft ${draftPath} not found. Write the ${what}'s sections there first (see .crew/templates/ and the writing guide).`);
@@ -9008,8 +9112,8 @@ var Store = class _Store {
     return [file, text2];
   }
   consume(draftFile, keep = false) {
-    const real2 = (p) => existsSync5(p) ? realpathSync2(p) : p;
-    if (!keep && real2(draftFile).startsWith(real2(resolve3(this.dir, "drafts")) + "/")) this.ws.remove(draftFile);
+    const real2 = (p) => existsSync6(p) ? realpathSync3(p) : p;
+    if (!keep && real2(draftFile).startsWith(real2(resolve4(this.dir, "drafts")) + "/")) this.ws.remove(draftFile);
   }
   build(template2, draft, fields) {
     const tmpl = fill(stripComments(this.template(template2)), { date: today(), ...fields }).replace(/^(\w+): $/gm, "$1:");
@@ -9039,11 +9143,11 @@ var Store = class _Store {
 // src/hub/commands/team/agents.ts
 var HUMAN = "executive";
 var PLAIN = /^[\w-]+$/;
-var agentsDir = (store) => join8(store.ws.root, ".claude", "agents");
-var agentFile = (store, role) => join8(agentsDir(store), `crew-${role}.md`);
+var agentsDir = (store) => join9(store.ws.root, ".claude", "agents");
+var agentFile = (store, role) => join9(agentsDir(store), `crew-${role}.md`);
 function template(store, name) {
-  for (const d of [join8(store.dir, "templates", "agents"), join8(SKILL_DIR, "agents")]) {
-    const text2 = store.ws.read(join8(d, `${name}.md`));
+  for (const d of [join9(store.dir, "templates", "agents"), join9(SKILL_DIR, "agents")]) {
+    const text2 = store.ws.read(join9(d, `${name}.md`));
     if (text2 !== null) return text2;
   }
   return fail(`Agent template ${name}.md not found. Re-run \`crew.mjs init\` from the plugin.`);
@@ -9083,8 +9187,8 @@ var agentRoles = (store) => resolvePolicy(store.ws.root, store.dir).roles.filter
 function rendered(store) {
   const out = /* @__PURE__ */ new Map();
   for (const name of store.ws.list(agentsDir(store)).filter((n2) => /^crew-.*\.md$/.test(n2))) {
-    const role = Doc.parse(store.ws.read(join8(agentsDir(store), name)) ?? "").get("crew-role");
-    if (role) out.set(join8(agentsDir(store), name), role);
+    const role = Doc.parse(store.ws.read(join9(agentsDir(store), name)) ?? "").get("crew-role");
+    if (role) out.set(join9(agentsDir(store), name), role);
   }
   return out;
 }
@@ -9307,17 +9411,17 @@ function hygiene(s2, f) {
   if (ahead.length > MAX_WRITTEN_AHEAD) {
     f.hints.push(`${ahead.length} plans written ahead of the work (> ${MAX_WRITTEN_AHEAD}) \u2014 keep later work as backlog items so plans don't go stale`);
   }
-  const leftovers = s2.store.ws.list(join9(s2.store.dir, "drafts")).filter((n2) => n2.endsWith(".md"));
+  const leftovers = s2.store.ws.list(join10(s2.store.dir, "drafts")).filter((n2) => n2.endsWith(".md"));
   if (leftovers.length) {
     f.hints.push(`unconverted drafts in .crew/drafts/: ${leftovers.join(", ")} \u2014 create the document from them or delete`);
   }
-  if (s2.store.ws.isDir(join9(s2.store.ws.root, ".project"))) {
+  if (s2.store.ws.isDir(join10(s2.store.ws.root, ".project"))) {
     f.hints.push("a .project/ directory from project-kit is still here \u2014 `crew.mjs migrate` moves it into .crew/");
   }
-  if (!s2.store.ws.read(join9(s2.store.ws.root, "CLAUDE.md"))?.includes(HUB_STATE_MARKER)) {
+  if (!s2.store.ws.read(join10(s2.store.ws.root, "CLAUDE.md"))?.includes(HUB_STATE_MARKER)) {
     f.hints.push("CLAUDE.md has no hub-state section (project state stays in the hub) \u2014 `crew.mjs init` adds it");
   }
-  if (!s2.store.ws.read(join9(s2.store.ws.root, ".githooks", "post-commit"))?.includes("graphify")) {
+  if (!s2.store.ws.read(join10(s2.store.ws.root, ".githooks", "post-commit"))?.includes("graphify")) {
     f.hints.push("code graph not set up (no graphify hook in .githooks/post-commit) \u2014 `/crew:codemap` installs and wires it");
   }
   f.hints.push(...legacyHints(s2.store));
@@ -9424,7 +9528,7 @@ Nothing was changed.`);
 }
 
 // src/hub/commands/views/graph.ts
-import { basename as basename2 } from "node:path";
+import { basename as basename3 } from "node:path";
 
 // src/hub/graph-types.ts
 var SCHEMA_VERSION = 6;
@@ -9451,7 +9555,7 @@ function buildGraph(store) {
   return {
     schemaVersion: SCHEMA_VERSION,
     generatedAt: (/* @__PURE__ */ new Date()).toISOString(),
-    project: { name: basename2(store.ws.root), branch: currentBranch(), today: today() },
+    project: { name: basename3(store.ws.root), branch: currentBranch(), today: today() },
     settings: store.settings(),
     focus: all.focus || null,
     docs,
@@ -9785,6 +9889,7 @@ function notify(store, kind, ref, text2, key = "") {
     if (r.status !== 0) store.say(`warning: notify.command failed (${r.status ?? r.signal}): ${(r.stderr ?? "").trim().split("\n")[0]}`);
   });
 }
+var MASKS = Object.values(SECRET_PATTERNS).map((re) => new RegExp(re.source, `${re.flags.replace("g", "")}g`));
 
 // src/hub/commands/team/questions.ts
 function questions(events) {
@@ -10440,13 +10545,13 @@ var Context = class {
 
 // src/hub/commands/views/design.ts
 var import_yaml3 = __toESM(require_dist(), 1);
-import { dirname as dirname4, join as join10 } from "node:path";
+import { dirname as dirname5, join as join11 } from "node:path";
 var FRONT = /^---\n([\s\S]*?)\n---\n/;
 function designPath(store) {
-  const cfg = store.ws.read(join10(store.dir, "config.yaml")) ?? "";
-  return join10(store.ws.root, yamlBlock(cfg, "design").file ?? "docs/design/DESIGN.md");
+  const cfg = store.ws.read(join11(store.dir, "config.yaml")) ?? "";
+  return join11(store.ws.root, yamlBlock(cfg, "design").file ?? "docs/design/DESIGN.md");
 }
-var studioPath = (store) => join10(dirname4(designPath(store)), "studio.json");
+var studioPath = (store) => join11(dirname5(designPath(store)), "studio.json");
 function readDesign(store) {
   const path = designPath(store);
   const text2 = store.ws.read(path);
@@ -10477,7 +10582,7 @@ var HANDOFF_HELP = {
   "screens-done": "write DESIGN.md \u2192 Screens for the approved screens and create one FEAT item per screen",
   "screens-skipped": "tell the user `/crew:design page <name>` builds screens later"
 };
-function describe(h) {
+function describe2(h) {
   return `${h.id}  ${h.kind}${h.screen ? ` (${h.screen})` : ""} \u2014 ${HANDOFF_HELP[h.kind]}${h.note ? `
      note: ${h.note}` : ""}`;
 }
@@ -10495,7 +10600,7 @@ function designShow(store, json) {
   if (studio) {
     const reviews = Object.entries(studio.reviews ?? {});
     store.say(`studio: stage ${studio.stage ?? "palette"} \xB7 shortlist ${studio.shortlist?.join(", ") || "\u2014"} \xB7 ${studio.variants?.length ?? 0} pinned variant(s) \xB7 screens ${reviews.map(([id, r]) => `${id}=${r.status}`).join(", ") || "not reviewed"}`);
-    for (const h of studio.handoffs ?? []) store.say(`  waiting on Claude: ${describe(h)}`);
+    for (const h of studio.handoffs ?? []) store.say(`  waiting on Claude: ${describe2(h)}`);
   }
 }
 function designDone(store, id) {
@@ -10519,6 +10624,8 @@ function status(store, write) {
   lines.push("## Idea and focus", "", ...ideaLines(store, goals2, plans2, items2, focus), "");
   const stale = staleClaims(store);
   if (stale.length) lines.push("## Stale claims", "", ...stale.map((s2) => `- ${s2.ref} \u2014 ${s2.actor} (${s2.run}), no activity for ${s2.hours}h`), "");
+  const live = runningLines(store);
+  if (live.length) lines.push("## Running now", "", ...live, "");
   const claims = store.ledger.claims();
   lines.push("## Now", "", ...planTable(byStatus(plans2, ["in-progress", "in-review"]), plans2, items2, claims), "");
   lines.push("## Blocked", "", ...blocked(plans2), "");
@@ -10727,44 +10834,6 @@ function context(store, o = {}) {
   const lines = assemble2(header, plan ? planSections(store, plan, role) : projectSections(store, role), budget);
   if (o.json) store.say(JSON.stringify({ plan: plan?.id ?? null, role, budget, text: lines.join("\n") }));
   else for (const l of lines) store.say(l);
-}
-
-// src/hub/commands/memory/ledger.ts
-var DETAIL = {
-  claim: (e) => `branch ${e.branch ?? "?"}${e.force ? " (forced)" : ""}`,
-  release: (e) => String(e.reason ?? ""),
-  move: (e) => `${e.from} \u2192 ${e.to}${e.note ? ` \u2014 ${e.note}` : ""}`,
-  log: (e) => String(e.text ?? ""),
-  learn: (e) => `${e.kind}: ${e.title}${e.supersedes ? ` (supersedes ${e.supersedes})` : ""}`,
-  checkpoint: (e) => e.workflow ? `${e.workflow}: ${e.step} ${e.state}` : `at ${e.step}${e.sha ? ` (${String(e.sha).slice(0, 7)})` : ""}` + (e.verify ?? []).map((v) => ` ${v.ok ? "\u2713" : "\u2717"} ${v.cmd}`).join("") + (e.attempt ? ` \u2014 tried: ${e.attempt.what}` : ""),
-  ask: (e) => `${e.qid} \u2192 ${e.to}${e.escalation ? " (escalation)" : ""}: ${e.text}`,
-  answer: (e) => `${e.qid}: ${e.text}${e.approved_by ? ` (by ${e.approved_by})` : ""}`,
-  assign: (e) => `to the ${e.to} role${e.team ? `, team ${e.team}` : ""}${e.note ? ` \u2014 ${e.note}` : ""}`,
-  review: (e) => `${e.verdict === "approve" ? "approved" : `changes: ${e.text}`}${e.sha ? ` (${String(e.sha).slice(0, 7)})` : ""}`,
-  notify: (e) => `${e.kind}: ${e.text}`,
-  pause: (e) => String(e.reason ?? "paused"),
-  resume: (e) => String(e.note ?? "resumed"),
-  usage: (e) => `${e.tokens_in} in / ${e.tokens_out} out tokens, $${Number(e.cost ?? 0).toFixed(2)}${e.model ? ` (${e.model})` : ""}`
-};
-var EVENT_TYPES = Object.keys(DETAIL);
-function showLedger(store, o = {}) {
-  store.require();
-  if (o.type && !DETAIL[o.type]) fail(`Unknown event type '${o.type}'. Valid: ${Object.keys(DETAIL).join(", ")}`);
-  const ref = o.ref?.toUpperCase();
-  const all = store.ledger.events();
-  const events = all.filter((e) => (!ref || e.ref === ref) && (!o.type || e.type === o.type)).slice(-(o.limit ?? 20));
-  if (o.json) {
-    for (const e of events) store.say(JSON.stringify(e));
-    return;
-  }
-  if (!events.length) store.say(`No events${ref ? ` for ${ref}` : ""} in ${store.ledger.path}.`);
-  for (const e of events) {
-    store.say(`${e.ts.slice(0, 16).replace("T", " ")}  ${e.type.padEnd(7)}  ${(e.ref ?? "\u2014").padEnd(9)}  ${e.actor} (${e.run})  ${DETAIL[e.type](e)}`);
-  }
-  const claims = [...store.ledger.claims(all).values()];
-  if (!ref && !o.type && claims.length) {
-    store.say(`claims: ${claims.map((c) => `${c.ref} ${c.actor}`).join(", ")}`);
-  }
 }
 
 // src/hub/commands/team/runs.ts
