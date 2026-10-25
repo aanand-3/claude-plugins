@@ -99,7 +99,7 @@ var require_visit = __commonJS({
   "node_modules/yaml/dist/visit.js"(exports) {
     "use strict";
     var identity = require_identity();
-    var BREAK = /* @__PURE__ */ Symbol("break visit");
+    var BREAK2 = /* @__PURE__ */ Symbol("break visit");
     var SKIP = /* @__PURE__ */ Symbol("skip children");
     var REMOVE = /* @__PURE__ */ Symbol("remove node");
     function visit(node, visitor) {
@@ -111,7 +111,7 @@ var require_visit = __commonJS({
       } else
         visit_(null, node, visitor_, Object.freeze([]));
     }
-    visit.BREAK = BREAK;
+    visit.BREAK = BREAK2;
     visit.SKIP = SKIP;
     visit.REMOVE = REMOVE;
     function visit_(key, node, visitor, path) {
@@ -127,8 +127,8 @@ var require_visit = __commonJS({
             const ci = visit_(i, node.items[i], visitor, path);
             if (typeof ci === "number")
               i = ci - 1;
-            else if (ci === BREAK)
-              return BREAK;
+            else if (ci === BREAK2)
+              return BREAK2;
             else if (ci === REMOVE) {
               node.items.splice(i, 1);
               i -= 1;
@@ -137,13 +137,13 @@ var require_visit = __commonJS({
         } else if (identity.isPair(node)) {
           path = Object.freeze(path.concat(node));
           const ck = visit_("key", node.key, visitor, path);
-          if (ck === BREAK)
-            return BREAK;
+          if (ck === BREAK2)
+            return BREAK2;
           else if (ck === REMOVE)
             node.key = null;
           const cv = visit_("value", node.value, visitor, path);
-          if (cv === BREAK)
-            return BREAK;
+          if (cv === BREAK2)
+            return BREAK2;
           else if (cv === REMOVE)
             node.value = null;
         }
@@ -159,7 +159,7 @@ var require_visit = __commonJS({
       } else
         await visitAsync_(null, node, visitor_, Object.freeze([]));
     }
-    visitAsync.BREAK = BREAK;
+    visitAsync.BREAK = BREAK2;
     visitAsync.SKIP = SKIP;
     visitAsync.REMOVE = REMOVE;
     async function visitAsync_(key, node, visitor, path) {
@@ -175,8 +175,8 @@ var require_visit = __commonJS({
             const ci = await visitAsync_(i, node.items[i], visitor, path);
             if (typeof ci === "number")
               i = ci - 1;
-            else if (ci === BREAK)
-              return BREAK;
+            else if (ci === BREAK2)
+              return BREAK2;
             else if (ci === REMOVE) {
               node.items.splice(i, 1);
               i -= 1;
@@ -185,13 +185,13 @@ var require_visit = __commonJS({
         } else if (identity.isPair(node)) {
           path = Object.freeze(path.concat(node));
           const ck = await visitAsync_("key", node.key, visitor, path);
-          if (ck === BREAK)
-            return BREAK;
+          if (ck === BREAK2)
+            return BREAK2;
           else if (ck === REMOVE)
             node.key = null;
           const cv = await visitAsync_("value", node.value, visitor, path);
-          if (cv === BREAK)
-            return BREAK;
+          if (cv === BREAK2)
+            return BREAK2;
           else if (cv === REMOVE)
             node.value = null;
         }
@@ -5561,7 +5561,7 @@ var require_cst_stringify = __commonJS({
 var require_cst_visit = __commonJS({
   "node_modules/yaml/dist/parse/cst-visit.js"(exports) {
     "use strict";
-    var BREAK = /* @__PURE__ */ Symbol("break visit");
+    var BREAK2 = /* @__PURE__ */ Symbol("break visit");
     var SKIP = /* @__PURE__ */ Symbol("skip children");
     var REMOVE = /* @__PURE__ */ Symbol("remove item");
     function visit(cst, visitor) {
@@ -5569,7 +5569,7 @@ var require_cst_visit = __commonJS({
         cst = { start: cst.start, value: cst.value };
       _visit(Object.freeze([]), cst, visitor);
     }
-    visit.BREAK = BREAK;
+    visit.BREAK = BREAK2;
     visit.SKIP = SKIP;
     visit.REMOVE = REMOVE;
     visit.itemAtPath = (cst, path) => {
@@ -5602,8 +5602,8 @@ var require_cst_visit = __commonJS({
             const ci = _visit(Object.freeze(path.concat([[field, i]])), token.items[i], visitor);
             if (typeof ci === "number")
               i = ci - 1;
-            else if (ci === BREAK)
-              return BREAK;
+            else if (ci === BREAK2)
+              return BREAK2;
             else if (ci === REMOVE) {
               token.items.splice(i, 1);
               i -= 1;
@@ -7264,7 +7264,7 @@ var require_public_api = __commonJS({
       }
       return doc;
     }
-    function parse6(src, reviver, options) {
+    function parse7(src, reviver, options) {
       let _reviver = void 0;
       if (typeof reviver === "function") {
         _reviver = reviver;
@@ -7305,7 +7305,7 @@ var require_public_api = __commonJS({
         return value.toString(options);
       return new Document.Document(value, _replacer, options).toString(options);
     }
-    exports.parse = parse6;
+    exports.parse = parse7;
     exports.parseAllDocuments = parseAllDocuments;
     exports.parseDocument = parseDocument;
     exports.stringify = stringify2;
@@ -7650,9 +7650,9 @@ ${f.why.trim()}
 `.replace(/: \n/g, ":\n");
 }
 function knowledgeId(title, taken) {
-  const base = `K-${today()}-${slugify(title).slice(0, 40).replace(/-+$/, "")}`;
-  let id = base, n2 = 2;
-  while (taken(id)) id = `${base}-${n2++}`;
+  const base2 = `K-${today()}-${slugify(title).slice(0, 40).replace(/-+$/, "")}`;
+  let id = base2, n2 = 2;
+  while (taken(id)) id = `${base2}-${n2++}`;
   return id;
 }
 
@@ -7699,12 +7699,12 @@ function changed(dir, paths) {
 function dirty(dir, path) {
   return (git(["-C", dir, "status", "--porcelain", "--untracked-files=all", "--no-renames", "--", path]) ?? "").split("\n").filter((l) => l.length > 3 && !l.slice(0, 2).includes("D")).map((l) => l.slice(3));
 }
-function squashMerge(branch, base, pid) {
-  const fork = git(["merge-base", branch, base])?.trim();
+function squashMerge(branch, base2, pid) {
+  const fork = git(["merge-base", branch, base2])?.trim();
   const changed2 = fork ? (git(["diff", "--name-only", "-z", fork, branch]) ?? "").split("\0").filter(Boolean) : [];
   if (!changed2.length) return null;
   const names = new RegExp(`^(\\w+\\(${pid}\\)|${pid}):`);
-  for (const line3 of (git(["log", "--format=%H %s", `${fork}..${base}`]) ?? "").split("\n")) {
+  for (const line3 of (git(["log", "--format=%H %s", `${fork}..${base2}`]) ?? "").split("\n")) {
     const [sha, subject] = [line3.slice(0, line3.indexOf(" ")), line3.slice(line3.indexOf(" ") + 1)];
     if (sha && names.test(subject) && mergesToItself(sha, branch, changed2)) return sha;
   }
@@ -7936,10 +7936,10 @@ function hubHome(root) {
   const main = worktrees()[0]?.path;
   return !main || real(main) === real(root) ? root : main;
 }
-function requireBase(home2, base) {
+function requireBase(home2, base2) {
   const at = git(["-C", home2, "branch", "--show-current"])?.trim();
-  if (at !== base) {
-    fail(`Hub state lives on ${base} in the main checkout (${home2}), which is on ${at || "a detached HEAD"}: switch it back to ${base}, or turn hub.plan_worktrees off.`);
+  if (at !== base2) {
+    fail(`Hub state lives on ${base2} in the main checkout (${home2}), which is on ${at || "a detached HEAD"}: switch it back to ${base2}, or turn hub.plan_worktrees off.`);
   }
 }
 function commitState(home2, message) {
@@ -8736,8 +8736,8 @@ var Store = class _Store {
     const plans2 = this.loadDir(this.dirs.plan);
     if (includeBranches && !this.settings().plan_worktrees) {
       for (const [pid, doc] of this.branchPlans()) {
-        const base = plans2.get(pid);
-        if (!base || !CLOSED.has(base.get("status") ?? "")) plans2.set(pid, doc);
+        const base2 = plans2.get(pid);
+        if (!base2 || !CLOSED.has(base2.get("status") ?? "")) plans2.set(pid, doc);
       }
     }
     return plans2;
@@ -8981,10 +8981,10 @@ function touchHints(plan, tracked, shared) {
   }
   return out;
 }
-function drift(plan, base, home2) {
+function drift(plan, base2, home2) {
   if (!home2 || !plan.touches().length) return null;
   const at = (args) => git(["-C", home2, ...args]);
-  const fork = at(["merge-base", base, "HEAD"])?.trim();
+  const fork = at(["merge-base", base2, "HEAD"])?.trim();
   if (!fork) return null;
   const changed2 = new Set([
     ...at(["diff", "--name-only", fork])?.split("\n") ?? [],
@@ -9282,14 +9282,211 @@ function showLedger(store, o = {}) {
 // src/hub/commands/team/guard.ts
 import { readFileSync as readFileSync5, realpathSync as realpathSync4 } from "node:fs";
 import { homedir, tmpdir } from "node:os";
-import { basename as basename3, dirname as dirname5, isAbsolute as isAbsolute2, join as join9, relative as relative4, resolve as resolve5 } from "node:path";
+import { basename as basename4, dirname as dirname5, isAbsolute as isAbsolute2, join as join9, relative as relative4, resolve as resolve5 } from "node:path";
+
+// src/hub/commands/team/hubcall.ts
+import { basename as basename3 } from "node:path";
+var HUB = /\bcrew\.mjs\b/;
+var ASSIGN = /^[A-Za-z_]\w*=/;
+var PREFIX2 = /* @__PURE__ */ new Set(["{", "!", "if", "then", "else", "elif", "do", "while", "until", "time", "builtin", "command", "exec", "env", "nohup"]);
+var SHELLS = /* @__PURE__ */ new Set(["sh", "bash", "zsh", "dash", "ksh"]);
+var RUNTIMES = /* @__PURE__ */ new Set(["node", "bun", "deno"]);
+var WRAPPERS = /* @__PURE__ */ new Set(["eval", "xargs", "parallel", "watch", "timeout", "nice", "sudo", "ssh"]);
+var BREAK = " 	\n;&|()<>";
+var VARIABLE = "a hub path held in a shell variable can't be given your identity; call the hub literally (node .crew/bin/crew.mjs \u2026)";
+var NESTED = "the guard can't give your identity to a hub call inside nested shell code; call the hub directly as its own command";
+function parse4(s2) {
+  const all = [];
+  const pending = [];
+  const n2 = s2.length;
+  let i = 0;
+  const heredocs = () => {
+    for (const h of pending.splice(0)) {
+      const from = i;
+      let body2 = s2.slice(from);
+      while (i < n2) {
+        const e = s2.indexOf("\n", i) < 0 ? n2 : s2.indexOf("\n", i);
+        const line3 = s2.slice(i, e);
+        if ((h.strip ? line3.replace(/^\t+/, "") : line3) === h.delim) {
+          body2 = s2.slice(from, i);
+          i = Math.min(e + 1, n2);
+          break;
+        }
+        i = e + 1;
+      }
+      if (i > n2) i = n2;
+      h.cmd.bodies.push(body2);
+    }
+  };
+  const nested = (stop) => list(stop);
+  const word = (stop) => {
+    const start2 = i;
+    let value = "";
+    while (i < n2) {
+      const c = s2[i];
+      if (BREAK.includes(c) || c === stop) break;
+      if (c === "\\") {
+        if (s2[i + 1] !== "\n") value += s2[i + 1] ?? "";
+        i += 2;
+      } else if (c === "'") {
+        const j = s2.indexOf("'", i + 1) < 0 ? n2 : s2.indexOf("'", i + 1);
+        value += s2.slice(i + 1, j);
+        i = j + 1;
+      } else if (c === '"') {
+        for (i++; i < n2 && s2[i] !== '"'; ) {
+          if (s2[i] === "\\" && '$`"\\\n'.includes(s2[i + 1] ?? "")) {
+            value += s2[i + 1];
+            i += 2;
+          } else if (s2.startsWith("$(", i) || s2[i] === "`") {
+            const from = i;
+            i += s2[i] === "`" ? 1 : 2;
+            nested(s2[from] === "`" ? "`" : ")");
+            value += s2.slice(from, i);
+          } else value += s2[i++];
+        }
+        i++;
+      } else if (s2.startsWith("$(", i) || c === "`") {
+        const from = i;
+        i += c === "`" ? 1 : 2;
+        nested(c === "`" ? "`" : ")");
+        value += s2.slice(from, i);
+      } else if (s2.startsWith("${", i)) {
+        const j = s2.indexOf("}", i) < 0 ? n2 : s2.indexOf("}", i) + 1;
+        value += s2.slice(i, j);
+        i = j;
+      } else value += s2[i++];
+    }
+    i = Math.min(i, n2);
+    return { start: start2, end: i, value, raw: s2.slice(start2, i) };
+  };
+  const redirect = (cmd, stop) => {
+    if (s2[i] === "&") i++;
+    const op = s2[i++];
+    let heredoc = false, herestring = false, strip = false;
+    if (op === "<" && s2[i] === "<") {
+      i++;
+      if (s2[i] === "<") {
+        herestring = true;
+        i++;
+      } else heredoc = true;
+      if (heredoc && s2[i] === "-") {
+        strip = true;
+        i++;
+      }
+    } else if (s2[i] === "(") {
+      i++;
+      nested(")");
+      return;
+    } else if (s2[i] === ">" || s2[i] === "|" || s2[i] === "&") {
+      if (s2[i++] === "&" && /[\d-]/.test(s2[i] ?? "")) {
+        while (i < n2 && /[\d-]/.test(s2[i])) i++;
+        return;
+      }
+    }
+    while (s2[i] === " " || s2[i] === "	") i++;
+    if (i >= n2 || BREAK.includes(s2[i])) return;
+    const target = word(stop);
+    if (heredoc) pending.push({ delim: target.value, strip, cmd });
+    else if (herestring) cmd.bodies.push(target.value);
+  };
+  function list(stop) {
+    let cur = { words: [], bodies: [] };
+    all.push(cur);
+    const end = () => {
+      cur = { words: [], bodies: [] };
+      all.push(cur);
+    };
+    while (i < n2) {
+      const c = s2[i];
+      if (stop && c === stop) {
+        i++;
+        return;
+      }
+      if (c === " " || c === "	") i++;
+      else if (c === "\\" && s2[i + 1] === "\n") i += 2;
+      else if (c === "\n") {
+        i++;
+        end();
+        heredocs();
+      } else if (c === "#") {
+        while (i < n2 && s2[i] !== "\n") i++;
+      } else if (c === "<" || c === ">" || c === "&" && s2[i + 1] === ">") redirect(cur, stop);
+      else if (c === "(") {
+        i++;
+        end();
+        nested(")");
+        end();
+      } else if (";&|)".includes(c)) {
+        i++;
+        end();
+      } else {
+        const w = word(stop);
+        if (/^\d+$/.test(w.raw) && (s2[i] === "<" || s2[i] === ">")) continue;
+        cur.words.push(w);
+      }
+    }
+  }
+  list("");
+  return all.filter((c) => c.words.length || c.bodies.length);
+}
+var base = (w) => w ? basename3(w.value) : "";
+function headAt(c) {
+  let h = 0;
+  while (h < c.words.length && (ASSIGN.test(c.words[h].raw) || PREFIX2.has(c.words[h].raw))) h++;
+  return h;
+}
+function hubWord(c) {
+  const h = headAt(c), head = c.words[h];
+  if (base(head) === "crew.mjs") return head;
+  if (!RUNTIMES.has(base(head))) return null;
+  const script = c.words.slice(h + 1).find((w) => !w.value.startsWith("-"));
+  return base(script) === "crew.mjs" ? script : null;
+}
+function refusal(c) {
+  const h = headAt(c), head = c.words[h];
+  if (!head) return null;
+  if (/^"?\$[A-Za-z_{]/.test(head.raw)) return VARIABLE;
+  const name = base(head), rest = c.words.slice(h + 1);
+  const later = (k) => rest.slice(k).some((w) => HUB.test(w.value));
+  const opt = (re) => rest.findIndex((w) => re.test(w.value));
+  if (SHELLS.has(name)) {
+    const k = opt(/^-[A-Za-z]*c[A-Za-z]*$/);
+    if (k >= 0 && later(k + 1)) return NESTED;
+    if (c.bodies.some((b) => HUB.test(b))) return NESTED;
+  }
+  if (WRAPPERS.has(name) && later(0)) return NESTED;
+  if (name === "find" || name === "fd") {
+    const k = opt(/^(-exec|-execdir|-ok|-okdir|-x|--exec|-X|--exec-batch)$/);
+    if (k >= 0 && later(k + 1)) return NESTED;
+  }
+  if (RUNTIMES.has(name)) {
+    const k = opt(/^(-[ep]|-pe|--eval|--print)(=|$)/);
+    if (k >= 0 && later(k)) return NESTED;
+  }
+  if (name === "git" && rest.some((w) => /^!|=!/.test(w.value) && HUB.test(w.value))) return NESTED;
+  return null;
+}
+function withIdentity(cmd, flags) {
+  if (!HUB.test(cmd)) return { command: cmd };
+  const cmds = parse4(cmd);
+  for (const c of cmds) {
+    const why = refusal(c);
+    if (why) return { deny: why };
+  }
+  const at = [...new Set(cmds.map(hubWord).filter((w) => !!w).map((w) => w.end))].sort((a, b) => b - a);
+  let command2 = cmd;
+  for (const e of at) command2 = `${command2.slice(0, e)} ${flags}${command2.slice(e)}`;
+  return { command: command2 };
+}
+
+// src/hub/commands/team/guard.ts
 var HUB_MCP = /^mcp__(?:plugin_crew_)?hub__/;
 function real3(p) {
   try {
     return realpathSync4(p);
   } catch {
     const up5 = dirname5(p);
-    return up5 === p ? p : join9(real3(up5), basename3(p));
+    return up5 === p ? p : join9(real3(up5), basename4(p));
   }
 }
 var shellPath = (p) => p.replace(/^["']|["']$/g, "").replace(/^(~|\$HOME|\$\{HOME\})(?=\/|$)/, homedir());
@@ -9300,7 +9497,6 @@ var within = (dir, p) => {
 var CREW_CLI2 = /\bcrew\.mjs\b/;
 var EDITS = { Edit: "file_path", Write: "file_path", MultiEdit: "file_path", NotebookEdit: "notebook_path" };
 var WRITERS = /^(rm|mv|cp|ln|chmod|chown|truncate|tee|install|touch|mkdir)$/;
-var OPERAND_OF = /^(ls|cat|less|head|tail|wc|cmp|diff|git|grep|egrep|rg|sed|awk|stat|file|find|du|test|\[|cp|mv|rm|ln|chmod|touch|readlink|realpath|shasum|sha1sum|sha256sum|md5|md5sum|echo|printf)$/;
 function agentRole(root, agentType) {
   if (!/^[\w-]+$/.test(agentType)) return null;
   try {
@@ -9312,11 +9508,6 @@ function agentRole(root, agentType) {
 var patternRe = (p) => new RegExp(`^${p.trim().replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*").replace(/\?/g, ".")}$`);
 var segments2 = (cmd) => cmd.split(/&&|\|\||;|(?<!>)\||\n/).map((c) => c.trim()).filter(Boolean);
 var words2 = (cmd) => cmd.split(/[\s"'=]+/).map((w) => w.replace(/^>+/, "").replace(/^\.\//, "")).filter(Boolean);
-var RUNNER = /\$\(|`|<\(|-exec|xargs|system|\b(node|bun|deno|sh|bash|zsh|eval|exec)\b/;
-function runsHub(seg) {
-  const head = seg.trim().split(/\s+/).find((w) => !/^\w+=/.test(w)) ?? "";
-  return !OPERAND_OF.test(basename3(head)) || RUNNER.test(seg);
-}
 function hubCommand(seg) {
   const w = seg.split(/\s+/);
   let i = w.findIndex((x) => CREW_CLI2.test(x));
@@ -9325,7 +9516,7 @@ function hubCommand(seg) {
   return w[i] ?? null;
 }
 var REDIRECT = /\d*&?>{1,2}\|?(&?)\s*([^\s;&|<>]+)/g;
-var PREFIX2 = /^(\{|!|if|then|else|elif|do|while|until|builtin|command|time)$/;
+var PREFIX3 = /^(\{|!|if|then|else|elif|do|while|until|builtin|command|time)$/;
 function writeTargets(cmd) {
   const out = [];
   const vars = {};
@@ -9344,7 +9535,7 @@ function writeTargets(cmd) {
     }
     for (const m of seg.matchAll(REDIRECT)) if (!(m[1] && /^(\d+|-)$/.test(m[2]))) out.push(at(m[2]));
     let [head, ...args] = words2(seg.replace(REDIRECT, ""));
-    while (head !== void 0 && PREFIX2.test(head.replace(/^\(+/, ""))) [head, ...args] = args;
+    while (head !== void 0 && PREFIX3.test(head.replace(/^\(+/, ""))) [head, ...args] = args;
     head = head?.replace(/^\(+/, "");
     if (head === "cd" || head === "pushd") {
       const to = expand(args.find((a) => !a.startsWith("-")) ?? "~");
@@ -9354,7 +9545,7 @@ function writeTargets(cmd) {
     const operands = (head === "git" ? args.slice(1) : args).filter((a) => !a.startsWith("-"));
     if (head && /^(cp|ln|install)$/.test(head)) {
       const t = args.findIndex((a) => a === "-t" || a === "--target-directory");
-      const dest = t >= 0 ? args[t + 1] : head === "ln" && operands.length === 1 ? basename3(operands[0]) : operands.at(-1);
+      const dest = t >= 0 ? args[t + 1] : head === "ln" && operands.length === 1 ? basename4(operands[0]) : operands.at(-1);
       if (dest) out.push(at(dest));
     } else if (head && WRITERS.test(head) || head === "sed" && args.some((a) => a.startsWith("-i")) || head === "git" && /^(checkout|restore|rm|mv)$/.test(args[0] ?? "")) {
       out.push(...operands.map(at));
@@ -9430,8 +9621,9 @@ function decide(store, h) {
     const claimed = [...cmd.matchAll(/--as[=\s]+(\S+)/g)].map((m) => m[1]);
     if (claimed.some((c) => c !== role)) return { deny: `you are the ${role} agent; don't pass --as for another role` };
     if (/--run-id\b|\bCREW_(ROLE|RUN|ACTOR|TEAM)=/.test(cmd)) return { deny: "the guard sets your identity; don't pass --run-id or CREW_* variables" };
-    const command2 = cmd.split(/(&&|\|\||;|\||&|\n)/).map((part, i) => i % 2 || !runsHub(part) ? part : part.replace(/(\bcrew\.mjs)(?=["'\s]|$)/g, `$1 --as ${role} --run-id ${run2}`)).join("");
-    return command2 === cmd ? null : { input: { ...input, command: command2 } };
+    const r = withIdentity(cmd, `--as ${role} --run-id ${run2}`);
+    if ("deny" in r) return r;
+    return r.command === cmd ? null : { input: { ...input, command: r.command } };
   }
   if (HUB_MCP.test(h.tool_name)) {
     if (input.as !== void 0 && input.as !== role) return { deny: `you are the ${role} agent; don't set as for another role` };
@@ -10223,8 +10415,8 @@ function policyCheck(store) {
   return errors.length ? 1 : 0;
 }
 function policyFindings(store) {
-  const base = resolvePolicy(store.home, store.dir);
-  const errors = new Set(base.errors), hints = new Set(base.hints);
+  const base2 = resolvePolicy(store.home, store.dir);
+  const errors = new Set(base2.errors), hints = new Set(base2.hints);
   let raw = {};
   try {
     raw = (0, import_yaml3.parse)(store.ws.read(`${store.dir}/policy.yaml`) ?? "") ?? {};
@@ -10886,7 +11078,7 @@ Slice of ${goal.id} (${goal.get("title")}): ${cand}
 import { join as join15, resolve as resolve6 } from "node:path";
 
 // src/hub/commands/views/graph.ts
-import { basename as basename4 } from "node:path";
+import { basename as basename5 } from "node:path";
 
 // src/hub/graph-types.ts
 var SCHEMA_VERSION = 6;
@@ -10979,7 +11171,7 @@ function staff(store, json = false) {
 import { chmodSync as chmodSync2, copyFileSync as copyFileSync2, existsSync as existsSync9, readFileSync as readFileSync8, statSync as statSync6 } from "node:fs";
 import { isAbsolute as isAbsolute4, join as join14, normalize } from "node:path";
 function mergeOrder(store) {
-  const base = store.baseBranch(), plans2 = store.plans(true), events = store.ledger.events(), moved = store.ledger.lastStatus(events);
+  const base2 = store.baseBranch(), plans2 = store.plans(true), events = store.ledger.events(), moved = store.ledger.lastStatus(events);
   const doneAt = new Map(events.filter((e) => e.type === "move" && e.to === "done").map((e) => [e.ref, e.ts]));
   const branches = new Set(planBranches());
   const status2 = (p) => moved.get(p.id) ?? p.get("status") ?? "";
@@ -10987,10 +11179,10 @@ function mergeOrder(store) {
   const merged = /* @__PURE__ */ new Map();
   const isMerged = (p) => {
     const b = p.get("branch");
-    if (!merged.has(p.id)) merged.set(p.id, !worktrees2.has(p.id) && (git(["merge-base", "--is-ancestor", b, base]) !== null || squashMerge(b, base, p.id) !== null));
+    if (!merged.has(p.id)) merged.set(p.id, !worktrees2.has(p.id) && (git(["merge-base", "--is-ancestor", b, base2]) !== null || squashMerge(b, base2, p.id) !== null));
     return merged.get(p.id);
   };
-  const out = { base, merge: [], waiting: [], merged: [] };
+  const out = { base: base2, merge: [], waiting: [], merged: [] };
   const done = [...plans2.values()].filter((p) => status2(p) === "done" && branches.has(p.get("branch") ?? "")).sort(byKey((p) => [doneAt.get(p.id) ?? p.get("completed") ?? "", p.id]));
   const pending = /* @__PURE__ */ new Set();
   for (const p of done) {
@@ -11302,7 +11494,7 @@ function buildGraph(store) {
   return {
     schemaVersion: SCHEMA_VERSION,
     generatedAt: (/* @__PURE__ */ new Date()).toISOString(),
-    project: { name: basename4(store.ws.root), branch: currentBranch(), today: today() },
+    project: { name: basename5(store.ws.root), branch: currentBranch(), today: today() },
     settings: store.settings(),
     focus: all.focus || null,
     docs,
@@ -11714,15 +11906,15 @@ var registration = {
 
 // src/hub/commands/work/gather.ts
 import { existsSync as existsSync10, realpathSync as realpathSync5, statSync as statSync7 } from "node:fs";
-import { basename as basename5, dirname as dirname6, join as join17 } from "node:path";
+import { basename as basename6, dirname as dirname6, join as join17 } from "node:path";
 var real4 = (p) => existsSync10(p) ? realpathSync5(p) : p;
 var mtimeOf = (p) => statSync7(p, { throwIfNoEntry: false })?.mtimeMs ?? 0;
 function copies(store) {
-  const out = [], base = store.baseBranch();
+  const out = [], base2 = store.baseBranch();
   for (const { path: wt } of worktrees()) {
     if (!existsSync10(wt) || real4(wt) === real4(store.home)) continue;
     const dirty2 = new Set(dirty(wt, ".crew").filter((f) => STATE_RE.test(f)));
-    const ahead = (git(["-C", wt, "diff", "--name-only", "--diff-filter=AM", `${base}...HEAD`, "--", ".crew"]) ?? "").split("\n").filter((f) => STATE_RE.test(f) && !dirty2.has(f));
+    const ahead = (git(["-C", wt, "diff", "--name-only", "--diff-filter=AM", `${base2}...HEAD`, "--", ".crew"]) ?? "").split("\n").filter((f) => STATE_RE.test(f) && !dirty2.has(f));
     for (const f of [...dirty2, ...ahead]) {
       const text2 = store.ws.read(join17(wt, f));
       if (text2 !== null && text2 !== store.ws.read(join17(store.home, f))) {
@@ -11754,7 +11946,7 @@ function gather(store) {
       } else if (same && same.path !== target && same.get("title") !== doc.get("title")) {
         const id = store.nextId(doc.id.replace(/-\d+$/, ""), kindOf(doc.id));
         const text2 = c.text.replace(new RegExp(`^id: ${doc.id}$`, "m"), `id: ${id}`).replace(new RegExp(`^# ${doc.id}:`, "m"), `# ${id}:`);
-        const path = join17(dirname6(target), basename5(target).replace(doc.id, id));
+        const path = join17(dirname6(target), basename6(target).replace(doc.id, id));
         store.ws.write(path, text2);
         store.say(`${doc.id} in ${from} clashes with ${same.id} "${same.get("title")}": gathered as ${id} (${store.rel(path)}); check what refers to ${doc.id}`);
       } else {
@@ -12938,7 +13130,7 @@ import { spawn } from "node:child_process";
 import { randomBytes as randomBytes4 } from "node:crypto";
 import { existsSync as existsSync14, mkdirSync as mkdirSync6, watch as watch2 } from "node:fs";
 import { createServer } from "node:http";
-import { basename as basename6, dirname as dirname8, join as join21 } from "node:path";
+import { basename as basename7, dirname as dirname8, join as join21 } from "node:path";
 
 // src/hub/commands/views/design.ts
 var import_yaml4 = __toESM(require_dist(), 1);
@@ -13250,7 +13442,7 @@ function serve(store, o) {
   ];
   const watchers = [...new Set(watched)].filter((p) => existsSync14(p)).map((p) => watch2(p, { recursive: !p.endsWith("HEAD") && (p !== ledgerDir || p === store.dir) }, (_, file) => {
     const f = String(file ?? "");
-    if (/\.lock$|\.stale-/.test(basename6(f))) return;
+    if (/\.lock$|\.stale-/.test(basename7(f))) return;
     if (!(p === store.dir && f.startsWith("view"))) notify2();
   }));
   return new Promise((resolve8, reject) => {

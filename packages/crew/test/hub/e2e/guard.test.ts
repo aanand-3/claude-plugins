@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { beforeEach, expect, it } from "vitest";
 import { Repo } from "../../helpers/repo.js";
 import { init, newPlan, tr } from "./helpers.js";
-import { agent, bash, events, hook, mcpCall } from "./sections.js";
+import { agent, bash, events, hook, knowledge, mcpCall } from "./sections.js";
 
 let repo: Repo;
 beforeEach(() => { repo = Repo.create(); });
@@ -59,6 +59,70 @@ it("injected identity reaches the ledger", () => {
   expect(repo.run("sh", ["-c", cmd]).returncode).toBe(0);
   const e = events(repo, "--type", "usage").at(-1);
   expect([e.role, e.run]).toEqual(["qa", "qa:abc123"]);
+});
+
+const HUB = "node .crew/bin/crew.mjs";
+const ID = `${HUB} --as qa --run-id qa:a1`;
+
+it("the guard injects identity only after the executed hub program (BUG-017)", () => {
+  init(repo);
+  agent(repo, "crew-qa", "qa");
+  const learn = 'learn decision "Rebuild both bundles" --why "rebuild dist/crew.mjs and dist/mcp.mjs"';
+  for (const tail of [learn, 'checkpoint P-001 --step T1 --note "ran node .crew/bin/crew.mjs next"',
+    "log P-001 'tried node .crew/bin/crew.mjs ledger; then .crew/bin/crew.mjs next'"]) {
+    expect(hook(repo, bash("crew-qa", `${HUB} ${tail}`))?.updatedInput?.command, tail).toBe(`${ID} ${tail}`);
+  }
+  const cmd = hook(repo, bash("crew-qa", `${HUB} ${learn}`)).updatedInput.command;
+  const r = repo.run("sh", ["-c", cmd]);
+  expect(r.returncode, r.stderr).toBe(0);
+  const body = Object.values(knowledge(repo)).find((t) => t.includes("Rebuild both bundles"));
+  expect(body).toContain("rebuild dist/crew.mjs and dist/mcp.mjs");
+  expect(body).not.toContain("--as");
+});
+
+it("a script's arguments are left alone (BUG-017)", () => {
+  init(repo);
+  agent(repo, "crew-qa", "qa");
+  for (const cmd of [
+    "bash .crew/drafts/x.sh /abs/.crew/bin/crew.mjs P-001", "X=1 QA_DIR=/x bash .crew/drafts/x.sh /abs/.crew/bin/crew.mjs P-001",
+    "sh x.sh .crew/bin/crew.mjs",
+  ]) {
+    expect(hook(repo, bash("crew-qa", cmd)), cmd).toBeNull();
+  }
+});
+
+it("heredoc bodies are left alone (BUG-017)", () => {
+  init(repo);
+  agent(repo, "crew-qa", "qa");
+  expect(hook(repo, bash("crew-qa", `cat > /tmp/x.sh <<'EOF'\n${HUB} next\nEOF`))).toBeNull();
+});
+
+it("a hub path in a variable is refused (BUG-017)", () => {
+  init(repo);
+  agent(repo, "crew-qa", "qa");
+  const out = hook(repo, bash("crew-qa", `C="${HUB}"; $C next`));
+  expect(out?.permissionDecision).toBe("deny");
+  expect(out.permissionDecisionReason).toContain("variable");
+});
+
+it("nested hub calls and git ! aliases are refused (BUG-017, CHORE-020)", () => {
+  init(repo);
+  agent(repo, "crew-qa", "qa");
+  for (const cmd of [`bash -c '${HUB} next'`, `eval "${HUB} next"`, `echo next | xargs ${HUB}`,
+    `node -e "require('child_process').execSync('${HUB} next')"`, `git -c 'alias.x=!${HUB} next' x`]) {
+    const out = hook(repo, bash("crew-qa", cmd));
+    expect(out?.permissionDecision, cmd).toBe("deny");
+    expect(out.permissionDecisionReason, cmd).toContain("directly");
+  }
+});
+
+it("visible hub calls keep identity; approval stays refused when nested (BUG-017)", () => {
+  init(repo);
+  agent(repo, "crew-qa", "qa");
+  expect(hook(repo, bash("crew-qa", `cd "$(${HUB} context P-001)"`)).updatedInput.command).toBe(`cd "$(${ID} context P-001)"`);
+  const out = hook(repo, bash("crew-qa", `bash -c '${HUB} move P-001 done --approved-by Amit'`));
+  expect(out.permissionDecision).toBe("deny");
+  expect(out.permissionDecisionReason).toContain("never pass --approved-by");
 });
 
 it("the guard protects its own files from every subagent", () => {

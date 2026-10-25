@@ -12,6 +12,7 @@ import { globRe } from "../../core/memory/knowledge.js";
 import { STATE_RE } from "../../core/work/hubstate.js";
 import { resolvePolicy } from "../../core/team/policy.js";
 import type { Store } from "../../core/store.js";
+import { withIdentity } from "./hubcall.js";
 
 export interface HookInput { tool_name: string; tool_input: Record<string, unknown>; agent_type?: string; agent_id?: string; cwd?: string }
 type Decision = { deny: string } | { input: Record<string, unknown> } | null;
@@ -37,8 +38,6 @@ const within = (dir: string, p: string) => {
 const CREW_CLI = /\bcrew\.mjs\b/;
 const EDITS: Record<string, string> = { Edit: "file_path", Write: "file_path", MultiEdit: "file_path", NotebookEdit: "notebook_path" };
 const WRITERS = /^(rm|mv|cp|ln|chmod|chown|truncate|tee|install|touch|mkdir)$/;
-/** Commands that take crew.mjs as a file operand rather than run it (`ls .crew/bin/crew.mjs`, `cmp .crew/bin/crew.mjs …`). */
-const OPERAND_OF = /^(ls|cat|less|head|tail|wc|cmp|diff|git|grep|egrep|rg|sed|awk|stat|file|find|du|test|\[|cp|mv|rm|ln|chmod|touch|readlink|realpath|shasum|sha1sum|sha256sum|md5|md5sum|echo|printf)$/;
 
 /** The role an agent definition declares (`crew-role:` in its frontmatter), or null for agents that aren't crew agents. */
 export function agentRole(root: string, agentType: string): string | null {
@@ -53,16 +52,6 @@ export function agentRole(root: string, agentType: string): string | null {
 const patternRe = (p: string) => new RegExp(`^${p.trim().replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*").replace(/\?/g, ".")}$`);
 const segments = (cmd: string) => cmd.split(/&&|\|\||;|(?<!>)\||\n/).map((c) => c.trim()).filter(Boolean);
 const words = (cmd: string) => cmd.split(/[\s"'=]+/).map((w) => w.replace(/^>+/, "").replace(/^\.\//, "")).filter(Boolean);
-
-/** Anything that could run a program from inside an operand-taking command. */
-const RUNNER = /\$\(|`|<\(|-exec|xargs|system|\b(node|bun|deno|sh|bash|zsh|eval|exec)\b/;
-
-/** Whether a shell segment may run the hub. Fails closed: only a segment whose command (after VAR=… assignments) just
- * names files, with nothing in it that could run a program, is left alone. */
-function runsHub(seg: string): boolean {
-  const head = seg.trim().split(/\s+/).find((w) => !/^\w+=/.test(w)) ?? "";
-  return !OPERAND_OF.test(basename(head)) || RUNNER.test(seg);
-}
 
 /** The hub command a shell segment runs (`crew.mjs [--as R] [--run-id X] <command> …`), or null. */
 function hubCommand(seg: string): string | null {
@@ -199,9 +188,9 @@ export function decide(store: Store, h: HookInput): Decision {
     const claimed = [...cmd.matchAll(/--as[=\s]+(\S+)/g)].map((m) => m[1]);
     if (claimed.some((c) => c !== role)) return { deny: `you are the ${role} agent; don't pass --as for another role` };
     if (/--run-id\b|\bCREW_(ROLE|RUN|ACTOR|TEAM)=/.test(cmd)) return { deny: "the guard sets your identity; don't pass --run-id or CREW_* variables" };
-    const command = cmd.split(/(&&|\|\||;|\||&|\n)/).map((part, i) => (i % 2 || !runsHub(part) ? part
-      : part.replace(/(\bcrew\.mjs)(?=["'\s]|$)/g, `$1 --as ${role} --run-id ${run}`))).join("");
-    return command === cmd ? null : { input: { ...input, command } };
+    const r = withIdentity(cmd, `--as ${role} --run-id ${run}`);
+    if ("deny" in r) return r;
+    return r.command === cmd ? null : { input: { ...input, command: r.command } };
   }
   if (HUB_MCP.test(h.tool_name)) {
     if (input.as !== undefined && input.as !== role) return { deny: `you are the ${role} agent; don't set as for another role` };

@@ -239,13 +239,15 @@ describe("guard", () => {
       ["node .crew/bin/crew.mjs next", `node .crew/bin/crew.mjs ${id} next`],
       ["cd x && node .crew/bin/crew.mjs next", `cd x && node .crew/bin/crew.mjs ${id} next`],
       ["ls .crew/bin/crew.mjs && node .crew/bin/crew.mjs next", `ls .crew/bin/crew.mjs && node .crew/bin/crew.mjs ${id} next`],
-      // fails closed: a hub run hidden behind an operand-taking command still gets the identity
+      // a newline separates commands: the hub call on the next line gets the identity
       ["ls x\nnode .crew/bin/crew.mjs next", `ls x\nnode .crew/bin/crew.mjs ${id} next`],
       ["echo \"$(node .crew/bin/crew.mjs next)\"", `echo "$(node .crew/bin/crew.mjs ${id} next)"`],
       ["ls x & node .crew/bin/crew.mjs next", `ls x & node .crew/bin/crew.mjs ${id} next`],
-      ["find . -exec node .crew/bin/crew.mjs next \\;", `find . -exec node .crew/bin/crew.mjs ${id} next \\;`],
     ];
     for (const [cmd, want] of cases) expect((hook(r, cmd)?.updatedInput as { command: string }).command, cmd).toBe(want);
+    const nested = hook(r, "find . -exec node .crew/bin/crew.mjs next \\;");
+    expect(nested?.permissionDecision).toBe("deny");
+    expect(nested?.permissionDecisionReason).toContain("directly");
     expect(hook(r, "ls .crew/bin/crew.mjs --as developer")?.permissionDecision).toBe("deny");
   });
 });
