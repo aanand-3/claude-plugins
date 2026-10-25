@@ -2,9 +2,9 @@
 id: BUG-034
 type: bug
 title: A stopped agent's run stays live for 24h and keeps a director dispatch entry
-status: new
-severity:
-priority:
+status: triaged
+severity: S3
+priority: P2
 goal: G-007
 plan:
 created: 2026-10-26
@@ -49,3 +49,4 @@ Suggested severity S3 (wrong routing, workaround is to ignore it), priority P2.
 - Fix options, smallest first: (a) in dispatch row 2 (or in `liveRuns()`), skip idle runs whose ref is a plan in done/cancelled or already merged; (b) a hub command for the Director, e.g. `crew.mjs end-run <run>`, that writes a stop event (a `report`/new `stop` type) the run's liveness honours; (c) have the session's TaskStop path write the stop event. (a) fixes this case; (b) covers runs with no ref or a ref still open.
 - A test for `liveRuns()`/dispatch: activity for run X on a done plan, no STOPS event, idle > idle_minutes -> no Director entry.
 - 2026-10-26: Completed the report against the code: liveRuns() (core/memory/activity.ts:161-185) ends a run only after 24h or a usage/report event from that run, never checks plan status; dispatch.ts:68-69 turns every idle run into a director entry. qa:af405bc1f1c24a473: last activity 2026-10-25T20:46:14Z, 9 checkpoints, no usage/report; P-034 done 21:03Z, merged 4a124be; dispatch still lists it (53 min at 21:39Z). Suggested S3/P2.
+- 2026-10-26: status new → triaged — priority P2, severity S3
