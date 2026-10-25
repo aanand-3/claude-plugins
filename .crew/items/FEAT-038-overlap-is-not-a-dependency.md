@@ -5,7 +5,7 @@ title: Overlap is not a dependency
 status: triaged
 priority: P1
 goal: G-007
-plan:
+plan: P-029
 created: 2026-10-25
 closed:
 ---

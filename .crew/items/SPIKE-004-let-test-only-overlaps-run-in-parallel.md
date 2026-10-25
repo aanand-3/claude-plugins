@@ -5,7 +5,7 @@ title: Let test-only overlaps run in parallel instead of becoming depends_on
 status: triaged
 priority: P1
 goal: G-007
-plan:
+plan: P-029
 created: 2026-10-24
 closed:
 ---
