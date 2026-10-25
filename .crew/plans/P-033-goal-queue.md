@@ -108,6 +108,7 @@ Latest log:
 - 2026-10-25: Review: AC6 amended — team-2's runner test also changes its opening step, because an approved goal with no focus is now auto-focused by the queue (Scope: 'or there is none'); the old 'no focus goal' stop is unreachable there, so the step now checks 'no approved goal' before approval and 'FOCUS — → G-001' after. Intended behaviour, not a regression.
 - 2026-10-25: Review: AC6 wording restored to the checkpointed text so it matches the branch copy's fingerprint (BUG-026; the guard forbids editing the branch copy). The accepted extra team-2 step is recorded under Risks & open questions instead.
 - 2026-10-25: status in-review → done
+- 2026-10-25: merged 7c017d4 feat(P-033): Goal queue onto main (squash of the plan's one commit, rebased on db5a8dd, bundles rebuilt by hub.build). Full suite on the plan commit: typecheck ok; 2 full runs failed only on beforeAll hook timeouts at load avg ~150 (run 1 view.test.ts, run 2 mcp.test.ts + view.test.ts), each file passed alone; bundle check clean. Rollout: ships in the bundle; refresh-bin NOT run (per Director) so this repo's agents get it at the next refresh. Worktree and branch removed. Rollback: git revert 7c017d4.
 
 ## Outcome
 `goalQueue` (queries.ts) orders the active goals by priority, then ID, focus first. `runState` calls `advanceFocus` first:
