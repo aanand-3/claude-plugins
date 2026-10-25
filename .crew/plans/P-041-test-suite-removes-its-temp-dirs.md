@@ -5,11 +5,11 @@ goal: G-007
 items: BUG-025
 touches: packages/crew/test/helpers/**, packages/crew/test/setup/**, packages/crew/vitest.config.ts
 depends_on:
-status: ready
+status: in-progress
 branch: plan/P-041-test-suite-removes-its-temp-dirs
 pr:
 created: 2026-10-25
-started:
+started: 2026-10-25
 completed:
 assignee: developer
 ---
@@ -139,5 +139,6 @@ n/a — test-only change; revert the commit to back out.
 
 - 2026-10-25: status draft → ready
 - 2026-10-25: assigned to the developer role
+- 2026-10-25: status ready → in-progress — branch plan/P-041-test-suite-removes-its-temp-dirs
 
 ## Outcome
