@@ -135,6 +135,18 @@ n/a — test-only change; revert the commit to back out.
 
 ## Handoff
 
+_Generated 2026-10-25 by `crew.mjs handoff` from the ledger._
+
+- P-041: Test suite removes its temp dirs [in-progress] tasks 0/4 — claimed by Arpit Anand (developer:a9a5a728521f0b44d)
+- last checkpoint 2026-10-25 08:45 at T4 (d3eceaf) by Arpit Anand; since then 0 commit(s), 3 uncommitted file(s): packages/crew/test/helpers/repo.ts, packages/crew/vitest.config.ts, packages/crew/test/setup/
+- next: T1: Add the run-scoped temp root and wire it as globalSetup → verify: `npx vitest run test/setup` passes and afterwards `ls -d "$TMPDIR"/crew-test-run-*` lists no root with that run's pid.
+- evidence: AC1 —, AC2 —, AC3 —, AC4 —
+
+Latest log:
+- 2026-10-25: status draft → ready
+- 2026-10-25: assigned to the developer role
+- 2026-10-25: status ready → in-progress — branch plan/P-041-test-suite-removes-its-temp-dirs
+
 ## Progress log
 
 - 2026-10-25: status draft → ready
