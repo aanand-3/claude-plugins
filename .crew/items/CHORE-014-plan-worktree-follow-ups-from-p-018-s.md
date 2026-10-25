@@ -21,3 +21,4 @@ Non-blocking from P-018's architect review: (1) guard: git -c 'alias.x=!crew.mjs
 ## Notes
 - 2026-10-25: P-026 hit this: from inside its plan worktree, move P-026 done was refused even after a fresh Architect approval, because the plan branch had uncommitted non-.crew changes (review.ts reviewProblems). Completed from the main checkout instead.
 - 2026-10-25: status new → triaged — priority P1
+- 2026-10-25: Architect: placed in P-028 — item 2 (review gate), item 5 (auto checkpoints survive a failing worktree; the main-session run on auto checkpoints is harmless, since implementers come from claims and moves), item 6 (squash detection via merge-tree). Item 1 split to CHORE-020 (guard.ts). Item 3 obsolete since P-026 (one home). Item 4 (lostPlans on origin-only branches) is in P-039's scope (AC4).
