@@ -5,7 +5,7 @@ title: After P-026: supersede the overlay-era knowledge and drop plans(true)
 status: triaged
 priority: P2
 goal: G-007
-plan:
+plan: P-039
 created: 2026-10-25
 closed:
 ---
