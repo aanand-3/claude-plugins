@@ -3,7 +3,7 @@ import { join } from "node:path";
 import * as git from "../../core/git.js";
 import type { Doc } from "../../core/work/doc.js";
 import { decisionProblems, fastLane, learningsProblems, readinessProblems, triageProblems } from "../../core/work/gates.js";
-import { overlapping } from "../../core/work/footprint.js";
+import { overlapping, sharedGlobs } from "../../core/work/footprint.js";
 import { approvalReason } from "../../core/team/policy.js";
 import { commitWork, evidenceProblems, writeHandoff } from "./execution.js";
 import { FORWARD, openQuestions } from "../team/questions.js";
@@ -174,19 +174,14 @@ export function start(store: Store, planId: string, force = false, approvedBy?: 
   if (!shared && !git.treeIsClean(store.rel(store.dir))) fail("Working tree not clean. Commit or stash first (changes under the hub's directory may stay).");
   const focus = store.focus();
   if (!q.onFocus(doc, store.items(), focus)) store.say(`note: ${planId} does not serve the focus goal ${focus}`);
-  for (const o of overlapping(doc, store.plans(true)).filter((x) => store.plans(true).get(x.id)?.get("status") !== "ready")) {
-    store.say(`warning: ${planId} overlaps ${o.id} (in progress) on ${o.globs.join(", ")} — expect conflicts; coordinate or add depends_on`);
+  const plans = store.plans(true);
+  for (const o of overlapping(doc, plans, sharedGlobs(store)).filter((x) => plans.get(x.id)?.get("status") !== "ready")) {
+    store.say(`warning: ${planId} overlaps ${o.id} (in progress) on ${o.globs.join(", ")} — expect conflicts at release; `
+      + "narrow touches or list the file in hub.shared");
   }
   if (shared) { // the plan's shared worktree: no branch switch here
-    let home = store.planHome(doc.id);
-    if (!home) { // specced before plan_worktrees: it gets its worktree now
-      const live = git.planBranches().includes(branch) && doc.path ? git.show(branch, store.rel(doc.path)) : null;
-      home = openPlanWorktree(store, doc.id, branch);
-      if (live !== null && live !== store.ws.read(doc.path!)) { // its branch holds the live plan: that copy comes home
-        store.ws.write(doc.path!, live);
-        store.say(`${doc.id}: took the plan from ${branch}, where its progress is`);
-      }
-    }
+    // specced before plan_worktrees (or its worktree was removed): it gets one now, on its branch if that exists
+    const home = store.planHome(doc.id) ?? openPlanWorktree(store, doc.id, branch);
     claimPlan(store, planId, branch, force, takeover, approvedBy);
     store.say(`${doc.id}: work in ${store.ws.rel(home) || "this checkout"} (${branch}) — claimed by ${store.ledger.who.actor} `
       + `(${store.ledger.who.run}); checkpoints commit its code on the branch`);

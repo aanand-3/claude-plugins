@@ -100,15 +100,22 @@ function plans(s: Snapshot, f: Findings): void {
   }
 }
 
-/** A plan branch with no plan file anywhere and no worktree: its worktree was removed before Release committed the work. */
+/** A plan branch with no plan file anywhere and no worktree. A local one: its worktree was removed before Release
+ * committed the work. One only on origin: its work is committed there, and its plan has to come home. */
 function lostPlans(s: Snapshot, f: Findings): void {
-  const seen = new Set<string>();
-  for (const b of git.planBranches()) {
+  const seen = new Set<string>(), branches = git.planBranches();
+  const local = new Set(branches.filter((b) => !b.startsWith("origin/")).map((b) => /^plan\/(P-\d+)/.exec(b)?.[1]));
+  for (const b of branches) { // refs/heads/ sort before refs/remotes/: a local branch is named first
     const pid = /^(?:origin\/)?plan\/(P-\d+)/.exec(b)?.[1];
     if (!pid || seen.has(pid) || s.allPlans.has(pid) || s.store.planWorktrees().has(pid)) continue;
     seen.add(pid);
-    f.hints.push(`${pid}: branch ${b} has no plan file and no worktree — its worktree was removed before Release committed `
-      + "it, so the uncommitted work is gone; recover what you can, then delete the branch");
+    if (b.startsWith("origin/") && !local.has(pid)) {
+      f.hints.push(`${pid}: only ${b} has it and the main checkout has no plan file: fetch it and bring the plan home `
+        + "(`migrate --gather` from a checkout of it)");
+    } else {
+      f.hints.push(`${pid}: branch ${b} has no plan file and no worktree — its worktree was removed before Release committed `
+        + "it, so the uncommitted work is gone; recover what you can, then delete the branch");
+    }
   }
 }
 

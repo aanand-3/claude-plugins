@@ -1,6 +1,6 @@
 /** `next --role R`: each role's own queue. Questions addressed to the role come first, then its work, most urgent first. */
 import type { Doc } from "../../core/work/doc.js";
-import { overlapping } from "../../core/work/footprint.js";
+import { overlapping, sharedGlobs } from "../../core/work/footprint.js";
 import { approvalReason } from "../../core/team/policy.js";
 import * as q from "../../core/work/queries.js";
 import type { Store } from "../../core/store.js";
@@ -21,12 +21,14 @@ class View {
   readonly items: Map<string, Doc>;
   readonly goals: Map<string, Doc>;
   readonly focus: string;
+  readonly shared: string[]; // hub.shared
   readonly events;
   constructor(readonly store: Store) {
     this.plans = store.plans(true);
     this.items = store.items();
     this.goals = store.goals();
     this.focus = store.focus();
+    this.shared = sharedGlobs(store);
     this.events = store.ledger.events();
   }
   status(st: string): Doc[] {
@@ -64,7 +66,7 @@ const RULES: Record<string, Rule[]> = {
       return n ? [`staff ${n} ready plan${n > 1 ? "s" : ""}: \`staff\` → the PM assigns, developers start`] : [];
     },
     (v) => [...v.plans.values()].filter((p) => p.get("status") === "in-progress").flatMap((p) =>
-      overlapping(p, v.plans).map((o) => `${p.id} and ${o.id} overlap on ${o.globs.join(", ")} — sequence them or split the work`)),
+      overlapping(p, v.plans, v.shared).map((o) => `${p.id} and ${o.id} overlap on ${o.globs.join(", ")} — sequence them, narrow touches or list the file in hub.shared`)),
     (v) => {
       const g = v.goals.get(v.focus);
       if (!v.focus) return v.goals.size ? ["set the focus goal: focus G-###"] : [];
@@ -90,7 +92,7 @@ const RULES: Record<string, Rule[]> = {
       .map((p) => `review ${p.id}: ${p.get("title")} — its diff against the spec → review ${p.id} --approve | --changes "…"`),
     (v) => v.status("draft").map((p) => `refine ${p.id}: ${p.get("title")} to the Definition of Ready`),
     (v) => v.ranked("triaged").slice(0, 2).map((i) => `write a plan for ${i.id}: ${i.get("title")} (${i.get("priority")})`),
-    (v) => v.status("ready").flatMap((p) => overlapping(p, v.plans).map((o) => `${p.id} overlaps ${o.id} (${o.globs.join(", ")}): add depends_on or narrow touches`)),
+    (v) => v.status("ready").flatMap((p) => overlapping(p, v.plans, v.shared).map((o) => `${p.id} overlaps ${o.id} (${o.globs.join(", ")}): narrow touches or list the file in hub.shared`)),
   ],
   developer: [
     (v) => [...v.plans.values()].filter((p) => ["in-progress", "blocked"].includes(p.get("status") ?? "")

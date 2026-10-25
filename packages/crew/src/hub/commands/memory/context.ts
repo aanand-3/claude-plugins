@@ -1,7 +1,7 @@
 /** `context`: what an agent needs right now, assembled from the hub (project state, ledger, memory) under a hard budget.
  * Sections come in priority order; what doesn't fit becomes a pointer to the command that shows it in full. */
 import type { Doc } from "../../core/work/doc.js";
-import { drift, overlapping } from "../../core/work/footprint.js";
+import { drift, overlapping, sharedGlobs } from "../../core/work/footprint.js";
 import * as git from "../../core/git.js";
 import { type Entry, recall } from "../../core/memory/knowledge.js";
 import * as q from "../../core/work/queries.js";
@@ -36,7 +36,7 @@ function planSections(store: Store, plan: Doc, role: string): Section[] {
   const tasks: Section = { title: "Remaining tasks", more: plan.path ? store.rel(plan.path) : plan.id,
     lines: plan.tasks().filter(([d]) => !d).map(([, t]) => t) };
   const waits = q.unmetDeps(plan, plans), asks = openQuestions(store.ledger.events(), plan.id);
-  const over = overlapping(plan, plans), outside = drift(plan, store.baseBranch(), store.planHome(plan.id)) ?? [];
+  const over = overlapping(plan, plans, sharedGlobs(store)), outside = drift(plan, store.baseBranch(), store.planHome(plan.id)) ?? [];
   const questions: Section = { title: "Open questions", more: "crew.mjs questions", lines: [
     ...asks.map((x) => `${x.blocking ? "blocking: " : ""}${x.id} ${x.by} → ${x.to}: ${x.text}`),
     ...openQuestions(store.ledger.events()).filter((x) => x.to === role && x.ref !== plan.id)

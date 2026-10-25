@@ -190,11 +190,12 @@ export class Store {
     return (this.idea()?.get("focus") ?? "").toUpperCase();
   }
 
-  /** The plans in the home; with includeBranches, copies committed on plan/* branches too (specced before hub state had
-   * one home), unless the home already closed the plan (merged or dropped). */
+  /** The plans in the home; with includeBranches, in branch-per-plan mode (no hub.plan_worktrees) also the copies
+   * committed on plan/* branches, where that mode keeps a started plan's state, unless the home already closed the plan
+   * (merged or dropped). With plan worktrees the main checkout is the only home: a branch's copy is never read. */
   plans(includeBranches = false): Docs {
     const plans = this.loadDir(this.dirs.plan);
-    if (includeBranches) {
+    if (includeBranches && !this.settings().plan_worktrees) {
       for (const [pid, doc] of this.branchPlans()) {
         const base = plans.get(pid);
         if (!base || !CLOSED.has(base.get("status") ?? "")) plans.set(pid, doc);

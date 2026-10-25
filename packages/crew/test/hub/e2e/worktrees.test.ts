@@ -175,7 +175,7 @@ it("merge-order ignores plan worktrees in solo mode", () => {
 
 /** A plan started before plan_worktrees: its worktree opens on the branch as it is, and the branch's plan (the live one)
  * comes to the main checkout. */
-it("plan worktrees: start keeps an existing branch's progress", () => {
+it("plan worktrees: start opens the worktree on an existing branch and keeps main's plan file (P-039)", () => {
   init(repo, { commit: true });
   readyPlan(repo);
   repo.commit("chore(hub): plan");
@@ -186,10 +186,12 @@ it("plan worktrees: start keeps an existing branch's progress", () => {
   repo.git("switch", "-q", "main");
   repo.write(".crew/config.yaml", "hub:\n  plan_worktrees: true\n");
   repo.commit("chore(hub): plan worktrees");
+  const tip = repo.git("rev-parse", "plan/P-001-signup").stdout.trim();
   const r = tr(repo, "start", "P-001");
   expect(r.returncode, r.stderr).toBe(0);
-  expect(r.stdout).toContain("took the plan from plan/P-001-");
+  expect(r.stdout).not.toContain("took the plan from");
+  expect(planWorktree(repo, "P-001").git("rev-parse", "HEAD").stdout.trim()).toBe(tip); // on the existing branch
   const main = read(planFile(repo, "P-001"));
-  expect(main).toContain("LIVE-PROGRESS-NOTE");
+  expect(main).not.toContain("LIVE-PROGRESS-NOTE"); // the branch's copy is never read: main's is the plan
   expect(main).toContain("status: in-progress");
 });

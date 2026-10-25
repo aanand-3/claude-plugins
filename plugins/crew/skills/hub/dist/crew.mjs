@@ -8728,11 +8728,12 @@ var Store = class _Store {
   focus() {
     return (this.idea()?.get("focus") ?? "").toUpperCase();
   }
-  /** The plans in the home; with includeBranches, copies committed on plan/* branches too (specced before hub state had
-   * one home), unless the home already closed the plan (merged or dropped). */
+  /** The plans in the home; with includeBranches, in branch-per-plan mode (no hub.plan_worktrees) also the copies
+   * committed on plan/* branches, where that mode keeps a started plan's state, unless the home already closed the plan
+   * (merged or dropped). With plan worktrees the main checkout is the only home: a branch's copy is never read. */
   plans(includeBranches = false) {
     const plans2 = this.loadDir(this.dirs.plan);
-    if (includeBranches) {
+    if (includeBranches && !this.settings().plan_worktrees) {
       for (const [pid, doc] of this.branchPlans()) {
         const base = plans2.get(pid);
         if (!base || !CLOSED.has(base.get("status") ?? "")) plans2.set(pid, doc);
@@ -10321,12 +10322,17 @@ function plans(s2, f) {
   }
 }
 function lostPlans(s2, f) {
-  const seen = /* @__PURE__ */ new Set();
-  for (const b of planBranches()) {
+  const seen = /* @__PURE__ */ new Set(), branches = planBranches();
+  const local = new Set(branches.filter((b) => !b.startsWith("origin/")).map((b) => /^plan\/(P-\d+)/.exec(b)?.[1]));
+  for (const b of branches) {
     const pid = /^(?:origin\/)?plan\/(P-\d+)/.exec(b)?.[1];
     if (!pid || seen.has(pid) || s2.allPlans.has(pid) || s2.store.planWorktrees().has(pid)) continue;
     seen.add(pid);
-    f.hints.push(`${pid}: branch ${b} has no plan file and no worktree \u2014 its worktree was removed before Release committed it, so the uncommitted work is gone; recover what you can, then delete the branch`);
+    if (b.startsWith("origin/") && !local.has(pid)) {
+      f.hints.push(`${pid}: only ${b} has it and the main checkout has no plan file: fetch it and bring the plan home (\`migrate --gather\` from a checkout of it)`);
+    } else {
+      f.hints.push(`${pid}: branch ${b} has no plan file and no worktree \u2014 its worktree was removed before Release committed it, so the uncommitted work is gone; recover what you can, then delete the branch`);
+    }
   }
 }
 function overlaps(s2, f) {
@@ -10683,19 +10689,12 @@ function start(store, planId, force = false, approvedBy) {
   if (!shared && !treeIsClean(store.rel(store.dir))) fail("Working tree not clean. Commit or stash first (changes under the hub's directory may stay).");
   const focus = store.focus();
   if (!onFocus(doc, store.items(), focus)) store.say(`note: ${planId} does not serve the focus goal ${focus}`);
-  for (const o of overlapping(doc, store.plans(true)).filter((x) => store.plans(true).get(x.id)?.get("status") !== "ready")) {
-    store.say(`warning: ${planId} overlaps ${o.id} (in progress) on ${o.globs.join(", ")} \u2014 expect conflicts; coordinate or add depends_on`);
+  const plans2 = store.plans(true);
+  for (const o of overlapping(doc, plans2, sharedGlobs(store)).filter((x) => plans2.get(x.id)?.get("status") !== "ready")) {
+    store.say(`warning: ${planId} overlaps ${o.id} (in progress) on ${o.globs.join(", ")} \u2014 expect conflicts at release; narrow touches or list the file in hub.shared`);
   }
   if (shared) {
-    let home = store.planHome(doc.id);
-    if (!home) {
-      const live = planBranches().includes(branch) && doc.path ? show(branch, store.rel(doc.path)) : null;
-      home = openPlanWorktree(store, doc.id, branch);
-      if (live !== null && live !== store.ws.read(doc.path)) {
-        store.ws.write(doc.path, live);
-        store.say(`${doc.id}: took the plan from ${branch}, where its progress is`);
-      }
-    }
+    const home = store.planHome(doc.id) ?? openPlanWorktree(store, doc.id, branch);
     claimPlan(store, planId, branch, force, takeover, approvedBy);
     store.say(`${doc.id}: work in ${store.ws.rel(home) || "this checkout"} (${branch}) \u2014 claimed by ${store.ledger.who.actor} (${store.ledger.who.run}); checkpoints commit its code on the branch`);
     return;
@@ -11074,6 +11073,7 @@ var View = class {
     this.items = store.items();
     this.goals = store.goals();
     this.focus = store.focus();
+    this.shared = sharedGlobs(store);
     this.events = store.ledger.events();
   }
   store;
@@ -11081,6 +11081,8 @@ var View = class {
   items;
   goals;
   focus;
+  shared;
+  // hub.shared
   events;
   status(st) {
     return [...this.plans.values()].filter((p) => p.get("status") === st).sort(byKey((p) => [!onFocus(p, this.items, this.focus), p.id]));
@@ -11112,7 +11114,7 @@ var RULES = {
       const n2 = staffing(v.store).start.length;
       return n2 ? [`staff ${n2} ready plan${n2 > 1 ? "s" : ""}: \`staff\` \u2192 the PM assigns, developers start`] : [];
     },
-    (v) => [...v.plans.values()].filter((p) => p.get("status") === "in-progress").flatMap((p) => overlapping(p, v.plans).map((o) => `${p.id} and ${o.id} overlap on ${o.globs.join(", ")} \u2014 sequence them or split the work`)),
+    (v) => [...v.plans.values()].filter((p) => p.get("status") === "in-progress").flatMap((p) => overlapping(p, v.plans, v.shared).map((o) => `${p.id} and ${o.id} overlap on ${o.globs.join(", ")} \u2014 sequence them, narrow touches or list the file in hub.shared`)),
     (v) => {
       const g = v.goals.get(v.focus);
       if (!v.focus) return v.goals.size ? ["set the focus goal: focus G-###"] : [];
@@ -11131,7 +11133,7 @@ var RULES = {
     (v) => (v.gate("plan.reviewed") === "architect" ? v.status("in-review") : []).filter((p) => reviewProblems(v.store, p).length && !implementers(v.events, p.id).has(v.store.ledger.who.run)).map((p) => `review ${p.id}: ${p.get("title")} \u2014 its diff against the spec \u2192 review ${p.id} --approve | --changes "\u2026"`),
     (v) => v.status("draft").map((p) => `refine ${p.id}: ${p.get("title")} to the Definition of Ready`),
     (v) => v.ranked("triaged").slice(0, 2).map((i) => `write a plan for ${i.id}: ${i.get("title")} (${i.get("priority")})`),
-    (v) => v.status("ready").flatMap((p) => overlapping(p, v.plans).map((o) => `${p.id} overlaps ${o.id} (${o.globs.join(", ")}): add depends_on or narrow touches`))
+    (v) => v.status("ready").flatMap((p) => overlapping(p, v.plans, v.shared).map((o) => `${p.id} overlaps ${o.id} (${o.globs.join(", ")}): narrow touches or list the file in hub.shared`))
   ],
   developer: [
     (v) => [...v.plans.values()].filter((p) => ["in-progress", "blocked"].includes(p.get("status") ?? "") && v.store.ledger.claims(v.events).get(p.id)?.run === v.store.ledger.who.run).map((p) => `continue ${p.id}: ${p.get("title")} \u2192 resume ${p.id}`),
@@ -12412,7 +12414,7 @@ function planSections(store, plan, role) {
     lines: plan.tasks().filter(([d]) => !d).map(([, t]) => t)
   };
   const waits = unmetDeps(plan, plans2), asks = openQuestions(store.ledger.events(), plan.id);
-  const over = overlapping(plan, plans2), outside = drift(plan, store.baseBranch(), store.planHome(plan.id)) ?? [];
+  const over = overlapping(plan, plans2, sharedGlobs(store)), outside = drift(plan, store.baseBranch(), store.planHome(plan.id)) ?? [];
   const questions2 = { title: "Open questions", more: "crew.mjs questions", lines: [
     ...asks.map((x) => `${x.blocking ? "blocking: " : ""}${x.id} ${x.by} \u2192 ${x.to}: ${x.text}`),
     ...openQuestions(store.ledger.events()).filter((x) => x.to === role && x.ref !== plan.id).map((x) => `for you: ${x.id} from ${x.by}${x.ref ? ` about ${x.ref}` : ""}: ${x.text}`)
