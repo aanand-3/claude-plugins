@@ -18,7 +18,8 @@ you ── this session ── dispatch ─┬─ crew-director ─ crew-pm ─ 
 ```
 
 ## Before the first run (each step once; skip what is already in place)
-1. **Hub.** `.crew/` must exist (`/crew:hub init`, or kickoff/onboard).
+1. **Doctor.** Run `node .crew/bin/crew.mjs doctor` and fix what it reports: each WARN and FAIL names its fix and who
+   owns it; the steps below are the details. `.crew/` must exist first (`/crew:hub init`, or kickoff/onboard).
 2. **Policy.** The team runs best under the lifecycle preset: each step belongs to one role and you approve the goal set.
    If `.crew/policy.yaml` has no `preset: lifecycle`, show the user what it does (`crew.mjs policy show` after) and add it
    only with their yes — a policy change is theirs.

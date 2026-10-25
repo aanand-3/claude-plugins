@@ -344,6 +344,18 @@ design show [--json] · design wait [--timeout 1800] · design done ID|all
 
 - `check`: Validate .crew/ (`crew.mjs check`): ERROR and HINT lines; an error result means problems were found.
 
+## views/doctor
+
+```text
+doctor [--json]                               is this project ready for the loop: OK/WARN/FAIL per check, with the fix
+```
+
+| Command | MCP tool |
+|---|---|
+| `doctor` | `doctor` |
+
+- `doctor`: Whether this project is ready for the autonomous loop (`doctor --json`): each check's id, level (ok, warn, fail), detail and fix; an error result means a check failed.
+
 ## views/reports
 
 | Command | MCP tool |

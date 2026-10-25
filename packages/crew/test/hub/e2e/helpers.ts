@@ -1,6 +1,6 @@
 /** The hub's end-to-end helpers, ported name for name from tests/crew/test_hub.py: each drives the shipped
  * dist/crew.mjs against a throwaway repo (test/helpers/repo.ts, which also keeps the hub run's CREW_* out — BUG-004). */
-import { readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect } from "vitest";
 import { HUB, type Repo, type Result } from "../../helpers/repo.js";
@@ -8,10 +8,15 @@ import { BUG_DRAFT, GOAL_DRAFT, IDEA_DRAFT, PLAN_DRAFT } from "./fixtures.js";
 
 export const tr = (repo: Repo, ...args: string[]): Result => repo.node(HUB, args);
 
-/** A hub with no human gates by default (the gates have their own tests); the idea's decision stays reserved. */
-export function init(repo: Repo, { commit = false, mode = "ai-native" }: { commit?: boolean; mode?: string } = {}): void {
+/** A hub with no human gates by default (the gates have their own tests); the idea's decision stays reserved. `init`'s
+ * default config and policy are removed again unless `defaults` (so suites keep branch-per-plan); a file the test wrote
+ * before `init` is never removed. */
+export function init(repo: Repo, { commit = false, mode = "ai-native", defaults = false }:
+  { commit?: boolean; mode?: string; defaults?: boolean } = {}): void {
   if (commit) repo.git("commit", "-q", "--allow-empty", "-m", "init");
+  const created = [".crew/config.yaml", ".crew/policy.yaml"].filter((f) => !existsSync(join(repo.path, f)));
   expect(tr(repo, "init").returncode).toBe(0);
+  if (!defaults) for (const f of created) rmSync(join(repo.path, f), { force: true });
   if (mode) {
     repo.write(".crew/policy.yaml", `mode: ${mode}\n`);
     if (commit) repo.commit("chore(hub): policy");
