@@ -122,14 +122,26 @@ Overlaps, for staffing only: P-030 on `planning.reg.ts` (the `init` registration
 
 _Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
 
-- P-036: Doctor and init defaults [in-review] tasks 7/7 — claimed by Arpit Anand (developer:a996d202aa6320ed0)
-- last checkpoint 2026-10-25 19:55 at T7 (080cd74) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
-- evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —, AC7 —, AC8 —, AC9 —, AC10 —
+- P-036: Doctor and init defaults [in-progress] tasks 7/7 — claimed by Arpit Anand (developer:acc7d2e166eea7b0c)
+- last checkpoint 2026-10-25 20:22 at BUG-032 (c42910c) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
+- ✓ cd packages/crew && npx vitest run test/hub/e2e/doctor.test.ts -t AC1 (AC 1)
+- ✓ cd packages/crew && npx vitest run test/hub/e2e/doctor.test.ts -t AC2 (AC 2)
+- ✓ cd packages/crew && npx vitest run test/hub/e2e/doctor.test.ts -t AC3 (AC 3)
+- ✓ cd packages/crew && npx vitest run test/hub/e2e/doctor.test.ts -t AC4 (AC 4)
+- ✓ cd packages/crew && npx vitest run test/hub/e2e/doctor.test.ts -t AC5 (AC 5)
+- ✓ cd packages/crew && npx vitest run test/hub/e2e/doctor.test.ts -t AC6 (AC 6)
+- ✓ cd packages/crew && npx vitest run test/hub/e2e/doctor.test.ts -t AC7 (AC 7)
+- ✓ cd packages/crew && npx vitest run test/hub/e2e/doctor.test.ts -t AC8 (AC 8)
+- ✓ cd packages/crew && npx vitest run test/hub/e2e/worktrees.test.ts test/hub/e2e/branch-copies.test.ts (AC 7)
+- ✓ team/SKILL.md Before the first run step 1 is Doctor (grep); doctor listed in mcp.test.ts tool list; e2e AC8 test passed (AC 8) (reported)
+- ✓ cd packages/crew && npx vitest run test/hub/e2e/basics.test.ts test/hub/e2e/worktrees.test.ts test/hub/e2e/branch-copies.test.ts test/mcp.test.ts test/hub/registry.test.ts && git diff --quiet main -- test/hub/registry.test.ts test/hub/registry-before.json (AC 9)
+- ✓ cd packages/crew && npm run typecheck && test $(wc -l < src/hub/commands/views/doctor.ts) -lt 300 && test $(wc -l < src/hub/commands/work/setup.ts) -lt 300 && test $(wc -l < src/hub/core/work/hubstate.ts) -lt 300 (AC 10)
+- evidence: AC1 ✓, AC2 ✓, AC3 ✓, AC4 ✓, AC5 ✓, AC6 ✓, AC7 ✓, AC8 ✓, AC9 ✓, AC10 ✓
 
 Latest log:
-- 2026-10-25: status draft → ready
-- 2026-10-25: assigned to the developer role
-- 2026-10-25: status ready → in-progress — branch plan/P-036-doctor-and-init-defaults
+- 2026-10-26: status in-progress → in-review
+- 2026-10-26: status in-review → done
+- 2026-10-26: status done → in-progress — Release's suite failed: crew init exits 1 outside git (BUG-032); reopened under the executive's standing approval on G-007
 
 ## Progress log
 
