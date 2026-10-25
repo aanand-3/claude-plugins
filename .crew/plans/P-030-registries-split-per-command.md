@@ -83,6 +83,23 @@ Two design choices, recorded as decisions with this plan:
 
 ## Handoff
 
+_Generated 2026-10-25 by `crew.mjs handoff` from the ledger._
+
+- P-030: Registries split per command [in-progress] tasks 0/6 — claimed by Arpit Anand (developer:a8a3af55f477f0cbc)
+- last checkpoint 2026-10-25 09:34 at T6 (c187a3e) by Arpit Anand; since then 0 commit(s), 3 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs, plugins/crew/skills/hub/references/commands.md
+- ✓ cd packages/crew && npx vitest run test/hub/registry.test.ts (AC 1,2,3,4) (reported)
+- ✓ npm run typecheck && npx vitest run test/mcp.test.ts test/hub/registry.test.ts (reported)
+- ✓ npm run build && npx vitest run test/dist.test.ts; git check-attr linguist-generated -- plugins/crew/skills/hub/references/commands.md (AC 5) (reported)
+- ✗ npx vitest run test/plugin (AC 5) (reported) — 11 passed, 1 failed: contents.test.ts expects SKILL.md table rows for watch/activity (Q to architect)
+- ✗ npm run build; npx vitest run test/mcp.test.ts test/hub/e2e/basics.test.ts test/hub/e2e/items.test.ts test/hub/e2e/execution.test.ts test/hub/e2e/team.test.ts; npm run typecheck; wc -l (AC 6,7) (reported) — 46 passed, 1 failed (mcp.test.ts 'lists the hub tools': order only, Q-ed2ef3); typecheck clean; largest file cli.ts 113 lines
+- next: T1: `test/hub/registry.test.ts` and `registry-before.json` from today's code → verify: `cd packages/crew && npx vitest run test/hub/registry.test.ts` passes on today's code (AC2, AC3 baselines)
+- evidence: AC1 ✓ (self), AC2 ✓ (self), AC3 ✓ (self), AC4 ✓ (self), AC5 ✗, AC6 ✗, AC7 ✗
+
+Latest log:
+- 2026-10-25: Architect: touches list the 25 registration files exactly (a commands/*/*.reg.ts glob overlapped every command module by stem).
+- 2026-10-25: assigned to the developer role
+- 2026-10-25: status ready → in-progress — branch plan/P-030-registries-split-per-command
+
 ## Progress log
 
 - 2026-10-25: status draft → ready
