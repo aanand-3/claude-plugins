@@ -1,1 +1,0 @@
-{"hook_event_name":"PostToolUse","agent_type":"crew-developer","agent_id":"b2b2b2b2b2b2","tool_name":"Bash","tool_input":{"command":"node .crew/bin/crew.mjs checkpoint P-001 --step T3"},"cwd":"/private/tmp/claude-502/-Users-aanand-Documents-Projects-Personal-claude-plugins/ba0483ef-1999-4628-bcd7-2f8e7e7c7074/scratchpad/p040s"}

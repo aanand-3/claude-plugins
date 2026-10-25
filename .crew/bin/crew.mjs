@@ -304,13 +304,13 @@ var require_directives = __commonJS({
        * @param onError - May be called even if the action was successful
        * @returns `true` on success
        */
-      add(line2, onError) {
+      add(line3, onError) {
         if (this.atNextDocument) {
           this.yaml = { explicit: _Directives.defaultYaml.explicit, version: "1.1" };
           this.tags = Object.assign({}, _Directives.defaultTags);
           this.atNextDocument = false;
         }
-        const parts = line2.trim().split(/[ \t]+/);
+        const parts = line3.trim().split(/[ \t]+/);
         const name = parts.shift();
         switch (name) {
           case "%TAG": {
@@ -1905,9 +1905,9 @@ var require_stringifyCollection = __commonJS({
       } else {
         str3 = lines[0];
         for (let i = 1; i < lines.length; ++i) {
-          const line2 = lines[i];
-          str3 += line2 ? `
-${indent}${line2}` : "\n";
+          const line3 = lines[i];
+          str3 += line3 ? `
+${indent}${line3}` : "\n";
         }
       }
       if (comment) {
@@ -1965,7 +1965,7 @@ ${indent}${line2}` : "\n";
           str3 += ",";
         } else if (ctx.options.trailingComma) {
           if (ctx.options.lineWidth > 0) {
-            reqNewline || (reqNewline = lines.reduce((sum, line2) => sum + line2.length + 2, 2) + (str3.length + 2) > ctx.options.lineWidth);
+            reqNewline || (reqNewline = lines.reduce((sum, line3) => sum + line3.length + 2, 2) + (str3.length + 2) > ctx.options.lineWidth);
           }
           if (reqNewline) {
             str3 += ",";
@@ -1981,14 +1981,14 @@ ${indent}${line2}` : "\n";
         return start2 + end;
       } else {
         if (!reqNewline) {
-          const len = lines.reduce((sum, line2) => sum + line2.length + 2, 2);
+          const len = lines.reduce((sum, line3) => sum + line3.length + 2, 2);
           reqNewline = ctx.options.lineWidth > 0 && len > ctx.options.lineWidth;
         }
         if (reqNewline) {
           let str3 = start2;
-          for (const line2 of lines)
-            str3 += line2 ? `
-${indentStep}${indent}${line2}` : "\n";
+          for (const line3 of lines)
+            str3 += line3 ? `
+${indentStep}${indent}${line3}` : "\n";
           return `${str3}
 ${indent}${end}`;
         } else {
@@ -3731,10 +3731,10 @@ var require_errors = __commonJS({
       if (error.pos[0] === -1)
         return;
       error.linePos = error.pos.map((pos) => lc.linePos(pos));
-      const { line: line2, col } = error.linePos[0];
-      error.message += ` at line ${line2}, column ${col}`;
+      const { line: line3, col } = error.linePos[0];
+      error.message += ` at line ${line3}, column ${col}`;
       let ci = col - 1;
-      let lineStr = src.substring(lc.lineStarts[line2 - 1], lc.lineStarts[line2]).replace(/[\n\r]+$/, "");
+      let lineStr = src.substring(lc.lineStarts[line3 - 1], lc.lineStarts[line3]).replace(/[\n\r]+$/, "");
       if (ci >= 60 && lineStr.length > 80) {
         const trimStart = Math.min(ci - 39, lineStr.length - 79);
         lineStr = "\u2026" + lineStr.substring(trimStart);
@@ -3742,8 +3742,8 @@ var require_errors = __commonJS({
       }
       if (lineStr.length > 80)
         lineStr = lineStr.substring(0, 79) + "\u2026";
-      if (line2 > 1 && /^ *$/.test(lineStr.substring(0, ci))) {
-        let prev = src.substring(lc.lineStarts[line2 - 2], lc.lineStarts[line2 - 1]);
+      if (line3 > 1 && /^ *$/.test(lineStr.substring(0, ci))) {
+        let prev = src.substring(lc.lineStarts[line3 - 2], lc.lineStarts[line3 - 1]);
         if (prev.length > 80)
           prev = prev.substring(0, 79) + "\u2026\n";
         lineStr = prev + lineStr;
@@ -3751,7 +3751,7 @@ var require_errors = __commonJS({
       if (/[^ ]/.test(lineStr)) {
         let count = 1;
         const end = error.linePos[1];
-        if (end?.line === line2 && end.col > col) {
+        if (end?.line === line3 && end.col > col) {
           count = Math.max(1, Math.min(end.col - col, 80 - ci));
         }
         const pointer = " ".repeat(ci) + "^".repeat(count);
@@ -4700,13 +4700,13 @@ var require_resolve_flow_scalar = __commonJS({
       return foldLines(source.slice(1, -1)).replace(/''/g, "'");
     }
     function foldLines(source) {
-      let first, line2;
+      let first, line3;
       try {
         first = new RegExp("(.*?)(?<![ 	])[ 	]*\r?\n", "sy");
-        line2 = new RegExp("[ 	]*(.*?)(?:(?<![ 	])[ 	]*)?\r?\n", "sy");
+        line3 = new RegExp("[ 	]*(.*?)(?:(?<![ 	])[ 	]*)?\r?\n", "sy");
       } catch {
         first = /(.*?)[ \t]*\r?\n/sy;
-        line2 = /[ \t]*(.*?)[ \t]*\r?\n/sy;
+        line3 = /[ \t]*(.*?)[ \t]*\r?\n/sy;
       }
       let match = first.exec(source);
       if (!match)
@@ -4714,8 +4714,8 @@ var require_resolve_flow_scalar = __commonJS({
       let res = match[1];
       let sep2 = " ";
       let pos = first.lastIndex;
-      line2.lastIndex = pos;
-      while (match = line2.exec(source)) {
+      line3.lastIndex = pos;
+      while (match = line3.exec(source)) {
         if (match[1] === "") {
           if (sep2 === "\n")
             res += sep2;
@@ -4725,7 +4725,7 @@ var require_resolve_flow_scalar = __commonJS({
           res += sep2 + match[1];
           sep2 = " ";
         }
-        pos = line2.lastIndex;
+        pos = line3.lastIndex;
       }
       const last = /[ \t]*(.*)/sy;
       last.lastIndex = pos;
@@ -5855,40 +5855,40 @@ var require_lexer = __commonJS({
         }
       }
       *parseStream() {
-        let line2 = this.getLine();
-        if (line2 === null)
+        let line3 = this.getLine();
+        if (line3 === null)
           return this.setNext("stream");
-        if (line2[0] === cst.BOM) {
+        if (line3[0] === cst.BOM) {
           yield* this.pushCount(1);
-          line2 = line2.substring(1);
+          line3 = line3.substring(1);
         }
-        if (line2[0] === "%") {
-          let dirEnd = line2.length;
-          let cs = line2.indexOf("#");
+        if (line3[0] === "%") {
+          let dirEnd = line3.length;
+          let cs = line3.indexOf("#");
           while (cs !== -1) {
-            const ch = line2[cs - 1];
+            const ch = line3[cs - 1];
             if (ch === " " || ch === "	") {
               dirEnd = cs - 1;
               break;
             } else {
-              cs = line2.indexOf("#", cs + 1);
+              cs = line3.indexOf("#", cs + 1);
             }
           }
           while (true) {
-            const ch = line2[dirEnd - 1];
+            const ch = line3[dirEnd - 1];
             if (ch === " " || ch === "	")
               dirEnd -= 1;
             else
               break;
           }
           const n = (yield* this.pushCount(dirEnd)) + (yield* this.pushSpaces(true));
-          yield* this.pushCount(line2.length - n);
+          yield* this.pushCount(line3.length - n);
           this.pushNewline();
           return "stream";
         }
         if (this.atLineEnd()) {
           const sp = yield* this.pushSpaces(true);
-          yield* this.pushCount(line2.length - sp);
+          yield* this.pushCount(line3.length - sp);
           yield* this.pushNewline();
           return "stream";
         }
@@ -5929,13 +5929,13 @@ var require_lexer = __commonJS({
       }
       *parseDocument() {
         yield* this.pushSpaces(true);
-        const line2 = this.getLine();
-        if (line2 === null)
+        const line3 = this.getLine();
+        if (line3 === null)
           return this.setNext("doc");
         let n = yield* this.pushIndicators();
-        switch (line2[n]) {
+        switch (line3[n]) {
           case "#":
-            yield* this.pushCount(line2.length - n);
+            yield* this.pushCount(line3.length - n);
           // fallthrough
           case void 0:
             yield* this.pushNewline();
@@ -5960,7 +5960,7 @@ var require_lexer = __commonJS({
           case ">":
             n += yield* this.parseBlockScalarHeader();
             n += yield* this.pushSpaces(true);
-            yield* this.pushCount(line2.length - n);
+            yield* this.pushCount(line3.length - n);
             yield* this.pushNewline();
             return yield* this.parseBlockScalar();
           default:
@@ -5980,11 +5980,11 @@ var require_lexer = __commonJS({
           }
           sp += yield* this.pushSpaces(true);
         } while (nl + sp > 0);
-        const line2 = this.getLine();
-        if (line2 === null)
+        const line3 = this.getLine();
+        if (line3 === null)
           return this.setNext("flow");
-        if (indent !== -1 && indent < this.indentNext && line2[0] !== "#" || indent === 0 && (line2.startsWith("---") || line2.startsWith("...")) && isEmpty(line2[3])) {
-          const atFlowEndMarker = indent === this.indentNext - 1 && this.flowLevel === 1 && (line2[0] === "]" || line2[0] === "}");
+        if (indent !== -1 && indent < this.indentNext && line3[0] !== "#" || indent === 0 && (line3.startsWith("---") || line3.startsWith("...")) && isEmpty(line3[3])) {
+          const atFlowEndMarker = indent === this.indentNext - 1 && this.flowLevel === 1 && (line3[0] === "]" || line3[0] === "}");
           if (!atFlowEndMarker) {
             this.flowLevel = 0;
             yield cst.FLOW_END;
@@ -5992,17 +5992,17 @@ var require_lexer = __commonJS({
           }
         }
         let n = 0;
-        while (line2[n] === ",") {
+        while (line3[n] === ",") {
           n += yield* this.pushCount(1);
           n += yield* this.pushSpaces(true);
           this.flowKey = false;
         }
         n += yield* this.pushIndicators();
-        switch (line2[n]) {
+        switch (line3[n]) {
           case void 0:
             return "flow";
           case "#":
-            yield* this.pushCount(line2.length - n);
+            yield* this.pushCount(line3.length - n);
             return "flow";
           case "{":
           case "[":
@@ -7687,9 +7687,9 @@ function currentBranch() {
 }
 function worktrees() {
   const out = [];
-  for (const line2 of (git(["worktree", "list", "--porcelain"]) ?? "").split("\n")) {
-    if (line2.startsWith("worktree ")) out.push({ path: line2.slice(9), branch: null });
-    else if (line2.startsWith("branch ") && out.length) out.at(-1).branch = line2.slice(7).replace(/^refs\/heads\//, "");
+  for (const line3 of (git(["worktree", "list", "--porcelain"]) ?? "").split("\n")) {
+    if (line3.startsWith("worktree ")) out.push({ path: line3.slice(9), branch: null });
+    else if (line3.startsWith("branch ") && out.length) out.at(-1).branch = line3.slice(7).replace(/^refs\/heads\//, "");
   }
   return out;
 }
@@ -7704,8 +7704,8 @@ function squashMerge(branch, base, pid) {
   const changed2 = fork ? (git(["diff", "--name-only", "-z", fork, branch]) ?? "").split("\0").filter(Boolean) : [];
   if (!changed2.length) return null;
   const names = new RegExp(`^(\\w+\\(${pid}\\)|${pid}):`);
-  for (const line2 of (git(["log", "--format=%H %s", `${fork}..${base}`]) ?? "").split("\n")) {
-    const [sha, subject] = [line2.slice(0, line2.indexOf(" ")), line2.slice(line2.indexOf(" ") + 1)];
+  for (const line3 of (git(["log", "--format=%H %s", `${fork}..${base}`]) ?? "").split("\n")) {
+    const [sha, subject] = [line3.slice(0, line3.indexOf(" ")), line3.slice(line3.indexOf(" ") + 1)];
     if (sha && names.test(subject) && mergesToItself(sha, branch, changed2)) return sha;
   }
   return null;
@@ -7774,10 +7774,10 @@ var Doc = class _Doc {
     const meta = {};
     const m = /^---\n([\s\S]*?)\n---\n/.exec(text);
     if (m) {
-      for (const line2 of m[1].split("\n")) {
-        if (line2.includes(":") && !line2.startsWith(" ")) {
-          const i = line2.indexOf(":");
-          meta[line2.slice(0, i).trim()] = line2.slice(i + 1).trim() || null;
+      for (const line3 of m[1].split("\n")) {
+        if (line3.includes(":") && !line3.startsWith(" ")) {
+          const i = line3.indexOf(":");
+          meta[line3.slice(0, i).trim()] = line3.slice(i + 1).trim() || null;
         }
       }
     }
@@ -7795,10 +7795,10 @@ var Doc = class _Doc {
     const at = this.text.indexOf("\n---\n");
     let head = at < 0 ? this.text : this.text.slice(0, at);
     const rest = at < 0 ? "" : this.text.slice(at);
-    const line2 = rstrip(`${key}: ${value ?? ""}`);
+    const line3 = rstrip(`${key}: ${value ?? ""}`);
     const re = new RegExp(`^${escapeRe(key)}:.*$`, "m");
-    head = re.test(head) ? head.replace(re, () => line2) : `${head}
-${line2}`;
+    head = re.test(head) ? head.replace(re, () => line3) : `${head}
+${line3}`;
     this.text = head + rest;
   }
   /** Paths (globs) a plan expects to change, as written: not upper-cased like IDs. */
@@ -7816,7 +7816,7 @@ ${line2}`;
   hasContent(name) {
     const body2 = stripComments(this.section(name));
     if (mdTable(body2).length) return true;
-    return body2.split("\n").map((l) => l.trim()).some((line2) => line2 && !EMPTY_LINES.has(line2) && !line2.startsWith("|") && !/^\*\*[^*]+:\*\*$/.test(line2));
+    return body2.split("\n").map((l) => l.trim()).some((line3) => line3 && !EMPTY_LINES.has(line3) && !line3.startsWith("|") && !/^\*\*[^*]+:\*\*$/.test(line3));
   }
   missing(names) {
     return names.filter((n) => !this.hasContent(n));
@@ -7826,8 +7826,8 @@ ${line2}`;
   }
   checklist(name) {
     const out = [];
-    for (const line2 of stripComments(this.section(name)).split("\n")) {
-      const m = TASK_RE.exec(line2);
+    for (const line3 of stripComments(this.section(name)).split("\n")) {
+      const m = TASK_RE.exec(line3);
       const label = m?.[2].trim();
       if (m && label && label !== "T1: \u2026 \u2192 verify: \u2026") out.push([m[1] !== " ", label]);
     }
@@ -7840,10 +7840,10 @@ ${line2}`;
   taskGroups(name = "Tasks") {
     const out = [];
     let phase = null;
-    for (const line2 of stripComments(this.section(name)).split("\n")) {
-      const h = /^###\s+(.+?)\s*$/.exec(line2);
+    for (const line3 of stripComments(this.section(name)).split("\n")) {
+      const h = /^###\s+(.+?)\s*$/.exec(line3);
       if (h) phase = h[1];
-      const m = TASK_RE.exec(line2);
+      const m = TASK_RE.exec(line3);
       const label = m?.[2].trim();
       if (m && label && label !== "T1: \u2026 \u2192 verify: \u2026") out.push([m[1] !== " ", label, phase]);
     }
@@ -8443,8 +8443,8 @@ var Workspace = class {
   watchers = [];
   output = [];
   /** A line for stdout (shown even when the command later refuses). */
-  say(line2) {
-    this.output.push(line2);
+  say(line3) {
+    this.output.push(line3);
   }
   read(path) {
     if (this.pending.has(path)) {
@@ -8578,10 +8578,10 @@ var SKILL_DIR = dirname3(SCRIPT_DIR);
 function yamlBlock(text, block) {
   const out = {};
   let inside = false;
-  for (const line2 of text.split("\n")) {
-    if (/^\S/.test(line2)) inside = line2.replace(/#.*/, "").trim() === `${block}:`;
+  for (const line3 of text.split("\n")) {
+    if (/^\S/.test(line3)) inside = line3.replace(/#.*/, "").trim() === `${block}:`;
     else if (inside) {
-      const m = /^\s+([\w-]+):\s*([^#]*)/.exec(line2);
+      const m = /^\s+([\w-]+):\s*([^#]*)/.exec(line3);
       if (m && m[2].trim()) out[m[1]] = m[2].trim().replace(/^["']|["']$/g, "");
     }
   }
@@ -8635,8 +8635,8 @@ var Store = class _Store {
   rel(p) {
     return p === this.dir || p.startsWith(`${this.dir}/`) ? relative2(this.home, p) : this.ws.rel(p);
   }
-  say(line2) {
-    this.ws.say(line2);
+  say(line3) {
+    this.ws.say(line3);
   }
   require() {
     if (!this.ws.isDir(this.dir)) fail("No .crew/ directory. Run `crew.mjs init` first.");
@@ -8722,12 +8722,11 @@ var Store = class _Store {
   focus() {
     return (this.idea()?.get("focus") ?? "").toUpperCase();
   }
-  /** The plans in the home; with includeBranches, in branch-per-plan mode (no hub.plan_worktrees) also the copies
-   * committed on plan/* branches, where that mode keeps a started plan's state, unless the home already closed the plan
-   * (merged or dropped). With plan worktrees the main checkout is the only home: a branch's copy is never read. */
+  /** The plans in the home; with includeBranches, copies committed on plan/* branches too (specced before hub state had
+   * one home), unless the home already closed the plan (merged or dropped). */
   plans(includeBranches = false) {
     const plans2 = this.loadDir(this.dirs.plan);
-    if (includeBranches && !this.settings().plan_worktrees) {
+    if (includeBranches) {
       for (const [pid, doc] of this.branchPlans()) {
         const base = plans2.get(pid);
         if (!base || !CLOSED.has(base.get("status") ?? "")) plans2.set(pid, doc);
@@ -8837,6 +8836,13 @@ function onFocus(plan, items2, focus) {
 }
 function goalOrder(goals2) {
   return new Map([...goals2.keys()].sort().map((e, i) => [e, i]));
+}
+function goalQueue(goals2, focus) {
+  const rank = (g) => {
+    const p = PRIORITIES.indexOf(g.get("priority") ?? "");
+    return [g.id !== focus, p < 0 ? PRIORITIES.length : p, g.id];
+  };
+  return [...goals2.values()].filter((g) => g.get("status") === "active").sort(byKey(rank)).map((g) => g.id);
 }
 function itemRank(it, goals2, focus) {
   const eorder = goalOrder(goals2);
@@ -9404,13 +9410,19 @@ var action = (tool, target) => target ? `${tool} ${target}` : tool;
 function runningLines(store) {
   return running(store).map((r) => `- ${r.idle ? "**idle** " : ""}${r.role} (${r.run}) \u2014 ${r.ref ?? "\u2014"} \xB7 task ${r.task ?? "\u2014"} \xB7 ${action(r.tool, r.target)} ${ago(r.minutes)} \xB7 tokens ${r.tokens === null ? "\u2014" : r.tokens}`);
 }
+var fromActivity = (e) => ({ ts: e.ts, type: "tool", run: e.run, ref: e.ref, text: action(e.tool, e.target) });
+var fromLedger = (e) => ({ ts: e.ts, type: e.type, run: e.run, ref: e.ref, text: detail(e) });
+var byTime = (a, b) => Date.parse(a.ts) - Date.parse(b.ts);
+var forRef = (ref) => (e) => !ref || e.ref?.toUpperCase() === ref.toUpperCase();
+function feedEntries(store, ref, limit = 20) {
+  return [...readActivity(feedPath(store)).map(fromActivity), ...store.ledger.events().map(fromLedger)].filter(forRef(ref)).sort(byTime).slice(-limit);
+}
 var clock = (ts) => ts.slice(0, 19).replace("T", " ");
 var oneLine = (s) => {
   const first = s.split("\n")[0];
   return first.length > 140 ? `${first.slice(0, 140)}\u2026` : first === s ? s : `${first} \u2026`;
 };
-var fromActivity = (e) => ({ ts: e.ts, ref: e.ref, text: `${clock(e.ts)}  ${"tool".padEnd(10)}  ${(e.ref ?? "\u2014").padEnd(9)}  ${e.run}  ${action(e.tool, e.target)}` });
-var fromLedger = (e) => ({ ts: e.ts, ref: e.ref, text: `${clock(e.ts)}  ${e.type.padEnd(10)}  ${(e.ref ?? "\u2014").padEnd(9)}  ${e.run}  ${oneLine(detail(e))}` });
+var line = (e) => `${clock(e.ts)}  ${e.type.padEnd(10)}  ${(e.ref ?? "\u2014").padEnd(9)}  ${e.run}  ${e.type === "tool" ? e.text : oneLine(e.text)}`;
 function follow(path, at) {
   if (!existsSync7(path)) return [];
   const size = statSync5(path).size;
@@ -9435,14 +9447,12 @@ function follow(path, at) {
 }
 function watch(store, o = {}) {
   store.require();
-  const ref = o.ref?.toUpperCase(), out = (l) => process.stdout.write(`${l.text}
+  const ref = o.ref?.toUpperCase(), out = (e) => process.stdout.write(`${line(e)}
 `);
-  const keep = (l) => !ref || l.ref === ref;
   const feed = feedPath(store), ledger2 = store.ledger.path;
   const size = (p) => existsSync7(p) ? statSync5(p).size : 0;
   const pos = { feed: { offset: size(feed), rest: "" }, ledger: { offset: size(ledger2), rest: "" } };
-  const recent = [...readActivity(feed).map(fromActivity), ...store.ledger.events().map(fromLedger)].filter(keep).sort((a, b) => Date.parse(a.ts) - Date.parse(b.ts)).slice(-(o.limit ?? 20));
-  recent.forEach(out);
+  feedEntries(store, ref, o.limit ?? 20).forEach(out);
   process.stdout.write(`\u2014 following ${store.rel(feed)} and the ledger${ref ? ` for ${ref}` : ""} (Ctrl-C to stop) \u2014
 `);
   setInterval(() => {
@@ -9450,10 +9460,14 @@ function watch(store, o = {}) {
       ...follow(feed, pos.feed).map(fromActivity),
       ...follow(ledger2, pos.ledger).map(fromLedger)
     ];
-    fresh.filter(keep).sort((a, b) => Date.parse(a.ts) - Date.parse(b.ts)).forEach(out);
+    fresh.filter(forRef(ref)).sort(byTime).forEach(out);
   }, o.intervalMs ?? 500);
   return 0;
 }
+
+// src/hub/commands/work/planning.ts
+import { readFileSync as readFileSync7 } from "node:fs";
+import { join as join14, resolve as resolve7 } from "node:path";
 
 // src/hub/core/work/gates.ts
 function triageProblems(item) {
@@ -9809,17 +9823,12 @@ function plans(s, f) {
   }
 }
 function lostPlans(s, f) {
-  const seen = /* @__PURE__ */ new Set(), branches = planBranches();
-  const local = new Set(branches.filter((b) => !b.startsWith("origin/")).map((b) => /^plan\/(P-\d+)/.exec(b)?.[1]));
-  for (const b of branches) {
+  const seen = /* @__PURE__ */ new Set();
+  for (const b of planBranches()) {
     const pid = /^(?:origin\/)?plan\/(P-\d+)/.exec(b)?.[1];
     if (!pid || seen.has(pid) || s.allPlans.has(pid) || s.store.planWorktrees().has(pid)) continue;
     seen.add(pid);
-    if (b.startsWith("origin/") && !local.has(pid)) {
-      f.hints.push(`${pid}: only ${b} has it and the main checkout has no plan file: fetch it and bring the plan home (\`migrate --gather\` from a checkout of it)`);
-    } else {
-      f.hints.push(`${pid}: branch ${b} has no plan file and no worktree \u2014 its worktree was removed before Release committed it, so the uncommitted work is gone; recover what you can, then delete the branch`);
-    }
+    f.hints.push(`${pid}: branch ${b} has no plan file and no worktree \u2014 its worktree was removed before Release committed it, so the uncommitted work is gone; recover what you can, then delete the branch`);
   }
 }
 function overlaps(s, f) {
@@ -9983,9 +9992,290 @@ function goalProblems(store, goal) {
   return problems;
 }
 
-// src/hub/commands/work/planning.ts
-import { readFileSync as readFileSync7 } from "node:fs";
-import { join as join14, resolve as resolve7 } from "node:path";
+// src/hub/commands/work/review.ts
+var lastCode = (branch) => git(["log", "-1", "--format=%H", branch, "--", ".", ":(exclude).crew"])?.trim() || null;
+function uncommitted(store, plan) {
+  if (!store.settings().plan_worktrees) return null;
+  const home = store.planHome(plan.id);
+  return home ? codeChanges(home, store.policy.policy.secrets.files) : [];
+}
+function review(store, planId, o) {
+  store.require();
+  const plan = store.find(store.checkRef(planId, "plan"));
+  if (!!o.approve === !!o.changes) fail('Give one verdict: --approve, or --changes "<what to change>".');
+  if (plan.get("status") !== "in-review") fail(`${plan.id} is '${plan.get("status")}': only a plan in review is reviewed.`);
+  authorize(store, plan.id, "plan.reviewed", void 0, void 0, `review ${plan.id}`);
+  const me = store.ledger.who.run;
+  if (implementers(store.ledger.events(), plan.id).has(me)) fail(`This run (${me}) implemented ${plan.id}; another role reviews it.`);
+  const open = o.approve ? uncommitted(store, plan) ?? [] : [];
+  if (open.length) {
+    fail(`${plan.id}'s worktree has uncommitted code: ${open.slice(0, 10).join(", ")}${open.length > 10 ? ", \u2026" : ""}. \`checkpoint ${plan.id}\` commits it on the plan's branch; then review again.`);
+  }
+  const branch = plan.get("branch") ?? "";
+  const sha = branch && git(["rev-parse", "--verify", "-q", branch])?.trim() || null;
+  store.ledger.record("review", plan.id, { verdict: o.approve ? "approve" : "changes", sha, ...o.changes ? { text: o.changes } : {} });
+  if (o.changes) {
+    plan.appendLog(`review: changes requested \u2014 ${o.changes}`, "Progress log");
+    plan.save();
+    move(store, plan.id, "in-progress", `changes requested: ${o.changes}`, false, void 0, "plan.reviewed");
+  } else store.say(`${plan.id}: approved${sha ? ` at ${sha.slice(0, 7)}` : ""}`);
+}
+function reviewProblems(store, plan) {
+  if (!store.policy.policy.role_gates["plan.reviewed"]) return [];
+  const last = store.ledger.events().filter((e) => e.type === "review" && e.ref === plan.id).at(-1);
+  const how = `\`review ${plan.id} --approve\` by the ${store.policy.policy.role_gates["plan.reviewed"]}`;
+  if (!last) return [`no code review yet: ${how}`];
+  if (last.verdict !== "approve") return [`the last review asked for changes: ${last.text}`];
+  const code = lastCode(plan.get("branch") ?? "");
+  const dirty2 = uncommitted(store, plan) ?? (currentBranch() !== plan.get("branch") ? [] : (git(["status", "--porcelain"]) ?? "").split("\n").filter((l) => l.trim() && !l.slice(3).startsWith(".crew/")));
+  const covered = !code || !!last.sha && git(["merge-base", "--is-ancestor", code, String(last.sha)]) !== null;
+  return covered && !dirty2.length ? [] : [`the code changed since the approving review (${String(last.sha ?? "?").slice(0, 7)}): ${how} again`];
+}
+
+// src/hub/commands/work/workflow.ts
+var LOG_SECTION = { item: "Notes" };
+function move(store, docId, status2, note, force = false, approvedBy, via) {
+  store.require();
+  docId = docId.toUpperCase();
+  const kind = kindOf(docId);
+  const doc = store.find(docId);
+  const flow = FLOWS[kind];
+  const old = doc.get("status") ?? "";
+  if (!Object.hasOwn(flow, status2)) fail(`Unknown status '${status2}'. Valid: ${Object.keys(flow).join(", ")}`);
+  if (!(flow[old] ?? []).includes(status2) && !force) {
+    const allowed = [...flow[old] ?? []].sort().join(", ") || "none";
+    fail(`${docId}: ${old} \u2192 ${status2} not allowed (from ${old}: ${allowed}). Use --force to override.`);
+  }
+  if (!force) guard2(store, kind, doc, status2, approvedBy);
+  const waiting = FORWARD.has(status2) ? openQuestions(store.ledger.events(), doc.id).filter((x) => x.blocking) : [];
+  if (waiting.length && !force) {
+    fail(`${doc.id} waits for an answer before it moves on:
+  - ${waiting.map((x) => `${x.id} \u2192 ${x.to}: ${x.text}`).join("\n  - ")}
+(\`crew.mjs questions\`; --force to move anyway)`);
+  }
+  if (kind === "plan" && status2 === "in-progress" && !via) assignedHere(store, doc.id);
+  const lane = kind === "plan" && status2 === "ready" && fastLane(store, doc);
+  authorize(store, doc.id, via ?? `${kind}.${status2}`, approvedBy, via ? void 0 : old, void 0, lane ? ["pm"] : []);
+  if (kind === "plan" && status2 === "in-progress" && !via) claimFor(store, doc, force);
+  if (kind === "plan" && status2 === "in-review") commitWork(store, doc, `chore(${doc.id}): hand over to review`);
+  stamp(kind, doc, status2);
+  doc.set("status", status2);
+  if (kind === "plan" && status2 === "in-review" && doc.source === "worktree") writeHandoff(store, doc);
+  if (kind === "plan" && old === "in-review" && status2 === "in-progress") {
+    escalateLimit(store, doc.id, bounces(store.ledger.events(), doc.id) + 1, store.policy.policy.limits.max_bounces, "came back from review");
+  }
+  const approval = approvedBy ? ` (approved by ${approvedBy})` : "";
+  doc.appendLog(`status ${old} \u2192 ${status2}` + (note ? ` \u2014 ${note}` : "") + approval, LOG_SECTION[kind] ?? "Progress log");
+  doc.save();
+  store.ledger.record("move", doc.id, {
+    from: old,
+    to: status2,
+    ...note ? { note } : {},
+    ...approvedBy ? { approved_by: approvedBy } : {},
+    ...via ? { via } : {}
+  });
+  if (CLOSED.has(status2) && store.ledger.claims().has(doc.id)) store.ledger.record("release", doc.id, { reason: status2 });
+  if (kind === "goal" && status2 === "done") notify(store, "goal-done", doc.id, `${doc.id} is done: ${doc.get("title")}`);
+  store.say(`${doc.id}: ${old} \u2192 ${status2}`);
+  return doc;
+}
+function authorize(store, id, transition, approvedBy, from, cmd = `move ${id} ${transition.split(".")[1]}`, also = []) {
+  const { policy, errors } = store.policy;
+  if (errors.length) fail(`The policy is invalid, so nothing moves until it is fixed (\`crew.mjs policy check\`):
+  - ${errors.join("\n  - ")}`);
+  if (approvedBy !== void 0 && !approvedBy.trim()) fail("--approved-by needs the approving person's name.");
+  if (approvedBy) return;
+  const reason = approvalReason(policy, transition);
+  const [, status2] = transition.split(".");
+  if (reason) {
+    fail(`${id} \u2192 ${status2} is ${reason}: a human approves it with \`crew.mjs ${cmd} --approved-by <name>\` (agents over MCP can't). Ask the ${policy.escalation.to} first.`);
+  }
+  const [kind] = transition.split(".");
+  const role = (from ? policy.role_gates[`${kind}.${from}>${status2}`] : void 0) ?? policy.role_gates[transition];
+  const mine = store.ledger.who.role;
+  if (role && mine !== role && !also.includes(mine ?? "")) fail(`${id} \u2192 ${status2} is for the ${role} role; this run is ${mine ? `the ${mine} role` : "in no role"} (CREW_ROLE).`);
+}
+function claimFor(store, doc, force) {
+  const held = store.ledger.claims().get(doc.id);
+  if (held?.run === store.ledger.who.run) return;
+  if (held && !force) {
+    fail(`${doc.id} is claimed by ${held.actor} (${held.run}, ${held.worktree}) since ${held.ts.slice(0, 10)}. Coordinate with them, or \`release ${doc.id} --force\` if that run is gone.`);
+  }
+  store.ledger.record("claim", doc.id, { branch: doc.get("branch") ?? "", ...force ? { force: true } : {} });
+}
+function budgetProblems(store) {
+  const { budgets } = store.policy.policy;
+  const events = store.ledger.events(), me = store.ledger.who.run;
+  const mine = store.ledger.spend(events.filter((e) => e.run === me)), all = store.ledger.spend(events);
+  const over = (what, used, cap, unit = "") => cap !== null && used >= cap ? [`${what}: ${unit}${+used.toFixed(2)} used of ${unit}${cap}`] : [];
+  const holders = new Set([...store.ledger.claims(events).values()].map((c) => c.run));
+  const agents2 = budgets.max_agents !== null && !holders.has(me) && holders.size >= budgets.max_agents ? [`max_agents: ${holders.size} runs already hold work (limit ${budgets.max_agents})`] : [];
+  return [
+    ...over("run cost", mine.cost, budgets.run.max_cost, "$"),
+    ...over("run tokens", mine.tokensIn + mine.tokensOut, budgets.run.max_tokens),
+    ...over("project cost", all.cost, budgets.project.max_cost, "$"),
+    ...over("project tokens", all.tokensIn + all.tokensOut, budgets.project.max_tokens),
+    ...agents2
+  ];
+}
+function guard2(store, kind, doc, status2, approvedBy) {
+  let problems = [];
+  let label = "";
+  if (kind === "plan" && status2 === "ready") {
+    problems = readinessProblems(store, doc);
+    label = "is not ready (Definition of Ready)";
+  } else if (kind === "plan" && status2 === "in-review") {
+    problems = learningsProblems(doc, new Set(store.knowledge().map((e) => e.id)));
+    label = "can't go to review";
+  } else if (kind === "plan" && status2 === "done") {
+    problems = [
+      ...doc.tasks().filter(([done]) => !done).map(([, t]) => `unchecked task: ${t}`),
+      ...evidenceProblems(store, doc, approvedBy),
+      ...reviewProblems(store, doc)
+    ];
+    label = "can't be done";
+  } else if (kind === "goal" && status2 === "done") {
+    problems = goalProblems(store, doc);
+    label = "isn't reached";
+  } else if (kind === "goal" && status2 === "active") {
+    problems = doc.missing(["Outcome", "Acceptance criteria"]).map((n) => `empty section: ${n}`);
+    label = "can't be active";
+  } else if (kind === "item" && status2 === "triaged") {
+    problems = triageProblems(doc);
+    label = "can't be triaged";
+  } else if (kind === "idea" && status2 === "decided") {
+    problems = decisionProblems(doc);
+    label = "can't be decided";
+  }
+  if (problems.length) fail(`${doc.id} ${label}:
+  - ${problems.join("\n  - ")}
+(--force to override)`);
+}
+function stamp(kind, doc, status2) {
+  if (kind === "plan" && status2 === "in-progress" && !doc.get("started")) doc.set("started", today());
+  if (kind === "idea" && status2 === "decided") doc.set("decided", today());
+  if (kind === "item" && ITEM_CLOSED.has(status2)) doc.set("closed", today());
+  if (status2 === "done") doc.set("completed", today());
+}
+function start(store, planId, force = false, approvedBy) {
+  store.require();
+  refuseWhilePaused(store, "new starts");
+  let doc = store.find(planId);
+  const branch = doc.get("branch") || `plan/${doc.id}-${slugify(doc.get("title") ?? "")}`;
+  const takeover = planBranches().includes(branch) && !store.ledger.claims().has(doc.id) && ["in-progress", "blocked"].includes(store.ledger.lastStatus().get(doc.id) ?? doc.get("status") ?? "");
+  const held = store.ledger.claims().get(doc.id);
+  if (held && held.run !== store.ledger.who.run && !force) {
+    fail(`${doc.id} is claimed by ${held.actor} (${held.run}, ${held.worktree}) since ${held.ts.slice(0, 10)}. Coordinate with them, or \`release ${doc.id} --force\` if that run is gone.`);
+  }
+  if (!force && !takeover) checkStartable(store, doc);
+  const over = budgetProblems(store);
+  if (over.length && !approvedBy) {
+    fail(`Over budget \u2014 no new work without a human's approval (\`start ${doc.id} --approved-by <name>\`):
+  - ${over.join("\n  - ")}`);
+  }
+  const asked = openQuestions(store.ledger.events(), doc.id).filter((x) => x.blocking);
+  if (asked.length && !force) {
+    fail(`${doc.id} waits for an answer before it starts:
+  - ${asked.map((x) => `${x.id} \u2192 ${x.to}: ${x.text}`).join("\n  - ")}
+(\`crew.mjs questions\`; --force to start anyway)`);
+  }
+  assignedHere(store, doc.id);
+  authorize(store, doc.id, "plan.in-progress", approvedBy, "ready");
+  const shared = store.settings().plan_worktrees;
+  if (!shared && !treeIsClean(store.rel(store.dir))) fail("Working tree not clean. Commit or stash first (changes under the hub's directory may stay).");
+  const focus = store.focus();
+  if (!onFocus(doc, store.items(), focus)) store.say(`note: ${planId} does not serve the focus goal ${focus}`);
+  for (const o of overlapping(doc, store.plans(true)).filter((x) => store.plans(true).get(x.id)?.get("status") !== "ready")) {
+    store.say(`warning: ${planId} overlaps ${o.id} (in progress) on ${o.globs.join(", ")} \u2014 expect conflicts; coordinate or add depends_on`);
+  }
+  if (shared) {
+    let home = store.planHome(doc.id);
+    if (!home) {
+      const live = planBranches().includes(branch) && doc.path ? show(branch, store.rel(doc.path)) : null;
+      home = openPlanWorktree(store, doc.id, branch);
+      if (live !== null && live !== store.ws.read(doc.path)) {
+        store.ws.write(doc.path, live);
+        store.say(`${doc.id}: took the plan from ${branch}, where its progress is`);
+      }
+    }
+    claimPlan(store, planId, branch, force, takeover, approvedBy);
+    store.say(`${doc.id}: work in ${store.ws.rel(home) || "this checkout"} (${branch}) \u2014 claimed by ${store.ledger.who.actor} (${store.ledger.who.run}); checkpoints commit its code on the branch`);
+    return;
+  }
+  const from = currentBranch(), sha = git(["rev-parse", "HEAD"])?.trim();
+  git(takeover ? ["switch", "--ignore-other-worktrees", branch] : ["switch", "-c", branch], true);
+  store.ws.onAbort(() => {
+    git(from ? ["switch", "-q", from] : ["switch", "-q", "--detach", sha ?? "HEAD"]);
+    if (!takeover) git(["branch", "-D", branch]);
+  });
+  claimPlan(store, planId, branch, force, takeover, approvedBy);
+  store.say(`Switched to ${branch} \u2014 claimed by ${store.ledger.who.actor} (${store.ledger.who.run})`);
+}
+function claimPlan(store, planId, branch, force, takeover, approvedBy) {
+  const doc = store.find(planId);
+  if (doc.get("status") === "draft" && force) {
+    doc.set("status", "ready");
+    doc.save();
+  }
+  store.ledger.record("claim", doc.id, { branch, ...force ? { force: true } : {}, ...takeover ? { takeover: true } : {} });
+  if (doc.get("status") !== "in-progress") move(store, planId, "in-progress", `branch ${branch}`, force, approvedBy);
+  else store.say(`${doc.id}: taken over where it stopped \u2014 \`resume ${doc.id}\``);
+}
+function assignedHere(store, id) {
+  const a = store.ledger.assignments().get(id), me = store.ledger.who.role, by = store.policy.policy.role_gates["plan.assigned"];
+  if (!a && by) fail(`${id} isn't assigned yet: the ${by} opens it with \`assign ${id} --to developer\`.`);
+  if (a && a.to !== me) fail(`${id} is assigned to the ${a.to} role; this run is ${me ? `the ${me} role` : "in no role"}.`);
+}
+function checkStartable(store, doc) {
+  if (doc.get("status") !== "ready") {
+    fail(`${doc.id} is '${doc.get("status")}', not 'ready'. Refine it first or use --force.`);
+  }
+  const plans2 = store.plans(true);
+  const waiting = unmetDeps(doc, plans2);
+  if (waiting.length) fail(`${doc.id} depends on unfinished plans: ${waiting.join(", ")}. (--force to start anyway)`);
+  const limit = store.settings().wip_limit;
+  const wip = myWip(store, plans2);
+  if (wip.length >= limit) {
+    fail(`WIP limit (${limit}) reached: ${wip.join(", ")} in progress. Finish or block it first (--force to override).`);
+  }
+}
+function myWip(store, plans2) {
+  const claims = store.ledger.claims();
+  return [...plans2.values()].filter((p) => p.get("status") === "in-progress" && (claims.get(p.id)?.run ?? store.ledger.who.run) === store.ledger.who.run).map((p) => p.id);
+}
+function release(store, planId, note, force = false) {
+  store.require();
+  const id = planId.toUpperCase();
+  const held = store.ledger.claims().get(id) ?? fail(`${id} is not claimed.`);
+  if (held.run !== store.ledger.who.run && !force) {
+    fail(`${id} is claimed by ${held.actor} (${held.run}), not this run. Use --force to release it anyway.`);
+  }
+  store.ledger.record("release", id, { reason: note ?? "released", from_run: held.run });
+  store.say(`${id}: released (was ${held.actor}, ${held.run})`);
+}
+function usage(store, u) {
+  store.require();
+  if (u.tokensIn === void 0 && u.tokensOut === void 0 && u.cost === void 0) fail("Give --tokens-in, --tokens-out or --cost.");
+  if (u.cost !== void 0 && !(Number.isFinite(u.cost) && u.cost >= 0)) fail("--cost must be a number \u2265 0.");
+  for (const [flag, n] of [["--tokens-in", u.tokensIn], ["--tokens-out", u.tokensOut]]) {
+    if (n !== void 0 && !(Number.isInteger(n) && n >= 0)) fail(`${flag} must be a whole number \u2265 0.`);
+  }
+  store.ledger.record("usage", u.ref ? u.ref.toUpperCase() : null, {
+    tokens_in: u.tokensIn ?? 0,
+    tokens_out: u.tokensOut ?? 0,
+    cost: u.cost ?? 0,
+    ...u.model ? { model: u.model } : {}
+  });
+  store.say(`usage recorded for ${store.ledger.who.actor} (${store.ledger.who.run})`);
+  const over = budgetProblems(store);
+  if (over.length) store.say(`warning: over budget \u2014 new work needs a human's approval: ${over.join("; ")}`);
+}
+function log(store, docId, text) {
+  const doc = store.find(docId);
+  doc.appendLog(text, LOG_SECTION[kindOf(docId) ?? "plan"] ?? "Progress log");
+  doc.save();
+  store.ledger.record("log", doc.id, { text });
+}
 
 // src/hub/commands/work/backlog.ts
 function createItem(store, prefix, title, body2, fields) {
@@ -10166,8 +10456,8 @@ function toDoc(store, d, kind, all) {
   };
 }
 var TASK_LINE = /^(?:(T\d+):\s*)?(.*?)(?:\s*→\s*verify:\s*(.*))?$/;
-function task([done, line2, phase]) {
-  const [, id = null, text = line2, verify = null] = TASK_LINE.exec(line2) ?? [];
+function task([done, line3, phase]) {
+  const [, id = null, text = line3, verify = null] = TASK_LINE.exec(line3) ?? [];
   return { id, text: text.trim(), verify: verify?.trim() || null, done, phase };
 }
 function knowledgeDoc(store, e) {
@@ -10452,284 +10742,6 @@ function hintUnplanned(store, goal, items2) {
   if (open.length) store.say(`note: ${goal} has unplanned items (${open.join(", ")}) \u2014 link the one this plan delivers with --items`);
 }
 
-// src/hub/commands/work/review.ts
-var lastCode = (branch) => git(["log", "-1", "--format=%H", branch, "--", ".", ":(exclude).crew"])?.trim() || null;
-function uncommitted(store, plan) {
-  if (!store.settings().plan_worktrees) return null;
-  const home = store.planHome(plan.id);
-  return home ? codeChanges(home, store.policy.policy.secrets.files) : [];
-}
-function review(store, planId, o) {
-  store.require();
-  const plan = store.find(store.checkRef(planId, "plan"));
-  if (!!o.approve === !!o.changes) fail('Give one verdict: --approve, or --changes "<what to change>".');
-  if (plan.get("status") !== "in-review") fail(`${plan.id} is '${plan.get("status")}': only a plan in review is reviewed.`);
-  authorize(store, plan.id, "plan.reviewed", void 0, void 0, `review ${plan.id}`);
-  const me = store.ledger.who.run;
-  if (implementers(store.ledger.events(), plan.id).has(me)) fail(`This run (${me}) implemented ${plan.id}; another role reviews it.`);
-  const open = o.approve ? uncommitted(store, plan) ?? [] : [];
-  if (open.length) {
-    fail(`${plan.id}'s worktree has uncommitted code: ${open.slice(0, 10).join(", ")}${open.length > 10 ? ", \u2026" : ""}. \`checkpoint ${plan.id}\` commits it on the plan's branch; then review again.`);
-  }
-  const branch = plan.get("branch") ?? "";
-  const sha = branch && git(["rev-parse", "--verify", "-q", branch])?.trim() || null;
-  store.ledger.record("review", plan.id, { verdict: o.approve ? "approve" : "changes", sha, ...o.changes ? { text: o.changes } : {} });
-  if (o.changes) {
-    plan.appendLog(`review: changes requested \u2014 ${o.changes}`, "Progress log");
-    plan.save();
-    move(store, plan.id, "in-progress", `changes requested: ${o.changes}`, false, void 0, "plan.reviewed");
-  } else store.say(`${plan.id}: approved${sha ? ` at ${sha.slice(0, 7)}` : ""}`);
-}
-function reviewProblems(store, plan) {
-  if (!store.policy.policy.role_gates["plan.reviewed"]) return [];
-  const last = store.ledger.events().filter((e) => e.type === "review" && e.ref === plan.id).at(-1);
-  const how = `\`review ${plan.id} --approve\` by the ${store.policy.policy.role_gates["plan.reviewed"]}`;
-  if (!last) return [`no code review yet: ${how}`];
-  if (last.verdict !== "approve") return [`the last review asked for changes: ${last.text}`];
-  const code = lastCode(plan.get("branch") ?? "");
-  const dirty2 = uncommitted(store, plan) ?? (currentBranch() !== plan.get("branch") ? [] : (git(["status", "--porcelain"]) ?? "").split("\n").filter((l) => l.trim() && !l.slice(3).startsWith(".crew/")));
-  const covered = !code || !!last.sha && git(["merge-base", "--is-ancestor", code, String(last.sha)]) !== null;
-  return covered && !dirty2.length ? [] : [`the code changed since the approving review (${String(last.sha ?? "?").slice(0, 7)}): ${how} again`];
-}
-
-// src/hub/commands/work/workflow.ts
-var LOG_SECTION = { item: "Notes" };
-function move(store, docId, status2, note, force = false, approvedBy, via) {
-  store.require();
-  docId = docId.toUpperCase();
-  const kind = kindOf(docId);
-  const doc = store.find(docId);
-  const flow = FLOWS[kind];
-  const old = doc.get("status") ?? "";
-  if (!Object.hasOwn(flow, status2)) fail(`Unknown status '${status2}'. Valid: ${Object.keys(flow).join(", ")}`);
-  if (!(flow[old] ?? []).includes(status2) && !force) {
-    const allowed = [...flow[old] ?? []].sort().join(", ") || "none";
-    fail(`${docId}: ${old} \u2192 ${status2} not allowed (from ${old}: ${allowed}). Use --force to override.`);
-  }
-  if (!force) guard2(store, kind, doc, status2, approvedBy);
-  const waiting = FORWARD.has(status2) ? openQuestions(store.ledger.events(), doc.id).filter((x) => x.blocking) : [];
-  if (waiting.length && !force) {
-    fail(`${doc.id} waits for an answer before it moves on:
-  - ${waiting.map((x) => `${x.id} \u2192 ${x.to}: ${x.text}`).join("\n  - ")}
-(\`crew.mjs questions\`; --force to move anyway)`);
-  }
-  if (kind === "plan" && status2 === "in-progress" && !via) assignedHere(store, doc.id);
-  const lane = kind === "plan" && status2 === "ready" && fastLane(store, doc);
-  authorize(store, doc.id, via ?? `${kind}.${status2}`, approvedBy, via ? void 0 : old, void 0, lane ? ["pm"] : []);
-  if (kind === "plan" && status2 === "in-progress" && !via) claimFor(store, doc, force);
-  if (kind === "plan" && status2 === "in-review") commitWork(store, doc, `chore(${doc.id}): hand over to review`);
-  stamp(kind, doc, status2);
-  doc.set("status", status2);
-  if (kind === "plan" && status2 === "in-review" && doc.source === "worktree") writeHandoff(store, doc);
-  if (kind === "plan" && old === "in-review" && status2 === "in-progress") {
-    escalateLimit(store, doc.id, bounces(store.ledger.events(), doc.id) + 1, store.policy.policy.limits.max_bounces, "came back from review");
-  }
-  const approval = approvedBy ? ` (approved by ${approvedBy})` : "";
-  doc.appendLog(`status ${old} \u2192 ${status2}` + (note ? ` \u2014 ${note}` : "") + approval, LOG_SECTION[kind] ?? "Progress log");
-  doc.save();
-  store.ledger.record("move", doc.id, {
-    from: old,
-    to: status2,
-    ...note ? { note } : {},
-    ...approvedBy ? { approved_by: approvedBy } : {},
-    ...via ? { via } : {}
-  });
-  if (CLOSED.has(status2) && store.ledger.claims().has(doc.id)) store.ledger.record("release", doc.id, { reason: status2 });
-  if (kind === "goal" && status2 === "done") notify(store, "goal-done", doc.id, `${doc.id} is done: ${doc.get("title")}`);
-  store.say(`${doc.id}: ${old} \u2192 ${status2}`);
-  return doc;
-}
-function authorize(store, id, transition, approvedBy, from, cmd = `move ${id} ${transition.split(".")[1]}`, also = []) {
-  const { policy, errors } = store.policy;
-  if (errors.length) fail(`The policy is invalid, so nothing moves until it is fixed (\`crew.mjs policy check\`):
-  - ${errors.join("\n  - ")}`);
-  if (approvedBy !== void 0 && !approvedBy.trim()) fail("--approved-by needs the approving person's name.");
-  if (approvedBy) return;
-  const reason = approvalReason(policy, transition);
-  const [, status2] = transition.split(".");
-  if (reason) {
-    fail(`${id} \u2192 ${status2} is ${reason}: a human approves it with \`crew.mjs ${cmd} --approved-by <name>\` (agents over MCP can't). Ask the ${policy.escalation.to} first.`);
-  }
-  const [kind] = transition.split(".");
-  const role = (from ? policy.role_gates[`${kind}.${from}>${status2}`] : void 0) ?? policy.role_gates[transition];
-  const mine = store.ledger.who.role;
-  if (role && mine !== role && !also.includes(mine ?? "")) fail(`${id} \u2192 ${status2} is for the ${role} role; this run is ${mine ? `the ${mine} role` : "in no role"} (CREW_ROLE).`);
-}
-function claimFor(store, doc, force) {
-  const held = store.ledger.claims().get(doc.id);
-  if (held?.run === store.ledger.who.run) return;
-  if (held && !force) {
-    fail(`${doc.id} is claimed by ${held.actor} (${held.run}, ${held.worktree}) since ${held.ts.slice(0, 10)}. Coordinate with them, or \`release ${doc.id} --force\` if that run is gone.`);
-  }
-  store.ledger.record("claim", doc.id, { branch: doc.get("branch") ?? "", ...force ? { force: true } : {} });
-}
-function budgetProblems(store) {
-  const { budgets } = store.policy.policy;
-  const events = store.ledger.events(), me = store.ledger.who.run;
-  const mine = store.ledger.spend(events.filter((e) => e.run === me)), all = store.ledger.spend(events);
-  const over = (what, used, cap, unit = "") => cap !== null && used >= cap ? [`${what}: ${unit}${+used.toFixed(2)} used of ${unit}${cap}`] : [];
-  const holders = new Set([...store.ledger.claims(events).values()].map((c) => c.run));
-  const agents2 = budgets.max_agents !== null && !holders.has(me) && holders.size >= budgets.max_agents ? [`max_agents: ${holders.size} runs already hold work (limit ${budgets.max_agents})`] : [];
-  return [
-    ...over("run cost", mine.cost, budgets.run.max_cost, "$"),
-    ...over("run tokens", mine.tokensIn + mine.tokensOut, budgets.run.max_tokens),
-    ...over("project cost", all.cost, budgets.project.max_cost, "$"),
-    ...over("project tokens", all.tokensIn + all.tokensOut, budgets.project.max_tokens),
-    ...agents2
-  ];
-}
-function guard2(store, kind, doc, status2, approvedBy) {
-  let problems = [];
-  let label = "";
-  if (kind === "plan" && status2 === "ready") {
-    problems = readinessProblems(store, doc);
-    label = "is not ready (Definition of Ready)";
-  } else if (kind === "plan" && status2 === "in-review") {
-    problems = learningsProblems(doc, new Set(store.knowledge().map((e) => e.id)));
-    label = "can't go to review";
-  } else if (kind === "plan" && status2 === "done") {
-    problems = [
-      ...doc.tasks().filter(([done]) => !done).map(([, t]) => `unchecked task: ${t}`),
-      ...evidenceProblems(store, doc, approvedBy),
-      ...reviewProblems(store, doc)
-    ];
-    label = "can't be done";
-  } else if (kind === "goal" && status2 === "done") {
-    problems = goalProblems(store, doc);
-    label = "isn't reached";
-  } else if (kind === "goal" && status2 === "active") {
-    problems = doc.missing(["Outcome", "Acceptance criteria"]).map((n) => `empty section: ${n}`);
-    label = "can't be active";
-  } else if (kind === "item" && status2 === "triaged") {
-    problems = triageProblems(doc);
-    label = "can't be triaged";
-  } else if (kind === "idea" && status2 === "decided") {
-    problems = decisionProblems(doc);
-    label = "can't be decided";
-  }
-  if (problems.length) fail(`${doc.id} ${label}:
-  - ${problems.join("\n  - ")}
-(--force to override)`);
-}
-function stamp(kind, doc, status2) {
-  if (kind === "plan" && status2 === "in-progress" && !doc.get("started")) doc.set("started", today());
-  if (kind === "idea" && status2 === "decided") doc.set("decided", today());
-  if (kind === "item" && ITEM_CLOSED.has(status2)) doc.set("closed", today());
-  if (status2 === "done") doc.set("completed", today());
-}
-function start(store, planId, force = false, approvedBy) {
-  store.require();
-  refuseWhilePaused(store, "new starts");
-  let doc = store.find(planId);
-  const branch = doc.get("branch") || `plan/${doc.id}-${slugify(doc.get("title") ?? "")}`;
-  const takeover = planBranches().includes(branch) && !store.ledger.claims().has(doc.id) && ["in-progress", "blocked"].includes(store.ledger.lastStatus().get(doc.id) ?? doc.get("status") ?? "");
-  const held = store.ledger.claims().get(doc.id);
-  if (held && held.run !== store.ledger.who.run && !force) {
-    fail(`${doc.id} is claimed by ${held.actor} (${held.run}, ${held.worktree}) since ${held.ts.slice(0, 10)}. Coordinate with them, or \`release ${doc.id} --force\` if that run is gone.`);
-  }
-  if (!force && !takeover) checkStartable(store, doc);
-  const over = budgetProblems(store);
-  if (over.length && !approvedBy) {
-    fail(`Over budget \u2014 no new work without a human's approval (\`start ${doc.id} --approved-by <name>\`):
-  - ${over.join("\n  - ")}`);
-  }
-  const asked = openQuestions(store.ledger.events(), doc.id).filter((x) => x.blocking);
-  if (asked.length && !force) {
-    fail(`${doc.id} waits for an answer before it starts:
-  - ${asked.map((x) => `${x.id} \u2192 ${x.to}: ${x.text}`).join("\n  - ")}
-(\`crew.mjs questions\`; --force to start anyway)`);
-  }
-  assignedHere(store, doc.id);
-  authorize(store, doc.id, "plan.in-progress", approvedBy, "ready");
-  const shared = store.settings().plan_worktrees;
-  if (!shared && !treeIsClean(store.rel(store.dir))) fail("Working tree not clean. Commit or stash first (changes under the hub's directory may stay).");
-  const focus = store.focus();
-  if (!onFocus(doc, store.items(), focus)) store.say(`note: ${planId} does not serve the focus goal ${focus}`);
-  const plans2 = store.plans(true);
-  for (const o of overlapping(doc, plans2, sharedGlobs(store)).filter((x) => plans2.get(x.id)?.get("status") !== "ready")) {
-    store.say(`warning: ${planId} overlaps ${o.id} (in progress) on ${o.globs.join(", ")} \u2014 expect conflicts at release; narrow touches or list the file in hub.shared`);
-  }
-  if (shared) {
-    const home = store.planHome(doc.id) ?? openPlanWorktree(store, doc.id, branch);
-    claimPlan(store, planId, branch, force, takeover, approvedBy);
-    store.say(`${doc.id}: work in ${store.ws.rel(home) || "this checkout"} (${branch}) \u2014 claimed by ${store.ledger.who.actor} (${store.ledger.who.run}); checkpoints commit its code on the branch`);
-    return;
-  }
-  const from = currentBranch(), sha = git(["rev-parse", "HEAD"])?.trim();
-  git(takeover ? ["switch", "--ignore-other-worktrees", branch] : ["switch", "-c", branch], true);
-  store.ws.onAbort(() => {
-    git(from ? ["switch", "-q", from] : ["switch", "-q", "--detach", sha ?? "HEAD"]);
-    if (!takeover) git(["branch", "-D", branch]);
-  });
-  claimPlan(store, planId, branch, force, takeover, approvedBy);
-  store.say(`Switched to ${branch} \u2014 claimed by ${store.ledger.who.actor} (${store.ledger.who.run})`);
-}
-function claimPlan(store, planId, branch, force, takeover, approvedBy) {
-  const doc = store.find(planId);
-  if (doc.get("status") === "draft" && force) {
-    doc.set("status", "ready");
-    doc.save();
-  }
-  store.ledger.record("claim", doc.id, { branch, ...force ? { force: true } : {}, ...takeover ? { takeover: true } : {} });
-  if (doc.get("status") !== "in-progress") move(store, planId, "in-progress", `branch ${branch}`, force, approvedBy);
-  else store.say(`${doc.id}: taken over where it stopped \u2014 \`resume ${doc.id}\``);
-}
-function assignedHere(store, id) {
-  const a = store.ledger.assignments().get(id), me = store.ledger.who.role, by = store.policy.policy.role_gates["plan.assigned"];
-  if (!a && by) fail(`${id} isn't assigned yet: the ${by} opens it with \`assign ${id} --to developer\`.`);
-  if (a && a.to !== me) fail(`${id} is assigned to the ${a.to} role; this run is ${me ? `the ${me} role` : "in no role"}.`);
-}
-function checkStartable(store, doc) {
-  if (doc.get("status") !== "ready") {
-    fail(`${doc.id} is '${doc.get("status")}', not 'ready'. Refine it first or use --force.`);
-  }
-  const plans2 = store.plans(true);
-  const waiting = unmetDeps(doc, plans2);
-  if (waiting.length) fail(`${doc.id} depends on unfinished plans: ${waiting.join(", ")}. (--force to start anyway)`);
-  const limit = store.settings().wip_limit;
-  const wip = myWip(store, plans2);
-  if (wip.length >= limit) {
-    fail(`WIP limit (${limit}) reached: ${wip.join(", ")} in progress. Finish or block it first (--force to override).`);
-  }
-}
-function myWip(store, plans2) {
-  const claims = store.ledger.claims();
-  return [...plans2.values()].filter((p) => p.get("status") === "in-progress" && (claims.get(p.id)?.run ?? store.ledger.who.run) === store.ledger.who.run).map((p) => p.id);
-}
-function release(store, planId, note, force = false) {
-  store.require();
-  const id = planId.toUpperCase();
-  const held = store.ledger.claims().get(id) ?? fail(`${id} is not claimed.`);
-  if (held.run !== store.ledger.who.run && !force) {
-    fail(`${id} is claimed by ${held.actor} (${held.run}), not this run. Use --force to release it anyway.`);
-  }
-  store.ledger.record("release", id, { reason: note ?? "released", from_run: held.run });
-  store.say(`${id}: released (was ${held.actor}, ${held.run})`);
-}
-function usage(store, u) {
-  store.require();
-  if (u.tokensIn === void 0 && u.tokensOut === void 0 && u.cost === void 0) fail("Give --tokens-in, --tokens-out or --cost.");
-  if (u.cost !== void 0 && !(Number.isFinite(u.cost) && u.cost >= 0)) fail("--cost must be a number \u2265 0.");
-  for (const [flag, n] of [["--tokens-in", u.tokensIn], ["--tokens-out", u.tokensOut]]) {
-    if (n !== void 0 && !(Number.isInteger(n) && n >= 0)) fail(`${flag} must be a whole number \u2265 0.`);
-  }
-  store.ledger.record("usage", u.ref ? u.ref.toUpperCase() : null, {
-    tokens_in: u.tokensIn ?? 0,
-    tokens_out: u.tokensOut ?? 0,
-    cost: u.cost ?? 0,
-    ...u.model ? { model: u.model } : {}
-  });
-  store.say(`usage recorded for ${store.ledger.who.actor} (${store.ledger.who.run})`);
-  const over = budgetProblems(store);
-  if (over.length) store.say(`warning: over budget \u2014 new work needs a human's approval: ${over.join("; ")}`);
-}
-function log(store, docId, text) {
-  const doc = store.find(docId);
-  doc.appendLog(text, LOG_SECTION[kindOf(docId) ?? "plan"] ?? "Progress log");
-  doc.save();
-  store.ledger.record("log", doc.id, { text });
-}
-
 // src/hub/commands/team/autonomy.ts
 function notify(store, kind, ref, text, key = "") {
   const { command: command2, on } = store.policy.policy.notify;
@@ -10743,7 +10755,18 @@ function notify(store, kind, ref, text, key = "") {
     if (r.status !== 0) store.say(`warning: notify.command failed (${r.status ?? r.signal}): ${(r.stderr ?? "").trim().split("\n")[0]}`);
   });
 }
+function advanceFocus(store) {
+  const goals2 = store.goals(), from = store.focus(), status2 = goals2.get(from)?.get("status");
+  if (status2 && !CLOSED.has(status2) || !store.idea()) return null;
+  const to = goalQueue(goals2, "")[0];
+  if (!to) return null;
+  const mark = store.ws.output.length;
+  setFocus(store, to);
+  store.ws.output.splice(mark);
+  return { from, to };
+}
 function runState(store) {
+  const moved = advanceFocus(store);
   const events = store.ledger.events(), reasons = [];
   const { held, stops } = escalationHolds(events);
   if (stops.length) reasons.push(`waiting for the executive: ${stops.map((x) => `${x.id} ${x.text}`).join("; ")}`);
@@ -10758,12 +10781,18 @@ function runState(store) {
   if (halt) reasons.push(`paused by ${halt.actor}: ${halt.reason ?? "no reason given"}`);
   const over = budgetProblems(store).filter((b) => b.startsWith("project"));
   if (over.length) reasons.push(`budget: ${over.join("; ")}`);
-  const focus = store.focus(), goal = focus ? store.goals().get(focus) : void 0;
-  if (!goal) reasons.push("no focus goal: the executive or the director sets one (`focus G-###`)");
-  else if (goal.get("status") === "done") reasons.push(`${focus} is done: the executive validates it and sets the next goals`);
+  const goals2 = store.goals(), focus = store.focus(), goal = goals2.get(focus), queue = goalQueue(goals2, focus);
+  if (!goal && queue.length) reasons.push("no focus goal: the executive or the director sets one (`focus G-###`)");
+  else if (!goal || CLOSED.has(goal.get("status") ?? "")) reasons.push(noGoalLeft([...goals2.values()]));
   for (const s of staleClaims(store, events)) notify(store, "stale", s.ref, `${s.ref}: no activity for ${s.hours}h from ${s.actor}`, s.run);
   for (const b of over) notify(store, "budget", null, b, b.split(":")[0]);
-  return { stop: reasons.length > 0, reasons, held: holds };
+  return { stop: reasons.length > 0, reasons, held: holds, queue, moved };
+}
+function noGoalLeft(goals2) {
+  const done = goals2.filter((g) => g.get("status") === "done").sort(byKey((g) => [g.get("completed") ?? "", g.id])).map((g) => g.id);
+  const waiting = goals2.filter((g) => g.get("status") === "proposed").map((g) => g.id).sort();
+  const tail3 = waiting.length ? `; waiting for approval: ${waiting.join(", ")}` : "";
+  return done.length ? `all approved goals done: ${done.join(", ")}${tail3}` : `no approved goal: the executive approves one (\`move G-### active --approved-by <name>\`)${tail3}`;
 }
 var LOOP = `while node .crew/bin/crew.mjs run --check; do claude -p "/crew:team continue" || break; done`;
 function run(store, check2 = false, json = false) {
@@ -10771,22 +10800,28 @@ function run(store, check2 = false, json = false) {
   const s = runState(store);
   if (json) store.say(JSON.stringify(s));
   else if (check2) {
+    if (s.moved) store.say(`FOCUS  ${s.moved.from || "\u2014"} \u2192 ${s.moved.to} (${movedWhy(store, s.moved.from)})`);
     store.say(s.stop ? `STOP  ${s.reasons.join("\nSTOP  ")}` : "GO    the team can continue");
+    if (!s.stop && s.queue.length) store.say(`QUEUE  ${s.queue.join(", ")}`);
     for (const h of s.held) store.say(`HELD  ${h}: waiting for the executive`);
   } else {
     store.say('Run the team unattended (from the project root): each pass hands "continue" to the Director; the loop stops');
-    store.say("on an escalation that holds everything, a pause, an exhausted budget or a done goal (`run --check` exits 1).");
+    store.say("on an escalation that holds everything, a pause, an exhausted budget or no approved goal left (`run --check` exits 1).");
     store.say(`  ${LOOP}`);
     store.say('Scheduled instead (cron, a CI schedule): `node .crew/bin/crew.mjs run --check && claude -p "/crew:team continue"`.');
     store.say(s.stop ? `Now: stopped \u2014 ${s.reasons.join("; ")}` : "Now: the team can continue.");
   }
   return check2 && s.stop ? 1 : 0;
 }
+function movedWhy(store, from) {
+  const status2 = from ? store.goals().get(from)?.get("status") : void 0;
+  return !from ? "no focus goal" : status2 ? `${from} is ${status2}` : `${from} is not a goal`;
+}
 function transcriptUsage(text) {
   const byMessage = /* @__PURE__ */ new Map();
-  text.split("\n").forEach((line2, i) => {
+  text.split("\n").forEach((line3, i) => {
     try {
-      const m = JSON.parse(line2).message;
+      const m = JSON.parse(line3).message;
       if (m?.usage) byMessage.set(m.id ?? `line-${i}`, m);
     } catch {
     }
@@ -10805,10 +10840,10 @@ var REPORT_CAP = 2e4;
 var MASKS = Object.values(SECRET_PATTERNS).map((re) => new RegExp(re.source, `${re.flags.replace("g", "")}g`));
 function transcriptReport(text) {
   let handback = null, said = null;
-  for (const line2 of text.split("\n")) {
+  for (const line3 of text.split("\n")) {
     let m;
     try {
-      const rec = JSON.parse(line2);
+      const rec = JSON.parse(line3);
       m = rec.type === "assistant" || rec.message?.role === "assistant" ? rec.message : void 0;
     } catch {
       continue;
@@ -11183,7 +11218,7 @@ function resume(store, id, json = false) {
   store.require();
   const plan = planFromBranch(store, id) ?? fail("Not on a plan branch: name the plan (`resume P-###`).");
   if (json) store.say(JSON.stringify({ plan: plan.id, lines: recovery(store, plan) }));
-  else for (const line2 of recovery(store, plan)) store.say(line2);
+  else for (const line3 of recovery(store, plan)) store.say(line3);
 }
 function writeHandoff(store, plan) {
   const logs = stripComments(plan.section("Progress log")).split("\n").filter((l) => l.trim().startsWith("- ")).slice(-3);
@@ -11386,7 +11421,6 @@ var View = class {
     this.items = store.items();
     this.goals = store.goals();
     this.focus = store.focus();
-    this.shared = sharedGlobs(store);
     this.events = store.ledger.events();
   }
   store;
@@ -11394,8 +11428,6 @@ var View = class {
   items;
   goals;
   focus;
-  shared;
-  // hub.shared
   events;
   status(st) {
     return [...this.plans.values()].filter((p) => p.get("status") === st).sort(byKey((p) => [!onFocus(p, this.items, this.focus), p.id]));
@@ -11427,7 +11459,7 @@ var RULES = {
       const n = staffing(v.store).start.length;
       return n ? [`staff ${n} ready plan${n > 1 ? "s" : ""}: \`staff\` \u2192 the PM assigns, developers start`] : [];
     },
-    (v) => [...v.plans.values()].filter((p) => p.get("status") === "in-progress").flatMap((p) => overlapping(p, v.plans, v.shared).map((o) => `${p.id} and ${o.id} overlap on ${o.globs.join(", ")} \u2014 sequence them, narrow touches or list the file in hub.shared`)),
+    (v) => [...v.plans.values()].filter((p) => p.get("status") === "in-progress").flatMap((p) => overlapping(p, v.plans).map((o) => `${p.id} and ${o.id} overlap on ${o.globs.join(", ")} \u2014 sequence them or split the work`)),
     (v) => {
       const g = v.goals.get(v.focus);
       if (!v.focus) return v.goals.size ? ["set the focus goal: focus G-###"] : [];
@@ -11446,7 +11478,7 @@ var RULES = {
     (v) => (v.gate("plan.reviewed") === "architect" ? v.status("in-review") : []).filter((p) => reviewProblems(v.store, p).length && !implementers(v.events, p.id).has(v.store.ledger.who.run)).map((p) => `review ${p.id}: ${p.get("title")} \u2014 its diff against the spec \u2192 review ${p.id} --approve | --changes "\u2026"`),
     (v) => v.status("draft").map((p) => `refine ${p.id}: ${p.get("title")} to the Definition of Ready`),
     (v) => v.ranked("triaged").slice(0, 2).map((i) => `write a plan for ${i.id}: ${i.get("title")} (${i.get("priority")})`),
-    (v) => v.status("ready").flatMap((p) => overlapping(p, v.plans, v.shared).map((o) => `${p.id} overlaps ${o.id} (${o.globs.join(", ")}): narrow touches or list the file in hub.shared`))
+    (v) => v.status("ready").flatMap((p) => overlapping(p, v.plans).map((o) => `${p.id} overlaps ${o.id} (${o.globs.join(", ")}): add depends_on or narrow touches`))
   ],
   developer: [
     (v) => [...v.plans.values()].filter((p) => ["in-progress", "blocked"].includes(p.get("status") ?? "") && v.store.ledger.claims(v.events).get(p.id)?.run === v.store.ledger.who.run).map((p) => `continue ${p.id}: ${p.get("title")} \u2192 resume ${p.id}`),
@@ -11504,14 +11536,14 @@ function current(store) {
 }
 function nextStep(store, role) {
   store.require();
-  for (const line2 of role ? roleLines(store, role) : nextLines(store)) store.say(line2);
+  for (const line3 of role ? roleLines(store, role) : nextLines(store)) store.say(line3);
 }
 function nextLines(store) {
   const ctx = new Context(store);
   for (const p of ctx.active) ctx.lines.push(`IN PROGRESS  ${p.id}: ${p.get("title")} [${p.get("status")}]`);
   for (const rule of [ctx.expedite, ctx.wipFull, ctx.startReady, ctx.refineDraft, ctx.triage, ctx.planItem, ctx.idea, ctx.goal]) {
-    const line2 = rule.call(ctx);
-    if (line2) return [...ctx.lines, `NEXT         ${line2}`];
+    const line3 = rule.call(ctx);
+    if (line3) return [...ctx.lines, `NEXT         ${line3}`];
   }
   return [...ctx.lines, "NEXT         nothing planned \u2014 write a goal for the next outcome, or capture items"];
 }
@@ -12076,8 +12108,15 @@ function serve(store, o) {
     if (req.method === "GET" && path === "/api/graph") return send(res, 200, buildGraph(open()));
     if (req.method === "GET" && path === "/api/design") return send(res, 200, designPayload(open()));
     if (req.method === "GET" && path === "/api/activity") {
-      const s = open();
-      return send(res, 200, { running: running(s), recent: readActivity(feedPath(s)).slice(-50) });
+      const s = open(), ref = new URLSearchParams((req.url ?? "").split("?")[1] ?? "").get("ref");
+      if (ref === null) return send(res, 200, { running: running(s), recent: readActivity(feedPath(s)).slice(-50) });
+      if (!/^[A-Z]+-\d+$/i.test(ref)) return send(res, 400, { error: `Not a hub ID: ${ref}` });
+      const id = ref.toUpperCase(), mine = (e) => e.ref?.toUpperCase() === id;
+      return send(res, 200, {
+        running: running(s).filter(mine),
+        recent: readActivity(feedPath(s)).filter(mine).slice(-50),
+        feed: feedEntries(s, id, 30)
+      });
     }
     if (req.method === "GET" && path === "/api/events") {
       res.writeHead(200, { "content-type": "text/event-stream", "cache-control": "no-store", connection: "keep-alive" });
@@ -12294,7 +12333,7 @@ function planSections(store, plan, role) {
     lines: plan.tasks().filter(([d]) => !d).map(([, t]) => t)
   };
   const waits = unmetDeps(plan, plans2), asks = openQuestions(store.ledger.events(), plan.id);
-  const over = overlapping(plan, plans2, sharedGlobs(store)), outside = drift(plan, store.baseBranch(), store.planHome(plan.id)) ?? [];
+  const over = overlapping(plan, plans2), outside = drift(plan, store.baseBranch(), store.planHome(plan.id)) ?? [];
   const questions2 = { title: "Open questions", more: "crew.mjs questions", lines: [
     ...asks.map((x) => `${x.blocking ? "blocking: " : ""}${x.id} ${x.by} \u2192 ${x.to}: ${x.text}`),
     ...openQuestions(store.ledger.events()).filter((x) => x.to === role && x.ref !== plan.id).map((x) => `for you: ${x.id} from ${x.by}${x.ref ? ` about ${x.ref}` : ""}: ${x.text}`)
@@ -12306,7 +12345,7 @@ function planSections(store, plan, role) {
   ] };
   const order = TYPES[role] ?? TYPES.developer;
   const known = recall(store.knowledge(), { globs: plan.touches() }).sort((a, b) => order.indexOf(a.type) - order.indexOf(b.type));
-  const memory = { title: "Knowledge in scope", more: `crew.mjs recall --plan ${plan.id}`, lines: known.map(line) };
+  const memory = { title: "Knowledge in scope", more: `crew.mjs recall --plan ${plan.id}`, lines: known.map(line2) };
   const recover = { title: "Where the work stands", more: `crew.mjs resume ${plan.id}`, lines: recovery(store, plan) };
   const handoff3 = { title: "Handoff & log", more: `crew.mjs ledger --ref ${plan.id}`, lines: [
     ...para(plan.section("Handoff"), 6),
@@ -12325,7 +12364,7 @@ function planSections(store, plan, role) {
       return [recover, questions2, why, ac, tasks, blockers, memory, handoff3];
   }
 }
-var line = (e) => `${e.id} [${e.type}${e.origin === "playbook" ? ", playbook" : ""}] ${e.title}`;
+var line2 = (e) => `${e.id} [${e.type}${e.origin === "playbook" ? ", playbook" : ""}] ${e.title}`;
 function projectSections(store, role) {
   const idea2 = store.idea(), focus = store.goals().get(store.focus());
   const crit = idea2?.checklist("Success criteria") ?? [];
@@ -12345,7 +12384,7 @@ function projectSections(store, role) {
   ] };
   const spend = store.ledger.spend(events);
   if (spend.cost) team.lines.push(`spend so far $${spend.cost.toFixed(2)}`);
-  const memory = { title: "Recent knowledge", more: "crew.mjs recall", lines: store.knowledge(false).filter((e) => !e.supersededBy).sort((a, b) => (b.doc.get("created") ?? "").localeCompare(a.doc.get("created") ?? "")).slice(0, 5).map(line) };
+  const memory = { title: "Recent knowledge", more: "crew.mjs recall", lines: store.knowledge(false).filter((e) => !e.supersededBy).sort((a, b) => (b.doc.get("created") ?? "").localeCompare(a.doc.get("created") ?? "")).slice(0, 5).map(line2) };
   return [head, next, team, memory];
 }
 function assemble2(header, sections2, budget) {
