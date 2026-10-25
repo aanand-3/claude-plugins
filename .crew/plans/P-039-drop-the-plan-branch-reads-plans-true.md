@@ -5,12 +5,12 @@ goal: G-007
 items: CHORE-018, BUG-026
 touches: packages/crew/src/hub/core/store.ts, packages/crew/src/hub/commands/memory/knowledge.ts, packages/crew/src/hub/commands/memory/context.ts, packages/crew/src/hub/commands/work/planning.ts, packages/crew/src/hub/commands/work/workflow.ts, packages/crew/src/hub/commands/work/release.ts, packages/crew/src/hub/commands/work/execution.ts, packages/crew/src/hub/commands/work/goals.ts, packages/crew/src/hub/commands/team/team.ts, packages/crew/src/hub/commands/team/roles.ts, packages/crew/src/hub/commands/views/reports.ts, packages/crew/src/hub/commands/views/advisor.ts, packages/crew/src/hub/commands/views/graph.ts, packages/crew/src/hub/commands/views/checks.ts, packages/crew/test/hub/e2e/worktrees.test.ts, packages/crew/test/hub-worktrees.test.ts, packages/crew/test/hub/e2e/branch-copies.test.ts
 depends_on: P-029, P-038
-status: in-review
+status: done
 branch: plan/P-039-drop-the-plan-branch-reads-plans-true
 pr:
 created: 2026-10-25
 started: 2026-10-25
-completed:
+completed: 2026-10-25
 assignee: developer
 ---
 
@@ -114,6 +114,7 @@ Latest log:
 - 2026-10-25: Architect (Q-16112d): branch reads go only with plan worktrees. Without them (the default mode, other projects) a started plan's hub state is committed on its branch, so `plans(true)` stays and `branchPlans` is gated on `!plan_worktrees`; call sites, `allPlans` and the `source` handling stay as on main. T2 and T4 reopened, AC2 rewritten, AC8 added. Touches unchanged.
 - 2026-10-25: status in-progress → in-review
 - 2026-10-25: Architect: approved at 4d4c5e2 (targeted suites pass; view.test.ts timed out under parallel load, passes alone). K-2026-10-25-plan-branch-reads-store-plans-true-apply supersedes the duplicate K-2026-10-25-no-keep-branch-reads-when-hub-plan.
+- 2026-10-25: status in-review → done
 
 ## Outcome
 With plan worktrees, `Store.plans(true)` reads only the main checkout. In branch-per-plan mode (the default), it still overlays branch copies (Q-16112d). `start` no longer takes a branch copy home, and its overlap warning (like `context`'s list and the advice in roles.ts) ignores `hub.shared` and never suggests depends_on. `check` gives an origin-only plan branch its own hint. `git.show` keeps its caller (`branchPlans`). `GraphDoc.source` (graph-types.ts, outside touches) is always "worktree" in plan-worktree mode.
