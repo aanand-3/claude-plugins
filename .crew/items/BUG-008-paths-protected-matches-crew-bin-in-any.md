@@ -2,9 +2,9 @@
 id: BUG-008
 type: bug
 title: paths.protected matches .crew/bin in any directory
-status: new
-severity:
-priority:
+status: triaged
+severity: S4
+priority: P3
 goal:
 plan:
 created: 2026-10-24
@@ -45,3 +45,4 @@ None today. Before P-019 an agent working in a fixture directory could not write
 ## Notes
 Suggested triage: close as fixed by P-019 (BUG-007's path resolution). Optionally add one negative assertion to `guard.test.ts` ("guard_resolves_paths: relative and symlinked paths…": a Write of `fixtures/x/.crew/bin/crew.mjs`, and of `.crew/bin/crew.mjs` with cwd `fixtures/x`, returns null) to the next plan that touches the guard tests; it does not need a plan of its own. By design, a nested directory that is its own git repository (the hook's cwd resolves to its top level) keeps its `.crew/bin` protected.
 - 2026-10-26: Architect: filled Environment, Steps, Expected, Actual, Evidence, Impact, Notes. Does not reproduce on main a4a4f99: nested fixture .crew/bin writes pass the guard; fixed by P-019 (BUG-007 path resolution). Suggest closing as fixed; optional negative assertion in guard.test.ts.
+- 2026-10-26: status new → triaged — priority P3, severity S4
