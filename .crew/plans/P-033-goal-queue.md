@@ -87,6 +87,18 @@ Needs no other plan's code. `crew-director.md` is P-031's (the design's open poi
 
 ## Handoff
 
+_Generated 2026-10-25 by `crew.mjs handoff` from the ledger._
+
+- P-033: Goal queue [in-progress] tasks 0/5 — claimed by Arpit Anand (developer:aaa443329dcc8698a)
+- last checkpoint 2026-10-25 09:45 at T5 (9f1b4a9) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
+- next: T1: `goalQueue` in queries.ts → verify: `cd packages/crew && npx vitest run test/goal-queue.test.ts` (AC1)
+- evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —, AC7 —, AC8 —
+
+Latest log:
+- 2026-10-25: status draft → ready
+- 2026-10-25: assigned to the developer role
+- 2026-10-25: status ready → in-progress — branch plan/P-033-goal-queue
+
 ## Progress log
 
 - 2026-10-25: status draft → ready
