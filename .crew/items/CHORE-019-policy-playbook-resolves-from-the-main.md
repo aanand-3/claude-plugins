@@ -2,8 +2,8 @@
 id: CHORE-019
 type: chore
 title: Policy playbook resolves from the main checkout
-status: new
-priority:
+status: triaged
+priority: P1
 goal: G-007
 plan:
 created: 2026-10-25
@@ -19,3 +19,4 @@ Store.policy still resolves the playbook from ws.root (the running checkout), wh
 - [ ]
 
 ## Notes
+- 2026-10-25: status new → triaged — priority P1
