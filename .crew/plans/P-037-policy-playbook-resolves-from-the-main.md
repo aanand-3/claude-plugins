@@ -5,11 +5,11 @@ goal: G-007
 items: CHORE-019
 touches: packages/crew/src/hub/core/store.ts, packages/crew/src/hub/commands/team/policy.ts, packages/crew/src/hub/commands/team/agents.ts, packages/crew/src/hub/commands/team/guard.ts, packages/crew/test/hub/e2e/playbook-home.test.ts
 depends_on:
-status: ready
+status: in-progress
 branch: plan/P-037-policy-playbook-resolves-from-the-main
 pr:
 created: 2026-10-25
-started:
+started: 2026-10-25
 completed:
 assignee: developer
 ---
@@ -65,5 +65,6 @@ Follow-up to P-026 (W0-b in `.crew/drafts/the-crew-team-was-pure-reef.md`), CHOR
 
 - 2026-10-25: status draft → ready
 - 2026-10-25: assigned to the developer role
+- 2026-10-25: status ready → in-progress — branch plan/P-037-policy-playbook-resolves-from-the-main
 
 ## Outcome
