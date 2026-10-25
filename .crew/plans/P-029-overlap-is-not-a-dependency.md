@@ -5,7 +5,7 @@ goal: G-007
 items: FEAT-038, FEAT-028, SPIKE-004
 touches: packages/crew/src/hub/core/work/footprint.ts, packages/crew/src/hub/commands/team/team.ts, packages/crew/src/hub/commands/views/checks.ts, packages/crew/test/hub/e2e/shared-touches.test.ts, packages/crew/test/view.test.ts, .crew/config.yaml, plugins/crew/skills/hub/agents/architect.md, plugins/crew/skills/hub/references/model.md
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-029-overlap-is-not-a-dependency
 pr:
 created: 2026-10-25
@@ -102,7 +102,7 @@ SPIKE-004's answer is recorded as K-2026-10-25-overlaps-on-hub-shared-paths-incl
 
 _Generated 2026-10-25 by `crew.mjs handoff` from the ledger._
 
-- P-029: Overlap is not a dependency [in-progress] tasks 6/6 — claimed by Arpit Anand (developer:a60138d3f67a3e5f0)
+- P-029: Overlap is not a dependency [in-review] tasks 6/6 — claimed by Arpit Anand (developer:a60138d3f67a3e5f0)
 - last checkpoint 2026-10-25 09:12 at T7 (c1e3c32) by Arpit Anand; since then 0 commit(s), 1 uncommitted file(s): .crew/config.yaml
 - ✓ cd packages/crew && npx vitest run test/hub/e2e/shared-touches.test.ts -t staff (AC 1,2)
 - ✓ cd packages/crew && npx vitest run test/hub/e2e/shared-touches.test.ts -t overlap (AC 3)
@@ -132,6 +132,7 @@ Latest log:
 - 2026-10-25: release blocked: hub.full_suite failed on the plan's work (brought up to main 3e879d0, rebuilt). test/view.test.ts > graph > matches the CLI expects the old overlap hint ('sequence them (depends_on) or narrow touches') and no 'P-007 depends on P-006 only through an overlap (web/home/**)' hint; P-029's new hints change that output. 1 failed / 319 passed. Not merged; plan commit 9401708 undone, work left uncommitted in its worktree. Back to the Director as a bug.
 - 2026-10-25: Architect: release full suite failed in test/view.test.ts 'matches the CLI' (def8a26). Both new hints on the sample project are correct behaviour: the reworded overlap hint, and P-007 depends on P-006 only through web/home/** without naming it (AC6). Fix: update that expectation to the two hints; touches += packages/crew/test/view.test.ts. Back to the developer for this one-line test change, then re-review.
 - 2026-10-25: status done → in-progress — release suite: update view.test.ts expectation (log 3e2919e); one-time --force approved by the executive
+- 2026-10-25: status in-progress → in-review — view.test.ts expectation updated (c1e3c32); .crew/config.yaml hub.shared change is still uncommitted in the worktree (checkpoint skips .crew/) and must go into the plan's commit
 
 ## Outcome
 `hub.shared` (a YAML list under `hub:` in .crew/config.yaml) makes overlaps on shared touches non-blocking in `staff` and in `check`'s overlap hint; the hint now says to narrow touches or share the file, not to add depends_on. New `check` touches rule: ERROR for a `hub.shared` that isn't a list; hints for broad wildcard touches (> 10 tracked files or covering a shared file), touches that list generated paths, and depends_on that only stands for an overlap. This repo's config lists the 8 shared paths; model.md and architect.md document it.
