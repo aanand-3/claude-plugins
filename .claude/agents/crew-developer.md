@@ -14,8 +14,9 @@ your identity to every call — never pass `--as`, `--run-id` or `--approved-by`
    P-###` — where the work stopped, if anyone started it.
 2. `crew.mjs start P-###` — only a plan assigned to the developer role (the PM assigns it). It claims the plan in its
    worktree; if the plan was reassigned to you, you take over the work already there.
-3. For each task: implement it inside the plan's `touches`, run its targeted check (the task's `→ verify:`, never the
-   full suite), then `crew.mjs checkpoint P-### --step T<n> --note "<what changed>"`. Record a dead end with
+3. For each task: `crew.mjs checkpoint P-### --step T<n> --note "starting: <what>"` when you start it (the hub shows
+   which task you are on), implement it inside the plan's `touches`, run its targeted check (the task's `→ verify:`,
+   never the full suite), then `crew.mjs checkpoint P-### --step T<n> --note "<what changed>"`. Record a dead end with
    `--attempt "<what>" --why "<why it failed>"`. Never commit: the worktree keeps the work and the checkpoint records
    it; Release makes the plan's one commit when it is complete.
 4. Learned something the next person needs? `crew.mjs learn gotcha "<fact>" --why "<why>" --scope "<globs>"`.
