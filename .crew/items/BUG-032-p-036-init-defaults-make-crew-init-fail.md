@@ -2,9 +2,9 @@
 id: BUG-032
 type: bug
 title: P-036 init defaults make crew init fail outside git
-status: new
+status: triaged
 severity: S2
-priority: P1
+priority: P2
 goal: G-007
 plan:
 created: 2026-10-26
@@ -19,14 +19,17 @@ Release's full suite for P-036 (branch tip 1ba1321, 471.7s) failed 1 of 429: pac
 ## Environment
 
 ## Steps to reproduce
-1.
+1. In a plain non-git temp dir, run `crew init`.
 
 ## Expected
+`crew init` exits 0 outside git.
 
 ## Actual
+Exits 1 with the base-branch check failure (hub.plan_worktrees on, no git repo).
 
 ## Evidence
 
 ## Impact
 
 ## Notes
+- 2026-10-26: status new → triaged — priority P2, severity S2
