@@ -5,12 +5,12 @@ goal: G-007
 items: BUG-031
 touches: packages/crew/src/hub/commands/team/hubcall.ts, packages/crew/test/hub/hubcall.test.ts
 depends_on:
-status: in-review
+status: done
 branch: plan/P-050-refuse-a-hub-script-held-in-a-shell
 pr:
 created: 2026-10-26
 started: 2026-10-26
-completed:
+completed: 2026-10-26
 assignee: developer
 ---
 
@@ -86,6 +86,7 @@ Latest log:
 - 2026-10-26: assigned to the developer role
 - 2026-10-26: status ready → in-progress — branch plan/P-050-refuse-a-hub-script-held-in-a-shell
 - 2026-10-26: status in-progress → in-review
+- 2026-10-26: status in-review → done
 
 ## Outcome
 Learnings: none
