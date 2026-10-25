@@ -5,11 +5,11 @@ goal: G-007
 items: CHORE-023, CHORE-024
 touches: packages/crew/src/hub/core/git.ts, packages/crew/src/hub/commands/work/execution.ts, packages/crew/build.mjs, packages/crew/test/hub/e2e/wip-commits.test.ts, packages/crew/test/dist.test.ts
 depends_on:
-status: ready
+status: in-progress
 branch: plan/P-046-wip-commits-keep-setup-files-hub-build
 pr:
 created: 2026-10-25
-started:
+started: 2026-10-25
 completed:
 assignee: developer
 ---
@@ -72,5 +72,6 @@ n/a — internal. After it ships (Release builds, `refresh-bin`), plans that cha
 
 - 2026-10-25: status draft → ready — Architect: specced (ACs, tasks, test plan, exact touches)
 - 2026-10-25: assigned to the developer role
+- 2026-10-25: status ready → in-progress — branch plan/P-046-wip-commits-keep-setup-files-hub-build
 
 ## Outcome
