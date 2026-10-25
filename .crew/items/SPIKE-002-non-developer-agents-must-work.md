@@ -34,3 +34,4 @@ None needed if rejected. If the PM wants the branch-per-plan residue confirmed f
 ## Findings
 
 ## Notes
+- 2026-10-26: Architect: filled Question and Timebox. Obsolete: hub documents have one home (P-026), plan worktrees are init's default (P-036) and branch-copy reads are off with them (P-039), so any role moves or reviews from any checkout. Residue only in legacy branch-per-plan mode, which doctor warns on. Suggest rejecting.
