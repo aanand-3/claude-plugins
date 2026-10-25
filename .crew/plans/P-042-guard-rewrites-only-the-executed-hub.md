@@ -3,7 +3,7 @@ id: P-042
 title: Guard rewrites only the executed hub program
 goal: G-007
 items: BUG-017, CHORE-020
-touches: packages/crew/src/hub/commands/team/guard.ts, packages/crew/src/hub/commands/team/hubcall.ts, packages/crew/test/hub/e2e/guard.test.ts, packages/crew/test/hub/hubcall.test.ts
+touches: packages/crew/src/hub/commands/team/guard.ts, packages/crew/src/hub/commands/team/hubcall.ts, packages/crew/test/hub/e2e/guard.test.ts, packages/crew/test/hub/hubcall.test.ts, packages/crew/test/hub-worktrees.test.ts
 depends_on: P-030
 status: done
 branch: plan/P-042-guard-rewrites-only-the-executed-hub
@@ -80,6 +80,10 @@ injection (see Approach).
 - [ ] AC9: Each new guard.test.ts case for AC1–AC5 fails against the base branch's guard.ts.
 - [ ] AC10: guard.ts and hubcall.ts each stay under 300 lines, and hubcall.ts is pure (no fs, git or store
       imports; at most node:path).
+- [ ] AC11: packages/crew/test/hub-worktrees.test.ts's guard test ("injects identity only where the hub runs, not
+      where crew.mjs is a file operand") holds the new behaviour: `find . -exec node .crew/bin/crew.mjs next \;` is
+      asserted denied with a reason containing "directly" (it no longer expects injection), and every other case in
+      it passes unchanged.
 
 ## Approach
 1. **hubcall.ts: a small shell tokenizer.** Walk the command once, character by character, tracking single quotes
@@ -121,6 +125,14 @@ injection (see Approach).
 - [x] T2: Write packages/crew/test/hub/hubcall.test.ts (quoted `&&`/`;`/`|` in a `--note` stays one command; escaped quotes; `#` comments; `node --no-warnings <hub>`; direct `<path>/crew.mjs`; assignment and keyword prefixes; `$(…)`, backticks, `"$(…)"`; `<<EOF`, `<<-EOF`, `<<'EOF'`, `<<<`; each refusal of Approach 3 with a non-refused neighbour: `bash script.sh <hub>`, `node script.js <hub>`, `git log -- <hub>`, `cat <<EOF` naming the hub) → verify: `cd packages/crew && npx vitest run test/hub/hubcall.test.ts` (runs from source, no build)
 - [x] T3: Wire `withIdentity` into guard.ts's identity block and remove `runsHub`, `RUNNER`, `OPERAND_OF` → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/guard.test.ts` with the pre-existing cases unmodified, and `wc -l src/hub/commands/team/guard.ts src/hub/commands/team/hubcall.ts` both under 300 (AC8, AC10)
 - [x] T4: Add the regression cases of the Test plan to packages/crew/test/hub/e2e/guard.test.ts, one `it` per incident shape, including the `sh -c` run of the rewritten learn call → verify: the T3 command passes; then in the plan worktree `git stash push -- packages/crew/src/hub/commands/team/guard.ts`, `npm run build`, `npx vitest run test/hub/e2e/guard.test.ts` shows each new AC1–AC5 case failing, `git stash pop`, `npm run build`; both runs recorded in the checkpoint (AC1–AC7, AC9)
+- [ ] T5: In packages/crew/test/hub-worktrees.test.ts (guard describe, ~line 246), remove the `find . -exec …` entry
+      and its "fails closed" framing from the injection `cases` list and assert instead that
+      `hook(r, "find . -exec node .crew/bin/crew.mjs next \\;")` has `permissionDecision` "deny" and a
+      `permissionDecisionReason` containing "directly"; update the comment above the `ls x\nnode …` case so it no
+      longer says fails closed through an operand-taking command (that case is a plain newline-chained hub call
+      now); no other case and no source file changes → verify: `cd packages/crew && npx vitest run
+      test/hub-worktrees.test.ts -t "injects identity"` passes, and `npm run build && npx vitest run
+      test/hub/e2e/guard.test.ts test/hub/hubcall.test.ts` still pass (AC11, AC8)
 
 ## Test plan
 Targeted checks only (the e2e file runs the built bundle, so build first: `cd packages/crew && npm run build`).
@@ -148,6 +160,7 @@ Targeted checks only (the e2e file runs the built bundle, so build first: `cd pa
 - AC9 — the T4 stash run: each AC1–AC5 case fails against the base guard.ts.
 - AC10 — `wc -l packages/crew/src/hub/commands/team/guard.ts packages/crew/src/hub/commands/team/hubcall.ts`; read
   hubcall.ts's imports.
+- AC11 — `cd packages/crew && npx vitest run test/hub-worktrees.test.ts -t "injects identity"` passes on the plan branch.
 
 ## Rollout & rollback
 n/a for the source change; the vendored .crew/bin copy is refreshed by the next release (refresh-bin). Rollback is a
@@ -187,6 +200,7 @@ Latest log:
 - 2026-10-25: status in-progress → in-review
 - 2026-10-25: status in-review → done
 - 2026-10-25: Release: NOT merged. Full suite on 6fc4be0 (plan branch merged with main, rebuilt, refresh-bin ok) fails: hub-worktrees.test.ts 'injects identity only where the hub runs' (line 248, a hook result lacks updatedInput.command; reproduces alone in ~2s); view.test.ts beforeAll timed out at 120s (likely load). Sent back via Director.
+- 2026-10-25: Architect diagnosis of Release's full-suite failure: test/hub-worktrees.test.ts guard test passes on main, fails on the P-042 branch only at its last case, find -exec with a hub call. That case pinned the pre-P-042 fail-closed injection; P-042's AC5 and decision K-2026-10-25-the-guard-gives-identity-only-to-a-hub refuse it instead, so the guard is right and the test is stale. The spec missed this second guard test file. Re-specced: touches add packages/crew/test/hub-worktrees.test.ts, AC11 and T5 (test-only change: assert deny with reason containing directly for that case, drop the fails-closed comment). done has no transitions without --force, so reopening waits on the Director/human.
 
 ## Outcome
 Learnings: K-2026-10-25-a-plan-task-that-says-to-git-stash
