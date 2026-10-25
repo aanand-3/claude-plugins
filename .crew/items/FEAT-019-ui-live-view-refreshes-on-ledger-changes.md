@@ -3,8 +3,8 @@ id: FEAT-019
 type: feat
 title: UI live view refreshes on ledger changes
 status: triaged
-priority: P3
-goal: G-001
+priority: P1
+goal: G-007
 plan:
 created: 2026-10-23
 closed:
@@ -22,3 +22,4 @@ The ui server watches .crew/, .git/refs and .git/HEAD only: questions, usage, cl
 
 ## Notes
 - 2026-10-23: status new → triaged — priority P3
+- 2026-10-25: re-triaged: priority P1
