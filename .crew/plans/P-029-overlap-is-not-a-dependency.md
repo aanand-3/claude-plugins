@@ -24,7 +24,7 @@ SPIKE-004's answer is recorded as K-2026-10-25-overlaps-on-hub-shared-paths-incl
 ## Scope
 **In:**
 - `hub.shared` in `.crew/config.yaml`: a YAML list of path globs. Two plans whose touches overlap only through shared touches don't block each other in `staff` and aren't reported by `check`'s overlap hint.
-- A touch is shared when it has no wildcard and a shared glob matches it, or when it equals a shared glob. An overlapping pair of touches is ignored when either side is shared (their common files are then all shared).
+- A touch is shared when it has no wildcard and a shared glob matches it, or when it equals a shared glob. An overlapping pair of touches is ignored only when both sides are shared, so a broad glob (never shared) still blocks every touch it overlaps (AC2; Q-acbff5).
 - `check` hints, for every plan that isn't closed:
   - **broad touches** (FEAT-028): a wildcard touch that matches more than 10 tracked files, or that covers a file a shared glob matches. The hint names the glob and says to list the exact files;
   - **generated paths** (W1-a): a touch that matches a tracked file `.gitattributes` marks `linguist-generated`. Release rebuilds those; no plan lists them;
@@ -56,7 +56,7 @@ SPIKE-004's answer is recorded as K-2026-10-25-overlaps-on-hub-shared-paths-incl
 ## Approach
 - **footprint.ts (core).**
   - `sharedGlobs(store)`: parse `.crew/config.yaml` with the `yaml` package and return `hub.shared` (non-list → `[]`; `check` reports it). `isShared(touch, shared)`: no `*`/`?` in the touch and some `globRe(s).test(touch)`, or `shared.includes(touch)`.
-  - `blockingGlobs(a, b, shared)`: the touches of `b` that overlap a touch of `a` (`globsOverlap`) where neither side is shared.
+  - `blockingGlobs(a, b, shared)`: the touches of `b` that overlap a touch of `a` (`globsOverlap`) unless both sides are shared.
   - `overlapping(plan, plans, shared: string[] = [])` uses `blockingGlobs`. A caller that passes no `shared` (workflow.ts's `start` warning, until P-039) keeps today's behaviour.
   - `touchHints(store, plan, shared)`: broad (`git ls-files` in the home, filtered by `globRe`) and generated (`check-attr -z linguist-generated` on the matched files) hints.
 - **team.ts.** `staffing`'s `clash` uses `blockingGlobs(p, o, shared)` instead of raw `globsOverlap`.

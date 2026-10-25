@@ -3,7 +3,7 @@ id: P-028
 title: Plan branches commit as they go
 goal: G-007
 items: FEAT-036, BUG-014, CHORE-014
-touches: packages/crew/src/hub/core/git.ts, packages/crew/src/hub/commands/work/execution.ts, packages/crew/src/hub/commands/work/review.ts, packages/crew/src/hub/commands/work/workflow.ts, packages/crew/test/hub/e2e/wip-commits.test.ts, packages/crew/test/hub/squash-merge.test.ts, plugins/crew/skills/hub/agents/developer.md, plugins/crew/skills/hub/agents/director.md
+touches: packages/crew/src/hub/core/git.ts, packages/crew/src/hub/commands/work/execution.ts, packages/crew/src/hub/commands/work/review.ts, packages/crew/src/hub/commands/work/workflow.ts, packages/crew/test/hub/e2e/wip-commits.test.ts, packages/crew/test/hub/e2e/worktrees.test.ts, packages/crew/test/hub/squash-merge.test.ts, plugins/crew/skills/hub/agents/developer.md, plugins/crew/skills/hub/agents/director.md
 depends_on:
 status: in-progress
 branch: plan/P-028-plan-branches-commit-as-they-go
@@ -108,5 +108,6 @@ Latest log:
 - 2026-10-25: status draft → ready
 - 2026-10-25: assigned to the developer role
 - 2026-10-25: status ready → in-progress — branch plan/P-028-plan-branches-commit-as-they-go
+- 2026-10-25: Architect: touches += packages/crew/test/hub/e2e/worktrees.test.ts (Q-1c0a2e).
 
 ## Outcome
