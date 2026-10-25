@@ -114,7 +114,14 @@ A run's role and team come from `CREW_ROLE` and `CREW_TEAM`; an unknown team is 
 
 The hub enforces gates, reserved transitions and budgets; models and tools reach the agents through `crew.mjs agents`
 (their frontmatter) and the `guard` hook enforces tool patterns, `paths.write`, `paths.protected` and `secrets.files`.
-An invalid policy blocks every move until `policy check` passes.
+Bash write targets (redirections, `tee`, `cp`/`mv`/`ln`/`install` destinations, `rm`/`touch`/`mkdir` operands, `sed -i`
+files, `git checkout/restore/rm/mv` operands) are checked against `paths.write` too; `/dev/*`, temp-dir files outside the
+repository and `git checkout`/`git restore` operands are exempt. Every variable in a target is expanded (its assignments,
+`for` words and globs, `$(mktemp)` as a temp path, the environment) and one that stays unknown is refused. Roles with
+`paths.write` are refused inline and stdin interpreter scripts (`python3 -c`/`-`, `node -e`/`-p`, `perl -e`, an
+interpreter fed a pipe or heredoc), `sh -c` or shell stdin, and `eval`, since no parser sees what those write. The gap that
+remains: a script file or build tool a role runs (`node x.js`, `bash x.sh`, `npm run`, `make`) is not seen by the guard.
+No subagent runs `crew.mjs init`. An invalid policy blocks every move until `policy check` passes.
 
 `preset: lifecycle`: mode `ai-native`; the executive approves `goal.active`; role gates `item.triaged`, `plan.assigned`,
 `plan.done`, `plan.dropped`, `goal.done` → pm; `plan.ready`, `plan.reviewed` → architect; `plan.in-progress`,

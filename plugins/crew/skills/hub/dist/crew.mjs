@@ -7369,7 +7369,7 @@ import { parseArgs } from "node:util";
 
 // src/hub/commands/work/planning.ts
 import { readFileSync as readFileSync9 } from "node:fs";
-import { join as join16, resolve as resolve7 } from "node:path";
+import { join as join17, resolve as resolve8 } from "node:path";
 
 // src/hub/core/git.ts
 import { spawnSync } from "node:child_process";
@@ -9024,7 +9024,7 @@ function drift(plan, base2, home2) {
 import { spawnSync as spawnSync4 } from "node:child_process";
 import { createHash as createHash2 } from "node:crypto";
 import { existsSync as existsSync8 } from "node:fs";
-import { join as join10 } from "node:path";
+import { join as join11 } from "node:path";
 
 // src/hub/commands/team/questions.ts
 import { randomBytes as randomBytes2 } from "node:crypto";
@@ -9300,9 +9300,9 @@ function showLedger(store, o = {}) {
 }
 
 // src/hub/commands/team/guard.ts
-import { readFileSync as readFileSync5, realpathSync as realpathSync4 } from "node:fs";
-import { homedir, tmpdir } from "node:os";
-import { basename as basename4, dirname as dirname5, isAbsolute as isAbsolute2, join as join9, relative as relative4, resolve as resolve5 } from "node:path";
+import { readFileSync as readFileSync5, realpathSync as realpathSync5 } from "node:fs";
+import { homedir as homedir2, tmpdir as tmpdir2 } from "node:os";
+import { basename as basename5, dirname as dirname6, isAbsolute as isAbsolute2, join as join10, relative as relative4, resolve as resolve6 } from "node:path";
 
 // src/hub/commands/team/hubcall.ts
 import { basename as basename3 } from "node:path";
@@ -9382,6 +9382,7 @@ function parse4(s2) {
   const redirect = (cmd, stop) => {
     if (s2[i] === "&") i++;
     const op = s2[i++];
+    const out = op === ">";
     let heredoc = false, herestring = false, strip = false;
     if (op === "<" && s2[i] === "<") {
       i++;
@@ -9408,12 +9409,13 @@ function parse4(s2) {
     const target = word(stop);
     if (heredoc) pending.push({ delim: target.value, strip, cmd });
     else if (herestring) cmd.bodies.push(target.value);
+    else if (out) cmd.targets.push(target);
   };
   function list(stop) {
-    let cur = { words: [], bodies: [] };
+    let cur = { words: [], bodies: [], targets: [] };
     all.push(cur);
     const end = () => {
-      cur = { words: [], bodies: [] };
+      cur = { words: [], bodies: [], targets: [] };
       all.push(cur);
     };
     while (i < n2) {
@@ -9447,7 +9449,7 @@ function parse4(s2) {
     }
   }
   list("");
-  return all.filter((c) => c.words.length || c.bodies.length);
+  return all.filter((c) => c.words.length || c.bodies.length || c.targets.length);
 }
 var base = (w) => w ? basename3(w.value) : "";
 function headAt(c) {
@@ -9501,28 +9503,228 @@ function withIdentity(cmd, flags) {
   return { command: command2 };
 }
 
+// src/hub/commands/team/targets.ts
+import { readdirSync as readdirSync3, realpathSync as realpathSync4 } from "node:fs";
+import { homedir, tmpdir } from "node:os";
+import { basename as basename4, dirname as dirname5, join as join9, resolve as resolve5 } from "node:path";
+var MAX = 64;
+var WRITERS = /^(rm|mv|cp|ln|chmod|chown|truncate|tee|install|touch|mkdir)$/;
+var DECLARE = /^(export|local|declare|readonly|typeset)$/;
+var GLOB = /[*?[]/;
+var MKTEMP = /^\s*mktemp(?:\s+(?:-[dqu]+|-t\s+[^\s-]\S*))*\s*$/;
+function realTmp() {
+  try {
+    return realpathSync4(tmpdir());
+  } catch {
+    return tmpdir();
+  }
+}
+function closing(s2, i) {
+  for (let depth = 1; i < s2.length; i++) {
+    const c = s2[i];
+    if (c === "'") {
+      i = s2.indexOf("'", i + 1);
+      if (i < 0) return s2.length;
+    } else if (c === "\\") i++;
+    else if (c === "(") depth++;
+    else if (c === ")" && --depth === 0) return i;
+  }
+  return s2.length;
+}
+function expand(raw, look) {
+  let parts = [""], glob = false, quoted = false;
+  const add = (vs) => {
+    parts = parts.flatMap((p) => vs.map((v) => p + v));
+    return parts.length <= MAX;
+  };
+  for (let i = 0; i < raw.length; ) {
+    const c = raw[i];
+    if (c === "'" && !quoted) {
+      const j = raw.indexOf("'", i + 1) < 0 ? raw.length : raw.indexOf("'", i + 1);
+      add([raw.slice(i + 1, j)]);
+      i = j + 1;
+    } else if (c === '"') {
+      quoted = !quoted;
+      i++;
+    } else if (c === "\\") {
+      add([quoted && !'$`"\\'.includes(raw[i + 1] ?? "") ? `\\${raw[i + 1] ?? ""}` : raw[i + 1] ?? ""]);
+      i += 2;
+    } else if (c === "`") return null;
+    else if (raw.startsWith("$(", i)) {
+      const j = closing(raw, i + 2);
+      if (!MKTEMP.test(raw.slice(i + 2, j))) return null;
+      add([join9(realTmp(), "mktemp.XXXXXX")]);
+      i = j + 1;
+    } else if (c === "$") {
+      const m = /^\{([A-Za-z_]\w*)\}|^([A-Za-z_]\w*)/.exec(raw.slice(i + 1));
+      if (!m) {
+        if (/^[{\w@*#?$!-]/.test(raw.slice(i + 1))) return null;
+        add(["$"]);
+        i++;
+        continue;
+      }
+      const v = look(m[1] ?? m[2]);
+      if (!v || !add(v)) return null;
+      i += 1 + m[0].length;
+    } else {
+      if (!quoted && GLOB.test(c)) glob = true;
+      add([c]);
+      i++;
+    }
+    if (parts.length > MAX) return null;
+  }
+  return { values: parts, glob };
+}
+function globRe2(g) {
+  let re = "";
+  for (let i = 0; i < g.length; i++) {
+    const c = g[i];
+    if (c === "*") re += "[^/]*";
+    else if (c === "?") re += "[^/]";
+    else if (c === "[" && g.indexOf("]", i + 2) > 0) {
+      const j = g.indexOf("]", i + 2);
+      re += `[${g.slice(i + 1, j).replace(/^!/, "^").replace(/\\/g, "\\\\")}]`;
+      i = j;
+    } else re += c.replace(/[.+^${}()|\\]/g, "\\$&");
+  }
+  return new RegExp(`^${re}$`);
+}
+function globbed(v, base2) {
+  const d = dirname5(v), last = basename4(v);
+  if (GLOB.test(d)) return null;
+  if (!GLOB.test(last)) return [v];
+  const re = globRe2(last);
+  try {
+    const names = readdirSync3(resolve5(base2, d.replace(/^~(?=\/|$)/, homedir()))).filter((n2) => re.test(n2) && (last.startsWith(".") || !n2.startsWith("."))).sort();
+    return names.length ? names.map((n2) => d === "." && !v.startsWith("./") ? n2 : join9(d, n2)) : [v];
+  } catch {
+    return [v];
+  }
+}
+function forList(words3, look, base2) {
+  const values = [];
+  for (const w of words3) {
+    const r = expand(w.raw, look);
+    if (!r) return null;
+    for (const v of r.values) {
+      const vs = r.glob ? globbed(v, base2) : [v];
+      if (!vs) return null;
+      values.push(...vs);
+    }
+    if (values.length > MAX) return null;
+  }
+  return values;
+}
+function writeTargets(cmd, cwd) {
+  const vars = /* @__PURE__ */ new Map();
+  const look = (n2) => vars.has(n2) ? vars.get(n2) : n2 in process.env ? [process.env[n2]] : null;
+  const ex = (w) => expand(w.raw, look)?.values ?? [w.value];
+  const assign2 = (w) => {
+    const name = w.raw.slice(0, w.raw.indexOf("="));
+    vars.set(name, expand(w.raw.slice(name.length + 1), look)?.values ?? null);
+  };
+  const rooted = (t) => /^(\/|~|\$)/.test(t);
+  let dir = "";
+  const at = (t) => !dir || rooted(t) ? t : join9(dir, t);
+  const out = [];
+  const push = (ws, restore2 = false) => {
+    for (const w of ws) for (const t of ex(w)) if (t) out.push({ path: at(t), restore: restore2 });
+  };
+  for (const c of parse4(cmd)) {
+    const words3 = c.words;
+    let h = 0;
+    for (; h < words3.length && (ASSIGN.test(words3[h].raw) || PREFIX2.has(words3[h].raw)); h++) {
+      if (ASSIGN.test(words3[h].raw)) assign2(words3[h]);
+    }
+    push(c.targets);
+    if (h >= words3.length) continue;
+    const head = basename4(words3[h].value), args = words3.slice(h + 1);
+    const operands = (head === "git" ? args.slice(1) : args).filter((a) => !a.value.startsWith("-"));
+    if (DECLARE.test(head)) {
+      for (const a of args) if (ASSIGN.test(a.raw)) assign2(a);
+    } else if (head === "for") {
+      vars.set(args[0]?.value ?? "", args[1]?.raw === "in" ? forList(args.slice(2), look, resolve5(cwd, dir)) : null);
+    } else if (head === "read") {
+      for (const a of operands) vars.set(a.value, null);
+    } else if (head === "cd" || head === "pushd") {
+      const to = operands[0] ? ex(operands[0])[0] : "~";
+      dir = rooted(to) ? to : join9(dir, to);
+    } else if (/^(cp|ln|install)$/.test(head)) {
+      const t = args.findIndex((a) => a.value === "-t" || a.value === "--target-directory");
+      if (t >= 0) push(args.slice(t + 1, t + 2));
+      else if (head === "ln" && operands.length === 1) for (const v of ex(operands[0])) out.push({ path: at(basename4(v)), restore: false });
+      else push(operands.slice(-1));
+    } else if (WRITERS.test(head)) push(operands);
+    else if (head === "sed" && args.some((a) => a.value.startsWith("-i") || a.value === "--in-place")) {
+      const files2 = [];
+      let script = false;
+      for (let k = 0; k < args.length; k++) {
+        const v = args[k].value;
+        if (/^(-e|-f|--expression|--file)$/.test(v)) {
+          script = true;
+          k++;
+        } else if (/^(--expression|--file)=/.test(v)) script = true;
+        else if (v && !v.startsWith("-")) files2.push(args[k]);
+      }
+      push(script ? files2 : files2.slice(1));
+    } else if (head === "git" && /^(checkout|restore|rm|mv)$/.test(args[0]?.value ?? "")) {
+      push(operands, /^(checkout|restore)$/.test(args[0].value));
+    }
+  }
+  return out.map((t) => ({ ...t, path: t.path.replace(/^\.\//, "") }));
+}
+var INTERPRETER = /^(python[23]?(\.\d+)?|node|nodejs|bun|deno|perl|ruby|php)$/;
+var SHELL = /^(sh|bash|zsh|dash|ksh)$/;
+var WRAPPER = /^(env|nohup|nice|exec|timeout|xargs)$/;
+var OPTION_ARG = { env: /^-[uSC]$/, nice: /^-n$/, timeout: /^-[sk]$/, xargs: /^-[IndPLsEa]$/ };
+function inlineScript(cmd) {
+  for (const c of parse4(cmd)) {
+    const w = c.words.map((x) => x.value);
+    let h = 0;
+    while (h < w.length) {
+      const b = basename4(w[h]);
+      if (WRAPPER.test(b)) {
+        for (h++; h < w.length && (w[h].startsWith("-") || ASSIGN.test(c.words[h].raw)); ) h += OPTION_ARG[b]?.test(w[h]) ? 2 : 1;
+        if (b === "timeout") h++;
+      } else if (ASSIGN.test(c.words[h].raw) || PREFIX2.has(c.words[h].raw)) h++;
+      else break;
+    }
+    if (h >= w.length) continue;
+    const head = basename4(w[h]), args = w.slice(h + 1);
+    if (head === "eval") return head;
+    const k = args.findIndex((a) => a === "-" || !a.startsWith("-"));
+    const operand = k < 0 ? void 0 : args[k], opts = k < 0 ? args : args.slice(0, k);
+    const has = (re) => opts.some((a) => re.test(a));
+    if (INTERPRETER.test(head)) {
+      const inline = head.startsWith("python") ? has(/^-[A-Za-z]*c[A-Za-z]*$/) : head === "deno" ? operand === "eval" : head === "php" ? has(/^-r$/) : /^(perl|ruby)$/.test(head) ? has(/^-[A-Za-z]*[eE]/) : has(/^(-[ep]|-pe|--eval|--print)(=|$)/);
+      if (inline || operand === "-" || !operand && !has(/^(-m|--version|-V|-h|--help)$/)) return head;
+    }
+    if (SHELL.test(head) && (has(/^-[A-Za-z]*c[A-Za-z]*$/) || !operand || operand === "-")) return head;
+  }
+  return null;
+}
+
 // src/hub/commands/team/guard.ts
 var HUB_MCP = /^mcp__(?:plugin_crew_)?hub__/;
 function real3(p) {
   try {
-    return realpathSync4(p);
+    return realpathSync5(p);
   } catch {
-    const up5 = dirname5(p);
-    return up5 === p ? p : join9(real3(up5), basename4(p));
+    const up5 = dirname6(p);
+    return up5 === p ? p : join10(real3(up5), basename5(p));
   }
 }
-var shellPath = (p) => p.replace(/^["']|["']$/g, "").replace(/^(~|\$HOME|\$\{HOME\})(?=\/|$)/, homedir());
+var shellPath = (p) => p.replace(/^["']|["']$/g, "").replace(/^(~|\$HOME|\$\{HOME\})(?=\/|$)/, homedir2());
 var within = (dir, p) => {
   const r = relative4(dir, p);
   return r !== ".." && !r.startsWith("../") && !isAbsolute2(r);
 };
 var CREW_CLI2 = /\bcrew\.mjs\b/;
 var EDITS = { Edit: "file_path", Write: "file_path", MultiEdit: "file_path", NotebookEdit: "notebook_path" };
-var WRITERS = /^(rm|mv|cp|ln|chmod|chown|truncate|tee|install|touch|mkdir)$/;
 function agentRole(root, agentType) {
   if (!/^[\w-]+$/.test(agentType)) return null;
   try {
-    return Doc.parse(readFileSync5(join9(root, ".claude", "agents", `${agentType}.md`), "utf8")).get("crew-role");
+    return Doc.parse(readFileSync5(join10(root, ".claude", "agents", `${agentType}.md`), "utf8")).get("crew-role");
   } catch {
     return null;
   }
@@ -9537,44 +9739,6 @@ function hubCommand(seg) {
   for (i++; i < w.length && w[i].startsWith("-"); i++) if (!w[i].includes("=")) i++;
   return w[i] ?? null;
 }
-var REDIRECT = /\d*&?>{1,2}\|?(&?)\s*([^\s;&|<>]+)/g;
-var PREFIX3 = /^(\{|!|if|then|else|elif|do|while|until|builtin|command|time)$/;
-function writeTargets(cmd) {
-  const out = [];
-  const vars = {};
-  const expand = (t) => t.replace(/^["']|["']$/g, "").replace(/^\$(?:\{(\w+)\}|(\w+))/, (m, a, b) => vars[a ?? b] ?? process.env[a ?? b] ?? m);
-  const rooted = (t) => /^(\/|~|\$)/.test(t);
-  let dir = "";
-  const at = (raw) => {
-    const t = expand(raw);
-    return !dir || rooted(t) ? t : join9(dir, t);
-  };
-  for (const seg of segments2(cmd)) {
-    const set = /^(?:export\s+)?(\w+)=(\S*)$/.exec(seg);
-    if (set) {
-      vars[set[1]] = expand(set[2]);
-      continue;
-    }
-    for (const m of seg.matchAll(REDIRECT)) if (!(m[1] && /^(\d+|-)$/.test(m[2]))) out.push(at(m[2]));
-    let [head, ...args] = words2(seg.replace(REDIRECT, ""));
-    while (head !== void 0 && PREFIX3.test(head.replace(/^\(+/, ""))) [head, ...args] = args;
-    head = head?.replace(/^\(+/, "");
-    if (head === "cd" || head === "pushd") {
-      const to = expand(args.find((a) => !a.startsWith("-")) ?? "~");
-      dir = rooted(to) ? to : join9(dir, to);
-      continue;
-    }
-    const operands = (head === "git" ? args.slice(1) : args).filter((a) => !a.startsWith("-"));
-    if (head && /^(cp|ln|install)$/.test(head)) {
-      const t = args.findIndex((a) => a === "-t" || a === "--target-directory");
-      const dest = t >= 0 ? args[t + 1] : head === "ln" && operands.length === 1 ? basename4(operands[0]) : operands.at(-1);
-      if (dest) out.push(at(dest));
-    } else if (head && WRITERS.test(head) || head === "sed" && args.some((a) => a.startsWith("-i")) || head === "git" && /^(checkout|restore|rm|mv)$/.test(args[0] ?? "")) {
-      out.push(...operands.map(at));
-    }
-  }
-  return out.map((t) => t.replace(/^\.\//, ""));
-}
 function decide(store, h) {
   if (!h.agent_type) return null;
   const root = store.ws.root;
@@ -9582,7 +9746,7 @@ function decide(store, h) {
   const run2 = role ? `${role}:${h.agent_id ?? "unknown"}` : null;
   const { policy: policy2 } = resolvePolicy(store.home, store.dir, role);
   const top = real3(h.cwd && git(["-C", h.cwd, "rev-parse", "--show-toplevel"])?.trim() || root);
-  const abs = (p) => real3(resolve5(h.cwd || top, shellPath(p)));
+  const abs = (p) => real3(resolve6(h.cwd || top, shellPath(p)));
   let trees = null;
   const checkouts = () => trees ??= [...new Set([top, root, ...worktrees().map((w) => w.path)].map(real3))].sort((a, b) => b.length - a.length);
   const rel = (p) => {
@@ -9592,7 +9756,7 @@ function decide(store, h) {
   const hits = (globs, p) => globs.some((g) => globRe(g).test(rel(p)));
   const outside = (p) => {
     const a = abs(p);
-    return !a.startsWith("/dev/") && ![...checkouts(), real3(tmpdir()), real3("/tmp")].some((d) => within(d, a));
+    return !a.startsWith("/dev/") && ![...checkouts(), real3(tmpdir2()), real3("/tmp")].some((d) => within(d, a));
   };
   const HUB_STATE = "project state stays in the hub (CLAUDE.md, crew:hub-state): use crew.mjs handoff, log, new-item, learn or ask, and keep only a pointer to the hub ID elsewhere";
   const input = h.tool_input ?? {};
@@ -9601,7 +9765,7 @@ function decide(store, h) {
     if (!shared2) return null;
     const a = abs(p), d = checkouts().find((c) => within(c, a)) ?? top;
     const r = relative4(d, a), m = /^\.claude\/worktrees\/[^/]+\/(.*)$/.exec(r);
-    return (d !== home2 || m) && STATE_RE.test(m ? m[1] : r) ? join9(home2, m ? m[1] : r) : null;
+    return (d !== home2 || m) && STATE_RE.test(m ? m[1] : r) ? join10(home2, m ? m[1] : r) : null;
   };
   const ONE_HOME = "hub documents live in the main checkout only: change them with crew.mjs from any checkout, or edit";
   const path = EDITS[h.tool_name] ? String(input[EDITS[h.tool_name]] ?? "") : "";
@@ -9613,11 +9777,12 @@ function decide(store, h) {
     return { deny: `${rel(String(input.file_path))} is a secret file (secrets.files); agents never read it` };
   }
   const cmd = h.tool_name === "Bash" ? String(input.command ?? "") : "";
+  const written = cmd ? writeTargets(cmd, h.cwd || top) : [];
   if (cmd) {
-    const targets = writeTargets(cmd);
+    const targets = written.map((t) => t.path);
     const target = targets.find((t) => hits(policy2.paths.protected, t));
     if (target) return { deny: `the command writes to ${rel(target)}, which the crew policy protects (paths.protected)` };
-    const unknown = targets.find((t) => t.startsWith("$"));
+    const unknown = targets.find((t) => /[$`]/.test(t));
     if (unknown) return { deny: `the command writes to ${unknown}, which the guard can't resolve (an unknown variable); use a literal path` };
     const copy = targets.find((t) => forked(t));
     if (copy) return { deny: `the command writes to ${abs(copy)}, a copy of hub state; ${ONE_HOME} ${forked(copy)}` };
@@ -9627,6 +9792,9 @@ function decide(store, h) {
     if (CREW_CLI2.test(cmd) && /--approved-by\b/.test(cmd)) return { deny: "only the human approves: agents never pass --approved-by" };
     if (segments2(cmd).some((c) => hubCommand(c) === "agents" && !/--check\b/.test(c))) {
       return { deny: "`crew.mjs agents` rewrites the agent definitions, which only the human renders (paths.protected)" };
+    }
+    if (segments2(cmd).some((c) => hubCommand(c) === "init")) {
+      return { deny: "`crew.mjs init` vendors the hub and its agent templates, which only the human installs (paths.protected)" };
     }
   }
   if (!role) return null;
@@ -9638,6 +9806,17 @@ function decide(store, h) {
   }
   if (path && policy2.paths.write.length && !hits(policy2.paths.write, path)) {
     return { deny: `the ${role} role may only write ${policy2.paths.write.join(", ")} (paths.write)` };
+  }
+  if (cmd && policy2.paths.write.length) {
+    const only = `the ${role} role may only write ${policy2.paths.write.join(", ")} (paths.write)`;
+    const head = inlineScript(cmd);
+    if (head) {
+      return { deny: `${only}; an inline or stdin ${head} script hides what it writes: use a hub command, or the Write tool on a path in paths.write` };
+    }
+    const temp = (a) => [real3(tmpdir2()), real3("/tmp")].some((d) => within(d, a)) && !checkouts().some((d) => within(d, a));
+    const exempt = (t) => t.restore || abs(t.path).startsWith("/dev/") || temp(abs(t.path));
+    const over = written.find((t) => !exempt(t) && !hits(policy2.paths.write, t.path));
+    if (over) return { deny: `the command writes to ${rel(over.path)}; ${only}` };
   }
   if (cmd && CREW_CLI2.test(cmd)) {
     const claimed = [...cmd.matchAll(/--as[=\s]+(\S+)/g)].map((m) => m[1]);
@@ -10169,7 +10348,7 @@ function commitWork(store, plan, subject) {
   if (!files2.length) return null;
   const at = (args, check2 = false) => git(["-C", home2, "--literal-pathspecs", ...args], check2);
   const prev = at(["rev-parse", "HEAD"])?.trim();
-  const gone = files2.filter((f) => !existsSync8(join10(home2, f)));
+  const gone = files2.filter((f) => !existsSync8(join11(home2, f)));
   if (files2.length > gone.length) at(["add", "-A", "--", ...files2.filter((f) => !gone.includes(f))], true);
   if (gone.length) at(["rm", "-q", "--cached", "--ignore-unmatch", "--", ...gone], true);
   try {
@@ -10245,20 +10424,20 @@ function handoff(store, id) {
 }
 
 // src/hub/commands/views/checks.ts
-import { join as join13 } from "node:path";
+import { join as join14 } from "node:path";
 
 // src/hub/commands/views/legacy.ts
-import { isAbsolute as isAbsolute3, join as join11, relative as relative5 } from "node:path";
+import { isAbsolute as isAbsolute3, join as join12, relative as relative5 } from "node:path";
 var LEGACY = ["check_secrets", "check_structure", "check_design", "format_on_edit", "track_plan_draft"];
 var REFRESH = "`/crew:guidelines --refresh` moves crew's hooks and settings to the .mjs scripts and removes the .py once nothing calls it";
 function legacyHints(store) {
   const { ws } = store;
-  const at = (...p) => join11(ws.root, ...p);
+  const at = (...p) => join12(ws.root, ...p);
   const hints = [];
   const leftovers = LEGACY.filter((n2) => ws.isFile(at(".crew", "bin", `${n2}.py`)));
   if (leftovers.length) hints.push(`.crew/bin/ still has the Python scripts ${leftovers.map((n2) => `${n2}.py`).join(", ")} \u2014 ${REFRESH}`);
   const hookDirs = [git(["rev-parse", "--git-path", "hooks"])?.trim(), git(["config", "core.hooksPath"])?.trim()].filter((d) => !!d).map((d) => isAbsolute3(d) ? d : at(d));
-  const inDir = (dir) => ws.list(dir).filter((f) => !f.endsWith(".sample")).map((f) => relative5(ws.root, join11(dir, f)));
+  const inDir = (dir) => ws.list(dir).filter((f) => !f.endsWith(".sample")).map((f) => relative5(ws.root, join12(dir, f)));
   const files2 = [.../* @__PURE__ */ new Set([
     ...inDir(at(".githooks")),
     ...hookDirs.flatMap(inDir),
@@ -10272,7 +10451,7 @@ function legacyHints(store) {
     ...inDir(at(".husky"))
   ])];
   for (const file of files2) {
-    const text2 = ws.read(join11(ws.root, file));
+    const text2 = ws.read(join12(ws.root, file));
     const calls = text2 ? LEGACY.filter((n2) => text2.includes(`.crew/bin/${n2}.py`)) : [];
     if (calls.length) hints.push(`${file} still runs ${calls.map((n2) => `.crew/bin/${n2}.py`).join(", ")} \u2014 use node .crew/bin/<name>.mjs (${REFRESH})`);
   }
@@ -10283,14 +10462,14 @@ function legacyHints(store) {
 }
 
 // src/hub/commands/team/agents.ts
-import { join as join12 } from "node:path";
+import { join as join13 } from "node:path";
 var HUMAN = "executive";
 var PLAIN = /^[\w-]+$/;
-var agentsDir = (store) => join12(store.ws.root, ".claude", "agents");
-var agentFile = (store, role) => join12(agentsDir(store), `crew-${role}.md`);
+var agentsDir = (store) => join13(store.ws.root, ".claude", "agents");
+var agentFile = (store, role) => join13(agentsDir(store), `crew-${role}.md`);
 function template(store, name) {
-  for (const d of [join12(store.dir, "templates", "agents"), join12(SKILL_DIR, "agents")]) {
-    const text2 = store.ws.read(join12(d, `${name}.md`));
+  for (const d of [join13(store.dir, "templates", "agents"), join13(SKILL_DIR, "agents")]) {
+    const text2 = store.ws.read(join13(d, `${name}.md`));
     if (text2 !== null) return text2;
   }
   return fail(`Agent template ${name}.md not found. Re-run \`crew.mjs init\` from the plugin.`);
@@ -10330,8 +10509,8 @@ var agentRoles = (store) => resolvePolicy(store.home, store.dir).roles.filter((r
 function rendered(store) {
   const out = /* @__PURE__ */ new Map();
   for (const name of store.ws.list(agentsDir(store)).filter((n2) => /^crew-.*\.md$/.test(n2))) {
-    const role = Doc.parse(store.ws.read(join12(agentsDir(store), name)) ?? "").get("crew-role");
-    if (role) out.set(join12(agentsDir(store), name), role);
+    const role = Doc.parse(store.ws.read(join13(agentsDir(store), name)) ?? "").get("crew-role");
+    if (role) out.set(join13(agentsDir(store), name), role);
   }
   return out;
 }
@@ -10665,17 +10844,17 @@ function hygiene(s2, f) {
   if (ahead.length > MAX_WRITTEN_AHEAD) {
     f.hints.push(`${ahead.length} plans written ahead of the work (> ${MAX_WRITTEN_AHEAD}) \u2014 keep later work as backlog items so plans don't go stale`);
   }
-  const leftovers = s2.store.ws.list(join13(s2.store.dir, "drafts")).filter((n2) => n2.endsWith(".md"));
+  const leftovers = s2.store.ws.list(join14(s2.store.dir, "drafts")).filter((n2) => n2.endsWith(".md"));
   if (leftovers.length) {
     f.hints.push(`unconverted drafts in .crew/drafts/: ${leftovers.join(", ")} \u2014 create the document from them or delete`);
   }
-  if (s2.store.ws.isDir(join13(s2.store.ws.root, ".project"))) {
+  if (s2.store.ws.isDir(join14(s2.store.ws.root, ".project"))) {
     f.hints.push("a .project/ directory from project-kit is still here \u2014 `crew.mjs migrate` moves it into .crew/");
   }
-  if (!s2.store.ws.read(join13(s2.store.ws.root, "CLAUDE.md"))?.includes(HUB_STATE_MARKER)) {
+  if (!s2.store.ws.read(join14(s2.store.ws.root, "CLAUDE.md"))?.includes(HUB_STATE_MARKER)) {
     f.hints.push("CLAUDE.md has no hub-state section (project state stays in the hub) \u2014 `crew.mjs init` adds it");
   }
-  if (!s2.store.ws.read(join13(s2.store.ws.root, ".githooks", "post-commit"))?.includes("graphify")) {
+  if (!s2.store.ws.read(join14(s2.store.ws.root, ".githooks", "post-commit"))?.includes("graphify")) {
     f.hints.push("code graph not set up (no graphify hook in .githooks/post-commit) \u2014 `/crew:codemap` installs and wires it");
   }
   f.hints.push(...legacyHints(s2.store));
@@ -11097,10 +11276,10 @@ Slice of ${goal.id} (${goal.get("title")}): ${cand}
 }
 
 // src/hub/commands/views/export.ts
-import { join as join15, resolve as resolve6 } from "node:path";
+import { join as join16, resolve as resolve7 } from "node:path";
 
 // src/hub/commands/views/graph.ts
-import { basename as basename5 } from "node:path";
+import { basename as basename6 } from "node:path";
 
 // src/hub/graph-types.ts
 var SCHEMA_VERSION = 6;
@@ -11191,7 +11370,7 @@ function staff(store, json = false) {
 
 // src/hub/commands/work/release.ts
 import { chmodSync as chmodSync2, copyFileSync as copyFileSync2, existsSync as existsSync9, readFileSync as readFileSync8, statSync as statSync6 } from "node:fs";
-import { isAbsolute as isAbsolute4, join as join14, normalize } from "node:path";
+import { isAbsolute as isAbsolute4, join as join15, normalize } from "node:path";
 function mergeOrder(store) {
   const base2 = store.baseBranch(), plans2 = store.plans(true), events = store.ledger.events(), moved = store.ledger.lastStatus(events);
   const doneAt = new Map(events.filter((e) => e.type === "move" && e.to === "done").map((e) => [e.ref, e.ts]));
@@ -11255,7 +11434,7 @@ function refreshBin(store, root, check2) {
   if (bad2.length) fail(`refresh-bin: release.refresh_bin.files must be bare file names in .crew/bin: ${bad2.join(", ")}`);
   const stale = [];
   for (const f of files2) {
-    const s2 = join14(root, src, f), t = join14(root, ".crew", "bin", f);
+    const s2 = join15(root, src, f), t = join15(root, ".crew", "bin", f);
     if (!existsSync9(s2) || !existsSync9(t)) {
       store.say(`skipped .crew/bin/${f}: ${existsSync9(t) ? `${src}/${f} does not exist` : "not vendored here (refresh-bin never adds a file)"}`);
     } else if (!readFileSync8(s2).equals(readFileSync8(t))) stale.push(f);
@@ -11271,8 +11450,8 @@ function refreshBin(store, root, check2) {
   const plan = [...store.plans().values()].find((p) => branch && p.get("branch") === branch && p.get("status") !== "dropped");
   if (!plan) fail(`refresh-bin: this checkout (branch '${branch || "none"}') is not a plan's worktree; run it in the plan's worktree`);
   for (const f of stale) {
-    const t = join14(root, ".crew", "bin", f), mode = statSync6(t).mode;
-    copyFileSync2(join14(root, src, f), t);
+    const t = join15(root, ".crew", "bin", f), mode = statSync6(t).mode;
+    copyFileSync2(join15(root, src, f), t);
     chmodSync2(t, mode & 4095);
     store.say(`refreshed .crew/bin/${f} from ${src}/${f}`);
   }
@@ -11516,7 +11695,7 @@ function buildGraph(store) {
   return {
     schemaVersion: SCHEMA_VERSION,
     generatedAt: (/* @__PURE__ */ new Date()).toISOString(),
-    project: { name: basename5(store.ws.root), branch: currentBranch(), today: today() },
+    project: { name: basename6(store.ws.root), branch: currentBranch(), today: today() },
     settings: store.settings(),
     focus: all.focus || null,
     docs,
@@ -11647,14 +11826,14 @@ function embed(graph) {
   return JSON.stringify(graph).replace(/</g, "\\u003c");
 }
 function renderHtmlShell(store) {
-  const shell = store.ws.read(join15(SCRIPT_DIR, UI_FILE));
+  const shell = store.ws.read(join16(SCRIPT_DIR, UI_FILE));
   if (shell === null || !shell.includes(DATA_SLOT)) {
     fail(`The UI bundle (${UI_FILE}) is missing next to crew.mjs. Re-run \`crew.mjs init\` from the plugin.`);
   }
   return shell;
 }
 function renderStudioShell(store) {
-  const shell = store.ws.read(join15(SCRIPT_DIR, STUDIO_FILE));
+  const shell = store.ws.read(join16(SCRIPT_DIR, STUDIO_FILE));
   if (shell === null || !shell.includes(STUDIO_SLOT)) {
     fail(`The design studio (${STUDIO_FILE}) is missing next to crew.mjs. Re-run \`crew.mjs init\` from the plugin.`);
   }
@@ -11669,30 +11848,30 @@ function exportGraph(store, format, out) {
     const text2 = `${JSON.stringify(graph, null, 2)}
 `;
     if (!out) return store.say(text2.trimEnd());
-    store.ws.write(resolve6(out), text2);
-    return store.say(`Wrote ${store.rel(resolve6(out))}`);
+    store.ws.write(resolve7(out), text2);
+    return store.say(`Wrote ${store.rel(resolve7(out))}`);
   }
-  const path = out ? resolve6(out) : join15(store.dir, "view", "index.html");
-  if (!out) store.ws.write(join15(store.dir, "view", ".gitignore"), "# generated by `crew.mjs export`\n*\n");
+  const path = out ? resolve7(out) : join16(store.dir, "view", "index.html");
+  if (!out) store.ws.write(join16(store.dir, "view", ".gitignore"), "# generated by `crew.mjs export`\n*\n");
   store.ws.write(path, renderHtml(store, graph));
   store.say(`Wrote ${store.rel(path)} \u2014 open it in a browser (it works offline; re-run export to refresh)`);
 }
 
 // src/hub/commands/work/planning.ts
 function init(store) {
-  for (const d of [...Object.values(store.dirs), store.knowledgeDir, join16(store.dir, "drafts")]) {
-    const keep = join16(d, ".gitkeep");
+  for (const d of [...Object.values(store.dirs), store.knowledgeDir, join17(store.dir, "drafts")]) {
+    const keep = join17(d, ".gitkeep");
     if (!store.ws.isFile(keep)) store.ws.write(keep, "");
   }
   vendor(store);
-  const readme = join16(store.dir, "README.md");
-  const model = store.ws.read(join16(SKILL_DIR, "references", "model.md"));
+  const readme = join17(store.dir, "README.md");
+  const model = store.ws.read(join17(SKILL_DIR, "references", "model.md"));
   if (!store.ws.isFile(readme) && model !== null) store.ws.write(readme, model);
   store.say(`Initialized ${store.rel(store.dir)}/`);
   hubStateRule(store);
 }
 function hubStateRule(store) {
-  const path = join16(store.ws.root, "CLAUDE.md");
+  const path = join17(store.ws.root, "CLAUDE.md");
   const text2 = store.ws.read(path);
   if (text2?.includes(HUB_STATE_MARKER)) return;
   store.ws.write(path, text2 === null ? HUB_STATE_RULE : `${text2.trimEnd()}
@@ -11701,20 +11880,20 @@ ${HUB_STATE_RULE}`);
   store.say(`${text2 === null ? "Created" : "Added the hub-state section to"} CLAUDE.md`);
 }
 function vendor(store) {
-  const bin = join16(store.dir, "bin");
-  if (resolve7(SCRIPT_DIR) === resolve7(bin)) return;
-  store.ws.write(join16(bin, "crew.mjs"), readFileSync9(SCRIPT_FILE, "utf8"), 493);
-  const ui = store.ws.read(join16(SCRIPT_DIR, UI_FILE));
-  if (ui !== null) store.ws.write(join16(bin, UI_FILE), ui);
-  const studio = store.ws.read(join16(SCRIPT_DIR, STUDIO_FILE));
-  if (studio !== null) store.ws.write(join16(bin, STUDIO_FILE), studio);
-  const templates = join16(store.dir, "templates");
-  for (const name of [...TEMPLATE_NAMES]) store.ws.write(join16(templates, name), store.ws.read(join16(SKILL_DIR, "templates", name)));
-  for (const name of store.ws.list(join16(SKILL_DIR, "agents"))) {
-    store.ws.write(join16(templates, "agents", name), store.ws.read(join16(SKILL_DIR, "agents", name)));
+  const bin = join17(store.dir, "bin");
+  if (resolve8(SCRIPT_DIR) === resolve8(bin)) return;
+  store.ws.write(join17(bin, "crew.mjs"), readFileSync9(SCRIPT_FILE, "utf8"), 493);
+  const ui = store.ws.read(join17(SCRIPT_DIR, UI_FILE));
+  if (ui !== null) store.ws.write(join17(bin, UI_FILE), ui);
+  const studio = store.ws.read(join17(SCRIPT_DIR, STUDIO_FILE));
+  if (studio !== null) store.ws.write(join17(bin, STUDIO_FILE), studio);
+  const templates = join17(store.dir, "templates");
+  for (const name of [...TEMPLATE_NAMES]) store.ws.write(join17(templates, name), store.ws.read(join17(SKILL_DIR, "templates", name)));
+  for (const name of store.ws.list(join17(SKILL_DIR, "agents"))) {
+    store.ws.write(join17(templates, "agents", name), store.ws.read(join17(SKILL_DIR, "agents", name)));
   }
-  const guide = store.ws.read(join16(SKILL_DIR, "references", "writing-guide.md"));
-  if (guide !== null) store.ws.write(join16(templates, "writing-guide.md"), guide);
+  const guide = store.ws.read(join17(SKILL_DIR, "references", "writing-guide.md"));
+  if (guide !== null) store.ws.write(join17(templates, "writing-guide.md"), guide);
 }
 function requireSections(doc, kind) {
   const missing = doc.missing(REQUIRED_ON_CREATE[kind]);
@@ -11750,7 +11929,7 @@ function newGoal(store, title, draftPath, priority, keep = false) {
   const eid = store.nextId("G", "goal");
   const doc = store.build("goal.md", draft, { id: eid, title, priority: Store.checkPriority(priority) || "P2" });
   requireSections(doc, "goal");
-  store.writeNew(doc, join16(store.dirs.goal, `${eid}-${slugify(title)}.md`));
+  store.writeNew(doc, join17(store.dirs.goal, `${eid}-${slugify(title)}.md`));
   breakdownToItems(store, doc);
   store.consume(draftFile, keep);
 }
@@ -11778,7 +11957,7 @@ function newPlan(store, title, draftPath, o = {}) {
   });
   requireSections(doc, "plan");
   if (shared2) openPlanWorktree(store, pid, branch);
-  store.writeNew(doc, join16(store.dirs.plan, `${pid}-${slug}.md`));
+  store.writeNew(doc, join17(store.dirs.plan, `${pid}-${slug}.md`));
   for (const i of linked) {
     const item = items2.get(i);
     item.set("plan", pid);
@@ -11790,7 +11969,7 @@ function newPlan(store, title, draftPath, o = {}) {
 }
 function openPlanWorktree(store, pid, branch) {
   const main2 = worktrees()[0]?.path ?? store.ws.root;
-  const path = join16(main2, ".claude", "worktrees", branch.replace(/^plan\//, ""));
+  const path = join17(main2, ".claude", "worktrees", branch.replace(/^plan\//, ""));
   const exists = planBranches().includes(branch);
   git(["worktree", "add", "-q", "--no-checkout", ...exists ? [path, branch] : ["-b", branch, path, store.baseBranch()]], true);
   store.ws.onAbort(() => {
@@ -11798,7 +11977,7 @@ function openPlanWorktree(store, pid, branch) {
     if (!exists) git(["branch", "-D", branch]);
   });
   sparseCheckout(store, path);
-  const common = commonDir(store.ws.root), exclude = common ? join16(common, "info", "exclude") : null;
+  const common = commonDir(store.ws.root), exclude = common ? join17(common, "info", "exclude") : null;
   const ignored = exclude ? store.ws.read(exclude) ?? "" : null;
   if (exclude && ignored !== null && !/^\.claude\/worktrees\/?$/m.test(ignored)) {
     store.ws.write(exclude, `${ignored}${ignored && !ignored.endsWith("\n") ? "\n" : ""}.claude/worktrees/
@@ -11816,7 +11995,7 @@ function sparseCheckout(store, path) {
   git(["-C", path, "checkout", "-q"], true);
 }
 function restore(store, f, root = store.ws.root) {
-  const head = git(["-C", root, "show", `HEAD:${f}`]), path = join16(root, f);
+  const head = git(["-C", root, "show", `HEAD:${f}`]), path = join17(root, f);
   if (head === null) store.ws.remove(path);
   else store.ws.write(path, head);
 }
@@ -11844,7 +12023,7 @@ function hintUnplanned(store, goal, items2) {
 }
 
 // src/hub/commands/work/setup.ts
-import { join as join17 } from "node:path";
+import { join as join18 } from "node:path";
 var config = (branch, worktrees2) => `# The hub's settings. \`crew.mjs doctor\` checks that they fit the autonomous loop.
 git:
   # The branch plans start from and merge into; the main checkout stays on it.
@@ -11870,8 +12049,8 @@ var POLICY = `# The team's policy: who may do what, and where a human decides.
 `;
 function initDefaults(store) {
   const files2 = [
-    [join17(store.dir, "config.yaml"), config(currentBranch() || "main", commonDir(store.home) !== null)],
-    [join17(store.dir, "policy.yaml"), POLICY]
+    [join18(store.dir, "config.yaml"), config(currentBranch() || "main", commonDir(store.home) !== null)],
+    [join18(store.dir, "policy.yaml"), POLICY]
   ];
   for (const [path, text2] of files2) {
     if (store.ws.isFile(path)) continue;
@@ -11967,9 +12146,9 @@ var registration = {
 };
 
 // src/hub/commands/work/gather.ts
-import { existsSync as existsSync10, realpathSync as realpathSync5, statSync as statSync7 } from "node:fs";
-import { basename as basename6, dirname as dirname6, join as join18 } from "node:path";
-var real4 = (p) => existsSync10(p) ? realpathSync5(p) : p;
+import { existsSync as existsSync10, realpathSync as realpathSync6, statSync as statSync7 } from "node:fs";
+import { basename as basename7, dirname as dirname7, join as join19 } from "node:path";
+var real4 = (p) => existsSync10(p) ? realpathSync6(p) : p;
 var mtimeOf = (p) => statSync7(p, { throwIfNoEntry: false })?.mtimeMs ?? 0;
 function copies(store) {
   const out = [], base2 = store.baseBranch();
@@ -11978,9 +12157,9 @@ function copies(store) {
     const dirty2 = new Set(dirty(wt, ".crew").filter((f) => STATE_RE.test(f)));
     const ahead = (git(["-C", wt, "diff", "--name-only", "--diff-filter=AM", `${base2}...HEAD`, "--", ".crew"]) ?? "").split("\n").filter((f) => STATE_RE.test(f) && !dirty2.has(f));
     for (const f of [...dirty2, ...ahead]) {
-      const text2 = store.ws.read(join18(wt, f));
-      if (text2 !== null && text2 !== store.ws.read(join18(store.home, f))) {
-        out.push({ wt, f, text: text2, mtime: mtimeOf(join18(wt, f)), committed: !dirty2.has(f) });
+      const text2 = store.ws.read(join19(wt, f));
+      if (text2 !== null && text2 !== store.ws.read(join19(store.home, f))) {
+        out.push({ wt, f, text: text2, mtime: mtimeOf(join19(wt, f)), committed: !dirty2.has(f) });
       }
     }
   }
@@ -11995,7 +12174,7 @@ function gather(store) {
   const seen = /* @__PURE__ */ new Map();
   let n2 = 0;
   for (const c of copies(store)) {
-    const from = `${store.ws.rel(c.wt) || c.wt}`, target = join18(store.home, c.f);
+    const from = `${store.ws.rel(c.wt) || c.wt}`, target = join19(store.home, c.f);
     const doc = Doc.parse(c.text, target), key = `${doc.id} ${doc.get("title")}`;
     const prior = seen.get(c.f) ?? (doc.id ? seen.get(key) : void 0);
     if (prior) {
@@ -12008,7 +12187,7 @@ function gather(store) {
       } else if (same && same.path !== target && same.get("title") !== doc.get("title")) {
         const id = store.nextId(doc.id.replace(/-\d+$/, ""), kindOf(doc.id));
         const text2 = c.text.replace(new RegExp(`^id: ${doc.id}$`, "m"), `id: ${id}`).replace(new RegExp(`^# ${doc.id}:`, "m"), `# ${id}:`);
-        const path = join18(dirname6(target), basename6(target).replace(doc.id, id));
+        const path = join19(dirname7(target), basename7(target).replace(doc.id, id));
         store.ws.write(path, text2);
         store.say(`${doc.id} in ${from} clashes with ${same.id} "${same.get("title")}": gathered as ${id} (${store.rel(path)}); check what refers to ${doc.id}`);
       } else {
@@ -12027,8 +12206,8 @@ function gather(store) {
 }
 
 // src/hub/commands/work/migrate.ts
-import { existsSync as existsSync11, readdirSync as readdirSync3, statSync as statSync8 } from "node:fs";
-import { join as join19 } from "node:path";
+import { existsSync as existsSync11, readdirSync as readdirSync4, statSync as statSync8 } from "node:fs";
+import { join as join20 } from "node:path";
 var DROPPED = /^(bin|templates|view)\/|^(ROADMAP|BACKLOG|STATUS|README)\.md$/;
 var ARCHIVED = /^(milestones|sprints|releases)\/|^(project-plan|raid)\.md$/;
 var DOCS = { epics: "goals", items: "items", plans: "plans" };
@@ -12045,7 +12224,7 @@ var OLD_REFS = [
   ".github/workflows/ci.yml"
 ];
 function walk(dir, prefix = "") {
-  return readdirSync3(dir, { withFileTypes: true }).flatMap((e) => e.isDirectory() ? walk(join19(dir, e.name), `${prefix}${e.name}/`) : [`${prefix}${e.name}`]);
+  return readdirSync4(dir, { withFileTypes: true }).flatMap((e) => e.isDirectory() ? walk(join20(dir, e.name), `${prefix}${e.name}/`) : [`${prefix}${e.name}`]);
 }
 function renamed(text2) {
   return text2.replace(/\bEP-(\d+)/g, "G-$1").replace(/\.project\//g, ".crew/").replace(/\btracker\.mjs\b/g, "crew.mjs").replace(/project-kit:tracker/g, "crew:hub");
@@ -12056,11 +12235,11 @@ function leanDoc(text2, kind) {
   return t;
 }
 function migrate(store) {
-  const root = store.ws.root, old = join19(root, ".project");
+  const root = store.ws.root, old = join20(root, ".project");
   if (!existsSync11(old) || !statSync8(old).isDirectory()) fail("No .project/ directory to migrate.");
   if (existsSync11(store.dir)) fail(`${store.rel(store.dir)}/ already exists \u2014 move it aside first; nothing was changed.`);
   const files2 = walk(old);
-  const read = (rel) => store.ws.read(join19(old, rel)) ?? "";
+  const read = (rel) => store.ws.read(join20(old, rel)) ?? "";
   const exitCriteria = milestoneCriteria(files2.filter((f) => f.startsWith("milestones/")).map(read));
   let counts = { docs: 0, archived: 0, knowledge: 0, issues: 0, drafted: 0 };
   const targets = /* @__PURE__ */ new Map();
@@ -12074,12 +12253,12 @@ function migrate(store) {
     const [dir, name] = [rel.split("/")[0], rel.split("/").pop()];
     const topLevelDoc = DOCS[dir] && name.endsWith(".md") && rel.split("/").length === 2;
     if (!TEXT.test(rel)) {
-      const to = join19(store.dir, ARCHIVED.test(rel) ? "archive" : "", rel);
+      const to = join20(store.dir, ARCHIVED.test(rel) ? "archive" : "", rel);
       put(rel, to);
-      store.ws.copy(join19(old, rel), to);
+      store.ws.copy(join20(old, rel), to);
     } else if (ARCHIVED.test(rel)) {
-      put(rel, join19(store.dir, "archive", rel));
-      store.ws.write(join19(store.dir, "archive", rel), renamed(read(rel)));
+      put(rel, join20(store.dir, "archive", rel));
+      store.ws.write(join20(store.dir, "archive", rel), renamed(read(rel)));
       counts.archived++;
     } else if (topLevelDoc) {
       const doc = Doc.parse(leanDoc(read(rel), dir));
@@ -12089,21 +12268,21 @@ function migrate(store) {
         doc.appendLog("status ready \u2192 draft \u2014 migrated to crew: declare `touches:` before moving it back to ready");
         counts.drafted++;
       }
-      put(rel, join19(store.dir, DOCS[dir], name.replace(/^EP-/, "G-")));
-      store.ws.write(join19(store.dir, DOCS[dir], name.replace(/^EP-/, "G-")), `${doc.text.trimEnd()}
+      put(rel, join20(store.dir, DOCS[dir], name.replace(/^EP-/, "G-")));
+      store.ws.write(join20(store.dir, DOCS[dir], name.replace(/^EP-/, "G-")), `${doc.text.trimEnd()}
 `);
       counts.docs++;
     } else if (rel === "config.yaml") {
-      put(rel, join19(store.dir, rel));
-      store.ws.write(join19(store.dir, rel), renamed(read(rel)).replace(/^[ \t]+tracker:.*\n/m, "").replace(/^modules:[ \t]*\n(?![ \t])/m, ""));
+      put(rel, join20(store.dir, rel));
+      store.ws.write(join20(store.dir, rel), renamed(read(rel)).replace(/^[ \t]+tracker:.*\n/m, "").replace(/^modules:[ \t]*\n(?![ \t])/m, ""));
     } else {
-      const to = join19(store.dir, rel.replace(/^epics\//, "goals/"));
+      const to = join20(store.dir, rel.replace(/^epics\//, "goals/"));
       put(rel, to);
       store.ws.write(to, renamed(read(rel)));
     }
   }
   if (files2.includes("project-plan.md")) {
-    const config2 = join19(store.dir, "config.yaml");
+    const config2 = join20(store.dir, "config.yaml");
     store.ws.write(config2, hubSettings(store.ws.read(config2) ?? "", read("project-plan.md")));
   }
   store.ws.remove(old);
@@ -12118,7 +12297,7 @@ function migrate(store) {
   if (branches.length) {
     store.say(`note: plan branches still hold .project/ (${branches.join(", ")}) \u2014 finish them on the old layout, or merge this commit into each and run \`crew.mjs migrate\` there too; until then their live status is not visible from main`);
   }
-  const stale = OLD_REFS.filter((f) => /\.project\/|tracker\.mjs/.test(store.ws.read(join19(root, f)) ?? ""));
+  const stale = OLD_REFS.filter((f) => /\.project\/|tracker\.mjs/.test(store.ws.read(join20(root, f)) ?? ""));
   if (stale.length) {
     store.say(`next: these still mention .project/ or tracker.mjs \u2014 re-render them (/crew:guidelines --refresh, /crew:git-setup): ${stale.join(", ")}`);
   }
@@ -12151,9 +12330,9 @@ function raid(store, text2) {
       const title = row.decision || row.assumption || row.risk || Object.values(row).find((v) => v && !/^[A-Z]+-?\d+$/.test(v)) || "";
       if (!title) continue;
       const fields = Object.entries(row).filter(([, v]) => v).map(([k, v]) => `- **${k}:** ${v}`).join("\n");
-      const id = knowledgeId(title, (k) => store.ws.isFile(join19(store.knowledgeDir, `${k}.md`)));
+      const id = knowledgeId(title, (k) => store.ws.isFile(join20(store.knowledgeDir, `${k}.md`)));
       const level = (v) => (v ?? "").trim().slice(0, 1).toUpperCase();
-      store.ws.write(join19(store.knowledgeDir, `${id}.md`), entryText({
+      store.ws.write(join20(store.knowledgeDir, `${id}.md`), entryText({
         id,
         type,
         title,
@@ -12366,7 +12545,7 @@ var registration6 = {
 // src/hub/commands/team/runner.ts
 var import_yaml4 = __toESM(require_dist(), 1);
 import { spawnSync as spawnSync5 } from "node:child_process";
-import { join as join20 } from "node:path";
+import { join as join21 } from "node:path";
 
 // src/hub/commands/team/dispatch.ts
 var View2 = class {
@@ -12543,12 +12722,12 @@ function preflight(store, command2) {
   if (agents3.length) {
     fails.push(`crew agents not rendered or not current: ${agents3.map((p) => `${store.rel(p.path)} (${p.problem})`).join(", ")} \u2192 the human runs \`crew.mjs agents\`, then starts the runner again`);
   }
-  const dir = join20(root, ".claude", "agents");
+  const dir = join21(root, ".claude", "agents");
   for (const name of store.ws.list(dir).filter((n2) => /^crew-.*\.md$/.test(n2))) {
-    const why = loadProblem(store.ws.read(join20(dir, name)) ?? "", name.slice(0, -3));
+    const why = loadProblem(store.ws.read(join21(dir, name)) ?? "", name.slice(0, -3));
     if (why) fails.push(`.claude/agents/${name} won't load: ${why} \u2192 the human re-renders it with \`crew.mjs agents\``);
   }
-  const text2 = store.ws.read(join20(root, ".claude", "settings.json"));
+  const text2 = store.ws.read(join21(root, ".claude", "settings.json"));
   let settings = null;
   if (text2 === null) fails.push(`no .claude/settings.json, so no crew hooks \u2192 ${SETTINGS_FIX}`);
   else {
@@ -12915,15 +13094,15 @@ import { spawnSync as spawnSync6 } from "node:child_process";
 import { randomBytes as randomBytes3 } from "node:crypto";
 import { appendFileSync as appendFileSync3, existsSync as existsSync12, linkSync as linkSync2, mkdirSync as mkdirSync5, readFileSync as readFileSync10, renameSync as renameSync3, statSync as statSync9, unlinkSync as unlinkSync2, writeFileSync as writeFileSync3 } from "node:fs";
 import { hostname } from "node:os";
-import { join as join21 } from "node:path";
+import { join as join22 } from "node:path";
 var POLL_MS = 1e3;
 var UNWRITTEN_STALE_MS = 6e4;
 function home(store) {
   const common = commonDir(store.ws.root);
-  return common ? join21(common, "crew") : store.dir;
+  return common ? join22(common, "crew") : store.dir;
 }
 function suiteSettings(store) {
-  const hub = yamlBlock(store.ws.read(join21(store.dir, "config.yaml")) ?? "", "hub");
+  const hub = yamlBlock(store.ws.read(join22(store.dir, "config.yaml")) ?? "", "hub");
   const command2 = hub.full_suite;
   if (!command2) fail("No hub.full_suite in .crew/config.yaml.");
   const slots = hub.suite_slots ?? "1";
@@ -12987,19 +13166,19 @@ function takeSlot(dir, slots, me) {
   for (let said = false; ; ) {
     for (let i = 0; i < slots; i++) {
       try {
-        writeFileSync3(join21(dir, `slot-${i}.lock`), body2, { flag: "wx" });
+        writeFileSync3(join22(dir, `slot-${i}.lock`), body2, { flag: "wx" });
         return i;
       } catch (e) {
         if (e.code !== "EEXIST") throw e;
       }
     }
     let freed = false;
-    for (let i = 0; i < slots; i++) freed = takeOverIfStale2(join21(dir, `slot-${i}.lock`), me.token) || freed;
+    for (let i = 0; i < slots; i++) freed = takeOverIfStale2(join22(dir, `slot-${i}.lock`), me.token) || freed;
     if (freed) continue;
     if (!said) {
       const held = [...Array(slots).keys()].map((i) => {
         try {
-          return holder(readFileSync10(join21(dir, `slot-${i}.lock`), "utf8"));
+          return holder(readFileSync10(join22(dir, `slot-${i}.lock`), "utf8"));
         } catch {
           return null;
         }
@@ -13029,14 +13208,14 @@ function runSuite(store, { cwd, ref }) {
     worktree: cwd,
     started: (/* @__PURE__ */ new Date()).toISOString()
   };
-  const slot = takeSlot(join21(dir, "suite"), slots, me);
+  const slot = takeSlot(join22(dir, "suite"), slots, me);
   const t1 = Date.now();
   let exit = 1;
   try {
     const r = spawnSync6(command2, { shell: true, cwd, stdio: "inherit" });
     exit = r.status ?? 1;
   } finally {
-    releaseSlot(join21(dir, "suite", `slot-${slot}.lock`), me.token);
+    releaseSlot(join22(dir, "suite", `slot-${slot}.lock`), me.token);
   }
   const t2 = Date.now();
   const rec = {
@@ -13049,7 +13228,7 @@ function runSuite(store, { cwd, ref }) {
     run_ms: t2 - t1,
     exit
   };
-  const file = join21(dir, "suites.jsonl");
+  const file = join22(dir, "suites.jsonl");
   const torn = existsSync12(file) && statSync9(file).size > 0 && !readFileSync10(file, "utf8").endsWith("\n");
   appendFileSync3(file, `${torn ? "\n" : ""}${JSON.stringify(rec)}
 `);
@@ -13063,7 +13242,7 @@ function suiteCmd(store, ref) {
   return r.exit;
 }
 function suites(store, limit = 20) {
-  const file = join21(home(store), "suites.jsonl");
+  const file = join22(home(store), "suites.jsonl");
   if (!existsSync12(file)) return [];
   const recs = readFileSync10(file, "utf8").split("\n").flatMap((l) => {
     try {
@@ -13476,22 +13655,22 @@ import { spawn } from "node:child_process";
 import { randomBytes as randomBytes4 } from "node:crypto";
 import { existsSync as existsSync14, mkdirSync as mkdirSync6, watch as watch2 } from "node:fs";
 import { createServer } from "node:http";
-import { basename as basename7, dirname as dirname8, join as join23 } from "node:path";
+import { basename as basename8, dirname as dirname9, join as join24 } from "node:path";
 
 // src/hub/commands/views/design.ts
 var import_yaml5 = __toESM(require_dist(), 1);
 import { existsSync as existsSync13, readFileSync as readFileSync11 } from "node:fs";
-import { dirname as dirname7, join as join22 } from "node:path";
+import { dirname as dirname8, join as join23 } from "node:path";
 var HANDOFF_KINDS = ["finalise", "locked", "revision", "screen-change", "screens-done", "screens-skipped"];
 var STAGES = ["palette", "directions", "tune", "finalise", "screens", "done"];
 var STATE_KEYS = ["stage", "shortlist", "variants", "current", "reviews"];
 var REQUIRED_COLORS = ["background", "foreground", "primary", "primary-foreground"];
 var FRONT = /^---\n([\s\S]*?)\n---\n/;
 function designPath(store) {
-  const cfg = store.ws.read(join22(store.dir, "config.yaml")) ?? "";
-  return join22(store.ws.root, yamlBlock(cfg, "design").file ?? "docs/design/DESIGN.md");
+  const cfg = store.ws.read(join23(store.dir, "config.yaml")) ?? "";
+  return join23(store.ws.root, yamlBlock(cfg, "design").file ?? "docs/design/DESIGN.md");
 }
-var studioPath = (store) => join22(dirname7(designPath(store)), "studio.json");
+var studioPath = (store) => join23(dirname8(designPath(store)), "studio.json");
 function readDesign(store) {
   const path = designPath(store);
   const text2 = store.ws.read(path);
@@ -13778,20 +13957,20 @@ function serve(store, o) {
       for (const c of clients) c.write("event: change\ndata: {}\n\n");
     }, 150);
   }
-  const ledgerDir = dirname8(store.ledger.path), common = commonDir(store.ws.root);
+  const ledgerDir = dirname9(store.ledger.path), common = commonDir(store.ws.root);
   mkdirSync6(ledgerDir, { recursive: true });
   const watched = [
     store.dir,
-    dirname8(designPath(store)),
+    dirname9(designPath(store)),
     ...ledgerDir !== store.dir ? [ledgerDir] : [],
-    ...common ? [join23(common, "refs"), join23(common, "HEAD")] : []
+    ...common ? [join24(common, "refs"), join24(common, "HEAD")] : []
   ];
   const watchers = [...new Set(watched)].filter((p) => existsSync14(p)).map((p) => watch2(p, { recursive: !p.endsWith("HEAD") && (p !== ledgerDir || p === store.dir) }, (_, file) => {
     const f = String(file ?? "");
-    if (/\.lock$|\.stale-/.test(basename7(f))) return;
+    if (/\.lock$|\.stale-/.test(basename8(f))) return;
     if (!(p === store.dir && f.startsWith("view"))) notify2();
   }));
-  return new Promise((resolve9, reject) => {
+  return new Promise((resolve10, reject) => {
     const listen = (port, tries) => {
       server.once("error", (e) => {
         if (e.code === "EADDRINUSE" && tries > 0) listen(port + 1, tries - 1);
@@ -13802,7 +13981,7 @@ function serve(store, o) {
         hosts = /* @__PURE__ */ new Set([`127.0.0.1:${actual}`, `localhost:${actual}`]);
         const url = `http://127.0.0.1:${actual}/${o.page ?? ""}`;
         if (o.open) openBrowser(url);
-        resolve9({ url, close: () => {
+        resolve10({ url, close: () => {
           watchers.forEach((w) => w.close());
           for (const c of clients) c.end();
           server.close();
@@ -13817,7 +13996,7 @@ function send(res, status2, body2) {
   res.end(JSON.stringify(body2));
 }
 function readJson(req) {
-  return new Promise((resolve9, reject) => {
+  return new Promise((resolve10, reject) => {
     let raw = "";
     req.on("data", (c) => {
       raw += c;
@@ -13826,7 +14005,7 @@ function readJson(req) {
     req.on("end", () => {
       try {
         const v = JSON.parse(raw || "{}");
-        resolve9(v && typeof v === "object" && !Array.isArray(v) ? v : {});
+        resolve10(v && typeof v === "object" && !Array.isArray(v) ? v : {});
       } catch {
         reject(new Error("Body must be JSON."));
       }
@@ -13908,12 +14087,12 @@ var registration25 = {
 var import_yaml6 = __toESM(require_dist(), 1);
 import { spawnSync as spawnSync7 } from "node:child_process";
 import { accessSync, constants, mkdirSync as mkdirSync7, rmSync as rmSync2, statSync as statSync10, writeFileSync as writeFileSync4 } from "node:fs";
-import { join as join24, resolve as resolve8 } from "node:path";
+import { join as join25, resolve as resolve9 } from "node:path";
 var ok = (id, detail2) => ({ id, level: "ok", detail: detail2, fix: null });
 var warn = (id, detail2, fix) => ({ id, level: "warn", detail: detail2, fix });
 var bad = (id, detail2, fix) => ({ id, level: "fail", detail: detail2, fix });
 function yamlFile(store, name) {
-  const text2 = store.ws.read(join24(store.dir, name));
+  const text2 = store.ws.read(join25(store.dir, name));
   try {
     const v = (0, import_yaml6.parse)(text2 ?? "");
     return v && typeof v === "object" ? v : {};
@@ -13939,7 +14118,7 @@ function planWorktrees(store) {
   return store.settings().plan_worktrees ? ok("plan-worktrees", "on") : warn("plan-worktrees", "hub.plan_worktrees is off: plans can't run side by side", "set hub.plan_worktrees: true in .crew/config.yaml");
 }
 function vendoredHub(store) {
-  return store.ws.isFile(join24(store.dir, "bin", "crew.mjs")) ? ok("vendored-hub", ".crew/bin/crew.mjs") : bad("vendored-hub", ".crew/bin/crew.mjs is missing", "run `crew.mjs init`");
+  return store.ws.isFile(join25(store.dir, "bin", "crew.mjs")) ? ok("vendored-hub", ".crew/bin/crew.mjs") : bad("vendored-hub", ".crew/bin/crew.mjs is missing", "run `crew.mjs init`");
 }
 function agents2(store) {
   const problems = agentProblems(store);
@@ -13951,7 +14130,7 @@ function agents2(store) {
   ));
 }
 function hookCommands2(store) {
-  const text2 = store.ws.read(join24(store.home, ".claude", "settings.json"));
+  const text2 = store.ws.read(join25(store.home, ".claude", "settings.json"));
   if (text2 === null) return null;
   try {
     const hooks2 = JSON.parse(text2).hooks ?? {};
@@ -13971,7 +14150,7 @@ function hooks(store) {
   return out.length ? out : [ok("hooks", "guard, usage and activity hooks are set")];
 }
 function generated2(store) {
-  const build = yamlBlock(store.ws.read(join24(store.dir, "config.yaml")) ?? "", "hub").build;
+  const build = yamlBlock(store.ws.read(join25(store.dir, "config.yaml")) ?? "", "hub").build;
   if (!build) return ok("generated", "no hub.build");
   const n2 = trackedFiles(store.home).generated.size;
   return n2 ? ok("generated", `${n2} tracked file(s) marked linguist-generated`) : warn(
@@ -14042,7 +14221,7 @@ function runHook(home2, hook, args, env) {
   let r = spawnSync7("git", ["hook", "run", "--ignore-missing", hook, ...args.length ? ["--", ...args] : []], opts);
   if (r.status === 129 || /not a git command|usage: git hook/.test(r.stderr ?? "")) {
     const dir = git(["-C", home2, "rev-parse", "--git-path", "hooks"])?.trim();
-    const file = dir ? resolve8(home2, dir, hook) : null;
+    const file = dir ? resolve9(home2, dir, hook) : null;
     if (!file || !isExecutable(file)) return null;
     r = spawnSync7(file, args, opts);
   }
@@ -14062,9 +14241,9 @@ function isExecutable(file) {
 function probeHubCommit(home2) {
   const common = commonDir(home2);
   if (!common) return null;
-  const dir = join24(common, "crew");
+  const dir = join25(common, "crew");
   mkdirSync7(dir, { recursive: true });
-  const index = join24(dir, `doctor-index-${process.pid}`), msg = join24(dir, `doctor-msg-${process.pid}`);
+  const index = join25(dir, `doctor-index-${process.pid}`), msg = join25(dir, `doctor-msg-${process.pid}`);
   const env = { ...process.env, GIT_INDEX_FILE: index };
   const g = (args, input) => spawnSync7("git", ["-C", home2, ...args], { env, input, encoding: "utf8" });
   try {

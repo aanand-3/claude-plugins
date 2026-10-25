@@ -6,14 +6,15 @@
 import { basename } from "node:path";
 
 /** One shell word: its raw offsets in the command and its dequoted value. */
-interface Word { start: number; end: number; value: string; raw: string }
-/** One simple command: its words (redirections left out) and the heredoc / here-string bodies fed to it. */
-interface Simple { words: Word[]; bodies: string[] }
+export interface Word { start: number; end: number; value: string; raw: string }
+/** One simple command: its words (redirections left out), the heredoc / here-string bodies fed to it and the target word
+ * of each output redirection (`>`, `>>`, `>|`, `&>`, `&>>`, `>&WORD`). */
+export interface Simple { words: Word[]; bodies: string[]; targets: Word[] }
 
 const HUB = /\bcrew\.mjs\b/;
-const ASSIGN = /^[A-Za-z_]\w*=/;
+export const ASSIGN = /^[A-Za-z_]\w*=/;
 /** Words that can come before the command itself. */
-const PREFIX = new Set(["{", "!", "if", "then", "else", "elif", "do", "while", "until", "time", "builtin", "command", "exec", "env", "nohup"]);
+export const PREFIX = new Set(["{", "!", "if", "then", "else", "elif", "do", "while", "until", "time", "builtin", "command", "exec", "env", "nohup"]);
 const SHELLS = new Set(["sh", "bash", "zsh", "dash", "ksh"]);
 const RUNTIMES = new Set(["node", "bun", "deno"]);
 /** Commands whose arguments are themselves run as code or as a command. */
@@ -99,6 +100,7 @@ export function parse(s: string): Simple[] {
   const redirect = (cmd: Simple, stop: string) => {
     if (s[i] === "&") i++;
     const op = s[i++];
+    const out = op === ">";
     let heredoc = false, herestring = false, strip = false;
     if (op === "<" && s[i] === "<") {
       i++;
@@ -119,13 +121,14 @@ export function parse(s: string): Simple[] {
     const target = word(stop);
     if (heredoc) pending.push({ delim: target.value, strip, cmd });
     else if (herestring) cmd.bodies.push(target.value);
+    else if (out) cmd.targets.push(target);
   };
 
   function list(stop: string): void {
-    let cur: Simple = { words: [], bodies: [] };
+    let cur: Simple = { words: [], bodies: [], targets: [] };
     all.push(cur);
     const end = () => {
-      cur = { words: [], bodies: [] };
+      cur = { words: [], bodies: [], targets: [] };
       all.push(cur);
     };
     while (i < n) {
@@ -161,7 +164,7 @@ export function parse(s: string): Simple[] {
   }
 
   list("");
-  return all.filter((c) => c.words.length || c.bodies.length);
+  return all.filter((c) => c.words.length || c.bodies.length || c.targets.length);
 }
 
 const base = (w: Word | undefined) => (w ? basename(w.value) : "");

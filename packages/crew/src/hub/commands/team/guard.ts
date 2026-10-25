@@ -13,6 +13,7 @@ import { STATE_RE } from "../../core/work/hubstate.js";
 import { resolvePolicy } from "../../core/team/policy.js";
 import type { Store } from "../../core/store.js";
 import { withIdentity } from "./hubcall.js";
+import { inlineScript, writeTargets, type Target } from "./targets.js";
 
 export interface HookInput { tool_name: string; tool_input: Record<string, unknown>; agent_type?: string; agent_id?: string; cwd?: string }
 type Decision = { deny: string } | { input: Record<string, unknown> } | null;
@@ -37,7 +38,6 @@ const within = (dir: string, p: string) => {
 };
 const CREW_CLI = /\bcrew\.mjs\b/;
 const EDITS: Record<string, string> = { Edit: "file_path", Write: "file_path", MultiEdit: "file_path", NotebookEdit: "notebook_path" };
-const WRITERS = /^(rm|mv|cp|ln|chmod|chown|truncate|tee|install|touch|mkdir)$/;
 
 /** The role an agent definition declares (`crew-role:` in its frontmatter), or null for agents that aren't crew agents. */
 export function agentRole(root: string, agentType: string): string | null {
@@ -60,51 +60,6 @@ function hubCommand(seg: string): string | null {
   if (i < 0) return null;
   for (i++; i < w.length && w[i].startsWith("-"); i++) if (!w[i].includes("=")) i++; // --as R, --run-id X
   return w[i] ?? null;
-}
-
-/** A redirection (`>`, `>>`, `>|`, `2>`, `&>`, `>&FILE`); group 1 is the `&` of `>&`, group 2 the target. */
-const REDIRECT = /\d*&?>{1,2}\|?(&?)\s*([^\s;&|<>]+)/g;
-/** Words that can come before the command itself (`{ cd x; }`, `if cd x; then`, `builtin cd x`). */
-const PREFIX = /^(\{|!|if|then|else|elif|do|while|until|builtin|command|time)$/;
-
-/** Paths a shell command writes to (best effort): redirection targets and the operands of common writing commands — for
- * cp/ln/install only the destination. A relative target after `cd DIR` in the chain is DIR/target. A leading variable is
- * expanded from the command's own assignments or the environment; one that can't be stays `$NAME…` (unresolved). */
-export function writeTargets(cmd: string): string[] {
-  const out: string[] = [];
-  const vars: Record<string, string> = {};
-  const expand = (t: string) => t.replace(/^["']|["']$/g, "")
-    .replace(/^\$(?:\{(\w+)\}|(\w+))/, (m, a, b) => vars[a ?? b] ?? process.env[a ?? b] ?? m);
-  const rooted = (t: string) => /^(\/|~|\$)/.test(t);
-  let dir = "";
-  const at = (raw: string) => {
-    const t = expand(raw);
-    return !dir || rooted(t) ? t : join(dir, t);
-  };
-  for (const seg of segments(cmd)) {
-    const set = /^(?:export\s+)?(\w+)=(\S*)$/.exec(seg);
-    if (set) { vars[set[1]] = expand(set[2]); continue; }
-    for (const m of seg.matchAll(REDIRECT)) if (!(m[1] && /^(\d+|-)$/.test(m[2]))) out.push(at(m[2]));
-    let [head, ...args] = words(seg.replace(REDIRECT, ""));
-    while (head !== undefined && PREFIX.test(head.replace(/^\(+/, ""))) [head, ...args] = args;
-    head = head?.replace(/^\(+/, "");
-    if (head === "cd" || head === "pushd") {
-      const to = expand(args.find((a) => !a.startsWith("-")) ?? "~");
-      dir = rooted(to) ? to : join(dir, to);
-      continue;
-    }
-    const operands = (head === "git" ? args.slice(1) : args).filter((a) => !a.startsWith("-"));
-    if (head && /^(cp|ln|install)$/.test(head)) {
-      const t = args.findIndex((a) => a === "-t" || a === "--target-directory");
-      // `ln -s TARGET` alone makes the link in the current directory, named after the target
-      const dest = t >= 0 ? args[t + 1] : head === "ln" && operands.length === 1 ? basename(operands[0]) : operands.at(-1);
-      if (dest) out.push(at(dest));
-    } else if ((head && WRITERS.test(head)) || (head === "sed" && args.some((a) => a.startsWith("-i")))
-      || (head === "git" && /^(checkout|restore|rm|mv)$/.test(args[0] ?? ""))) {
-      out.push(...operands.map(at));
-    }
-  }
-  return out.map((t) => t.replace(/^\.\//, ""));
 }
 
 export function decide(store: Store, h: HookInput): Decision {
@@ -154,11 +109,12 @@ export function decide(store: Store, h: HookInput): Decision {
     return { deny: `${rel(String(input.file_path))} is a secret file (secrets.files); agents never read it` };
   }
   const cmd = h.tool_name === "Bash" ? String(input.command ?? "") : "";
+  const written: Target[] = cmd ? writeTargets(cmd, h.cwd || top) : [];
   if (cmd) {
-    const targets = writeTargets(cmd);
+    const targets = written.map((t) => t.path);
     const target = targets.find((t) => hits(policy.paths.protected, t));
     if (target) return { deny: `the command writes to ${rel(target)}, which the crew policy protects (paths.protected)` };
-    const unknown = targets.find((t) => t.startsWith("$"));
+    const unknown = targets.find((t) => /[$`]/.test(t));
     if (unknown) return { deny: `the command writes to ${unknown}, which the guard can't resolve (an unknown variable); use a literal path` };
     const copy = targets.find((t) => forked(t));
     if (copy) return { deny: `the command writes to ${abs(copy)}, a copy of hub state; ${ONE_HOME} ${forked(copy)}` };
@@ -168,6 +124,9 @@ export function decide(store: Store, h: HookInput): Decision {
     if (CREW_CLI.test(cmd) && /--approved-by\b/.test(cmd)) return { deny: "only the human approves: agents never pass --approved-by" };
     if (segments(cmd).some((c) => hubCommand(c) === "agents" && !/--check\b/.test(c))) {
       return { deny: "`crew.mjs agents` rewrites the agent definitions, which only the human renders (paths.protected)" };
+    }
+    if (segments(cmd).some((c) => hubCommand(c) === "init")) {
+      return { deny: "`crew.mjs init` vendors the hub and its agent templates, which only the human installs (paths.protected)" };
     }
   }
   if (!role) return null;
@@ -181,6 +140,19 @@ export function decide(store: Store, h: HookInput): Decision {
   }
   if (path && policy.paths.write.length && !hits(policy.paths.write, path)) {
     return { deny: `the ${role} role may only write ${policy.paths.write.join(", ")} (paths.write)` };
+  }
+  // Bash writes too (BUG-033): /dev, temp dirs and git restores author nothing; inline scripts hide their writes (BUG-021)
+  if (cmd && policy.paths.write.length) {
+    const only = `the ${role} role may only write ${policy.paths.write.join(", ")} (paths.write)`;
+    const head = inlineScript(cmd);
+    if (head) {
+      return { deny: `${only}; an inline or stdin ${head} script hides what it writes: use a hub command, or the Write tool on a path in paths.write` };
+    }
+    // a temp file outside every checkout (a repository can itself live in a temp dir)
+    const temp = (a: string) => [real(tmpdir()), real("/tmp")].some((d) => within(d, a)) && !checkouts().some((d) => within(d, a));
+    const exempt = (t: Target) => t.restore || abs(t.path).startsWith("/dev/") || temp(abs(t.path));
+    const over = written.find((t) => !exempt(t) && !hits(policy.paths.write, t.path));
+    if (over) return { deny: `the command writes to ${rel(over.path)}; ${only}` };
   }
 
   // identity: injected from the verified agent, never claimed
