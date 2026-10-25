@@ -120,7 +120,7 @@ it("role queues", () => {
   repo.env.CREW_RUN = "qa-run";
   expect(tr(repo, "next", "--role", "qa").stdout).toContain("verify P-001: AC1");
   tr(repo, "checkpoint", "P-001", "--run", "true", "--ac", "all");
-  expect(tr(repo, "next", "--role", "qa").stdout).toContain("P-001: evidence complete → move P-001 done");
+  expect(tr(repo, "next", "--role", "qa").stdout).toContain("P-001: evidence complete → move P-001 accepted");
   expect(tr(repo, "next", "--role", "wizard").returncode).not.toBe(0);
   expect(tr(repo, "next", "--role", "release").stdout).toContain("nothing for the release role");
 });

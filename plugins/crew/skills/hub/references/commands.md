@@ -195,6 +195,16 @@ suites [--limit 20] [--json]                  recorded full-suite runs, newest f
 
 - `suites`: Recorded full-suite runs (`crew.mjs suites`), newest first: ts, ref, run, worktree, slot, wait_ms, run_ms, exit.
 
+## work/land
+
+```text
+land [P-###]                                  squash-merge accepted plans in merge order: update, rebuild, full suite, merge; a failure goes back to the developer (Release)
+```
+
+| Command | MCP tool |
+|---|---|
+| `land` | — |
+
 ## memory/context
 
 ```text

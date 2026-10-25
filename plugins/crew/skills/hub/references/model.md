@@ -61,7 +61,7 @@ Stop/PreCompact hooks call `checkpoint --auto`, which records nothing off a plan
 `resume` compares the last checkpoint with git now; `handoff` writes the same into the plan's `## Handoff` (also on
 `in-review`), so another machine resumes from git alone.
 
-**Evidence (plan → `done`):** every acceptance criterion's latest check passed and was recorded by a run other than the
+**Evidence (plan → `accepted`):** every acceptance criterion's latest check passed and was recorded by a run other than the
 implementers (every run that claimed the plan or moved it to in-progress — moving a plan to in-progress claims it), and
 an implementer can't make the move itself. A check covers criteria by their text (a fingerprint), so inserting or
 reordering criteria never moves a pass onto another one; adding an `evidence:` note doesn't change a criterion. With `--approved-by`, an
@@ -92,8 +92,8 @@ the Outcome's `Learnings:` line lists the entries captured, or `none`, before `i
 | `mode` | global | override; sets the default `human_gates` |
 | `human_gates`, `reserved` | global | `<kind>.<status>` transitions needing `--approved-by`; the org's are a floor, reserved is a union |
 | `preset` | global | `lifecycle`: a layer between org and project with the team's RACI as gates (see below) |
-| `role_gates` | global | `{plan.done: qa}` — the step needs the acting role; keys are `<kind>.<status>`, one edge `<kind>.<from>><to>` (wins over the status), or an action: `plan.assigned`, `plan.reassigned`, `plan.reviewed` |
-| `evidence.role` | global | only that role's checks count toward a plan's done |
+| `role_gates` | global | `{plan.accepted: qa}` — the step needs the acting role; keys are `<kind>.<status>`, one edge `<kind>.<from>><to>` (wins over the status), or an action: `plan.assigned`, `plan.reassigned`, `plan.reviewed`, `plan.landed` |
+| `evidence.role` | global | only that role's checks count toward a plan's acceptance |
 | `limits` | global (`max_turns` also per role) | `stale_claim_hours`, `max_bounces`, `max_attempts` (over → a question to the director), `max_turns` (agents) |
 | `notify` | global | `{command, on: [escalation, budget, stale, goal-done, paused, stopped]}` — the command gets each event as JSON on stdin |
 | `fast_lane` | global | `{types: [CHORE, BUG], max_tasks: 3}` — the PM may make such plans ready |
@@ -109,7 +109,7 @@ A run's role and team come from `CREW_ROLE` and `CREW_TEAM`; an unknown team is 
 | Mode | Human gates by default |
 |---|---|
 | `ai-native` | none (only reserved decisions) |
-| `ai-assisted` (default) | plan `ready`, plan `done`, goal `done` |
+| `ai-assisted` (default) | plan `ready`, plan `accepted`, goal `done` |
 | `human-led` | those, plus item `triaged` |
 
 The hub enforces gates, reserved transitions and budgets; models and tools reach the agents through `crew.mjs agents`
@@ -124,17 +124,20 @@ remains: a script file or build tool a role runs (`node x.js`, `bash x.sh`, `npm
 No subagent runs `crew.mjs init`. An invalid policy blocks every move until `policy check` passes.
 
 `preset: lifecycle`: mode `ai-native`; the executive approves `goal.active`; role gates `item.triaged`, `plan.assigned`,
-`plan.done`, `plan.dropped`, `goal.done` → pm; `plan.ready`, `plan.reviewed` → architect; `plan.in-progress`,
-`plan.in-review` → developer; `plan.reassigned` → director; `evidence.role: qa`; `limits: {stale_claim_hours: 24, max_bounces:
+`plan.accepted`, `plan.done`, `plan.dropped`, `goal.done` → pm; `plan.ready`, `plan.reviewed` → architect; `plan.in-progress`,
+`plan.in-review` → developer; `plan.landed` → release; `plan.reassigned` → director; `evidence.role: qa`; `limits: {stale_claim_hours: 24, max_bounces:
 2, max_attempts: 5}`; the director, pm, qa and release roles write only `.crew/drafts/`. Under a policy that gates
-`plan.assigned`, `start` needs an assignment; under one that gates `plan.reviewed`, `done` needs an approving review that
-covers the last code change; under one that gates `goal.done`, the PM verifies a goal's criteria.
+`plan.assigned`, `start` needs an assignment; under one that gates `plan.reviewed`, `accepted` needs an approving review that
+covers the last code change; under one that gates `goal.done`, the PM verifies a goal's criteria. `plan.landed` is the
+gate of `land` and of every `accepted → in-progress` move (a failed land); it keeps the developer's claim and counts
+toward `max_bounces`. A project whose own policy gates `plan.done` for a human should gate `plan.accepted` instead:
+`done` after a landing is mechanical.
 
 **Dispatch.** `dispatch [--json]` decides who works on what next, from the gates and the state above: one
 `{role, ref, task, resume}` entry per document, highest priority first — questions to a role; Director exceptions (a
 stale claim, a blocked plan, the focus goal done while another is active); urgent bugs (S1 or P0); the first plan in
-`merge-order`; plans in review (a failing check → the implementer, no approving review → the Architect, missing evidence
-→ QA, else the PM completes); a focus goal with nothing open → the PM closes it; plans in progress; ready plans `staff`
+`merge-order` → Release lands it; landed accepted plans → the PM completes them; plans in review (a failing check → the
+implementer, no approving review → the Architect, missing evidence → QA, else the PM accepts); a focus goal with nothing open → the PM closes it; plans in progress; ready plans `staff`
 can start (assigned → that role, else the PM assigns); triage; specs and new plans while fewer plans are ready than
 `budgets.max_agents`; and, when nothing can move but work is open, one stall entry for the Director. Documents an
 escalation holds get no entry; a paused team gets none. Entries are cut to `max_agents` (`more` counts the rest);
@@ -186,19 +189,23 @@ Outcome and Success criteria written, with the criteria as a checklist. A pivot 
 | Plan status | Item status |
 |---|---|
 | draft, ready | `planned` |
-| in-progress, blocked, in-review | `in-progress` |
+| in-progress, blocked, in-review, accepted | `in-progress` |
 | done | `done` |
 
 Items are therefore never edited on plan branches. If a plan is dropped, clear the item's `plan:` to return it to the backlog.
 
 **Plan**
 ```
-draft ──► ready ──► in-progress ──► in-review ──► done
-  │          │            │   ▲
-  │          │            ▼   │
-  │          │          blocked
+draft ──► ready ──► in-progress ──► in-review ──► accepted ──► done
+  │          │         ▲  │   ▲          │            │
+  │          │         │  ▼   │          │            │
+  │          │         │ blocked         │            │
+  │          │         └─────────────────┴────────────┘   (review changes; a failed land)
   └──────────┴────────────────────► dropped   (from any non-done state; record why)
 ```
+`accepted`: QA's evidence and the review are in, and the PM accepted it; Release lands it (`land`). `done`: it is on the
+base branch, and the PM moved it there. An accepted plan still holds its claim and its touches, its goal stays open,
+its items stay `in-progress`, and a plan that depends on it doesn't start until it is `done`.
 
 **Goal:** `proposed → active → done | dropped`. Run `move G-### active` when its first plan starts; it closes only after its acceptance criteria are confirmed.
 
@@ -210,10 +217,15 @@ draft ──► ready ──► in-progress ──► in-review ──► done
 - Every linked item is triaged. A plan that fixes a BUG names its regression test.
 - Dependencies are declared (`depends_on:`); risks and open questions are listed.
 
-## Definition of Done (plan → `done`)
+## Definition of Done
+**Accepted** (plan → `accepted`, enforced):
 - Every acceptance criterion is verified with the named checks, and all tasks are ticked.
-- The targeted checks are green (the full suite runs once, before the merge: CI, or `full_suite`). Docs, `.env.example` and ADRs are updated where needed; rollout steps are documented.
+- The targeted checks are green. Docs, `.env.example` and ADRs are updated where needed; rollout steps are documented.
 - Outcome written: what shipped, deviations, follow-ups (captured as items on main).
+- Under a policy that gates `plan.reviewed`, an approving review covers the current code.
+
+**Done** (plan → `done`, enforced): the plan is landed — no plan worktree is left, and its branch, if it still exists, is
+merged or squash-merged into the base. The full suite ran once, before the merge (CI, or `full_suite` through `land`).
 
 ## Size, dependencies and WIP
 - Size a plan by its tasks: more than `max_tasks`, or work in unrelated areas, means split it. Parallel work comes from splitting
@@ -228,7 +240,8 @@ draft ──► ready ──► in-progress ──► in-review ──► done
 - Branch per plan: `plan/P-012-<slug>`, created from an up-to-date `main`.
 - Commits: Conventional Commits with the plan ID as the scope: `feat(P-012): add login endpoint`.
 - PR title: `P-012: <plan title>`. The PR body links the plan, its items and the goal. Squash-merge, then delete the branch.
-- **The final commit on the branch sets the plan to `done`** (tasks checked, outcome written), so merging the PR is what lands "done" on `main`.
+- **The final commit on the branch sets the plan to `accepted`** (tasks checked, outcome written); after the merge (`land`,
+  or the PR), the PM moves it `done` on `main`.
 
 ### Where hub changes are committed
 - **On `main`** (`chore(hub): …`, only `.crew/` files): the idea and focus, goals, items, plan drafts and creation, generated reports.

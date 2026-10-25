@@ -10,6 +10,7 @@ import { FORWARD, openQuestions } from "../team/questions.js";
 import { goalProblems } from "./goals.js";
 import { openPlanWorktree } from "./planning.js";
 import { reviewProblems } from "./review.js";
+import { landedProblems } from "./release.js";
 import { bounces, escalateLimit, refuseWhilePaused } from "../team/liveness.js";
 import { notify } from "../team/autonomy.js";
 import { CLOSED, FLOWS, ITEM_CLOSED, type Kind } from "../../core/work/model.js";
@@ -27,6 +28,7 @@ export function move(store: Store, docId: string, status: string, note?: string,
   const doc = store.find(docId);
   const flow = FLOWS[kind!];
   const old = doc.get("status") ?? "";
+  if (kind === "plan" && old === "accepted" && status === "in-progress") via ??= "plan.landed"; // a failed land: Release's gate
   if (!Object.hasOwn(flow, status)) fail(`Unknown status '${status}'. Valid: ${Object.keys(flow).join(", ")}`);
   if (!(flow[old] ?? []).includes(status) && !force) {
     const allowed = [...(flow[old] ?? [])].sort().join(", ") || "none";
@@ -46,8 +48,9 @@ export function move(store: Store, docId: string, status: string, note?: string,
   stamp(kind!, doc, status);
   doc.set("status", status);
   if (kind === "plan" && status === "in-review" && doc.source === "worktree") writeHandoff(store, doc);
-  if (kind === "plan" && old === "in-review" && status === "in-progress") { // counted with this move: escalated once over the limit
-    escalateLimit(store, doc.id, bounces(store.ledger.events(), doc.id) + 1, store.policy.policy.limits.max_bounces, "came back from review");
+  if (kind === "plan" && (old === "in-review" || old === "accepted") && status === "in-progress") { // counted with this move
+    escalateLimit(store, doc.id, bounces(store.ledger.events(), doc.id) + 1, store.policy.policy.limits.max_bounces,
+      old === "accepted" ? "came back from review or a failed land" : "came back from review");
   }
   const approval = approvedBy ? ` (approved by ${approvedBy})` : "";
   doc.appendLog(`status ${old} → ${status}` + (note ? ` — ${note}` : "") + approval, LOG_SECTION[kind!] ?? "Progress log");
@@ -117,10 +120,13 @@ function guard(store: Store, kind: Kind, doc: Doc, status: string, approvedBy?: 
   } else if (kind === "plan" && status === "in-review") {
     problems = learningsProblems(doc, new Set(store.knowledge().map((e) => e.id)));
     label = "can't go to review";
-  } else if (kind === "plan" && status === "done") {
+  } else if (kind === "plan" && status === "accepted") {
     problems = [...doc.tasks().filter(([done]) => !done).map(([, t]) => `unchecked task: ${t}`),
       ...evidenceProblems(store, doc, approvedBy), ...reviewProblems(store, doc)];
-    label = "can't be done";
+    label = "can't be accepted";
+  } else if (kind === "plan" && status === "done") {
+    problems = landedProblems(store, doc);
+    label = "isn't landed";
   } else if (kind === "goal" && status === "done") {
     problems = goalProblems(store, doc);
     label = "isn't reached";

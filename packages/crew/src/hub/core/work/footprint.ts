@@ -6,7 +6,7 @@ import * as git from "../git.js";
 import { globRe, globsOverlap } from "../memory/knowledge.js";
 import type { Docs, Store } from "../store.js";
 
-export const LIVE = new Set(["ready", "in-progress", "blocked", "in-review"]);
+export const LIVE = new Set(["ready", "in-progress", "blocked", "in-review", "accepted"]);
 /** A wildcard touch matching more tracked files than this is broad: list the exact files. */
 const BROAD = 10;
 

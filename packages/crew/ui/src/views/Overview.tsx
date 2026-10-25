@@ -18,7 +18,7 @@ export function Overview() {
   const focusPlans = focus ? plans.filter((p) => p.goal === focus.id) : [];
   const bugs = docsOf(ix, "item").filter((d) => d.type === "BUG" && !CLOSED.includes(d.status));
   const serious = bugs.filter((d) => d.severity === "S1" || d.severity === "S2");
-  const active = plans.filter((d) => ["in-progress", "in-review"].includes(d.status));
+  const active = plans.filter((d) => ["in-progress", "in-review", "accepted"].includes(d.status));
   const blocked = plans.filter((d) => d.status === "blocked");
   const escalations = g.questions.filter((x) => x.escalation);
   const learned = docsOf(ix, "knowledge").filter((d) => d.status === "active")

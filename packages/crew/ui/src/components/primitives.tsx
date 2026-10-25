@@ -8,7 +8,7 @@ import { docHref } from "../router";
 export type Tone = "neutral" | "accent" | "primary" | "success" | "warning" | "destructive" | "muted";
 
 const STATUS_TONE: Record<string, Tone> = {
-  draft: "neutral", ready: "accent", "in-progress": "primary", blocked: "destructive", "in-review": "warning",
+  draft: "neutral", ready: "accent", "in-progress": "primary", blocked: "destructive", "in-review": "warning", accepted: "accent",
   done: "success", dropped: "muted", new: "neutral", triaged: "accent", planned: "accent", wontfix: "muted",
   duplicate: "muted", proposed: "neutral", active: "primary", exploring: "neutral", researching: "accent",
   decided: "success", killed: "muted", superseded: "muted",

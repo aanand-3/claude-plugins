@@ -194,51 +194,51 @@ describe("review", () => {
     expect(as(repo, "architect", "review", "P-001", "--approve").returncode).toBe(0);
     w.write(".crew/config.yaml", "hub:\n  plan_worktrees: true\n  wip_limit: 2\n");
     repo.env.CREW_RUN = "pm";
-    const r = as(repo, "pm", "move", "P-001", "done");
+    const r = as(repo, "pm", "move", "P-001", "accepted");
     expect(r.returncode).not.toBe(0);
     expect(r.stderr).toContain("the code changed since the approving review");
   });
 
-  it("BUG-014: done from the main checkout sees a change made after the approval, uncommitted or checkpointed", () => {
+  it("BUG-014: accepted from the main checkout sees a change made after the approval, uncommitted or checkpointed", () => {
     const w = inReview();
     repo.env.CREW_RUN = "arch";
     expect(as(repo, "architect", "review", "P-001", "--approve").returncode).toBe(0);
     w.write("src/auth/signup.py", "def signup(): return 1\n"); // uncommitted, in the plan's worktree
     repo.env.CREW_RUN = "pm";
-    let r = as(repo, "pm", "move", "P-001", "done");
+    let r = as(repo, "pm", "move", "P-001", "accepted");
     expect(r.returncode).not.toBe(0);
     expect(r.stderr).toContain("the code changed since the approving review");
     repo.env.CREW_RUN = "dev";
     expect(as(repo, "developer", "checkpoint", "P-001").returncode).toBe(0); // now a commit after the approval
     expect(status(w)).toEqual([]);
     repo.env.CREW_RUN = "pm";
-    r = as(repo, "pm", "move", "P-001", "done");
+    r = as(repo, "pm", "move", "P-001", "accepted");
     expect(r.returncode).not.toBe(0);
     expect(r.stderr).toContain("the code changed since the approving review");
     repo.env.CREW_RUN = "arch";
     expect(as(repo, "architect", "review", "P-001", "--approve").returncode).toBe(0);
     repo.env.CREW_RUN = "pm";
-    r = as(repo, "pm", "move", "P-001", "done");
+    r = as(repo, "pm", "move", "P-001", "accepted");
     expect(r.returncode, r.stderr).toBe(0);
   });
 
-  it("done passes with no code change since the approval, from the main checkout", () => {
+  it("accepted passes with no code change since the approval, from the main checkout", () => {
     const w = inReview();
     repo.env.CREW_RUN = "arch";
     expect(as(repo, "architect", "review", "P-001", "--approve").returncode).toBe(0);
     w.write("dist/app.mjs", "// rebuilt\n");
     repo.env.CREW_RUN = "pm";
-    const r = as(repo, "pm", "move", "P-001", "done");
+    const r = as(repo, "pm", "move", "P-001", "accepted");
     expect(r.returncode, r.stderr).toBe(0);
   });
 
-  it("done passes with no code change since the approval, from inside the plan's worktree (CHORE-014 item 2)", () => {
+  it("accepted passes with no code change since the approval, from inside the plan's worktree (CHORE-014 item 2)", () => {
     const w = inReview();
     repo.env.CREW_RUN = "arch";
     expect(as(repo, "architect", "review", "P-001", "--approve").returncode).toBe(0);
     w.write("dist/app.mjs", "// rebuilt\n");
     repo.env.CREW_RUN = "pm";
-    const r = as(w, "pm", "move", "P-001", "done");
+    const r = as(w, "pm", "move", "P-001", "accepted");
     expect(r.returncode, r.stderr).toBe(0);
   });
 });

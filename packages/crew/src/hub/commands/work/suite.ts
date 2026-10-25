@@ -128,18 +128,26 @@ function releaseSlot(file: string, token: string): void {
   } catch { /* already gone */ }
 }
 
-/** Run `hub.full_suite` in `cwd` under a slot; record the run. The holder is this process, alive for the whole run. */
-export function runSuite(store: Store, { cwd, ref }: { cwd: string; ref?: string }): { exit: number; waitMs: number; runMs: number } {
+/** Run `hub.full_suite` in `cwd` under a slot; record the run. The holder is this process, alive for the whole run.
+ * `capture` (land): the output is passed through and also returned. */
+export function runSuite(store: Store, { cwd, ref, capture = false }: { cwd: string; ref?: string; capture?: boolean }):
+  { exit: number; waitMs: number; runMs: number; output?: string } {
   const { command, slots } = suiteSettings(store);
   const dir = home(store), run = store.ledger.who.run, t0 = Date.now();
   const me: Holder = { token: `${process.pid}-${randomBytes(6).toString("hex")}`, pid: process.pid, host: hostname(), run,
     ref: ref ?? null, worktree: cwd, started: new Date().toISOString() };
   const slot = takeSlot(join(dir, "suite"), slots, me);
   const t1 = Date.now();
-  let exit = 1;
+  let exit = 1, output: string | undefined;
   try {
-    const r = spawnSync(command, { shell: true, cwd, stdio: "inherit" });
+    const r = capture ? spawnSync(command, { shell: true, cwd, stdio: ["inherit", "pipe", "pipe"], encoding: "utf8", maxBuffer: 64 << 20 })
+      : spawnSync(command, { shell: true, cwd, stdio: "inherit" });
     exit = r.status ?? 1;
+    if (capture) {
+      process.stdout.write(r.stdout ?? "");
+      process.stderr.write(r.stderr ?? "");
+      output = `${r.stdout ?? ""}${r.stderr ?? ""}`;
+    }
   } finally {
     releaseSlot(join(dir, "suite", `slot-${slot}.lock`), me.token);
   }
@@ -149,7 +157,7 @@ export function runSuite(store: Store, { cwd, ref }: { cwd: string; ref?: string
   const file = join(dir, "suites.jsonl");
   const torn = existsSync(file) && statSync(file).size > 0 && !readFileSync(file, "utf8").endsWith("\n");
   appendFileSync(file, `${torn ? "\n" : ""}${JSON.stringify(rec)}\n`);
-  return { exit, waitMs: rec.wait_ms, runMs: rec.run_ms };
+  return { exit, waitMs: rec.wait_ms, runMs: rec.run_ms, ...(capture ? { output } : {}) };
 }
 
 const secs = (ms: number) => (ms / 1000).toFixed(1);

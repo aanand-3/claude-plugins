@@ -114,7 +114,7 @@ it("plan worktrees: start, checkpoint and merge order", () => {
   // the checkpoint above committed the marker; the hand-over found nothing left to commit
   expect(repo.git("log", "-1", "--format=%s", "plan/P-001-signup").stdout.trim()).toBe("chore(P-001): checkpoint T1");
   expect(wt.git("status", "--porcelain").stdout).toBe("");
-  expect(out).toContain("merge plan/P-001-signup into main");
+  expect(out).toContain("1. P-001: Signup — `land P-001`");
 });
 
 it("plan worktrees: the developer agent has no isolation", () => {

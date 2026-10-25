@@ -66,12 +66,12 @@ it("the plan pipeline: assign, start, continue, review, test, fix, complete, mer
   expect(dispatch().entries).toEqual([{ role: "developer", ref: "P-001", task: expect.stringMatching(/^continue P-001/), resume: "dev" }]);
 });
 
-it("in review: architect review, then a failing check goes back to the implementer, then QA, then the PM completes (AC2)", () => {
+it("in review: architect review, then a failing check goes back to the implementer, then QA, then the PM accepts (AC2)", () => {
   inReview(repo); // QA's checks passed, no review yet
   expect(brief(dispatch())).toEqual(["architect P-001 review"]);
   repo.env.CREW_RUN = "arch";
   ok(as(repo, "architect", "review", "P-001", "--approve"));
-  expect(brief(dispatch())).toEqual(["pm P-001 complete"]);
+  expect(brief(dispatch())).toEqual(["pm P-001 accept"]);
   repo.env.CREW_RUN = "qa";
   expect(as(repo, "qa", "checkpoint", "P-001", "--run", "false", "--ac", "all").returncode).toBe(1); // the check fails
   expect(dispatch().entries).toEqual([{ role: "developer", ref: "P-001", task: expect.stringMatching(/^fix P-001/), resume: "dev" }]);
@@ -89,15 +89,15 @@ it("approved with evidence missing → QA, resumed from its last run (AC2)", () 
   expect(d.entries).toEqual([{ role: "qa", ref: "P-001", task: expect.stringMatching(/^test P-001/), resume: "qa-2" }]);
 });
 
-it("a done, unmerged plan goes to release (AC2)", () => {
+it("an accepted, unmerged plan goes to release (AC2)", () => {
   inReview(repo);
   repo.env.CREW_RUN = "arch";
   ok(as(repo, "architect", "review", "P-001", "--approve"));
   repo.env.CREW_RUN = "pm";
-  ok(as(repo, "pm", "move", "P-001", "done"));
-  repo.commit("chore(P-001): done");
+  ok(as(repo, "pm", "move", "P-001", "accepted"));
+  repo.commit("chore(P-001): accepted");
   repo.git("switch", "-q", "main");
-  expect(dispatch().entries).toEqual([{ role: "release", ref: "P-001", task: expect.stringMatching(/^merge P-001/), resume: null }]);
+  expect(dispatch().entries).toEqual([{ role: "release", ref: "P-001", task: expect.stringMatching(/^land P-001/), resume: null }]);
 });
 
 it("exceptions go to the Director: stale claims, blocked plans, the next focus, a stall (AC3)", () => {

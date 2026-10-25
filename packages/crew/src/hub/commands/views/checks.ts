@@ -90,7 +90,7 @@ function plans(s: Snapshot, f: Findings): void {
     if (unknownItems.length) f.errors.push(`${pid}: links unknown items ${unknownItems.join(", ")}`);
     if (p.get("goal") && !s.goals.has(up(p.get("goal")))) f.errors.push(`${pid}: references missing goal ${p.get("goal")}`);
     if (st === "ready") f.errors.push(...readinessProblems(s.store, p).map((problem) => `${pid}: ready but ${problem}`));
-    if (st === "done") donePlan(pid, p, f);
+    if (st === "done" || st === "accepted") donePlan(pid, p, f, st);
     if (ACTIVE.has(st ?? "")) activePlan(pid, p, s, f, branches, here);
     const outside = drift(s.allPlans.get(pid) ?? p, s.store.baseBranch(), s.store.planHome(pid));
     if (outside?.length) f.hints.push(`${pid}: changes outside its touches: ${outside.slice(0, 8).join(", ")} — widen touches (and log why) or move the work`);
@@ -150,9 +150,9 @@ function touches(s: Snapshot, f: Findings): void {
   }
 }
 
-function donePlan(pid: string, p: Doc, f: Findings): void {
-  if (p.tasks().some(([d]) => !d)) f.errors.push(`${pid}: done but has unchecked tasks`);
-  if (!stripComments(p.section("Outcome")).trim()) f.errors.push(`${pid}: done but Outcome section is empty`);
+function donePlan(pid: string, p: Doc, f: Findings, st: string): void {
+  if (p.tasks().some(([d]) => !d)) f.errors.push(`${pid}: ${st} but has unchecked tasks`);
+  if (!stripComments(p.section("Outcome")).trim()) f.errors.push(`${pid}: ${st} but Outcome section is empty`);
 }
 
 function activePlan(pid: string, p: Doc, s: Snapshot, f: Findings, branches: Set<string>, here: string | null): void {
@@ -199,7 +199,7 @@ function goals(s: Snapshot, f: Findings): void {
     if (eps.length && eps.every((p) => CLOSED.has(p.get("status") ?? "")) && !openItems.length && st === "active") {
       f.hints.push(`${eid}: all plans and items closed — verify acceptance criteria, then \`move ${eid} done\``);
     }
-    if (st === "proposed" && eps.some((p) => ["in-progress", "in-review", "blocked", "done"].includes(p.get("status") ?? ""))) {
+    if (st === "proposed" && eps.some((p) => ["in-progress", "in-review", "blocked", "accepted", "done"].includes(p.get("status") ?? ""))) {
       f.hints.push(`${eid}: has started plans but is still 'proposed' — \`move ${eid} active\` (on main)`);
     }
     if (!CLOSED.has(st ?? "") && !eps.length && !eitems.length) f.hints.push(`${eid}: no plans and no items — break the goal down`);

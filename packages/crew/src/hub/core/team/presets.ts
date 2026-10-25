@@ -16,7 +16,9 @@ export const PRESETS: Record<string, { global: Raw; roles: Record<string, Raw> }
         "plan.assigned": "pm",           // the PM opens a plan for a developer; `start` then needs that assignment
         "plan.in-progress": "developer", // only the assigned developer implements (and fixes what comes back)
         "plan.in-review": "developer",   // … and hands over to test
-        "plan.done": "pm",               // the PM completes, against QA's evidence
+        "plan.accepted": "pm",           // the PM accepts, against QA's evidence and the review
+        "plan.done": "pm",               // … and completes once Release has landed it
+        "plan.landed": "release",        // Release lands it; a failed land sends it back (accepted → in-progress)
         "plan.dropped": "pm",
         "goal.done": "pm",               // the PM verifies a goal's criteria and closes it
         "plan.reassigned": "director",   // the Director moves stuck work to someone else

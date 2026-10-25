@@ -1,5 +1,6 @@
-/** `merge-order`: what Release merges next — done plans whose branches are still unmerged, dependencies first. A plan waits
- * while a plan it depends on isn't merged yet; merged (or squash-merged) branches are listed for deletion. */
+/** `merge-order`: what Release lands next — accepted plans whose branches are still unmerged, first accepted first and
+ * dependencies first (plus plans completed before `accepted` existed, merged by hand). A plan waits while a plan it depends
+ * on isn't landed yet; merged (or squash-merged) branches are listed for deletion. */
 import { chmodSync, copyFileSync, existsSync, readFileSync, statSync } from "node:fs";
 import { isAbsolute, join, normalize } from "node:path";
 import type { Doc } from "../../core/work/doc.js";
@@ -7,51 +8,62 @@ import * as git from "../../core/git.js";
 import type { Store } from "../../core/store.js";
 import { byKey, fail } from "../../core/text.js";
 
-export interface MergeOrder { base: string; merge: { id: string; title: string; branch: string; worktree?: string }[]; waiting: { id: string; why: string }[];
-  merged: { id: string; branch: string }[] }
+export interface MergeOrder { base: string;
+  merge: { id: string; title: string; branch: string; worktree?: string; legacy?: boolean }[]; waiting: { id: string; why: string }[];
+  merged: { id: string; branch: string; legacy?: boolean }[] }
+
+/** A plan branch merged into `base`, or squash-merged (this repo's way: the branch never becomes an ancestor). */
+const branchMerged = (branch: string, base: string, pid: string) =>
+  git.git(["merge-base", "--is-ancestor", branch, base]) !== null || git.squashMerge(branch, base, pid) !== null;
+
+/** Why a plan isn't landed on the base yet (`plan.done`'s gate): its plan worktree is still open, or its branch is neither
+ * merged nor squash-merged into the base. A plan with neither (no branch, or both removed by `land`) is landed. */
+export function landedProblems(store: Store, plan: Doc): string[] {
+  const base = store.baseBranch(), b = plan.get("branch") ?? "", how = `Release lands it with \`land ${plan.id}\``;
+  const wt = store.settings().plan_worktrees ? store.planWorktrees().get(plan.id) : undefined;
+  if (wt) return [`its worktree ${store.rel(wt) || wt} is still open: ${how}`];
+  if (b && git.planBranches().includes(b) && !branchMerged(b, base, plan.id)) return [`${b} is not merged into ${base}: ${how}`];
+  return [];
+}
 
 export function mergeOrder(store: Store): MergeOrder {
   const base = store.baseBranch(), plans = store.plans(true), events = store.ledger.events(), moved = store.ledger.lastStatus(events);
-  const doneAt = new Map(events.filter((e) => e.type === "move" && e.to === "done").map((e) => [e.ref, e.ts]));
+  const at = new Map(events.filter((e) => e.type === "move" && (e.to === "accepted" || e.to === "done")).map((e) => [`${e.ref} ${e.to}`, e.ts]));
   const branches = new Set(git.planBranches());
   const status = (p: Doc) => moved.get(p.id) ?? p.get("status") ?? "";
-  // with plan_worktrees, a plan's worktree holds its work uncommitted until Release commits it: its branch then only
-  // looks merged. Other worktrees on a plan branch (a developer's own checkout) hold no plan work.
-  const worktrees = new Map([...store.settings().plan_worktrees ? store.planWorktrees() : []]
-    .filter(([, wt]) => git.dirty(wt, ".").length));
-  const merged = new Map<string, boolean>(); // merged in, or squash-merged (this repo's way: the branch never becomes an ancestor)
-  const isMerged = (p: Doc) => {
-    const b = p.get("branch")!;
-    if (!merged.has(p.id)) merged.set(p.id, !worktrees.has(p.id)
-      && (git.git(["merge-base", "--is-ancestor", b, base]) !== null || git.squashMerge(b, base, p.id) !== null));
-    return merged.get(p.id)!;
+  const landed = new Map<string, boolean>();
+  const isLanded = (p: Doc) => {
+    if (!landed.has(p.id)) landed.set(p.id, !landedProblems(store, p).length);
+    return landed.get(p.id)!;
   };
   const out: MergeOrder = { base, merge: [], waiting: [], merged: [] };
-  const done = [...plans.values()].filter((p) => status(p) === "done" && branches.has(p.get("branch") ?? ""))
-    .sort(byKey((p) => [doneAt.get(p.id) ?? p.get("completed") ?? "", p.id])); // first completed, first merged
-  const pending = new Set<string>(); // done but not merged yet
-  for (const p of done) {
-    if (isMerged(p)) out.merged.push({ id: p.id, branch: p.get("branch")! });
+  const queue = [...plans.values()].filter((p) => ["accepted", "done"].includes(status(p)) && branches.has(p.get("branch") ?? ""))
+    .sort(byKey((p) => [at.get(`${p.id} ${status(p)}`) ?? p.get("completed") ?? "", p.id])); // first accepted, first landed
+  const pending = new Set<string>(); // accepted (or done) but not landed yet
+  for (const p of queue) {
+    if (isLanded(p)) out.merged.push({ id: p.id, branch: p.get("branch")!, ...(status(p) === "done" ? { legacy: true } : {}) });
     else pending.add(p.id);
   }
-  const unmergedDep = (p: Doc) => p.dependsOn().filter((d) => {
-    const dep = plans.get(d), b = dep?.get("branch") ?? "";
-    return dep && status(dep) !== "dropped" && (pending.has(d) || (branches.has(b) && !isMerged(dep)) || status(dep) !== "done");
+  const unlandedDep = (p: Doc) => p.dependsOn().filter((d) => {
+    const dep = plans.get(d), s = dep ? status(dep) : "";
+    return dep && s !== "dropped" && !((s === "done" || s === "accepted") && isLanded(dep));
   });
+  const worktrees = store.settings().plan_worktrees ? store.planWorktrees() : new Map<string, string>();
   const placed = new Set<string>();
-  for (let progress = true; progress;) { // dependencies first: place a plan once everything it depends on is placed or merged
+  for (let progress = true; progress;) { // dependencies first: place a plan once everything it depends on is placed or landed
     progress = false;
-    for (const p of done.filter((x) => pending.has(x.id) && !placed.has(x.id))) {
-      if (unmergedDep(p).every((d) => placed.has(d))) {
+    for (const p of queue.filter((x) => pending.has(x.id) && !placed.has(x.id))) {
+      if (unlandedDep(p).every((d) => placed.has(d))) {
         const wt = worktrees.get(p.id);
-        out.merge.push({ id: p.id, title: p.get("title") ?? "", branch: p.get("branch")!, ...(wt ? { worktree: store.rel(wt) } : {}) });
+        out.merge.push({ id: p.id, title: p.get("title") ?? "", branch: p.get("branch")!, ...(wt ? { worktree: store.rel(wt) } : {}),
+          ...(status(p) === "done" ? { legacy: true } : {}) });
         placed.add(p.id);
         progress = true;
       }
     }
   }
-  for (const p of done.filter((x) => pending.has(x.id) && !placed.has(x.id))) {
-    out.waiting.push({ id: p.id, why: `depends on ${unmergedDep(p).filter((d) => !placed.has(d)).join(", ")}, not merged yet` });
+  for (const p of queue.filter((x) => pending.has(x.id) && !placed.has(x.id))) {
+    out.waiting.push({ id: p.id, why: `depends on ${unlandedDep(p).filter((d) => !placed.has(d)).join(", ")}, not landed yet` });
   }
   return out;
 }
@@ -61,11 +73,12 @@ export function mergeOrderCmd(store: Store, json = false): void {
   const m = mergeOrder(store);
   if (json) return store.say(JSON.stringify(m, null, 2));
   if (!m.merge.length && !m.waiting.length) store.say(`Nothing to merge into ${m.base}.`);
-  m.merge.forEach((p, i) => store.say(`${String(i + 1).padStart(2)}. ${p.id}: ${p.title} — `
-    + (p.worktree ? `commit everything in ${p.worktree} once (\`<type>(${p.id}): ${p.title}\`), squash-merge ${p.branch} into ${m.base}, `
-      + `then \`git worktree remove ${p.worktree}\` and delete the branch` : `merge ${p.branch} into ${m.base}`)));
+  m.merge.forEach((p, i) => store.say(`${String(i + 1).padStart(2)}. ${p.id}: ${p.title} — ` + (!p.legacy ? `\`land ${p.id}\``
+    : (p.worktree ? `commit everything in ${p.worktree} once (\`<type>(${p.id}): ${p.title}\`), squash-merge ${p.branch} into ${m.base}, `
+      + `then \`git worktree remove ${p.worktree}\` and delete the branch` : `merge ${p.branch} into ${m.base}`)
+      + " (completed before `accepted`: merge by hand)")));
   for (const w of m.waiting) store.say(`WAIT ${w.id}: ${w.why}`);
-  for (const p of m.merged) store.say(`merged: ${p.id} (${p.branch}) — delete the branch`);
+  for (const p of m.merged) store.say(`merged: ${p.id} (${p.branch}) — ${p.legacy ? "" : "the PM moves it done; "}delete the branch`);
 }
 
 /** `refresh-bin [--check]` (FEAT-027): copy the policy's `release.refresh_bin.files` from `from` over the vendored copies

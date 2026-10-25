@@ -20,7 +20,8 @@ export const PLAN_FLOW: Flow = {
   ready: ["in-progress", "draft", "dropped"],
   "in-progress": ["blocked", "in-review", "ready", "dropped"],
   blocked: ["in-progress", "dropped"],
-  "in-review": ["in-progress", "done", "dropped"],
+  "in-review": ["in-progress", "accepted", "dropped"],
+  accepted: ["done", "in-progress", "dropped"],      // accepted: QA and review passed; done: landed on the base
   done: [],
   dropped: ["draft"],
 };
@@ -42,7 +43,7 @@ export const ACTIVE = new Set(["in-progress", "blocked", "in-review"]);
 export const ITEM_CLOSED = new Set(["wontfix", "duplicate"]);
 export const PLAN_TO_ITEM: Record<string, string> = {
   draft: "planned", ready: "planned", "in-progress": "in-progress",
-  blocked: "in-progress", "in-review": "in-progress", done: "done",
+  blocked: "in-progress", "in-review": "in-progress", accepted: "in-progress", done: "done",
 };
 
 export const KINDS: Record<string, Kind> = {

@@ -30,7 +30,7 @@ const plan = (context, inScope, ac, tasks, extra = "") => `## Context\n${context
 function newPlan(title, items, touches, body, ...extra) {
   return tr("new-plan", title, "--from", draft("plan", body), "--items", items, "--touches", touches, ...extra).trim();
 }
-function ship(pid, outcome) { // start → tick → review → done on the branch, squash-merge to main
+function ship(pid, outcome) { // start → tick → review → accepted on the branch, squash-merge to main, then done
   commit(`chore(hub): before ${pid}`);
   tr("start", pid);
   const learnings = outcome.includes("Learnings:") ? "" : "\nLearnings: none";
@@ -39,13 +39,15 @@ function ship(pid, outcome) { // start → tick → review → done on the branc
   tr("move", pid, "in-review");
   const qa = { ...env, CREW_RUN: "qa", CREW_ACTOR: "qa", CREW_ROLE: "qa" };
   execFileSync("node", [hub, "checkpoint", pid, "--run", "true", "--ac", "all"], { cwd: dir, env: qa, encoding: "utf8" });
-  execFileSync("node", [hub, "move", pid, "done"], { cwd: dir, env: qa, encoding: "utf8" });
-  commit(`feat(${pid}): done`);
+  execFileSync("node", [hub, "move", pid, "accepted"], { cwd: dir, env: qa, encoding: "utf8" });
+  commit(`feat(${pid}): accepted`);
   const branch = git("branch", "--show-current").trim();
   git("switch", "-q", "main");
   git("merge", "-q", "--squash", branch);
   commit(`${pid}: squash`);
   git("branch", "-q", "-D", branch);
+  tr("move", pid, "done"); // landed: completed on main
+  commit(`chore(hub): ${pid} done`);
 }
 
 rmSync(dir, { recursive: true, force: true });

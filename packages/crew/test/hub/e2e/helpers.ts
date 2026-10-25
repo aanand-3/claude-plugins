@@ -56,19 +56,22 @@ export const goalFile = (repo: Repo, id: string) => docIn(repo, ".crew/goals", i
 export const read = (path: string) => readFileSync(path, "utf8");
 export const write = (path: string, text: string) => writeFileSync(path, text);
 
-/** Tick all tasks, write the outcome and walk the plan to review; a separate QA run verifies it and moves it to done. */
+/** Tick all tasks, write the outcome and walk the plan to review; a separate QA run verifies it and accepts it, then it
+ * moves to done (its branch has no commits of its own, so it counts as landed). */
 export function finish(repo: Repo, id: string): void {
   const p = planFile(repo, id);
   write(p, read(p).replaceAll("- [ ] T", "- [x] T").trimEnd() + "\nShipped.\nLearnings: none\n");
   expect(tr(repo, "move", id, "in-review").returncode).toBe(0);
   qaDone(repo, id);
+  const r = tr(repo, "move", id, "done");
+  expect(r.returncode, r.stderr).toBe(0);
 }
 
 export function qaDone(repo: Repo, id: string, check = "true"): void {
   const saved = { CREW_RUN: repo.env.CREW_RUN, CREW_ACTOR: repo.env.CREW_ACTOR };
   Object.assign(repo.env, { CREW_RUN: "qa-run", CREW_ACTOR: "qa" });
   expect(tr(repo, "checkpoint", id, "--run", check, "--ac", "all").returncode).toBe(0);
-  const r = tr(repo, "move", id, "done");
+  const r = tr(repo, "move", id, "accepted");
   expect(r.returncode, r.stderr).toBe(0);
   for (const [k, v] of Object.entries(saved)) {
     if (v === undefined) delete repo.env[k]; else repo.env[k] = v;

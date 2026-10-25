@@ -63,9 +63,9 @@ export function escalateLimit(store: Store, ref: string, count: number, limit: n
   ask(store, ref, "director", `${ref} ${what} ${count} times (limit ${limit}): decide — re-spec it, reassign it, split it or drop it.`);
 }
 
-/** How many times a plan came back from review (in-review → in-progress). */
-export const bounces = (events: LedgerEvent[], ref: string) =>
-  events.filter((e) => e.type === "move" && e.ref === ref && e.from === "in-review" && e.to === "in-progress").length;
+/** How many times a plan came back from review or a failed land (in-review or accepted → in-progress). */
+export const bounces = (events: LedgerEvent[], ref: string) => events.filter((e) => e.type === "move" && e.ref === ref
+  && (e.from === "in-review" || e.from === "accepted") && e.to === "in-progress").length;
 
 export const attempts = (events: LedgerEvent[], ref: string) =>
   events.filter((e) => e.type === "checkpoint" && e.ref === ref && e.attempt).length;

@@ -90,7 +90,7 @@ it("a developer starts only what the PM assigned to it", () => {
   expect(as(repo, "developer", "start", "P-001").returncode).toBe(0);
 });
 
-it("under the lifecycle only the PM completes and triages", () => {
+it("under the lifecycle only the PM accepts and triages", () => {
   lifecycle(repo);
   expect(newBug(repo).returncode).toBe(0);
   let r = as(repo, "developer", "triage", "BUG-001", "--priority", "P1", "--severity", "S2");
@@ -107,16 +107,16 @@ it("under the lifecycle only the PM completes and triages", () => {
   expect(as(repo, "developer", "move", "P-001", "in-review").returncode).toBe(0);
   repo.env.CREW_RUN = "qa";
   expect(as(repo, "qa", "checkpoint", "P-001", "--run", "true", "--ac", "all").returncode).toBe(0);
-  expect(as(repo, "qa", "next").stdout).toContain("report to the pm, who completes it");
+  expect(as(repo, "qa", "next").stdout).toContain("report to the pm, who accepts it");
   repo.env.CREW_RUN = "arch";
   expect(as(repo, "architect", "review", "P-001", "--approve").returncode).toBe(0);
   repo.env.CREW_RUN = "qa";
-  r = as(repo, "qa", "move", "P-001", "done");
+  r = as(repo, "qa", "move", "P-001", "accepted");
   expect(r.returncode).not.toBe(0);
   expect(r.stderr).toContain("for the pm role");
   repo.env.CREW_RUN = "pm";
-  expect(as(repo, "pm", "next").stdout).toContain("complete P-001");
-  expect(as(repo, "pm", "move", "P-001", "done").returncode).toBe(0);
+  expect(as(repo, "pm", "next").stdout).toContain("accept P-001");
+  expect(as(repo, "pm", "move", "P-001", "accepted").returncode).toBe(0);
 });
 
 it("activating the goal set waits for the executive", () => {

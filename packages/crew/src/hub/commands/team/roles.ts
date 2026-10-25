@@ -10,7 +10,7 @@ import { budgetProblems } from "../work/workflow.js";
 import { openQuestions } from "./questions.js";
 import { staffing } from "./team.js";
 import { reviewProblems } from "../work/review.js";
-import { mergeOrder } from "../work/release.js";
+import { landedProblems, mergeOrder } from "../work/release.js";
 import { fastLane } from "../../core/work/gates.js";
 import { paused, staleClaims } from "./liveness.js";
 
@@ -49,9 +49,9 @@ class View {
 const RULES: Record<string, Rule[]> = {
   executive: [
     (v) => openQuestions(v.events).filter((x) => x.escalation).map((x) => `answer ${x.id} (${x.by}${x.ref ? ` about ${x.ref}` : ""}): ${x.text}`),
-    (v) => v.status("in-review").filter((p) => approvalReason(v.store.policy.policy, "plan.done")
+    (v) => v.status("in-review").filter((p) => approvalReason(v.store.policy.policy, "plan.accepted")
       && evidence(v.store, p).every((e) => e.verify?.ok && e.independent))
-      .map((p) => `approve ${p.id}: ${p.get("title")} — evidence complete → move ${p.id} done --approved-by <you>`),
+      .map((p) => `approve ${p.id}: ${p.get("title")} — evidence complete → move ${p.id} accepted --approved-by <you>`),
     (v) => (["exploring", "researching", "proposed"].includes(v.store.idea()?.get("status") ?? "") ? ["decide the idea (go / pivot / kill)"] : []),
   ],
   director: [
@@ -83,8 +83,10 @@ const RULES: Record<string, Rule[]> = {
       .map((g) => `break ${g.id} down: it has no open items`),
     (v) => (v.gate("plan.assigned") === "pm" ? v.status("ready").filter((p) => !v.assigned.has(p.id)) : [])
       .map((p) => `open ${p.id}: ${p.get("title")} → assign ${p.id} --to developer (\`staff\` shows what can run now)`),
-    (v) => (v.gate("plan.done") === "pm" ? v.status("in-review") : []).filter((p) => complete(v, p) && !reviewProblems(v.store, p).length)
-      .map((p) => `complete ${p.id}: ${p.get("title")} — QA's evidence and the review are in → move ${p.id} done`),
+    (v) => (v.gate("plan.accepted") === "pm" ? v.status("in-review") : []).filter((p) => complete(v, p) && !reviewProblems(v.store, p).length)
+      .map((p) => `accept ${p.id}: ${p.get("title")} — QA's evidence and the review are in → move ${p.id} accepted`),
+    (v) => (v.gate("plan.done") === "pm" ? v.status("accepted") : []).filter((p) => !landedProblems(v.store, p).length)
+      .map((p) => `complete ${p.id}: landed on ${v.store.baseBranch()} → move ${p.id} done`),
   ],
   architect: [
     (v) => (v.gate("plan.reviewed") === "architect" ? v.status("in-review") : [])
@@ -104,16 +106,17 @@ const RULES: Record<string, Rule[]> = {
   qa: [
     (v) => v.status("in-review").filter((p) => !implementers(v.events, p.id).has(v.store.ledger.who.run)).map((p) => {
       const missing = evidence(v.store, p).flatMap((e, i) => (e.verify?.ok && e.independent ? [] : [`AC${i + 1}`]));
-      const closer = v.gate("plan.done");
+      const closer = v.gate("plan.accepted");
       return missing.length ? `verify ${p.id}: ${missing.join(", ")} → checkpoint ${p.id} --run "<check>" --ac …`
-        : closer && closer !== "qa" ? `${p.id}: evidence complete → report to the ${closer}, who completes it`
-          : `${p.id}: evidence complete → move ${p.id} done`;
+        : closer && closer !== "qa" ? `${p.id}: evidence complete → report to the ${closer}, who accepts it`
+          : `${p.id}: evidence complete → move ${p.id} accepted`;
     }),
     (v) => v.ranked("new").filter((i) => i.id.startsWith("BUG-")).slice(0, 2).map((i) => `reproduce ${i.id}: ${i.get("title")}`),
   ],
   release: [
-    (v) => mergeOrder(v.store).merge.slice(0, 1)
-      .map((p) => `ship ${p.id}: merge ${p.branch} (first in \`merge-order\`), follow its Rollout & rollback, then delete the branch`),
+    (v) => mergeOrder(v.store).merge.slice(0, 1).map((p) => (p.legacy
+      ? `ship ${p.id}: merge ${p.branch} by hand (first in \`merge-order\`; completed before \`accepted\`), follow its Rollout & rollback, then delete the branch`
+      : `land ${p.id}: ${p.title} (first in \`merge-order\`) → land ${p.id}, then follow its Rollout & rollback`)),
     (v) => v.status("in-review").filter((p) => !fastLane(v.store, p) && p.hasContent("Rollout & rollback")
       && !/^\s*n\/a\b/i.test(stripComments(p.section("Rollout & rollback"))))
       .map((p) => `prepare the rollout of ${p.id}: ${p.get("title")} (see its Rollout & rollback)`),

@@ -94,7 +94,7 @@ it("a human gate is refused over MCP and approved on the CLI", () => {
 
 it("role gates", () => {
   init(repo, { commit: true, mode: "" });
-  repo.write(".crew/policy.yaml", "mode: ai-native\nrole_gates:\n  plan.done: qa\n");
+  repo.write(".crew/policy.yaml", "mode: ai-native\nrole_gates:\n  plan.accepted: qa\n");
   readyPlan(repo);
   repo.commit("chore(hub): plan");
   repo.env.CREW_ROLE = "developer";
@@ -104,11 +104,11 @@ it("role gates", () => {
   expect(tr(repo, "move", "P-001", "in-review").returncode).toBe(0);
   repo.env.CREW_RUN = "reviewer"; // another run, with evidence, but in the wrong role
   expect(tr(repo, "checkpoint", "P-001", "--run", "true", "--ac", "all").returncode).toBe(0);
-  const r = tr(repo, "move", "P-001", "done");
+  const r = tr(repo, "move", "P-001", "accepted");
   expect(r.returncode).not.toBe(0);
   expect(r.stderr).toContain("for the qa role; this run is the developer role");
   repo.env.CREW_ROLE = "qa";
-  expect(tr(repo, "move", "P-001", "done").returncode).toBe(0);
+  expect(tr(repo, "move", "P-001", "accepted").returncode).toBe(0);
   expect(events(repo, "--type", "move").at(-1)!.role).toBe("qa");
 });
 

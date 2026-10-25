@@ -40,7 +40,7 @@ export function escalationHolds(events: LedgerEvent[]): { held: Map<string, stri
 }
 
 /** Moves that take a document forward; an open blocking question stops these (blocked, dropped and going back stay allowed). */
-export const FORWARD = new Set(["ready", "in-progress", "in-review", "done", "active", "decided", "triaged"]);
+export const FORWARD = new Set(["ready", "in-progress", "in-review", "accepted", "done", "active", "decided", "triaged"]);
 
 export function ask(store: Store, ref: string | undefined, to: string, text: string, o: { fyi?: boolean; escalation?: boolean } = {}): string {
   store.require();
