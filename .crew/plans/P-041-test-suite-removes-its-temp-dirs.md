@@ -152,6 +152,7 @@ Latest log:
 - 2026-10-25: assigned to the developer role
 - 2026-10-25: status ready → in-progress — branch plan/P-041-test-suite-removes-its-temp-dirs
 - 2026-10-25: status in-progress → in-review
+- 2026-10-25: T3 mutation check (developer, once): cleanup.ts afterEach body commented out -> case (b) fails; tmp-root teardown rmSync commented out -> case (d) fails, (e) cascades. Both restored; the mutated run's leftover root was swept by the next run.
 
 ## Outcome
 Run-scoped temp root: test/setup/tmp-root.ts (globalSetup) points TMPDIR/TMP/TEMP at crew-test-run-<pid>-* and removes it on teardown, sweeping roots of dead pids first. test/helpers/repo.ts tracks Repo.create (per test) and tempDir() (per file) dirs; test/setup/cleanup.ts (setupFiles) removes them with their <path>-* siblings. Regression test test/setup/tmp-cleanup.test.ts (cases a-e). Awaiting QA.
