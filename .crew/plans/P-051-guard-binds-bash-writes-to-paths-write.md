@@ -257,6 +257,17 @@ Until then the old guard keeps running. Rollback: revert the plan's commit and r
 
 ## Handoff
 
+_Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
+
+- P-051: Guard binds Bash writes to paths.write and resolves or refuses unknown targets [in-progress] tasks 5/5 — claimed by Arpit Anand (developer:a89f364e3564eeb34)
+- last checkpoint 2026-10-25 22:04 at T5 (f673c93) by Arpit Anand; since then 0 commit(s), 2 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs
+- evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —, AC7 —, AC8 —, AC9 —
+
+Latest log:
+- 2026-10-26: status draft → ready
+- 2026-10-26: assigned to the developer role
+- 2026-10-26: status ready → in-progress — branch plan/P-051-guard-binds-bash-writes-to-paths-write
+
 ## Progress log
 
 - 2026-10-26: status draft → ready
