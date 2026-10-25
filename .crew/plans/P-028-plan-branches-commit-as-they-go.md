@@ -5,11 +5,11 @@ goal: G-007
 items: FEAT-036, BUG-014, CHORE-014
 touches: packages/crew/src/hub/core/git.ts, packages/crew/src/hub/commands/work/execution.ts, packages/crew/src/hub/commands/work/review.ts, packages/crew/src/hub/commands/work/workflow.ts, packages/crew/test/hub/e2e/wip-commits.test.ts, packages/crew/test/hub/squash-merge.test.ts, plugins/crew/skills/hub/agents/developer.md, plugins/crew/skills/hub/agents/director.md
 depends_on:
-status: ready
+status: in-progress
 branch: plan/P-028-plan-branches-commit-as-they-go
 pr:
 created: 2026-10-25
-started:
+started: 2026-10-25
 completed:
 assignee: developer
 ---
@@ -95,5 +95,6 @@ The same files carry two more CHORE-014 follow-ups, so they ride here: squash de
 
 - 2026-10-25: status draft → ready
 - 2026-10-25: assigned to the developer role
+- 2026-10-25: status ready → in-progress — branch plan/P-028-plan-branches-commit-as-they-go
 
 ## Outcome
