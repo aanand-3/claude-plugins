@@ -30,3 +30,4 @@ A recommendation recorded with `learn decision` (which overlaps qualify, how rel
 Related: FEAT-025 (bundles built at release) and FEAT-028 (broad touches globs) remove the other two sources of false overlap.
 - 2026-10-24: status new → triaged — priority P3
 - 2026-10-25: re-triaged: priority P1
+- 2026-10-25: Findings: answered by K-2026-10-25-overlaps-on-hub-shared-paths-including (test files go in hub.shared like registries and docs; no test-file special case; broad globs still block). Implemented in P-029; tests: packages/crew/test/hub/e2e/shared-touches.test.ts.
