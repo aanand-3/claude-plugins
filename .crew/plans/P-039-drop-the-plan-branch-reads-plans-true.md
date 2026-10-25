@@ -115,6 +115,7 @@ Latest log:
 - 2026-10-25: status in-progress → in-review
 - 2026-10-25: Architect: approved at 4d4c5e2 (targeted suites pass; view.test.ts timed out under parallel load, passes alone). K-2026-10-25-plan-branch-reads-store-plans-true-apply supersedes the duplicate K-2026-10-25-no-keep-branch-reads-when-hub-plan.
 - 2026-10-25: status in-review → done
+- 2026-10-25: merged to main as 8b5c1dc; full suite green (typecheck, 375 tests, build, bundles clean); no rollout steps
 
 ## Outcome
 With plan worktrees, `Store.plans(true)` reads only the main checkout. In branch-per-plan mode (the default), it still overlays branch copies (Q-16112d). `start` no longer takes a branch copy home, and its overlap warning (like `context`'s list and the advice in roles.ts) ignores `hub.shared` and never suggests depends_on. `check` gives an origin-only plan branch its own hint. `git.show` keeps its caller (`branchPlans`). `GraphDoc.source` (graph-types.ts, outside touches) is always "worktree" in plan-worktree mode.
