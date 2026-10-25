@@ -2,7 +2,7 @@
 id: P-023
 title: Bundles built at release; escalations hold only what they block
 goal: G-001
-items: FEAT-025, FEAT-026
+items: FEAT-025, FEAT-026, BUG-022
 touches: packages/crew/src/hub/commands/team/questions.ts, packages/crew/src/hub/commands/team/autonomy.ts, packages/crew/src/hub/core/work/footprint.ts, packages/crew/test/hub/run-check.test.ts, packages/crew/test/hub/generated-drift.test.ts, .gitattributes, .crew/config.yaml, plugins/crew/skills/hub/agents/release.md, plugins/crew/skills/hub/agents/developer.md, plugins/crew/skills/team/SKILL.md, README.md
 depends_on: P-020
 status: done
@@ -110,6 +110,7 @@ Latest log:
 - 2026-10-25: status in-review → in-progress — changes requested: fix BUG-022: run-check.test.ts beforeEach times out at vitest's 10s hookTimeout. In packages/crew/test/hub/run-check.test.ts only: replace beforeEach with a setup() function that returns the repo, called first in each it() (the e2e convention in team.test.ts/team-2.test.ts), so setup runs under the 120s testTimeout. No hook-level or global hookTimeout; vitest.config.ts stays out of touches. Verify: cd packages/crew && npm run build && npx vitest run test/hub/run-check.test.ts passes, and BUG-022's regression is that file passing. mcp.test.ts's beforeAll timeout at 120s under load is not this plan's.
 - 2026-10-25: status in-progress → in-review
 - 2026-10-25: status in-review → done (approved by Arpit Anand)
+- 2026-10-25: Merged into local main as eaa70df (squash of 6a939c3, BUG-022 test fix folded in). Full suite green on first run: typecheck ok, 39 files / 277 tests passed, build ok, plugins/crew/skills diff clean. Local only, no push; origin plan/P-023 branch and PR #15 left untouched. Worktree removed, local branch deleted.
 
 ## Outcome
 An open escalation about a plan or an item now holds only that document: `run --check` reports GO while any open plan or item is unheld and prints a `HELD` line per held document (`--json` carries `held`); it stops on an escalation with no ref or about the idea or a goal, and when holds cover everything open. `drift` leaves out changed files `.gitattributes` marks `linguist-generated` (the hub's dist/ and the skill scripts). Release rebuilds the generated files with the new `hub.build` on the current base and commits them in the plan's one commit; the Developer and Release instructions, README and team skill say so.

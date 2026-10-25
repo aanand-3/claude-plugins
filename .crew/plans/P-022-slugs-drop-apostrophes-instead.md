@@ -102,6 +102,7 @@ Latest log:
 - 2026-10-25: status in-progress → in-review
 - 2026-10-25: QA: AC1-AC4 verified by checks; typecheck passes; no bugs. AC4 commit step pending (changes uncommitted on branch). Protected .crew/bin/crew.mjs --as qa --run-id qa:a13bbd5ae41d54ec2 not refreshed — not required by any AC.
 - 2026-10-25: status in-review → done
+- 2026-10-25: merged: squash fc812e2 on local main (branch commit 232d8b4); full_suite pass 37 files/273 tests, skills diff clean; not pushed. Human: copy plugins/crew/skills/hub/dist/crew.mjs --as release --run-id release:a7fad5de026157928 over .crew/bin/crew.mjs --as release --run-id release:a7fad5de026157928
 
 ## Outcome
 

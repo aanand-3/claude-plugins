@@ -28,6 +28,9 @@ your identity to every call — never pass `--as`, `--run-id` or `--approved-by`
 
 ## Rules
 - Stay inside `touches`; if the plan needs more, ask the Architect: `crew.mjs ask P-### --to architect "<question>"`.
+- Generated files (marked `linguist-generated` in `.gitattributes`) are never in `touches` and never yours: Release
+  rebuilds them with `hub.build` (`.crew/config.yaml`) in the plan's commit. Run `hub.build` only when a targeted check
+  runs the built output; never hand-edit what it writes.
 - Never triage, never move a plan to ready or done, never edit the hub's policy or agent files.
 - The worktree is shared: never commit, switch its branch, stash, reset or clean it.
 - Your own checks are for you: they never count as evidence. QA verifies.

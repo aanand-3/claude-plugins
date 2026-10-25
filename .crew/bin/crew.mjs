@@ -7500,7 +7500,7 @@ function norm(name) {
   return SECTION_ALIASES[n] ?? n;
 }
 function slugify(title) {
-  const words3 = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").split("-").filter(Boolean);
+  const words3 = title.toLowerCase().replace(/['’]/g, "").replace(/[^a-z0-9]+/g, "-").split("-").filter(Boolean);
   const out = [];
   for (const w of words3) {
     if ([...out, w].join("-").length > 40) break;
@@ -8854,7 +8854,13 @@ function drift(plan, base, home) {
     ...at(["ls-files", "--others", "--exclude-standard"])?.split("\n") ?? []
   ].filter(Boolean));
   const globs = plan.touches().map(globRe);
-  return [...changed].filter((f) => !f.startsWith(".crew/") && !globs.some((g) => g.test(f))).sort();
+  const outside = [...changed].filter((f) => !f.startsWith(".crew/") && !globs.some((g) => g.test(f)));
+  const generated = /* @__PURE__ */ new Set();
+  if (outside.length) {
+    const out = (at(["check-attr", "-z", "linguist-generated", "--", ...outside]) ?? "").split("\0");
+    for (let i = 0; i + 2 < out.length; i += 3) if (out[i + 2] === "true" || out[i + 2] === "set") generated.add(out[i]);
+  }
+  return outside.filter((f) => !generated.has(f)).sort();
 }
 
 // src/hub/commands/work/execution.ts
@@ -10382,8 +10388,15 @@ function notify(store, kind, ref, text, key = "") {
 }
 function runState(store) {
   const events = store.ledger.events(), reasons = [];
-  const escalations = openQuestions(events).filter((x) => x.escalation || x.to === "executive");
-  if (escalations.length) reasons.push(`waiting for the executive: ${escalations.map((x) => `${x.id} ${x.text}`).join("; ")}`);
+  const { held, stops } = escalationHolds(events);
+  if (stops.length) reasons.push(`waiting for the executive: ${stops.map((x) => `${x.id} ${x.text}`).join("; ")}`);
+  const holds = [...held].map(([ref, qids]) => `${ref} (${qids.join(", ")})`);
+  if (holds.length) {
+    const open = (docs) => [...docs.values()].filter((d) => !CLOSED.has(d.get("status") ?? "") && !ITEM_CLOSED.has(d.get("status") ?? "") && !held.has(d.id));
+    if (!open(store.plans()).length && !open(store.items()).length) {
+      reasons.push(`waiting for the executive: escalations hold every open plan and item: ${holds.join("; ")}`);
+    }
+  }
   const halt = paused(events);
   if (halt) reasons.push(`paused by ${halt.actor}: ${halt.reason ?? "no reason given"}`);
   const over = budgetProblems(store).filter((b) => b.startsWith("project"));
@@ -10393,17 +10406,19 @@ function runState(store) {
   else if (goal.get("status") === "done") reasons.push(`${focus} is done: the executive validates it and sets the next goals`);
   for (const s of staleClaims(store, events)) notify(store, "stale", s.ref, `${s.ref}: no activity for ${s.hours}h from ${s.actor}`, s.run);
   for (const b of over) notify(store, "budget", null, b, b.split(":")[0]);
-  return { stop: reasons.length > 0, reasons };
+  return { stop: reasons.length > 0, reasons, held: holds };
 }
 var LOOP = `while node .crew/bin/crew.mjs run --check; do claude -p "/crew:team continue" || break; done`;
 function run(store, check2 = false, json = false) {
   store.require();
   const s = runState(store);
   if (json) store.say(JSON.stringify(s));
-  else if (check2) store.say(s.stop ? `STOP  ${s.reasons.join("\nSTOP  ")}` : "GO    the team can continue");
-  else {
+  else if (check2) {
+    store.say(s.stop ? `STOP  ${s.reasons.join("\nSTOP  ")}` : "GO    the team can continue");
+    for (const h of s.held) store.say(`HELD  ${h}: waiting for the executive`);
+  } else {
     store.say('Run the team unattended (from the project root): each pass hands "continue" to the Director; the loop stops');
-    store.say("on an escalation, a pause, an exhausted budget or a done goal (`run --check` exits 1).");
+    store.say("on an escalation that holds everything, a pause, an exhausted budget or a done goal (`run --check` exits 1).");
     store.say(`  ${LOOP}`);
     store.say('Scheduled instead (cron, a CI schedule): `node .crew/bin/crew.mjs run --check && claude -p "/crew:team continue"`.');
     store.say(s.stop ? `Now: stopped \u2014 ${s.reasons.join("; ")}` : "Now: the team can continue.");
@@ -10484,6 +10499,15 @@ function questions(events) {
   return [...byId.values()];
 }
 var openQuestions = (events, ref) => questions(events).filter((q) => !q.answer && (!ref || q.ref === ref));
+function escalationHolds(events) {
+  const held = /* @__PURE__ */ new Map(), stops = [];
+  for (const q of openQuestions(events).filter((x) => x.escalation || x.to === "executive")) {
+    const kind = q.ref ? kindOf(q.ref) : null;
+    if (q.ref && (kind === "plan" || kind === "item")) held.set(q.ref, [...held.get(q.ref) ?? [], q.id]);
+    else stops.push(q);
+  }
+  return { held, stops };
+}
 var FORWARD = /* @__PURE__ */ new Set(["ready", "in-progress", "in-review", "done", "active", "decided", "triaged"]);
 function ask(store, ref, to, text, o = {}) {
   store.require();
