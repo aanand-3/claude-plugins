@@ -5,7 +5,7 @@ goal: G-007
 items: FEAT-042, CHORE-005
 touches: packages/crew/src/hub/commands/team/runner.ts, packages/crew/src/hub/commands/team/dispatch.ts, packages/crew/src/hub/commands/team/autonomy.reg.ts, packages/crew/src/hub/cli.ts, packages/crew/src/hub/core/team/policy.ts, packages/crew/test/hub/registry.test.ts, packages/crew/test/hub/e2e/runner.test.ts, packages/crew/test/hub/e2e/dispatch.test.ts, plugins/crew/skills/team/SKILL.md, plugins/crew/skills/hub/references/model.md
 depends_on: P-031, P-027
-status: in-progress
+status: in-review
 branch: plan/P-034-local-runner-run-until-done
 pr:
 created: 2026-10-25
@@ -112,7 +112,7 @@ Overlaps, for staffing only: P-030 on `autonomy.reg.ts` (the `run` registration 
 
 _Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
 
-- P-034: Local runner: run --until-done [in-progress] tasks 6/6 — claimed by Arpit Anand (developer:add085e9ca4500746)
+- P-034: Local runner: run --until-done [in-review] tasks 6/6 — claimed by Arpit Anand (developer:add085e9ca4500746)
 - last checkpoint 2026-10-25 20:13 at T2 (d5e8f1f) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —, AC7 —, AC8 —, AC9 —, AC10 —, AC11 —, AC12 —
 
@@ -129,6 +129,7 @@ Latest log:
 - 2026-10-26: status in-progress → in-review
 - 2026-10-26: review: changes requested — test/hub/registry.test.ts fails: 'the CLI commands and their options are as before the split' compares run's spec exactly, and run now has until-done/max-passes/command. Do not edit registry-before.json (K-2026-10-25). In packages/crew/test/hub/registry.test.ts (now in touches; see the spec's Registration note), change that check so for each command in BEFORE.cli, pos is equal and each option list BEFORE has is a subset of the current one; then npx vitest run test/hub/registry.test.ts passes. Everything else checks out: diff within touches, runner/dispatch/policy/docs match the spec, runner, dispatch, policy, run-check, team-2 and plugin suites pass, typecheck passes, sizes fine. The extras (text on the stop report, PASS lines on stdout) are accepted.
 - 2026-10-26: status in-review → in-progress — changes requested: test/hub/registry.test.ts fails: 'the CLI commands and their options are as before the split' compares run's spec exactly, and run now has until-done/max-passes/command. Do not edit registry-before.json (K-2026-10-25). In packages/crew/test/hub/registry.test.ts (now in touches; see the spec's Registration note), change that check so for each command in BEFORE.cli, pos is equal and each option list BEFORE has is a subset of the current one; then npx vitest run test/hub/registry.test.ts passes. Everything else checks out: diff within touches, runner/dispatch/policy/docs match the spec, runner, dispatch, policy, run-check, team-2 and plugin suites pass, typecheck passes, sizes fine. The extras (text on the stop report, PASS lines on stdout) are accepted.
+- 2026-10-26: status in-progress → in-review
 
 ## Outcome
 `run --until-done [--max-passes N] [--command CMD]` is a real command (commands/team/runner.ts, registered in autonomy.reg.ts): preflight (agents rendered and loadable, guard/usage hooks fail, activity hook warns, base branch, pass command on PATH; exit 2), then one pass at a time with a runner `report` per pass, stopping on runState / empty dispatch (exit 0) or no progress in 2 passes / max passes (exit 1), with a `stopped` report and notification. Crew agents are refused. `stopped` is a notify kind. Dispatch sends idle live runs to the Director. team/SKILL.md and model.md updated.
