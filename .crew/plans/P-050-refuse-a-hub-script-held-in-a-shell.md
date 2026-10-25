@@ -65,4 +65,6 @@ n/a — internal guard change; revert the commit to back out.
 
 ## Progress log
 
+- 2026-10-26: PM: plan opened from BUG-031 fast lane; blocked at ready: BUG-031 not triaged because its Steps to reproduce, Expected and Actual sections are empty, and the pm role cannot edit .crew/items (paths.write is .crew/drafts only).
+
 ## Outcome
