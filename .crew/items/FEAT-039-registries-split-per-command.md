@@ -5,7 +5,7 @@ title: Registries split per command
 status: triaged
 priority: P1
 goal: G-007
-plan:
+plan: P-030
 created: 2026-10-25
 closed:
 ---
