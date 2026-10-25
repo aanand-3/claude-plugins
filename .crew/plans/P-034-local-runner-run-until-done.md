@@ -110,6 +110,18 @@ Overlaps, for staffing only: P-030 on `autonomy.reg.ts` (the `run` registration 
 
 ## Handoff
 
+_Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
+
+- P-034: Local runner: run --until-done [in-progress] tasks 0/6 — claimed by Arpit Anand (developer:add085e9ca4500746)
+- last checkpoint 2026-10-25 20:03 at T6 (8e07a10) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
+- next: T1: `preflight` → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/runner.test.ts -t preflight` (AC1, AC2, AC3)
+- evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —, AC7 —, AC8 —, AC9 —, AC10 —, AC11 —, AC12 —
+
+Latest log:
+- 2026-10-25: status draft → ready
+- 2026-10-26: assigned to the developer role
+- 2026-10-26: status ready → in-progress — branch plan/P-034-local-runner-run-until-done
+
 ## Progress log
 
 - 2026-10-25: status draft → ready
