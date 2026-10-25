@@ -5,7 +5,7 @@ title: Plan-worktree follow-ups from P-018's review
 status: triaged
 priority: P1
 goal: G-007
-plan:
+plan: P-028
 created: 2026-10-24
 closed:
 ---
