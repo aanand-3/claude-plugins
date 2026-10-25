@@ -8608,7 +8608,7 @@ var Store = class _Store {
   }
   /** The effective policy for this run's role and team (CREW_ROLE, CREW_TEAM; see policy.ts). */
   get policy() {
-    return this.policyCache ??= resolvePolicy(this.ws.root, this.dir, this.ledger.who.role, this.ledger.who.team);
+    return this.policyCache ??= resolvePolicy(this.home, this.dir, this.ledger.who.role, this.ledger.who.team);
   }
   /** A path for messages: hub files relative to the home, so they read `.crew/…` from any checkout. */
   rel(p) {
@@ -8678,7 +8678,7 @@ var Store = class _Store {
   /** Project knowledge, plus the org playbook's lessons (`lessons/**.md`, read-only) when a playbook is configured. */
   knowledge(withPlaybook = true) {
     const project = [...this.loadDir(this.knowledgeDir).values()].map((d) => toEntry(d, "project"));
-    const pb = withPlaybook ? playbook(this.ws.root, this.dir) : { read: null };
+    const pb = withPlaybook ? playbook(this.home, this.dir) : { read: null };
     const lessons = pb.read && pb.list ? pb.list("lessons").filter((f) => f.endsWith(".md")).flatMap((f) => {
       const text = pb.read(f);
       const d = text === null ? null : Doc.parse(text, null, "playbook");
@@ -9227,7 +9227,7 @@ function decide(store, h) {
   const root = store.ws.root;
   const role = agentRole(root, h.agent_type);
   const run2 = role ? `${role}:${h.agent_id ?? "unknown"}` : null;
-  const { policy } = resolvePolicy(root, store.dir, role);
+  const { policy } = resolvePolicy(store.home, store.dir, role);
   const top = real3(h.cwd && git(["-C", h.cwd, "rev-parse", "--show-toplevel"])?.trim() || root);
   const abs = (p) => real3(resolve5(h.cwd || top, shellPath(p)));
   let trees = null;
@@ -9504,7 +9504,7 @@ function template(store, name) {
 }
 var scalar = (v) => /^["']/.test(v) || !/(: | #|^[\s\W])|\s$/.test(v) ? v : JSON.stringify(v);
 function renderAgent(store, role) {
-  const r = resolvePolicy(store.ws.root, store.dir, role);
+  const r = resolvePolicy(store.home, store.dir, role);
   const custom = !ROLES.includes(role);
   let text = template(store, custom ? "generic" : role);
   if (custom) text = text.replaceAll("{{role}}", role).replaceAll("{{charter}}", (r.charters[role] ?? "").replace(/\s+/g, " ").trim());
@@ -9533,7 +9533,7 @@ ${lines.map(([k, v]) => `${k}: ${scalar(v)}`).join("\n")}
 ---
 ${body2}`, errors: r.errors };
 }
-var agentRoles = (store) => resolvePolicy(store.ws.root, store.dir).roles.filter((r) => r !== HUMAN);
+var agentRoles = (store) => resolvePolicy(store.home, store.dir).roles.filter((r) => r !== HUMAN);
 function rendered(store) {
   const out = /* @__PURE__ */ new Map();
   for (const name of store.ws.list(agentsDir(store)).filter((n) => /^crew-.*\.md$/.test(n))) {
@@ -9593,7 +9593,7 @@ function agents(store, check2 = false) {
 var import_yaml2 = __toESM(require_dist(), 1);
 var show2 = (v) => Array.isArray(v) ? v.length ? v.join(", ") : "\u2014" : v === null || v === void 0 ? "\u2014" : String(v);
 function policyShow(store, role, team, json = false) {
-  const r = resolvePolicy(store.ws.root, store.dir, role ?? store.ledger.who.role, team ?? store.ledger.who.team);
+  const r = resolvePolicy(store.home, store.dir, role ?? store.ledger.who.role, team ?? store.ledger.who.team);
   if (json) {
     store.say(JSON.stringify({ role: r.role, team: r.team, policy: r.policy, sources: Object.fromEntries(r.sources), errors: r.errors }, null, 2));
     return r.errors.length ? 1 : 0;
@@ -9642,7 +9642,7 @@ function policyCheck(store) {
   return errors.length ? 1 : 0;
 }
 function policyFindings(store) {
-  const base = resolvePolicy(store.ws.root, store.dir);
+  const base = resolvePolicy(store.home, store.dir);
   const errors = new Set(base.errors), hints = new Set(base.hints);
   let raw = {};
   try {
@@ -9650,8 +9650,8 @@ function policyFindings(store) {
   } catch {
   }
   const named = (section) => Object.keys(raw[section] ?? {});
-  for (const role of named("roles")) for (const e of resolvePolicy(store.ws.root, store.dir, role).errors) errors.add(e);
-  for (const team of named("teams")) for (const e of resolvePolicy(store.ws.root, store.dir, null, team).errors) errors.add(e);
+  for (const role of named("roles")) for (const e of resolvePolicy(store.home, store.dir, role).errors) errors.add(e);
+  for (const team of named("teams")) for (const e of resolvePolicy(store.home, store.dir, null, team).errors) errors.add(e);
   return { errors: [...errors].map((e) => `policy: ${e}`), hints: [...hints].map((h) => `policy: ${h}`) };
 }
 function report(store, errors, hints) {
