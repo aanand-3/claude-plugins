@@ -11,6 +11,7 @@ pr:
 created: 2026-10-25
 started:
 completed:
+assignee: developer
 ---
 
 # P-032: Merge queue: land
@@ -141,5 +142,6 @@ draft → ready → in-progress → in-review → accepted → done
 - 2026-10-25: Architect: depends_on P-031 (presets.ts) and P-043 (runSuite for step 5, release.md) added
 - 2026-10-25: status ready → draft — Architect: re-spec for the executive decision (accepted status, PM owns done)
 - 2026-10-25: status draft → ready — Architect: re-specced for accepted → land → done (executive decision)
+- 2026-10-26: assigned to the developer role
 
 ## Outcome
