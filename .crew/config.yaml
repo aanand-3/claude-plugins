@@ -1,2 +1,4 @@
 hub:
   plan_worktrees: true
+  wip_limit: 5
+  shared: [src/cli.ts]
