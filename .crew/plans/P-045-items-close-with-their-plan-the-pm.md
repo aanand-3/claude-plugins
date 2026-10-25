@@ -11,6 +11,7 @@ pr:
 created: 2026-10-25
 started:
 completed:
+assignee: developer
 ---
 
 # P-045: Items close with their plan; the PM closes any item
@@ -132,5 +133,6 @@ needs none of its code, since it hooks the plan's move to `done` whichever edge 
 ## Progress log
 
 - 2026-10-25: status draft → ready — BUG-024 specced as its own plan (P-032 is at max_tasks and waits on six plans)
+- 2026-10-25: assigned to the developer role — BUG-024; touches overlap P-032/P-021/P-025/P-031 a few lines each
 
 ## Outcome
