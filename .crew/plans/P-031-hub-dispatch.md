@@ -5,7 +5,7 @@ goal: G-007
 items: FEAT-040
 touches: packages/crew/src/hub/commands/team/dispatch.ts, packages/crew/src/hub/commands/team/dispatch.reg.ts, packages/crew/src/hub/commands/index.ts, packages/crew/src/hub/cli.ts, packages/crew/src/hub/mcp.ts, packages/crew/src/hub/core/team/presets.ts, packages/crew/test/hub/e2e/dispatch.test.ts, packages/crew/test/hub/e2e/team.test.ts, packages/crew/test/hub/e2e/team-2.test.ts, packages/crew/test/hub/e2e/goal-queue.test.ts, packages/crew/test/hub/registry.test.ts, packages/crew/test/mcp.test.ts, plugins/crew/skills/hub/agents/director.md, plugins/crew/skills/hub/agents/pm.md, plugins/crew/skills/team/SKILL.md, plugins/crew/skills/hub/SKILL.md, plugins/crew/skills/hub/references/model.md
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-031-hub-dispatch
 pr:
 created: 2026-10-25
@@ -111,7 +111,7 @@ Needs no other plan's code. It reads P-029's shared-aware staffing through `staf
 
 _Generated 2026-10-25 by `crew.mjs handoff` from the ledger._
 
-- P-031: Hub dispatch [in-progress] tasks 6/6 — claimed by Arpit Anand (developer:a9de166b4a3040f9f)
+- P-031: Hub dispatch [in-review] tasks 6/6 — claimed by Arpit Anand (developer:a9de166b4a3040f9f)
 - last checkpoint 2026-10-25 15:08 at T6 (4da1e87) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
 - ✓ npx vitest run test/hub/e2e/dispatch.test.ts -t 'AC1\)' (AC 1)
 - ✗ npx vitest run test/hub/e2e/dispatch.test.ts -t 'AC2\)' (AC 2) — ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
@@ -152,6 +152,7 @@ Latest log:
 - 2026-10-25: architect: diagnosed Release's goal-queue failure on 7515f1b — goal-queue.test.ts close() closes goals as the director, refused by P-031's goal.done: pm gate. Fix (verified with a temporary copy: 5/5 pass): close() runs as pm. Spec updated: goal-queue.test.ts added to touches, AC12, T6, test-plan line. Re-review needed after the change.
 - 2026-10-25: status done → in-progress — full-suite failure: test/hub/e2e/goal-queue.test.ts close() runs director move done, refused by the new pm-only goal.done gate
 - 2026-10-25: developer: T6 done in the worktree but not committed. git merge main is in progress: all conflicts resolved and staged (registry.test.ts keeps the arrayContaining subset line, mcp.test.ts lists dispatch and suites, hub dist takes main's side) except .crew/bin/crew.mjs, which the policy protects from the developer, so the merge and the T6 checkpoint cannot be committed. goal-queue.test.ts close() now runs as pm (unstaged, one line); build + goal-queue 5/5 pass; AC12 greps: only dispatch.test.ts:221 and team.test.ts:173, count 0. Needs Release (refresh-bin) or the Director to resolve .crew/bin/crew.mjs --as developer --run-id developer:a9de166b4a3040f9f to main's side, then re-run the T6 checkpoint. Unstaged change to .claude/agents/crew-release.md in the worktree is not the developer's.
+- 2026-10-25: status in-progress → in-review
 
 ## Outcome
 Shipped: the hub command `dispatch [--json]` and the MCP tool `dispatch` (same JSON) in `commands/team/dispatch.ts` (rows 1–11, held/paused handling, the `max_agents` cap with `more`, the spec frontier), registered via `dispatch.reg.ts`; `goal.done: pm` in the lifecycle preset; director.md, pm.md, team/SKILL.md "Each run", model.md and hub/SKILL.md's row updated to the dispatch loop; registry.test.ts compares only the pre-split commands/tools with the frozen `registry-before.json`; `dispatch` added to mcp.test.ts's tool list; new e2e `dispatch.test.ts`. T5 checks pass: typecheck, `wc -l` 161/18, basics/mcp/registry green, `registry-before.json` unchanged. Reopened for the full-suite failure: T6 makes `goal-queue.test.ts`'s `close()` run as the pm (5/5 pass); AC12 greps list only dispatch.test.ts and team.test.ts, `"director"` count 0 in goal-queue.test.ts. Branch merged with main up to 6b426a4 (P-042, P-043, P-044); diff vs main is P-031's files only.
