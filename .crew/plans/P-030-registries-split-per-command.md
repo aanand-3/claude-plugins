@@ -57,12 +57,12 @@ Two design choices, recorded as decisions with this plan:
 - **Reuse:** today's `parse`, `identity`, `callTool`, `handle` unchanged; `bundleNode` in build.mjs.
 
 ## Tasks
-- [ ] T1: `test/hub/registry.test.ts` and `registry-before.json` from today's code → verify: `cd packages/crew && npx vitest run test/hub/registry.test.ts` passes on today's code (AC2, AC3 baselines)
-- [ ] T2: registry.ts with the shared types and helpers; cli.ts and mcp.ts use them (still holding the tables) → verify: `npm run typecheck`; `npx vitest run test/mcp.test.ts test/hub/registry.test.ts`
-- [ ] T3: the `.reg.ts` files and `commands/index.ts`; cli.ts and mcp.ts build `COMMANDS`, the help text and `TOOLS` from the index; the duplicate-name check → verify: `npx vitest run test/hub/registry.test.ts` (AC1, AC2, AC3, AC4) and `npx vitest run test/mcp.test.ts`
-- [ ] T4: reference.ts, `bundleReference` in build.mjs, the `.gitattributes` line, the dist freshness case → verify: `npm run build && npx vitest run test/dist.test.ts`; `git check-attr linguist-generated -- plugins/crew/skills/hub/references/commands.md` says `true` (AC5)
-- [ ] T5: SKILL.md points to the reference → verify: `grep -n "references/commands.md" plugins/crew/skills/hub/SKILL.md`; `grep -c "^| \`new-idea" plugins/crew/skills/hub/SKILL.md` prints 0; `npx vitest run test/plugin` (AC5)
-- [ ] T6: the unchanged suites, types and sizes → verify: `npx vitest run test/mcp.test.ts test/hub/e2e/basics.test.ts test/hub/e2e/items.test.ts test/hub/e2e/execution.test.ts test/hub/e2e/team.test.ts` after `npm run build`; `npm run typecheck`; `wc -l src/hub/cli.ts src/hub/mcp.ts src/hub/registry.ts src/hub/reference.ts src/hub/commands/*/*.reg.ts` each under 300 (AC6, AC7)
+- [x] T1: `test/hub/registry.test.ts` and `registry-before.json` from today's code → verify: `cd packages/crew && npx vitest run test/hub/registry.test.ts` passes on today's code (AC2, AC3 baselines)
+- [x] T2: registry.ts with the shared types and helpers; cli.ts and mcp.ts use them (still holding the tables) → verify: `npm run typecheck`; `npx vitest run test/mcp.test.ts test/hub/registry.test.ts`
+- [x] T3: the `.reg.ts` files and `commands/index.ts`; cli.ts and mcp.ts build `COMMANDS`, the help text and `TOOLS` from the index; the duplicate-name check → verify: `npx vitest run test/hub/registry.test.ts` (AC1, AC2, AC3, AC4) and `npx vitest run test/mcp.test.ts`
+- [x] T4: reference.ts, `bundleReference` in build.mjs, the `.gitattributes` line, the dist freshness case → verify: `npm run build && npx vitest run test/dist.test.ts`; `git check-attr linguist-generated -- plugins/crew/skills/hub/references/commands.md` says `true` (AC5)
+- [x] T5: SKILL.md points to the reference → verify: `grep -n "references/commands.md" plugins/crew/skills/hub/SKILL.md`; `grep -c "^| \`new-idea" plugins/crew/skills/hub/SKILL.md` prints 0; `npx vitest run test/plugin` (AC5)
+- [x] T6: the unchanged suites, types and sizes → verify: `npx vitest run test/mcp.test.ts test/hub/e2e/basics.test.ts test/hub/e2e/items.test.ts test/hub/e2e/execution.test.ts test/hub/e2e/team.test.ts` after `npm run build`; `npm run typecheck`; `wc -l src/hub/cli.ts src/hub/mcp.ts src/hub/registry.ts src/hub/reference.ts src/hub/commands/*/*.reg.ts` each under 300 (AC6, AC7)
 
 ## Test plan
 **Targeted checks** (from `packages/crew/`; e2e and dist checks after `npm run build`):
