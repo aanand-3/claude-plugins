@@ -6,7 +6,7 @@ import type { Store } from "../../core/store.js";
 const show = (v: unknown) => (Array.isArray(v) ? (v.length ? v.join(", ") : "—") : v === null || v === undefined ? "—" : String(v));
 
 export function policyShow(store: Store, role?: string, team?: string, json = false): number {
-  const r = resolvePolicy(store.ws.root, store.dir, role ?? store.ledger.who.role, team ?? store.ledger.who.team);
+  const r = resolvePolicy(store.home, store.dir, role ?? store.ledger.who.role, team ?? store.ledger.who.team);
   if (json) {
     store.say(JSON.stringify({ role: r.role, team: r.team, policy: r.policy, sources: Object.fromEntries(r.sources), errors: r.errors }, null, 2));
     return r.errors.length ? 1 : 0;
@@ -48,15 +48,15 @@ export function policyCheck(store: Store): number {
 }
 
 export function policyFindings(store: Store): { errors: string[]; hints: string[] } {
-  const base = resolvePolicy(store.ws.root, store.dir);
+  const base = resolvePolicy(store.home, store.dir);
   const errors = new Set(base.errors), hints = new Set(base.hints);
   let raw: Record<string, unknown> = {};
   try {
     raw = (parse(store.ws.read(`${store.dir}/policy.yaml`) ?? "") ?? {}) as Record<string, unknown>;
   } catch { /* reported by resolvePolicy */ }
   const named = (section: string) => Object.keys((raw[section] ?? {}) as object);
-  for (const role of named("roles")) for (const e of resolvePolicy(store.ws.root, store.dir, role).errors) errors.add(e);
-  for (const team of named("teams")) for (const e of resolvePolicy(store.ws.root, store.dir, null, team).errors) errors.add(e);
+  for (const role of named("roles")) for (const e of resolvePolicy(store.home, store.dir, role).errors) errors.add(e);
+  for (const team of named("teams")) for (const e of resolvePolicy(store.home, store.dir, null, team).errors) errors.add(e);
   return { errors: [...errors].map((e) => `policy: ${e}`), hints: [...hints].map((h) => `policy: ${h}`) };
 }
 

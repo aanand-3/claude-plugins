@@ -30,7 +30,7 @@ const scalar = (v: string) => (/^["']/.test(v) || !/(: | #|^[\s\W])|\s$/.test(v)
 
 /** The agent definition for a role, as it should be on disk now. */
 export function renderAgent(store: Store, role: string): { text: string; errors: string[] } {
-  const r = resolvePolicy(store.ws.root, store.dir, role);
+  const r = resolvePolicy(store.home, store.dir, role);
   const custom = !(ROLES as readonly string[]).includes(role);
   let text = template(store, custom ? "generic" : role);
   if (custom) text = text.replaceAll("{{role}}", role).replaceAll("{{charter}}", (r.charters[role] ?? "").replace(/\s+/g, " ").trim());
@@ -55,7 +55,7 @@ export function renderAgent(store: Store, role: string): { text: string; errors:
 }
 
 /** Roles that get an agent: every role but the human's. */
-const agentRoles = (store: Store) => resolvePolicy(store.ws.root, store.dir).roles.filter((r) => r !== HUMAN);
+const agentRoles = (store: Store) => resolvePolicy(store.home, store.dir).roles.filter((r) => r !== HUMAN);
 
 /** Crew agent files on disk (crew-*.md with a crew-role) → their role. */
 function rendered(store: Store): Map<string, string> {

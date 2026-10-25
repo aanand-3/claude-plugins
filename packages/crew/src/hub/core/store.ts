@@ -85,7 +85,7 @@ export class Store {
 
   /** The effective policy for this run's role and team (CREW_ROLE, CREW_TEAM; see policy.ts). */
   get policy(): Resolved {
-    return (this.policyCache ??= resolvePolicy(this.ws.root, this.dir, this.ledger.who.role, this.ledger.who.team));
+    return (this.policyCache ??= resolvePolicy(this.home, this.dir, this.ledger.who.role, this.ledger.who.team));
   }
 
   /** A path for messages: hub files relative to the home, so they read `.crew/…` from any checkout. */
@@ -163,7 +163,7 @@ export class Store {
   /** Project knowledge, plus the org playbook's lessons (`lessons/**.md`, read-only) when a playbook is configured. */
   knowledge(withPlaybook = true): Entry[] {
     const project = [...this.loadDir(this.knowledgeDir).values()].map((d) => toEntry(d, "project"));
-    const pb = withPlaybook ? playbook(this.ws.root, this.dir) : { read: null };
+    const pb = withPlaybook ? playbook(this.home, this.dir) : { read: null };
     const lessons = pb.read && pb.list ? pb.list("lessons").filter((f) => f.endsWith(".md")).flatMap((f) => {
       const text = pb.read!(f);
       const d = text === null ? null : Doc.parse(text, null, "playbook");

@@ -123,7 +123,7 @@ export function decide(store: Store, h: HookInput): Decision {
   const root = store.ws.root;
   const role = agentRole(root, h.agent_type);
   const run = role ? `${role}:${h.agent_id ?? "unknown"}` : null;
-  const { policy } = resolvePolicy(root, store.dir, role);
+  const { policy } = resolvePolicy(store.home, store.dir, role);
   const top = real((h.cwd && git.git(["-C", h.cwd, "rev-parse", "--show-toplevel"])?.trim()) || root);
   // relative paths are the tool's, so they resolve against the hook's cwd (BUG-007)
   const abs = (p: string) => real(resolve(h.cwd || top, shellPath(p)));
