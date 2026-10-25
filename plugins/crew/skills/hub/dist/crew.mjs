@@ -7935,24 +7935,24 @@ function hubHome(root) {
   const main2 = worktrees()[0]?.path;
   return !main2 || real(main2) === real(root) ? root : main2;
 }
-function requireBase(home, base) {
-  const at = git(["-C", home, "branch", "--show-current"])?.trim();
+function requireBase(home2, base) {
+  const at = git(["-C", home2, "branch", "--show-current"])?.trim();
   if (at !== base) {
-    fail(`Hub state lives on ${base} in the main checkout (${home}), which is on ${at || "a detached HEAD"}: switch it back to ${base}, or turn hub.plan_worktrees off.`);
+    fail(`Hub state lives on ${base} in the main checkout (${home2}), which is on ${at || "a detached HEAD"}: switch it back to ${base}, or turn hub.plan_worktrees off.`);
   }
 }
-function commitState(home, message) {
-  const common = commonDir(home);
+function commitState(home2, message) {
+  const common = commonDir(home2);
   if (!common) return null;
   mkdirSync2(join2(common, "crew"), { recursive: true });
   const lock = join2(common, "crew", "hub-commit.lock"), token = acquireLock(lock);
   try {
-    const changed2 = changed(home, STATE_PATHS);
+    const changed2 = changed(home2, STATE_PATHS);
     if (!changed2.length) return null;
-    git(["-C", home, "add", "-A", "--", ...changed2], true);
-    const r = git(["-C", home, "commit", "-q", "--only", "-m", message, "--", ...changed2]);
-    if (r === null) fail(`The hub's files are written but not committed (git commit failed in ${home}); the next hub command commits them.`);
-    return git(["-C", home, "rev-parse", "--short", "HEAD"])?.trim() ?? null;
+    git(["-C", home2, "add", "-A", "--", ...changed2], true);
+    const r = git(["-C", home2, "commit", "-q", "--only", "-m", message, "--", ...changed2]);
+    if (r === null) fail(`The hub's files are written but not committed (git commit failed in ${home2}); the next hub command commits them.`);
+    return git(["-C", home2, "rev-parse", "--short", "HEAD"])?.trim() ?? null;
   } finally {
     releaseLock(lock, token);
   }
@@ -8964,8 +8964,8 @@ function overlapping(plan, plans2, shared = []) {
     return globs.length ? [{ id: p.id, globs }] : [];
   });
 }
-function trackedFiles(home) {
-  const ls = (...spec) => (git(["-C", home, "ls-files", "--", ...spec]) ?? "").split("\n").filter(Boolean);
+function trackedFiles(home2) {
+  const ls = (...spec) => (git(["-C", home2, "ls-files", "--", ...spec]) ?? "").split("\n").filter(Boolean);
   return { files: ls(), generated: new Set(ls(":(attr:linguist-generated)", ":(attr:linguist-generated=true)")) };
 }
 function touchHints(plan, tracked, shared) {
@@ -8980,9 +8980,9 @@ function touchHints(plan, tracked, shared) {
   }
   return out;
 }
-function drift(plan, base, home) {
-  if (!home || !plan.touches().length) return null;
-  const at = (args) => git(["-C", home, ...args]);
+function drift(plan, base, home2) {
+  if (!home2 || !plan.touches().length) return null;
+  const at = (args) => git(["-C", home2, ...args]);
   const fork = at(["merge-base", base, "HEAD"])?.trim();
   if (!fork) return null;
   const changed2 = new Set([
@@ -9382,12 +9382,12 @@ function decide(store, h) {
   };
   const HUB_STATE = "project state stays in the hub (CLAUDE.md, crew:hub-state): use crew.mjs handoff, log, new-item, learn or ask, and keep only a pointer to the hub ID elsewhere";
   const input = h.tool_input ?? {};
-  const home = real3(store.home), shared = store.settings().plan_worktrees;
+  const home2 = real3(store.home), shared = store.settings().plan_worktrees;
   const forked = (p) => {
     if (!shared) return null;
     const a = abs(p), d = checkouts().find((c) => within(c, a)) ?? top;
     const r = relative4(d, a), m = /^\.claude\/worktrees\/[^/]+\/(.*)$/.exec(r);
-    return (d !== home || m) && STATE_RE.test(m ? m[1] : r) ? join9(home, m ? m[1] : r) : null;
+    return (d !== home2 || m) && STATE_RE.test(m ? m[1] : r) ? join9(home2, m ? m[1] : r) : null;
   };
   const ONE_HOME = "hub documents live in the main checkout only: change them with crew.mjs from any checkout, or edit";
   const path = EDITS[h.tool_name] ? String(input[EDITS[h.tool_name]] ?? "") : "";
@@ -9898,7 +9898,7 @@ function checkpoint(store, id, o = {}) {
     if (o.auto) return autoWorktrees(store, o);
     fail("Not on a plan branch: name the plan (`checkpoint P-###`).");
   }
-  const home = plan.id.startsWith("P-") && store.planHome(plan.id) || store.ws.root;
+  const home2 = plan.id.startsWith("P-") && store.planHome(plan.id) || store.ws.root;
   const acs = parseAc(o.ac, criteria(plan).length);
   const prints = acs.map((n2) => acPrint(criteria(plan)[n2 - 1]));
   if (o.verify && o.result !== "pass" && o.result !== "fail") fail("--verify needs --result pass|fail.");
@@ -9907,12 +9907,12 @@ function checkpoint(store, id, o = {}) {
   if (goal && !o.run && !o.verify) fail(`A goal's checkpoint records evidence: \`checkpoint ${plan.id} --verify "<how>" --result pass|fail --ac n\`.`);
   const step = goal ? "goal" : o.step ?? plan.tasks().find(([done]) => !done)?.[1].split(":")[0] ?? "done";
   if (!o.auto && !goal) commitWork(store, plan, `chore(${plan.id}): checkpoint ${step}`);
-  const snap = snapshot(home);
+  const snap = snapshot(home2);
   const last = checkpoints(store.ledger.events(), plan.id).at(-1);
   if (o.auto && last?.fingerprint === snap.fingerprint) return 0;
   const verify = [];
   if (o.run) {
-    const r = spawnSync3(o.run, { shell: true, cwd: home, encoding: "utf8", timeout: RUN_TIMEOUT_MS, maxBuffer: 32 << 20 });
+    const r = spawnSync3(o.run, { shell: true, cwd: home2, encoding: "utf8", timeout: RUN_TIMEOUT_MS, maxBuffer: 32 << 20 });
     verify.push({ cmd: o.run, ok: r.status === 0, ac: acs, ac_text: prints, output: tail2(`${r.stdout ?? ""}${r.stderr ?? ""}`, store.policy.policy.secrets.patterns), observed: true });
   }
   if (o.verify) {
@@ -9948,13 +9948,13 @@ function autoWorktrees(store, o) {
   return 0;
 }
 function commitWork(store, plan, subject) {
-  const home = store.settings().plan_worktrees ? store.planHome(plan.id) : null;
-  if (!home || git(["-C", home, "branch", "--show-current"])?.trim() !== plan.get("branch")) return null;
-  const files2 = codeChanges(home, store.policy.policy.secrets.files);
+  const home2 = store.settings().plan_worktrees ? store.planHome(plan.id) : null;
+  if (!home2 || git(["-C", home2, "branch", "--show-current"])?.trim() !== plan.get("branch")) return null;
+  const files2 = codeChanges(home2, store.policy.policy.secrets.files);
   if (!files2.length) return null;
-  const at = (args, check2 = false) => git(["-C", home, "--literal-pathspecs", ...args], check2);
+  const at = (args, check2 = false) => git(["-C", home2, "--literal-pathspecs", ...args], check2);
   const prev = at(["rev-parse", "HEAD"])?.trim();
-  const gone = files2.filter((f) => !existsSync8(join10(home, f)));
+  const gone = files2.filter((f) => !existsSync8(join10(home2, f)));
   if (files2.length > gone.length) at(["add", "-A", "--", ...files2.filter((f) => !gone.includes(f))], true);
   if (gone.length) at(["rm", "-q", "--cached", "--ignore-unmatch", "--", ...gone], true);
   try {
@@ -9983,9 +9983,9 @@ function recovery(store, plan) {
   const tasks = plan.tasks();
   const out = [`${plan.id}: ${plan.get("title")} [${plan.get("status")}] tasks ${tasks.filter(([d]) => d).length}/${tasks.length}` + (owner2 ? ` \u2014 claimed by ${owner2.actor} (${owner2.run})` : "")];
   if (last) {
-    const home = store.planHome(plan.id);
-    const now = home ? snapshot(home) : null;
-    const ahead = home && last.sha && now?.sha ? Number(git(["-C", home, "rev-list", "--count", `${last.sha}..HEAD`])?.trim() || 0) : 0;
+    const home2 = store.planHome(plan.id);
+    const now = home2 ? snapshot(home2) : null;
+    const ahead = home2 && last.sha && now?.sha ? Number(git(["-C", home2, "rev-list", "--count", `${last.sha}..HEAD`])?.trim() || 0) : 0;
     out.push(`last checkpoint ${String(last.ts).slice(0, 16).replace("T", " ")} at ${last.step} (${String(last.sha ?? "?").slice(0, 7)}) by ${last.actor}` + (now ? `; since then ${ahead} commit(s), ${now.dirty.length} uncommitted file(s)${now.dirty.length ? `: ${now.dirty.slice(0, 8).join(", ")}` : ""}` : ""));
   } else out.push("no checkpoint yet");
   const latest = /* @__PURE__ */ new Map();
@@ -10500,8 +10500,8 @@ function goalProblems(store, goal) {
 var lastCode = (branch) => git(["log", "-1", "--format=%H", branch, "--", ".", ":(exclude).crew"])?.trim() || null;
 function uncommitted(store, plan) {
   if (!store.settings().plan_worktrees) return null;
-  const home = store.planHome(plan.id);
-  return home ? codeChanges(home, store.policy.policy.secrets.files) : [];
+  const home2 = store.planHome(plan.id);
+  return home2 ? codeChanges(home2, store.policy.policy.secrets.files) : [];
 }
 function review(store, planId, o) {
   store.require();
@@ -10694,9 +10694,9 @@ function start(store, planId, force = false, approvedBy) {
     store.say(`warning: ${planId} overlaps ${o.id} (in progress) on ${o.globs.join(", ")} \u2014 expect conflicts at release; narrow touches or list the file in hub.shared`);
   }
   if (shared) {
-    const home = store.planHome(doc.id) ?? openPlanWorktree(store, doc.id, branch);
+    const home2 = store.planHome(doc.id) ?? openPlanWorktree(store, doc.id, branch);
     claimPlan(store, planId, branch, force, takeover, approvedBy);
-    store.say(`${doc.id}: work in ${store.ws.rel(home) || "this checkout"} (${branch}) \u2014 claimed by ${store.ledger.who.actor} (${store.ledger.who.run}); checkpoints commit its code on the branch`);
+    store.say(`${doc.id}: work in ${store.ws.rel(home2) || "this checkout"} (${branch}) \u2014 claimed by ${store.ledger.who.actor} (${store.ledger.who.run}); checkpoints commit its code on the branch`);
     return;
   }
   const from = currentBranch(), sha = git(["rev-parse", "HEAD"])?.trim();
@@ -12388,6 +12388,198 @@ var registration12 = {
   }
 };
 
+// src/hub/commands/work/suite.ts
+import { spawnSync as spawnSync4 } from "node:child_process";
+import { randomBytes as randomBytes3 } from "node:crypto";
+import { appendFileSync as appendFileSync3, existsSync as existsSync12, linkSync as linkSync2, mkdirSync as mkdirSync5, readFileSync as readFileSync10, renameSync as renameSync3, statSync as statSync9, unlinkSync as unlinkSync2, writeFileSync as writeFileSync3 } from "node:fs";
+import { hostname } from "node:os";
+import { join as join19 } from "node:path";
+var POLL_MS = 1e3;
+var UNWRITTEN_STALE_MS = 6e4;
+function home(store) {
+  const common = commonDir(store.ws.root);
+  return common ? join19(common, "crew") : store.dir;
+}
+function suiteSettings(store) {
+  const hub = yamlBlock(store.ws.read(join19(store.dir, "config.yaml")) ?? "", "hub");
+  const command2 = hub.full_suite;
+  if (!command2) fail("No hub.full_suite in .crew/config.yaml.");
+  const slots = hub.suite_slots ?? "1";
+  if (!/^\d+$/.test(slots) || parseInt(slots, 10) < 1) fail("hub.suite_slots: expected a whole number of at least 1");
+  return { command: command2, slots: parseInt(slots, 10) };
+}
+function holder(text2) {
+  try {
+    const h = JSON.parse(text2);
+    return h && typeof h === "object" && typeof h.token === "string" && typeof h.pid === "number" ? h : null;
+  } catch {
+    return null;
+  }
+}
+function isStale(text2, file) {
+  const h = holder(text2);
+  if (!h) {
+    try {
+      return Date.now() - statSync9(file).mtimeMs > UNWRITTEN_STALE_MS;
+    } catch {
+      return false;
+    }
+  }
+  if (h.host !== hostname()) return false;
+  try {
+    process.kill(h.pid, 0);
+    return false;
+  } catch (e) {
+    return e.code === "ESRCH";
+  }
+}
+function takeOverIfStale2(file, token) {
+  let seen;
+  try {
+    seen = readFileSync10(file, "utf8");
+  } catch {
+    return true;
+  }
+  if (!isStale(seen, file)) return false;
+  const aside = `${file}.stale-${token}`;
+  try {
+    renameSync3(file, aside);
+  } catch {
+    return true;
+  }
+  let freed = true;
+  if (readFileSync10(aside, "utf8") !== seen) {
+    try {
+      linkSync2(aside, file);
+      freed = false;
+    } catch {
+    }
+  }
+  unlinkSync2(aside);
+  return freed;
+}
+var sleep = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+function takeSlot(dir, slots, me) {
+  mkdirSync5(dir, { recursive: true });
+  const body2 = JSON.stringify(me);
+  for (let said = false; ; ) {
+    for (let i = 0; i < slots; i++) {
+      try {
+        writeFileSync3(join19(dir, `slot-${i}.lock`), body2, { flag: "wx" });
+        return i;
+      } catch (e) {
+        if (e.code !== "EEXIST") throw e;
+      }
+    }
+    let freed = false;
+    for (let i = 0; i < slots; i++) freed = takeOverIfStale2(join19(dir, `slot-${i}.lock`), me.token) || freed;
+    if (freed) continue;
+    if (!said) {
+      const held = [...Array(slots).keys()].map((i) => {
+        try {
+          return holder(readFileSync10(join19(dir, `slot-${i}.lock`), "utf8"));
+        } catch {
+          return null;
+        }
+      }).filter((h) => h !== null).map((h) => `${h.run} (${h.ref ?? "no ref"}, since ${h.started})`);
+      process.stderr.write(`suite: waiting for a slot \u2014 held by ${held.join("; ") || "another run"}
+`);
+      said = true;
+    }
+    sleep(POLL_MS);
+  }
+}
+function releaseSlot(file, token) {
+  try {
+    if (holder(readFileSync10(file, "utf8"))?.token === token) unlinkSync2(file);
+  } catch {
+  }
+}
+function runSuite(store, { cwd, ref }) {
+  const { command: command2, slots } = suiteSettings(store);
+  const dir = home(store), run2 = store.ledger.who.run, t0 = Date.now();
+  const me = {
+    token: `${process.pid}-${randomBytes3(6).toString("hex")}`,
+    pid: process.pid,
+    host: hostname(),
+    run: run2,
+    ref: ref ?? null,
+    worktree: cwd,
+    started: (/* @__PURE__ */ new Date()).toISOString()
+  };
+  const slot = takeSlot(join19(dir, "suite"), slots, me);
+  const t1 = Date.now();
+  let exit = 1;
+  try {
+    const r = spawnSync4(command2, { shell: true, cwd, stdio: "inherit" });
+    exit = r.status ?? 1;
+  } finally {
+    releaseSlot(join19(dir, "suite", `slot-${slot}.lock`), me.token);
+  }
+  const t2 = Date.now();
+  const rec = {
+    ts: new Date(t2).toISOString(),
+    ref: ref ?? null,
+    run: run2,
+    worktree: cwd,
+    slot,
+    wait_ms: t1 - t0,
+    run_ms: t2 - t1,
+    exit
+  };
+  const file = join19(dir, "suites.jsonl");
+  const torn = existsSync12(file) && statSync9(file).size > 0 && !readFileSync10(file, "utf8").endsWith("\n");
+  appendFileSync3(file, `${torn ? "\n" : ""}${JSON.stringify(rec)}
+`);
+  return { exit, waitMs: rec.wait_ms, runMs: rec.run_ms };
+}
+var secs = (ms) => (ms / 1e3).toFixed(1);
+function suiteCmd(store, ref) {
+  store.require();
+  const r = runSuite(store, { cwd: store.ws.root, ref: ref?.toUpperCase() });
+  store.say(`suite: exit ${r.exit} (waited ${secs(r.waitMs)}s, ran ${secs(r.runMs)}s)`);
+  return r.exit;
+}
+function suites(store, limit = 20) {
+  const file = join19(home(store), "suites.jsonl");
+  if (!existsSync12(file)) return [];
+  const recs = readFileSync10(file, "utf8").split("\n").flatMap((l) => {
+    try {
+      return l.trim() ? [JSON.parse(l)] : [];
+    } catch {
+      return [];
+    }
+  });
+  return recs.reverse().slice(0, Math.max(0, limit));
+}
+function suitesCmd(store, limit = 20, json = false) {
+  const recs = suites(store, limit);
+  if (json) return store.say(JSON.stringify(recs, null, 2));
+  if (!recs.length) return store.say("No suite runs recorded.");
+  for (const r of recs) {
+    store.say(`${r.ts}  ${r.ref ?? "-"}  ${r.run}  slot ${r.slot}  waited ${secs(r.wait_ms)}s  ran ${secs(r.run_ms)}s  exit ${r.exit}`);
+  }
+}
+
+// src/hub/commands/work/suite.reg.ts
+var registration13 = {
+  usage: [
+    "  suite [--ref P-###]                           run hub.full_suite under a slot shared by every worktree (Release)",
+    "  suites [--limit 20] [--json]                  recorded full-suite runs, newest first: queue wait and duration"
+  ],
+  cli: {
+    suite: { pos: [], str: ["ref"], run: (s2, a) => suiteCmd(s2, str(a, "ref")) },
+    suites: { pos: [], int: ["limit"], flag: ["json"], run: (s2, a) => suitesCmd(s2, a.num.limit, !!a.opt.json) }
+  },
+  tools: {
+    suites: {
+      description: "Recorded full-suite runs (`crew.mjs suites`), newest first: ts, ref, run, worktree, slot, wait_ms, run_ms, exit.",
+      input: obj({ limit: num("how many, newest first (default 20)") }),
+      run: (st, a) => suitesCmd(st, n(a, "limit"), true)
+    }
+  }
+};
+
 // src/hub/commands/memory/context.ts
 var DEFAULT_BUDGET = 6e3;
 var para = (text2, n2 = 3) => stripComments(text2).split("\n").map((l) => l.trim()).filter(Boolean).slice(0, n2);
@@ -12505,15 +12697,15 @@ function context(store, o = {}) {
   if (budget < 200) fail("--budget must be at least 200 characters.");
   const pid = o.id?.toUpperCase() ?? /^plan\/(P-\d+)/.exec(currentBranch() ?? "")?.[1];
   const plan = pid ? store.plans(true).get(pid) ?? fail(`No plan ${pid}.`) : null;
-  const home = plan ? store.planHome(plan.id) : null;
-  const header = `crew context${role === "any" ? "" : ` \u2014 ${role}`}${plan ? ` \u2014 ${plan.id}: ${plan.get("title")} [${plan.get("status")}]` : ""}` + (home && home !== store.ws.root ? ` \u2014 work in ${store.rel(home)}` : "");
+  const home2 = plan ? store.planHome(plan.id) : null;
+  const header = `crew context${role === "any" ? "" : ` \u2014 ${role}`}${plan ? ` \u2014 ${plan.id}: ${plan.get("title")} [${plan.get("status")}]` : ""}` + (home2 && home2 !== store.ws.root ? ` \u2014 work in ${store.rel(home2)}` : "");
   const lines = assemble2(header, plan ? planSections(store, plan, role) : projectSections(store, role), budget);
   if (o.json) store.say(JSON.stringify({ plan: plan?.id ?? null, role, budget, text: lines.join("\n") }));
   else for (const l of lines) store.say(l);
 }
 
 // src/hub/commands/memory/context.reg.ts
-var registration13 = {
+var registration14 = {
   usage: [
     "  context [P-###] [--role R] [--budget CHARS] [--json]   what you need right now, within a budget (default 6000 chars)"
   ],
@@ -12541,7 +12733,7 @@ var registration13 = {
 };
 
 // src/hub/commands/views/advisor.reg.ts
-var registration14 = {
+var registration15 = {
   usage: [
     "  next [--role R] \xB7 current \xB7 check \xB7 status [--write]    (roles: executive, director, pm, architect, developer, qa, release + the policy's)"
   ],
@@ -12564,7 +12756,7 @@ var registration14 = {
 };
 
 // src/hub/commands/team/guard.reg.ts
-var registration15 = {
+var registration16 = {
   usage: [
     "  guard                                         PreToolUse hook: reads the hook JSON on stdin, prints the decision"
   ],
@@ -12574,7 +12766,7 @@ var registration15 = {
 };
 
 // src/hub/commands/team/team.reg.ts
-var registration16 = {
+var registration17 = {
   usage: [
     "  assign PLAN_ID --to ROLE [--team T] [--note TXT]   open a ready plan for a role (start then needs it)",
     "  staff [--json]                                what can run in parallel now, within budgets.max_agents",
@@ -12624,7 +12816,7 @@ var registration16 = {
 };
 
 // src/hub/commands/team/liveness.reg.ts
-var registration17 = {
+var registration18 = {
   usage: [
     "  pause [--reason TXT] \xB7 resume --team [--note TXT]     stop / restart staffing and starts (executive or director)"
   ],
@@ -12641,7 +12833,7 @@ var registration17 = {
 };
 
 // src/hub/commands/team/agents.reg.ts
-var registration18 = {
+var registration19 = {
   usage: [
     "  agents [--check]                              render the role agents (.claude/agents/crew-<role>.md) from the policy"
   ],
@@ -12651,7 +12843,7 @@ var registration18 = {
 };
 
 // src/hub/commands/team/questions.reg.ts
-var registration19 = {
+var registration20 = {
   usage: [
     "  ask [ID] --to ROLE TEXT [--fyi] \xB7 escalate [ID] TEXT \xB7 answer Q-\u2026 TEXT [--decision [--scope GLOBS]] [--approved-by NAME]",
     "  questions [--to ROLE] [--ref ID] [--all] [--json]       questions between roles; an open one blocks only its document"
@@ -12726,7 +12918,7 @@ var registration19 = {
 };
 
 // src/hub/commands/views/export.reg.ts
-var registration20 = {
+var registration21 = {
   usage: [
     "  export [--json] [--out FILE]                  interactive HTML view (.crew/view/index.html) or the graph as JSON"
   ],
@@ -12742,25 +12934,25 @@ var registration20 = {
 
 // src/hub/server.ts
 import { spawn } from "node:child_process";
-import { randomBytes as randomBytes3 } from "node:crypto";
-import { existsSync as existsSync13, mkdirSync as mkdirSync5, watch as watch2 } from "node:fs";
+import { randomBytes as randomBytes4 } from "node:crypto";
+import { existsSync as existsSync14, mkdirSync as mkdirSync6, watch as watch2 } from "node:fs";
 import { createServer } from "node:http";
-import { basename as basename6, dirname as dirname8, join as join20 } from "node:path";
+import { basename as basename6, dirname as dirname8, join as join21 } from "node:path";
 
 // src/hub/commands/views/design.ts
 var import_yaml4 = __toESM(require_dist(), 1);
-import { existsSync as existsSync12, readFileSync as readFileSync10 } from "node:fs";
-import { dirname as dirname7, join as join19 } from "node:path";
+import { existsSync as existsSync13, readFileSync as readFileSync11 } from "node:fs";
+import { dirname as dirname7, join as join20 } from "node:path";
 var HANDOFF_KINDS = ["finalise", "locked", "revision", "screen-change", "screens-done", "screens-skipped"];
 var STAGES = ["palette", "directions", "tune", "finalise", "screens", "done"];
 var STATE_KEYS = ["stage", "shortlist", "variants", "current", "reviews"];
 var REQUIRED_COLORS = ["background", "foreground", "primary", "primary-foreground"];
 var FRONT = /^---\n([\s\S]*?)\n---\n/;
 function designPath(store) {
-  const cfg = store.ws.read(join19(store.dir, "config.yaml")) ?? "";
-  return join19(store.ws.root, yamlBlock(cfg, "design").file ?? "docs/design/DESIGN.md");
+  const cfg = store.ws.read(join20(store.dir, "config.yaml")) ?? "";
+  return join20(store.ws.root, yamlBlock(cfg, "design").file ?? "docs/design/DESIGN.md");
 }
-var studioPath = (store) => join19(dirname7(designPath(store)), "studio.json");
+var studioPath = (store) => join20(dirname7(designPath(store)), "studio.json");
 function readDesign(store) {
   const path = designPath(store);
   const text2 = store.ws.read(path);
@@ -12914,7 +13106,7 @@ function designWait(store, timeoutSec) {
   const path = studioPath(store);
   const pending = () => {
     try {
-      return existsSync12(path) ? JSON.parse(readFileSync10(path, "utf8")).handoffs ?? [] : [];
+      return existsSync13(path) ? JSON.parse(readFileSync11(path, "utf8")).handoffs ?? [] : [];
     } catch {
       return [];
     }
@@ -12972,7 +13164,7 @@ function runAction(open, name, body2) {
 }
 function serve(store, o) {
   store.require();
-  const token = randomBytes3(18).toString("base64url");
+  const token = randomBytes4(18).toString("base64url");
   const open = () => Store.open(store.ws.root);
   const clients = /* @__PURE__ */ new Set();
   let hosts = /* @__PURE__ */ new Set();
@@ -13048,14 +13240,14 @@ function serve(store, o) {
     }, 150);
   }
   const ledgerDir = dirname8(store.ledger.path), common = commonDir(store.ws.root);
-  mkdirSync5(ledgerDir, { recursive: true });
+  mkdirSync6(ledgerDir, { recursive: true });
   const watched = [
     store.dir,
     dirname8(designPath(store)),
     ...ledgerDir !== store.dir ? [ledgerDir] : [],
-    ...common ? [join20(common, "refs"), join20(common, "HEAD")] : []
+    ...common ? [join21(common, "refs"), join21(common, "HEAD")] : []
   ];
-  const watchers = [...new Set(watched)].filter((p) => existsSync13(p)).map((p) => watch2(p, { recursive: !p.endsWith("HEAD") && (p !== ledgerDir || p === store.dir) }, (_, file) => {
+  const watchers = [...new Set(watched)].filter((p) => existsSync14(p)).map((p) => watch2(p, { recursive: !p.endsWith("HEAD") && (p !== ledgerDir || p === store.dir) }, (_, file) => {
     const f = String(file ?? "");
     if (/\.lock$|\.stale-/.test(basename6(f))) return;
     if (!(p === store.dir && f.startsWith("view"))) notify2();
@@ -13109,7 +13301,7 @@ function openBrowser(url) {
 }
 
 // src/hub/commands/views/ui.reg.ts
-var registration21 = {
+var registration22 = {
   usage: [
     "  ui [--port 8765] [--no-open] [--design]       serve the view live on 127.0.0.1 (updates as files change);",
     "                                                --design opens the design studio (/design)"
@@ -13130,7 +13322,7 @@ var registration21 = {
 };
 
 // src/hub/commands/views/design.reg.ts
-var registration22 = {
+var registration23 = {
   usage: [
     "  design show [--json] \xB7 design wait [--timeout 1800] \xB7 design done ID|all",
     "                                                the design studio's state; wait blocks until the page hands a",
@@ -13160,7 +13352,7 @@ var registration22 = {
 };
 
 // src/hub/commands/views/checks.reg.ts
-var registration23 = {
+var registration24 = {
   cli: {
     check: { pos: [], run: (s2) => check(s2) }
   },
@@ -13274,7 +13466,7 @@ function recentlyDone(plans2) {
 }
 
 // src/hub/commands/views/reports.reg.ts
-var registration24 = {
+var registration25 = {
   cli: {
     status: { pos: [], flag: ["write"], run: (s2, a) => status(s2, !!a.opt.write) }
   },
@@ -13288,7 +13480,7 @@ var registration24 = {
 };
 
 // src/hub/commands/views/graph.reg.ts
-var registration25 = {
+var registration26 = {
   tools: {
     graph: {
       description: "Every tracked document (idea, goals, items, plans) with status, gates, relations and the focus, as JSON (`crew.mjs export --json`).",
@@ -13315,19 +13507,20 @@ var REGISTRATIONS = [
   ["work/execution.reg.ts", registration10],
   ["work/review.reg.ts", registration11],
   ["work/release.reg.ts", registration12],
-  ["memory/context.reg.ts", registration13],
-  ["views/advisor.reg.ts", registration14],
-  ["team/guard.reg.ts", registration15],
-  ["team/team.reg.ts", registration16],
-  ["team/liveness.reg.ts", registration17],
-  ["team/agents.reg.ts", registration18],
-  ["team/questions.reg.ts", registration19],
-  ["views/export.reg.ts", registration20],
-  ["views/ui.reg.ts", registration21],
-  ["views/design.reg.ts", registration22],
-  ["views/checks.reg.ts", registration23],
-  ["views/reports.reg.ts", registration24],
-  ["views/graph.reg.ts", registration25]
+  ["work/suite.reg.ts", registration13],
+  ["memory/context.reg.ts", registration14],
+  ["views/advisor.reg.ts", registration15],
+  ["team/guard.reg.ts", registration16],
+  ["team/team.reg.ts", registration17],
+  ["team/liveness.reg.ts", registration18],
+  ["team/agents.reg.ts", registration19],
+  ["team/questions.reg.ts", registration20],
+  ["views/export.reg.ts", registration21],
+  ["views/ui.reg.ts", registration22],
+  ["views/design.reg.ts", registration23],
+  ["views/checks.reg.ts", registration24],
+  ["views/reports.reg.ts", registration25],
+  ["views/graph.reg.ts", registration26]
 ];
 var REGISTRY = load(REGISTRATIONS);
 

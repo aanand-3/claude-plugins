@@ -7,6 +7,9 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     testTimeout: 120_000,
+    // half the cores: with several plans' suites on one machine, all-core runs starved each other into timeouts
+    // (BUG-028); `crew.mjs suites` shows the durations if this needs raising
+    maxWorkers: "50%",
     globalSetup: ["test/setup/tmp-root.ts"],
     setupFiles: ["test/setup/cleanup.ts"],
   },

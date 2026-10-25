@@ -144,7 +144,8 @@ There is no stored order: set priorities when approving, and `focus G-###` jumps
 | `max_tasks` | 10 | A plan with more tasks must be split |
 | `plan_worktrees` | false | One shared worktree per plan, created at `new-plan`; a single commit when the plan completes (the agent team needs it) |
 | `shared` | [] | Path globs (registries, docs, test files) that plans may change side by side: two plans that meet only on shared touches don't block each other in `staff` or `check`, and their merge conflicts are resolved at release. A touch is shared when it is an exact path a shared glob matches, or equals a shared glob; a broad glob never is |
-| `full_suite` | — | The command that runs every test; Release runs it before each merge when the project has no CI |
+| `full_suite` | — | The command that runs every test; Release runs it with `crew.mjs suite` before each merge when the project has no CI |
+| `suite_slots` | 1 | How many `crew.mjs suite` runs may run at once across every worktree of the repository; the rest wait for a slot |
 
 ## Item types
 | Type | Use for | Triage gate (must have content) |

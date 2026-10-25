@@ -1,5 +1,6 @@
 /** The command registry (P-030): the CLI and the MCP server read the same commands, options, help lines and tool
- * schemas as before the split into `commands/*\/*.reg.ts`, recorded in registry-before.json. */
+ * schemas as before the split into `commands/*\/*.reg.ts`, recorded in registry-before.json. Commands added since
+ * are not in that record: the checks cover BEFORE's commands, help lines and tools, not that nothing was added. */
 import { readdirSync, readFileSync } from "node:fs";
 import { expect, it } from "vitest";
 import { COMMANDS, help, parse, USAGE } from "../../src/hub/cli.js";
@@ -13,6 +14,7 @@ const KEYS = ["pos", "rest", "str", "int", "flag", "required", "choices"] as con
 const noStore = (): Store => { throw new Error("tools/list opens no store"); };
 
 type ListedTool = { name: string; description: string; inputSchema: unknown };
+const pick = (o: Record<string, unknown>, keys: object) => Object.fromEntries(Object.keys(keys).map((k) => [k, o[k]]));
 const listTools = () => (handle({ id: 1, method: "tools/list" }, noStore) as { result: { tools: ListedTool[] } }).result.tools;
 
 /** What the CLI and MCP server expose: each command's option spec, the help lines, each tool's description and schema. */
@@ -24,7 +26,7 @@ function inventory(help: string = USAGE) {
 }
 
 it("the CLI commands and their options are as before the split (AC2)", () => {
-  expect(inventory().cli).toEqual(BEFORE.cli);
+  expect(pick(inventory().cli, BEFORE.cli)).toEqual(BEFORE.cli);
 });
 
 it("every help line from before the split is in the help text (AC2)", () => {
@@ -33,7 +35,7 @@ it("every help line from before the split is in the help text (AC2)", () => {
 });
 
 it("tools/list returns the same tools, descriptions and input schemas as before the split (AC3)", () => {
-  expect(inventory().tools).toEqual(BEFORE.tools);
+  expect(pick(inventory().tools, BEFORE.tools)).toEqual(BEFORE.tools);
 });
 
 const HUB = new URL("../../src/hub/", import.meta.url);
@@ -48,8 +50,8 @@ it("cli.ts and mcp.ts declare no command; each is registered by one .reg.ts that
   const listed = REGISTRATIONS.map(([file]) => file);
   expect([...listed].sort()).toEqual(onDisk.sort());
   expect(new Set(listed).size).toBe(listed.length);
-  expect(Object.keys(REGISTRY.from.cli).sort()).toEqual(Object.keys(BEFORE.cli).sort());
-  expect(Object.keys(REGISTRY.from.tools).sort()).toEqual(Object.keys(BEFORE.tools).sort());
+  expect(Object.keys(BEFORE.cli).filter((c) => !(c in REGISTRY.from.cli))).toEqual([]);
+  expect(Object.keys(BEFORE.tools).filter((t) => !(t in REGISTRY.from.tools))).toEqual([]);
 });
 
 it("a registration added through the index's loader reaches parse, the help text and tools/list (AC4)", () => {
@@ -73,11 +75,13 @@ it("a registration added through the index's loader reaches parse, the help text
 
 it("a command or tool name registered twice fails at load, naming the two files (AC4)", () => {
   const one = (name: string): Registration => ({ cli: { [name]: { pos: [], run: () => 0 } } });
+  const commands = Object.keys(COMMANDS).sort();
   expect(() => load([["work/a.reg.ts", one("dup")], ["team/b.reg.ts", one("dup")]]))
     .toThrow("command 'dup' is registered twice: in work/a.reg.ts and in team/b.reg.ts");
   expect(() => register("views/again.reg.ts", one("next")))
     .toThrow("command 'next' is registered twice: in views/advisor.reg.ts and in views/again.reg.ts");
   const tool: Registration = { tools: { next: { description: "", input: obj(), run: () => 0 } } };
   expect(() => load([["x.reg.ts", tool], ["y.reg.ts", tool]])).toThrow("tool 'next' is registered twice: in x.reg.ts and in y.reg.ts");
-  expect(Object.keys(COMMANDS).sort()).toEqual(Object.keys(BEFORE.cli).sort());
+  expect(Object.keys(COMMANDS).sort()).toEqual(commands);
+  expect(commands).toEqual(expect.arrayContaining(Object.keys(BEFORE.cli)));
 });

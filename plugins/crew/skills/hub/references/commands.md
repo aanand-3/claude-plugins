@@ -180,6 +180,20 @@ refresh-bin [--check]                         copy the policy's release.refresh_
 
 - `merge_order`: What Release merges next (`crew.mjs merge-order`): done plans with unmerged branches, dependencies first; plans waiting on an unmerged dependency; merged branches to delete.
 
+## work/suite
+
+```text
+suite [--ref P-###]                           run hub.full_suite under a slot shared by every worktree (Release)
+suites [--limit 20] [--json]                  recorded full-suite runs, newest first: queue wait and duration
+```
+
+| Command | MCP tool |
+|---|---|
+| `suite` | — |
+| `suites` | `suites` |
+
+- `suites`: Recorded full-suite runs (`crew.mjs suites`), newest first: ts, ref, run, worktree, slot, wait_ms, run_ms, exit.
+
 ## memory/context
 
 ```text

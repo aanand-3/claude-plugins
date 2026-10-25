@@ -13,6 +13,7 @@ import { registration as memory_knowledge } from "./memory/knowledge.reg.js";
 import { registration as work_execution } from "./work/execution.reg.js";
 import { registration as work_review } from "./work/review.reg.js";
 import { registration as work_release } from "./work/release.reg.js";
+import { registration as work_suite } from "./work/suite.reg.js";
 import { registration as memory_context } from "./memory/context.reg.js";
 import { registration as views_advisor } from "./views/advisor.reg.js";
 import { registration as team_guard } from "./team/guard.reg.js";
@@ -41,6 +42,7 @@ export const REGISTRATIONS: [file: string, registration: Registration][] = [
   ["work/execution.reg.ts", work_execution],
   ["work/review.reg.ts", work_review],
   ["work/release.reg.ts", work_release],
+  ["work/suite.reg.ts", work_suite],
   ["memory/context.reg.ts", memory_context],
   ["views/advisor.reg.ts", views_advisor],
   ["team/guard.reg.ts", team_guard],
