@@ -2,7 +2,7 @@
 id: BUG-030
 type: bug
 title: Architect's next flags overlaps on hub.shared paths
-status: new
+status: triaged
 severity: S3
 priority: P2
 goal: G-007
@@ -19,14 +19,18 @@ roles.ts architect queue calls overlapping(p, v.plans) without sharedGlobs(store
 ## Environment
 
 ## Steps to reproduce
-1.
+1. Have two ready plans whose touches meet only on a hub.shared file (e.g. P-031/P-025 on cli.ts).
+2. Run `crew.mjs --as pm --run-id pm:ab2d1adb64e1d1929 next --role architect`.
 
 ## Expected
+No overlap is flagged for plans meeting only on hub.shared files, as staffing (footprint.ts overlapping with shared as third argument) does not block on them.
 
 ## Actual
+roles.ts:93 calls overlapping(p, v.plans) without sharedGlobs(v.store); next reports those overlaps as needing depends_on or narrower touches.
 
 ## Evidence
 
 ## Impact
 
 ## Notes
+- 2026-10-25: status new → triaged — priority P2, severity S3
