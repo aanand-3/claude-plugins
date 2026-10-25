@@ -5,7 +5,7 @@ goal: G-007
 items: BUG-025
 touches: packages/crew/test/helpers/**, packages/crew/test/setup/**, packages/crew/vitest.config.ts
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-041-test-suite-removes-its-temp-dirs
 pr:
 created: 2026-10-25
@@ -90,18 +90,18 @@ Decisions:
 
 ## Tasks
 <!-- Architect -->
-- [ ] T1: Add the run-scoped temp root and wire it as globalSetup → verify: `npx vitest run test/setup` passes and afterwards `ls -d "$TMPDIR"/crew-test-run-*` lists no root with that run's pid.
+- [x] T1: Add the run-scoped temp root and wire it as globalSetup → verify: `npx vitest run test/setup` passes and afterwards `ls -d "$TMPDIR"/crew-test-run-*` lists no root with that run's pid.
       `test/setup/tmp-root.ts` exports createRunRoot(base), sweepStale(base) and the default globalSetup returning
       the teardown; `globalSetup` added in vitest.config.ts.
-- [ ] T2: Track the helper's dirs and remove them per test / per file → verify: the T3 test passes, and `npx vitest run test/hub/e2e/playbook-home.test.ts test/hub/e2e/live-ui.test.ts` passes.
+- [x] T2: Track the helper's dirs and remove them per test / per file → verify: the T3 test passes, and `npx vitest run test/hub/e2e/playbook-home.test.ts test/hub/e2e/live-ui.test.ts` passes.
       helpers/repo.ts: Repo.create test-scoped, new `tempDir(prefix)` file-scoped; `test/setup/cleanup.ts` as a
       `setupFiles` entry (afterEach + afterAll, removing `<path>-*` siblings too).
-- [ ] T3: Regression test `test/setup/tmp-cleanup.test.ts` → verify: it passes with T1–T2, and fails with cleanup.ts's afterEach body or the teardown's rmSync commented out (checked once by the developer, noted in the progress log).
+- [x] T3: Regression test `test/setup/tmp-cleanup.test.ts` → verify: it passes with T1–T2, and fails with cleanup.ts's afterEach body or the teardown's rmSync commented out (checked once by the developer, noted in the progress log).
       Cases: (a) `os.tmpdir()` is inside a `crew-test-run-` root; (b) a Repo.create dir and its `-playbook`
       sibling made in one test are gone in the next test of the file; (c) a `tempDir()` dir survives across tests of
       the file; (d) `createRunRoot` + its teardown on a scratch base leaves the base empty; (e) `sweepStale` removes a
       root named with a dead pid (an exited child's) and keeps one named with `process.pid`.
-- [ ] T4: Typecheck the new files → verify: `npm run typecheck` in packages/crew passes (tsconfig already includes test/ and vitest.config.ts).
+- [x] T4: Typecheck the new files → verify: `npm run typecheck` in packages/crew passes (tsconfig already includes test/ and vitest.config.ts).
 
 ## Test plan
 <!-- Architect -->
@@ -137,9 +137,8 @@ n/a — test-only change; revert the commit to back out.
 
 _Generated 2026-10-25 by `crew.mjs handoff` from the ledger._
 
-- P-041: Test suite removes its temp dirs [in-progress] tasks 0/4 — claimed by Arpit Anand (developer:a9a5a728521f0b44d)
+- P-041: Test suite removes its temp dirs [in-review] tasks 4/4 — claimed by Arpit Anand (developer:a9a5a728521f0b44d)
 - last checkpoint 2026-10-25 08:45 at T4 (d3eceaf) by Arpit Anand; since then 0 commit(s), 3 uncommitted file(s): packages/crew/test/helpers/repo.ts, packages/crew/vitest.config.ts, packages/crew/test/setup/
-- next: T1: Add the run-scoped temp root and wire it as globalSetup → verify: `npx vitest run test/setup` passes and afterwards `ls -d "$TMPDIR"/crew-test-run-*` lists no root with that run's pid.
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —
 
 Latest log:
@@ -152,5 +151,8 @@ Latest log:
 - 2026-10-25: status draft → ready
 - 2026-10-25: assigned to the developer role
 - 2026-10-25: status ready → in-progress — branch plan/P-041-test-suite-removes-its-temp-dirs
+- 2026-10-25: status in-progress → in-review
 
 ## Outcome
+Run-scoped temp root: test/setup/tmp-root.ts (globalSetup) points TMPDIR/TMP/TEMP at crew-test-run-<pid>-* and removes it on teardown, sweeping roots of dead pids first. test/helpers/repo.ts tracks Repo.create (per test) and tempDir() (per file) dirs; test/setup/cleanup.ts (setupFiles) removes them with their <path>-* siblings. Regression test test/setup/tmp-cleanup.test.ts (cases a-e). Awaiting QA.
+Learnings: K-2026-10-25-a-vitest-run-killed-before-teardown
