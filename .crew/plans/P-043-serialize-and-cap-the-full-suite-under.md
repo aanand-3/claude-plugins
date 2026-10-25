@@ -5,7 +5,7 @@ goal: G-007
 items: BUG-028
 touches: packages/crew/src/hub/commands/work/suite.ts, packages/crew/src/hub/commands/work/suite.reg.ts, packages/crew/src/hub/commands/index.ts, packages/crew/vitest.config.ts, packages/crew/test/hub/e2e/suite.test.ts, packages/crew/test/hub/registry.test.ts, packages/crew/test/mcp.test.ts, plugins/crew/skills/hub/agents/release.md, plugins/crew/skills/hub/SKILL.md, plugins/crew/skills/hub/references/model.md
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-043-serialize-and-cap-the-full-suite-under
 pr:
 created: 2026-10-25
@@ -85,7 +85,7 @@ Ships with the next `.crew/bin` refresh; until Release runs `crew.mjs suite`, no
 
 _Generated 2026-10-25 by `crew.mjs handoff` from the ledger._
 
-- P-043: Serialize and cap the full suite under parallel plans [in-progress] tasks 5/5 — claimed by Arpit Anand (developer:a1faaed4e6c15f0b2)
+- P-043: Serialize and cap the full suite under parallel plans [in-review] tasks 5/5 — claimed by Arpit Anand (developer:a1faaed4e6c15f0b2)
 - last checkpoint 2026-10-25 13:05 at T5 (ace68f6) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —, AC7 —, AC8 —
 
@@ -99,7 +99,8 @@ Latest log:
 - 2026-10-25: status draft → ready
 - 2026-10-25: assigned to the developer role
 - 2026-10-25: status ready → in-progress — branch plan/P-043-serialize-and-cap-the-full-suite-under
+- 2026-10-25: status in-progress → in-review
 
 ## Outcome
 New `suite [--ref P-###]` command (`commands/work/suite.ts`, exporting `runSuite` for P-032) runs `hub.full_suite` under one of `hub.suite_slots` slot files in the git common dir's `crew/suite/` (shared by every worktree), waits with one stderr line naming the holders, takes over a dead holder's slot (same host, ESRCH), exits with the suite's code and appends a record to `crew/suites.jsonl`; `suites [--limit] [--json]` and the MCP tool `suites` read them newest first. vitest runs at `maxWorkers: "50%"`; release.md, SKILL.md and model.md send Release through `crew.mjs suite`. registry.test.ts now leaves names added after P-030 (an `ADDED` list) out of its frozen comparisons.
-Learnings: the guard rewrites every `crew.mjs` word in a Bash command, heredoc bodies included, so source text that mentions `crew.mjs <command>` must be written with the Write/Edit tools, not a shell heredoc.
+Learnings: K-2026-10-25-the-crew-guard-rewrites-every-crew-mjs
