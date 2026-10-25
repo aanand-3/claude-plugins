@@ -5,7 +5,7 @@ goal: G-007
 items: FEAT-035, FEAT-019
 touches: packages/crew/src/hub/core/memory/activity.ts, packages/crew/src/hub/core/memory/ledger.ts, packages/crew/src/hub/commands/team/activity.ts, packages/crew/src/hub/commands/team/autonomy.ts, packages/crew/src/hub/commands/memory/ledger.ts, packages/crew/src/hub/commands/views/reports.ts, packages/crew/src/hub/core/team/policy.ts, packages/crew/src/hub/commands/team/policy.ts, packages/crew/src/hub/server.ts, packages/crew/src/hub/cli.ts, packages/crew/ui/src/api.ts, packages/crew/ui/src/views/Overview.tsx, packages/crew/ui/src/components/LivePanel.tsx, packages/crew/ui/src/styles/**, packages/crew/test/activity.test.ts, packages/crew/test/hub/e2e/activity.test.ts, packages/crew/test/hub/e2e/live-ui.test.ts, packages/crew/test/plugin/contents.test.ts, plugins/crew/skills/guidelines/templates/settings.json, plugins/crew/skills/hub/agents/developer.md, plugins/crew/skills/hub/SKILL.md
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-027-live-agent-activity-in-the-hub
 pr:
 created: 2026-10-25
@@ -62,13 +62,13 @@ It is the first plan the team builds after Wave 0 (P-026, merged), alone, so eve
 - Every module stays under 300 lines; `cli.ts` (279 lines) gets two registry entries and two help lines.
 
 ## Tasks
-- [ ] T1: `core/memory/activity.ts` — event shape, path, append with rotation and torn-line handling, read, `describe` (target and ref), `liveRuns` (live, idle, task, last action, tokens). → verify: `npx vitest run test/activity.test.ts` (unit, imports src) covers AC2, AC3, AC4 and the AC6/AC7 rules.
-- [ ] T2: `commands/team/activity.ts` `activityHook` + `activity --hook` in cli.ts. → verify: `test/hub/e2e/activity.test.ts` hook cases (AC1, AC2 end to end).
-- [ ] T3: `report` event: ledger.ts `EventType`, `DETAIL.report` in commands/memory/ledger.ts (and an empty detail for an unknown type instead of a throw), report capture in `usageHook`. → verify: `test/hub/e2e/activity.test.ts` report cases with fake transcripts (handback message, plain text fallback, zero-usage transcript, secret masked, cap) and `ledger --ref P-### --type report` (AC5); `test/hub/e2e/team-2.test.ts` usage-hook cases still pass.
-- [ ] T4: "Running now" in `status` + `limits.idle_minutes` in policy.ts. → verify: e2e status cases with activity lines written at chosen timestamps (live, stopped, resumed, 24 h cutoff, idle with default and with `idle_minutes: 5`); `policy check`/`policy show` (AC6, AC7); `test/hub/e2e/policy.test.ts` still passes.
-- [ ] T5: `watch` command. → verify: e2e spawns `watch --limit 5`, checks the initial lines, appends via `activity --hook`, sees the new line within 2 s, kills it; `--ref` filter (AC8).
-- [ ] T6: server watchers + `/api/activity`; `LivePanel` on the Overview. → verify: `test/hub/e2e/live-ui.test.ts` (spawns `ui --no-open --port 0`; `/api/activity` shape; a `change` SSE after `pause` and after a hook append; a linked-worktree server gets a `change` after a commit) for AC9; manual UI check for AC10 (below).
-- [ ] T7: settings template entry, developer.md step-start checkpoint, hub SKILL.md command rows. → verify: `test/plugin/contents.test.ts` asserts the template's activity entry and that format_on_edit stays first (AC11).
+- [x] T1: `core/memory/activity.ts` — event shape, path, append with rotation and torn-line handling, read, `describe` (target and ref), `liveRuns` (live, idle, task, last action, tokens). → verify: `npx vitest run test/activity.test.ts` (unit, imports src) covers AC2, AC3, AC4 and the AC6/AC7 rules.
+- [x] T2: `commands/team/activity.ts` `activityHook` + `activity --hook` in cli.ts. → verify: `test/hub/e2e/activity.test.ts` hook cases (AC1, AC2 end to end).
+- [x] T3: `report` event: ledger.ts `EventType`, `DETAIL.report` in commands/memory/ledger.ts (and an empty detail for an unknown type instead of a throw), report capture in `usageHook`. → verify: `test/hub/e2e/activity.test.ts` report cases with fake transcripts (handback message, plain text fallback, zero-usage transcript, secret masked, cap) and `ledger --ref P-### --type report` (AC5); `test/hub/e2e/team-2.test.ts` usage-hook cases still pass.
+- [x] T4: "Running now" in `status` + `limits.idle_minutes` in policy.ts. → verify: e2e status cases with activity lines written at chosen timestamps (live, stopped, resumed, 24 h cutoff, idle with default and with `idle_minutes: 5`); `policy check`/`policy show` (AC6, AC7); `test/hub/e2e/policy.test.ts` still passes.
+- [x] T5: `watch` command. → verify: e2e spawns `watch --limit 5`, checks the initial lines, appends via `activity --hook`, sees the new line within 2 s, kills it; `--ref` filter (AC8).
+- [x] T6: server watchers + `/api/activity`; `LivePanel` on the Overview. → verify: `test/hub/e2e/live-ui.test.ts` (spawns `ui --no-open --port 0`; `/api/activity` shape; a `change` SSE after `pause` and after a hook append; a linked-worktree server gets a `change` after a commit) for AC9; manual UI check for AC10 (below).
+- [x] T7: settings template entry, developer.md step-start checkpoint, hub SKILL.md command rows. → verify: `test/plugin/contents.test.ts` asserts the template's activity entry and that format_on_edit stays first (AC11).
 
 ## Test plan
 **Targeted checks:** (the e2e suites drive the built bundle: run `cd packages/crew && npm run build` first, then discard the generated output — `git checkout -- plugins/crew/skills` and `git clean` of new dist files — since Release builds it)
@@ -94,9 +94,8 @@ It is the first plan the team builds after Wave 0 (P-026, merged), alone, so eve
 
 _Generated 2026-10-25 by `crew.mjs handoff` from the ledger._
 
-- P-027: Live agent activity in the hub [in-progress] tasks 0/7 — claimed by Arpit Anand (developer:a2058a8bac29fad70)
+- P-027: Live agent activity in the hub [in-review] tasks 7/7 — claimed by Arpit Anand (developer:a2058a8bac29fad70)
 - last checkpoint 2026-10-25 06:36 at T4 (f9cf69b) by Arpit Anand; since then 0 commit(s), 21 uncommitted file(s): packages/crew/src/hub/cli.ts, packages/crew/src/hub/commands/memory/ledger.ts, packages/crew/src/hub/commands/team/autonomy.ts, packages/crew/src/hub/commands/team/policy.ts, packages/crew/src/hub/commands/views/reports.ts, packages/crew/src/hub/core/memory/ledger.ts, packages/crew/src/hub/core/team/policy.ts, packages/crew/src/hub/server.ts
-- next: T1: `core/memory/activity.ts` — event shape, path, append with rotation and torn-line handling, read, `describe` (target and ref), `liveRuns` (live, idle, task, last action, tokens). → verify: `npx vitest run test/activity.test.ts` (unit, imports src) covers AC2, AC3, AC4 and the AC6/AC7 rules.
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —, AC7 —, AC8 —, AC9 —, AC10 —, AC11 —
 
 Latest log:
@@ -110,5 +109,8 @@ Latest log:
 - 2026-10-25: assigned to the developer role
 - 2026-10-25: status ready → in-progress — branch plan/P-027-live-agent-activity-in-the-hub
 - 2026-10-25: Architect: touches widened to packages/crew/src/hub/commands/team/policy.ts (policy show limits row) for AC7, answering Q-562bf9.
+- 2026-10-25: status in-progress → in-review
 
 ## Outcome
+Live activity feed (activity --hook), agent reports on SubagentStop, Running now in status/ui with idle flag (limits.idle_minutes), watch command, server watches ledger dir and common-dir refs. Awaiting QA.
+Learnings: K-2026-10-25-the-guard-injects-the-agents-role
