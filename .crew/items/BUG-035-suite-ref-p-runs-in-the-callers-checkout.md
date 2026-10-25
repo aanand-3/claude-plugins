@@ -49,3 +49,4 @@ Suggested severity S2 (a quality gate silently passes; no workaround inside the 
 - Gate: wherever the merge is checked (P-032's `land`, which calls `runSuite`, or a check before Release's squash-merge), accept only a record with that plan's ref, its worktree, the plan branch's current HEAD sha and exit 0.
 - Release instructions (crew-release.md step 2/3) can then drop "in the plan's worktree" as a manual precondition.
 - Targeted test: `suite --ref P-###` invoked from the main checkout runs with cwd = the plan's worktree and records its sha.
+- 2026-10-26: Completed the report against the code: suiteCmd (work/suite.ts:157-162) always runs hub.full_suite in the caller's checkout (store.ws.root); --ref is only a label, the record has no sha, and no hub code reads suites.jsonl before a merge (the gate is crew-release.md prose). suites.jsonl: P-049 21:12:30Z and P-050 21:30:41Z ran in the main checkout; P-049 merged as b249d20 18s later. Suggested S2/P1.
