@@ -5,11 +5,11 @@ goal: G-007
 items: BUG-031
 touches: packages/crew/src/hub/commands/team/hubcall.ts, packages/crew/test/hub/hubcall.test.ts
 depends_on:
-status: ready
+status: in-progress
 branch: plan/P-050-refuse-a-hub-script-held-in-a-shell
 pr:
 created: 2026-10-26
-started:
+started: 2026-10-26
 completed:
 assignee: developer
 ---
@@ -73,5 +73,6 @@ n/a — internal guard change; revert the commit to back out.
 - 2026-10-26: PM: plan opened from BUG-031 fast lane; blocked at ready: BUG-031 not triaged because its Steps to reproduce, Expected and Actual sections are empty, and the pm role cannot edit .crew/items (paths.write is .crew/drafts only).
 - 2026-10-26: status draft → ready
 - 2026-10-26: assigned to the developer role
+- 2026-10-26: status ready → in-progress — branch plan/P-050-refuse-a-hub-script-held-in-a-shell
 
 ## Outcome
