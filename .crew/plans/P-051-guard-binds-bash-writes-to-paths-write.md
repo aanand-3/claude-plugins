@@ -5,11 +5,11 @@ goal: G-007
 items: BUG-033, BUG-021, BUG-011, BUG-013, BUG-002
 touches: packages/crew/src/hub/commands/team/guard.ts, packages/crew/src/hub/commands/team/targets.ts, packages/crew/src/hub/commands/team/hubcall.ts, packages/crew/test/hub/targets.test.ts, packages/crew/test/hub/hubcall.test.ts, packages/crew/test/hub/e2e/guard.test.ts, packages/crew/test/hub/e2e/guard-writes.test.ts, plugins/crew/skills/hub/references/model.md
 depends_on:
-status: ready
+status: in-progress
 branch: plan/P-051-guard-binds-bash-writes-to-paths-write
 pr:
 created: 2026-10-26
-started:
+started: 2026-10-26
 completed:
 assignee: developer
 ---
@@ -261,5 +261,6 @@ Until then the old guard keeps running. Rollback: revert the plan's commit and r
 
 - 2026-10-26: status draft → ready
 - 2026-10-26: assigned to the developer role
+- 2026-10-26: status ready → in-progress — branch plan/P-051-guard-binds-bash-writes-to-paths-write
 
 ## Outcome
