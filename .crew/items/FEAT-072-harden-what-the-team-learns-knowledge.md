@@ -2,9 +2,9 @@
 id: FEAT-072
 type: feat
 title: Harden what the team learns: knowledge and check hints become code, guard, policy and process
-status: new
-priority:
-goal:
+status: triaged
+priority: P1
+goal: G-005
 plan:
 created: 2026-10-26
 closed:
@@ -27,3 +27,4 @@ As the executive, I want what the team learns and what `check` reports to turn i
 
 ## Notes
 Executive's request 2026-10-26. Examples where hardening happened only by hand that day: "the team session never runs a role's step with --as" (a convention) became guard enforcement through BUG-043/P-065; "checkpoint and handoff never tick tasks" (a gotcha) became a hub refusal through BUG-048/P-067. `check` that day: 0 errors, 14 hints, none owned (stale knowledge scopes, a superseded entry still cited by P-062, P-064 file vs ledger mismatch, stray .vitest output outside P-062's touches, 8 plans written ahead, 3 unconverted drafts). Complements G-005's lesson loop (FEAT-016–018), which keeps lessons as recalled text and leaves out automatic prompt edits.
+- 2026-10-26: status new → triaged — priority P1
