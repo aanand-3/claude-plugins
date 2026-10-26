@@ -87,6 +87,7 @@ Latest log:
 - 2026-10-26: status ready → in-progress — branch plan/P-048-notify-the-human-when-a-goal-waits
 - 2026-10-26: status in-progress → in-review — T1-T3 done: goal-approval kind emitted by new-goal, docs, typecheck/sizes; checks pass at checkpoints
 - 2026-10-26: status in-review → accepted
+- 2026-10-26: landed on main as 5b7ec20
 
 ## Outcome
 Learnings: none
