@@ -2,10 +2,10 @@
 id: BUG-048
 type: bug
 title: Dispatch re-offers a PM accept the hub refuses when a plan reached in-review with unchecked tasks
-status: new
-severity:
-priority:
-goal:
+status: triaged
+severity: S2
+priority: P2
+goal: G-001
 plan:
 created: 2026-10-26
 closed:
@@ -42,3 +42,4 @@ An unattended runner would spend a PM agent per pass on a refused move until the
 ## Notes
 Found while running the team loop on 2026-10-26. Related: BUG-047 (criteria parsing on the same plan).
 - 2026-10-26: Root cause seen while unblocking P-060: no hub command ticks task boxes (checkpoint --step and handoff record the step but leave '- [ ]'); developers tick by editing the plan file (K-2026-10-26-checkpoint-step-tn-and-handoff-never). A fix could have checkpoint --step tick its task, or move in-review refuse unchecked tasks.
+- 2026-10-26: status new → triaged — priority P2, severity S2
