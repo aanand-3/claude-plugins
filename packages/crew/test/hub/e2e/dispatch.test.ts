@@ -79,6 +79,38 @@ it("in review: architect review, then a failing check goes back to the implement
   expect(dispatch().entries).toEqual([{ role: "developer", ref: "P-001", task: expect.stringMatching(/^fix P-001/), resume: "dev" }]);
 });
 
+/** P-060's sequence (BUG-048): forced into review with every task unchecked, then QA's checks pass. */
+function forcedInReview(): void {
+  started(repo);
+  const p = planFile(repo, "P-001");
+  write(p, read(p).trimEnd() + "\nShipped.\nLearnings: none\n");
+  repo.write("src/auth/signup.py", "def signup(): ...\n");
+  repo.commit("feat(P-001): signup");
+  ok(as(repo, "developer", "move", "P-001", "in-review", "--force"));
+  repo.env.CREW_RUN = "qa";
+  ok(as(repo, "qa", "checkpoint", "P-001", "--run", "true", "--ac", "all"));
+}
+
+it("in review with unchecked tasks → developer finish, never a refused PM accept (P-067 AC3, BUG-048)", () => {
+  forcedInReview();
+  repo.env.CREW_RUN = "arch";
+  ok(as(repo, "architect", "review", "P-001", "--approve"));
+  const d = dispatch();
+  expect(brief(d)).toEqual(["developer P-001 finish"]);
+  expect(d.entries[0].task).toMatch(/^finish P-001: tick its done tasks \(T1, T2 unchecked\)/);
+  expect(d.entries[0].resume).toBe("dev");
+  expect(brief(d)).not.toContain("pm P-001 accept");
+  const p = planFile(repo, "P-001");
+  write(p, read(p).replaceAll("- [ ] T", "- [x] T"));
+  expect(brief(dispatch())).toEqual(["pm P-001 accept"]);
+});
+
+it("in review with unchecked tasks: a failing check still goes to developer fix first (P-067 AC4)", () => {
+  forcedInReview();
+  expect(as(repo, "qa", "checkpoint", "P-001", "--run", "false", "--ac", "all").returncode).toBe(1);
+  expect(dispatch().entries).toEqual([{ role: "developer", ref: "P-001", task: expect.stringMatching(/^fix P-001/), resume: "dev" }]);
+});
+
 it("approved with evidence missing → QA, resumed from its last run (AC2)", () => {
   inReview(repo);
   repo.env.CREW_RUN = "arch";

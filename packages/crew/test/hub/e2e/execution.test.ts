@@ -69,6 +69,36 @@ it("accepted needs independent evidence for every criterion", () => {
   expect(r.returncode, r.stderr).toBe(0);
 });
 
+it("in-review refuses unchecked tasks, naming each; --force still moves", () => {
+  started(repo);
+  const p = planFile(repo, "P-001");
+  write(p, read(p).trimEnd() + "\nShipped.\nLearnings: none\n");
+  const r = tr(repo, "move", "P-001", "in-review");
+  expect(r.returncode).not.toBe(0);
+  expect(r.stderr).toContain("can't go to review");
+  expect(r.stderr).toMatch(/unchecked task: T1\b/);
+  expect(r.stderr).toMatch(/unchecked task: T2\b/);
+  expect(r.stderr).toContain("tick each done task `- [x]`");
+  expect(read(p)).toContain("status: in-progress");
+  write(p, read(p).replaceAll("- [ ] T1", "- [x] T1"));
+  const one = tr(repo, "move", "P-001", "in-review");
+  expect(one.stderr).not.toMatch(/unchecked task: T1\b/);
+  expect(one.stderr).toMatch(/unchecked task: T2\b/);
+  write(p, read(p).replaceAll("- [ ] T", "- [x] T"));
+  const ok = tr(repo, "move", "P-001", "in-review");
+  expect(ok.returncode, ok.stderr).toBe(0);
+  expect(read(p)).toContain("status: in-review");
+});
+
+it("in-review --force moves a plan with unchecked tasks", () => {
+  started(repo);
+  const p = planFile(repo, "P-001");
+  write(p, read(p).trimEnd() + "\nShipped.\nLearnings: none\n");
+  const r = tr(repo, "move", "P-001", "in-review", "--force");
+  expect(r.returncode, r.stderr).toBe(0);
+  expect(read(p)).toContain("status: in-review");
+});
+
 it("human approval accepts evidence notes", () => {
   started(repo);
   const p = planFile(repo, "P-001");

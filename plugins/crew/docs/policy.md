@@ -11,7 +11,7 @@ who may take the move under the `lifecycle` preset.
 | Moving to | Gate | Refused as | Who (lifecycle) |
 |---|---|---|---|
 | `plan.ready` | Definition of Ready | `<id> is not ready (Definition of Ready)` | architect |
-| `plan.in-review` | Learnings recorded | `<id> can't go to review` | developer |
+| `plan.in-review` | Tasks checked and learnings recorded | `<id> can't go to review` | developer |
 | `plan.accepted` | Tasks, evidence and review | `<id> can't be accepted` | pm |
 | `plan.done` | Landed | `<id> isn't landed` | pm |
 | `goal.active` | Outcome and criteria written | `<id> can't be active` | human |

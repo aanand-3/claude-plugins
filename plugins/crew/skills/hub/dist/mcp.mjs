@@ -11119,7 +11119,7 @@ function refreshBin(store, root, check3) {
 // src/hub/core/work/transition-gates.ts
 var TRANSITION_GATES = {
   "plan.ready": { gate: "Definition of Ready", label: "is not ready (Definition of Ready)" },
-  "plan.in-review": { gate: "Learnings recorded", label: "can't go to review" },
+  "plan.in-review": { gate: "Tasks checked and learnings recorded", label: "can't go to review" },
   "plan.accepted": { gate: "Tasks, evidence and review", label: "can't be accepted" },
   "plan.done": { gate: "Landed", label: "isn't landed" },
   "goal.active": { gate: "Outcome and criteria written", label: "can't be active" },
@@ -11224,16 +11224,18 @@ function budgetProblems(store) {
 }
 function guard2(store, kind, doc, status2, approvedBy) {
   let problems = [];
+  const unchecked = () => doc.tasks().filter(([done]) => !done).map(([, t]) => `unchecked task: ${t}`);
   if (kind === "plan" && status2 === "ready") {
     problems = readinessProblems(store, doc);
   } else if (kind === "plan" && status2 === "in-review") {
-    problems = learningsProblems(doc, new Set(store.knowledge().map((e) => e.id)));
-  } else if (kind === "plan" && status2 === "accepted") {
+    const open = unchecked();
     problems = [
-      ...doc.tasks().filter(([done]) => !done).map(([, t]) => `unchecked task: ${t}`),
-      ...evidenceProblems(store, doc, approvedBy),
-      ...reviewProblems(store, doc)
+      ...open,
+      ...open.length ? ["tick each done task `- [x]` in the plan's Tasks (no hub command ticks them)"] : [],
+      ...learningsProblems(doc, new Set(store.knowledge().map((e) => e.id)))
     ];
+  } else if (kind === "plan" && status2 === "accepted") {
+    problems = [...unchecked(), ...evidenceProblems(store, doc, approvedBy), ...reviewProblems(store, doc)];
   } else if (kind === "plan" && status2 === "done") {
     problems = landedProblems(store, doc);
   } else if (kind === "goal" && status2 === "done") {
@@ -11533,10 +11535,17 @@ var ROWS = [
   (v) => mergeOrder(v.store).merge.slice(0, 1).map((p) => entry("release", p.id, p.legacy ? `merge ${p.id}: ${p.branch} by hand (first in merge-order; completed before accepted)` : `land ${p.id}: ${p.title} (first in merge-order)`)),
   // 4b. landed: the PM completes it
   (v) => v.withStatus("accepted").filter((p) => !landedProblems(v.store, p).length).map((p) => entry("pm", p.id, `complete ${p.id}: move ${p.id} done`)),
-  // 5. in review: a failing check, then the code review, the design review (UI plans), QA's evidence, then completion
+  // 5. in review: a failing check, unchecked tasks, then the code review, the design review (UI plans), QA's evidence, then completion
   (v) => v.withStatus("in-review").map((p) => {
     const ev = evidence(v.store, p);
     if (ev.some((e) => e.verify && !e.verify.ok)) return entry("developer", p.id, `fix ${p.id}: a check failed`, v.lastRun(p.id, "claim"));
+    const open = p.tasks().filter(([d]) => !d).map(([, t]) => /^T\d+\b/.exec(t)?.[0] ?? t.split(/\s+/).slice(0, 4).join(" "));
+    if (open.length) return entry(
+      "developer",
+      p.id,
+      `finish ${p.id}: tick its done tasks (${open.join(", ")} unchecked), or move it back to in-progress`,
+      v.lastRun(p.id, "claim")
+    );
     if (reviewProblems(v.store, p, "code").length) return entry("architect", p.id, `review ${p.id}: ${p.get("title")}`);
     if (reviewProblems(v.store, p, "design").length) return entry("designer", p.id, `design review ${p.id}: ${p.get("title")}`);
     if (ev.some((e) => !(e.verify?.ok && e.independent))) return entry("qa", p.id, `test ${p.id}: ${p.get("title")}`, v.lastRun(p.id, "checkpoint", "qa"));

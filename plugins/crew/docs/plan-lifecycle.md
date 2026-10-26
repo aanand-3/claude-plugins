@@ -22,7 +22,7 @@ stateDiagram-v2
   ready --> draft
   ready --> dropped: pm
   in_progress --> blocked
-  in_progress --> in_review: Learnings recorded · developer
+  in_progress --> in_review: Tasks checked and learnings recorded · developer
   in_progress --> ready: Definition of Ready · architect
   in_progress --> dropped: pm
   blocked --> in_progress: developer
@@ -44,7 +44,7 @@ stateDiagram-v2
 | `ready` | `draft` |  |  |
 | `ready` | `dropped` |  | pm |
 | `in-progress` | `blocked` |  |  |
-| `in-progress` | `in-review` | Learnings recorded | developer |
+| `in-progress` | `in-review` | Tasks checked and learnings recorded | developer |
 | `in-progress` | `ready` | Definition of Ready | architect |
 | `in-progress` | `dropped` |  | pm |
 | `blocked` | `in-progress` |  | developer |

@@ -115,13 +115,15 @@ export function budgetProblems(store: Store): string[] {
 /** Refuse a transition whose gate isn't met (bypassed only with --force). */
 function guard(store: Store, kind: Kind, doc: Doc, status: string, approvedBy?: string): void {
   let problems: string[] = [];
+  const unchecked = () => doc.tasks().filter(([done]) => !done).map(([, t]) => `unchecked task: ${t}`);
   if (kind === "plan" && status === "ready") {
     problems = readinessProblems(store, doc);
   } else if (kind === "plan" && status === "in-review") {
-    problems = learningsProblems(doc, new Set(store.knowledge().map((e) => e.id)));
+    const open = unchecked();
+    problems = [...open, ...(open.length ? ["tick each done task `- [x]` in the plan's Tasks (no hub command ticks them)"] : []),
+      ...learningsProblems(doc, new Set(store.knowledge().map((e) => e.id)))];
   } else if (kind === "plan" && status === "accepted") {
-    problems = [...doc.tasks().filter(([done]) => !done).map(([, t]) => `unchecked task: ${t}`),
-      ...evidenceProblems(store, doc, approvedBy), ...reviewProblems(store, doc)];
+    problems = [...unchecked(), ...evidenceProblems(store, doc, approvedBy), ...reviewProblems(store, doc)];
   } else if (kind === "plan" && status === "done") {
     problems = landedProblems(store, doc);
   } else if (kind === "goal" && status === "done") {
