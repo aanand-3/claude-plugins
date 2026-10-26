@@ -2,9 +2,9 @@
 id: FEAT-058
 type: feat
 title: Record guard denials
-status: new
+status: triaged
 priority: P1
-goal:
+goal: G-008
 plan:
 created: 2026-10-26
 closed:
@@ -24,3 +24,4 @@ Guard denials only go back to the agent as hook output (guard.ts:199-200) and ar
 
 ## Notes
 - 2026-10-26: goal hint G-008 (by Arpit Anand)
+- 2026-10-26: status new → triaged — priority P1
