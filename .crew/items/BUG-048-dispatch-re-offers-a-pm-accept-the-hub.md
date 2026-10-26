@@ -41,3 +41,4 @@ An unattended runner would spend a PM agent per pass on a refused move until the
 
 ## Notes
 Found while running the team loop on 2026-10-26. Related: BUG-047 (criteria parsing on the same plan).
+- 2026-10-26: Root cause seen while unblocking P-060: no hub command ticks task boxes (checkpoint --step and handoff record the step but leave '- [ ]'); developers tick by editing the plan file (K-2026-10-26-checkpoint-step-tn-and-handoff-never). A fix could have checkpoint --step tick its task, or move in-review refuse unchecked tasks.
