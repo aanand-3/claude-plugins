@@ -2,8 +2,8 @@
 id: FEAT-074
 type: feat
 title: Check hints get owners in dispatch
-status: new
-priority:
+status: triaged
+priority: P1
 goal:
 plan:
 created: 2026-10-26
@@ -28,3 +28,4 @@ As the executive, I want every `check` hint routed to the role that can fix it, 
 
 ## Notes
 The stale-hint stall is not part of this item: it goes to FEAT-066 (G-009), using the first-seen pass recorded here. Source: Q-b1501e, Q-232a2b. Priority after FEAT-071 (P0) and BUG-050. Executive call: G-007 is at 39/47 plans closed, so this item keeps G-007 open longer; alternative is the head of G-009 next to FEAT-066 (escalated on the hub).
+- 2026-10-26: status new → triaged — priority P1
