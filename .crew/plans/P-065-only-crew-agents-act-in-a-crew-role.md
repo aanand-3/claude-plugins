@@ -101,15 +101,9 @@ and subagents that aren't crew agents act as the executive: the guard refuses th
 ## Design
 
 ## Tasks
-- [ ] T1: In `test/hub/e2e/guard.test.ts` add `it("callers that aren't crew agents can't claim a role (BUG-043)")`
-  covering AC1–AC4 for `who` in `[null, "Explore"]` (via `hook()` and `bash()`; `init(repo)` first), asserting the
-  denied reasons' key words. → verify: `npm run build`, then `npx vitest run test/hub/e2e/guard.test.ts -t "BUG-043"`
-  fails on the current guard.ts (the AC1 repro returns null).
-- [ ] T2: Add `unclaimed()` to `guard.ts` and call it at both early returns; update the header comment.
-  → verify: `npm run build`, then `npx vitest run test/hub/e2e/guard.test.ts test/hub/e2e/guard-writes.test.ts` pass;
-  `wc -l src/hub/commands/team/guard.ts` under 300.
-- [ ] T3: Update the SKILL.md sentence (AC6). → verify: `grep -n "main session" plugins/crew/skills/hub/SKILL.md`;
-  `npx vitest run test/docs.test.ts` passes.
+- [ ] T1: Regression test in `test/hub/e2e/guard.test.ts`, `it("callers that aren't crew agents can't claim a role (BUG-043)")`, covering AC1–AC4 for `who` in `[null, "Explore"]` (via `hook()` and `bash()`; `init(repo)` first), asserting the denied reasons' key words → verify: `npm run build`, then `npx vitest run test/hub/e2e/guard.test.ts -t "BUG-043"` fails on the current guard.ts (the AC1 repro returns null).
+- [ ] T2: Add `unclaimed()` to `guard.ts` and call it at both early returns; update the header comment → verify: `npm run build`, then `npx vitest run test/hub/e2e/guard.test.ts test/hub/e2e/guard-writes.test.ts` pass; `wc -l src/hub/commands/team/guard.ts` under 300.
+- [ ] T3: Update the SKILL.md sentence (AC6) → verify: `grep -n "main session" plugins/crew/skills/hub/SKILL.md` shows the new wording; `npx vitest run test/docs.test.ts` passes.
 
 ## Test plan
 **Targeted checks:** (in the plan worktree, `cd packages/crew`; `npm ci --prefer-offline` first in a fresh worktree;

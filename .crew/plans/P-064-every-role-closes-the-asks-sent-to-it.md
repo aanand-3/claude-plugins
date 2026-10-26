@@ -5,7 +5,7 @@ goal:
 items: BUG-044
 touches: plugins/crew/skills/hub/agents/pm.md, plugins/crew/skills/hub/agents/developer.md, plugins/crew/skills/hub/agents/qa.md, plugins/crew/skills/hub/agents/release.md, plugins/crew/skills/hub/agents/designer.md, plugins/crew/skills/hub/agents/generic.md, packages/crew/test/hub/e2e/agents.test.ts
 depends_on:
-status: draft
+status: ready
 branch: plan/P-064-every-role-closes-the-asks-sent-to-it
 pr:
 created: 2026-10-26
@@ -61,7 +61,9 @@ Add the line where each template keeps its standing instructions: in **Rules** f
 and generic (where the architect's own `answer` line lives). Suggested wording (adapt the "within your role" part to each
 role, keep the command literal):
 
-`- A question for you (an \`answer Q-…\` entry from dispatch or \`next\`): do what it asks within your role, then close it with \`crew.mjs answer Q-… "<what you did, or your answer>"\`. If it isn't your role's work, answer saying so and which role owns it; never leave it open.`
+> - A question for you (an `answer Q-…` entry from dispatch or `next`): do what it asks within your role, then close
+>   it with `crew.mjs answer Q-… "<what you did, or your answer>"`. If it isn't your role's work, answer saying so and
+>   which role owns it; never leave it open.
 
 The templates must name only real hub commands (`answer` is one). Keep each line under the templates' existing wrap
 (~120 chars), as the files do.
@@ -69,12 +71,8 @@ The templates must name only real hub commands (`answer` is one). Keep each line
 ## Design
 
 ## Tasks
-- [ ] T1: In `test/hub/e2e/agents.test.ts` add `it("every role template closes its asks with answer (BUG-044)")`:
-  each template file contains `crew.mjs answer Q-`; then `init(repo, { mode: "" })`, write a policy with a project role
-  (as "a project role renders from the generic template" does), `tr(repo, "agents")`, and assert `.claude/agents/crew-pm.md` and the project role's agent contain it.
-  → verify: the new case fails on the current templates (six files lack the line).
-- [ ] T2: Add the line to `pm.md`, `developer.md`, `qa.md`, `release.md`, `designer.md` and `generic.md`.
-  → verify: `npx vitest run test/hub/e2e/agents.test.ts` passes (new and existing cases).
+- [ ] T1: Regression test in `test/hub/e2e/agents.test.ts`, `it("every role template closes its asks with answer (BUG-044)")`: each template file contains `crew.mjs answer Q-`; then `init(repo, { mode: "" })`, write a policy with a project role (as "a project role renders from the generic template" does), `tr(repo, "agents")`, and assert `.claude/agents/crew-pm.md` and the project role's agent contain it → verify: the new case fails on the current templates (six files lack the line).
+- [ ] T2: Add the line to `pm.md`, `developer.md`, `qa.md`, `release.md`, `designer.md` and `generic.md` → verify: `npx vitest run test/hub/e2e/agents.test.ts` passes (new and existing cases).
 
 ## Test plan
 **Targeted checks:** (in the plan worktree, `cd packages/crew`; `npm ci --prefer-offline` first in a fresh worktree;
@@ -98,5 +96,7 @@ then. Rollback: revert the commit and re-render.
 ## Handoff
 
 ## Progress log
+
+- 2026-10-26: status draft → ready
 
 ## Outcome
