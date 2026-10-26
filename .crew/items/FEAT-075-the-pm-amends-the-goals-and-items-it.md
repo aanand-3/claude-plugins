@@ -2,9 +2,9 @@
 id: FEAT-075
 type: feat
 title: The PM amends the goals and items it owns through the hub
-status: new
-priority:
-goal:
+status: triaged
+priority: P1
+goal: G-007
 plan:
 created: 2026-10-26
 closed:
@@ -27,3 +27,4 @@ As the executive, I want the PM to amend the goals and items it owns through the
 
 ## Notes
 Executive's request 2026-10-26. It hit twice that day: G-009's Breakdown stayed stale ("No role can edit goal files", FEAT-064 report, 11:49), and Q-088a6e (G-005 Breakdown and In scope, FEAT-072 criteria, FEAT-066 criteria), which the executive's session edited by hand in 3d50d9b. Q-088a6e also stopped the whole team, which is BUG-051.
+- 2026-10-26: status new → triaged — priority P1
