@@ -150,6 +150,7 @@ Latest log:
 - 2026-10-26: status ready → in-progress — branch plan/P-065-only-crew-agents-act-in-a-crew-role
 - 2026-10-26: status in-progress → in-review — T1-T3 done. Branch predates P-063 on main; no overlapping hunks in guard.ts
 - 2026-10-26: status in-review → accepted
+- 2026-10-26: landed on main as 68a6a44
 
 ## Outcome
 
