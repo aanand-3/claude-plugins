@@ -11,6 +11,7 @@ pr:
 created: 2026-10-26
 started:
 completed:
+assignee: developer
 ---
 
 # P-055: Triage owns goal links
@@ -105,5 +106,6 @@ FEAT-048 and BUG-037 (G-007). Goal links should be decided at triage, not captur
 
 - 2026-10-26: status draft → ready
 - 2026-10-26: Architect: spec updated for the executive's rule 1 (Q-fcec4f): items record origin (--origin, plan worktree, single claim), --goal is a Notes hint, triage suggests the origin's goal (AC1, AC1b, Approach, T1). Rules 2-5 unchanged; touches unchanged.
+- 2026-10-26: assigned to the developer role
 
 ## Outcome
