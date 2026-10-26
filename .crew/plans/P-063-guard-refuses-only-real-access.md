@@ -11,6 +11,7 @@ pr:
 created: 2026-10-26
 started:
 completed:
+assignee: developer
 ---
 
 # P-063: Guard refuses only real access to secrets files
@@ -103,5 +104,6 @@ Ships with the next vendored hub refresh (Release builds the bundle and refreshe
 ## Progress log
 
 - 2026-10-26: status draft → ready
+- 2026-10-26: assigned to the developer role
 
 ## Outcome
