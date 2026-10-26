@@ -56,3 +56,4 @@ Security has an owner. A Security role reviews every plan that touches security-
 - Design: `.crew/drafts/with-the-current-crew-distributed-deer.md`.
 
 ## Progress log
+- 2026-10-26: proposed from a design session: Security role audits the whole project on a cadence and gates plans on security.paths; reuses the Designer's path-scoped review gate, the audit trigger is new. Design: .crew/drafts/with-the-current-crew-distributed-deer.md. Related: CHORE-027 (designer not rendered here).
