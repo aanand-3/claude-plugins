@@ -5,7 +5,7 @@ goal: G-007
 items: FEAT-050
 touches: packages/crew/src/hub/commands/team/guard.ts, packages/crew/src/hub/core/memory/activity.ts, packages/crew/src/hub/commands/team/activity.ts, packages/crew/ui/src/api.ts, packages/crew/ui/src/components/LivePanel.tsx, packages/crew/test/activity.test.ts, packages/crew/test/hub/e2e/activity.test.ts, packages/crew/test/hub/e2e/guard.test.ts, packages/crew/test/hub/e2e/guard-writes.test.ts, packages/crew/test/hub/e2e/live-ui.test.ts, packages/crew/test/hub-worktrees.test.ts, packages/crew/test/hub/e2e/playbook-home.test.ts
 depends_on:
-status: in-review
+status: accepted
 branch: plan/P-056-guard-labels-every-agent-command
 pr:
 created: 2026-10-26
@@ -116,6 +116,7 @@ Latest log:
 - 2026-10-26: status accepted → in-progress — land: hub.full_suite failed (exit 1):      58|   expect(hook(wt, { ...bash("crew-developer", "ls"), cwd: wt.path })).… ·        |                                                                       ^ ·      59| }); ·      60| · ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
 - 2026-10-26: touches + test/hub-worktrees.test.ts and test/hub/e2e/playbook-home.test.ts (land suite, hub 24f9184): change only their guard null expectations to 'not denied, command unchanged' (plus the label where natural), nothing else. hub-worktrees.test.ts:236 (ls/cmp/git diff on .crew/bin/crew.mjs as crew-qa: expect(hook(r, cmd)?.updatedInput?.command).toBe(cmd)) and playbook-home.test.ts:58 (crew-developer ls in a worktree: not denied, command 'ls'). A grep of the test tree for toBeNull()/toBe(null) on guard hooks for crew Bash calls finds no others: the rest are Write/Read payloads, non-crew agents or the main session. Targeted checks missed them because they ran only the guard and activity suites; these two guard cases sit in other suites.
 - 2026-10-26: status in-progress → in-review
+- 2026-10-26: status in-review → accepted
 
 ## Outcome
 The guard now labels every allowed crew-agent Bash call `<role> <plan>: <what>` (identity flags still injected) and refuses a background or >120 s call with no description. `deriveWhat`/`label` live in core/memory/activity.ts, and `describe` also takes the plan from a worktree path in the command. The activity hook records `label` on Bash events, and `watch`, `status` Running now, `/api/activity` and the UI Live panel show it, falling back to `tool target`. guard.ts is 217 lines, activity.ts 235. live-ui.test.ts was added to touches (Q-2f4b62).
