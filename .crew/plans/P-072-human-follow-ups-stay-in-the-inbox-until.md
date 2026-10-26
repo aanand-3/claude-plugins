@@ -97,6 +97,14 @@ already show the follow-up through the open question. No `depends_on`.
   the follow-up and `GET /api/inbox` lists it with kind `follow-up`; without `follow_up` the action behaves as
   before. Test: same file, case "ui: answer with a follow-up (FEAT-068)". The Inbox page (manual, Design section): the
   follow-up entry shows, Done closes it without a reload, the "Then you…" field on an escalation records a follow-up.
+- [ ] AC6 · Inbox layout (Designer's review): `views.css` has exactly one new rule,
+  `.inbox__text { overflow-wrap: anywhere; min-width: 0; }`, next to the other `.live__`/`.actions__` rules, and the
+  entry's question `<p>` in `Inbox.tsx` carries `className="inbox__text"`; in `Answer`, the "Then you…" input
+  (`aria-label` "Follow-up for Q-…", unchanged) sits inside the answer `<form>`, on its own `.actions__row` above the
+  row holding the decision input and the Answer button, with placeholder `Then you… (optional step you will do)`, so
+  Enter in either input submits the answer with `follow_up`. Check: the static check in the Test plan; on screen
+  (manual), a 300-character step and an escalation with one unbroken 80-character token wrap inside their cards with
+  no sideways scroll at 375/900/1440 px, light and dark, and the placeholder is not clipped at 375 px.
 - [ ] AC5 · `npm run typecheck` passes; `followups.ts`, `inbox.ts`, `execution.ts`, `server.ts` and `Inbox.tsx` stay
   under 300 lines; the existing `inbox.test.ts` cases pass unchanged.
 
@@ -122,9 +130,13 @@ Composition on the existing Inbox view (docs/design/DESIGN.md tokens; inventory 
   Q-id as plain `.id` text (like escalations); body `<p>` the step; `.muted` line "about P-### · holds P-###" via
   `IdLink`; one `btn` "Done" (disabled while busy or with no name, title "Enter your name first") that posts
   `answer {qid, text: "done", approved_by}`; then the `how` command in `code.live__action` and `Result`, as today.
-- Escalation entry: under the existing answer form, one more `input.input.actions__note`, placeholder
-  "Then you… (optional: a step you'll do; it stays in your inbox)", `aria-label="Follow-up for Q-…"`; when filled it
-  is sent as `follow_up` with the answer. No layout change otherwise.
+- Escalation entry: inside the answer form, before Answer: the `<form>` holds two `.actions__row`s, first one more
+  `input.input.actions__note`, placeholder "Then you… (optional step you will do)" (short enough not to clip at
+  375 px), `aria-label="Follow-up for Q-…"`, then the existing row with the decision input and the Answer button.
+  Enter in either input submits; when filled it is sent as `follow_up` with the answer. No layout change otherwise.
+- Text wrapping: the entry's question `<p>` (shared by every kind) gets `className="inbox__text"`, styled by one rule
+  in `ui/src/styles/views.css` beside the `.live__`/`.actions__` rules: `.inbox__text { overflow-wrap: anywhere;
+  min-width: 0; }`, so a branch name, path or URL in a step breaks inside the card. No other style change.
 - States: loading, error, empty and the not-served hint unchanged. The follow-up card disappears on the change event
   after Done (no reload).
 - UI criteria: at 375, 900 and 1440 px, light and dark, no horizontal overflow (long step text wraps inside the card),
