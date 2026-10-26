@@ -5,7 +5,7 @@ goal: G-007
 items: BUG-034
 touches: packages/crew/src/hub/core/memory/activity.ts, packages/crew/src/hub/core/memory/ledger.ts, packages/crew/src/hub/commands/team/activity.ts, packages/crew/src/hub/commands/team/liveness.ts, packages/crew/src/hub/commands/team/liveness.reg.ts, plugins/crew/skills/hub/agents/director.md, packages/crew/test/activity.test.ts, packages/crew/test/hub/e2e/activity.test.ts, packages/crew/test/mcp.test.ts, packages/crew/test/hub/registry.test.ts, plugins/crew/docs/reference.md, plugins/crew/docs/context-and-memory.md, packages/crew/src/docs/diagrams.ts, packages/crew/src/hub/commands/memory/ledger.ts
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-053-a-stopped-agents-run-stops-staying-live
 pr:
 created: 2026-10-26
@@ -65,7 +65,7 @@ BUG-034 (G-007). A stopped agent (TaskStop, a crashed session) writes no usage o
 
 _Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
 
-- P-053: A stopped agent's run stops staying live [in-progress] tasks 4/4 — claimed by Arpit Anand (developer:a36d2c9d3bfb216a2)
+- P-053: A stopped agent's run stops staying live [in-review] tasks 4/4 — claimed by Arpit Anand (developer:a36d2c9d3bfb216a2)
 - last checkpoint 2026-10-26 07:04 at T2 (970bb1c) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
 - ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-053-a-stopped-agents-run-stops-staying-live/packages/crew && npx vitest run test/activity.test.ts (AC 1)
 - ✗ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-053-a-stopped-agents-run-stops-staying-live/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/activity.test.ts test/mcp.test.ts test/hub/registry.test.ts ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-053-a-stopped-agents-run-stops-staying-live checkout -- plugins/crew/skills/hub/dist plugins/crew/skills/hub/references/commands.md plugins/crew/docs; exit $r (AC 2)
@@ -86,6 +86,7 @@ Latest log:
 - 2026-10-26: status draft → ready
 - 2026-10-26: assigned to the developer role
 - 2026-10-26: status ready → in-progress — branch plan/P-053-a-stopped-agents-run-stops-staying-live
+- 2026-10-26: status in-progress → in-review
 
 ## Outcome
 A run whose last activity names a done or dropped plan, or a closed item, is no longer live: it drops out of `status`, `/api/activity` and dispatch's idle row. `end-run <run> --note` (CLI) and `end_run` (MCP), for the executive or the director, record an `end-run` event that ends a live run until it acts again. The Director's step 2 gained a `run … idle` entry. The ledger docs and reference were regenerated. registry.test.ts now accepts a tool enum that gained values, because the ledger tool's `type` enum lists the event types.
