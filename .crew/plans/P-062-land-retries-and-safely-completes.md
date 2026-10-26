@@ -11,6 +11,7 @@ pr:
 created: 2026-10-26
 started:
 completed:
+assignee: developer
 ---
 
 # P-062: land retries and safely completes a worktree removal that fails early
@@ -96,5 +97,6 @@ n/a — internal change to land's cleanup, shipped in the hub bundle Release reb
 ## Progress log
 
 - 2026-10-26: status draft → ready
+- 2026-10-26: assigned to the developer role
 
 ## Outcome
