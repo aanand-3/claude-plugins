@@ -11,6 +11,7 @@ pr:
 created: 2026-10-26
 started:
 completed:
+assignee: developer
 ---
 
 # P-059: Show the triage goal suggestion in next --role pm
@@ -73,5 +74,6 @@ and before `start` (K-2026-10-25-a-plan-worktree-cut-before-its-depends).
 ## Progress log
 
 - 2026-10-26: status draft → ready
+- 2026-10-26: assigned to the developer role
 
 ## Outcome
