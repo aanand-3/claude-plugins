@@ -2,12 +2,13 @@
 id: CHORE-024
 type: chore
 title: Hub build leaks its hub-ui temp dirs
-status: triaged
+status: done
 priority: P2
 goal: G-007
 plan: P-046
 created: 2026-10-25
-closed:
+closed: 2026-10-26
+completed: 2026-10-26
 ---
 
 # CHORE-024: Hub build leaks its hub-ui temp dirs
@@ -26,3 +27,4 @@ add to it; left alone it grows the same way BUG-025 did, more slowly.
 Related: BUG-025 (test suite temp-dir leak, fixed by P-041 in the tests only). This one is product/build code,
 which P-041 explicitly left out. Likely fix: rmSync(outDir, { recursive: true, force: true }) in bundlePage's finally.
 - 2026-10-25: status new → triaged — priority P2
+- 2026-10-26: status triaged → done — delivered by P-046
