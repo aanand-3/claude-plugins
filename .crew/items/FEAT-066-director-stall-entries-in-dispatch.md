@@ -2,9 +2,9 @@
 id: FEAT-066
 type: feat
 title: Director stall entries in dispatch for repeated refusals and denials
-status: new
-priority:
-goal:
+status: triaged
+priority: P1
+goal: G-009
 plan:
 created: 2026-10-26
 closed:
@@ -27,3 +27,4 @@ As the executive, I want a loop that keeps bouncing off the same refusal to be h
 ## Notes
 Goal G-009 (Director-first exceptions). Source: Q-24ba43 (a)(b), Q-73467a.
 - 2026-10-26: goal hint G-009 (by Arpit Anand)
+- 2026-10-26: status new → triaged — priority P1
