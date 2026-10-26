@@ -5,11 +5,11 @@ goal:
 items: FEAT-069
 touches: packages/crew/src/hub/core/work/footprint.ts, packages/crew/src/hub/commands/work/workflow.ts, packages/crew/src/hub/commands/team/team.ts, packages/crew/scripts/sample-project.mjs, plugins/crew/skills/hub/SKILL.md, plugins/crew/skills/hub/references/model.md, packages/crew/test/hub/e2e/context.test.ts, packages/crew/test/hub/e2e/branch-copies.test.ts, packages/crew/test/hub/e2e/start-overlap.test.ts
 depends_on:
-status: ready
+status: in-progress
 branch: plan/P-071-start-refuses-an-overlap-with-active
 pr:
 created: 2026-10-26
-started:
+started: 2026-10-26
 completed:
 assignee: developer
 ---
@@ -116,5 +116,6 @@ Rollback: revert the plan's commit and rebuild.
 
 - 2026-10-26: status draft → ready
 - 2026-10-26: assigned to the developer role
+- 2026-10-26: status ready → in-progress — branch plan/P-071-start-refuses-an-overlap-with-active
 
 ## Outcome
