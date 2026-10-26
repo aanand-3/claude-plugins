@@ -139,9 +139,9 @@ _Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —
 
 Latest log:
-- 2026-10-26: status draft → ready
 - 2026-10-26: assigned to the developer role
 - 2026-10-26: status ready → in-progress — branch plan/P-065-only-crew-agents-act-in-a-crew-role
+- 2026-10-26: status in-progress → in-review — T1-T3 done. Branch predates P-063 on main; no overlapping hunks in guard.ts
 
 ## Progress log
 
