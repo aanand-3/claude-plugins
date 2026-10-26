@@ -2,12 +2,12 @@
 id: FEAT-062
 type: feat
 title: Runner-only launches
-status: triaged
+status: duplicate
 priority: P1
 goal: G-009
 plan:
 created: 2026-10-26
-closed:
+closed: 2026-10-26
 ---
 
 # FEAT-062: Runner-only launches
@@ -24,3 +24,4 @@ Slice of G-009 (One runner, many views): Runner-only launches — the `launch: r
 
 ## Notes
 - 2026-10-26: triaged from G-009 breakdown
+- 2026-10-26: status triaged → duplicate — Replaced by an item with the full summary
