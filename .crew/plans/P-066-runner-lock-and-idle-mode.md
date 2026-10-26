@@ -5,7 +5,7 @@ goal:
 items: FEAT-059
 touches: packages/crew/src/hub/core/lock.ts, packages/crew/src/hub/commands/work/suite.ts, packages/crew/src/hub/commands/team/runner.ts, packages/crew/src/hub/commands/team/runnerlock.ts, packages/crew/src/hub/commands/team/autonomy.ts, packages/crew/src/hub/commands/team/autonomy.reg.ts, packages/crew/src/hub/commands/views/reports.ts, packages/crew/src/hub/registry.ts, packages/crew/src/hub/cli.ts, packages/crew/src/hub/main.ts, plugins/crew/skills/team/SKILL.md, packages/crew/test/hub/lock.test.ts, packages/crew/test/hub/e2e/runner.test.ts, packages/crew/test/structure.test.ts
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-066-runner-lock-and-idle-mode
 pr:
 created: 2026-10-26
@@ -167,7 +167,7 @@ ignored by the old runner and can be deleted.
 
 _Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
 
-- P-066: Runner lock and idle mode [in-progress] tasks 5/6 — claimed by Arpit Anand (developer:a90435617251059e2)
+- P-066: Runner lock and idle mode [in-review] tasks 5/6 — claimed by Arpit Anand (developer:a90435617251059e2)
 - last checkpoint 2026-10-26 15:46 at T1 (483709a) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
 - ✓ npm run --prefix /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-066-runner-lock-and-idle-mode/packages/crew test -- test/hub/lock.test.ts (AC 2)
 - ✓ npm run --prefix /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-066-runner-lock-and-idle-mode/packages/crew test -- test/hub/e2e/suite.test.ts (AC 11)
@@ -190,6 +190,7 @@ Latest log:
 - 2026-10-26: status in-progress → in-review
 - 2026-10-26: status in-review → accepted
 - 2026-10-26: status accepted → in-progress — land: hub.full_suite failed (exit 1):      41|   expect(loose("hub/core/").sort()).toEqual(["git.ts", "store.ts", "te… ·        |                                     ^ ·      42| }); ·      43| · ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+- 2026-10-26: status in-progress → in-review
 
 ## Outcome
 The runner is one per clone and idles instead of exiting. `core/lock.ts` (extracted from suite.ts, which now uses it)
