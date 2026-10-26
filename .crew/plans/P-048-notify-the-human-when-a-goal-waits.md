@@ -11,6 +11,7 @@ pr:
 created: 2026-10-25
 started:
 completed:
+assignee: developer
 ---
 
 # P-048: Notify the human when a goal waits for approval
@@ -67,5 +68,6 @@ n/a — off unless a project's `notify.on` lists `goal-approval`. Ships in the b
 ## Progress log
 
 - 2026-10-25: status draft → ready — Architect: specced (ACs, tasks, test plan, exact touches)
+- 2026-10-26: assigned to the developer role
 
 ## Outcome
