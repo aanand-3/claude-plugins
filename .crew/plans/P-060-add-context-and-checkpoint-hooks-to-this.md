@@ -181,6 +181,7 @@ Latest log:
 - 2026-10-26: The PM's assignment to the developer role (95fe671) replaces the team session's assign entry 0734bc7, which the team session made in the PM's name; the PM owns this assignment.
 - 2026-10-26: status ready → in-progress — branch plan/P-060-add-context-and-checkpoint-hooks-to-this
 - 2026-10-26: status in-progress → in-review
+- 2026-10-26: PM: accept blocked - 5 tasks unchecked (T1-T5); hub parses only 6 criteria (nested bullets) from the 8 numbered ones, see BUG-047. QA verified AC7/AC8 by hand.
 
 ## Outcome
 - This repo's .claude/settings.json carries the SessionStart context hook and the Stop and PreCompact `checkpoint --auto` hooks, merged in via the guidelines refresh path.
