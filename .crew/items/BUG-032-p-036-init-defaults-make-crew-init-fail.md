@@ -2,13 +2,14 @@
 id: BUG-032
 type: bug
 title: P-036 init defaults make crew init fail outside git
-status: triaged
+status: done
 severity: S2
 priority: P2
 goal: G-007
 plan:
 created: 2026-10-26
-closed:
+closed: 2026-10-26
+completed: 2026-10-26
 ---
 
 # BUG-032: P-036 init defaults make crew init fail outside git
@@ -34,3 +35,4 @@ Exits 1 with the base-branch check failure (hub.plan_worktrees on, no git repo).
 ## Notes
 - 2026-10-26: status new → triaged — priority P2, severity S2
 - 2026-10-26: fixed by P-036 (8be0bec); close once P-045 lands
+- 2026-10-26: status triaged → done — Fixed by P-036 (landed 8be0bec); closed with P-045 rollout
