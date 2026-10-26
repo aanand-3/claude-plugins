@@ -2,10 +2,10 @@
 id: BUG-051
 type: bug
 title: An escalation about a goal stops the whole team instead of holding that goal
-status: new
-severity:
-priority:
-goal:
+status: triaged
+severity: S2
+priority: P1
+goal: G-007
 plan:
 created: 2026-10-26
 closed:
@@ -40,3 +40,4 @@ One document-edit question froze every plan, landing and review for the whole wa
 Decide the rule rather than special-casing G-005: a goal escalation holds the goal's status moves and, if it's about scope, its unstarted plans; only an escalation with no ref at all (or about the idea or policy) stops the team. Found with FEAT-075's gap (roles can't edit goal and item bodies), which is what made the PM escalate.
 - 2026-10-26: Correction to Notes: the companion gap (roles can't edit goal and item bodies) is FEAT-075, not FEAT-075.
 - 2026-10-26: Disregard the previous correction: the Notes' reference to FEAT-075 was right (FEAT-075: the PM amends the goals and items it owns).
+- 2026-10-26: status new → triaged — priority P1, severity S2
