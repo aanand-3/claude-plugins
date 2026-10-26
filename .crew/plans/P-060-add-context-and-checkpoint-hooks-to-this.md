@@ -160,6 +160,18 @@ table change: three rows in `HOOKS`, one fix constant and the OK string.
 
 ## Handoff
 
+_Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
+
+- P-060: Add context and checkpoint hooks to this repo and check them in doctor [in-progress] tasks 0/5 — claimed by Arpit Anand (developer:a193aada253203405)
+- last checkpoint 2026-10-26 10:53 at T1 (abc6d81) by Arpit Anand; since then 0 commit(s), 1 uncommitted file(s): plugins/crew/skills/guidelines/scripts/merge_settings.mjs
+- next: T1: Split the template's SessionStart into three hooks and let `RUNS` in src/docs/inventory.ts skip an optional closing quote (AC1); update `context.test.ts` ("the SessionStart hook runs context") and `contents.test.ts` ("the settings template wires the hooks") to look across the group's hooks → verify: `npx vitest run test/hub/e2e/context.test.ts test/plugin/contents.test.ts test/docs.test.ts test/tools/upgrade.test.ts`
+- evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —
+
+Latest log:
+- 2026-10-26: assigned to the developer role
+- 2026-10-26: The PM's assignment to the developer role (95fe671) replaces the team session's assign entry 0734bc7, which the team session made in the PM's name; the PM owns this assignment.
+- 2026-10-26: status ready → in-progress — branch plan/P-060-add-context-and-checkpoint-hooks-to-this
+
 ## Progress log
 
 - 2026-10-26: status draft → ready
