@@ -8195,6 +8195,9 @@ var PRESETS = {
         // … and closes any item from any status (a plan's done closes its own)
         "item.wontfix": "pm",
         "item.duplicate": "pm",
+        "item.regoaled": "pm",
+        // … and moves items, or plans with their items, between goals (`regoal`)
+        "plan.regoaled": "pm",
         "plan.ready": "architect",
         // only the Architect makes a spec ready
         "plan.assigned": "pm",
@@ -8231,7 +8234,15 @@ var PRESETS = {
 // src/hub/core/team/policy.ts
 var MODES = ["ai-native", "ai-assisted", "human-led"];
 var NOTIFY_ON = ["escalation", "budget", "stale", "goal-done", "paused", "stopped", "goal-approval"];
-var ACTIONS = /* @__PURE__ */ new Set(["plan.assigned", "plan.reassigned", "plan.reviewed", "plan.design-reviewed", "plan.landed"]);
+var ACTIONS = /* @__PURE__ */ new Set([
+  "plan.assigned",
+  "plan.reassigned",
+  "plan.reviewed",
+  "plan.design-reviewed",
+  "plan.landed",
+  "item.regoaled",
+  "plan.regoaled"
+]);
 var MODE_GATES = {
   "ai-native": [],
   "ai-assisted": ["plan.ready", "plan.accepted", "goal.done"],
@@ -11778,6 +11789,24 @@ function checkSeverity(severity) {
   if (s2 && !Object.hasOwn(SEVERITY_PRIORITY, s2)) fail(`Severity must be one of ${Object.keys(SEVERITY_PRIORITY).join(", ")}.`);
   return s2;
 }
+function itemOrigin(store, explicit) {
+  if (explicit) {
+    const id = explicit.toUpperCase(), kind = kindOf(id);
+    if (kind !== "plan" && kind !== "item" || !store.docs(kind).has(id)) fail(`Origin ${id} does not exist.`);
+    return id;
+  }
+  const branch = /^plan\/(P-\d+)-/.exec(currentBranch() ?? "");
+  if (branch) return branch[1];
+  const mine = [...store.ledger.claims()].filter(([ref, c]) => kindOf(ref) === "plan" && c.run === store.ledger.who.run);
+  return mine.length === 1 ? mine[0][0] : "";
+}
+function suggestedGoal(store, item) {
+  const origin = item.get("origin"), kind = origin ? kindOf(origin) : null;
+  const goal = kind === "plan" || kind === "item" ? store.docs(kind).get(origin)?.get("goal") : null;
+  if (goal) return [goal, `origin ${origin}'s goal`];
+  const hint = [...item.section("Notes").matchAll(/goal hint (G-\d+)/g)].at(-1);
+  return hint ? [hint[1], "goal hint"] : null;
+}
 function newItem(store, typ, title, draftPath, why, o = {}) {
   store.require();
   const prefix = typ.toUpperCase();
@@ -11788,20 +11817,25 @@ ${why}
 `];
   const severity = checkSeverity(o.severity);
   if (severity && prefix !== "BUG") fail("--severity applies to bugs only.");
-  const fields = {
-    goal: store.checkRef(o.goal, "goal"),
-    priority: Store.checkPriority(o.priority) || (SEVERITY_PRIORITY[severity] ?? ""),
-    severity
-  };
+  const hint = store.checkRef(o.goal, "goal");
+  const origin = itemOrigin(store, o.origin);
+  const fields = { goal: "", priority: Store.checkPriority(o.priority) || (SEVERITY_PRIORITY[severity] ?? ""), severity };
   const probe = store.build(`item-${ITEM_TYPES[prefix]}.md`, body2, { id: "X", title, ...fields });
+  const empty = prefix === "BUG" ? probe.missing(TRIAGE_SECTIONS.BUG) : [];
+  if (empty.length) fail(`A bug needs Steps to reproduce, Expected and Actual; empty: ${empty.join(", ")}. Nothing was created.`);
   if (!splitSections(probe.text)[1].some(([h]) => probe.hasContent(h))) fail("The item has no content. Nothing was created.");
   const it = createItem(store, prefix, title, body2, fields);
+  if (origin) it.set("origin", origin);
+  if (hint) it.appendLog(`goal hint ${hint} (by ${store.ledger.who.actor})`, "Notes");
+  if (origin || hint) it.save();
   if (draftFile) store.consume(draftFile, o.keep);
   if (o.priority || severity) {
     const problems = triageProblems(it);
     const human = approvalReason(store.policy.policy, "item.triaged");
+    const role = store.policy.policy.role_gates["item.triaged"], mine = store.ledger.who.role;
     if (problems.length) store.say(`note: ${it.id} stays new until triaged \u2014 ${problems.join("; ")}`);
     else if (human) store.say(`note: ${it.id} stays new \u2014 triage is ${human}: \`triage ${it.id} --approved-by <name>\``);
+    else if (role && mine !== role) store.say(`note: ${it.id} stays new \u2014 the ${role} triages it`);
     else move(store, it.id, "triaged", summary(it));
   }
 }
@@ -11815,26 +11849,75 @@ function triage(store, itemId, o = {}) {
     move(store, itemId, o.reject, o.note, false, o.approvedBy);
     return;
   }
+  const target = o.goal === void 0 ? void 0 : parseGoal(store, o.goal);
+  const current2 = item.get("goal") || null;
+  if (target === null && !current2) fail(`${item.id} has no goal to clear. Nothing was changed.`);
+  const regoal2 = current2 !== null && target !== void 0 && target !== current2;
+  if (regoal2) regoalProblems(store, item, target, o.note, o.approvedBy, `triage ${item.id} --goal ${target ?? "none"}`);
   let priority = o.priority;
   const severity = checkSeverity(o.severity);
   if (severity) {
     item.set("severity", severity);
     if (!priority && !item.get("priority")) priority = SEVERITY_PRIORITY[severity];
   }
-  const updates = [["priority", Store.checkPriority(priority)], ["goal", store.checkRef(o.goal, "goal")]];
-  for (const [key, value] of updates) if (value) item.set(key, value);
+  const p = Store.checkPriority(priority);
+  if (p) item.set("priority", p);
+  if (target && !current2) item.set("goal", target);
   const problems = triageProblems(item);
   if (problems.length) fail(`${item.id} can't be triaged:
   - ${problems.join("\n  - ")}
 Nothing was changed.`);
+  if (regoal2) setGoal(store, [item], target, o.note);
   if (item.get("status") === "triaged") {
     item.appendLog(`re-triaged: ${summary(item)}`, "Notes");
     item.save();
     store.say(`${item.id}: updated`);
-    return;
+  } else {
+    item.save();
+    move(store, item.id, "triaged", summary(item), false, o.approvedBy);
   }
-  item.save();
-  move(store, item.id, "triaged", summary(item), false, o.approvedBy);
+  const hint = item.get("goal") ? null : suggestedGoal(store, item);
+  if (hint) store.say(`suggested goal: ${hint[0]} (${hint[1]}) \u2014 confirm with \`triage ${item.id} --goal ${hint[0]}\` or pick another`);
+}
+function parseGoal(store, value) {
+  return ["", "NONE"].includes(value.trim().toUpperCase()) ? null : store.checkRef(value.trim(), "goal");
+}
+var isClosed = (doc) => (kindOf(doc.id) === "plan" ? CLOSED : ITEM_CLOSED).has(doc.get("status") ?? "");
+function regoalProblems(store, doc, target, note, approvedBy, cmd = `regoal ${doc.id} ${target ?? "none"} --note TXT`) {
+  if (!note?.trim()) fail(`Changing ${doc.id}'s goal is a re-goal: give --note (why). Nothing was changed.`);
+  const kind = kindOf(doc.id) === "plan" ? "plan" : "item";
+  authorize(store, doc.id, `${kind}.regoaled`, approvedBy, void 0, cmd);
+  const pid = kind === "item" ? (doc.get("plan") ?? "").toUpperCase() : "";
+  const plan = pid ? store.plans().get(pid) : void 0;
+  if (plan && !isClosed(plan)) fail(`${doc.id} is in ${pid}: re-goal the plan, which moves its items with it`);
+  const docs = kind === "plan" ? [doc, ...planItems(doc, store.items())] : [doc];
+  const goals2 = store.goals();
+  for (const d of docs) {
+    if (isClosed(d)) fail(`${d.id} is ${d.get("status")}: closed work keeps its goal. Nothing was changed.`);
+    for (const [g, which] of [[d.get("goal"), "its goal"], [target, "the target goal"]]) {
+      const st = g ? goals2.get(g.toUpperCase())?.get("status") : null;
+      if (st && CLOSED.has(st)) fail(`${d.id}: ${which} ${g} is ${st}, so its work is frozen. Nothing was changed.`);
+    }
+  }
+  return docs;
+}
+function setGoal(store, docs, target, note) {
+  for (const d of docs) {
+    const text2 = `re-goaled ${d.get("goal") || "none"} \u2192 ${target ?? "none"} by ${store.ledger.who.actor}: ${note}`;
+    d.set("goal", target ?? "");
+    d.appendLog(text2, kindOf(d.id) === "plan" ? "Progress log" : "Notes");
+    d.save();
+    store.ledger.record("log", d.id, { text: text2 });
+  }
+}
+function regoal(store, docId, goal, note) {
+  store.require();
+  const doc = store.find(docId);
+  if (!["plan", "item"].includes(kindOf(doc.id) ?? "")) fail("regoal works on plans and FEAT/BUG/CHORE/SPIKE items.");
+  const target = parseGoal(store, goal);
+  if ((doc.get("goal") || null) === target) fail(`${doc.id} is already on ${target ?? "no goal"}. Nothing was changed.`);
+  setGoal(store, regoalProblems(store, doc, target, note), target, note);
+  store.say(`${doc.id}: goal ${target ?? "none"}`);
 }
 function breakdownToItems(store, goal) {
   const items2 = store.items();
@@ -12795,16 +12878,19 @@ var registration2 = {
 var registration3 = {
   usage: [
     "  new-item feat|bug|chore|spike TITLE (--from DRAFT | --why TEXT) [--goal] [--priority] [--severity]",
+    "  new-item \u2026 --origin P-###|ID                       record where the item was found (else the caller's plan worktree or claim)",
     "  triage ID [--priority P1] [--severity S2] [--goal G-001] [--approved-by NAME]",
-    "  triage ID --reject wontfix|duplicate --note TXT"
+    "  triage ID --reject wontfix|duplicate --note TXT",
+    "  regoal ID G-###|none --note TXT                  move an item or plan (with its items) to another goal, or off it (PM)"
   ],
   cli: {
     "new-item": {
       pos: ["type", "title"],
-      str: ["from", "why", "goal", "priority", "severity"],
+      str: ["from", "why", "goal", "origin", "priority", "severity"],
       flag: ["keep-draft"],
       run: (s2, a) => newItem(s2, a.pos[0], a.pos[1], str(a, "from"), str(a, "why"), {
         goal: str(a, "goal"),
+        origin: str(a, "origin"),
         priority: str(a, "priority"),
         severity: str(a, "severity"),
         keep: !!a.opt["keep-draft"]
@@ -12822,6 +12908,11 @@ var registration3 = {
         note: str(a, "note"),
         approvedBy: str(a, "approved-by")
       })
+    },
+    regoal: {
+      pos: ["id", "goal"],
+      str: ["note"],
+      run: (s2, a) => regoal(s2, a.pos[0].toUpperCase(), a.pos[1], str(a, "note"))
     }
   },
   tools: {
@@ -12855,6 +12946,11 @@ var registration3 = {
         reject: s(a, "reject"),
         note: s(a, "note")
       })
+    },
+    regoal: {
+      description: "Move an item, or a plan with all its items, to another goal or off any (`crew.mjs regoal`, the PM's): `goal` is G-### or `none`, `note` says why. Refused for closed work, done or dropped goals, and an item in an open plan.",
+      input: obj({ id: text("e.g. FEAT-003 or P-004"), goal: text("G-### or none"), note: text("why it moves") }, ["id", "goal", "note"]),
+      run: (st, a) => regoal(st, up4(a, "id"), s(a, "goal") ?? "", s(a, "note"))
     }
   }
 };

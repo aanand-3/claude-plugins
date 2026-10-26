@@ -187,6 +187,7 @@ staging, commit 4f2c9e1
 ## Impact
 Pilot users who tab past the email field see a crash page.
 `));
+tr("triage", "BUG-001", "--goal", "G-001"); // capture keeps --goal as a hint; the PM links it at triage
 newPlan("Create habit", "FEAT-005", "src/habits/**, web/habits/**", plan("First slice of G-002.", "create habit form and API",
   ["a habit with name, schedule and colour is saved", "validation errors are shown inline"], ["schema and migration", "API", "form"]));
 newPlan("Fix login 500 on empty email", "BUG-001", "src/auth/login.py, tests/auth/**", plan("Fixes BUG-001 found in pilot onboarding.",
@@ -217,6 +218,7 @@ Streak shows 0 after 05:30 local (midnight UTC)
 ## Impact
 Every user outside UTC loses streaks; blocks P-007 (streaks).
 `));
+tr("triage", "BUG-002", "--goal", "G-002");
 newPlan("Password reset", "FEAT-003", "src/auth/reset/**, web/reset/**", plan("Last core slice of G-001; depends on P-002's token service.",
   "reset by emailed token", ["reset link works once and expires in 1 h", "old sessions are revoked"], ["reset token", "email", "reset form", "revoke sessions"]),
   "--depends", "P-002");

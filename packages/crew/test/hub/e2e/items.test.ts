@@ -12,10 +12,16 @@ beforeEach(() => { repo = Repo.create(); });
 
 it("item intake and the triage gate", () => {
   init(repo);
-  expect(tr(repo, "new-item", "bug", "Crash", "--why", "500 on login").returncode).toBe(0);
-  let r = tr(repo, "triage", "BUG-001", "--severity", "S2");
+  let r = tr(repo, "new-item", "bug", "Crash", "--why", "500 on login"); // a bug needs its repro at capture (P-055)
   expect(r.returncode).not.toBe(0);
   expect(r.stderr).toContain("Steps to reproduce");
+  expect(r.stderr).toContain("Nothing was created");
+  expect(newBug(repo, "Crash").returncode).toBe(0);
+  const bug = join(repo.path, ".crew/items", readdirSync(join(repo.path, ".crew/items")).find((f) => f.startsWith("BUG-001"))!);
+  write(bug, read(bug).replace("500 Internal Server Error", "")); // the triage gate still guards a later edit
+  r = tr(repo, "triage", "BUG-001", "--severity", "S2");
+  expect(r.returncode).not.toBe(0);
+  expect(r.stderr).toContain("Actual");
   expect(r.stderr).toContain("Nothing was changed");
   expect(item(repo, "BUG-001")).toContain("status: new");
   expect(item(repo, "BUG-001")).not.toContain("severity: \n");

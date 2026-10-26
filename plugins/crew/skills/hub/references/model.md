@@ -135,7 +135,7 @@ remains: a script file or build tool a role runs (`node x.js`, `bash x.sh`, `npm
 No subagent runs `crew.mjs init`. An invalid policy blocks every move until `policy check` passes.
 
 `preset: lifecycle`: mode `ai-native`; the executive approves `goal.active`; role gates `item.triaged`, `item.done`,
-`item.wontfix`, `item.duplicate`, `plan.assigned`, `plan.accepted`, `plan.done`, `plan.dropped`, `goal.done` → pm;
+`item.wontfix`, `item.duplicate`, `item.regoaled`, `plan.regoaled`, `plan.assigned`, `plan.accepted`, `plan.done`, `plan.dropped`, `goal.done` → pm;
 `plan.ready`, `plan.reviewed` → architect; `plan.in-progress`, `plan.in-review` → developer; `plan.landed` → release;
 `plan.design-reviewed` → designer; `plan.reassigned` → director; `evidence.role: qa`; `limits: {stale_claim_hours: 24, max_bounces:
 2, max_attempts: 5}`; the director, pm, qa and release roles write only `.crew/drafts/`. Under a policy that gates
@@ -192,6 +192,16 @@ There is no stored order: set priorities when approving, and `focus G-###` jumps
 **Priority:** P0 drop everything · P1 needed for the focus goal, soon · P2 planned · P3 someday.
 **Severity (bugs):** S1 outage, data loss or security · S2 major, no workaround · S3 has a workaround · S4 cosmetic. The default priority follows severity (S1→P0, S2→P1, S3→P2, S4→P3).
 **Ranking** (`next`, `status`): P0 first, then the focus goal, then priority → goal → ID.
+
+**Goal links** are decided at triage, not capture. `new-item` links no goal: it records the item's `origin:` — `--origin
+P-###|ID`, else the plan whose worktree it runs in, else the plan of the run's one open claim — and a `--goal` is checked,
+then kept in Notes as `goal hint G-###`. A bug is refused at capture unless Steps to reproduce, Expected and Actual have
+content. `triage` on an item without a goal prints the suggested goal (the origin's goal, else the latest hint); `triage
+--goal G-###` links it. A goal's Breakdown still links the items it creates. Changing or clearing a goal is a re-goal (the
+PM's: `item.regoaled`, `plan.regoaled`): `regoal ID G-###|none --note TXT`, or `triage --goal G-###|none --note TXT`. Each
+appends `re-goaled <old> → <new> by <actor>: <note>` (Notes for items, Progress log for plans) and a `log` event. A
+re-goal is refused for closed work, from or to a `done` or `dropped` goal, and for an item in an open plan; `regoal P-###`
+moves the plan with all its items, all or nothing.
 
 ## Lifecycles
 

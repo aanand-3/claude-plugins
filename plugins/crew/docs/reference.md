@@ -18,6 +18,7 @@ MCP tool runs the same code through the tool; the rest are CLI only.
 | `migrate` | CLI only | `commands/work/migrate.reg.ts` |
 | `new-item` | `new_item` | `commands/work/backlog.reg.ts` |
 | `triage` | `triage` | `commands/work/backlog.reg.ts` |
+| `regoal` | `regoal` | `commands/work/backlog.reg.ts` |
 | `start` | CLI only | `commands/work/workflow.reg.ts` |
 | `move` | `move` | `commands/work/workflow.reg.ts` |
 | `log` | `log` | `commands/work/workflow.reg.ts` |
@@ -73,6 +74,7 @@ From `packages/crew/src/hub/mcp.ts:TOOLS`.
 | `focus` | `focus` | Set the focus goal the team works toward now (`crew.mjs focus`). |
 | `new_item` | `new-item` | Capture a backlog item (`crew.mjs new-item`). |
 | `triage` | `triage` | Triage a new item (`crew.mjs triage`): set priority/severity/goal, or reject it with a note. |
+| `regoal` | `regoal` | Move an item, or a plan with all its items, to another goal or off any (`crew.mjs regoal`, the PM's): `goal` is G-### or `none`, `note` says why. |
 | `move` | `move` | Move a document to a new status (`crew.mjs move`). |
 | `log` | `log` | Append a dated line to a document's log (`crew.mjs log`). |
 | `usage` | `usage` | Record tokens and cost this run used (`crew.mjs usage`); feeds budgets and the executive view. |

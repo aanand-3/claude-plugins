@@ -41,17 +41,21 @@ migrate --gather                              bring hub documents other checkout
 
 ```text
 new-item feat|bug|chore|spike TITLE (--from DRAFT | --why TEXT) [--goal] [--priority] [--severity]
+new-item … --origin P-###|ID                       record where the item was found (else the caller's plan worktree or claim)
 triage ID [--priority P1] [--severity S2] [--goal G-001] [--approved-by NAME]
 triage ID --reject wontfix|duplicate --note TXT
+regoal ID G-###|none --note TXT                  move an item or plan (with its items) to another goal, or off it (PM)
 ```
 
 | Command | MCP tool |
 |---|---|
 | `new-item` | `new_item` |
 | `triage` | `triage` |
+| `regoal` | `regoal` |
 
 - `new_item`: Capture a backlog item (`crew.mjs new-item`). Give exactly one of `from` (a draft file with the item template's sections) or `why` (one-paragraph summary). Priority or severity at intake triage it if the triage gate passes.
 - `triage`: Triage a new item (`crew.mjs triage`): set priority/severity/goal, or reject it with a note.
+- `regoal`: Move an item, or a plan with all its items, to another goal or off any (`crew.mjs regoal`, the PM's): `goal` is G-### or `none`, `note` says why. Refused for closed work, done or dropped goals, and an item in an open plan.
 
 ## work/workflow
 

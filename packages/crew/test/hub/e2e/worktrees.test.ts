@@ -4,7 +4,7 @@ import { existsSync, readdirSync, realpathSync, unlinkSync } from "node:fs";
 import { basename, join } from "node:path";
 import { beforeEach, expect, it } from "vitest";
 import { Repo } from "../../helpers/repo.js";
-import { PLAN_DRAFT } from "./fixtures.js";
+import { BUG_DRAFT, PLAN_DRAFT } from "./fixtures.js";
 import { init, item, newBug, newPlan, planFile, qaDone, read, tr, write } from "./helpers.js";
 import { agent, bash, events, frontmatter, hook, readyPlan } from "./sections.js";
 
@@ -30,7 +30,7 @@ const tickAndShip = (p: string) => write(p, read(p).replaceAll("- [ ] T", "- [x]
 
 it("plan worktrees: new-plan opens the plan's worktree and keeps the spec in the main checkout", () => {
   worktreeHub(repo);
-  expect(tr(repo, "new-item", "bug", "Crash", "--why", "500 on login").returncode).toBe(0);
+  expect(newBug(repo, "Crash").returncode).toBe(0);
   repo.write(".crew/drafts/other.md", "a draft that stays\n");
   write(join(repo.path, ".crew/config.yaml"), "hub:\n  plan_worktrees: true\n  wip_limit: 2\n"); // setup stays uncommitted
   const r = newPlan(repo, "Signup", PLAN_DRAFT, "--items", "BUG-001");
@@ -62,7 +62,7 @@ it("plan worktrees refuse hub writes while the main checkout is off the base bra
   for (const cmd of [["move", "P-001", "ready"], ["log", "P-001", "a note"]]) expect(tr(repo, ...cmd).returncode, cmd[0]).not.toBe(0);
   expect(read(planFile(repo, "P-001"))).toBe(before);
   expect(events(repo).length).toBe(logged); // refused before the ledger appends
-  const bug = tr(repo, "new-item", "bug", "Crash", "--why", "500");
+  const bug = newBug(repo, "Crash");
   expect(bug.returncode).not.toBe(0);
   expect(existsSync(join(repo.path, ".crew/items")) ? readdirSync(join(repo.path, ".crew/items")).filter((f) => f.startsWith("BUG-")) : []).toEqual([]);
 });
@@ -77,7 +77,8 @@ it("a hub write from a plan worktree lands in the main checkout", () => {
   expect(tr(w1, "move", "P-001", "ready").returncode).toBe(0);
   expect(tr(w2, "log", "P-001", "picked the provider").returncode).toBe(0);
   expect(tr(w2, "triage", "BUG-001", "--priority", "P2", "--severity", "S3").returncode).toBe(0);
-  expect(tr(w1, "new-item", "bug", "Timeout", "--why", "slow login").returncode).toBe(0);
+  repo.write(".crew/drafts/bug.md", BUG_DRAFT); // the main checkout's draft, consumed by the capture
+  expect(tr(w1, "new-item", "bug", "Timeout", "--from", join(repo.path, ".crew/drafts/bug.md")).returncode).toBe(0);
   const p1 = read(planFile(repo, "P-001"));
   expect(p1).toContain("status: ready");
   expect(p1).toContain("picked the provider");

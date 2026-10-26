@@ -4,7 +4,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { beforeEach, expect, it } from "vitest";
 import { Repo, SKILLS } from "../../helpers/repo.js";
-import { tr } from "./helpers.js";
+import { newBug, tr } from "./helpers.js";
 
 let repo: Repo;
 beforeEach(() => { repo = Repo.create(); });
@@ -176,7 +176,7 @@ it("a refused hub commit message names the hook's refusal and doctor (AC7)", () 
   repo.write(".githooks/pre-commit", NO_MAIN, 0o755);
   repo.commit("chore: strict hooks");
   const head = repo.git("rev-parse", "HEAD").stdout;
-  const r = tr(repo, "new-item", "bug", "Crash", "--why", "x");
+  const r = newBug(repo, "Crash");
   expect(r.returncode).not.toBe(0);
   expect(r.stderr).toContain("hook: no commits on main");
   expect(r.stderr).toContain("`crew.mjs doctor`");

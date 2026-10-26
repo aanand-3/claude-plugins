@@ -63,6 +63,8 @@ Steps gated by role that are not status changes:
 <!-- generated:plan-steps -->
 | Step | Who (lifecycle) | What |
 |---|---|---|
+| `item.regoaled` | pm | moves an item to another goal or off any (`regoal`, `triage --goal`); needs `--note` |
+| `plan.regoaled` | pm | moves a plan with all its items to another goal (`regoal`); needs `--note` |
 | `plan.assigned` | pm | opens a ready plan for a developer (`assign`); `start` needs the assignment |
 | `plan.landed` | release | lands an accepted plan on the base (`land`); a failed land sends it back to in-progress |
 | `plan.reassigned` | director | moves stuck work to someone else (`reassign`) |

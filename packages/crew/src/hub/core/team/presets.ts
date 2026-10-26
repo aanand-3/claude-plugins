@@ -15,6 +15,8 @@ export const PRESETS: Record<string, { global: Raw; roles: Record<string, Raw> }
         "item.done": "pm",               // … and closes any item from any status (a plan's done closes its own)
         "item.wontfix": "pm",
         "item.duplicate": "pm",
+        "item.regoaled": "pm",           // … and moves items, or plans with their items, between goals (`regoal`)
+        "plan.regoaled": "pm",
         "plan.ready": "architect",       // only the Architect makes a spec ready
         "plan.assigned": "pm",           // the PM opens a plan for a developer; `start` then needs that assignment
         "plan.in-progress": "developer", // only the assigned developer implements (and fixes what comes back)

@@ -41,7 +41,7 @@ it("every TRANSITION_GATES key labels at least one edge of its flow", () => {
 });
 
 it("the role gates that aren't flow edges are listed beside the plan flow", () => {
-  expect(offFlowSteps().map((s) => s.step).sort()).toEqual(["plan.assigned", "plan.design-reviewed", "plan.landed", "plan.reassigned", "plan.reviewed"]);
+  expect(offFlowSteps().map((s) => s.step).sort()).toEqual(["item.regoaled", "plan.assigned", "plan.design-reviewed", "plan.landed", "plan.reassigned", "plan.regoaled", "plan.reviewed"]);
 });
 
 it("the static policy layer order is loadLayers()'s, with every layer present", () => {

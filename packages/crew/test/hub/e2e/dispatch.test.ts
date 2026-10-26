@@ -3,7 +3,7 @@
 import { beforeEach, expect, it } from "vitest";
 import { join } from "node:path";
 import { HUB, Repo } from "../../helpers/repo.js";
-import { PLAN_DRAFT } from "./fixtures.js";
+import { BUG_DRAFT, PLAN_DRAFT } from "./fixtures.js";
 import { newGoal, newIdea, newPlan, planFile, read, tr, write } from "./helpers.js";
 import { as, events, inReview, LIFECYCLE, lifecycle, started, type Json } from "./team-helpers.js";
 
@@ -41,7 +41,8 @@ it("items and specs: triage, spec a draft, write a plan for a focus item, an urg
   let d = dispatch();
   expect(brief(d)).toEqual(["pm FEAT-005 triage", "architect P-001 spec", "architect FEAT-002 write"]);
   expect(d.entries.map((e: Json) => e.ref)).not.toContain("FEAT-003"); // another goal's triaged FEAT waits
-  ok(as(repo, "developer", "new-item", "bug", "Login 500", "--why", "500 on empty email", "--severity", "S1"));
+  repo.write(".crew/drafts/bug.md", BUG_DRAFT);
+  ok(as(repo, "developer", "new-item", "bug", "Login 500", "--from", ".crew/drafts/bug.md", "--severity", "S1"));
   d = dispatch();
   expect(d.entries[0]).toMatchObject({ role: "pm", ref: "BUG-001" });
   expect(d.entries[0].task).toMatch(/^triage BUG-001/);
@@ -49,7 +50,8 @@ it("items and specs: triage, spec a draft, write a plan for a focus item, an urg
 
 it("an urgent bug comes before release and review (AC1)", () => {
   inReview(repo);
-  ok(as(repo, "developer", "new-item", "bug", "Login 500", "--why", "500 on empty email", "--severity", "S1"));
+  repo.write(".crew/drafts/bug.md", BUG_DRAFT);
+  ok(as(repo, "developer", "new-item", "bug", "Login 500", "--from", ".crew/drafts/bug.md", "--severity", "S1"));
   expect(brief(dispatch())[0]).toBe("pm BUG-001 triage");
 });
 

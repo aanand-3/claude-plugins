@@ -1,22 +1,27 @@
 /** backlog: its CLI commands, help lines and MCP tools (moved verbatim from cli.ts and mcp.ts). */
-import { newItem, triage } from "./backlog.js";
+import { newItem, regoal, triage } from "./backlog.js";
 import { ITEM_FIELDS, obj, type Registration, s, str, text, up } from "../../registry.js";
 
 export const registration: Registration = {
   usage: [
     "  new-item feat|bug|chore|spike TITLE (--from DRAFT | --why TEXT) [--goal] [--priority] [--severity]",
+    "  new-item … --origin P-###|ID                       record where the item was found (else the caller's plan worktree or claim)",
     "  triage ID [--priority P1] [--severity S2] [--goal G-001] [--approved-by NAME]",
     "  triage ID --reject wontfix|duplicate --note TXT",
+    "  regoal ID G-###|none --note TXT                  move an item or plan (with its items) to another goal, or off it (PM)",
   ],
   cli: {
-    "new-item": { pos: ["type", "title"], str: ["from", "why", "goal", "priority", "severity"], flag: ["keep-draft"],
+    "new-item": { pos: ["type", "title"], str: ["from", "why", "goal", "origin", "priority", "severity"], flag: ["keep-draft"],
       run: (s, a) => newItem(s, a.pos[0], a.pos[1], str(a, "from"), str(a, "why"), {
-        goal: str(a, "goal"), priority: str(a, "priority"), severity: str(a, "severity"), keep: !!a.opt["keep-draft"] }) },
+        goal: str(a, "goal"), origin: str(a, "origin"), priority: str(a, "priority"), severity: str(a, "severity"),
+        keep: !!a.opt["keep-draft"] }) },
     triage: { pos: ["id"], str: ["priority", "severity", "goal", "note", "reject", "approved-by"],
       choices: { reject: ["duplicate", "wontfix"] },
       run: (s, a) => triage(s, a.pos[0].toUpperCase(), {
         priority: str(a, "priority"), severity: str(a, "severity"), goal: str(a, "goal"), reject: str(a, "reject"),
         note: str(a, "note"), approvedBy: str(a, "approved-by") }) },
+    regoal: { pos: ["id", "goal"], str: ["note"],
+      run: (s, a) => regoal(s, a.pos[0].toUpperCase(), a.pos[1], str(a, "note")) },
   },
   tools: {
     new_item: { description: "Capture a backlog item (`crew.mjs new-item`). Give exactly one of `from` (a draft file with the item template's sections) or `why` (one-paragraph summary). Priority or severity at intake triage it if the triage gate passes.",
@@ -29,5 +34,8 @@ export const registration: Registration = {
         note: text("required with reject") }, ["id"]),
       run: (st, a) => triage(st, up(a, "id"), { priority: s(a, "priority"), severity: s(a, "severity"), goal: s(a, "goal"),
         reject: s(a, "reject"), note: s(a, "note") }) },
+    regoal: { description: "Move an item, or a plan with all its items, to another goal or off any (`crew.mjs regoal`, the PM's): `goal` is G-### or `none`, `note` says why. Refused for closed work, done or dropped goals, and an item in an open plan.",
+      input: obj({ id: text("e.g. FEAT-003 or P-004"), goal: text("G-### or none"), note: text("why it moves") }, ["id", "goal", "note"]),
+      run: (st, a) => regoal(st, up(a, "id"), s(a, "goal") ?? "", s(a, "note")) },
   },
 };

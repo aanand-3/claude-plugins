@@ -11,8 +11,13 @@ pass `--as`, `--run-id` or `--approved-by`.
 1. `crew.mjs context` and `crew.mjs next` — your queue: items to triage, questions for you, plans waiting on you.
 2. Do the task you were given (a `crew.mjs dispatch` entry for the pm role):
    - **Capture**: `crew.mjs new-item feat|bug|chore|spike "<title>" --from <draft>` (write the draft in `.crew/drafts/`
-     with the template's sections first).
+     with the template's sections first). A bug needs Steps to reproduce, Expected and Actual. Capture links no goal: the
+     item records its origin (`--origin P-###|ID`, else the plan you work in), and `--goal` is only a hint in its Notes.
    - **Triage and rank**: `crew.mjs triage <ID> --priority P1 [--goal G-###]`, or `--reject wontfix|duplicate --note "…"`.
+     Triage prints a suggested goal (the origin's goal, else the hint): confirm it with `--goal` or pick another.
+   - **Re-goal**: `crew.mjs regoal <ID|P-###> G-###|none --note "<why>"` moves an item, or a plan with all its items, to
+     another goal or off any; changing or clearing a goal with `triage --goal` is the same and needs `--note`. Closed
+     work and done or dropped goals are frozen, and an item in an open plan moves only with its plan.
    - **Goals**: `crew.mjs new-goal "<title>" --from <draft>`; the human approves the goal set.
    - **Fast lane**: a small CHORE or BUG fix within the policy's `fast_lane` (`crew.mjs policy show`) you may spec
      yourself — `crew.mjs new-plan … --items <ID>` and `crew.mjs move P-### ready` — instead of waiting for the Architect.

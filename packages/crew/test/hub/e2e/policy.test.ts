@@ -114,6 +114,49 @@ it("role gates", () => {
   expect(events(repo, "--type", "move").at(-1)!.role).toBe("qa");
 });
 
+it("lifecycle gives regoal to the PM; policy show lists both steps (P-055 AC7)", () => {
+  init(repo, { commit: true, mode: "" });
+  repo.write(".crew/policy.yaml", "preset: lifecycle\n");
+  const show = tr(repo, "policy", "show").stdout;
+  expect(show).toMatch(/item\.regoaled.*pm/);
+  expect(show).toMatch(/plan\.regoaled.*pm/);
+  expect(tr(repo, "policy", "check").returncode).toBe(0);
+  expect(tr(repo, "--as", "pm", "new-item", "feat", "Dark mode", "--why", "users asked").returncode).toBe(0);
+  repo.write(".crew/drafts/goal.md", "## Outcome\nx\n\n## Scope\n- x\n\n## Acceptance criteria\n- [ ] x\n\n## Breakdown\n- FEAT-001\n");
+  expect(tr(repo, "new-goal", "Accounts", "--from", ".crew/drafts/goal.md").returncode).toBe(0);
+  let r = tr(repo, "--as", "developer", "regoal", "FEAT-001", "none", "--note", "x");
+  expect(r.returncode).not.toBe(0);
+  expect(r.stderr).toContain("is for the pm role; this run is the developer role");
+  expect(item(repo, "FEAT-001")).toContain("goal: G-001");
+  for (const who of [["--as", "executive"], []]) { // re-goal is the PM's alone (executive's decision on review)
+    for (const cmd of [["regoal", "FEAT-001", "none", "--note", "off"], ["triage", "FEAT-001", "--goal", "none", "--note", "off"]]) {
+      r = tr(repo, ...who, ...cmd);
+      expect(r.returncode, `${who.join(" ")} ${cmd[0]}`).not.toBe(0);
+      expect(r.stderr).toContain("is for the pm role");
+      expect(item(repo, "FEAT-001")).toContain("goal: G-001");
+    }
+  }
+  r = tr(repo, "--as", "pm", "regoal", "FEAT-001", "none", "--note", "off");
+  expect(r.returncode, r.stderr).toBe(0);
+  expect(item(repo, "FEAT-001")).toMatch(/^goal:\s*$/m);
+  r = tr(repo, "--as", "pm", "triage", "FEAT-001", "--priority", "P2", "--goal", "G-001");
+  expect(r.returncode, r.stderr).toBe(0);
+  expect(item(repo, "FEAT-001")).toContain("goal: G-001");
+});
+
+it("intake triage at capture leaves the item new for a caller outside item.triaged's role (P-055)", () => {
+  init(repo, { commit: true, mode: "" });
+  repo.write(".crew/policy.yaml", "preset: lifecycle\n");
+  for (const [who, id] of [[["--as", "executive"], "FEAT-001"], [[], "FEAT-002"], [["--as", "developer"], "FEAT-003"]] as const) {
+    const r = tr(repo, ...who, "new-item", "feat", `Feat ${id}`, "--why", "y", "--priority", "P2");
+    expect(r.returncode, `${who.join(" ")} ${r.stderr}`).toBe(0);
+    expect(r.stdout).toContain(`${id} stays new — the pm triages it`);
+    expect(item(repo, id)).toContain("status: new");
+  }
+  expect(tr(repo, "--as", "pm", "new-item", "feat", "By PM", "--why", "y", "--priority", "P2").returncode).toBe(0);
+  expect(item(repo, "FEAT-004")).toContain("status: triaged");
+});
+
 it("budgets stop new work until a human approves", () => {
   init(repo, { commit: true, mode: "" });
   repo.write(".crew/policy.yaml", "mode: ai-native\nbudgets:\n  max_agents: 1\n  run: { max_cost: 1 }\n  project: { max_tokens: 5000 }\n");
