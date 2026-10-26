@@ -2,13 +2,14 @@
 id: BUG-021
 type: bug
 title: Guard lets a role write outside paths.write through an inline interpreter script
-status: triaged
+status: done
 severity: S2
 priority: P1
 goal: G-007
 plan: P-051
 created: 2026-10-25
-closed:
+closed: 2026-10-26
+completed: 2026-10-26
 ---
 
 # BUG-021: Guard lets a role write outside paths.write through an inline interpreter script
@@ -37,3 +38,4 @@ CHORE-016's Done-when section was written by step 1 (its last line held the inje
 
 ## Notes
 - 2026-10-26: status new → triaged — priority P1, severity S2
+- 2026-10-26: status triaged → done — Fixed by P-051 (6273d49, landed)
