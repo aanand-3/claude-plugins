@@ -5,7 +5,7 @@ title: Guard labels every agent command
 status: triaged
 priority: P2
 goal: G-007
-plan:
+plan: P-056
 created: 2026-10-26
 closed:
 ---
