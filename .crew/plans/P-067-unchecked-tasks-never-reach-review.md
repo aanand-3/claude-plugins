@@ -11,6 +11,7 @@ pr:
 created: 2026-10-26
 started:
 completed:
+assignee: developer
 ---
 
 # P-067: Unchecked tasks never reach review, and dispatch never offers a refused accept
@@ -78,5 +79,6 @@ n/a: this changes hub behaviour only. The bundle is rebuilt by Release. To roll 
 ## Progress log
 
 - 2026-10-26: status draft → ready
+- 2026-10-26: assigned to the developer role
 
 ## Outcome
