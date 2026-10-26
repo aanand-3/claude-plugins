@@ -105,6 +105,7 @@ Latest log:
 - 2026-10-26: status ready → in-progress — branch plan/P-025-generated-diagrams-and-inventories
 - 2026-10-26: status in-progress → in-review — T1-T6 done; checks per AC in checkpoints; dist/ untouched (Release rebuilds; build now also runs npm run docs)
 - 2026-10-26: status in-review → accepted
+- 2026-10-26: landed on main as 042b9de
 
 ## Outcome
 `TRANSITION_GATES` (core/work/transition-gates.ts) now holds every gate's name and refusal label, and `guard()` reads its labels from it, so its refusals read as before. `EVENT_TYPES` is a runtime list in ledger.ts. `src/docs/diagrams.ts` builds the four flows as data (each edge with its gate, its `lifecycle` role and any human gate), the role gates that aren't flow edges, the policy layer order and the ledger events. It imports only hub/core. `src/docs/inventory.ts` reads commands, MCP tools, UI actions, hooks and skills. `src/docs/render.ts` turns that data into Mermaid and tables. `npm run docs` (also run by `npm run build`) rewrites the marker blocks in four stub pages under `plugins/crew/docs/`. `test/docs.test.ts` checks freshness, staleness after a hand edit or a new edge, filled blocks, pointers, the layer order against `loadLayers()` and the inventory. COMMANDS was already exported in cli.ts, so cli.ts is unchanged. Not done: reserved decisions (`idea.decided`, `idea.killed`) don't show as human-gated, because the built-in list is private to policy.ts; that is CHORE-026.
