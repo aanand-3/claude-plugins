@@ -5,7 +5,7 @@ title: Callers that are not crew agents can claim any role
 status: triaged
 severity: S2
 priority: P1
-goal:
+goal: G-007
 plan:
 created: 2026-10-26
 closed:
@@ -41,3 +41,4 @@ Any role-gated rule (PM-only assign, developer-only start) can be bypassed by th
 Goal G-007. Source draft: .crew/drafts/yes-pm-logs-them-recursive-sparkle.md step 3.
 - 2026-10-26: goal hint G-007 (by Arpit Anand)
 - 2026-10-26: status new → triaged — priority P1, severity S2
+- 2026-10-26: re-triaged: priority P1, severity S2
