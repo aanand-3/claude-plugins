@@ -101,6 +101,18 @@ Ships with the next vendored hub refresh (Release builds the bundle and refreshe
 
 ## Handoff
 
+_Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
+
+- P-063: Guard refuses only real access to secrets files [in-progress] tasks 0/5 — claimed by Arpit Anand (developer:a15018def85344c14)
+- last checkpoint 2026-10-26 11:50 at T4 (63dfd06) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
+- next: T1 · `hubcall.ts`: add `Simple.inputs` (input redirection targets per Design) and export `hubWord`. Verify: `npx vitest run test/hub/hubcall.test.ts` passes unchanged; the `inputs` cases in `test/hub/secretrefs.test.ts` (T5) pass.
+- evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —
+
+Latest log:
+- 2026-10-26: status draft → ready
+- 2026-10-26: assigned to the developer role
+- 2026-10-26: status ready → in-progress — branch plan/P-063-guard-refuses-only-real-access
+
 ## Progress log
 
 - 2026-10-26: status draft → ready
