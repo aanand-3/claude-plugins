@@ -84,5 +84,6 @@ recorded earlier against a nested bullet's text no longer matches a criterion an
 ## Progress log
 
 - 2026-10-26: status draft → ready
+- 2026-10-26: Overlaps P-072 (in-progress) on packages/crew/src/hub/commands/work/execution.ts: P-072 changes recovery(), this plan changes criteria() only; no dependency, the later one rebases.
 
 ## Outcome
