@@ -2,13 +2,13 @@
 id: BUG-042
 type: bug
 title: guard's secrets check refuses commands that only mention a secrets filename in text
-status: triaged
+status: done
 severity: S3
 priority: P2
 goal: G-007
 plan: P-063
 created: 2026-10-26
-closed:
+closed: 2026-10-26
 ---
 
 # BUG-042: guard's secrets check refuses commands that only mention a secrets filename in text
@@ -42,3 +42,4 @@ Agents then made the same edit with the Edit/Write tools, i.e. worked around a g
 Added to G-007 at the executive's request ("add to g7"). Fix needs care to avoid weakening the check: add negative tests (text-only mention is allowed) alongside positive tests (cat, grep, cp, redirect, interpreter open of a real secrets file stay refused).
 - 2026-10-26: goal hint G-007 (by Arpit Anand)
 - 2026-10-26: status new → triaged — priority P2, severity S3
+- 2026-10-26: status triaged → done — delivered by P-063
