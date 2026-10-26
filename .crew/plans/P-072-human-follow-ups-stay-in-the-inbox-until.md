@@ -11,6 +11,7 @@ pr:
 created: 2026-10-26
 started:
 completed:
+assignee: developer
 ---
 
 # P-072: Human follow-ups stay in the inbox until done
@@ -164,5 +165,6 @@ so mixed versions stay safe. Rollback: revert the commit; open follow-ups stay a
 ## Progress log
 
 - 2026-10-26: status draft → ready
+- 2026-10-26: assigned to the developer role
 
 ## Outcome
