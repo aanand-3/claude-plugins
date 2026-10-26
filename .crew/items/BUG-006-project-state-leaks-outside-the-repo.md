@@ -2,13 +2,14 @@
 id: BUG-006
 type: bug
 title: Project state leaks outside the repo (hand-over notes, memory, scratchpad)
-status: triaged
+status: done
 severity: S2
 priority: P1
 goal: G-001
 plan: P-019
 created: 2026-10-24
-closed:
+closed: 2026-10-26
+completed: 2026-10-26
 ---
 
 # BUG-006: Project state leaks outside the repo (hand-over notes, memory, scratchpad)
@@ -44,3 +45,4 @@ Breaks G-001's outcome ("nothing important lives only in chat"). Hits every crew
 The executive found it while reviewing P-018's report (2026-10-24).
 - 2026-10-24: status new → triaged — priority P1, severity S2
 - 2026-10-26: DONE: fixed by P-019 (152650b). CLAUDE.md and templates/CLAUDE.project.md carry the 'Project state lives in the hub' block; guard.ts denies subagent writes outside the repository (guard.test.ts 'guard_outside_repo: subagents keep project state in the repository (BUG-006)'), tightened later by P-051 (paths.write). No remaining work.
+- 2026-10-26: status triaged → done — DONE per Architect review: fixed by P-019 (152650b), tightened by P-051.
