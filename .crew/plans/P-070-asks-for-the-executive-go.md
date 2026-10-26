@@ -5,11 +5,11 @@ goal:
 items: CHORE-030
 touches: packages/crew/src/hub/commands/team/questions.ts, plugins/crew/skills/hub/agents/director.md, plugins/crew/docs/context-and-memory.md, plugins/crew/skills/hub/SKILL.md, packages/crew/test/hub/e2e/dispatch.test.ts
 depends_on:
-status: ready
+status: in-progress
 branch: plan/P-070-asks-for-the-executive-go
 pr:
 created: 2026-10-26
-started:
+started: 2026-10-26
 completed:
 assignee: developer
 ---
@@ -111,5 +111,6 @@ Ships in the hub bundle and plugin templates. In this repository the Director ag
 
 - 2026-10-26: status draft → ready
 - 2026-10-26: assigned to the developer role
+- 2026-10-26: status ready → in-progress — branch plan/P-070-asks-for-the-executive-go
 
 ## Outcome
