@@ -2,13 +2,14 @@
 id: BUG-018
 type: bug
 title: Plan state forks across worktree copies of .crew
-status: triaged
+status: done
 severity: S2
 priority: P1
 goal: G-001
 plan: P-026
 created: 2026-10-24
-closed:
+closed: 2026-10-26
+completed: 2026-10-26
 ---
 
 # BUG-018: Plan state forks across worktree copies of .crew
@@ -39,3 +40,4 @@ Every role reading the hub from a different checkout sees a different plan state
 Severity S2: core shared-context guarantee of G-001 broken, no workaround.
 - 2026-10-24: status new → triaged — priority P1, severity S2
 - 2026-10-26: DONE: fixed by P-026 (0660496, G-007 with FEAT-034). Hub documents live in the main checkout only; a plan worktree's hub writes land there (worktrees.test.ts 'a hub write from a plan worktree lands in the main checkout', 'the guard keeps hub documents in the main checkout'); forked copies gather via work/gather.ts (branch-copies.test.ts). P-020 and P-022 are now in main's .crew/plans with one status. No remaining work.
+- 2026-10-26: status triaged → done — DONE per Architect review: fixed by P-026 (0660496).
