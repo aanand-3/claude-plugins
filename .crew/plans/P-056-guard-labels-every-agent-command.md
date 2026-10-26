@@ -117,6 +117,7 @@ Latest log:
 - 2026-10-26: touches + test/hub-worktrees.test.ts and test/hub/e2e/playbook-home.test.ts (land suite, hub 24f9184): change only their guard null expectations to 'not denied, command unchanged' (plus the label where natural), nothing else. hub-worktrees.test.ts:236 (ls/cmp/git diff on .crew/bin/crew.mjs as crew-qa: expect(hook(r, cmd)?.updatedInput?.command).toBe(cmd)) and playbook-home.test.ts:58 (crew-developer ls in a worktree: not denied, command 'ls'). A grep of the test tree for toBeNull()/toBe(null) on guard hooks for crew Bash calls finds no others: the rest are Write/Read payloads, non-crew agents or the main session. Targeted checks missed them because they ran only the guard and activity suites; these two guard cases sit in other suites.
 - 2026-10-26: status in-progress → in-review
 - 2026-10-26: status in-review → accepted
+- 2026-10-26: landed on main as bbb37ec
 
 ## Outcome
 The guard now labels every allowed crew-agent Bash call `<role> <plan>: <what>` (identity flags still injected) and refuses a background or >120 s call with no description. `deriveWhat`/`label` live in core/memory/activity.ts, and `describe` also takes the plan from a worktree path in the command. The activity hook records `label` on Bash events, and `watch`, `status` Running now, `/api/activity` and the UI Live panel show it, falling back to `tool target`. guard.ts is 217 lines, activity.ts 235. live-ui.test.ts was added to touches (Q-2f4b62).
