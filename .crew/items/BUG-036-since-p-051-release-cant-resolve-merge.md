@@ -2,9 +2,9 @@
 id: BUG-036
 type: bug
 title: Since P-051 Release can't resolve merge conflicts: its Bash writes are bound to paths.write .crew/drafts/**
-status: new
+status: triaged
 severity: S3
-priority:
+priority: P2
 goal: G-007
 plan:
 created: 2026-10-26
@@ -45,3 +45,4 @@ Open choice (the executive's decision, policy):
 - **B. Keep conflict resolution with the developer, as `land` does now.** Release never edits code, and the review stays valid for the code that lands. The cost is a round trip per conflict. Release's instructions would then say to run `land` (or bounce) instead of resolving.
 
 ## Notes
+- 2026-10-26: status new → triaged — priority P2, severity S3
