@@ -5,12 +5,12 @@ goal:
 items: BUG-044
 touches: plugins/crew/skills/hub/agents/pm.md, plugins/crew/skills/hub/agents/developer.md, plugins/crew/skills/hub/agents/qa.md, plugins/crew/skills/hub/agents/release.md, plugins/crew/skills/hub/agents/designer.md, plugins/crew/skills/hub/agents/generic.md, packages/crew/test/hub/e2e/agents.test.ts
 depends_on:
-status: accepted
+status: done
 branch: plan/P-064-every-role-closes-the-asks-sent-to-it
 pr:
 created: 2026-10-26
 started: 2026-10-26
-completed:
+completed: 2026-10-26
 assignee: developer
 ---
 
@@ -126,6 +126,7 @@ Latest log:
 - 2026-10-26: BUG-049 overlaps: the full-suite view.test.ts beforeAll timeout under load bounced this landing; not caused by this plan's code (view passes alone). Tracked as BUG-049 (P1, G-007).
 - 2026-10-26: landed on main as 35e92db
 - 2026-10-26: landed on main as 35e92db (full suite 663/663 passed). Rollout: human must refresh .crew/templates/agents/ from plugins/crew/skills/hub/agents/ and run 'node .crew/bin/crew.mjs agents' (protected paths); 'agents --check' flags stale ones until then.
+- 2026-10-26: status accepted → done
 
 ## Outcome
 Learnings: none

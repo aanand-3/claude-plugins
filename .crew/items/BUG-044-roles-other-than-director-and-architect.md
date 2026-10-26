@@ -2,13 +2,13 @@
 id: BUG-044
 type: bug
 title: Roles other than director and architect never close an ask
-status: triaged
+status: done
 severity: S2
 priority: P1
 goal: G-007
 plan: P-064
 created: 2026-10-26
-closed:
+closed: 2026-10-26
 ---
 
 # BUG-044: Roles other than director and architect never close an ask
@@ -43,3 +43,4 @@ Goal G-007. Source draft: .crew/drafts/yes-pm-logs-them-recursive-sparkle.md ste
 - 2026-10-26: goal hint G-007 (by Arpit Anand)
 - 2026-10-26: status new → triaged — priority P1, severity S2
 - 2026-10-26: re-triaged: priority P1, severity S2
+- 2026-10-26: status triaged → done — delivered by P-064
