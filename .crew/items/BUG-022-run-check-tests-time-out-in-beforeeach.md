@@ -40,3 +40,4 @@ Likely fix: set `hookTimeout` alongside `testTimeout` in packages/crew/vitest.co
 - 2026-10-25: status new → triaged — priority P1, severity S2
 - 2026-10-25: Found by P-023's release (hub.full_suite failed after P-023 was marked done); fix belongs to P-023 once reopened. Reopen refused: 'P-023: done → in-progress not allowed (from done: none). Use --force to override.'
 - 2026-10-25: Fixed by P-023 (eaa70df): run-check.test.ts setup moved into each test. Linked to P-023's items by the executive session at the executive's request.
+- 2026-10-26: DONE: fixed by P-023 (eaa70df): run-check.test.ts has no beforeEach, setup moved into each test (its own Notes record this). The broader load-timeout problem is BUG-028 (G-007). No remaining work.
