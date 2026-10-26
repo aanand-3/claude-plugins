@@ -10402,8 +10402,8 @@ function legacyHints(store) {
   const { ws } = store;
   const at = (...p) => join12(ws.root, ...p);
   const hints = [];
-  const leftovers = LEGACY.filter((n2) => ws.isFile(at(".crew", "bin", `${n2}.py`)));
-  if (leftovers.length) hints.push(`.crew/bin/ still has the Python scripts ${leftovers.map((n2) => `${n2}.py`).join(", ")} \u2014 ${REFRESH}`);
+  const leftovers2 = LEGACY.filter((n2) => ws.isFile(at(".crew", "bin", `${n2}.py`)));
+  if (leftovers2.length) hints.push(`.crew/bin/ still has the Python scripts ${leftovers2.map((n2) => `${n2}.py`).join(", ")} \u2014 ${REFRESH}`);
   const hookDirs = [git(["rev-parse", "--git-path", "hooks"])?.trim(), git(["config", "core.hooksPath"])?.trim()].filter((d) => !!d).map((d) => isAbsolute3(d) ? d : at(d));
   const inDir = (dir) => ws.list(dir).filter((f) => !f.endsWith(".sample")).map((f) => relative5(ws.root, join12(dir, f)));
   const files2 = [.../* @__PURE__ */ new Set([
@@ -10812,9 +10812,9 @@ function hygiene(s2, f) {
   if (ahead.length > MAX_WRITTEN_AHEAD) {
     f.hints.push(`${ahead.length} plans written ahead of the work (> ${MAX_WRITTEN_AHEAD}) \u2014 keep later work as backlog items so plans don't go stale`);
   }
-  const leftovers = s2.store.ws.list(join14(s2.store.dir, "drafts")).filter((n2) => n2.endsWith(".md"));
-  if (leftovers.length) {
-    f.hints.push(`unconverted drafts in .crew/drafts/: ${leftovers.join(", ")} \u2014 create the document from them or delete`);
+  const leftovers2 = s2.store.ws.list(join14(s2.store.dir, "drafts")).filter((n2) => n2.endsWith(".md"));
+  if (leftovers2.length) {
+    f.hints.push(`unconverted drafts in .crew/drafts/: ${leftovers2.join(", ")} \u2014 create the document from them or delete`);
   }
   if (s2.store.ws.isDir(join14(s2.store.ws.root, ".project"))) {
     f.hints.push("a .project/ directory from project-kit is still here \u2014 `crew.mjs migrate` moves it into .crew/");
@@ -13648,8 +13648,8 @@ var registration13 = {
 
 // src/hub/commands/work/land.ts
 import { spawnSync as spawnSync7 } from "node:child_process";
-import { mkdirSync as mkdirSync6 } from "node:fs";
-import { join as join23 } from "node:path";
+import { existsSync as existsSync13, mkdirSync as mkdirSync6, readdirSync as readdirSync5, rmSync as rmSync2 } from "node:fs";
+import { join as join23, relative as relative6 } from "node:path";
 var ROUNDS = 3;
 var OUTPUT_LINES2 = 5;
 var OUTPUT_CHARS2 = 600;
@@ -13783,16 +13783,39 @@ function squash(store, plan, base2, from) {
   }
 }
 function landed(store, plan, base2, branch, wt, sha) {
-  git(["worktree", "remove", "--force", wt], true);
-  git(["branch", "-D", branch], true);
+  const short = sha.slice(0, 7);
+  log(store, plan.id, `landed on ${base2} as ${short}`);
+  const warnings = [cleanupWorktree(store, wt)];
+  if (git(["branch", "-D", branch]) === null) warnings.push(`branch ${branch} was not deleted; delete it by hand`);
   store.forgetWorktrees();
   for (const dep of [...store.plans().values()].filter((p) => p.dependsOn().includes(plan.id))) {
     const home2 = store.planWorktrees().get(dep.id);
     if (home2) store.say(`${dep.id}: ${updateDependant(store, dep, home2, base2)}`);
   }
-  const short = sha.slice(0, 7);
-  log(store, plan.id, `landed on ${base2} as ${short}`);
   store.say(`${plan.id}: landed on ${base2} as ${short} \u2014 the PM moves it done`);
+  for (const w of warnings) if (w) store.say(`${plan.id}: cleanup \u2014 ${w} (the landing stands)`);
+}
+function cleanupWorktree(store, wt) {
+  if (git(["worktree", "remove", "--force", wt]) !== null) return null;
+  let left = [];
+  try {
+    if (existsSync13(wt)) left = leftovers(wt, wt);
+    if (!left.length) rmSync2(wt, { recursive: true, force: true });
+  } catch (e) {
+    left = [`(${e.message})`];
+  }
+  git(["worktree", "prune"]);
+  if (!left.length) return null;
+  return `left ${store.rel(wt) || wt}: ${left.slice(0, 5).join(", ")}${left.length > 5 ? ", \u2026" : ""}; remove it by hand, then \`git worktree prune\``;
+}
+var OS_JUNK = /^(\.DS_Store|\._.*|Thumbs\.db|desktop\.ini)$/;
+function leftovers(dir, root) {
+  return readdirSync5(dir, { withFileTypes: true }).flatMap((e) => {
+    const path = join23(dir, e.name);
+    if (e.isDirectory()) return leftovers(path, root);
+    if (OS_JUNK.test(e.name) || e.isFile() && path === join23(root, ".git")) return [];
+    return [relative6(root, path)];
+  });
 }
 function updateDependant(store, dep, home2, base2) {
   const at = (args) => spawnSync7("git", ["-C", home2, ...args], { encoding: "utf8" });
@@ -14267,13 +14290,13 @@ var registration24 = {
 // src/hub/server.ts
 import { spawn } from "node:child_process";
 import { randomBytes as randomBytes4 } from "node:crypto";
-import { existsSync as existsSync14, mkdirSync as mkdirSync7, watch as watch2 } from "node:fs";
+import { existsSync as existsSync15, mkdirSync as mkdirSync7, watch as watch2 } from "node:fs";
 import { createServer } from "node:http";
 import { basename as basename8, dirname as dirname9, join as join25 } from "node:path";
 
 // src/hub/commands/views/design.ts
 var import_yaml5 = __toESM(require_dist(), 1);
-import { existsSync as existsSync13, readFileSync as readFileSync11 } from "node:fs";
+import { existsSync as existsSync14, readFileSync as readFileSync11 } from "node:fs";
 import { dirname as dirname8, join as join24 } from "node:path";
 var HANDOFF_KINDS = ["finalise", "locked", "revision", "screen-change", "screens-done", "screens-skipped"];
 var STAGES = ["palette", "directions", "tune", "finalise", "screens", "done"];
@@ -14438,7 +14461,7 @@ function designWait(store, timeoutSec) {
   const path = studioPath(store);
   const pending = () => {
     try {
-      return existsSync13(path) ? JSON.parse(readFileSync11(path, "utf8")).handoffs ?? [] : [];
+      return existsSync14(path) ? JSON.parse(readFileSync11(path, "utf8")).handoffs ?? [] : [];
     } catch {
       return [];
     }
@@ -14589,7 +14612,7 @@ function serve(store, o) {
     ...ledgerDir !== store.dir ? [ledgerDir] : [],
     ...common ? [join25(common, "refs"), join25(common, "HEAD")] : []
   ];
-  const watchers = [...new Set(watched)].filter((p) => existsSync14(p)).map((p) => watch2(p, { recursive: !p.endsWith("HEAD") && (p !== ledgerDir || p === store.dir) }, (_, file) => {
+  const watchers = [...new Set(watched)].filter((p) => existsSync15(p)).map((p) => watch2(p, { recursive: !p.endsWith("HEAD") && (p !== ledgerDir || p === store.dir) }, (_, file) => {
     const f = String(file ?? "");
     if (/\.lock$|\.stale-/.test(basename8(f))) return;
     if (!(p === store.dir && f.startsWith("view"))) notify2();
@@ -14710,7 +14733,7 @@ var registration27 = {
 // src/hub/commands/views/doctor.ts
 var import_yaml6 = __toESM(require_dist(), 1);
 import { spawnSync as spawnSync8 } from "node:child_process";
-import { accessSync, constants, mkdirSync as mkdirSync8, rmSync as rmSync2, statSync as statSync10, writeFileSync as writeFileSync4 } from "node:fs";
+import { accessSync, constants, mkdirSync as mkdirSync8, rmSync as rmSync3, statSync as statSync10, writeFileSync as writeFileSync4 } from "node:fs";
 import { join as join26, resolve as resolve9 } from "node:path";
 var ok = (id, detail2) => ({ id, level: "ok", detail: detail2, fix: null });
 var warn = (id, detail2, fix) => ({ id, level: "warn", detail: detail2, fix });
@@ -14882,7 +14905,7 @@ function probeHubCommit(home2) {
     const cm = runHook(home2, "commit-msg", [msg], env);
     return cm === null ? null : { hook: "commit-msg", message: cm };
   } finally {
-    for (const f of [index, `${index}.lock`, msg]) rmSync2(f, { force: true });
+    for (const f of [index, `${index}.lock`, msg]) rmSync3(f, { force: true });
   }
 }
 

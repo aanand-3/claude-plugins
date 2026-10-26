@@ -1,7 +1,9 @@
 /** P-032: the merge queue. Plans go in-review → accepted (PM) → done (PM, once landed); `land` lands accepted plans in
  * merge order in throwaway repos with plan worktrees, and a failed land goes back to the developer (accepted → in-progress,
  * Release's `plan.landed` gate). */
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { existsSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import { Repo, ROOT, type Result } from "../../helpers/repo.js";
@@ -279,6 +281,59 @@ describe("land", () => {
     expect(r.stdout).toContain("P-002: merged main into its worktree");
     expect(w2.read("src/cli.ts")).toContain("P-001 was here");
     expect(w2.read("src/logout.ts")).toBe("x\n");
+  });
+});
+
+/** Finder's race, made deterministic: a `git` first on the repo's PATH whose `worktree remove` runs the real git, then
+ * writes `file` back into the removed folder and fails as git does when `rmdir` meets a new file (BUG-040). */
+function finder(r: Repo, file: string): void {
+  const real = spawnSync("sh", ["-c", "command -v git"], { encoding: "utf8" }).stdout.trim();
+  const bin = mkdtempSync(join(tmpdir(), "crew-shim-"));
+  writeFileSync(join(bin, "git"), `#!/bin/sh
+case " $* " in
+  *" worktree remove "*)
+    "${real}" "$@"
+    for last; do :; done
+    mkdir -p "$last" && echo x > "$last/${file}"
+    echo "error: failed to delete '$last': Directory not empty" >&2
+    exit 255;;
+esac
+exec "${real}" "$@"
+`, { mode: 0o755 });
+  r.env.PATH = `${bin}:${r.env.PATH}`;
+}
+
+describe("cleanup", () => {
+  it("cleanup: a .DS_Store recreated during worktree removal does not stop the landing (BUG-040)", () => {
+    const w1 = started(repo, "P-001", "Signup");
+    const w2 = started(repo, "P-002", "Logout", "--depends", "P-001");
+    accepted(repo, "P-001", w1, 1);
+    finder(repo, ".DS_Store");
+    const r = land(repo, "P-001");
+    ok(r);
+    expect(r.stdout).not.toContain("not landed");
+    expect(events(repo, "log").some((e) => e.ref === "P-001" && /^landed on main as [0-9a-f]{7}$/.test(String(e.text)))).toBe(true);
+    expect(hasWorktree(repo, "P-001")).toBe(false);
+    expect(repo.git("branch", "--list", "plan/*").stdout).not.toContain("P-001");
+    const squashed = repo.git("log", "--format=%H", "--grep", "^feat(P-001): Signup$", "main").stdout.trim();
+    expect(repo.git("-C", w2.path, "merge-base", "--is-ancestor", squashed, "HEAD").returncode).toBe(0);
+    ok(runAs(repo, "pm", "pm", "move", "P-001", "done"));
+  });
+
+  it("cleanup: a leftover file is a warning, not a failed landing (BUG-040)", () => {
+    const w1 = started(repo, "P-001", "Signup");
+    const w2 = started(repo, "P-002", "Logout", "--depends", "P-001");
+    const folder = w1.path;
+    accepted(repo, "P-001", w1, 1);
+    finder(repo, "keep.txt");
+    const r = land(repo, "P-001");
+    ok(r);
+    expect(r.stdout).not.toContain("not landed");
+    expect(r.stdout).toMatch(/P-001: cleanup — .*P-001-signup.*keep\.txt/);
+    expect(events(repo, "log").some((e) => e.ref === "P-001" && /^landed on main as /.test(String(e.text)))).toBe(true);
+    expect(r.stdout).toContain("P-002: worktree fast-forwarded to main");
+    expect(w2.read("src/cli.ts")).toContain("P-001 was here");
+    expect(existsSync(join(folder, "keep.txt"))).toBe(true);
   });
 });
 

@@ -4,8 +4,8 @@
  * its developer (`accepted → in-progress`, the `plan.landed` gate, never forced). `land` never moves a plan to `done`:
  * the PM does, once it has landed. */
 import { spawnSync } from "node:child_process";
-import { mkdirSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, mkdirSync, readdirSync, rmSync } from "node:fs";
+import { join, relative } from "node:path";
 import type { Doc } from "../../core/work/doc.js";
 import * as git from "../../core/git.js";
 import { secretsIn } from "../../core/memory/knowledge.js";
@@ -166,18 +166,48 @@ function squash(store: Store, plan: Doc, base: string, from: string): string | n
   }
 }
 
-/** 7–9: remove the worktree and the branch, update the dependants' worktrees, log the landing. */
+/** 7–9: log the landing (the squash is on the base: that is the fact), then remove the worktree and the branch and update
+ * the dependants' worktrees. Nothing after the log throws: a cleanup that fails is a warning, never "not landed" (BUG-040). */
 function landed(store: Store, plan: Doc, base: string, branch: string, wt: string, sha: string): void {
-  git.git(["worktree", "remove", "--force", wt], true);
-  git.git(["branch", "-D", branch], true);
+  const short = sha.slice(0, 7);
+  log(store, plan.id, `landed on ${base} as ${short}`);
+  const warnings = [cleanupWorktree(store, wt)];
+  if (git.git(["branch", "-D", branch]) === null) warnings.push(`branch ${branch} was not deleted; delete it by hand`);
   store.forgetWorktrees();
   for (const dep of [...store.plans().values()].filter((p) => p.dependsOn().includes(plan.id))) {
     const home = store.planWorktrees().get(dep.id);
     if (home) store.say(`${dep.id}: ${updateDependant(store, dep, home, base)}`);
   }
-  const short = sha.slice(0, 7);
-  log(store, plan.id, `landed on ${base} as ${short}`);
   store.say(`${plan.id}: landed on ${base} as ${short} — the PM moves it done`);
+  for (const w of warnings) if (w) store.say(`${plan.id}: cleanup — ${w} (the landing stands)`);
+}
+
+/** Removes the landed plan's own worktree. When `git worktree remove` fails (Finder writes .DS_Store back while git empties
+ * the folder), the folder is deleted only if all that is left is OS junk or empty folders; a warning when it stays. */
+function cleanupWorktree(store: Store, wt: string): string | null {
+  if (git.git(["worktree", "remove", "--force", wt]) !== null) return null;
+  let left: string[] = [];
+  try {
+    if (existsSync(wt)) left = leftovers(wt, wt);
+    if (!left.length) rmSync(wt, { recursive: true, force: true });
+  } catch (e) {
+    left = [`(${(e as Error).message})`];
+  }
+  git.git(["worktree", "prune"]);
+  if (!left.length) return null;
+  return `left ${store.rel(wt) || wt}: ${left.slice(0, 5).join(", ")}${left.length > 5 ? ", …" : ""}; remove it by hand, then \`git worktree prune\``;
+}
+
+const OS_JUNK = /^(\.DS_Store|\._.*|Thumbs\.db|desktop\.ini)$/;
+
+/** Every file under `dir` that is not OS junk (nor the worktree's own .git file), relative to `root`; empty folders don't count. */
+function leftovers(dir: string, root: string): string[] {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+    const path = join(dir, e.name);
+    if (e.isDirectory()) return leftovers(path, root);
+    if (OS_JUNK.test(e.name) || (e.isFile() && path === join(root, ".git"))) return [];
+    return [relative(root, path)];
+  });
 }
 
 function updateDependant(store: Store, dep: Doc, home: string, base: string): string {
