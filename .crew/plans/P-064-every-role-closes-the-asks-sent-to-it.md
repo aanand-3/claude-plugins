@@ -5,7 +5,7 @@ goal:
 items: BUG-044
 touches: plugins/crew/skills/hub/agents/pm.md, plugins/crew/skills/hub/agents/developer.md, plugins/crew/skills/hub/agents/qa.md, plugins/crew/skills/hub/agents/release.md, plugins/crew/skills/hub/agents/designer.md, plugins/crew/skills/hub/agents/generic.md, packages/crew/test/hub/e2e/agents.test.ts
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-064-every-role-closes-the-asks-sent-to-it
 pr:
 created: 2026-10-26
@@ -98,7 +98,7 @@ then. Rollback: revert the commit and re-render.
 
 _Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
 
-- P-064: Every role closes the asks sent to it [in-progress] tasks 2/2 — claimed by Arpit Anand (developer:a69325ed00930a177)
+- P-064: Every role closes the asks sent to it [in-review] tasks 2/2 — claimed by Arpit Anand (developer:a69325ed00930a177)
 - last checkpoint 2026-10-26 14:24 at done (6620206) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
 - ✓ cd packages/crew && npx vitest run test/hub/e2e/agents.test.ts -t BUG-044 (AC 2)
 - ✓ cd packages/crew && npx vitest run test/hub/e2e/agents.test.ts (AC 3)
@@ -121,6 +121,7 @@ Latest log:
 - 2026-10-26: status in-progress → in-review
 - 2026-10-26: status in-review → accepted
 - 2026-10-26: status accepted → in-progress — land: hub.full_suite failed (exit 1):      15| beforeAll(() => { ·        | ^ ·      16|   execFileSync("node", [new URL("../scripts/sample-project.mjs", impor… ·      17|   graph = JSON.parse(tr("export", "--json")); · ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+- 2026-10-26: status in-progress → in-review — land bounce was not P-064: view.test.ts times out its beforeAll on main too under load (see the done checkpoint); no code change
 
 ## Outcome
 Learnings: none
