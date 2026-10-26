@@ -5,11 +5,11 @@ goal: G-007
 items: BUG-036
 touches: plugins/crew/skills/hub/agents/release.md, packages/crew/test/hub/e2e/agents.test.ts
 depends_on:
-status: ready
+status: in-progress
 branch: plan/P-052-release-lets-land-bounce-merge-conflicts
 pr:
 created: 2026-10-26
-started:
+started: 2026-10-26
 completed:
 assignee: developer
 ---
@@ -64,5 +64,6 @@ BUG-036 (G-007). Since P-051 the guard binds every role's Bash writes to `paths.
 
 - 2026-10-26: status draft → ready
 - 2026-10-26: assigned to the developer role
+- 2026-10-26: status ready → in-progress — branch plan/P-052-release-lets-land-bounce-merge-conflicts
 
 ## Outcome
