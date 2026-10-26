@@ -5,7 +5,7 @@ goal: G-007
 items: FEAT-050
 touches: packages/crew/src/hub/commands/team/guard.ts, packages/crew/src/hub/core/memory/activity.ts, packages/crew/src/hub/commands/team/activity.ts, packages/crew/ui/src/api.ts, packages/crew/ui/src/components/LivePanel.tsx, packages/crew/test/activity.test.ts, packages/crew/test/hub/e2e/activity.test.ts, packages/crew/test/hub/e2e/guard.test.ts, packages/crew/test/hub/e2e/guard-writes.test.ts, packages/crew/test/hub/e2e/live-ui.test.ts
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-056-guard-labels-every-agent-command
 pr:
 created: 2026-10-26
@@ -82,7 +82,7 @@ Ships in the bundle; reaches this repo through refresh-bin. Rollback: revert the
 
 _Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
 
-- P-056: Guard labels every agent command [in-progress] tasks 5/5 — claimed by Arpit Anand (developer:a903b303fd5033b36)
+- P-056: Guard labels every agent command [in-review] tasks 5/5 — claimed by Arpit Anand (developer:a903b303fd5033b36)
 - last checkpoint 2026-10-26 08:23 at T3 (8aa8f85) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
 - ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-056-guard-labels-every-agent-command/packages/crew && npx vitest run test/activity.test.ts -t label (AC 2)
 - ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-056-guard-labels-every-agent-command/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/guard.test.ts -t label ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-056-guard-labels-every-agent-command checkout -- plugins/crew/skills/hub/dist plugins/crew/skills/hub/references/commands.md plugins/crew/docs; exit $r (AC 1)
@@ -102,6 +102,7 @@ Latest log:
 - 2026-10-26: status draft → ready
 - 2026-10-26: assigned to the developer role
 - 2026-10-26: status ready → in-progress — branch plan/P-056-guard-labels-every-agent-command
+- 2026-10-26: status in-progress → in-review
 
 ## Outcome
 The guard now labels every allowed crew-agent Bash call `<role> <plan>: <what>` (identity flags still injected) and refuses a background or >120 s call with no description. `deriveWhat`/`label` live in core/memory/activity.ts, and `describe` also takes the plan from a worktree path in the command. The activity hook records `label` on Bash events, and `watch`, `status` Running now, `/api/activity` and the UI Live panel show it, falling back to `tool target`. guard.ts is 217 lines, activity.ts 235. live-ui.test.ts was added to touches (Q-2f4b62).
