@@ -5,7 +5,7 @@ goal: G-007
 items: FEAT-049
 touches: packages/crew/src/hub/commands/work/overlap.ts, packages/crew/src/hub/commands/work/backlog.ts, packages/crew/src/hub/commands/work/backlog.reg.ts, plugins/crew/skills/hub/agents/pm.md, plugins/crew/skills/hub/references/model.md, plugins/crew/docs/reference.md, packages/crew/test/overlap.test.ts, packages/crew/test/hub/e2e/overlap.test.ts, packages/crew/test/mcp.test.ts, packages/crew/test/hub/registry.test.ts
 depends_on: P-055
-status: in-progress
+status: in-review
 branch: plan/P-057-overlap-check-at-triage
 pr:
 created: 2026-10-26
@@ -80,7 +80,7 @@ Ships in the bundle; reaches this repo through refresh-bin. The PM template text
 
 _Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
 
-- P-057: Overlap check at triage [in-progress] tasks 4/4 — claimed by Arpit Anand (developer:a802d01ace9899ce3)
+- P-057: Overlap check at triage [in-review] tasks 4/4 — claimed by Arpit Anand (developer:a802d01ace9899ce3)
 - last checkpoint 2026-10-26 10:07 at T4 (7718983) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —
 
@@ -94,7 +94,9 @@ Latest log:
 - 2026-10-26: status draft → ready
 - 2026-10-26: assigned to the developer role
 - 2026-10-26: status ready → in-progress — branch plan/P-057-overlap-check-at-triage
+- 2026-10-26: status in-progress → in-review
 
 ## Outcome
 `overlaps ID [--json]` (CLI and MCP tool) and `triage` list overlap candidates from the documents alone: open items with similar titles (Jaccard >= 0.5 with >= 2 shared tokens, top 5) and plans in flight whose touches cover a path the item names, with only the dependent-plan or note outcomes suggested and an architect flag for plans being built/landed or paths in two plans. New module commands/work/overlap.ts; triage adds one line in backlog.ts. Tests: test/overlap.test.ts (unit table), test/hub/e2e/overlap.test.ts (AC1-AC5, incl. a no-network, git-only, no-`claude` run).
-Learnings: an AC3-style "no subprocess but git, no network" check works as a NODE_OPTIONS `--import` preload that wraps child_process/net/dns/fetch and calls `syncBuiltinESMExports()`, with PATH reduced to symlinks of node and git.
+The AC3 test is a NODE_OPTIONS `--import` preload that wraps child_process/net/dns/fetch (syncBuiltinESMExports) with PATH reduced to node and git.
+Learnings: K-2026-10-26-e2e-tests-drive-the-built-dist-crew-mjs
