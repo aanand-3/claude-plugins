@@ -83,6 +83,7 @@ From `packages/crew/src/hub/mcp.ts:TOOLS`.
 | `resume` | `resume` | Where a plan's work stopped (`crew.mjs resume`): last checkpoint vs git now, check results, approaches not to retry, the next task and each criterion's evidence. |
 | `handoff` | `handoff` | Write the resume view into the plan's Handoff section (`crew.mjs handoff`), before ending a session. |
 | `review` | `review` | Code review of a plan in review (`crew.mjs review`): approve, or request changes, which sends it back to the developer. |
+| `design_review` |  | Design review of a UI plan in review (`crew.mjs review --design`): approve, or request changes, which sends it back to the developer. |
 | `merge_order` | `merge-order` | What Release merges next (`crew.mjs merge-order`): done plans with unmerged branches, dependencies first; plans waiting on an unmerged dependency; merged branches to delete. |
 | `suites` | `suites` | Recorded full-suite runs (`crew.mjs suites`), newest first: ts, ref, run, worktree, sha, branch, slot, wait_ms, run_ms, exit. |
 | `context` | `context` | What you need right now (`crew.mjs context`): for a plan, where the work stands, its goal, criteria with evidence, tasks, blockers and questions, knowledge in scope; without one, the idea, focus, your next steps and the team. |

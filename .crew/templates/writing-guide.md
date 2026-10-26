@@ -20,7 +20,7 @@ A tracked document is a contract between whoever plans the work and whoever does
 | CHORE | What and why, the cost of not doing it, and when it's done | "Refactor stuff" |
 | SPIKE | One question, a hard timebox, the output it produces (ADR, recommendation, follow-up items) | Open-ended research |
 
-UI plans (projects with `docs/design/DESIGN.md`) also end with a task like `Visual QA → verify: node .crew/bin/check_design.mjs --all clean; screenshots at 375/1280 px, light and dark, match DESIGN.md`.
+UI plans (projects with `docs/design/DESIGN.md`) also end with a task like `Visual QA → verify: node .crew/bin/check_design.mjs --all clean; screenshots at full size at 375/900/1440 px, light and dark, match DESIGN.md and the design skill's review checklist`. Where `design.ui_paths` is set, a plan whose touches overlap it is a UI plan: the Designer writes its `## Design` section before it can be ready, QA records `layout_sweep.mjs` as evidence (for the crew hub's UI), and the Designer's `review --design --approve` is needed before it is accepted.
 
 ### Goal
 | Section | Good | Bad |

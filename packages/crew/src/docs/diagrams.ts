@@ -41,6 +41,7 @@ const STEP_NOTES: Record<string, string> = {
   "plan.assigned": "opens a ready plan for a developer (`assign`); `start` needs the assignment",
   "plan.reassigned": "moves stuck work to someone else (`reassign`)",
   "plan.reviewed": "reviews the code against the spec (`review`); a request for changes sends the plan back to in-progress",
+  "plan.design-reviewed": "reviews a UI plan's design in code and on screen (`review --design`); a request for changes sends the plan back to in-progress",
   "plan.landed": "lands an accepted plan on the base (`land`); a failed land sends it back to in-progress",
 };
 

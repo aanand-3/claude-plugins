@@ -31,7 +31,7 @@ Documents hold the *content* (reviewed in git); the ledger holds *what is happen
 | `ask` / `answer` | `ask`, `escalate`, limits / `answer` | `qid`, `to`, `text`, `escalation`, `approved_by` |
 | `learn` | `learn` | `kind`, `title` |
 | `assign` | `assign`, `reassign` | `to` (a role), `team`, `note`, `reassigned` |
-| `review` | `review` | `verdict` (approve, changes), `sha`, `text` |
+| `review` | `review` | `verdict` (approve, changes), `sha`, `text`, `kind: design` for a design review (none: code) |
 | `pause` / `resume` | `pause` / `resume --team` | `reason` / `note` |
 | `notify` | a `notify:` alert sent | `kind`, `text`, `key` |
 
@@ -41,11 +41,11 @@ can't both claim a plan. Derived from it: live claims (owner in `status` and the
 hint when a plan file disagrees with the ledger's last move or a closed plan is still claimed.
 
 ## Roles, questions and context
-Roles are the built-in seven (`executive`, `director`, `pm`, `architect`, `developer`, `qa`, `release`) plus any the policy
+Roles are the built-in eight (`executive`, `director`, `pm`, `architect`, `developer`, `qa`, `release`, `designer`) plus any the policy
 declares under `roles.<name>` with a `charter:` (lower-case name). Identity is `--as ROLE --run-id ID` on any command
 (`as`/`run_id` on MCP), else `CREW_ROLE`/`CREW_RUN`; for crew agents the `guard` hook injects it from the agent's verified
 definition, so an agent can't act as another role. An unknown acting role makes the policy invalid, so moves fail closed.
-Roles: `executive` (the human), `director`, `pm`, `architect`, `developer`, `qa`, `release` (`CREW_ROLE`). Questions are
+Roles: `executive` (the human), `director`, `pm`, `architect`, `designer`, `developer`, `qa`, `release` (`CREW_ROLE`). Questions are
 ledger events (`ask` → `answer`): an open, blocking question on a document refuses its forward moves and its `start`, and
 nothing else. Only the addressed role answers (or a human with `--approved-by`), never the asking run. Escalations go to the
 policy's `escalation.to` and are answered only with `--approved-by`.
@@ -103,7 +103,7 @@ the Outcome's `Learnings:` line lists the entries captured, or `none`, before `i
 | `mode` | global | override; sets the default `human_gates` |
 | `human_gates`, `reserved` | global | `<kind>.<status>` transitions needing `--approved-by`; the org's are a floor, reserved is a union |
 | `preset` | global | `lifecycle`: a layer between org and project with the team's RACI as gates (see below) |
-| `role_gates` | global | `{plan.accepted: qa}` — the step needs the acting role; keys are `<kind>.<status>`, one edge `<kind>.<from>><to>` (wins over the status), or an action: `plan.assigned`, `plan.reassigned`, `plan.reviewed`, `plan.landed` |
+| `role_gates` | global | `{plan.accepted: qa}` — the step needs the acting role; keys are `<kind>.<status>`, one edge `<kind>.<from>><to>` (wins over the status), or an action: `plan.assigned`, `plan.reassigned`, `plan.reviewed`, `plan.design-reviewed`, `plan.landed` |
 | `evidence.role` | global | only that role's checks count toward a plan's acceptance |
 | `limits` | global (`max_turns` also per role) | `stale_claim_hours`, `max_bounces`, `max_attempts` (over → a question to the director), `max_turns` (agents) |
 | `notify` | global | `{command, on: [escalation, budget, stale, goal-done, paused, stopped, goal-approval]}` — the command gets each event as JSON on stdin |
@@ -137,10 +137,12 @@ No subagent runs `crew.mjs init`. An invalid policy blocks every move until `pol
 `preset: lifecycle`: mode `ai-native`; the executive approves `goal.active`; role gates `item.triaged`, `item.done`,
 `item.wontfix`, `item.duplicate`, `plan.assigned`, `plan.accepted`, `plan.done`, `plan.dropped`, `goal.done` → pm;
 `plan.ready`, `plan.reviewed` → architect; `plan.in-progress`, `plan.in-review` → developer; `plan.landed` → release;
-`plan.reassigned` → director; `evidence.role: qa`; `limits: {stale_claim_hours: 24, max_bounces:
+`plan.design-reviewed` → designer; `plan.reassigned` → director; `evidence.role: qa`; `limits: {stale_claim_hours: 24, max_bounces:
 2, max_attempts: 5}`; the director, pm, qa and release roles write only `.crew/drafts/`. Under a policy that gates
 `plan.assigned`, `start` needs an assignment; under one that gates `plan.reviewed`, `accepted` needs an approving review that
-covers the last code change; under one that gates `goal.done`, the PM verifies a goal's criteria. `plan.landed` is the
+covers the last code change, and under one that gates `plan.design-reviewed` a UI plan (its touches overlap
+`design.ui_paths` in `.crew/config.yaml`, a list of path globs) also needs an approving `review --design` that covers it; a
+UI plan needs a `## Design` section to be ready; under one that gates `goal.done`, the PM verifies a goal's criteria. `plan.landed` is the
 gate of `land` and of every `accepted → in-progress` move (a failed land); it keeps the developer's claim and counts
 toward `max_bounces`. A project whose own policy gates `plan.done` for a human should gate `plan.accepted` instead:
 `done` after a landing is mechanical.
@@ -149,7 +151,7 @@ toward `max_bounces`. A project whose own policy gates `plan.done` for a human s
 `{role, ref, task, resume}` entry per document, highest priority first — questions to a role; Director exceptions (a
 stale claim, a blocked plan, the focus goal done while another is active); urgent bugs (S1 or P0); the first plan in
 `merge-order` → Release lands it; landed accepted plans → the PM completes them; plans in review (a failing check → the
-implementer, no approving review → the Architect, missing evidence → QA, else the PM accepts); a focus goal with nothing open → the PM closes it; plans in progress; ready plans `staff`
+implementer, no approving review → the Architect, a UI plan with no approving design review → the Designer, missing evidence → QA, else the PM accepts); a focus goal with nothing open → the PM closes it; plans in progress; ready plans `staff`
 can start (assigned → that role, else the PM assigns); triage; specs and new plans while fewer plans are ready than
 `budgets.max_agents`; and, when nothing can move but work is open, one stall entry for the Director. Documents an
 escalation holds get no entry; a paused team gets none. Entries are cut to `max_agents` (`more` counts the rest);

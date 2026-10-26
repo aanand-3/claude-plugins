@@ -81,11 +81,12 @@ const ROWS: Row[] = [
   // 4b. landed: the PM completes it
   (v) => v.withStatus("accepted").filter((p) => !landedProblems(v.store, p).length)
     .map((p) => entry("pm", p.id, `complete ${p.id}: move ${p.id} done`)),
-  // 5. in review: a failing check, then the review, then QA's evidence, then completion
+  // 5. in review: a failing check, then the code review, the design review (UI plans), QA's evidence, then completion
   (v) => v.withStatus("in-review").map((p) => {
     const ev = evidence(v.store, p);
     if (ev.some((e) => e.verify && !e.verify.ok)) return entry("developer", p.id, `fix ${p.id}: a check failed`, v.lastRun(p.id, "claim"));
-    if (reviewProblems(v.store, p).length) return entry("architect", p.id, `review ${p.id}: ${p.get("title")}`);
+    if (reviewProblems(v.store, p, "code").length) return entry("architect", p.id, `review ${p.id}: ${p.get("title")}`);
+    if (reviewProblems(v.store, p, "design").length) return entry("designer", p.id, `design review ${p.id}: ${p.get("title")}`);
     if (ev.some((e) => !(e.verify?.ok && e.independent))) return entry("qa", p.id, `test ${p.id}: ${p.get("title")}`, v.lastRun(p.id, "checkpoint", "qa"));
     return entry("pm", p.id, `accept ${p.id}: move ${p.id} accepted`);
   }),

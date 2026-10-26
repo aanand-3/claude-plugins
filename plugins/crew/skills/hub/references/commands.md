@@ -159,13 +159,16 @@ checkpoint --workflow kickoff|onboard --step S [--skip] [--note] · resume --wor
 
 ```text
 review P-### --approve | --changes TXT        code review of a plan in review (never by its implementer)
+review P-### --design --approve | --changes TXT   design review of a UI plan in review (design.ui_paths)
 ```
 
 | Command | MCP tool |
 |---|---|
 | `review` | `review` |
+| — | `design_review` |
 
 - `review`: Code review of a plan in review (`crew.mjs review`): approve, or request changes, which sends it back to the developer. Never by the plan's implementer; under the lifecycle preset the Architect's, and done needs an approval of the current code.
+- `design_review`: Design review of a UI plan in review (`crew.mjs review --design`): approve, or request changes, which sends it back to the developer. A UI plan's touches overlap design.ui_paths; never by its implementer; under the lifecycle preset the designer's, and accepting it needs an approval of the current code.
 
 ## work/release
 

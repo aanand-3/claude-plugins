@@ -1,6 +1,6 @@
 /** `next --role R`: each role's own queue. Questions addressed to the role come first, then its work, most urgent first. */
 import type { Doc } from "../../core/work/doc.js";
-import { overlapping, sharedGlobs } from "../../core/work/footprint.js";
+import { isUiPlan, overlapping, sharedGlobs } from "../../core/work/footprint.js";
 import { approvalReason } from "../../core/team/policy.js";
 import * as q from "../../core/work/queries.js";
 import type { Store } from "../../core/store.js";
@@ -75,11 +75,18 @@ const RULES: Record<string, Rule[]> = {
   ],
   architect: [
     (v) => (v.gate("plan.reviewed") === "architect" ? v.status("in-review") : [])
-      .filter((p) => reviewProblems(v.store, p).length && !implementers(v.events, p.id).has(v.store.ledger.who.run))
+      .filter((p) => reviewProblems(v.store, p, "code").length && !implementers(v.events, p.id).has(v.store.ledger.who.run))
       .map((p) => `review ${p.id}: ${p.get("title")} — its diff against the spec → review ${p.id} --approve | --changes "…"`),
     (v) => v.status("draft").map((p) => `refine ${p.id}: ${p.get("title")} to the Definition of Ready`),
     (v) => v.ranked("triaged").slice(0, 2).map((i) => `write a plan for ${i.id}: ${i.get("title")} (${i.get("priority")})`),
     (v) => v.status("ready").flatMap((p) => overlapping(p, v.plans, v.shared).map((o) => `${p.id} overlaps ${o.id} (${o.globs.join(", ")}): narrow touches or list the file in hub.shared`)),
+  ],
+  designer: [ // UI plans (design.ui_paths): review what was built, then shape what is about to be
+    (v) => v.status("in-review").filter((p) => reviewProblems(v.store, p, "design").length && !implementers(v.events, p.id).has(v.store.ledger.who.run))
+      .map((p) => `design review ${p.id}: ${p.get("title")} — on screen at full size (375/900/1440 px, light and dark) and in code `
+        + `→ review ${p.id} --design --approve | --changes "…"`),
+    (v) => v.status("draft").filter((p) => isUiPlan(v.store, p) && p.missing(["Design"]).length)
+      .map((p) => `shape ${p.id}: ${p.get("title")} — write its ## Design (layout from the shell and inventory, UI acceptance criteria)`),
   ],
   developer: [
     (v) => [...v.plans.values()].filter((p) => ["in-progress", "blocked"].includes(p.get("status") ?? "")

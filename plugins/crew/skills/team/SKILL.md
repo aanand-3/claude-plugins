@@ -1,6 +1,6 @@
 ---
 name: team
-description: Run the crew agent team on this project — the hub dispatches the work and this session launches the Director, PM, Architect, Developer, QA and Release agents it names until the ask is done, a human decision is needed, the team is paused or the budget runs out. Use when the user says "/crew:team <ask>", "let the team work on X", "fix BUG-001 with the team", "continue" a team run, or wants the agents to take the backlog forward.
+description: Run the crew agent team on this project — the hub dispatches the work and this session launches the Director, PM, Architect, Designer, Developer, QA and Release agents it names until the ask is done, a human decision is needed, the team is paused or the budget runs out. Use when the user says "/crew:team <ask>", "let the team work on X", "fix BUG-001 with the team", "continue" a team run, or wants the agents to take the backlog forward.
 argument-hint: "<ask, e.g. \"fix BUG-001\"> | continue"
 ---
 
@@ -13,9 +13,13 @@ each agent is. The Director handles the exceptions dispatch gives it: questions,
 next focus.
 
 ```
-you ── this session ── dispatch ─┬─ crew-director ─ crew-pm ─ crew-architect ─ crew-developer ─ crew-qa ─ crew-release
+you ── this session ── dispatch ─┬─ crew-director ─ crew-pm ─ crew-architect ─ crew-designer ─ crew-developer ─ crew-qa ─ crew-release
                                    (one agent per entry; each plan: one shared worktree)
 ```
+
+The Designer works only on UI plans — plans whose touches overlap `design.ui_paths` in `.crew/config.yaml`: it writes a
+UI plan's `## Design` before the Architect makes it ready, and reviews it (`review --design`) before the PM accepts it.
+Without `ui_paths`, dispatch never names it.
 
 ## Before the first run (each step once; skip what is already in place)
 1. **Doctor.** Run `node .crew/bin/crew.mjs doctor` and fix what it reports: each WARN and FAIL names its fix and who

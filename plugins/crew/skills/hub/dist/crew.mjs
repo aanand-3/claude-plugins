@@ -7456,7 +7456,7 @@ var KINDS = {
 var DIRS = { goal: "goals", plan: "plans", item: "items" };
 var FLOWS = { idea: IDEA_FLOW, goal: GOAL_FLOW, plan: PLAN_FLOW, item: ITEM_FLOW };
 var ITEM_TYPES = { FEAT: "feat", BUG: "bug", CHORE: "chore", SPIKE: "spike" };
-var ROLES = ["executive", "director", "pm", "architect", "developer", "qa", "release"];
+var ROLES = ["executive", "director", "pm", "architect", "developer", "qa", "release", "designer"];
 var OFF_FOCUS_OK = /* @__PURE__ */ new Set(["BUG", "CHORE"]);
 var TRIAGE_SECTIONS = {
   FEAT: ["Summary"],
@@ -8214,8 +8214,10 @@ var PRESETS = {
         // the PM verifies a goal's criteria and closes it
         "plan.reassigned": "director",
         // the Director moves stuck work to someone else
-        "plan.reviewed": "architect"
+        "plan.reviewed": "architect",
         // code review against the spec; done needs an approval of the current code
+        "plan.design-reviewed": "designer"
+        // design review of a UI plan (design.ui_paths), in code and on screen
       },
       // liveness: a claim quiet for a day is stale; a third bounce or a sixth failed attempt goes to the Director
       limits: { stale_claim_hours: 24, max_bounces: 2, max_attempts: 5 },
@@ -8229,7 +8231,7 @@ var PRESETS = {
 // src/hub/core/team/policy.ts
 var MODES = ["ai-native", "ai-assisted", "human-led"];
 var NOTIFY_ON = ["escalation", "budget", "stale", "goal-done", "paused", "stopped", "goal-approval"];
-var ACTIONS = /* @__PURE__ */ new Set(["plan.assigned", "plan.reassigned", "plan.reviewed", "plan.landed"]);
+var ACTIONS = /* @__PURE__ */ new Set(["plan.assigned", "plan.reassigned", "plan.reviewed", "plan.design-reviewed", "plan.landed"]);
 var MODE_GATES = {
   "ai-native": [],
   "ai-assisted": ["plan.ready", "plan.accepted", "goal.done"],
@@ -9972,79 +9974,20 @@ function goalPlans(goalId, plans2, items2) {
   return [...plans2.values()].filter((p) => planGoal(p, items2) === goalId);
 }
 
-// src/hub/core/work/gates.ts
-function triageProblems(item) {
-  const prefix = item.id.split("-")[0];
-  const problems = item.missing(TRIAGE_SECTIONS[prefix]).map((n2) => `empty section: ${n2}`);
-  if (!PRIORITIES.includes(item.get("priority") ?? "")) problems.push("no priority (P0\u2013P3)");
-  if (prefix === "BUG" && !Object.hasOwn(SEVERITY_PRIORITY, item.get("severity") ?? "")) problems.push("no severity (S1\u2013S4)");
-  return problems;
-}
-function fastLane(store, plan) {
-  const { types, max_tasks } = store.policy.policy.fast_lane;
-  const items2 = planItems(plan, store.items());
-  return types.length > 0 && items2.length > 0 && items2.every((i) => types.includes(i.id.split("-")[0])) && (max_tasks === null || plan.tasks().length <= max_tasks);
-}
-function readinessProblems(store, plan) {
-  return [
-    ...plan.missing(READY_SECTIONS).map((n2) => `empty section: ${n2}`),
-    ...plan.touches().length ? [] : ["no touches: (the paths this plan will change)"],
-    ...taskProblems(store, plan),
-    ...itemProblems(store, plan)
-  ];
-}
-function learningsProblems(plan, known) {
-  const m = /^\s*[-*]?\s*\**learnings?\**\s*:\**\s*(.*)$/im.exec(stripComments(plan.section("Outcome")));
-  if (!m) return ["Outcome has no `Learnings:` line \u2014 list the K-\u2026 entries captured with `learn`, or write `Learnings: none`"];
-  const ids = m[1].match(K_ID_RE) ?? [];
-  if (!ids.length && !/^none\b/i.test(m[1].trim())) return ["`Learnings:` must list K-\u2026 entries or say none"];
-  return ids.filter((i) => !known.has(i)).map((i) => `Learnings: ${i} does not exist`);
-}
-function decisionProblems(idea2) {
-  const problems = idea2.missing(DECIDED_SECTIONS).map((n2) => `empty section: ${n2}`);
-  if (idea2.hasContent("Success criteria") && !idea2.checklist("Success criteria").length) {
-    problems.push("Success criteria must be a checklist (`- [ ] \u2026`) so each one can be verified");
-  }
-  return problems;
-}
-function taskProblems(store, plan) {
-  const tasks = plan.tasks();
-  const max = store.settings().max_tasks;
-  const problems = tasks.length ? [] : ["no tasks"];
-  const noVerify = tasks.filter(([, t]) => !t.toLowerCase().includes("verify")).map(([, t]) => t.split("\u2192")[0].trim());
-  if (noVerify.length) problems.push(`tasks without '\u2192 verify:': ${noVerify.join("; ")}`);
-  if (tasks.length > max) problems.push(`${tasks.length} tasks (> max_tasks ${max}) \u2014 split the plan`);
-  return problems;
-}
-function itemProblems(store, plan) {
-  const items2 = store.items();
-  const linked = idList(plan.get("items"));
-  const problems = [];
-  for (const i of linked) {
-    if (!items2.has(i)) problems.push(`unknown item ${i}`);
-    else if (items2.get(i).get("status") === "new") problems.push(`item ${i} is not triaged`);
-  }
-  if (linked.some((i) => i.startsWith("BUG-"))) {
-    const text2 = (plan.section("Acceptance criteria") + plan.section("Tasks") + plan.section("Test plan")).toLowerCase();
-    if (!text2.includes("regression")) {
-      problems.push("fixes a bug but names no regression test (acceptance criteria, tasks or test plan)");
-    }
-  }
-  return problems;
-}
-
 // src/hub/core/work/footprint.ts
 var import_yaml2 = __toESM(require_dist(), 1);
 import { join as join10 } from "node:path";
 var LIVE = /* @__PURE__ */ new Set(["ready", "in-progress", "blocked", "in-review", "accepted"]);
 var BROAD = 10;
-function sharedSetting(store) {
+function configSetting(store, block, key) {
   try {
-    return (0, import_yaml2.parse)(store.ws.read(join10(store.dir, "config.yaml")) ?? "")?.hub?.shared;
+    const doc = (0, import_yaml2.parse)(store.ws.read(join10(store.dir, "config.yaml")) ?? "");
+    return doc?.[block]?.[key];
   } catch {
     return void 0;
   }
 }
+var sharedSetting = (store) => configSetting(store, "hub", "shared");
 function sharedGlobs(store) {
   const v = sharedSetting(store);
   return globList(v) ? v : [];
@@ -10053,6 +9996,14 @@ var globList = (v) => Array.isArray(v) && v.every((g) => typeof g === "string");
 function sharedProblem(store) {
   const v = sharedSetting(store);
   return v === void 0 || v === null || globList(v) ? null : "hub.shared: expected a list of path globs";
+}
+function uiPaths(store) {
+  const v = configSetting(store, "design", "ui_paths");
+  return globList(v) ? v : [];
+}
+function isUiPlan(store, plan) {
+  const ui = uiPaths(store);
+  return ui.length > 0 && plan.touches().some((t) => ui.some((g) => globsOverlap(t, g)));
 }
 function isShared(touch, shared2) {
   return shared2.includes(touch) || !/[*?]/.test(touch) && shared2.some((s2) => globRe(s2).test(touch));
@@ -10100,6 +10051,68 @@ function drift(plan, base2, home2) {
     for (let i = 0; i + 2 < out.length; i += 3) if (out[i + 2] === "true" || out[i + 2] === "set") generated3.add(out[i]);
   }
   return outside.filter((f) => !generated3.has(f)).sort();
+}
+
+// src/hub/core/work/gates.ts
+function triageProblems(item) {
+  const prefix = item.id.split("-")[0];
+  const problems = item.missing(TRIAGE_SECTIONS[prefix]).map((n2) => `empty section: ${n2}`);
+  if (!PRIORITIES.includes(item.get("priority") ?? "")) problems.push("no priority (P0\u2013P3)");
+  if (prefix === "BUG" && !Object.hasOwn(SEVERITY_PRIORITY, item.get("severity") ?? "")) problems.push("no severity (S1\u2013S4)");
+  return problems;
+}
+function fastLane(store, plan) {
+  const { types, max_tasks } = store.policy.policy.fast_lane;
+  const items2 = planItems(plan, store.items());
+  return types.length > 0 && items2.length > 0 && items2.every((i) => types.includes(i.id.split("-")[0])) && (max_tasks === null || plan.tasks().length <= max_tasks);
+}
+function readinessProblems(store, plan) {
+  return [
+    ...plan.missing(READY_SECTIONS).map((n2) => `empty section: ${n2}`),
+    ...plan.touches().length ? [] : ["no touches: (the paths this plan will change)"],
+    ...isUiPlan(store, plan) && plan.missing(["Design"]).length ? ["empty section: Design (a UI plan: touches overlap design.ui_paths)"] : [],
+    ...taskProblems(store, plan),
+    ...itemProblems(store, plan)
+  ];
+}
+function learningsProblems(plan, known) {
+  const m = /^\s*[-*]?\s*\**learnings?\**\s*:\**\s*(.*)$/im.exec(stripComments(plan.section("Outcome")));
+  if (!m) return ["Outcome has no `Learnings:` line \u2014 list the K-\u2026 entries captured with `learn`, or write `Learnings: none`"];
+  const ids = m[1].match(K_ID_RE) ?? [];
+  if (!ids.length && !/^none\b/i.test(m[1].trim())) return ["`Learnings:` must list K-\u2026 entries or say none"];
+  return ids.filter((i) => !known.has(i)).map((i) => `Learnings: ${i} does not exist`);
+}
+function decisionProblems(idea2) {
+  const problems = idea2.missing(DECIDED_SECTIONS).map((n2) => `empty section: ${n2}`);
+  if (idea2.hasContent("Success criteria") && !idea2.checklist("Success criteria").length) {
+    problems.push("Success criteria must be a checklist (`- [ ] \u2026`) so each one can be verified");
+  }
+  return problems;
+}
+function taskProblems(store, plan) {
+  const tasks = plan.tasks();
+  const max = store.settings().max_tasks;
+  const problems = tasks.length ? [] : ["no tasks"];
+  const noVerify = tasks.filter(([, t]) => !t.toLowerCase().includes("verify")).map(([, t]) => t.split("\u2192")[0].trim());
+  if (noVerify.length) problems.push(`tasks without '\u2192 verify:': ${noVerify.join("; ")}`);
+  if (tasks.length > max) problems.push(`${tasks.length} tasks (> max_tasks ${max}) \u2014 split the plan`);
+  return problems;
+}
+function itemProblems(store, plan) {
+  const items2 = store.items();
+  const linked = idList(plan.get("items"));
+  const problems = [];
+  for (const i of linked) {
+    if (!items2.has(i)) problems.push(`unknown item ${i}`);
+    else if (items2.get(i).get("status") === "new") problems.push(`item ${i} is not triaged`);
+  }
+  if (linked.some((i) => i.startsWith("BUG-"))) {
+    const text2 = (plan.section("Acceptance criteria") + plan.section("Tasks") + plan.section("Test plan")).toLowerCase();
+    if (!text2.includes("regression")) {
+      problems.push("fixes a bug but names no regression test (acceptance criteria, tasks or test plan)");
+    }
+  }
+  return problems;
 }
 
 // src/hub/commands/work/execution.ts
@@ -10786,12 +10799,18 @@ function uncommitted(store, plan) {
   const home2 = store.planHome(plan.id);
   return home2 ? codeChanges(home2, store.policy.policy.secrets.files) : [];
 }
+var GATE = { code: "plan.reviewed", design: "plan.design-reviewed" };
+var DESIGN_USAGE = "review P-### --design --approve | --changes TXT";
 function review(store, planId, o) {
   store.require();
   const plan = store.find(store.checkRef(planId, "plan"));
-  if (!!o.approve === !!o.changes) fail('Give one verdict: --approve, or --changes "<what to change>".');
+  const kind = o.design ? "design" : "code";
+  if (!!o.approve === !!o.changes) {
+    fail(o.design ? `usage: ${DESIGN_USAGE}` : 'Give one verdict: --approve, or --changes "<what to change>".');
+  }
   if (plan.get("status") !== "in-review") fail(`${plan.id} is '${plan.get("status")}': only a plan in review is reviewed.`);
-  authorize(store, plan.id, "plan.reviewed", void 0, void 0, `review ${plan.id}`);
+  if (o.design && !isUiPlan(store, plan)) fail(`${plan.id} is not a UI plan (its touches don't overlap design.ui_paths): it needs no design review.`);
+  authorize(store, plan.id, GATE[kind], void 0, void 0, `review ${plan.id}${o.design ? " --design" : ""}`);
   const me = store.ledger.who.run;
   if (implementers(store.ledger.events(), plan.id).has(me)) fail(`This run (${me}) implemented ${plan.id}; another role reviews it.`);
   const open = o.approve ? uncommitted(store, plan) ?? [] : [];
@@ -10800,23 +10819,34 @@ function review(store, planId, o) {
   }
   const branch = plan.get("branch") ?? "";
   const sha = branch && git(["rev-parse", "--verify", "-q", branch])?.trim() || null;
-  store.ledger.record("review", plan.id, { verdict: o.approve ? "approve" : "changes", sha, ...o.changes ? { text: o.changes } : {} });
+  store.ledger.record("review", plan.id, {
+    verdict: o.approve ? "approve" : "changes",
+    sha,
+    ...o.design ? { kind } : {},
+    ...o.changes ? { text: o.changes } : {}
+  });
+  const what = o.design ? "design review" : "review";
   if (o.changes) {
-    plan.appendLog(`review: changes requested \u2014 ${o.changes}`, "Progress log");
+    plan.appendLog(`${what}: changes requested \u2014 ${o.changes}`, "Progress log");
     plan.save();
-    move(store, plan.id, "in-progress", `changes requested: ${o.changes}`, false, void 0, "plan.reviewed");
-  } else store.say(`${plan.id}: approved${sha ? ` at ${sha.slice(0, 7)}` : ""}`);
+    move(store, plan.id, "in-progress", `${o.design ? "design " : ""}changes requested: ${o.changes}`, false, void 0, GATE[kind]);
+  } else store.say(`${plan.id}: ${o.design ? "design " : ""}approved${sha ? ` at ${sha.slice(0, 7)}` : ""}`);
 }
-function reviewProblems(store, plan) {
-  if (!store.policy.policy.role_gates["plan.reviewed"]) return [];
-  const last = store.ledger.events().filter((e) => e.type === "review" && e.ref === plan.id).at(-1);
-  const how = `\`review ${plan.id} --approve\` by the ${store.policy.policy.role_gates["plan.reviewed"]}`;
-  if (!last) return [`no code review yet: ${how}`];
-  if (last.verdict !== "approve") return [`the last review asked for changes: ${last.text}`];
+function reviewProblems(store, plan, kind) {
+  return (kind ? [kind] : ["code", "design"]).flatMap((k) => kindProblems(store, plan, k));
+}
+function kindProblems(store, plan, kind) {
+  const role = store.policy.policy.role_gates[GATE[kind]];
+  if (!role || kind === "design" && !isUiPlan(store, plan)) return [];
+  const last = store.ledger.events().filter((e) => e.type === "review" && e.ref === plan.id && (e.kind ?? "code") === kind).at(-1);
+  const how = `\`review ${plan.id}${kind === "design" ? " --design" : ""} --approve\` by the ${role}`;
+  const what = kind === "design" ? "design review" : "code review";
+  if (!last) return [`no ${what} yet: ${how}`];
+  if (last.verdict !== "approve") return [`the last ${kind === "design" ? "design " : ""}review asked for changes: ${last.text}`];
   const code = lastCode(plan.get("branch") ?? "");
   const dirty2 = uncommitted(store, plan) ?? (currentBranch() !== plan.get("branch") ? [] : (git(["status", "--porcelain"]) ?? "").split("\n").filter((l) => l.trim() && !l.slice(3).startsWith(".crew/")));
   const covered = !code || !!last.sha && git(["merge-base", "--is-ancestor", code, String(last.sha)]) !== null;
-  return covered && !dirty2.length ? [] : [`the code changed since the approving review (${String(last.sha ?? "?").slice(0, 7)}): ${how} again`];
+  return covered && !dirty2.length ? [] : [`the code changed since the approving ${kind === "design" ? "design " : ""}review (${String(last.sha ?? "?").slice(0, 7)}): ${how} again`];
 }
 
 // src/hub/commands/work/release.ts
@@ -11340,11 +11370,12 @@ var ROWS = [
   (v) => mergeOrder(v.store).merge.slice(0, 1).map((p) => entry("release", p.id, p.legacy ? `merge ${p.id}: ${p.branch} by hand (first in merge-order; completed before accepted)` : `land ${p.id}: ${p.title} (first in merge-order)`)),
   // 4b. landed: the PM completes it
   (v) => v.withStatus("accepted").filter((p) => !landedProblems(v.store, p).length).map((p) => entry("pm", p.id, `complete ${p.id}: move ${p.id} done`)),
-  // 5. in review: a failing check, then the review, then QA's evidence, then completion
+  // 5. in review: a failing check, then the code review, the design review (UI plans), QA's evidence, then completion
   (v) => v.withStatus("in-review").map((p) => {
     const ev = evidence(v.store, p);
     if (ev.some((e) => e.verify && !e.verify.ok)) return entry("developer", p.id, `fix ${p.id}: a check failed`, v.lastRun(p.id, "claim"));
-    if (reviewProblems(v.store, p).length) return entry("architect", p.id, `review ${p.id}: ${p.get("title")}`);
+    if (reviewProblems(v.store, p, "code").length) return entry("architect", p.id, `review ${p.id}: ${p.get("title")}`);
+    if (reviewProblems(v.store, p, "design").length) return entry("designer", p.id, `design review ${p.id}: ${p.get("title")}`);
     if (ev.some((e) => !(e.verify?.ok && e.independent))) return entry("qa", p.id, `test ${p.id}: ${p.get("title")}`, v.lastRun(p.id, "checkpoint", "qa"));
     return entry("pm", p.id, `accept ${p.id}: move ${p.id} accepted`);
   }),
@@ -11851,10 +11882,15 @@ var RULES = {
     (v) => (v.gate("plan.done") === "pm" ? v.status("accepted") : []).filter((p) => !landedProblems(v.store, p).length).map((p) => `complete ${p.id}: landed on ${v.store.baseBranch()} \u2192 move ${p.id} done`)
   ],
   architect: [
-    (v) => (v.gate("plan.reviewed") === "architect" ? v.status("in-review") : []).filter((p) => reviewProblems(v.store, p).length && !implementers(v.events, p.id).has(v.store.ledger.who.run)).map((p) => `review ${p.id}: ${p.get("title")} \u2014 its diff against the spec \u2192 review ${p.id} --approve | --changes "\u2026"`),
+    (v) => (v.gate("plan.reviewed") === "architect" ? v.status("in-review") : []).filter((p) => reviewProblems(v.store, p, "code").length && !implementers(v.events, p.id).has(v.store.ledger.who.run)).map((p) => `review ${p.id}: ${p.get("title")} \u2014 its diff against the spec \u2192 review ${p.id} --approve | --changes "\u2026"`),
     (v) => v.status("draft").map((p) => `refine ${p.id}: ${p.get("title")} to the Definition of Ready`),
     (v) => v.ranked("triaged").slice(0, 2).map((i) => `write a plan for ${i.id}: ${i.get("title")} (${i.get("priority")})`),
     (v) => v.status("ready").flatMap((p) => overlapping(p, v.plans, v.shared).map((o) => `${p.id} overlaps ${o.id} (${o.globs.join(", ")}): narrow touches or list the file in hub.shared`))
+  ],
+  designer: [
+    // UI plans (design.ui_paths): review what was built, then shape what is about to be
+    (v) => v.status("in-review").filter((p) => reviewProblems(v.store, p, "design").length && !implementers(v.events, p.id).has(v.store.ledger.who.run)).map((p) => `design review ${p.id}: ${p.get("title")} \u2014 on screen at full size (375/900/1440 px, light and dark) and in code \u2192 review ${p.id} --design --approve | --changes "\u2026"`),
+    (v) => v.status("draft").filter((p) => isUiPlan(v.store, p) && p.missing(["Design"]).length).map((p) => `shape ${p.id}: ${p.get("title")} \u2014 write its ## Design (layout from the shell and inventory, UI acceptance criteria)`)
   ],
   developer: [
     (v) => [...v.plans.values()].filter((p) => ["in-progress", "blocked"].includes(p.get("status") ?? "") && v.store.ledger.claims(v.events).get(p.id)?.run === v.store.ledger.who.run).map((p) => `continue ${p.id}: ${p.get("title")} \u2192 resume ${p.id}`),
@@ -13117,14 +13153,15 @@ var registration10 = {
 // src/hub/commands/work/review.reg.ts
 var registration11 = {
   usage: [
-    "  review P-### --approve | --changes TXT        code review of a plan in review (never by its implementer)"
+    "  review P-### --approve | --changes TXT        code review of a plan in review (never by its implementer)",
+    "  review P-### --design --approve | --changes TXT   design review of a UI plan in review (design.ui_paths)"
   ],
   cli: {
     review: {
       pos: ["id"],
       str: ["changes"],
-      flag: ["approve"],
-      run: (s2, a) => review(s2, a.pos[0], { approve: !!a.opt.approve, changes: str(a, "changes") })
+      flag: ["approve", "design"],
+      run: (s2, a) => review(s2, a.pos[0], { approve: !!a.opt.approve, changes: str(a, "changes"), design: !!a.opt.design })
     }
   },
   tools: {
@@ -13133,6 +13170,13 @@ var registration11 = {
       input: obj({ id: text("e.g. P-004"), approve: { type: "boolean" }, changes: text("what must change") }, ["id"]),
       run: (st, a) => {
         review(st, s(a, "id"), { approve: a.approve === true, changes: s(a, "changes") });
+      }
+    },
+    design_review: {
+      description: "Design review of a UI plan in review (`crew.mjs review --design`): approve, or request changes, which sends it back to the developer. A UI plan's touches overlap design.ui_paths; never by its implementer; under the lifecycle preset the designer's, and accepting it needs an approval of the current code.",
+      input: obj({ id: text("e.g. P-004"), approve: { type: "boolean" }, changes: text("what must change") }, ["id"]),
+      run: (st, a) => {
+        review(st, s(a, "id"), { approve: a.approve === true, changes: s(a, "changes"), design: true });
       }
     }
   }

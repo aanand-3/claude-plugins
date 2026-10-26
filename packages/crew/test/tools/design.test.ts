@@ -1,5 +1,5 @@
 /** design skill, function by function (the pytest suite imported these from the Python modules; they run against the TS port). */
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -8,6 +8,7 @@ import { exportTailwind, frontMatter, lint, scanText } from "../../src/tools/des
 import { catalog, FONT_MOODS, googleCss, slug, SURFACES, suggestFonts } from "../../src/tools/design/studio.js";
 import { hexToLab, labToHex, lch, load, MOODS, roles, suggest } from "../../src/tools/design/wada.js";
 import { DESIGN, FINAL } from "./design-fixtures.js";
+import { SKILLS } from "../helpers/repo.js";
 
 describe("check_design", () => {
   it("contrast matches the WCAG reference values", () => {
@@ -139,5 +140,31 @@ describe("studio", () => {
       expect(p.moods).toContain("cool");
     }
     expect(suggestFonts(["calm"], null)).toEqual(suggestFonts(["calm"], null)); // deterministic
+  });
+});
+
+describe("review checklist (P-021 AC7)", () => {
+  const skill = join(SKILLS, "design");
+  const ENTRIES = ["Native form controls left unstyled", "Controls sized by their content", "Joined ID lists in chips",
+    "Long IDs overflowing cards and rails", "Text past containers at narrow widths", "Icons misaligned with text",
+    "Screens judged only from scaled-down screenshots"];
+
+  it("covers every entry, each with how to spot it and the fix", () => {
+    const text = readFileSync(join(skill, "references", "review-checklist.md"), "utf8");
+    const sections = text.split(/^## /m).slice(1);
+    expect(sections.map((s) => s.split("\n")[0].trim())).toEqual(ENTRIES);
+    for (const s of sections) {
+      expect(s, s.split("\n")[0]).toContain("**Spot:**");
+      expect(s, s.split("\n")[0]).toContain("**Fix:**");
+    }
+  });
+
+  it("review and page modes link it and screenshot at full size at 375/900/1440 px, light and dark", () => {
+    const md = readFileSync(join(skill, "SKILL.md"), "utf8");
+    for (const mode of ["## page", "## review"]) {
+      const section = md.slice(md.indexOf(mode)).split(/^## /m)[1];
+      expect(section, mode).toContain("](references/review-checklist.md)");
+      expect(section, mode).toMatch(/full size at 375, 900 and 1440 px in light and dark/);
+    }
   });
 });

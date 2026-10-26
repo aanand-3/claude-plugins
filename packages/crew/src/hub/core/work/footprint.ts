@@ -10,14 +10,17 @@ export const LIVE = new Set(["ready", "in-progress", "blocked", "in-review", "ac
 /** A wildcard touch matching more tracked files than this is broad: list the exact files. */
 const BROAD = 10;
 
-/** `hub.shared` in .crew/config.yaml as written (store.ts's flat settings can't hold a list). */
-function sharedSetting(store: Store): unknown {
+/** `<block>.<key>` in .crew/config.yaml as written (store.ts's flat settings can't hold a list). */
+function configSetting(store: Store, block: string, key: string): unknown {
   try {
-    return (parse(store.ws.read(join(store.dir, "config.yaml")) ?? "") as { hub?: { shared?: unknown } } | null)?.hub?.shared;
+    const doc = parse(store.ws.read(join(store.dir, "config.yaml")) ?? "") as Record<string, Record<string, unknown> | null> | null;
+    return doc?.[block]?.[key];
   } catch {
     return undefined;
   }
 }
+
+const sharedSetting = (store: Store) => configSetting(store, "hub", "shared");
 
 /** `hub.shared`: path globs whose overlaps never block (the merge queue resolves them); [] unless it is a list of strings. */
 export function sharedGlobs(store: Store): string[] {
@@ -31,6 +34,19 @@ const globList = (v: unknown): v is string[] => Array.isArray(v) && v.every((g) 
 export function sharedProblem(store: Store): string | null {
   const v = sharedSetting(store);
   return v === undefined || v === null || globList(v) ? null : "hub.shared: expected a list of path globs";
+}
+
+/** `design.ui_paths`: the path globs of the project's UI; [] unless it is a list of strings (then no plan is a UI plan). */
+export function uiPaths(store: Store): string[] {
+  const v = configSetting(store, "design", "ui_paths");
+  return globList(v) ? v : [];
+}
+
+/** A UI plan: one whose touches overlap `design.ui_paths`. It needs a `## Design` section to be ready and the designer's
+ * approval (`review --design`) to be accepted. */
+export function isUiPlan(store: Store, plan: Doc): boolean {
+  const ui = uiPaths(store);
+  return ui.length > 0 && plan.touches().some((t) => ui.some((g) => globsOverlap(t, g)));
 }
 
 /** A touch is shared when it is an exact path a shared glob matches, or is itself a shared glob; a broad glob never is. */

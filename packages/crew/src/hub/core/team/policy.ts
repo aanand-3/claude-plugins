@@ -13,7 +13,7 @@ export const MODES = ["ai-native", "ai-assisted", "human-led"] as const;
 /** Gated steps that aren't status changes: `<kind>.<action>`, usable in human_gates and role_gates. */
 /** What `notify.command` can be told about (docs/vision.md → Workstream T, autonomy). */
 export const NOTIFY_ON = ["escalation", "budget", "stale", "goal-done", "paused", "stopped", "goal-approval"];
-export const ACTIONS = new Set(["plan.assigned", "plan.reassigned", "plan.reviewed", "plan.landed"]);
+export const ACTIONS = new Set(["plan.assigned", "plan.reassigned", "plan.reviewed", "plan.design-reviewed", "plan.landed"]);
 /** Transitions (`<kind>.<status>`) that need a human, by mode, until the project sets `human_gates`. */
 export const MODE_GATES: Record<string, string[]> = {
   "ai-native": [],

@@ -25,7 +25,7 @@ const SKILLS = new URL("../../plugins/crew/skills/", import.meta.url).pathname;
 export const TOOLS = [
   ["git-setup", "setup_git"], ["git-setup", "check_secrets"],
   ["guidelines", "compose_rules"], ["guidelines", "check_structure"], ["guidelines", "format_on_edit"], ["guidelines", "track_plan_draft"],
-  ["design", "check_design"], ["design", "wada"], ["design", "studio"],
+  ["design", "check_design"], ["design", "wada"], ["design", "studio"], ["design", "layout_sweep"],
   ["research", "verify_evidence"], ["global-setup", "install_global"],
 ];
 export const toolPath = (skill, name) => join(SKILLS, skill, "scripts", `${name}.mjs`);

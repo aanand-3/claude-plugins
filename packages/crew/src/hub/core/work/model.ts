@@ -55,8 +55,9 @@ export const DIRS: Record<Exclude<Kind, "idea">, string> = { goal: "goals", plan
 export const FLOWS: Record<Kind, Flow> = { idea: IDEA_FLOW, goal: GOAL_FLOW, plan: PLAN_FLOW, item: ITEM_FLOW };
 export const ITEM_TYPES: Record<string, string> = { FEAT: "feat", BUG: "bug", CHORE: "chore", SPIKE: "spike" };
 export const TYPE_LABEL: Record<string, string> = { FEAT: "Features", BUG: "Fixes", CHORE: "Chores", SPIKE: "Spikes" };
-/** The roles of the team (docs/vision.md → Operating model); `executive` is the human who owns the idea. */
-export const ROLES = ["executive", "director", "pm", "architect", "developer", "qa", "release"] as const;
+/** The roles of the team (docs/vision.md → Operating model); `executive` is the human who owns the idea. The designer
+ * shapes and reviews UI plans (those whose touches overlap `design.ui_paths`). */
+export const ROLES = ["executive", "director", "pm", "architect", "developer", "qa", "release", "designer"] as const;
 /** Item types that may be worked on outside the focus goal. */
 export const OFF_FOCUS_OK = new Set(["BUG", "CHORE"]);
 /** Triage gate: sections that must have content before an item is triaged. */

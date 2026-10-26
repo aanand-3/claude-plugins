@@ -67,6 +67,7 @@ Steps gated by role that are not status changes:
 | `plan.landed` | release | lands an accepted plan on the base (`land`); a failed land sends it back to in-progress |
 | `plan.reassigned` | director | moves stuck work to someone else (`reassign`) |
 | `plan.reviewed` | architect | reviews the code against the spec (`review`); a request for changes sends the plan back to in-progress |
+| `plan.design-reviewed` | designer | reviews a UI plan's design in code and on screen (`review --design`); a request for changes sends the plan back to in-progress |
 <!-- /generated -->
 
 ## Goal

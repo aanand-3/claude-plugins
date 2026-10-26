@@ -1,5 +1,6 @@
 /** Quality gates: what an item needs to be triaged, a plan to be ready and the idea to be decided. */
 import type { Doc } from "./doc.js";
+import { isUiPlan } from "./footprint.js";
 import { K_ID_RE } from "../memory/knowledge.js";
 import { DECIDED_SECTIONS, PRIORITIES, READY_SECTIONS, SEVERITY_PRIORITY, TRIAGE_SECTIONS } from "./model.js";
 import { planItems } from "./queries.js";
@@ -24,11 +25,12 @@ export function fastLane(store: Store, plan: Doc): boolean {
     && (max_tasks === null || plan.tasks().length <= max_tasks);
 }
 
-/** Definition of Ready. */
+/** Definition of Ready (a UI plan also needs its `## Design`). */
 export function readinessProblems(store: Store, plan: Doc): string[] {
   return [
     ...plan.missing(READY_SECTIONS).map((n) => `empty section: ${n}`),
     ...(plan.touches().length ? [] : ["no touches: (the paths this plan will change)"]),
+    ...(isUiPlan(store, plan) && plan.missing(["Design"]).length ? ["empty section: Design (a UI plan: touches overlap design.ui_paths)"] : []),
     ...taskProblems(store, plan),
     ...itemProblems(store, plan),
   ];

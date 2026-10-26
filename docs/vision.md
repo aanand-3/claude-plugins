@@ -12,8 +12,15 @@ Executive (human)   initiates the idea, adds context, decides go / pivot / kill;
       │  decided idea + success criteria
 Director (agent)    turns the idea into the focus goal, staffs teams, accepts results, reports, escalates
       │
-Team (agents)       PM · Architect · Developer · QA · Release, in one or more teams (e.g. backend / frontend)
+Team (agents)       PM · Architect · Designer · Developer · QA · Release, in one or more teams (e.g. backend / frontend)
 ```
+- **Who does what on a plan (RACI):** the PM opens and accepts it; the Architect specs it, makes it ready and reviews the
+  code; the Developer implements it; QA records the evidence; Release lands it. On a **UI plan** (its touches overlap
+  `design.ui_paths` in `.crew/config.yaml`) the **Designer** is responsible for its `## Design` section before it can be
+  ready (the layout from DESIGN.md's shell and inventory, the UI acceptance criteria) and for the design review after
+  it is built (`review --design`, in code and on screen at full size at 375/900/1440 px, light and dark), which
+  accepting it needs; the Developer builds with the design skill's `page` mode and QA records `layout_sweep.mjs` as
+  evidence. Projects without `ui_paths` have no UI plans and no design gate.
 - **`mode`** (`ai-native | ai-assisted | human-led`) decides where humans sit. It sets the defaults for human gates and lesson review.
   - ai-native: the human is involved until the idea is decided, then only for escalations.
   - ai-assisted: + plan `ready`/`accepted` approval.

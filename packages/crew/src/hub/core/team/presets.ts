@@ -26,6 +26,7 @@ export const PRESETS: Record<string, { global: Raw; roles: Record<string, Raw> }
         "goal.done": "pm",               // the PM verifies a goal's criteria and closes it
         "plan.reassigned": "director",   // the Director moves stuck work to someone else
         "plan.reviewed": "architect",    // code review against the spec; done needs an approval of the current code
+        "plan.design-reviewed": "designer", // design review of a UI plan (design.ui_paths), in code and on screen
       },
       // liveness: a claim quiet for a day is stale; a third bounce or a sixth failed attempt goes to the Director
       limits: { stale_claim_hours: 24, max_bounces: 2, max_attempts: 5 },
