@@ -26,3 +26,4 @@ model.md's lifecycle diagrams miss edges in PLAN_FLOW/GOAL_FLOW/ITEM_FLOW and it
 
 ## Notes
 - 2026-10-25: status new → triaged — priority P2
+- 2026-10-26: re-goaled G-006 → G-006 by Arpit Anand: CHORE-016 belongs to G-006 (docs true to the code); plan lost the goal
