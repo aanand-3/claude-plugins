@@ -5,7 +5,7 @@ goal:
 items: CHORE-030
 touches: packages/crew/src/hub/commands/team/questions.ts, plugins/crew/skills/hub/agents/director.md, plugins/crew/docs/context-and-memory.md, plugins/crew/skills/hub/SKILL.md, packages/crew/test/hub/e2e/dispatch.test.ts
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-070-asks-for-the-executive-go
 pr:
 created: 2026-10-26
@@ -109,7 +109,7 @@ Ships in the hub bundle and plugin templates. In this repository the Director ag
 
 _Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
 
-- P-070: Asks for the executive go to the Director first [in-progress] tasks 3/3 — claimed by Arpit Anand (developer:ac46af70205372d20)
+- P-070: Asks for the executive go to the Director first [in-review] tasks 3/3 — claimed by Arpit Anand (developer:ac46af70205372d20)
 - last checkpoint 2026-10-26 16:00 at T3 (68d6406) by Arpit Anand; since then 0 commit(s), 2 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs
 - evidence: AC1 —, AC2 —, AC3 —
 
@@ -123,6 +123,7 @@ Latest log:
 - 2026-10-26: status draft → ready
 - 2026-10-26: assigned to the developer role
 - 2026-10-26: status ready → in-progress — branch plan/P-070-asks-for-the-executive-go
+- 2026-10-26: status in-progress → in-review
 
 ## Outcome
 Shipped: `ask()` in `questions.ts` routes an ask for the escalation target (executive) from a role other than the
