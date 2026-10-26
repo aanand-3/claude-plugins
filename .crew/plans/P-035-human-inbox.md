@@ -34,7 +34,7 @@ Overlaps, for staffing only: P-037 on `guard.ts`, and P-030 on `questions.reg.ts
 - `inboxEntries(store)` in a new `commands/team/inbox.ts`, and `crew.mjs inbox [--json]` plus an MCP tool `inbox` (read-only, same JSON). Entries, oldest first within each kind:
   - **goal**: each `proposed` goal → `{ kind: "goal", ref: "G-###", question: "Approve G-###: <title>?", options: ["approve", "drop"], holds: "its plans and items wait until it is approved", how: "move G-### active --approved-by <you> · move G-### dropped --approved-by <you>" }`.
   - **escalation**: each open question that is an escalation or addressed to the executive → `{ kind: "escalation", ref: "Q-…", about: <ref or null>, question, options, holds, how: "answer Q-… \"<decision>\" --approved-by <you>" }`. `holds` comes from `escalationHolds`: "holds P-###" for a plan or item, otherwise "stops the team".
-  - **approval**: each plan in review whose `plan.done` the policy gates to a human (`approvalReason`) and that has nothing else missing (evidence complete, review approved) → `{ kind: "approval", ref: "P-###", question: "Complete P-###: <title>?", options: ["approve"], holds: "P-###", how: "move P-### done --approved-by <you>" }`.
+  - **approval**: each plan in review whose `plan.accepted` the policy gates to a human (`approvalReason`) and that has nothing else missing (evidence complete, review approved) → `{ kind: "approval", ref: "P-###", question: "Accept P-###: <title>?", options: ["approve"], holds: "P-###", how: "move P-### accepted --approved-by <you>" }`.
   - Text form: one block per entry (kind, ref, question, options, holds, the command). `Inbox empty — nothing waits on you.` when there are none.
 - **Options on questions:** `ask` and `escalate` take `--options "A; B"` (split on `;`, trimmed, empty dropped), stored as `options: string[]` on the `ask` event. The `Question` type, `questions`/`questions --json` and the inbox show them. Without `--options`, nothing changes.
 - **`ui` server:**
@@ -66,7 +66,7 @@ Overlaps, for staffing only: P-037 on `guard.ts`, and P-030 on `questions.reg.ts
   - a proposed G-002 (with its approve/drop commands);
   - an escalation about P-001 with "holds P-001";
   - an escalation with no ref with "stops the team";
-  - under `mode: ai-assisted`, a plan in review with complete evidence and an approving review, as an `approval` for `done`.
+  - under `mode: ai-assisted`, a plan in review with complete evidence and an approving review, as an `approval` for `accepted`.
   `inbox --json` has the same entries with `kind`, `ref`, `question`, `options`, `holds` and `how`. In a repo with none of these it prints `Inbox empty`.
 - [ ] AC2 · `escalate P-001 "Ship it?" --options "yes, today; no"` stores `options: ["yes, today", "no"]`; `questions --json` and `inbox` show them; `ask P-001 --to pm "x"` without `--options` stores no `options` field.
 - [ ] AC3 · From a terminal with no role, `answer Q-… "yes, today" --approved-by Amit` answers the escalation. The entry leaves the inbox, `run --check` no longer holds P-001, and `move G-002 active --approved-by Amit` removes the goal entry.
@@ -86,7 +86,7 @@ Overlaps, for staffing only: P-037 on `guard.ts`, and P-030 on `questions.reg.ts
 
 ## Approach
 - **inbox.ts:** pure over the stores and ledger.
-  - Reuse `questions`/`openQuestions`/`escalationHolds` (questions.ts), `approvalReason` (core/team/policy.ts), and `evidence` (execution.ts) with `reviewProblems` (review.ts) for `plan.done`.
+  - Reuse `questions`/`openQuestions`/`escalationHolds` (questions.ts), `approvalReason` (core/team/policy.ts), and `evidence` (execution.ts) with `reviewProblems` (review.ts) for `plan.accepted`.
   - Mirror the "complete" test of the executive rule in roles.ts; don't import roles.ts internals.
 - **questions.ts:** `ask`/`escalate` take `options?: string[]` in their options object; `Question` gets `options: string[]` (`[]` when absent).
 - **Registration:**
