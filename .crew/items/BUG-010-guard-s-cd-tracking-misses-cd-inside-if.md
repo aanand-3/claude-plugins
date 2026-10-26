@@ -2,13 +2,14 @@
 id: BUG-010
 type: bug
 title: Guard's cd tracking misses cd inside { }, if/then, builtin/command, and a variable directory
-status: triaged
+status: done
 severity: S3
 priority: P2
 goal: G-001
 plan: P-019
 created: 2026-10-24
-closed:
+closed: 2026-10-26
+completed: 2026-10-26
 ---
 
 # BUG-010: Guard's cd tracking misses cd inside { }, if/then, builtin/command, and a variable directory
@@ -50,3 +51,4 @@ A crew subagent can still keep project state outside the repo, or write a protec
 A possible fix: skip a leading `{`, `if`, `then`, `else`, `elif`, `do`, `while`, `until`, `!`, `builtin` or `command` before looking for `cd`. For a `cd` target with `$`, other than `$HOME`/`${HOME}`, or with a command substitution, treat later relative targets as unresolved and deny, or match them conservatively.
 - 2026-10-24: status new → triaged — priority P2, severity S3
 - 2026-10-26: DONE: fixed by P-019 (152650b). guard.test.ts 'guard_shell_forms' denies every form in the report: '{ cd ~; ...; }', 'if cd ~; then ...', 'builtin cd', 'command cd', 'D=~/.claude; cd $D', and the .crew/policy.yaml variants; targets.ts expands variables or leaves them unresolved (fail closed). Still on main after P-051. No remaining work.
+- 2026-10-26: status triaged → done — DONE per Architect review: fixed by P-019 (152650b).
