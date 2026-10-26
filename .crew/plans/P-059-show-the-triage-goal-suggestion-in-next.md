@@ -5,7 +5,7 @@ goal: G-007
 items: FEAT-051
 touches: packages/crew/src/hub/commands/work/backlog.ts, packages/crew/src/hub/commands/team/roles.ts, packages/crew/test/hub/e2e/pm-queue.test.ts
 depends_on: P-055
-status: in-review
+status: accepted
 branch: plan/P-059-show-the-triage-goal-suggestion-in-next
 pr:
 created: 2026-10-26
@@ -88,6 +88,7 @@ Latest log:
 - 2026-10-26: assigned to the developer role
 - 2026-10-26: status ready → in-progress — branch plan/P-059-show-the-triage-goal-suggestion-in-next
 - 2026-10-26: status in-progress → in-review
+- 2026-10-26: status in-review → accepted
 
 ## Outcome
 `backlog.ts` exports `suggestedGoal` and a new `suggestionText(item, store)` (`suggested goal: G-### (<reason>)` or null); `triage` prints its suggestion through it, byte-identical. `roles.ts` appends ` — <suggestionText>` to both PM triage lines (bug and non-bug) when non-null; items without a suggestion or with a goal keep the bare `triage ID: title` line. New `test/hub/e2e/pm-queue.test.ts` covers origin, hint, bug and plain items and checks the text matches triage's. Targeted checks green after build: pm-queue 1/1, goal-links 14/14, team + dispatch green (48/48 with goal-links).
