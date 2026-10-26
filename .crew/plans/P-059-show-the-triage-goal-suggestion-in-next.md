@@ -51,9 +51,9 @@ Reuse P-055's `suggestedGoal(store, item)` in `commands/work/backlog.ts` rather 
 ## Design
 
 ## Tasks
-- [ ] T1: In `backlog.ts`, export `suggestedGoal` and add `suggestionText`; `triage` prints its suggestion through it → verify: `npx vitest run test/hub/e2e/goal-links.test.ts` green with no change to that file (after `npm run build`).
-- [ ] T2: In `roles.ts`, append the suggestion to both PM triage lines when `suggestionText` returns one → verify: `node <dist>/crew.mjs next --role pm` in a scratch hub shows `— suggested goal: …` on an item with a hint and the bare line on one without.
-- [ ] T3: Add `test/hub/e2e/pm-queue.test.ts`: a hub with G-001 and P-001; FEAT-001 captured with `--origin P-001`, FEAT-002 with `--goal G-001` (goal hint), FEAT-003 with neither, BUG-001 with `--origin P-001`; `next --role pm` (as pm) contains `triage FEAT-001: … — suggested goal: G-001 (origin P-001's goal)`, `… — suggested goal: G-001 (goal hint)` for FEAT-002, `triage bug BUG-001: … — suggested goal: G-001 (origin P-001's goal)`, and FEAT-003's line ends at its title; the suggestion substring equals the one `triage FEAT-002 --priority P3` prints for the same item → verify: `npx vitest run test/hub/e2e/pm-queue.test.ts` green.
+- [x] T1: In `backlog.ts`, export `suggestedGoal` and add `suggestionText`; `triage` prints its suggestion through it → verify: `npx vitest run test/hub/e2e/goal-links.test.ts` green with no change to that file (after `npm run build`).
+- [x] T2: In `roles.ts`, append the suggestion to both PM triage lines when `suggestionText` returns one → verify: `node <dist>/crew.mjs next --role pm` in a scratch hub shows `— suggested goal: …` on an item with a hint and the bare line on one without.
+- [x] T3: Add `test/hub/e2e/pm-queue.test.ts`: a hub with G-001 and P-001; FEAT-001 captured with `--origin P-001`, FEAT-002 with `--goal G-001` (goal hint), FEAT-003 with neither, BUG-001 with `--origin P-001`; `next --role pm` (as pm) contains `triage FEAT-001: … — suggested goal: G-001 (origin P-001's goal)`, `… — suggested goal: G-001 (goal hint)` for FEAT-002, `triage bug BUG-001: … — suggested goal: G-001 (origin P-001's goal)`, and FEAT-003's line ends at its title; the suggestion substring equals the one `triage FEAT-002 --priority P3` prints for the same item → verify: `npx vitest run test/hub/e2e/pm-queue.test.ts` green.
 
 ## Test plan
 **Targeted checks** (in packages/crew, after `npm run build`):
@@ -71,6 +71,17 @@ and before `start` (K-2026-10-25-a-plan-worktree-cut-before-its-depends).
 
 ## Handoff
 
+_Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
+
+- P-059: Show the triage goal suggestion in next --role pm [in-progress] tasks 3/3 — claimed by Arpit Anand (developer:a6f625b7a35766451)
+- last checkpoint 2026-10-26 10:40 at T3 (b66c720) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
+- evidence: AC1 —, AC2 —, AC3 —, AC4 —
+
+Latest log:
+- 2026-10-26: status draft → ready
+- 2026-10-26: assigned to the developer role
+- 2026-10-26: status ready → in-progress — branch plan/P-059-show-the-triage-goal-suggestion-in-next
+
 ## Progress log
 
 - 2026-10-26: status draft → ready
@@ -78,3 +89,5 @@ and before `start` (K-2026-10-25-a-plan-worktree-cut-before-its-depends).
 - 2026-10-26: status ready → in-progress — branch plan/P-059-show-the-triage-goal-suggestion-in-next
 
 ## Outcome
+`backlog.ts` exports `suggestedGoal` and a new `suggestionText(item, store)` (`suggested goal: G-### (<reason>)` or null); `triage` prints its suggestion through it, byte-identical. `roles.ts` appends ` — <suggestionText>` to both PM triage lines (bug and non-bug) when non-null; items without a suggestion or with a goal keep the bare `triage ID: title` line. New `test/hub/e2e/pm-queue.test.ts` covers origin, hint, bug and plain items and checks the text matches triage's. Targeted checks green after build: pm-queue 1/1, goal-links 14/14, team + dispatch green (48/48 with goal-links).
+Learnings: none
