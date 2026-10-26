@@ -96,6 +96,18 @@ then. Rollback: revert the commit and re-render.
 
 ## Handoff
 
+_Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
+
+- P-064: Every role closes the asks sent to it [in-progress] tasks 0/2 — claimed by Arpit Anand (developer:a69325ed00930a177)
+- last checkpoint 2026-10-26 13:29 at T2 (db9a9b9) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
+- next: T1: Regression test in `test/hub/e2e/agents.test.ts`, `it("every role template closes its asks with answer (BUG-044)")`: each template file contains `crew.mjs answer Q-`; then `init(repo, { mode: "" })`, write a policy with a project role (as "a project role renders from the generic template" does), `tr(repo, "agents")`, and assert `.claude/agents/crew-pm.md` and the project role's agent contain it → verify: the new case fails on the current templates (six files lack the line).
+- evidence: AC1 —, AC2 —, AC3 —
+
+Latest log:
+- 2026-10-26: status draft → ready
+- 2026-10-26: assigned to the developer role
+- 2026-10-26: status ready → in-progress — branch plan/P-064-every-role-closes-the-asks-sent-to-it
+
 ## Progress log
 
 - 2026-10-26: status draft → ready
