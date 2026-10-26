@@ -5,7 +5,7 @@ goal: G-007
 items: BUG-040
 touches: packages/crew/src/hub/commands/work/land.ts, packages/crew/test/hub/e2e/land.test.ts
 depends_on:
-status: in-review
+status: accepted
 branch: plan/P-061-land-tolerates-untracked-os-files
 pr:
 created: 2026-10-26
@@ -91,6 +91,7 @@ Latest log:
 - 2026-10-26: assigned to the developer role
 - 2026-10-26: status ready → in-progress — branch plan/P-061-land-tolerates-untracked-os-files
 - 2026-10-26: status in-progress → in-review — T1-T3 done: landed() logs first and never throws after the squash; OS-junk-only worktree folders are swept; other leftovers give a cleanup warning. land.test.ts 19/19 incl. two BUG-040 regression tests that failed on the old land.ts
+- 2026-10-26: status in-review → accepted
 
 ## Outcome
 land now logs `landed on <base> as <sha>` before any cleanup; worktree removal, branch deletion and dependant updates never throw, and a cleanup failure is a separate `P-###: cleanup — … (the landing stands)` warning with exit 0. A failed `git worktree remove` is finished by deleting the plan's own folder only when every leftover is OS junk or an empty folder, then `git worktree prune`; any other file keeps the folder and is named in the warning. Two regression tests (a git shim recreating .DS_Store / keep.txt) failed on the old land.ts with "not landed" and pass now; land.test.ts 19/19.
