@@ -2,12 +2,12 @@
 id: FEAT-051
 type: feat
 title: Show the triage goal suggestion in next --role pm
-status: triaged
+status: done
 priority: P3
 goal: G-007
 plan: P-059
 created: 2026-10-26
-closed:
+closed: 2026-10-26
 ---
 
 # FEAT-051: Show the triage goal suggestion in next --role pm
@@ -29,3 +29,4 @@ As the PM, I want the filer's suggested goal shown in my triage queue, so that I
 - Needs `roles.ts`, which P-021 also touches; wait until P-021 lands before opening a plan.
 - Small; P3 is enough.
 - 2026-10-26: status new → triaged — priority P3
+- 2026-10-26: status triaged → done — delivered by P-059
