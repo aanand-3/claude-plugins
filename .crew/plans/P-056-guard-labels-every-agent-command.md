@@ -11,6 +11,7 @@ pr:
 created: 2026-10-26
 started:
 completed:
+assignee: developer
 ---
 
 # P-056: Guard labels every agent command
@@ -82,5 +83,6 @@ Ships in the bundle; reaches this repo through refresh-bin. Rollback: revert the
 ## Progress log
 
 - 2026-10-26: status draft → ready
+- 2026-10-26: assigned to the developer role
 
 ## Outcome
