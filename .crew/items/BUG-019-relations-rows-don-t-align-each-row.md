@@ -39,3 +39,4 @@ Cosmetic (S4): titles are harder to scan down a group. Fails the "aligned in a g
 ## Notes
 Found by QA while testing P-020.
 - 2026-10-24: status new → triaged — priority P3, severity S4
+- 2026-10-26: DONE: fixed by P-020 (78a3edf). ui/src/styles/views.css .relations__group li uses grid-template-columns 96px minmax(0,1fr) (fixed chip column sized for 'superseded'), so titles align. No remaining work.
