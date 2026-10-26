@@ -2,12 +2,12 @@
 id: FEAT-024
 type: feat
 title: Designer role that shapes and reviews UI plans
-status: triaged
+status: done
 priority: P1
 goal: G-003
 plan: P-021
 created: 2026-10-24
-closed:
+closed: 2026-10-26
 ---
 
 # FEAT-024: Designer role that shapes and reviews UI plans
@@ -29,3 +29,4 @@ As the executive running a crew team, I want a Designer agent to lay out UI plan
 - Decided with the user: no separate UI developer or UI QA agent. The Developer runs the design skill's `page` mode on UI plans, QA runs the layout check, the Designer owns taste and approval.
 - Prototype of the layout check: `layout-sweep.js` (a console script, checked against a planted overflow) in the P-020 session's side notes.
 - 2026-10-24: status new → triaged — priority P1
+- 2026-10-26: status triaged → done — delivered by P-021

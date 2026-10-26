@@ -2,13 +2,14 @@
 id: BUG-028
 type: bug
 title: Full suite times out under load when plans run in parallel
-status: triaged
+status: done
 severity: S2
 priority: P1
 goal: G-007
 plan: P-043
 created: 2026-10-25
-closed:
+closed: 2026-10-26
+completed: 2026-10-26
 ---
 
 # BUG-028: Full suite times out under load when plans run in parallel
@@ -35,3 +36,4 @@ test/mcp.test.ts fails with 'Hook timed out in 120000ms' in its beforeAll; passe
 ## Notes
 - 2026-10-25: Cause, measured 2026-10-25: the suite starts a fresh node process on the 527 KB dist/crew.mjs for every hub call (about 485 tr() call sites plus 82 repo.node() and the git init and commit processes each Repo.create runs) across 371 tests. vitest runs files in parallel (about 7 workers on this 8-core Mac), and three plans' suites at once gave load averages of 100-150. Options besides one-suite-at-a-time: run most hub tests in-process through cli.ts main(argv, open), keeping a small e2e set that spawns the real bundle; cap maxWorkers for hub.full_suite (e.g. 4); share one sample-project fixture per file instead of one per test.
 - 2026-10-25: status new → triaged — priority P1, severity S2
+- 2026-10-26: status triaged → done — delivered by P-043

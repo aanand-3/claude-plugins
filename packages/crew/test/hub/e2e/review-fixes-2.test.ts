@@ -121,7 +121,7 @@ it("evidence follows the criterion, not its position", () => {
   expect(tr(repo, "checkpoint", "P-001", "--run", "true", "--ac", "1").returncode).toBe(0);
   // a new criterion inserted above the verified one: the pass must stay with its own criterion
   write(p, read(p).replace("- [ ] 201 on valid input", "- [ ] rate limited to 5 tries a minute\n- [ ] 201 on valid input"));
-  const r = tr(repo, "move", "P-001", "done");
+  const r = tr(repo, "move", "P-001", "accepted");
   expect(r.returncode).not.toBe(0);
   expect(r.stderr).toContain("AC1 has no evidence");
   expect(r.stderr).toContain("rate limited");

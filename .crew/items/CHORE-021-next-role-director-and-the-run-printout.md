@@ -2,12 +2,12 @@
 id: CHORE-021
 type: chore
 title: next --role director and the run printout follow dispatch and the runner
-status: triaged
+status: done
 priority: P2
 goal: G-007
 plan: P-047
 created: 2026-10-25
-closed:
+closed: 2026-10-26
 ---
 
 # CHORE-021: next --role director and the run printout follow dispatch and the runner
@@ -20,3 +20,4 @@ After P-031 and P-034, roles.ts still describes the Director's old hand-off loop
 
 ## Notes
 - 2026-10-25: status new → triaged — priority P2
+- 2026-10-26: status triaged → done — delivered by P-047

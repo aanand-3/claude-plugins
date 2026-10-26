@@ -3,14 +3,15 @@ id: P-032
 title: Merge queue: land
 goal: G-007
 items: FEAT-037
-touches: packages/crew/src/hub/commands/work/land.ts, packages/crew/src/hub/commands/work/land.reg.ts, packages/crew/src/hub/commands/index.ts, packages/crew/src/hub/commands/work/release.ts, packages/crew/src/hub/commands/work/workflow.ts, packages/crew/src/hub/core/work/model.ts, packages/crew/src/hub/core/work/footprint.ts, packages/crew/src/hub/core/team/presets.ts, packages/crew/src/hub/core/team/policy.ts, packages/crew/src/hub/commands/team/liveness.ts, packages/crew/src/hub/commands/team/questions.ts, packages/crew/src/hub/commands/team/roles.ts, packages/crew/src/hub/commands/team/dispatch.ts, packages/crew/src/hub/commands/views/checks.ts, packages/crew/src/hub/commands/views/reports.ts, packages/crew/ui/src/views/Board.tsx, packages/crew/ui/src/views/Overview.tsx, packages/crew/ui/src/views/DocPage.tsx, packages/crew/ui/src/components/Actions.tsx, packages/crew/ui/src/components/primitives.tsx, packages/crew/test/hub/e2e/land.test.ts, packages/crew/test/hub/e2e/helpers.ts, packages/crew/test/hub/e2e/team-helpers.ts, packages/crew/test/hub/e2e/policy.test.ts, packages/crew/test/hub/e2e/team.test.ts, packages/crew/test/hub/e2e/team-2.test.ts, packages/crew/test/hub/e2e/execution.test.ts, packages/crew/test/hub/e2e/review-fixes.test.ts, packages/crew/test/hub/e2e/review-fixes-2.test.ts, packages/crew/test/hub/e2e/wip-commits.test.ts, packages/crew/test/hub/e2e/context.test.ts, packages/crew/test/hub/e2e/basics.test.ts, packages/crew/test/hub/e2e/ledger.test.ts, packages/crew/test/hub/e2e/worktrees.test.ts, packages/crew/test/hub/e2e/items.test.ts, packages/crew/test/hub/e2e/dispatch.test.ts, packages/crew/test/hub-worktrees.test.ts, packages/crew/test/hub/squash-merge.test.ts, plugins/crew/skills/hub/agents/release.md, plugins/crew/skills/hub/agents/pm.md, plugins/crew/skills/hub/agents/developer.md, plugins/crew/skills/hub/agents/qa.md, plugins/crew/skills/hub/references/model.md, plugins/crew/skills/hub/SKILL.md, docs/vision.md
+touches: packages/crew/src/hub/commands/work/land.ts, packages/crew/src/hub/commands/work/land.reg.ts, packages/crew/src/hub/commands/index.ts, packages/crew/src/hub/commands/work/release.ts, packages/crew/src/hub/commands/work/suite.ts, packages/crew/src/hub/commands/work/workflow.ts, packages/crew/src/hub/core/work/model.ts, packages/crew/src/hub/core/work/footprint.ts, packages/crew/src/hub/core/team/presets.ts, packages/crew/src/hub/core/team/policy.ts, packages/crew/src/hub/commands/team/liveness.ts, packages/crew/src/hub/commands/team/questions.ts, packages/crew/src/hub/commands/team/roles.ts, packages/crew/src/hub/commands/team/dispatch.ts, packages/crew/src/hub/commands/views/checks.ts, packages/crew/src/hub/commands/views/reports.ts, packages/crew/ui/src/views/Board.tsx, packages/crew/ui/src/views/Overview.tsx, packages/crew/ui/src/views/DocPage.tsx, packages/crew/ui/src/components/Actions.tsx, packages/crew/ui/src/components/primitives.tsx, packages/crew/test/hub/e2e/land.test.ts, packages/crew/test/hub/e2e/suite.test.ts, packages/crew/test/hub/e2e/helpers.ts, packages/crew/test/hub/e2e/team-helpers.ts, packages/crew/test/hub/e2e/policy.test.ts, packages/crew/test/hub/e2e/team.test.ts, packages/crew/test/hub/e2e/team-2.test.ts, packages/crew/test/hub/e2e/execution.test.ts, packages/crew/test/hub/e2e/review-fixes.test.ts, packages/crew/test/hub/e2e/review-fixes-2.test.ts, packages/crew/test/hub/e2e/wip-commits.test.ts, packages/crew/test/hub/e2e/context.test.ts, packages/crew/test/hub/e2e/basics.test.ts, packages/crew/test/hub/e2e/ledger.test.ts, packages/crew/test/hub/e2e/worktrees.test.ts, packages/crew/test/hub/e2e/items.test.ts, packages/crew/test/hub/e2e/dispatch.test.ts, packages/crew/test/hub-worktrees.test.ts, packages/crew/test/hub/squash-merge.test.ts, plugins/crew/skills/hub/agents/release.md, plugins/crew/skills/hub/agents/pm.md, plugins/crew/skills/hub/agents/developer.md, plugins/crew/skills/hub/agents/qa.md, plugins/crew/skills/hub/references/model.md, plugins/crew/skills/hub/SKILL.md, packages/crew/scripts/sample-project.mjs, docs/vision.md
 depends_on: P-028, P-024, P-030, P-039, P-031, P-043
-status: ready
+status: done
 branch: plan/P-032-merge-queue-land
 pr:
 created: 2026-10-25
-started:
-completed:
+started: 2026-10-26
+completed: 2026-10-26
+assignee: developer
 ---
 
 # P-032: Merge queue: land
@@ -91,27 +92,28 @@ draft → ready → in-progress → in-review → accepted → done
 - **workflow.ts** (274 lines; stay under 300): in `guard`, the current `status === "done"` branch becomes `status === "accepted"`, and a new `done` branch returns `landedProblems(store, doc)` with the label "isn't landed". At the top of `move`, `if (kind === "plan" && old === "accepted" && status === "in-progress") via ??= "plan.landed";` (before `assignedHere`, `authorize` and `claimFor`). The `escalateLimit` call fires for `old` in `in-review` or `accepted`.
 - **release.ts:** `landedProblems(store, plan)`: with plan worktrees, a worktree still open for the plan → "its worktree <path> is still open: Release lands it with `land P-###`"; its branch exists and is neither an ancestor of the base nor `git.squashMerge`d → "<branch> is not merged into <base>: Release lands it with `land P-###`". A missing branch with no worktree counts as landed. `mergeOrder` reuses its merged test (`isMerged`) for both; `done` → `accepted` in the queue filter, the `doneAt` key and the dependency rule; the legacy `done` entries carry a flag the text uses.
 - **land.ts** (new, under 300 lines): read `hub.build` and `hub.full_suite` with `yamlBlock(config, "hub")`; shell steps with `spawnSync(cmd, {shell: true, cwd: worktree})`; the output tail as `checkpoint` does (copy the few lines of `tail` from execution.ts, which is not in touches). The hub-commit lock via `acquireLock`/`releaseLock` (core/memory/ledger.ts) on the same `hub-commit.lock` path hubstate.ts uses, around step 6 only.
+- **suite.ts** (Q-4f7208): `runSuite` gains an option `capture?: boolean`; with it, the command runs with `stdio: ["inherit", "pipe", "pipe"]`, its stdout and stderr are written through to `process.stdout`/`process.stderr` after the run, and the result also carries `output` (stdout + stderr as text). Without it, behaviour is unchanged (`stdio: "inherit"`, no `output`), so `suite` and its record stay as they are. `land` calls it with `capture: true` and bounces with the tail of `output`.
 - **Registration:** `land.reg.ts` with the CLI spec and the usage line `land [P-###]   squash-merge accepted plans in merge order: update, rebuild, full suite, merge; a failure goes back to the developer (Release)`, plus one line in `commands/index.ts`.
 - **roles.ts, dispatch.ts:** the lines in Scope; the landed test is `!landedProblems(store, p).length`.
 - **Tests:** `land.test.ts` drives the built `dist/crew.mjs` in throwaway repos with plan worktrees (repo helpers from `test/helpers/repo.ts`, the worktree setup from `test/hub-worktrees.test.ts`, copied in). Existing tests that walk a plan to `done` through its gates change to `accepted`, and those that need a `done` plan add the landing (or the merge) and then `done`: in `helpers.ts`, `qaDone` ends at `accepted` and `finish` then moves `done` (its plans have no branch, so they count as landed); `team-helpers.ts`'s forced `done` becomes `accepted`, merge, `done`. Expected `next` / `dispatch` texts change with the new wording.
 
 ## Tasks
-- [ ] T1: flow, gates, landed check, the `plan.landed` routing and the bounce count (model.ts, workflow.ts, release.ts `landedProblems`, presets.ts, policy.ts, liveness.ts, questions.ts, footprint.ts) → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/land.test.ts -t "flow"` and `-t "bounce limit"` (AC1, AC10)
-- [ ] T2: `merge-order` on accepted plans, the landed dependency rule, the legacy `done` entries and the `land P-###` text → verify: `npx vitest run test/hub/e2e/land.test.ts -t "merge-order"`, `test/hub-worktrees.test.ts -t merge_order`, `test/hub/squash-merge.test.ts` (AC6 second half, AC7 legacy)
-- [ ] T3: land.ts steps 1–5 and the bounce → verify: `npm run build && npx vitest run test/hub/e2e/land.test.ts -t "bounce"` and `-t "refuses"` (AC3, AC4, AC7)
-- [ ] T4: step 6 squash (merge-tree, commit-tree, ff-only under the lock, repeat when the base moved) and step 7 → verify: `npx vitest run test/hub/e2e/land.test.ts -t "two plans"`, `-t uncommitted`, `-t squash` (AC2, AC5, AC8)
-- [ ] T5: step 8 dependants, step 9 log, the queue without an ID → verify: `npx vitest run test/hub/e2e/land.test.ts -t dependants` (AC6)
-- [ ] T6: `next` lines (roles.ts), `dispatch` rows (dispatch.ts), mode gates → verify: `npx vitest run test/hub/e2e/land.test.ts -t "next"`, `test/hub/e2e/dispatch.test.ts`, `test/hub/e2e/policy.test.ts` (AC9)
-- [ ] T7: existing tests moved to the new flow → verify: `npx vitest run test/hub/e2e/team.test.ts test/hub/e2e/team-2.test.ts test/hub/e2e/execution.test.ts test/hub/e2e/review-fixes.test.ts test/hub/e2e/review-fixes-2.test.ts test/hub/e2e/wip-commits.test.ts test/hub/e2e/context.test.ts test/hub/e2e/basics.test.ts test/hub/e2e/ledger.test.ts test/hub/e2e/worktrees.test.ts test/hub/e2e/items.test.ts` all green
-- [ ] T8: `check`, status report, UI board → verify: `npx vitest run test/hub/e2e/land.test.ts -t "views"`; `grep -n '"accepted"' ui/src/views/Board.tsx`; `npm run typecheck` (it covers `ui/`) (AC11)
-- [ ] T9: registration and docs → verify: `node ../../plugins/crew/skills/hub/dist/crew.mjs --help | grep -n "^  land"` after `npm run build`; `npx vitest run test/hub/registry.test.ts test/mcp.test.ts test/plugin`; `grep -n "crew.mjs land" ../../plugins/crew/skills/hub/agents/release.md`; `grep -c "commit everything once" ../../plugins/crew/skills/hub/agents/release.md` prints 0; `grep -n "accepted" ../../plugins/crew/skills/hub/agents/pm.md ../../plugins/crew/skills/hub/references/model.md` (AC12)
-- [ ] T10: types and size → verify: `npm run typecheck`; `wc -l src/hub/commands/work/land.ts src/hub/commands/work/release.ts src/hub/commands/work/workflow.ts src/hub/commands/team/roles.ts src/hub/commands/team/dispatch.ts` each under 300
+- [x] T1: flow, gates, landed check, the `plan.landed` routing and the bounce count (model.ts, workflow.ts, release.ts `landedProblems`, presets.ts, policy.ts, liveness.ts, questions.ts, footprint.ts) → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/land.test.ts -t "flow"` and `-t "bounce limit"` (AC1, AC10)
+- [x] T2: `merge-order` on accepted plans, the landed dependency rule, the legacy `done` entries and the `land P-###` text → verify: `npx vitest run test/hub/e2e/land.test.ts -t "merge-order"`, `test/hub-worktrees.test.ts -t merge_order`, `test/hub/squash-merge.test.ts` (AC6 second half, AC7 legacy)
+- [x] T3: land.ts steps 1–5 and the bounce → verify: `npm run build && npx vitest run test/hub/e2e/land.test.ts -t "bounce"` and `-t "refuses"` (AC3, AC4, AC7)
+- [x] T4: step 6 squash (merge-tree, commit-tree, ff-only under the lock, repeat when the base moved) and step 7 → verify: `npx vitest run test/hub/e2e/land.test.ts -t "two plans"`, `-t uncommitted`, `-t squash` (AC2, AC5, AC8)
+- [x] T5: step 8 dependants, step 9 log, the queue without an ID → verify: `npx vitest run test/hub/e2e/land.test.ts -t dependants` (AC6)
+- [x] T6: `next` lines (roles.ts), `dispatch` rows (dispatch.ts), mode gates → verify: `npx vitest run test/hub/e2e/land.test.ts -t "next"`, `test/hub/e2e/dispatch.test.ts`, `test/hub/e2e/policy.test.ts` (AC9)
+- [x] T7: existing tests moved to the new flow → verify: `npx vitest run test/hub/e2e/team.test.ts test/hub/e2e/team-2.test.ts test/hub/e2e/execution.test.ts test/hub/e2e/review-fixes.test.ts test/hub/e2e/review-fixes-2.test.ts test/hub/e2e/wip-commits.test.ts test/hub/e2e/context.test.ts test/hub/e2e/basics.test.ts test/hub/e2e/ledger.test.ts test/hub/e2e/worktrees.test.ts test/hub/e2e/items.test.ts` all green
+- [x] T8: `check`, status report, UI board → verify: `npx vitest run test/hub/e2e/land.test.ts -t "views"`; `grep -n '"accepted"' ui/src/views/Board.tsx`; `npm run typecheck` (it covers `ui/`) (AC11)
+- [x] T9: registration and docs → verify: `node ../../plugins/crew/skills/hub/dist/crew.mjs --help | grep -n "^  land"` after `npm run build`; `npx vitest run test/hub/registry.test.ts test/mcp.test.ts test/plugin`; `grep -n "crew.mjs land" ../../plugins/crew/skills/hub/agents/release.md`; `grep -c "commit everything once" ../../plugins/crew/skills/hub/agents/release.md` prints 0; `grep -n "accepted" ../../plugins/crew/skills/hub/agents/pm.md ../../plugins/crew/skills/hub/references/model.md` (AC12)
+- [x] T10: types and size → verify: `npm run typecheck`; `wc -l src/hub/commands/work/land.ts src/hub/commands/work/release.ts src/hub/commands/work/workflow.ts src/hub/commands/team/roles.ts src/hub/commands/team/dispatch.ts` each under 300
 
 ## Test plan
 **Targeted checks** (from `packages/crew/`, after `npm run build`; `land.test.ts` drives the built `dist/crew.mjs` in throwaway repos with plan worktrees, `hub.build` and `hub.full_suite` set to small shell commands, `preset: lifecycle` where a criterion names it):
 - AC1, AC10 → `npx vitest run test/hub/e2e/land.test.ts -t flow` and `-t "bounce limit"`
 - AC2, AC5, AC8 → `-t "two plans"`, `-t uncommitted`, `-t squash`
-- AC3, AC4 → `-t bounce`
+- AC3, AC4 → `-t bounce`; `npx vitest run test/hub/e2e/suite.test.ts` (runSuite without capture unchanged)
 - AC6 → `-t dependants` and `-t merge-order`; `npx vitest run test/hub-worktrees.test.ts -t merge_order test/hub/squash-merge.test.ts`
 - AC7 → `-t refuses`
 - AC9 → `-t next`; `npx vitest run test/hub/e2e/dispatch.test.ts test/hub/e2e/policy.test.ts`
@@ -135,11 +137,33 @@ draft → ready → in-progress → in-review → accepted → done
 
 ## Handoff
 
+_Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
+
+- P-032: Merge queue: land [in-review] tasks 10/10 — claimed by Arpit Anand (developer:a2348741d7d0604d7)
+- last checkpoint 2026-10-25 22:04 at T10 (f0e4202) by Arpit Anand; since then 0 commit(s), 4 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs, plugins/crew/skills/hub/dist/ui.html, plugins/crew/skills/hub/references/commands.md
+- evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —, AC7 —, AC8 —, AC9 —, AC10 —, AC11 —, AC12 —
+
+Latest log:
+- 2026-10-26: status ready → in-progress — branch plan/P-032-merge-queue-land
+- 2026-10-26: Architect: Q-4f7208 — suite.ts (runSuite `capture` option) and suite.test.ts added to touches
+- 2026-10-26: Architect: Q-637b2b — scripts/sample-project.mjs (ship(): accepted, squash-merge, done) added to touches
+
 ## Progress log
 
 - 2026-10-25: status draft → ready
 - 2026-10-25: Architect: depends_on P-031 (presets.ts) and P-043 (runSuite for step 5, release.md) added
 - 2026-10-25: status ready → draft — Architect: re-spec for the executive decision (accepted status, PM owns done)
 - 2026-10-25: status draft → ready — Architect: re-specced for accepted → land → done (executive decision)
+- 2026-10-26: assigned to the developer role
+- 2026-10-26: status ready → in-progress — branch plan/P-032-merge-queue-land
+- 2026-10-26: Architect: Q-4f7208 — suite.ts (runSuite `capture` option) and suite.test.ts added to touches
+- 2026-10-26: Architect: Q-637b2b — scripts/sample-project.mjs (ship(): accepted, squash-merge, done) added to touches
+- 2026-10-26: status in-progress → in-review
+- 2026-10-26: status in-review → done
+- 2026-10-26: merged to main as 2160165 (squash); full suite green in the P-032 worktree at 99e647e; no rollout steps
 
 ## Outcome
+Shipped: plan status `accepted` (in-review → accepted → done; in-review → done removed), gates moved (`plan.accepted` holds the evidence, review and task checks; `plan.done` checks only that the plan is landed), `accepted → in-progress` through the `plan.landed` role gate (keeps the claim, counts toward max_bounces), and `land [P-###]` (land.ts, CLI only): restore generated files, merge the base, `hub.build` + `refresh-bin`, `hub.full_suite` via `runSuite`, squash under the hub-commit lock with merge-tree/commit-tree/ff-only (3 rounds), remove worktree and branch, update dependants, log. `merge-order` queues accepted plans and lists legacy done ones with the manual steps; `next`, `dispatch`, `check`, status report and the UI board know `accepted`; agent docs, model.md, SKILL.md and vision.md updated.
+Deviations: `runSuite` gained a `capture` option (suite.ts, added to touches by Q-4f7208). team-helpers `finish` ends at `accepted` on the unmerged branch rather than "accepted, merge, done": its only callers are team-2's merge-order tests, which need unmerged plans. `scripts/sample-project.mjs` (added to touches by Q-637b2b) now accepts, squash-merges, then moves done. A bounce makes `land` exit 1.
+Follow-ups: `.claude/agents/crew-{pm,release,developer,qa}.md` need re-rendering and `.crew/bin` a refresh after the merge (human).
+Learnings: K-2026-10-26-packages-crew-scripts-sample-project-mjs

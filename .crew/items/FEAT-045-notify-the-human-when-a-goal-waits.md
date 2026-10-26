@@ -2,12 +2,12 @@
 id: FEAT-045
 type: feat
 title: Notify the human when a goal waits for approval
-status: triaged
+status: done
 priority: P2
 goal: G-007
 plan: P-048
 created: 2026-10-25
-closed:
+closed: 2026-10-26
 ---
 
 # FEAT-045: Notify the human when a goal waits for approval
@@ -22,3 +22,4 @@ P-035 lists proposed goals in the inbox but only escalations notify today; a goa
 
 ## Notes
 - 2026-10-25: status new → triaged — priority P2
+- 2026-10-26: status triaged → done — delivered by P-048

@@ -2,13 +2,14 @@
 id: BUG-027
 type: bug
 title: Usage counts a resumed agent's tokens again at every stop
-status: triaged
+status: done
 severity: S2
 priority: P1
 goal: G-007
 plan: P-049
 created: 2026-10-25
-closed:
+closed: 2026-10-26
+completed: 2026-10-26
 ---
 
 # BUG-027: Usage counts a resumed agent's tokens again at every stop
@@ -34,3 +35,4 @@ usage --hook (commands/team/autonomy.ts:148) records transcriptUsage of the whol
 
 ## Notes
 - 2026-10-25: status new → triaged — priority P1, severity S2
+- 2026-10-26: status triaged → done — delivered by P-049

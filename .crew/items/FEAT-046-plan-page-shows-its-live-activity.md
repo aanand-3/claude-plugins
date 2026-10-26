@@ -2,12 +2,13 @@
 id: FEAT-046
 type: feat
 title: Plan page shows its live activity
-status: triaged
+status: done
 priority: P2
 goal: G-007
 plan: P-040
 created: 2026-10-25
-closed:
+closed: 2026-10-26
+completed: 2026-10-26
 ---
 
 # FEAT-046: Plan page shows its live activity
@@ -22,3 +23,4 @@ Raised by the executive 2026-10-25 after P-027: the hub UI shows live agent acti
 
 ## Notes
 - 2026-10-25: status new → triaged — priority P2
+- 2026-10-26: status triaged → done — delivered by P-040

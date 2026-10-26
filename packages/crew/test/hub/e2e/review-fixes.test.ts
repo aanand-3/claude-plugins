@@ -21,7 +21,7 @@ it("moving a plan in progress claims it, so it cannot approve itself", () => {
   write(p, read(p).replaceAll("- [ ] T", "- [x] T").trimEnd() + "\nShipped.\nLearnings: none\n");
   tr(repo, "checkpoint", "P-001", "--verify", "trust me", "--result", "pass", "--ac", "all");
   tr(repo, "move", "P-001", "in-review");
-  let r = tr(repo, "move", "P-001", "done");
+  let r = tr(repo, "move", "P-001", "accepted");
   expect(r.returncode).not.toBe(0);
   expect(r.stderr).toContain("this run (dev1) implemented P-001");
   expect(r.stderr).toContain("only verified by the implementer");
@@ -40,7 +40,7 @@ it("a takeover keeps the first implementer dependent", () => {
   write(p, read(p).replaceAll("- [ ] T", "- [x] T").trimEnd() + "\nShipped.\nLearnings: none\n");
   expect(tr(repo, "move", "P-001", "in-review").returncode).toBe(0);
   repo.env.CREW_RUN = "qa-run";
-  expect(tr(repo, "move", "P-001", "done").stderr).toContain("AC1: only verified by the implementer (dev-run)");
+  expect(tr(repo, "move", "P-001", "accepted").stderr).toContain("AC1: only verified by the implementer (dev-run)");
 });
 
 it("usage rejects negative or fractional tokens", () => {
@@ -120,6 +120,6 @@ it("an org human_gates floor adds to the mode gates", () => {
   orgPlaybook(repo, "human_gates: [plan.blocked]\n");
   const out = JSON.parse(tr(repo, "policy", "show", "--json").stdout);
   const gates = new Set<string>(out.policy.human_gates);
-  for (const g of ["plan.ready", "plan.done", "goal.done", "item.triaged", "plan.blocked"]) expect(gates.has(g), g).toBe(true);
+  for (const g of ["plan.ready", "plan.accepted", "goal.done", "item.triaged", "plan.blocked"]) expect(gates.has(g), g).toBe(true);
   expect(out.sources.human_gates).toBe("built-in: mode human-led + org floor");
 });

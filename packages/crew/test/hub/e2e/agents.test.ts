@@ -8,7 +8,7 @@ import { init, read, tr } from "./helpers.js";
 import { agent, bash, frontmatter, hook } from "./sections.js";
 
 const AGENT_TEMPLATES = join(dirname(dirname(HUB)), "agents");
-const BUILT_IN_AGENTS = ["director", "pm", "architect", "developer", "qa", "release"];
+const BUILT_IN_AGENTS = ["director", "pm", "architect", "developer", "qa", "release", "designer"];
 
 let repo: Repo;
 beforeEach(() => { repo = Repo.create(); });
@@ -53,33 +53,33 @@ it("agent frontmatter follows the role's policy", () => {
 
 it("a project role renders from the generic template", () => {
   init(repo, { mode: "" });
-  repo.write(".crew/policy.yaml", "mode: ai-native\nroles:\n  designer:\n    charter: \"owns the visual design: tokens, layouts; never writes backend code\"\n");
+  repo.write(".crew/policy.yaml", "mode: ai-native\nroles:\n  copywriter:\n    charter: \"owns the visual design: tokens, layouts; never writes backend code\"\n");
   expect(tr(repo, "agents").returncode).toBe(0);
-  const path = join(repo.path, ".claude/agents/crew-designer.md");
+  const path = join(repo.path, ".claude/agents/crew-copywriter.md");
   const fm = frontmatter(path); // the charter's colon is quoted, so the frontmatter stays valid YAML
-  expect(fm["crew-role"]).toBe("designer");
+  expect(fm["crew-role"]).toBe("copywriter");
   expect(fm.description).toContain("owns the visual design: tokens");
   expect(read(path)).toContain("Your charter: owns the visual design");
   expect(read(path)).not.toContain("{{");
-  const agentOut = hook(repo, bash("crew-designer", "node .crew/bin/crew.mjs next"));
-  expect(agentOut.updatedInput.command).toContain("--as designer --run-id designer:a1"); // the guard knows the rendered agent
+  const agentOut = hook(repo, bash("crew-copywriter", "node .crew/bin/crew.mjs next"));
+  expect(agentOut.updatedInput.command).toContain("--as copywriter --run-id copywriter:a1"); // the guard knows the rendered agent
 });
 
 it("agents --check flags policy changes", () => {
   init(repo, { mode: "" });
-  repo.write(".crew/policy.yaml", "mode: ai-native\nroles:\n  designer:\n    charter: owns the visual design\n");
+  repo.write(".crew/policy.yaml", "mode: ai-native\nroles:\n  copywriter:\n    charter: owns the visual design\n");
   expect(tr(repo, "agents").returncode).toBe(0);
   expect(tr(repo, "check").stdout).not.toContain("agents:");
   repo.write(".crew/policy.yaml", "mode: ai-native\nroles:\n  qa:\n    models: { default: opus }\n");
   let r = tr(repo, "agents", "--check");
   expect(r.returncode).toBe(1);
   expect(r.stdout).toContain("crew-qa.md: stale");
-  expect(r.stdout).toContain("crew-designer.md: its role 'designer' is no longer defined");
+  expect(r.stdout).toContain("crew-copywriter.md: its role 'copywriter' is no longer defined");
   expect(tr(repo, "check").stdout).toContain("HINT   agents: .claude/agents/crew-qa.md is stale");
   const out = tr(repo, "agents").stdout;
   expect(out).toContain("wrote .claude/agents/crew-qa.md");
-  expect(out).toContain("removed .claude/agents/crew-designer.md");
-  expect(existsSync(join(repo.path, ".claude/agents/crew-designer.md"))).toBe(false);
+  expect(out).toContain("removed .claude/agents/crew-copywriter.md");
+  expect(existsSync(join(repo.path, ".claude/agents/crew-copywriter.md"))).toBe(false);
   expect(tr(repo, "agents", "--check").returncode).toBe(0);
   repo.write(".crew/policy.yaml", "mode: ai-native\nroles:\n  qa:\n    models: { default: 3 }\n");
   r = tr(repo, "agents");
@@ -106,6 +106,16 @@ it("only the human renders agents", () => {
   expect(out.permissionDecision).toBe("deny"); // nor rewrites the templates the next render reads
 });
 
+it("the release template leaves merge conflicts to land's bounce", () => {
+  const text = read(join(AGENT_TEMPLATES, "release.md"));
+  expect(text).toContain("Never resolve a merge conflict");
+  expect(text).toContain("git merge --abort");
+  expect(text).toContain("--to developer");
+  expect(text).not.toContain("move P-### in-progress"); // a done plan has no transitions; in-progress is the developer's
+  const resolving = text.split("\n").filter((l) => /resolve (the |a |any )?conflict/i.test(l) && !/never/i.test(l));
+  expect(resolving).toEqual([]);
+});
+
 it("agent templates are valid and name real commands", () => {
   const usage = tr(repo, "--help").stdout;
   const commands = new Set([...usage.matchAll(/(?:^ {2}|· )([a-z][a-z-]*)/gm)].map((m) => m[1]));
@@ -120,4 +130,15 @@ it("agent templates are valid and name real commands", () => {
     }
   }
   expect(new Set(templates().map((f) => f.slice(0, -".md".length)))).toEqual(new Set([...BUILT_IN_AGENTS, "generic"]));
+});
+
+it("the designer renders from its own template, and agents --check is clean (P-021 AC1)", () => {
+  init(repo);
+  expect(statSync(join(repo.path, ".crew/templates/agents/designer.md")).isFile()).toBe(true);
+  expect(tr(repo, "agents").returncode).toBe(0);
+  const path = join(repo.path, ".claude/agents/crew-designer.md");
+  expect(frontmatter(path)["crew-role"]).toBe("designer");
+  expect(read(path)).toContain("review P-### --design --approve");
+  expect(read(path)).not.toContain("Your charter:"); // a built-in role, not the generic template
+  expect(tr(repo, "agents", "--check").returncode).toBe(0);
 });

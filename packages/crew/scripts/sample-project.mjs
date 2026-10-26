@@ -30,7 +30,7 @@ const plan = (context, inScope, ac, tasks, extra = "") => `## Context\n${context
 function newPlan(title, items, touches, body, ...extra) {
   return tr("new-plan", title, "--from", draft("plan", body), "--items", items, "--touches", touches, ...extra).trim();
 }
-function ship(pid, outcome) { // start → tick → review → done on the branch, squash-merge to main
+function ship(pid, outcome) { // start → tick → review → accepted on the branch, squash-merge to main, then done
   commit(`chore(hub): before ${pid}`);
   tr("start", pid);
   const learnings = outcome.includes("Learnings:") ? "" : "\nLearnings: none";
@@ -39,13 +39,15 @@ function ship(pid, outcome) { // start → tick → review → done on the branc
   tr("move", pid, "in-review");
   const qa = { ...env, CREW_RUN: "qa", CREW_ACTOR: "qa", CREW_ROLE: "qa" };
   execFileSync("node", [hub, "checkpoint", pid, "--run", "true", "--ac", "all"], { cwd: dir, env: qa, encoding: "utf8" });
-  execFileSync("node", [hub, "move", pid, "done"], { cwd: dir, env: qa, encoding: "utf8" });
-  commit(`feat(${pid}): done`);
+  execFileSync("node", [hub, "move", pid, "accepted"], { cwd: dir, env: qa, encoding: "utf8" });
+  commit(`feat(${pid}): accepted`);
   const branch = git("branch", "--show-current").trim();
   git("switch", "-q", "main");
   git("merge", "-q", "--squash", branch);
   commit(`${pid}: squash`);
   git("branch", "-q", "-D", branch);
+  tr("move", pid, "done"); // landed: completed on main
+  commit(`chore(hub): ${pid} done`);
 }
 
 rmSync(dir, { recursive: true, force: true });
@@ -185,6 +187,7 @@ staging, commit 4f2c9e1
 ## Impact
 Pilot users who tab past the email field see a crash page.
 `));
+tr("triage", "BUG-001", "--goal", "G-001"); // capture keeps --goal as a hint; the PM links it at triage
 newPlan("Create habit", "FEAT-005", "src/habits/**, web/habits/**", plan("First slice of G-002.", "create habit form and API",
   ["a habit with name, schedule and colour is saved", "validation errors are shown inline"], ["schema and migration", "API", "form"]));
 newPlan("Fix login 500 on empty email", "BUG-001", "src/auth/login.py, tests/auth/**", plan("Fixes BUG-001 found in pilot onboarding.",
@@ -215,6 +218,7 @@ Streak shows 0 after 05:30 local (midnight UTC)
 ## Impact
 Every user outside UTC loses streaks; blocks P-007 (streaks).
 `));
+tr("triage", "BUG-002", "--goal", "G-002");
 newPlan("Password reset", "FEAT-003", "src/auth/reset/**, web/reset/**", plan("Last core slice of G-001; depends on P-002's token service.",
   "reset by emailed token", ["reset link works once and expires in 1 h", "old sessions are revoked"], ["reset token", "email", "reset form", "revoke sessions"]),
   "--depends", "P-002");

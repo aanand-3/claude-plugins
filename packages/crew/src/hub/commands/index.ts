@@ -14,6 +14,7 @@ import { registration as work_execution } from "./work/execution.reg.js";
 import { registration as work_review } from "./work/review.reg.js";
 import { registration as work_release } from "./work/release.reg.js";
 import { registration as work_suite } from "./work/suite.reg.js";
+import { registration as work_land } from "./work/land.reg.js";
 import { registration as memory_context } from "./memory/context.reg.js";
 import { registration as views_advisor } from "./views/advisor.reg.js";
 import { registration as team_guard } from "./team/guard.reg.js";
@@ -22,10 +23,12 @@ import { registration as team_dispatch } from "./team/dispatch.reg.js";
 import { registration as team_liveness } from "./team/liveness.reg.js";
 import { registration as team_agents } from "./team/agents.reg.js";
 import { registration as team_questions } from "./team/questions.reg.js";
+import { registration as team_inbox } from "./team/inbox.reg.js";
 import { registration as views_export } from "./views/export.reg.js";
 import { registration as views_ui } from "./views/ui.reg.js";
 import { registration as views_design } from "./views/design.reg.js";
 import { registration as views_checks } from "./views/checks.reg.js";
+import { registration as views_doctor } from "./views/doctor.reg.js";
 import { registration as views_reports } from "./views/reports.reg.js";
 import { registration as views_graph } from "./views/graph.reg.js";
 import { load, type Registration } from "../registry.js";
@@ -44,6 +47,7 @@ export const REGISTRATIONS: [file: string, registration: Registration][] = [
   ["work/review.reg.ts", work_review],
   ["work/release.reg.ts", work_release],
   ["work/suite.reg.ts", work_suite],
+  ["work/land.reg.ts", work_land],
   ["memory/context.reg.ts", memory_context],
   ["views/advisor.reg.ts", views_advisor],
   ["team/guard.reg.ts", team_guard],
@@ -52,10 +56,12 @@ export const REGISTRATIONS: [file: string, registration: Registration][] = [
   ["team/liveness.reg.ts", team_liveness],
   ["team/agents.reg.ts", team_agents],
   ["team/questions.reg.ts", team_questions],
+  ["team/inbox.reg.ts", team_inbox],
   ["views/export.reg.ts", views_export],
   ["views/ui.reg.ts", views_ui],
   ["views/design.reg.ts", views_design],
   ["views/checks.reg.ts", views_checks],
+  ["views/doctor.reg.ts", views_doctor],
   ["views/reports.reg.ts", views_reports],
   ["views/graph.reg.ts", views_graph],
 ];

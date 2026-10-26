@@ -1,5 +1,6 @@
 /** Hub documents have one home, the main checkout: every checkout reads and writes them there, and with plan worktrees
  * each command that changes them commits them on the base branch, so parallel plans never fork the state (BUG-018). */
+import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, realpathSync } from "node:fs";
 import { join } from "node:path";
 import * as git from "../git.js";
@@ -39,8 +40,12 @@ export function commitState(home: string, message: string): string | null {
     const changed = git.changed(home, STATE_PATHS);
     if (!changed.length) return null;
     git.git(["-C", home, "add", "-A", "--", ...changed], true);
-    const r = git.git(["-C", home, "commit", "-q", "--only", "-m", message, "--", ...changed]);
-    if (r === null) fail(`The hub's files are written but not committed (git commit failed in ${home}); the next hub command commits them.`);
+    const r = spawnSync("git", ["commit", "-q", "--only", "-m", message, "--", ...changed], { cwd: home, encoding: "utf8" });
+    if (r.status !== 0) {
+      const why = `${r.stderr ?? ""}\n${r.stdout ?? ""}`.split("\n").map((l) => l.trim()).find(Boolean) ?? "git commit failed";
+      fail(`The hub's files are written but not committed (git commit failed in ${home}: ${why}); the next hub command commits `
+        + "them. `crew.mjs doctor` checks the hooks.");
+    }
     return git.git(["-C", home, "rev-parse", "--short", "HEAD"])?.trim() ?? null;
   } finally {
     releaseLock(lock, token);

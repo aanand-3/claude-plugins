@@ -3,7 +3,7 @@
 import { beforeEach, expect, it } from "vitest";
 import { join } from "node:path";
 import { HUB, Repo } from "../../helpers/repo.js";
-import { PLAN_DRAFT } from "./fixtures.js";
+import { BUG_DRAFT, PLAN_DRAFT } from "./fixtures.js";
 import { newGoal, newIdea, newPlan, planFile, read, tr, write } from "./helpers.js";
 import { as, events, inReview, LIFECYCLE, lifecycle, started, type Json } from "./team-helpers.js";
 
@@ -41,7 +41,8 @@ it("items and specs: triage, spec a draft, write a plan for a focus item, an urg
   let d = dispatch();
   expect(brief(d)).toEqual(["pm FEAT-005 triage", "architect P-001 spec", "architect FEAT-002 write"]);
   expect(d.entries.map((e: Json) => e.ref)).not.toContain("FEAT-003"); // another goal's triaged FEAT waits
-  ok(as(repo, "developer", "new-item", "bug", "Login 500", "--why", "500 on empty email", "--severity", "S1"));
+  repo.write(".crew/drafts/bug.md", BUG_DRAFT);
+  ok(as(repo, "developer", "new-item", "bug", "Login 500", "--from", ".crew/drafts/bug.md", "--severity", "S1"));
   d = dispatch();
   expect(d.entries[0]).toMatchObject({ role: "pm", ref: "BUG-001" });
   expect(d.entries[0].task).toMatch(/^triage BUG-001/);
@@ -49,7 +50,8 @@ it("items and specs: triage, spec a draft, write a plan for a focus item, an urg
 
 it("an urgent bug comes before release and review (AC1)", () => {
   inReview(repo);
-  ok(as(repo, "developer", "new-item", "bug", "Login 500", "--why", "500 on empty email", "--severity", "S1"));
+  repo.write(".crew/drafts/bug.md", BUG_DRAFT);
+  ok(as(repo, "developer", "new-item", "bug", "Login 500", "--from", ".crew/drafts/bug.md", "--severity", "S1"));
   expect(brief(dispatch())[0]).toBe("pm BUG-001 triage");
 });
 
@@ -66,12 +68,12 @@ it("the plan pipeline: assign, start, continue, review, test, fix, complete, mer
   expect(dispatch().entries).toEqual([{ role: "developer", ref: "P-001", task: expect.stringMatching(/^continue P-001/), resume: "dev" }]);
 });
 
-it("in review: architect review, then a failing check goes back to the implementer, then QA, then the PM completes (AC2)", () => {
+it("in review: architect review, then a failing check goes back to the implementer, then QA, then the PM accepts (AC2)", () => {
   inReview(repo); // QA's checks passed, no review yet
   expect(brief(dispatch())).toEqual(["architect P-001 review"]);
   repo.env.CREW_RUN = "arch";
   ok(as(repo, "architect", "review", "P-001", "--approve"));
-  expect(brief(dispatch())).toEqual(["pm P-001 complete"]);
+  expect(brief(dispatch())).toEqual(["pm P-001 accept"]);
   repo.env.CREW_RUN = "qa";
   expect(as(repo, "qa", "checkpoint", "P-001", "--run", "false", "--ac", "all").returncode).toBe(1); // the check fails
   expect(dispatch().entries).toEqual([{ role: "developer", ref: "P-001", task: expect.stringMatching(/^fix P-001/), resume: "dev" }]);
@@ -89,15 +91,15 @@ it("approved with evidence missing → QA, resumed from its last run (AC2)", () 
   expect(d.entries).toEqual([{ role: "qa", ref: "P-001", task: expect.stringMatching(/^test P-001/), resume: "qa-2" }]);
 });
 
-it("a done, unmerged plan goes to release (AC2)", () => {
+it("an accepted, unmerged plan goes to release (AC2)", () => {
   inReview(repo);
   repo.env.CREW_RUN = "arch";
   ok(as(repo, "architect", "review", "P-001", "--approve"));
   repo.env.CREW_RUN = "pm";
-  ok(as(repo, "pm", "move", "P-001", "done"));
-  repo.commit("chore(P-001): done");
+  ok(as(repo, "pm", "move", "P-001", "accepted"));
+  repo.commit("chore(P-001): accepted");
   repo.git("switch", "-q", "main");
-  expect(dispatch().entries).toEqual([{ role: "release", ref: "P-001", task: expect.stringMatching(/^merge P-001/), resume: null }]);
+  expect(dispatch().entries).toEqual([{ role: "release", ref: "P-001", task: expect.stringMatching(/^land P-001/), resume: null }]);
 });
 
 it("exceptions go to the Director: stale claims, blocked plans, the next focus, a stall (AC3)", () => {
@@ -112,6 +114,17 @@ it("a blocked plan → director unblock (AC3)", () => {
   started(repo);
   ok(as(repo, "developer", "move", "P-001", "blocked", "--note", "waiting on a vendor"));
   expect(brief(dispatch())).toEqual(["director P-001 unblock"]);
+});
+
+it("an idle run → director: resume or reassign (P-034 AC10)", () => {
+  started(repo);
+  const ago = (min: number) => new Date(Date.now() - min * 60_000).toISOString();
+  repo.write(".git/crew/activity.jsonl", `${JSON.stringify({ ts: ago(30), run: "developer:a1", role: "developer", ref: "P-001", tool: "Edit", target: "src/a.ts" })}\n`);
+  const d = dispatch();
+  expect(d.entries[0]).toMatchObject({ role: "director", ref: "P-001" });
+  expect(d.entries[0].task).toMatch(/^run developer:a1 on P-001 idle for 30 min: resume or reassign$/);
+  policy("limits: { idle_minutes: 45 }\n"); // not idle yet: the developer continues
+  expect(brief(dispatch())).toEqual(["developer P-001 continue"]);
 });
 
 it("a focus goal that is done while another goal is active → director focus (AC3)", () => {
@@ -223,4 +236,66 @@ it("goal closure: a focus goal with nothing open goes to the PM, who closes it; 
   expect(r.stderr).toContain("for the pm role");
   ok(as(repo, "pm", "move", "G-001", "done"));
   expect(tr(repo, "policy", "show").stdout).toMatch(/role_gates goal\.done +pm/);
+});
+
+// ------------------------------------------------------------------ P-047: `next --role director` follows dispatch
+const next = (role: string) => { const r = as(repo, role, "next"); ok(r); return r.stdout; };
+/** Each director entry of `dispatch --json` (questions aside) appears in `next --role director` as its task. */
+const directorTasks = () => dispatch().entries.filter((e: Json) => e.role === "director" && !e.ref?.startsWith("Q-")).map((e: Json) => e.task);
+
+it("director next: no staffing, overlap or goal-closure lines; the PM still assigns (P-047 AC1)", () => {
+  focused();
+  ok(newPlan(repo, "Signup endpoint", PLAN_DRAFT, "--goal", "G-001", "--items", "FEAT-001"));
+  ok(newPlan(repo, "Login", PLAN_DRAFT, "--goal", "G-001", "--items", "FEAT-002", "--touches", "src/login/**"));
+  for (const p of ["P-001", "P-002"]) ok(as(repo, "architect", "move", p, "ready"));
+  repo.commit("chore(hub): plans");
+  const out = next("director");
+  expect(out).not.toMatch(/staff \d/);
+  expect(out).not.toContain("overlap");
+  expect(out).not.toContain("has nothing open");
+  const pm = next("pm");
+  for (const p of ["P-001", "P-002"]) expect(pm).toMatch(new RegExp(`open ${p}: .* → assign ${p} --to developer`));
+});
+
+it("director next: a blocked plan's unblock entry, as dispatch gives it (P-047 AC2)", () => {
+  started(repo);
+  ok(as(repo, "developer", "move", "P-001", "blocked", "--note", "waiting on a vendor"));
+  const tasks = directorTasks();
+  expect(tasks).toEqual([expect.stringMatching(/^unblock P-001: /)]);
+  expect(next("director")).toContain(tasks[0]);
+});
+
+it("director next: a stale claim's reassign entry, as dispatch gives it (P-047 AC2)", () => {
+  started(repo, "dev-1");
+  repo.commit("chore(P-001): start");
+  repo.git("switch", "-q", "main");
+  policy("limits: { stale_claim_hours: 0 }\n");
+  const tasks = directorTasks();
+  expect(tasks).toEqual([expect.stringMatching(/^reassign P-001: /)]);
+  expect(next("director")).toContain(tasks[0]);
+});
+
+it("director next: a question to the director once, as QUESTION; an escalation waits on the executive (P-047 AC3)", () => {
+  lifecycle(repo);
+  ok(newPlan(repo));
+  ok(as(repo, "developer", "ask", "P-001", "--to", "director", "Who owns the vendor contract?"));
+  const qid = events(repo, "--type", "ask").at(-1).qid;
+  let out = next("director");
+  expect(out.split("\n").filter((l: string) => l.includes(qid))).toEqual([expect.stringMatching(/^QUESTION /)]);
+  expect(out).toMatch(new RegExp(`QUESTION +${qid} `));
+  ok(as(repo, "pm", "escalate", "P-001", "Drop it?"));
+  out = next("director");
+  expect(out).toMatch(/waiting on the executive: Q-\S+ — Drop it\?/);
+});
+
+it("director next: the stall line when open work can't move (P-047 AC4)", () => {
+  lifecycle(repo);
+  ok(newPlan(repo));
+  ok(newPlan(repo, "Login", PLAN_DRAFT, "--touches", "src/login/**", "--depends", "P-001"));
+  for (const p of ["P-001", "P-002"]) ok(as(repo, "architect", "move", p, "ready"));
+  ok(as(repo, "pm", "escalate", "P-001", "Ship it at all?"));
+  repo.commit("chore(hub): plans");
+  const tasks = directorTasks();
+  expect(tasks).toEqual([expect.stringMatching(/^stall: nothing can move — /)]);
+  expect(next("director")).toContain(tasks[0]);
 });

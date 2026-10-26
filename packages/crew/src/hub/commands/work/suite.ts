@@ -10,9 +10,9 @@ import * as git from "../../core/git.js";
 import { type Store, yamlBlock } from "../../core/store.js";
 import { fail } from "../../core/text.js";
 
-/** One finished run, as `suites.jsonl` holds it. */
-export interface SuiteRecord { ts: string; ref: string | null; run: string; worktree: string; slot: number; wait_ms: number;
-  run_ms: number; exit: number }
+/** One finished run, as `suites.jsonl` holds it: `sha` and `branch` are the tested HEAD (BUG-035; absent in older records). */
+export interface SuiteRecord { ts: string; ref: string | null; run: string; worktree: string; sha: string | null;
+  branch: string | null; slot: number; wait_ms: number; run_ms: number; exit: number }
 interface Holder { token: string; pid: number; host: string; run: string; ref: string | null; worktree: string; started: string }
 
 const POLL_MS = 1_000;
@@ -128,35 +128,58 @@ function releaseSlot(file: string, token: string): void {
   } catch { /* already gone */ }
 }
 
-/** Run `hub.full_suite` in `cwd` under a slot; record the run. The holder is this process, alive for the whole run. */
-export function runSuite(store: Store, { cwd, ref }: { cwd: string; ref?: string }): { exit: number; waitMs: number; runMs: number } {
+/** Run `hub.full_suite` in `cwd` under a slot; record the run with the HEAD it tested. The holder is this process, alive
+ * for the whole run. `capture` (land): the output is passed through and also returned. */
+export function runSuite(store: Store, { cwd, ref, capture = false }: { cwd: string; ref?: string; capture?: boolean }):
+  { exit: number; waitMs: number; runMs: number; sha: string | null; output?: string } {
   const { command, slots } = suiteSettings(store);
+  const sha = git.git(["-C", cwd, "rev-parse", "HEAD"])?.trim() || null;
+  const branch = git.git(["-C", cwd, "branch", "--show-current"])?.trim() || null;
   const dir = home(store), run = store.ledger.who.run, t0 = Date.now();
   const me: Holder = { token: `${process.pid}-${randomBytes(6).toString("hex")}`, pid: process.pid, host: hostname(), run,
     ref: ref ?? null, worktree: cwd, started: new Date().toISOString() };
   const slot = takeSlot(join(dir, "suite"), slots, me);
   const t1 = Date.now();
-  let exit = 1;
+  let exit = 1, output: string | undefined;
   try {
-    const r = spawnSync(command, { shell: true, cwd, stdio: "inherit" });
+    const r = capture ? spawnSync(command, { shell: true, cwd, stdio: ["inherit", "pipe", "pipe"], encoding: "utf8", maxBuffer: 64 << 20 })
+      : spawnSync(command, { shell: true, cwd, stdio: "inherit" });
     exit = r.status ?? 1;
+    if (capture) {
+      process.stdout.write(r.stdout ?? "");
+      process.stderr.write(r.stderr ?? "");
+      output = `${r.stdout ?? ""}${r.stderr ?? ""}`;
+    }
   } finally {
     releaseSlot(join(dir, "suite", `slot-${slot}.lock`), me.token);
   }
   const t2 = Date.now();
-  const rec: SuiteRecord = { ts: new Date(t2).toISOString(), ref: ref ?? null, run, worktree: cwd, slot, wait_ms: t1 - t0,
-    run_ms: t2 - t1, exit };
+  const rec: SuiteRecord = { ts: new Date(t2).toISOString(), ref: ref ?? null, run, worktree: cwd, sha, branch, slot,
+    wait_ms: t1 - t0, run_ms: t2 - t1, exit };
   const file = join(dir, "suites.jsonl");
   const torn = existsSync(file) && statSync(file).size > 0 && !readFileSync(file, "utf8").endsWith("\n");
   appendFileSync(file, `${torn ? "\n" : ""}${JSON.stringify(rec)}\n`);
-  return { exit, waitMs: rec.wait_ms, runMs: rec.run_ms };
+  return { exit, waitMs: rec.wait_ms, runMs: rec.run_ms, sha, ...(capture ? { output } : {}) };
 }
 
 const secs = (ms: number) => (ms / 1000).toFixed(1);
 
+/** Where `suite --ref` runs (BUG-035): a plan's worktree, else this checkout when it is on the plan's branch, else
+ * nowhere. Other refs and no ref: this checkout. */
+function suiteHome(store: Store, ref?: string): string {
+  if (!ref || !/^P-\d+$/.test(ref)) return store.ws.root;
+  const pid = store.checkRef(ref, "plan");
+  const wt = store.planWorktrees().get(pid);
+  if (wt) return wt;
+  const want = store.find(pid).get("branch") || null, here = git.currentBranch();
+  if (want && here === want) return store.ws.root;
+  return fail(`${pid} has no worktree and this checkout is on ${here ?? "a detached HEAD"}, not ${want ?? "a plan branch"}: run it where the plan's branch is checked out.`);
+}
+
 export function suiteCmd(store: Store, ref?: string): number {
   store.require();
-  const r = runSuite(store, { cwd: store.ws.root, ref: ref?.toUpperCase() });
+  ref = ref?.toUpperCase();
+  const r = runSuite(store, { cwd: suiteHome(store, ref), ref });
   store.say(`suite: exit ${r.exit} (waited ${secs(r.waitMs)}s, ran ${secs(r.runMs)}s)`);
   return r.exit;
 }
@@ -180,6 +203,6 @@ export function suitesCmd(store: Store, limit = 20, json = false): void {
   if (json) return store.say(JSON.stringify(recs, null, 2));
   if (!recs.length) return store.say("No suite runs recorded.");
   for (const r of recs) {
-    store.say(`${r.ts}  ${r.ref ?? "-"}  ${r.run}  slot ${r.slot}  waited ${secs(r.wait_ms)}s  ran ${secs(r.run_ms)}s  exit ${r.exit}`);
+    store.say(`${r.ts}  ${r.ref ?? "-"}  ${r.sha?.slice(0, 7) ?? "-"}  ${r.run}  slot ${r.slot}  waited ${secs(r.wait_ms)}s  ran ${secs(r.run_ms)}s  exit ${r.exit}`);
   }
 }

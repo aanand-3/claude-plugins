@@ -33,6 +33,12 @@ completed:
 <!-- Key design decisions, assumptions, what is reused. Keep it short.
      `touches:` above lists the paths (globs) this plan expects to change; it is required before ready. -->
 
+## Design
+<!-- UI plans only (touches overlap `design.ui_paths` in .crew/config.yaml): required before ready, written by the designer.
+     The screen layout as a composition of the shell and inventory components (docs/design/DESIGN.md, the studio's Screens),
+     and the UI acceptance criteria: states, breakpoints (375/900/1440 px, light and dark), inventory components used.
+     Other plans leave it empty. -->
+
 ## Tasks
 <!-- Each task: small, verifiable. "→ verify:" says how we'll know it's done. -->
 - [ ] T1: … → verify: …

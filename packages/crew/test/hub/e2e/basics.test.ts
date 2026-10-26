@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { beforeEach, expect, it } from "vitest";
 import { HUB, Repo } from "../../helpers/repo.js";
 import { PLAN_DRAFT, SKELETON_PLAN } from "./fixtures.js";
-import { goalFile, init, item, newGoal, newIdea, newPlan, planFile, read, tr, write } from "./helpers.js";
+import { goalFile, init, item, newBug, newGoal, newIdea, newPlan, planFile, read, tr, write } from "./helpers.js";
 
 let repo: Repo;
 beforeEach(() => { repo = Repo.create(); });
@@ -59,9 +59,11 @@ it("hub_state_check: check hints until CLAUDE.md has the hub-state section", () 
 
 it("a refused command writes nothing", () => {
   init(repo);
-  tr(repo, "new-item", "bug", "Crash", "--why", "500 on login");
+  expect(newBug(repo, "Crash").returncode).toBe(0);
+  const bug = join(repo.path, ".crew/items", readdirSync(join(repo.path, ".crew/items")).find((f) => f.startsWith("BUG-001"))!);
+  write(bug, read(bug).replace("1. POST /login with an empty email", "")); // emptied after capture
   const before = item(repo, "BUG-001");
-  const r = tr(repo, "triage", "BUG-001", "--priority", "P1"); // no steps or severity → refused after setting priority
+  const r = tr(repo, "triage", "BUG-001", "--priority", "P1"); // no steps → refused after setting priority
   expect(r.returncode).toBe(1);
   expect(r.stderr).toContain("Steps to reproduce");
   expect(item(repo, "BUG-001")).toBe(before);

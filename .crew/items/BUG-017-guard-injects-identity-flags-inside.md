@@ -2,13 +2,14 @@
 id: BUG-017
 type: bug
 title: Guard injects identity flags inside quoted hub arguments
-status: triaged
+status: done
 severity: S2
 priority: P1
 goal: G-007
 plan: P-042
 created: 2026-10-24
-closed:
+closed: 2026-10-26
+completed: 2026-10-26
 ---
 
 # BUG-017: Guard injects identity flags inside quoted hub arguments
@@ -43,3 +44,4 @@ Fix in the guard: rewrite only the token that is the executed program (the segme
 - 2026-10-25: INCIDENT 2026-10-25 (escalated from S3/P2): during P-039 QA a bash script call whose argument named the hub executable had the guard's role and run-id flags injected after that word, shifting the script's positional arguments. The script then ran in the main checkout and made 9 commits on main (9839313..1dba548) over .crew/policy.yaml, config.yaml and .crew/bin; the team was paused and main was repaired in ecc446a. Same root cause as this report (the guard rewrites every hub-executable word in the segment, not only the program being run), now hitting script arguments as well as quoted hub arguments. See K-2026-10-25-the-guard-injects-its-role-and-run-flags and K-2026-10-25-the-crew-guard-refuses-any-hub-call.
 - 2026-10-25: re-triaged: priority P1, severity S2
 - 2026-10-25: Also broken by the guard's rewrite (reported by P-039's QA, 2026-10-25): a Bash command that starts with an env assignment, VAR=value <cmd> …, gets its arguments shifted the same way. P-042 should cover it.
+- 2026-10-26: status triaged → done — delivered by P-042

@@ -2,13 +2,14 @@
 id: BUG-011
 type: bug
 title: Guard ignores a variable in the middle of a Bash write target
-status: new
-severity:
-priority:
-goal: G-001
-plan:
+status: done
+severity: S3
+priority: P2
+goal: G-007
+plan: P-051
 created: 2026-10-24
-closed:
+closed: 2026-10-26
+completed: 2026-10-26
 ---
 
 # BUG-011: Guard ignores a variable in the middle of a Bash write target
@@ -43,3 +44,6 @@ A crew subagent can overwrite the policy, hook settings, agent definitions or CL
 
 ## Notes
 Found while re-testing P-019 round 3 (BUG-009, BUG-010 fixes).
+- 2026-10-26: status new → triaged — priority P2, severity S3
+- 2026-10-26: re-triaged: priority P2, severity S3
+- 2026-10-26: status triaged → done — Fixed by P-051 (6273d49, landed)

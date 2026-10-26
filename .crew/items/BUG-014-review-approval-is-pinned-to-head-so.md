@@ -2,13 +2,14 @@
 id: BUG-014
 type: bug
 title: Review approval is pinned to HEAD, so uncommitted changes after it go unnoticed
-status: triaged
+status: done
 severity: S3
 priority: P1
 goal: G-007
 plan: P-028
 created: 2026-10-24
-closed:
+closed: 2026-10-26
+completed: 2026-10-26
 ---
 
 # BUG-014: Review approval is pinned to HEAD, so uncommitted changes after it go unnoticed
@@ -44,3 +45,4 @@ S3: the review gate on done doesn't hold for any plan-worktree plan. Today the A
 
 ## Notes
 - 2026-10-25: status new → triaged — priority P1, severity S3
+- 2026-10-26: status triaged → done — delivered by P-028

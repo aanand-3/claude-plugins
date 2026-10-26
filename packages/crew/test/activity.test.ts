@@ -4,7 +4,7 @@ import { appendFileSync, existsSync, mkdtempSync, readFileSync, writeFileSync } 
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe as group, expect, it } from "vitest";
-import { type ActivityEvent, appendActivity, describe, liveRuns, previousRef, readActivity } from "../src/hub/core/memory/activity.js";
+import { type ActivityEvent, appendActivity, deriveWhat, describe, label, liveRuns, previousRef, readActivity } from "../src/hub/core/memory/activity.js";
 import type { LedgerEvent } from "../src/hub/core/memory/ledger.js";
 
 const ROOT = mkdtempSync(join(tmpdir(), "hub-activity-root-"));
@@ -57,6 +57,40 @@ group("describe", () => {
       .toEqual({ tool: "Edit", target: "src/a.ts", ref: "P-027" });
     expect(describe({ tool_name: "Bash", tool_input: { command: "npm test" }, cwd: join(wt, "packages") }, ROOT).ref).toBe("P-027");
     expect(describe({ tool_name: "Bash", tool_input: { command: "node .crew/bin/crew.mjs log G-007 hi" }, cwd: wt }, ROOT).ref).toBe("G-007");
+    expect(describe({ tool_name: "Bash", tool_input: { command: `cd "${wt}/packages/crew" && npm test` } }, ROOT).ref).toBe("P-027");
+  });
+});
+
+group("label", () => {
+  it.each([
+    ["node .crew/bin/crew.mjs --as qa --run-id qa:1 checkpoint P-054 --step T1", "checkpoint P-054"],
+    ["node .crew/bin/crew.mjs land p-054", "land P-054"],
+    [".crew/bin/crew.mjs status", "status"],
+    ["cd /r/.claude/worktrees/P-056-x/packages/crew && npx vitest run test/a.test.ts test/b.test.ts test/c.test.ts", "vitest a.test.ts b.test.ts +1"],
+    ["npm run build && npx vitest run test/hub/e2e/x.test.ts -t \"label\"", "npm run build + vitest x.test.ts"],
+    ["npx vitest run", "vitest (all)"],
+    ["npm ci --prefer-offline", "npm ci"],
+    ["git -C /r/wt status --short && git log --oneline -3", "git status + git log"],
+    ["W=/Users/x; FOO=1 CI=true node /x/.crew/bin/crew.mjs suite P-054", "suite P-054"],
+    ["export X=1 && /usr/bin/sed -n 1p a | grep b | wc -l | sort", "sed + grep + wc +1"],
+    ["python3 -I script.py", "python3"],
+  ])("derives %s", (command, what) => expect(deriveWhat(command)).toBe(what));
+
+  it("caps the what at 80 characters", () => {
+    const what = deriveWhat(`npm run ${"a".repeat(90)}`);
+    expect(what).toHaveLength(80);
+    expect(what.endsWith("…")).toBe(true);
+    expect(label("qa", null, "x".repeat(200), "ls")).toBe(`qa: ${"x".repeat(79)}…`);
+  });
+
+  it("prefixes the role and plan, uses the agent's description and returns a labelled one unchanged", () => {
+    expect(label("qa", "P-001", undefined, "node .crew/bin/crew.mjs checkpoint P-001")).toBe("qa P-001: checkpoint P-001");
+    expect(label("qa", "P-054", "build + suite tests", "npm run build")).toBe("qa P-054: build + suite tests");
+    expect(label("pm", null, "  ", "grep -r x .")).toBe("pm: grep");
+    expect(label("qa", "P-054", "qa P-054: build + suite tests", "x")).toBe("qa P-054: build + suite tests");
+    expect(label("developer", "P-056", "dev P-056: build and test", "x")).toBe("developer P-056: build and test");
+    expect(label("pm", "P-002", "pm: triage", "x")).toBe("pm P-002: triage");
+    expect(label("pm", null, "Note: keep this", "x")).toBe("pm: Note: keep this");
   });
 });
 
@@ -115,6 +149,11 @@ group("liveRuns", () => {
     expect(runs[0].minutes).toBeCloseTo(2);
   });
 
+  it("carries the last event's label, null without one (P-056 AC4)", () => {
+    expect(liveRuns([ev({ ts: at(1), label: "developer P-001: vitest a.test.ts" })], [], NOW)[0].label).toBe("developer P-001: vitest a.test.ts");
+    expect(liveRuns([ev({ ts: at(1) })], [], NOW)[0].label).toBe(null);
+  });
+
   it("drops a run that stopped, and shows it again once it resumes", () => {
     const acts = [ev({ ts: at(10) })];
     expect(liveRuns(acts, [led("report", 5)], NOW)).toEqual([]);
@@ -123,6 +162,12 @@ group("liveRuns", () => {
     expect(resumed).toHaveLength(1);
     expect(resumed[0].tokens).toBe(null);
     expect(resumed[0].task).toBe(null);
+  });
+
+  it("counts a resumed run's transcript snapshots once", () => {
+    const runs = liveRuns([ev({ ts: at(2) })], [led("usage", 40, { tokens_in: 100, tokens_out: 20, source: "transcript" }),
+      led("usage", 20, { tokens_in: 300, tokens_out: 50, source: "transcript" })], NOW);
+    expect(runs[0].tokens).toBe(350);
   });
 
   it("forgets runs quiet for over 24 hours", () => {
@@ -135,6 +180,23 @@ group("liveRuns", () => {
     expect(liveRuns(acts, [], NOW)[0].idle).toBe(false);
     expect(liveRuns(acts, [], NOW, 5)[0].idle).toBe(true);
     expect(liveRuns([ev({ ts: at(21) })], [], NOW)[0].idle).toBe(true);
+  });
+
+  it("drops an idle run whose plan or item is closed, keeps one on an open plan (BUG-034)", () => {
+    const closed = (ref: string) => ref === "P-009" || ref === "BUG-003";
+    expect(liveRuns([ev({ ts: at(30), ref: "P-009" })], [], NOW, 20, closed)).toEqual([]);
+    expect(liveRuns([ev({ ts: at(30), ref: "BUG-003" })], [], NOW, 20, closed)).toEqual([]);
+    const open = liveRuns([ev({ ts: at(30), ref: "P-001" })], [], NOW, 20, closed);
+    expect(open).toHaveLength(1);
+    expect(open[0]).toMatchObject({ ref: "P-001", idle: true });
+    expect(liveRuns([ev({ ts: at(30), ref: null })], [], NOW, 20, closed)).toHaveLength(1);
+  });
+
+  it("drops a run an end-run names after its last activity, and shows it again once it acts", () => {
+    const end = led("end-run", 5, { run: "director:d1", role: "director", ref: null, ended: "developer:a1" });
+    expect(liveRuns([ev({ ts: at(30) })], [end], NOW)).toEqual([]);
+    expect(liveRuns([ev({ ts: at(30) }), ev({ ts: at(1) })], [end], NOW)).toHaveLength(1);
+    expect(liveRuns([ev({ ts: at(30), run: "qa:b" })], [end], NOW)).toHaveLength(1);
   });
 
   it("lists the most recent run first", () => {

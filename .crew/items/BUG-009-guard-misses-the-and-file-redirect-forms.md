@@ -2,13 +2,14 @@
 id: BUG-009
 type: bug
 title: Guard misses the >| and >&FILE redirect forms
-status: triaged
+status: done
 severity: S3
 priority: P2
 goal: G-001
 plan: P-019
 created: 2026-10-24
-closed:
+closed: 2026-10-26
+completed: 2026-10-26
 ---
 
 # BUG-009: Guard misses the >| and >&FILE redirect forms
@@ -42,3 +43,5 @@ A crew subagent can write a hand-over outside the repo, or overwrite the policy,
 ## Notes
 The fix needs care: `>&N` (a digit) and `>&-` are fd duplication or closing, not files, and must stay allowed (`ls >&2` and `2>&1` pass today, correctly). The `>|` case also needs `segments()` not to split on that `|`.
 - 2026-10-24: status new → triaged — priority P2, severity S3
+- 2026-10-26: DONE: fixed by P-019 (152650b). targets.test.ts parses '>| d >& e' as write targets while '2>&1 >&- >&2' are not; guard.test.ts 'guard_shell_forms: >| and >&FILE ... (BUG-009, BUG-010)' denies 'echo hi >| ~/x', 'echo hi >& ~/x' and both forms on .crew/policy.yaml. Still on main after P-051. No remaining work.
+- 2026-10-26: status triaged → done — DONE per Architect review: fixed by P-019 (152650b).

@@ -7,7 +7,7 @@
 //   skills/hub/references/commands.md — the command reference, rendered from the command registrations
 // `node build.mjs` writes them; the freshness test builds into a temp dir and compares.
 import { build } from "esbuild";
-import { chmodSync, copyFileSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { chmodSync, copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -25,7 +25,7 @@ const SKILLS = new URL("../../plugins/crew/skills/", import.meta.url).pathname;
 export const TOOLS = [
   ["git-setup", "setup_git"], ["git-setup", "check_secrets"],
   ["guidelines", "compose_rules"], ["guidelines", "check_structure"], ["guidelines", "format_on_edit"], ["guidelines", "track_plan_draft"],
-  ["design", "check_design"], ["design", "wada"], ["design", "studio"],
+  ["design", "check_design"], ["design", "wada"], ["design", "studio"], ["design", "layout_sweep"],
   ["research", "verify_evidence"], ["global-setup", "install_global"],
 ];
 export const toolPath = (skill, name) => join(SKILLS, skill, "scripts", `${name}.mjs`);
@@ -53,9 +53,14 @@ async function bundleNode(entry, outfile) {
 export const REFERENCE = new URL("../../plugins/crew/skills/hub/references/commands.md", import.meta.url).pathname;
 /** Bundle reference.ts to a temp file, import it and write the command reference it renders. */
 export async function bundleReference(outfile = REFERENCE) {
-  const mod = await bundleNode("src/hub/reference.ts", join(mkdtempSync(join(tmpdir(), "hub-ref-")), "reference.mjs"));
-  const { commandReference } = await import(pathToFileURL(mod).href);
-  writeFileSync(outfile, commandReference());
+  const dir = mkdtempSync(join(tmpdir(), "hub-ref-"));
+  try {
+    const mod = await bundleNode("src/hub/reference.ts", join(dir, "reference.mjs"));
+    const { commandReference } = await import(pathToFileURL(mod).href);
+    writeFileSync(outfile, commandReference());
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
   return outfile;
 }
 
@@ -69,11 +74,12 @@ async function bundlePage(page, outfile) {
   try {
     await viteBuild({ configFile: new URL("ui/vite.config.ts", import.meta.url).pathname, mode: "production",
       build: { outDir, rollupOptions: { input: new URL(`ui/${page}`, import.meta.url).pathname } } });
+    mkdirSync(join(outfile, ".."), { recursive: true });
+    copyFileSync(join(outDir, page), outfile);
   } finally {
     if (env === undefined) delete process.env.NODE_ENV; else process.env.NODE_ENV = env;
+    rmSync(outDir, { recursive: true, force: true });
   }
-  mkdirSync(join(outfile, ".."), { recursive: true });
-  copyFileSync(join(outDir, page), outfile);
   return outfile;
 }
 

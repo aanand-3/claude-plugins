@@ -41,17 +41,24 @@ migrate --gather                              bring hub documents other checkout
 
 ```text
 new-item feat|bug|chore|spike TITLE (--from DRAFT | --why TEXT) [--goal] [--priority] [--severity]
+new-item … --origin P-###|ID                       record where the item was found (else the caller's plan worktree or claim)
 triage ID [--priority P1] [--severity S2] [--goal G-001] [--approved-by NAME]
 triage ID --reject wontfix|duplicate --note TXT
+overlaps ID [--json]                          similar open items and plans in flight whose touches cover the item's paths (PM, at triage)
+regoal ID G-###|none --note TXT                  move an item or plan (with its items) to another goal, or off it (PM)
 ```
 
 | Command | MCP tool |
 |---|---|
 | `new-item` | `new_item` |
 | `triage` | `triage` |
+| `overlaps` | `overlaps` |
+| `regoal` | `regoal` |
 
 - `new_item`: Capture a backlog item (`crew.mjs new-item`). Give exactly one of `from` (a draft file with the item template's sections) or `why` (one-paragraph summary). Priority or severity at intake triage it if the triage gate passes.
 - `triage`: Triage a new item (`crew.mjs triage`): set priority/severity/goal, or reject it with a note.
+- `overlaps`: Overlap candidates for an item (`crew.mjs overlaps`), read-only: open items with similar titles and plans in flight whose touches cover a path the item names; `architect` is set when the hub flags a technical question.
+- `regoal`: Move an item, or a plan with all its items, to another goal or off any (`crew.mjs regoal`, the PM's): `goal` is G-### or `none`, `note` says why. Refused for closed work, done or dropped goals, and an item in an open plan.
 
 ## work/workflow
 
@@ -101,6 +108,7 @@ watch [--ref ID] [--limit 20]                 the live feed (tool calls and ledg
 
 ```text
 run [--check] [--json]                        run the team unattended: the loop, and whether it may go on (exit 1: stop)
+run --until-done [--max-passes N] [--command CMD]  the local runner: preflight, then one pass at a time until it stops (default 20 passes; 0 done, 1 no progress or limit, 2 preflight)
 ```
 
 | Command | MCP tool |
@@ -158,13 +166,16 @@ checkpoint --workflow kickoff|onboard --step S [--skip] [--note] · resume --wor
 
 ```text
 review P-### --approve | --changes TXT        code review of a plan in review (never by its implementer)
+review P-### --design --approve | --changes TXT   design review of a UI plan in review (design.ui_paths)
 ```
 
 | Command | MCP tool |
 |---|---|
 | `review` | `review` |
+| — | `design_review` |
 
 - `review`: Code review of a plan in review (`crew.mjs review`): approve, or request changes, which sends it back to the developer. Never by the plan's implementer; under the lifecycle preset the Architect's, and done needs an approval of the current code.
+- `design_review`: Design review of a UI plan in review (`crew.mjs review --design`): approve, or request changes, which sends it back to the developer. A UI plan's touches overlap design.ui_paths; never by its implementer; under the lifecycle preset the designer's, and accepting it needs an approval of the current code.
 
 ## work/release
 
@@ -183,7 +194,7 @@ refresh-bin [--check]                         copy the policy's release.refresh_
 ## work/suite
 
 ```text
-suite [--ref P-###]                           run hub.full_suite under a slot shared by every worktree (Release)
+suite [--ref P-###]                           run hub.full_suite under a slot shared by every worktree, in P-###'s worktree (Release)
 suites [--limit 20] [--json]                  recorded full-suite runs, newest first: queue wait and duration
 ```
 
@@ -192,7 +203,17 @@ suites [--limit 20] [--json]                  recorded full-suite runs, newest f
 | `suite` | — |
 | `suites` | `suites` |
 
-- `suites`: Recorded full-suite runs (`crew.mjs suites`), newest first: ts, ref, run, worktree, slot, wait_ms, run_ms, exit.
+- `suites`: Recorded full-suite runs (`crew.mjs suites`), newest first: ts, ref, run, worktree, sha, branch, slot, wait_ms, run_ms, exit.
+
+## work/land
+
+```text
+land [P-###]                                  squash-merge accepted plans in merge order: update, rebuild, full suite, merge; a failure goes back to the developer (Release)
+```
+
+| Command | MCP tool |
+|---|---|
+| `land` | — |
 
 ## memory/context
 
@@ -264,13 +285,16 @@ dispatch [--json]                             who works on what next: one {role,
 
 ```text
 pause [--reason TXT] · resume --team [--note TXT]     stop / restart staffing and starts (executive or director)
+end-run RUN [--note TXT]                            mark a stopped agent's run ended (executive or director)
 ```
 
 | Command | MCP tool |
 |---|---|
 | `pause` | `pause` |
+| `end-run` | `end_run` |
 
 - `pause`: Pause the team (`crew.mjs pause`), or resume it with resume: true: while paused, staff and start refuse. The executive's or the Director's call.
+- `end_run`: Mark a stopped or crashed agent's run ended (`crew.mjs end-run`): it stops being live and gives no dispatch entry until it acts again. The executive's or the Director's call.
 
 ## team/agents
 
@@ -286,6 +310,7 @@ agents [--check]                              render the role agents (.claude/ag
 
 ```text
 ask [ID] --to ROLE TEXT [--fyi] · escalate [ID] TEXT · answer Q-… TEXT [--decision [--scope GLOBS]] [--approved-by NAME]
+ask/escalate … [--options "A; B"]            the answers to choose from (split on ';'), shown by questions and inbox
 questions [--to ROLE] [--ref ID] [--all] [--json]       questions between roles; an open one blocks only its document
 ```
 
@@ -300,6 +325,18 @@ questions [--to ROLE] [--ref ID] [--all] [--json]       questions between roles;
 - `escalate`: Escalate to the executive (`crew.mjs escalate`): reserved decisions, a goal at risk, anything only a human can settle. Blocks the document until a human answers.
 - `answer`: Answer a question addressed to your role (`crew.mjs answer`); decision: true also records it as a decision entry. Escalations can't be answered here — only a human, on the CLI.
 - `questions`: Open questions between roles (`crew.mjs questions --json`).
+
+## team/inbox
+
+```text
+inbox [--json]                                what waits on the human: goals to approve, escalations, human-gated steps
+```
+
+| Command | MCP tool |
+|---|---|
+| `inbox` | `inbox` |
+
+- `inbox`: What waits on the human (`crew.mjs inbox --json`): goals to approve, escalations and plan steps the policy gates to a human, each with its question, options, what it holds and the command a human runs. Read-only.
 
 ## views/export
 
@@ -343,6 +380,18 @@ design show [--json] · design wait [--timeout 1800] · design done ID|all
 | `check` | `check` |
 
 - `check`: Validate .crew/ (`crew.mjs check`): ERROR and HINT lines; an error result means problems were found.
+
+## views/doctor
+
+```text
+doctor [--json]                               is this project ready for the loop: OK/WARN/FAIL per check, with the fix
+```
+
+| Command | MCP tool |
+|---|---|
+| `doctor` | `doctor` |
+
+- `doctor`: Whether this project is ready for the autonomous loop (`doctor --json`): each check's id, level (ok, warn, fail), detail and fix; an error result means a check failed.
 
 ## views/reports
 

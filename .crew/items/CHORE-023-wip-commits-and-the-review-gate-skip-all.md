@@ -2,12 +2,13 @@
 id: CHORE-023
 type: chore
 title: WIP commits and the review gate skip all of .crew/, including setup files
-status: triaged
+status: done
 priority: P2
 goal: G-007
 plan: P-046
 created: 2026-10-25
-closed:
+closed: 2026-10-26
+completed: 2026-10-26
 ---
 
 # CHORE-023: WIP commits and the review gate skip all of .crew/, including setup files
@@ -20,3 +21,4 @@ Found re-reviewing P-029: git.codeChanges (P-028) drops every .crew/ path, so a 
 
 ## Notes
 - 2026-10-25: status new → triaged — priority P2
+- 2026-10-26: status triaged → done — delivered by P-046

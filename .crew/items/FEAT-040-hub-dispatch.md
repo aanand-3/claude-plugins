@@ -2,12 +2,13 @@
 id: FEAT-040
 type: feat
 title: Hub dispatch
-status: triaged
+status: done
 priority: P1
 goal: G-007
 plan: P-031
 created: 2026-10-25
-closed:
+closed: 2026-10-26
+completed: 2026-10-26
 ---
 
 # FEAT-040: Hub dispatch
@@ -24,3 +25,4 @@ Slice of G-007 (Autonomous parallel delivery): Hub dispatch — `dispatch` route
 
 ## Notes
 - 2026-10-25: triaged from G-007 breakdown
+- 2026-10-26: status triaged → done — delivered by P-031

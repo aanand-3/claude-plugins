@@ -16,6 +16,7 @@ import { goalQueue } from "../../core/work/queries.js";
 import { byKey } from "../../core/text.js";
 import { setFocus } from "../work/planning.js";
 import { budgetProblems } from "../work/workflow.js";
+import { MAX_PASSES, PASS_COMMAND } from "./runner.js";
 
 // -- notify
 /** Tell the humans: run the policy's `notify.command` with the event as JSON on stdin, after the command's writes succeed.
@@ -88,8 +89,6 @@ function noGoalLeft(goals: Doc[]): string {
     : `no approved goal: the executive approves one (\`move G-### active --approved-by <name>\`)${tail}`;
 }
 
-const LOOP = `while node .crew/bin/crew.mjs run --check; do claude -p "/crew:team continue" || break; done`;
-
 export function run(store: Store, check = false, json = false): number {
   store.require();
   const s = runState(store);
@@ -101,9 +100,9 @@ export function run(store: Store, check = false, json = false): number {
     for (const h of s.held) store.say(`HELD  ${h}: waiting for the executive`);
   }
   else {
-    store.say("Run the team unattended (from the project root): each pass hands \"continue\" to the Director; the loop stops");
-    store.say("on an escalation that holds everything, a pause, an exhausted budget or no approved goal left (`run --check` exits 1).");
-    store.say(`  ${LOOP}`);
+    store.say("Run the team unattended, from the project root in your own terminal:");
+    store.say("  node .crew/bin/crew.mjs run --until-done");
+    store.say(`It runs a preflight, then passes of \`${PASS_COMMAND}\` until \`run --check\` says stop, dispatch is empty, 2 passes make no progress or --max-passes (${MAX_PASSES}) is reached; --command CMD replaces the pass command.`);
     store.say("Scheduled instead (cron, a CI schedule): `node .crew/bin/crew.mjs run --check && claude -p \"/crew:team continue\"`.");
     store.say(s.stop ? `Now: stopped — ${s.reasons.join("; ")}` : "Now: the team can continue.");
   }

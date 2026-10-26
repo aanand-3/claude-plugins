@@ -5,7 +5,7 @@ import { FilterBar, useFilters } from "../components/FilterBar";
 import { Empty, StatusChip } from "../components/primitives";
 import { docsOf, type GraphDoc, matches, useData } from "../data";
 
-const PLAN_COLUMNS = ["draft", "ready", "in-progress", "blocked", "in-review", "done"];
+const PLAN_COLUMNS = ["draft", "ready", "in-progress", "blocked", "in-review", "accepted", "done"];
 const ITEM_COLUMNS = ["new", "triaged", "planned", "in-progress", "done"];
 const DONE_SHOWN = 8;
 

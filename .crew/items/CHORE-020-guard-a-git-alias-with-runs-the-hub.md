@@ -2,12 +2,13 @@
 id: CHORE-020
 type: chore
 title: Guard: a git alias with ! runs the hub with no identity
-status: triaged
+status: done
 priority: P2
 goal: G-007
 plan: P-042
 created: 2026-10-25
-closed:
+closed: 2026-10-26
+completed: 2026-10-26
 ---
 
 # CHORE-020: Guard: a git alias with ! runs the hub with no identity
@@ -20,3 +21,4 @@ Split from CHORE-014 item 1 (P-018's architect review): an agent can run the hub
 
 ## Notes
 - 2026-10-25: status new → triaged — priority P2
+- 2026-10-26: status triaged → done — delivered by P-042

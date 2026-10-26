@@ -1,10 +1,11 @@
 /** Live activity: `activity --hook` (the PostToolUse hook: one feed event per tool call of a crew agent), `watch` (the feed
  * and the ledger, followed in the terminal) and the "Running now" lines `status` prints. See core/memory/activity.ts. */
 import { closeSync, existsSync, openSync, readFileSync, readSync, statSync } from "node:fs";
-import { activityPath, type ActivityEvent, appendActivity, describe, IDLE_MINUTES, type LiveRun, liveRuns, previousRef,
+import { activityPath, type ActivityEvent, appendActivity, describe, IDLE_MINUTES, label, type LiveRun, liveRuns, previousRef,
   readActivity, type ToolCall } from "../../core/memory/activity.js";
 import type { LedgerEvent } from "../../core/memory/ledger.js";
 import type { Store } from "../../core/store.js";
+import { CLOSED, ITEM_CLOSED } from "../../core/work/model.js";
 import { detail } from "../memory/ledger.js";
 import { agentRole } from "./guard.js";
 
@@ -22,14 +23,17 @@ export function activityHook(store: Store): number {
   const role = h && typeof h.agent_type === "string" ? agentRole(store.ws.root, h.agent_type) : null;
   if (!role) return 0;
   const run = `${role}:${h.agent_id ?? "unknown"}`, path = feedPath(store);
-  const d = describe(h, store.ws.root);
-  appendActivity(path, { ts: new Date().toISOString(), run, role, ref: d.ref ?? previousRef(path, run), tool: d.tool, target: d.target });
+  const d = describe(h, store.ws.root), ref = d.ref ?? previousRef(path, run), input = h.tool_input ?? {};
+  const bash = d.tool === "Bash" && typeof input.command === "string" ? { label: label(role, ref, input.description, input.command) } : {};
+  appendActivity(path, { ts: new Date().toISOString(), run, role, ref, tool: d.tool, target: d.target, ...bash });
   return 0;
 }
 
-/** The live runs, with the policy's idle limit. */
+/** The live runs, with the policy's idle limit; a run whose last activity is about a closed plan or item is over. */
 export function running(store: Store, now = Date.now()): LiveRun[] {
-  return liveRuns(readActivity(feedPath(store)), store.ledger.events(), now, store.policy.policy.limits.idle_minutes ?? IDLE_MINUTES);
+  const plans = store.plans(), items = store.items();
+  const closed = (ref: string) => CLOSED.has(plans.get(ref)?.get("status") ?? "") || ITEM_CLOSED.has(items.get(ref)?.get("status") ?? "");
+  return liveRuns(readActivity(feedPath(store)), store.ledger.events(), now, store.policy.policy.limits.idle_minutes ?? IDLE_MINUTES, closed);
 }
 
 export const ago = (minutes: number) => (minutes < 1 ? "just now" : minutes < 60 ? `${Math.floor(minutes)}m ago`
@@ -39,14 +43,14 @@ const action = (tool: string, target: string | null) => (target ? `${tool} ${tar
 /** `status` → "Running now": one line per live run. */
 export function runningLines(store: Store): string[] {
   return running(store).map((r) => `- ${r.idle ? "**idle** " : ""}${r.role} (${r.run}) — ${r.ref ?? "—"} · task ${r.task ?? "—"} · `
-    + `${action(r.tool, r.target)} ${ago(r.minutes)} · tokens ${r.tokens === null ? "—" : r.tokens}`);
+    + `${r.label ?? action(r.tool, r.target)} ${ago(r.minutes)} · tokens ${r.tokens === null ? "—" : r.tokens}`);
 }
 
 // -- feed (watch and /api/activity?ref=)
 /** One feed entry: a tool call (`type` "tool", text = tool and target) or a ledger event (its type and detail). */
 export interface FeedEntry { ts: string; type: string; run: string; ref: string | null; text: string }
 
-const fromActivity = (e: ActivityEvent): FeedEntry => ({ ts: e.ts, type: "tool", run: e.run, ref: e.ref, text: action(e.tool, e.target) });
+const fromActivity = (e: ActivityEvent): FeedEntry => ({ ts: e.ts, type: "tool", run: e.run, ref: e.ref, text: e.label ?? action(e.tool, e.target) });
 const fromLedger = (e: LedgerEvent): FeedEntry => ({ ts: e.ts, type: e.type, run: e.run, ref: e.ref, text: detail(e) });
 const byTime = (a: FeedEntry, b: FeedEntry) => Date.parse(a.ts) - Date.parse(b.ts);
 const forRef = (ref?: string) => (e: FeedEntry) => !ref || e.ref?.toUpperCase() === ref.toUpperCase();

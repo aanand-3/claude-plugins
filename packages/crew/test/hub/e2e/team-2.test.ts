@@ -53,10 +53,10 @@ it("kickoff runs in the ledger", () => {
   expect(tr(repo, "ledger").stdout).toContain("kickoff: guidelines done");
 });
 
-it("review sends changes back, and done needs an approval of the current code", () => {
+it("review sends changes back, and accepted needs an approval of the current code", () => {
   inReview(repo);
   repo.env.CREW_RUN = "pm";
-  let r = as(repo, "pm", "move", "P-001", "done");
+  let r = as(repo, "pm", "move", "P-001", "accepted");
   expect(r.returncode).not.toBe(0);
   expect(r.stderr).toContain("no code review yet"); // QA's evidence alone isn't enough under the preset
   repo.env.CREW_RUN = "dev";
@@ -84,13 +84,13 @@ it("review sends changes back, and done needs an approval of the current code", 
   repo.env.CREW_RUN = "pm";
   repo.write("src/auth/signup.py", "def signup(): return 1\n");
   repo.commit("feat(P-001): after the review");
-  r = as(repo, "pm", "move", "P-001", "done");
+  r = as(repo, "pm", "move", "P-001", "accepted");
   expect(r.returncode).not.toBe(0);
   expect(r.stderr).toContain("the code changed since the approving review");
   repo.env.CREW_RUN = "arch";
   expect(as(repo, "architect", "review", "P-001", "--approve").returncode).toBe(0);
   repo.env.CREW_RUN = "pm";
-  r = as(repo, "pm", "move", "P-001", "done");
+  r = as(repo, "pm", "move", "P-001", "accepted");
   expect(r.returncode, r.stderr).toBe(0);
   expect(events(repo, "--type", "review").map((e) => e.verdict)).toEqual(["changes", "approve", "approve"]);
 });
@@ -102,13 +102,13 @@ it("only QA checks count as evidence under the lifecycle", () => {
   expect(as(repo, "architect", "review", "P-001", "--approve").returncode).toBe(0);
   repo.env.CREW_RUN = "pm"; // a later check by another role replaces QA's as the latest — and doesn't count
   expect(as(repo, "pm", "checkpoint", "P-001", "--verify", "looked fine", "--result", "pass", "--ac", "all").returncode).toBe(0);
-  const r = as(repo, "pm", "move", "P-001", "done");
+  const r = as(repo, "pm", "move", "P-001", "accepted");
   expect(r.returncode).not.toBe(0);
   expect(r.stderr).toContain("checked by the pm role; only the qa role's checks count (evidence.role)");
   repo.env.CREW_RUN = "qa";
   expect(as(repo, "qa", "checkpoint", "P-001", "--run", "true", "--ac", "all").returncode).toBe(0);
   repo.env.CREW_RUN = "pm";
-  expect(as(repo, "pm", "move", "P-001", "done").returncode).toBe(0);
+  expect(as(repo, "pm", "move", "P-001", "accepted").returncode).toBe(0);
 });
 
 /** One check per enforced row: what each role may not do. */
@@ -160,6 +160,9 @@ it("merge order puts dependencies first", () => {
   expect(out.base).toBe("main");
   const branch = (pid: string): string => out.merge.find((p: Json) => p.id === pid).branch;
   repo.git("merge", "-q", "--no-ff", "-m", "merge P-001", branch("P-001"));
+  const done = tr(repo, "move", "P-001", "done"); // landed: the PM completes it
+  expect(done.returncode, done.stderr).toBe(0);
+  repo.commit("chore(hub): P-001 done");
   repo.env.CREW_RUN = "three";
   finish(repo, "P-002"); // depends on P-001, which is merged now
   out = JSON.parse(tr(repo, "merge-order", "--json").stdout);
@@ -178,10 +181,10 @@ it("a plan waits for its unmerged dependency", () => {
   repo.commit("chore(P-001): start");
   repo.git("switch", "-q", "main");
   repo.env.CREW_RUN = "two";
-  finish(repo, "P-002", "--force"); // done out of order, by hand
+  finish(repo, "P-002", "--force"); // accepted out of order, by hand
   const out = JSON.parse(tr(repo, "merge-order", "--json").stdout);
   expect(out.merge).toEqual([]);
-  expect(out.waiting).toEqual([{ id: "P-002", why: "depends on P-001, not merged yet" }]);
+  expect(out.waiting).toEqual([{ id: "P-002", why: "depends on P-001, not landed yet" }]);
   expect(tr(repo, "merge-order").stdout).toContain("WAIT P-002: depends on P-001");
 });
 
@@ -197,7 +200,10 @@ it("the runner stops on escalation, pause, budget and no approved goal left", ()
   r = tr(repo, "run", "--check"); // the goal queue focuses the approved goal
   expect(r.returncode).toBe(0);
   expect(r.stdout).toContain("FOCUS  — → G-001");
-  expect(tr(repo, "run").stdout).toContain("while node .crew/bin/crew.mjs run --check");
+  const printed = tr(repo, "run").stdout;
+  expect(printed).toContain("node .crew/bin/crew.mjs run --until-done");
+  for (const s of ["--max-passes", "--command"]) expect(printed).toContain(s);
+  expect(printed).not.toContain("while node");
   expect(as(repo, "director", "escalate", "G-001", "Ship to production?").returncode).toBe(0);
   r = tr(repo, "run", "--check");
   expect(r.returncode).toBe(1);
@@ -254,6 +260,23 @@ it("usage is captured from each agent's transcript, and budgets bite", () => {
   expect(tr(repo, "run", "--check").stdout).toContain("budget: project tokens: 213 used of 200");
 });
 
+it("usage of a resumed run counts its latest transcript once", () => {
+  lifecycle(repo);
+  repo.write(".crew/policy.yaml", LIFECYCLE + "budgets: { project: { max_tokens: 1 } }\n");
+  agent(repo, "crew-qa", "qa");
+  const more = { type: "assistant", message: { id: "m3", model: "claude-sonnet-5-5", usage: { input_tokens: 7, output_tokens: 20 } } };
+  const first = repo.write("t1.jsonl", TRANSCRIPT.map((t) => JSON.stringify(t)).join("\n") + "\n");
+  const second = repo.write("t2.jsonl", [...TRANSCRIPT, more].map((t) => JSON.stringify(t)).join("\n") + "\n");
+  for (const path of [first, second]) {
+    const payload = { hook_event_name: "SubagentStop", agent_type: "crew-qa", agent_id: "x9", agent_transcript_path: path };
+    const r = repo.run("node", [HUB_PATH, "usage", "--hook"], JSON.stringify(payload));
+    expect(r.returncode, r.stderr).toBe(0);
+  }
+  const usage = events(repo, "--type", "usage");
+  expect(usage.map((e) => [e.run, e.tokens_in, e.tokens_out])).toEqual([["qa:x9", 113, 100], ["qa:x9", 120, 120]]);
+  expect(tr(repo, "run", "--check").stdout).toContain("project tokens: 240 used of 1"); // not 213 + 240
+});
+
 it("the fast lane skips the architect but not QA", () => {
   lifecycle(repo);
   repo.write(".crew/policy.yaml", LIFECYCLE + "fast_lane: { types: [CHORE, BUG], max_tasks: 3 }\n");
@@ -275,11 +298,11 @@ it("the fast lane skips the architect but not QA", () => {
   repo.env.CREW_RUN = "arch";
   expect(as(repo, "architect", "review", "P-001", "--approve").returncode).toBe(0);
   repo.env.CREW_RUN = "pm";
-  r = as(repo, "pm", "move", "P-001", "done");
+  r = as(repo, "pm", "move", "P-001", "accepted");
   expect(r.returncode).not.toBe(0);
   expect(r.stderr).toContain("AC1 has no evidence"); // QA still verifies
   repo.env.CREW_RUN = "qa";
   as(repo, "qa", "checkpoint", "P-001", "--run", "true", "--ac", "all");
   repo.env.CREW_RUN = "pm";
-  expect(as(repo, "pm", "move", "P-001", "done").returncode).toBe(0);
+  expect(as(repo, "pm", "move", "P-001", "accepted").returncode).toBe(0);
 });

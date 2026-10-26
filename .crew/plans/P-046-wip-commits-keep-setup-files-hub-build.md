@@ -86,6 +86,7 @@ Latest log:
 - 2026-10-25: status ready → in-progress — branch plan/P-046-wip-commits-keep-setup-files-hub-build
 - 2026-10-25: status in-progress → in-review
 - 2026-10-25: status in-review → done
+- 2026-10-26: merged to main as 4c9a0de; full suite green (56 files, 419 tests)
 
 ## Outcome
 `git.codeChanges` now excludes only the hub's documents (`NOT_CODE` in git.ts: `STATE_RE` plus `drafts/` and `view/`), so setup files under `.crew/` (config.yaml, policy.yaml, templates/, bin/) are WIP-committed and seen by the review gate. build.mjs removes its `hub-ui-*` / `hub-ref-*` temp dirs in `finally`. Follow-up: developer.md line 20 ("`.crew/` and secret files stay out") should say "the hub's documents under `.crew/`" once P-032 lands.

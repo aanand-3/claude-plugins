@@ -39,3 +39,4 @@ nothing important lives only in chat.
 
 ## Progress log
 - 2026-10-23: status proposed → active — the hub is built on branches; landing it is the work now
+- 2026-10-26: PM grooming of Architect review: 13 items closed done (FEAT-001, 025, 026, 023; BUG-018, 006, 022, 007, 009, 010, 019, 001; CHORE-010), 2 rejected as duplicate (FEAT-033, FEAT-032), 2 intended to move off the goal (SPIKE-001, FEAT-047; triage cannot clear a goal, links remain), FEAT-002 rescoped. Remaining: FEAT-002 (add SessionStart context and Stop/PreCompact checkpoint --auto hooks to .claude/settings.json, human's choice), then a push and green CI for criterion 1.

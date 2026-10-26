@@ -4,7 +4,7 @@ import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { beforeEach, expect, it } from "vitest";
 import { Repo } from "../../helpers/repo.js";
-import { PLAN_DRAFT } from "./fixtures.js";
+import { BUG_DRAFT, PLAN_DRAFT } from "./fixtures.js";
 import { init, item, newBug, newPlan, planFile, read, tr } from "./helpers.js";
 import { events, readyPlan } from "./sections.js";
 
@@ -67,7 +67,8 @@ it("AC3: hub commands from inside the sparse worktree read and write the main ch
   expect(JSON.stringify(events(repo, "--type", "checkpoint").at(-1))).toContain("SPARSE-CHECKPOINT");
   expect(tr(wt, "log", "P-001", "SPARSE-LOG-NOTE").returncode).toBe(0);
   expect(read(planFile(repo, "P-001"))).toContain("SPARSE-LOG-NOTE");
-  expect(tr(wt, "new-item", "bug", "Timeout", "--why", "slow login").returncode).toBe(0);
+  repo.write(".crew/drafts/bug.md", BUG_DRAFT); // the main checkout's draft, consumed by the capture
+  expect(tr(wt, "new-item", "bug", "Timeout", "--from", join(repo.path, ".crew/drafts/bug.md")).returncode).toBe(0);
   expect(item(repo, "BUG-001")).toContain("Timeout");
   expectSparse(wt);
   expect(porcelain(wt)).toBe("");

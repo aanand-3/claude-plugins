@@ -2,13 +2,14 @@
 id: BUG-030
 type: bug
 title: Architect's next flags overlaps on hub.shared paths
-status: triaged
+status: done
 severity: S3
 priority: P2
 goal: G-007
 plan: P-044
 created: 2026-10-25
-closed:
+closed: 2026-10-26
+completed: 2026-10-26
 ---
 
 # BUG-030: Architect's next flags overlaps on hub.shared paths
@@ -34,3 +35,4 @@ roles.ts:93 calls overlapping(p, v.plans) without sharedGlobs(v.store); next rep
 
 ## Notes
 - 2026-10-25: status new → triaged — priority P2, severity S3
+- 2026-10-26: status triaged → done — delivered by P-044

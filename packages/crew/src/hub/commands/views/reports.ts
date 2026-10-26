@@ -24,7 +24,7 @@ export function status(store: Store, write: boolean): void {
   const live = runningLines(store);
   if (live.length) lines.push("## Running now", "", ...live, "");
   const claims = store.ledger.claims();
-  lines.push("## Now", "", ...planTable(byStatus(plans, ["in-progress", "in-review"]), plans, items, claims), "");
+  lines.push("## Now", "", ...planTable(byStatus(plans, ["in-progress", "in-review", "accepted"]), plans, items, claims), "");
   lines.push("## Blocked", "", ...blocked(plans), "");
   const asks = openQuestions(store.ledger.events());
   if (asks.length) {

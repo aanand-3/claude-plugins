@@ -1,6 +1,6 @@
 /** The hub's end-to-end helpers, ported name for name from tests/crew/test_hub.py: each drives the shipped
  * dist/crew.mjs against a throwaway repo (test/helpers/repo.ts, which also keeps the hub run's CREW_* out — BUG-004). */
-import { readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect } from "vitest";
 import { HUB, type Repo, type Result } from "../../helpers/repo.js";
@@ -8,10 +8,15 @@ import { BUG_DRAFT, GOAL_DRAFT, IDEA_DRAFT, PLAN_DRAFT } from "./fixtures.js";
 
 export const tr = (repo: Repo, ...args: string[]): Result => repo.node(HUB, args);
 
-/** A hub with no human gates by default (the gates have their own tests); the idea's decision stays reserved. */
-export function init(repo: Repo, { commit = false, mode = "ai-native" }: { commit?: boolean; mode?: string } = {}): void {
+/** A hub with no human gates by default (the gates have their own tests); the idea's decision stays reserved. `init`'s
+ * default config and policy are removed again unless `defaults` (so suites keep branch-per-plan); a file the test wrote
+ * before `init` is never removed. */
+export function init(repo: Repo, { commit = false, mode = "ai-native", defaults = false }:
+  { commit?: boolean; mode?: string; defaults?: boolean } = {}): void {
   if (commit) repo.git("commit", "-q", "--allow-empty", "-m", "init");
+  const created = [".crew/config.yaml", ".crew/policy.yaml"].filter((f) => !existsSync(join(repo.path, f)));
   expect(tr(repo, "init").returncode).toBe(0);
+  if (!defaults) for (const f of created) rmSync(join(repo.path, f), { force: true });
   if (mode) {
     repo.write(".crew/policy.yaml", `mode: ${mode}\n`);
     if (commit) repo.commit("chore(hub): policy");
@@ -51,19 +56,22 @@ export const goalFile = (repo: Repo, id: string) => docIn(repo, ".crew/goals", i
 export const read = (path: string) => readFileSync(path, "utf8");
 export const write = (path: string, text: string) => writeFileSync(path, text);
 
-/** Tick all tasks, write the outcome and walk the plan to review; a separate QA run verifies it and moves it to done. */
+/** Tick all tasks, write the outcome and walk the plan to review; a separate QA run verifies it and accepts it, then it
+ * moves to done (its branch has no commits of its own, so it counts as landed). */
 export function finish(repo: Repo, id: string): void {
   const p = planFile(repo, id);
   write(p, read(p).replaceAll("- [ ] T", "- [x] T").trimEnd() + "\nShipped.\nLearnings: none\n");
   expect(tr(repo, "move", id, "in-review").returncode).toBe(0);
   qaDone(repo, id);
+  const r = tr(repo, "move", id, "done");
+  expect(r.returncode, r.stderr).toBe(0);
 }
 
 export function qaDone(repo: Repo, id: string, check = "true"): void {
   const saved = { CREW_RUN: repo.env.CREW_RUN, CREW_ACTOR: repo.env.CREW_ACTOR };
   Object.assign(repo.env, { CREW_RUN: "qa-run", CREW_ACTOR: "qa" });
   expect(tr(repo, "checkpoint", id, "--run", check, "--ac", "all").returncode).toBe(0);
-  const r = tr(repo, "move", id, "done");
+  const r = tr(repo, "move", id, "accepted");
   expect(r.returncode, r.stderr).toBe(0);
   for (const [k, v] of Object.entries(saved)) {
     if (v === undefined) delete repo.env[k]; else repo.env[k] = v;

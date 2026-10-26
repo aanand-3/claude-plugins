@@ -25,8 +25,19 @@ function inventory(help: string = USAGE) {
   return { cli, usage: help.split("\n").filter((l) => l.trim()), tools };
 }
 
+const LISTS = ["str", "int", "flag", "required"] as const;
+
+/** `pos` (and `rest`, `choices`) stay equal; each option list from before only has to be in the current one (options may be added). */
 it("the CLI commands and their options are as before the split (AC2)", () => {
-  expect(pick(inventory().cli, BEFORE.cli)).toEqual(BEFORE.cli);
+  const now = inventory().cli as Record<string, Record<string, unknown>>;
+  for (const [name, before] of Object.entries(BEFORE.cli as Record<string, Record<string, unknown>>)) {
+    const cur = now[name];
+    expect(cur, name).toBeDefined();
+    for (const k of KEYS) {
+      if (!(LISTS as readonly string[]).includes(k)) expect(cur[k], `${name}.${k}`).toEqual(before[k]);
+      else if (before[k] !== undefined) expect(cur[k], `${name}.${k}`).toEqual(expect.arrayContaining(before[k] as string[]));
+    }
+  }
 });
 
 it("every help line from before the split is in the help text (AC2)", () => {
@@ -34,8 +45,12 @@ it("every help line from before the split is in the help text (AC2)", () => {
   expect((BEFORE.usage as string[]).filter((l) => !lines.has(l))).toEqual([]);
 });
 
+/** An enum from before only has to be in the current one (values may be added, like the ledger's event types). */
+const enums = (x: unknown): unknown => Array.isArray(x) ? x.map(enums) : x && typeof x === "object"
+  ? Object.fromEntries(Object.entries(x).map(([k, v]) => [k, k === "enum" ? expect.arrayContaining(v as string[]) : enums(v)])) : x;
+
 it("tools/list returns the same tools, descriptions and input schemas as before the split (AC3)", () => {
-  expect(pick(inventory().tools, BEFORE.tools)).toEqual(BEFORE.tools);
+  expect(pick(inventory().tools, BEFORE.tools)).toEqual(enums(BEFORE.tools));
 });
 
 const HUB = new URL("../../src/hub/", import.meta.url);

@@ -3,14 +3,15 @@ id: P-035
 title: Human inbox
 goal: G-007
 items: FEAT-043
-touches: packages/crew/src/hub/commands/team/inbox.ts, packages/crew/src/hub/commands/team/inbox.reg.ts, packages/crew/src/hub/commands/team/questions.ts, packages/crew/src/hub/commands/team/questions.reg.ts, packages/crew/src/hub/commands/team/guard.ts, packages/crew/src/hub/commands/index.ts, packages/crew/src/hub/cli.ts, packages/crew/src/hub/mcp.ts, packages/crew/src/hub/server.ts, packages/crew/ui/src/views/Inbox.tsx, packages/crew/ui/src/views/index.ts, packages/crew/test/hub/e2e/inbox.test.ts, packages/crew/test/hub/e2e/guard.test.ts, plugins/crew/skills/team/SKILL.md, plugins/crew/skills/hub/references/model.md
+touches: packages/crew/src/hub/commands/team/inbox.ts, packages/crew/src/hub/commands/team/inbox.reg.ts, packages/crew/src/hub/commands/team/questions.ts, packages/crew/src/hub/commands/team/questions.reg.ts, packages/crew/src/hub/commands/team/guard.ts, packages/crew/src/hub/commands/index.ts, packages/crew/src/hub/cli.ts, packages/crew/src/hub/mcp.ts, packages/crew/src/hub/server.ts, packages/crew/ui/src/views/Inbox.tsx, packages/crew/ui/src/views/index.ts, packages/crew/test/hub/e2e/inbox.test.ts, packages/crew/test/hub/e2e/guard.test.ts, packages/crew/test/mcp.test.ts, plugins/crew/skills/team/SKILL.md, plugins/crew/skills/hub/references/model.md
 depends_on: P-027, P-031
-status: ready
+status: done
 branch: plan/P-035-human-inbox
 pr:
 created: 2026-10-25
-started:
-completed:
+started: 2026-10-26
+completed: 2026-10-26
+assignee: developer
 ---
 
 # P-035: Human inbox
@@ -33,9 +34,9 @@ Overlaps, for staffing only: P-037 on `guard.ts`, and P-030 on `questions.reg.ts
 - `inboxEntries(store)` in a new `commands/team/inbox.ts`, and `crew.mjs inbox [--json]` plus an MCP tool `inbox` (read-only, same JSON). Entries, oldest first within each kind:
   - **goal**: each `proposed` goal → `{ kind: "goal", ref: "G-###", question: "Approve G-###: <title>?", options: ["approve", "drop"], holds: "its plans and items wait until it is approved", how: "move G-### active --approved-by <you> · move G-### dropped --approved-by <you>" }`.
   - **escalation**: each open question that is an escalation or addressed to the executive → `{ kind: "escalation", ref: "Q-…", about: <ref or null>, question, options, holds, how: "answer Q-… \"<decision>\" --approved-by <you>" }`. `holds` comes from `escalationHolds`: "holds P-###" for a plan or item, otherwise "stops the team".
-  - **approval**: each plan in review whose `plan.done` the policy gates to a human (`approvalReason`) and that has nothing else missing (evidence complete, review approved) → `{ kind: "approval", ref: "P-###", question: "Complete P-###: <title>?", options: ["approve"], holds: "P-###", how: "move P-### done --approved-by <you>" }`.
+  - **approval**: each plan in review whose `plan.accepted` the policy gates to a human (`approvalReason`) and that has nothing else missing (evidence complete, review approved) → `{ kind: "approval", ref: "P-###", question: "Accept P-###: <title>?", options: ["approve"], holds: "P-###", how: "move P-### accepted --approved-by <you>" }`.
   - Text form: one block per entry (kind, ref, question, options, holds, the command). `Inbox empty — nothing waits on you.` when there are none.
-- **Options on questions:** `ask` and `escalate` take `--options "A; B"` (split on `;`, trimmed, empty dropped), stored as `options: string[]` on the `ask` event. The `Question` type, `questions`/`questions --json` and the inbox show them. Without `--options`, nothing changes.
+- **Options on questions:** `ask` and `escalate` take `--options "A; B"` (split on `;`, trimmed, empty dropped), stored as `options: string[]` on the `ask` event. The `Question` type, `questions`/`questions --json` and the inbox show them. Without `--options`, nothing changes. `--options` is CLI-only in this plan: the MCP `ask`/`escalate` schemas stay as recorded in `test/hub/registry-before.json`, which is frozen (K-2026-10-25).
 - **`ui` server:**
   - `GET /api/inbox` returns `{ entries }`.
   - Two new `ACTIONS`, through the page's token check like the others: `answer` `{ qid, text, approved_by }` → `answer(store, qid, text, { approvedBy })`, and `approve-goal` `{ id, approved_by }` → `move(store, id, "active", …, approvedBy)`. Both refuse an empty `approved_by` with the same message as the CLI ("a human answers it … --approved-by <name>").
@@ -65,7 +66,7 @@ Overlaps, for staffing only: P-037 on `guard.ts`, and P-030 on `questions.reg.ts
   - a proposed G-002 (with its approve/drop commands);
   - an escalation about P-001 with "holds P-001";
   - an escalation with no ref with "stops the team";
-  - under `mode: ai-assisted`, a plan in review with complete evidence and an approving review, as an `approval` for `done`.
+  - under `mode: ai-assisted`, a plan in review with complete evidence and an approving review, as an `approval` for `accepted`.
   `inbox --json` has the same entries with `kind`, `ref`, `question`, `options`, `holds` and `how`. In a repo with none of these it prints `Inbox empty`.
 - [ ] AC2 · `escalate P-001 "Ship it?" --options "yes, today; no"` stores `options: ["yes, today", "no"]`; `questions --json` and `inbox` show them; `ask P-001 --to pm "x"` without `--options` stores no `options` field.
 - [ ] AC3 · From a terminal with no role, `answer Q-… "yes, today" --approved-by Amit` answers the escalation. The entry leaves the inbox, `run --check` no longer holds P-001, and `move G-002 active --approved-by Amit` removes the goal entry.
@@ -85,7 +86,7 @@ Overlaps, for staffing only: P-037 on `guard.ts`, and P-030 on `questions.reg.ts
 
 ## Approach
 - **inbox.ts:** pure over the stores and ledger.
-  - Reuse `questions`/`openQuestions`/`escalationHolds` (questions.ts), `approvalReason` (core/team/policy.ts), and `evidence` (execution.ts) with `reviewProblems` (review.ts) for `plan.done`.
+  - Reuse `questions`/`openQuestions`/`escalationHolds` (questions.ts), `approvalReason` (core/team/policy.ts), and `evidence` (execution.ts) with `reviewProblems` (review.ts) for `plan.accepted`.
   - Mirror the "complete" test of the executive rule in roles.ts; don't import roles.ts internals.
 - **questions.ts:** `ask`/`escalate` take `options?: string[]` in their options object; `Question` gets `options: string[]` (`[]` when absent).
 - **Registration:**
@@ -102,13 +103,13 @@ Overlaps, for staffing only: P-037 on `guard.ts`, and P-030 on `questions.reg.ts
   - The guard cases go in `test/hub/e2e/guard.test.ts`.
 
 ## Tasks
-- [ ] T1: `--options` on ask/escalate; `Question.options` → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/inbox.test.ts -t options` (AC2)
-- [ ] T2: inbox.ts + `inbox` command and MCP tool → verify: `npx vitest run test/hub/e2e/inbox.test.ts -t "lists|answer|steer"` (AC1, AC3, AC7)
-- [ ] T3: guard rule → verify: `npx vitest run test/hub/e2e/guard.test.ts` (AC4)
-- [ ] T4: server `/api/inbox`, `answer` and `approve-goal` actions → verify: `npx vitest run test/hub/e2e/inbox.test.ts -t ui` (AC5)
-- [ ] T5: Inbox page → verify: `npm run build`, then the manual check in the Test plan (AC6)
-- [ ] T6: team/SKILL.md "Each run", model.md → verify: `grep -n "inbox" plugins/crew/skills/team/SKILL.md plugins/crew/skills/hub/references/model.md`; `npx vitest run test/plugin` (AC8)
-- [ ] T7: types, sizes, unchanged suites → verify: `npm run typecheck`; `wc -l` of the touched modules; `npx vitest run test/hub/e2e/team-2.test.ts test/hub/e2e/live-ui.test.ts test/view.test.ts` (AC9)
+- [x] T1: `--options` on ask/escalate; `Question.options` → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/inbox.test.ts -t options` (AC2)
+- [x] T2: inbox.ts + `inbox` command and MCP tool → verify: `npx vitest run test/hub/e2e/inbox.test.ts -t "lists|answer|steer"` (AC1, AC3, AC7)
+- [x] T3: guard rule → verify: `npx vitest run test/hub/e2e/guard.test.ts` (AC4)
+- [x] T4: server `/api/inbox`, `answer` and `approve-goal` actions → verify: `npx vitest run test/hub/e2e/inbox.test.ts -t ui` (AC5)
+- [x] T5: Inbox page → verify: `npm run build`, then the manual check in the Test plan (AC6)
+- [x] T6: team/SKILL.md "Each run", model.md → verify: `grep -n "inbox" plugins/crew/skills/team/SKILL.md plugins/crew/skills/hub/references/model.md`; `npx vitest run test/plugin` (AC8)
+- [x] T7: types, sizes, unchanged suites → verify: `npm run typecheck`; `wc -l` of the touched modules; `npx vitest run test/hub/e2e/team-2.test.ts test/hub/e2e/live-ui.test.ts test/view.test.ts` (AC9)
 
 ## Test plan
 **Targeted checks** (from `packages/crew/`; e2e suites drive the built `dist/crew.mjs`: `npm run build` first, then discard the generated output, which Release builds):
@@ -129,8 +130,42 @@ Overlaps, for staffing only: P-037 on `guard.ts`, and P-030 on `questions.reg.ts
 
 ## Handoff
 
+_Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
+
+- P-035: Human inbox [in-review] tasks 7/7 — claimed by Arpit Anand (developer:a6589ac899aeab61f)
+- last checkpoint 2026-10-26 05:50 at T5 (b3addb7) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-035-human-inbox/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/inbox.test.ts -t options ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-035-human-inbox checkout -- plugins; exit $r (AC 2)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-035-human-inbox/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/inbox.test.ts -t 'lists|answer|steer' ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-035-human-inbox checkout -- plugins; exit $r (AC 1,3,7)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-035-human-inbox/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/guard.test.ts ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-035-human-inbox checkout -- plugins; exit $r (AC 4)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-035-human-inbox/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/inbox.test.ts -t ui ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-035-human-inbox checkout -- plugins; exit $r (AC 5)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-035-human-inbox/packages/crew && npm run build >/dev/null 2>&1 && npm run typecheck >/dev/null 2>&1 ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-035-human-inbox checkout -- plugins; exit $r
+- ✓ grep -n inbox /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-035-human-inbox/plugins/crew/skills/team/SKILL.md /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-035-human-inbox/plugins/crew/skills/hub/references/model.md && cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-035-human-inbox/packages/crew && npx vitest run test/plugin (AC 8)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-035-human-inbox/packages/crew && npm run build >/dev/null 2>&1 && npm run typecheck >/dev/null 2>&1 && wc -l src/hub/commands/team/inbox.ts src/hub/commands/team/questions.ts src/hub/commands/team/guard.ts src/hub/server.ts ui/src/views/Inbox.tsx && npx vitest run test/hub/e2e/inbox.test.ts test/hub/e2e/guard.test.ts test/hub/e2e/team-2.test.ts test/hub/e2e/live-ui.test.ts test/view.test.ts test/hub/e2e/dispatch.test.ts test/hub/registry.test.ts test/mcp.test.ts test/plugin ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-035-human-inbox checkout -- plugins; exit $r (AC 1,2,3,4,5,7,9)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-035-human-inbox/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/inbox.test.ts test/hub/e2e/guard.test.ts ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-035-human-inbox checkout -- plugins; exit $r (AC 1,2,3,4,5,7)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-035-human-inbox/packages/crew && grep -n -i inbox ../../plugins/crew/skills/team/SKILL.md ../../plugins/crew/skills/hub/references/model.md && npx vitest run test/plugin (AC 8)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-035-human-inbox/packages/crew && npm run build >/dev/null 2>&1 && npm run typecheck >/dev/null 2>&1 && wc -l src/hub/commands/team/inbox.ts src/hub/commands/team/questions.ts src/hub/commands/team/guard.ts src/hub/server.ts ui/src/views/Inbox.tsx && npx vitest run test/hub/e2e/team-2.test.ts test/hub/e2e/live-ui.test.ts test/view.test.ts ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-035-human-inbox checkout -- plugins; exit $r (AC 9)
+- ✓ Built hub from the worktree, scratch sample project (scratchpad) with proposed G-003 and 3 escalations (one with --options), ui --no-open --port 8791. #/inbox lists goal and escalations; clicking option 'yes, today' filled the answer input; Answer posted and Q-8fdb8d vanished with no reload (window marker kept), questions --json shows answer by Tester; Approve moved G-003 to active (approved by Tester), entry vanished. Screenshots at 1280 and 375 px: no horizontal overflow (scrollWidth 375), long question wraps. Export HTML (served statically) Inbox shows the 'crew.mjs inbox / crew.mjs ui' hint, no console errors. (AC 6) (reported)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-035-human-inbox/packages/crew && npm run build >/dev/null 2>&1 && npm run typecheck >/dev/null 2>&1 && npx vitest run test/structure.test.ts test/hub/e2e/inbox.test.ts test/hub/e2e/live-ui.test.ts test/view.test.ts ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-035-human-inbox checkout -- plugins; exit $r (AC 5,6,9)
+- evidence: AC1 ✓, AC2 ✓, AC3 ✓, AC4 ✓, AC5 ✓ (self), AC6 ✓ (self), AC7 ✓, AC8 ✓, AC9 ✓ (self)
+
+Latest log:
+- 2026-10-26: status in-progress → in-review
+- 2026-10-26: status in-review → accepted
+- 2026-10-26: status accepted → in-progress — land: hub.full_suite failed (exit 1):      51|       expect(["hub/graph-types", "hub/core/work/model"], `${f.pathname… ·        |                                                                                            ^ ·      52|     } ·      53|   } · ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
 ## Progress log
 
 - 2026-10-25: status draft → ready
+- 2026-10-26: assigned to the developer role
+- 2026-10-26: status ready → in-progress — branch plan/P-035-human-inbox
+- 2026-10-26: status in-progress → in-review
+- 2026-10-26: status in-review → accepted
+- 2026-10-26: status accepted → in-progress — land: hub.full_suite failed (exit 1):      51|       expect(["hub/graph-types", "hub/core/work/model"], `${f.pathname… ·        |                                                                                            ^ ·      52|     } ·      53|   } · ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+- 2026-10-26: status in-progress → in-review
+- 2026-10-26: status in-review → accepted
+- 2026-10-26: landed on main as dc412c8
+- 2026-10-26: status accepted → done
 
 ## Outcome
+The hub has an inbox: `crew.mjs inbox [--json]`, an MCP `inbox` tool and an Inbox page in `crew.mjs ui` list proposed goals, open escalations and plans in review whose `accepted` step is human-gated. Humans answer from their terminal or the page (`/api/inbox`, `answer` and `approve-goal` actions that need a name). `ask`/`escalate` take `--options` on the CLI. The guard denies every tool call that reaches `/api/commands/`.
+Learnings: K-2026-10-26-adding-an-mcp-tool-or-changing-a-tools

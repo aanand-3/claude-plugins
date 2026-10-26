@@ -10,7 +10,7 @@ import { Card } from "./primitives";
 
 const MOVABLE = new Set<Kind>(["plan", "item", "goal", "idea"]);
 const CLI_ONLY: Record<string, string> = { "ready>in-progress": "start" }; // needs a branch: `crew.mjs start`
-const FORWARD = new Set(["ready", "in-review", "done", "active", "researching", "proposed", "decided"]); // the one primary action
+const FORWARD = new Set(["ready", "in-review", "accepted", "done", "active", "researching", "proposed", "decided"]); // the one primary action
 
 export interface Act { busy: boolean; result: ActionResult | null; run: (name: string, body: Record<string, unknown>) => Promise<void> }
 

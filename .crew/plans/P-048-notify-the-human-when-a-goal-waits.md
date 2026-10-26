@@ -5,12 +5,13 @@ goal: G-007
 items: FEAT-045
 touches: packages/crew/src/hub/commands/work/planning.ts, packages/crew/src/hub/core/team/policy.ts, packages/crew/test/hub/e2e/policy.test.ts, plugins/crew/skills/hub/references/model.md, plugins/crew/skills/team/SKILL.md
 depends_on:
-status: ready
+status: done
 branch: plan/P-048-notify-the-human-when-a-goal-waits
 pr:
 created: 2026-10-25
-started:
-completed:
+started: 2026-10-26
+completed: 2026-10-26
+assignee: developer
 ---
 
 # P-048: Notify the human when a goal waits for approval
@@ -45,9 +46,9 @@ FEAT-045 (G-007). A new goal is `proposed` (the goal template's status) and wait
 - Tests: a new `it("new-goal notifies goal-approval once per goal")` in test/hub/e2e/policy.test.ts, with team-helpers' `lifecycle`, `LIFECYCLE` and `as`, and helpers' `newGoal`, set up as team-2.test.ts's "notify runs the policy command once per event" does.
 
 ## Tasks
-- [ ] T1: the `goal-approval` kind and its emission in `newGoal` → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/policy.test.ts -t "goal-approval"` (AC1–AC4)
-- [ ] T2: docs → verify: `grep -n "goal-approval" ../../plugins/crew/skills/hub/references/model.md ../../plugins/crew/skills/team/SKILL.md` lists both (AC5); `npx vitest run test/plugin`
-- [ ] T3: types, sizes, the existing notify test → verify: `npm run typecheck`; `wc -l src/hub/commands/work/planning.ts src/hub/core/team/policy.ts` each under 300; `npx vitest run test/hub/e2e/team-2.test.ts -t notify` (AC6)
+- [x] T1: the `goal-approval` kind and its emission in `newGoal` → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/policy.test.ts -t "goal-approval"` (AC1–AC4)
+- [x] T2: docs → verify: `grep -n "goal-approval" ../../plugins/crew/skills/hub/references/model.md ../../plugins/crew/skills/team/SKILL.md` lists both (AC5); `npx vitest run test/plugin`
+- [x] T3: types, sizes, the existing notify test → verify: `npm run typecheck`; `wc -l src/hub/commands/work/planning.ts src/hub/core/team/policy.ts` each under 300; `npx vitest run test/hub/e2e/team-2.test.ts -t notify` (AC6)
 
 ## Test plan
 **Targeted checks** (from `packages/crew/`; the e2e suites drive the built `dist/crew.mjs`: `npm run build` first, then discard the generated output, which Release builds):
@@ -64,8 +65,30 @@ n/a — off unless a project's `notify.on` lists `goal-approval`. Ships in the b
 
 ## Handoff
 
+_Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
+
+- P-048: Notify the human when a goal waits for approval [in-review] tasks 0/3 — claimed by Arpit Anand (developer:ac6144f54a3bb12a7)
+- last checkpoint 2026-10-26 05:30 at T3 (dfa60d2) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-048-notify-the-human-when-a-goal-waits/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/policy.test.ts -t goal-approval ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-048-notify-the-human-when-a-goal-waits checkout -- plugins; exit $r (AC 1,2,3,4)
+- ✓ grep -n goal-approval /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-048-notify-the-human-when-a-goal-waits/plugins/crew/skills/hub/references/model.md /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-048-notify-the-human-when-a-goal-waits/plugins/crew/skills/team/SKILL.md (AC 5)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-048-notify-the-human-when-a-goal-waits/packages/crew && npm run typecheck && wc -l src/hub/commands/work/planning.ts src/hub/core/team/policy.ts && test $(wc -l < src/hub/commands/work/planning.ts) -lt 300 && test $(wc -l < src/hub/core/team/policy.ts) -lt 300 && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/team-2.test.ts -t notify ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-048-notify-the-human-when-a-goal-waits checkout -- plugins/crew/skills/hub/dist; exit $r (AC 6)
+- next: T1: the `goal-approval` kind and its emission in `newGoal` → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/policy.test.ts -t "goal-approval"` (AC1–AC4)
+- evidence: AC1 ✓ (self), AC2 ✓ (self), AC3 ✓ (self), AC4 ✓ (self), AC5 ✓ (self), AC6 ✓ (self)
+
+Latest log:
+- 2026-10-25: status draft → ready — Architect: specced (ACs, tasks, test plan, exact touches)
+- 2026-10-26: assigned to the developer role
+- 2026-10-26: status ready → in-progress — branch plan/P-048-notify-the-human-when-a-goal-waits
+
 ## Progress log
 
 - 2026-10-25: status draft → ready — Architect: specced (ACs, tasks, test plan, exact touches)
+- 2026-10-26: assigned to the developer role
+- 2026-10-26: status ready → in-progress — branch plan/P-048-notify-the-human-when-a-goal-waits
+- 2026-10-26: status in-progress → in-review — T1-T3 done: goal-approval kind emitted by new-goal, docs, typecheck/sizes; checks pass at checkpoints
+- 2026-10-26: status in-review → accepted
+- 2026-10-26: landed on main as 5b7ec20
+- 2026-10-26: status accepted → done
 
 ## Outcome
+Learnings: none

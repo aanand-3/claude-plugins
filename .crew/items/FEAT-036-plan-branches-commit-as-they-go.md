@@ -2,12 +2,13 @@
 id: FEAT-036
 type: feat
 title: Plan branches commit as they go
-status: triaged
+status: done
 priority: P1
 goal: G-007
 plan: P-028
 created: 2026-10-25
-closed:
+closed: 2026-10-26
+completed: 2026-10-26
 ---
 
 # FEAT-036: Plan branches commit as they go
@@ -24,3 +25,4 @@ Slice of G-007 (Autonomous parallel delivery): Plan branches commit as they go �
 
 ## Notes
 - 2026-10-25: triaged from G-007 breakdown
+- 2026-10-26: status triaged → done — delivered by P-028

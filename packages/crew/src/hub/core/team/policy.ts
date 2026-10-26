@@ -12,13 +12,14 @@ import { PRESETS } from "./presets.js";
 export const MODES = ["ai-native", "ai-assisted", "human-led"] as const;
 /** Gated steps that aren't status changes: `<kind>.<action>`, usable in human_gates and role_gates. */
 /** What `notify.command` can be told about (docs/vision.md → Workstream T, autonomy). */
-export const NOTIFY_ON = ["escalation", "budget", "stale", "goal-done", "paused"];
-export const ACTIONS = new Set(["plan.assigned", "plan.reassigned", "plan.reviewed"]);
+export const NOTIFY_ON = ["escalation", "budget", "stale", "goal-done", "paused", "stopped", "goal-approval"];
+export const ACTIONS = new Set(["plan.assigned", "plan.reassigned", "plan.reviewed", "plan.design-reviewed", "plan.landed",
+  "item.regoaled", "plan.regoaled"]);
 /** Transitions (`<kind>.<status>`) that need a human, by mode, until the project sets `human_gates`. */
 export const MODE_GATES: Record<string, string[]> = {
   "ai-native": [],
-  "ai-assisted": ["plan.ready", "plan.done", "goal.done"],
-  "human-led": ["plan.ready", "plan.done", "goal.done", "item.triaged"],
+  "ai-assisted": ["plan.ready", "plan.accepted", "goal.done"],
+  "human-led": ["plan.ready", "plan.accepted", "goal.done", "item.triaged"],
 };
 const BUILT_IN: Raw = {
   mode: "ai-assisted",

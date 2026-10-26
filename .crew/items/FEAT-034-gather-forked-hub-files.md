@@ -2,12 +2,13 @@
 id: FEAT-034
 type: feat
 title: Gather forked hub files
-status: triaged
+status: done
 priority: P1
 goal: G-007
 plan: P-026
 created: 2026-10-25
-closed:
+closed: 2026-10-26
+completed: 2026-10-26
 ---
 
 # FEAT-034: Gather forked hub files
@@ -24,3 +25,4 @@ Slice of G-007 (Autonomous parallel delivery): Gather forked hub files — `migr
 
 ## Notes
 - 2026-10-25: triaged from G-007 breakdown
+- 2026-10-26: status triaged → done — delivered by P-026

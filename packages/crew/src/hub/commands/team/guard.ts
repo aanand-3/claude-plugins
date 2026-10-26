@@ -2,17 +2,20 @@
  * Identity: a crew agent's role comes from `crew-role` in its definition (.claude/agents/<agent_type>.md); the guard injects
  * it into every hub call (`--as`/`--run-id` after crew.mjs, `as`/`run_id` on MCP tools) and refuses a call claiming anything else.
  * It never returns "allow": permissions are checked on the rewritten input as usual (T0 spike, docs/vision.md).
- * Applies to subagents only; the main session (no agent_type) is the human's own and is left alone. */
+ * Applies to subagents only; the main session (no agent_type) is the human's own and is left alone, except that no tool call
+ * reaches the `ui` command endpoint. */
 import { readFileSync, realpathSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { Doc } from "../../core/work/doc.js";
 import * as git from "../../core/git.js";
+import { activityPath, describe, label, previousRef } from "../../core/memory/activity.js";
 import { globRe } from "../../core/memory/knowledge.js";
 import { STATE_RE } from "../../core/work/hubstate.js";
 import { resolvePolicy } from "../../core/team/policy.js";
 import type { Store } from "../../core/store.js";
 import { withIdentity } from "./hubcall.js";
+import { inlineScript, writeTargets, type Target } from "./targets.js";
 
 export interface HookInput { tool_name: string; tool_input: Record<string, unknown>; agent_type?: string; agent_id?: string; cwd?: string }
 type Decision = { deny: string } | { input: Record<string, unknown> } | null;
@@ -37,7 +40,6 @@ const within = (dir: string, p: string) => {
 };
 const CREW_CLI = /\bcrew\.mjs\b/;
 const EDITS: Record<string, string> = { Edit: "file_path", Write: "file_path", MultiEdit: "file_path", NotebookEdit: "notebook_path" };
-const WRITERS = /^(rm|mv|cp|ln|chmod|chown|truncate|tee|install|touch|mkdir)$/;
 
 /** The role an agent definition declares (`crew-role:` in its frontmatter), or null for agents that aren't crew agents. */
 export function agentRole(root: string, agentType: string): string | null {
@@ -62,52 +64,20 @@ function hubCommand(seg: string): string | null {
   return w[i] ?? null;
 }
 
-/** A redirection (`>`, `>>`, `>|`, `2>`, `&>`, `>&FILE`); group 1 is the `&` of `>&`, group 2 the target. */
-const REDIRECT = /\d*&?>{1,2}\|?(&?)\s*([^\s;&|<>]+)/g;
-/** Words that can come before the command itself (`{ cd x; }`, `if cd x; then`, `builtin cd x`). */
-const PREFIX = /^(\{|!|if|then|else|elif|do|while|until|builtin|command|time)$/;
-
-/** Paths a shell command writes to (best effort): redirection targets and the operands of common writing commands — for
- * cp/ln/install only the destination. A relative target after `cd DIR` in the chain is DIR/target. A leading variable is
- * expanded from the command's own assignments or the environment; one that can't be stays `$NAME…` (unresolved). */
-export function writeTargets(cmd: string): string[] {
-  const out: string[] = [];
-  const vars: Record<string, string> = {};
-  const expand = (t: string) => t.replace(/^["']|["']$/g, "")
-    .replace(/^\$(?:\{(\w+)\}|(\w+))/, (m, a, b) => vars[a ?? b] ?? process.env[a ?? b] ?? m);
-  const rooted = (t: string) => /^(\/|~|\$)/.test(t);
-  let dir = "";
-  const at = (raw: string) => {
-    const t = expand(raw);
-    return !dir || rooted(t) ? t : join(dir, t);
-  };
-  for (const seg of segments(cmd)) {
-    const set = /^(?:export\s+)?(\w+)=(\S*)$/.exec(seg);
-    if (set) { vars[set[1]] = expand(set[2]); continue; }
-    for (const m of seg.matchAll(REDIRECT)) if (!(m[1] && /^(\d+|-)$/.test(m[2]))) out.push(at(m[2]));
-    let [head, ...args] = words(seg.replace(REDIRECT, ""));
-    while (head !== undefined && PREFIX.test(head.replace(/^\(+/, ""))) [head, ...args] = args;
-    head = head?.replace(/^\(+/, "");
-    if (head === "cd" || head === "pushd") {
-      const to = expand(args.find((a) => !a.startsWith("-")) ?? "~");
-      dir = rooted(to) ? to : join(dir, to);
-      continue;
-    }
-    const operands = (head === "git" ? args.slice(1) : args).filter((a) => !a.startsWith("-"));
-    if (head && /^(cp|ln|install)$/.test(head)) {
-      const t = args.findIndex((a) => a === "-t" || a === "--target-directory");
-      // `ln -s TARGET` alone makes the link in the current directory, named after the target
-      const dest = t >= 0 ? args[t + 1] : head === "ln" && operands.length === 1 ? basename(operands[0]) : operands.at(-1);
-      if (dest) out.push(at(dest));
-    } else if ((head && WRITERS.test(head)) || (head === "sed" && args.some((a) => a.startsWith("-i")))
-      || (head === "git" && /^(checkout|restore|rm|mv)$/.test(args[0] ?? ""))) {
-      out.push(...operands.map(at));
-    }
-  }
-  return out.map((t) => t.replace(/^\.\//, ""));
+/** The `ui` server's command endpoint (answers and approvals) is the human's, from their own terminal or browser: no Claude
+ * tool call reaches it, the main session's included. Matches literal text only, like the other command rules. */
+const UI_COMMANDS = "/api/commands/";
+function uiCommand(h: HookInput): Decision {
+  const input = h.tool_input ?? {};
+  const cmd = h.tool_name === "Bash" ? String(input.command ?? "") : "";
+  const hit = h.tool_name === "WebFetch" ? String(input.url ?? "").includes(UI_COMMANDS)
+    : cmd.includes(UI_COMMANDS) && /\b(curl|wget|node|python[\d.]*|fetch)\b/.test(cmd);
+  return hit ? { deny: "only the human answers and approves, from their own terminal or browser" } : null;
 }
 
 export function decide(store: Store, h: HookInput): Decision {
+  const ui = uiCommand(h);
+  if (ui) return ui;
   if (!h.agent_type) return null; // the main session: the human's own
   const root = store.ws.root;
   const role = agentRole(root, h.agent_type);
@@ -154,11 +124,12 @@ export function decide(store: Store, h: HookInput): Decision {
     return { deny: `${rel(String(input.file_path))} is a secret file (secrets.files); agents never read it` };
   }
   const cmd = h.tool_name === "Bash" ? String(input.command ?? "") : "";
+  const written: Target[] = cmd ? writeTargets(cmd, h.cwd || top) : [];
   if (cmd) {
-    const targets = writeTargets(cmd);
+    const targets = written.map((t) => t.path);
     const target = targets.find((t) => hits(policy.paths.protected, t));
     if (target) return { deny: `the command writes to ${rel(target)}, which the crew policy protects (paths.protected)` };
-    const unknown = targets.find((t) => t.startsWith("$"));
+    const unknown = targets.find((t) => /[$`]/.test(t));
     if (unknown) return { deny: `the command writes to ${unknown}, which the guard can't resolve (an unknown variable); use a literal path` };
     const copy = targets.find((t) => forked(t));
     if (copy) return { deny: `the command writes to ${abs(copy)}, a copy of hub state; ${ONE_HOME} ${forked(copy)}` };
@@ -168,6 +139,9 @@ export function decide(store: Store, h: HookInput): Decision {
     if (CREW_CLI.test(cmd) && /--approved-by\b/.test(cmd)) return { deny: "only the human approves: agents never pass --approved-by" };
     if (segments(cmd).some((c) => hubCommand(c) === "agents" && !/--check\b/.test(c))) {
       return { deny: "`crew.mjs agents` rewrites the agent definitions, which only the human renders (paths.protected)" };
+    }
+    if (segments(cmd).some((c) => hubCommand(c) === "init")) {
+      return { deny: "`crew.mjs init` vendors the hub and its agent templates, which only the human installs (paths.protected)" };
     }
   }
   if (!role) return null;
@@ -182,15 +156,40 @@ export function decide(store: Store, h: HookInput): Decision {
   if (path && policy.paths.write.length && !hits(policy.paths.write, path)) {
     return { deny: `the ${role} role may only write ${policy.paths.write.join(", ")} (paths.write)` };
   }
+  // Bash writes too (BUG-033): /dev, temp dirs and git restores author nothing; inline scripts hide their writes (BUG-021)
+  if (cmd && policy.paths.write.length) {
+    const only = `the ${role} role may only write ${policy.paths.write.join(", ")} (paths.write)`;
+    const head = inlineScript(cmd);
+    if (head) {
+      return { deny: `${only}; an inline or stdin ${head} script hides what it writes: use a hub command, or the Write tool on a path in paths.write` };
+    }
+    // a temp file outside every checkout (a repository can itself live in a temp dir)
+    const temp = (a: string) => [real(tmpdir()), real("/tmp")].some((d) => within(d, a)) && !checkouts().some((d) => within(d, a));
+    const exempt = (t: Target) => t.restore || abs(t.path).startsWith("/dev/") || temp(abs(t.path));
+    const over = written.find((t) => !exempt(t) && !hits(policy.paths.write, t.path));
+    if (over) return { deny: `the command writes to ${rel(over.path)}; ${only}` };
+  }
+
+  // a background or long call shows up as a task the executive watches: it needs words, not just a command
+  const blank = typeof input.description !== "string" || !input.description.trim();
+  if (h.tool_name === "Bash" && blank && (input.run_in_background === true || Number(input.timeout) > 120_000)) {
+    return { deny: 'a background or long Bash call needs a description: add "description": "<what it does>" (the guard prefixes "<role> <plan>:")' };
+  }
 
   // identity: injected from the verified agent, never claimed
+  let command = cmd;
   if (cmd && CREW_CLI.test(cmd)) {
     const claimed = [...cmd.matchAll(/--as[=\s]+(\S+)/g)].map((m) => m[1]);
     if (claimed.some((c) => c !== role)) return { deny: `you are the ${role} agent; don't pass --as for another role` };
     if (/--run-id\b|\bCREW_(ROLE|RUN|ACTOR|TEAM)=/.test(cmd)) return { deny: "the guard sets your identity; don't pass --run-id or CREW_* variables" };
     const r = withIdentity(cmd, `--as ${role} --run-id ${run}`);
     if ("deny" in r) return r;
-    return r.command === cmd ? null : { input: { ...input, command: r.command } };
+    command = r.command;
+  }
+  // every command is labelled "<role> <plan>: <what>" for the executive's task list
+  if (h.tool_name === "Bash") {
+    const ref = describe(h, root).ref ?? previousRef(activityPath(store.ledger.path), run!);
+    return { input: { ...input, command, description: label(role, ref, input.description, cmd) } };
   }
   if (HUB_MCP.test(h.tool_name)) {
     if (input.as !== undefined && input.as !== role) return { deny: `you are the ${role} agent; don't set as for another role` };

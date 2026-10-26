@@ -47,11 +47,11 @@ Mode is `$ARGUMENTS` (default: `init` when no DESIGN.md exists, otherwise ask).
 1. Read DESIGN.md (tokens, shell, inventory, Screens, do's and don'ts) and the page's plan. If DESIGN.md → Screens has the page, start from its approved layout (`docs/design/studio.json → screens`); otherwise add it there first (and let the user review it in the studio) when it is a main screen.
 2. Sketch the page as a composition of **shell + inventory components** (ASCII is fine) before coding. Anything not in the inventory: reuse/extend an inventory component first; a genuinely new composite gets added to the inventory section in the same change, with its states.
 3. Build with tokens only (`bg-primary`, `text-muted-foreground`, `rounded-md`, spacing scale). Every data view has loading, empty and error states.
-4. **QA loop:** run the app, screenshot at 375 px and 1280 px in light and dark, compare against DESIGN.md, the studio's render of the screen and one existing page, fix everything found in one batch, re-check once. Run `check_design.mjs --all`.
+4. **QA loop:** run the app, screenshot at full size at 375, 900 and 1440 px in light and dark (look at each at 100 %, never scaled down), compare against DESIGN.md, the studio's render of the screen, one existing page and the [review checklist](references/review-checklist.md), fix everything found in one batch, re-check once. Run `check_design.mjs --all`; for the crew hub's UI also `layout_sweep.mjs` (sideways scroll and overflow at every width and theme).
 
 ## review — audit existing UI
 1. `check_design.mjs --all` for mechanical drift.
-2. Visual pass per page against DESIGN.md (including Screens) and principles (hierarchy, spacing rhythm, alignment, states, contrast, the tells list). Report as a table: `file:line | issue | before → after | why`. Fix only what the user approves.
+2. Visual pass per page against DESIGN.md (including Screens), principles (hierarchy, spacing rhythm, alignment, states, contrast, the tells list) and every entry of the [review checklist](references/review-checklist.md), on screenshots taken at full size at 375, 900 and 1440 px in light and dark (look at each at 100 %, never scaled down). Report as a table: `file:line | issue | before → after | why`. Fix only what the user approves.
 3. Where a deeper pass would help, suggest a companion skill from references/companions.md (e.g. Impeccable `audit`/`polish` for a critique, Emil Kowalski's skills for motion).
 
 ## refresh — change a final design

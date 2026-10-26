@@ -72,7 +72,7 @@ const ago = (path: string, seconds: number) => {
 const events = (r: Repo, type: string) => tr(r, "ledger", "--json", "--limit", "1000", "--type", type).stdout
   .split("\n").filter((l) => l.trim()).map((l) => JSON.parse(l) as Record<string, unknown>);
 
-/** A plan taken to done in its worktree, QA's check recorded from another run. */
+/** A plan taken to accepted in its worktree, QA's check recorded from another run. */
 function donePlan(r: Repo): Repo {
   newPlan(r, "Signup");
   expect(tr(r, "move", "P-001", "ready").returncode).toBe(0);
@@ -85,7 +85,7 @@ function donePlan(r: Repo): Repo {
   const env = { ...r.env };
   Object.assign(r.env, { CREW_RUN: "qa-run", CREW_ACTOR: "qa" });
   expect(tr(r, "checkpoint", "P-001", "--run", "test -f src/signup.ts", "--ac", "all").returncode).toBe(0);
-  const done = tr(r, "move", "P-001", "done");
+  const done = tr(r, "move", "P-001", "accepted");
   expect(done.returncode, done.stderr).toBe(0);
   r.env = env;
   w.env = env;
@@ -99,7 +99,7 @@ describe("merge_order", () => {
     r.git("worktree", "remove", w.path);
     r.write("notes.md", "qa notes\n");
     r.commit("chore(P-001): QA evidence", "notes.md"); // names the plan, holds none of its changes
-    expect(tr(r, "merge-order").stdout).toContain("1. P-001: Signup — merge plan/P-001-signup into main");
+    expect(tr(r, "merge-order").stdout).toContain("1. P-001: Signup — `land P-001`");
     r.git("merge", "--squash", "plan/P-001-signup");
     r.commit("P-001: Signup (#1)");
     expect(tr(r, "merge-order").stdout).toContain("merged: P-001 (plan/P-001-signup)");
@@ -108,7 +108,7 @@ describe("merge_order", () => {
     later.env = r.env;
     later.write("src/signup.ts", "export const signup = 2;\n");
     later.commit("fix(P-001): after the squash");
-    expect(tr(r, "merge-order").stdout).toContain("1. P-001: Signup — merge plan/P-001-signup into main");
+    expect(tr(r, "merge-order").stdout).toContain("1. P-001: Signup — `land P-001`");
   });
 });
 
@@ -233,7 +233,9 @@ describe("guard", () => {
     const r = Repo.create();
     expect(tr(r, "init").returncode).toBe(0);
     r.write(".claude/agents/crew-qa.md", "---\nname: crew-qa\ncrew-role: qa\n---\nbody\n");
-    for (const cmd of ["ls .crew/bin/crew.mjs", "cmp .crew/bin/crew.mjs x", "git diff -- .crew/bin/crew.mjs"]) expect(hook(r, cmd), cmd).toBeNull();
+    for (const cmd of ["ls .crew/bin/crew.mjs", "cmp .crew/bin/crew.mjs x", "git diff -- .crew/bin/crew.mjs"]) {
+      expect((hook(r, cmd)?.updatedInput as { command?: string } | undefined)?.command, cmd).toBe(cmd); // labelled, not rewritten
+    }
     const id = "--as qa --run-id qa:a1";
     const cases: [string, string][] = [
       ["node .crew/bin/crew.mjs next", `node .crew/bin/crew.mjs ${id} next`],

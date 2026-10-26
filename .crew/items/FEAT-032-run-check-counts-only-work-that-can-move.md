@@ -2,12 +2,12 @@
 id: FEAT-032
 type: feat
 title: run --check counts only work that can move
-status: triaged
+status: duplicate
 priority: P2
 goal: G-001
 plan:
 created: 2026-10-25
-closed:
+closed: 2026-10-26
 ---
 
 # FEAT-032: run --check counts only work that can move
@@ -26,3 +26,5 @@ As the human running the team unattended, I want `run --check` to say GO only wh
 ## Notes
 Source: Q-efbe24 (Architect, from QA's point on P-023). Builds on FEAT-026 (escalations stop only the work they block).
 - 2026-10-25: status new → triaged — priority P2
+- 2026-10-26: DUPLICATE in effect of FEAT-040 (P-031 dispatch) and FEAT-042 (P-034 runner): run --until-done (team/runner.ts) stops on 'nothing to dispatch' and on 'no progress in 2 passes', so the loop no longer spends tokens on unmovable work. Residual, cosmetic: run --check alone (autonomy.ts runState) still counts draft and blocked plans as open when deciding whether holds cover everything. Not worth a plan unless the PM wants run --check to agree with dispatch; if so, make runState use dispatch's entries.
+- 2026-10-26: status triaged → duplicate — Covered by FEAT-040 (P-031 dispatch) and FEAT-042 (P-034 runner). Cosmetic residual: run --check still counts draft/blocked plans as open.

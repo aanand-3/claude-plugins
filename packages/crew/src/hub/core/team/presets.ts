@@ -12,15 +12,23 @@ export const PRESETS: Record<string, { global: Raw; roles: Record<string, Raw> }
       human_gates: ["goal.active"],
       role_gates: {
         "item.triaged": "pm",            // only the PM triages and ranks
+        "item.done": "pm",               // … and closes any item from any status (a plan's done closes its own)
+        "item.wontfix": "pm",
+        "item.duplicate": "pm",
+        "item.regoaled": "pm",           // … and moves items, or plans with their items, between goals (`regoal`)
+        "plan.regoaled": "pm",
         "plan.ready": "architect",       // only the Architect makes a spec ready
         "plan.assigned": "pm",           // the PM opens a plan for a developer; `start` then needs that assignment
         "plan.in-progress": "developer", // only the assigned developer implements (and fixes what comes back)
         "plan.in-review": "developer",   // … and hands over to test
-        "plan.done": "pm",               // the PM completes, against QA's evidence
+        "plan.accepted": "pm",           // the PM accepts, against QA's evidence and the review
+        "plan.done": "pm",               // … and completes once Release has landed it
+        "plan.landed": "release",        // Release lands it; a failed land sends it back (accepted → in-progress)
         "plan.dropped": "pm",
         "goal.done": "pm",               // the PM verifies a goal's criteria and closes it
         "plan.reassigned": "director",   // the Director moves stuck work to someone else
         "plan.reviewed": "architect",    // code review against the spec; done needs an approval of the current code
+        "plan.design-reviewed": "designer", // design review of a UI plan (design.ui_paths), in code and on screen
       },
       // liveness: a claim quiet for a day is stale; a third bounce or a sixth failed attempt goes to the Director
       limits: { stale_claim_hours: 24, max_bounces: 2, max_attempts: 5 },

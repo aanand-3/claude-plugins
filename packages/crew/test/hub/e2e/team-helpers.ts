@@ -56,7 +56,7 @@ export function inReview(repo: Repo): void {
   expect(as(repo, "qa", "checkpoint", "P-001", "--run", "true", "--ac", "all").returncode).toBe(0);
 }
 
-/** Start, commit and complete a plan on its branch, back on main afterwards (plain ai-native: no role gates).
+/** Start, commit and accept a plan on its branch, back on main afterwards and not merged (plain ai-native: no role gates).
  * test_team.py's own `finish`, not helpers.ts's. */
 export function finish(repo: Repo, pid: string, ...start: string[]): void {
   expect(tr(repo, "start", pid, ...start).returncode).toBe(0);
@@ -64,8 +64,8 @@ export function finish(repo: Repo, pid: string, ...start: string[]): void {
   repo.write(`src/${pid}.txt`, pid);
   repo.commit(`feat(${pid}): work`);
   expect(tr(repo, "move", pid, "in-review").returncode).toBe(0);
-  expect(tr(repo, "move", pid, "done", "--force").returncode).toBe(0);
-  repo.commit(`chore(${pid}): done`);
+  expect(tr(repo, "move", pid, "accepted", "--force").returncode).toBe(0);
+  repo.commit(`chore(${pid}): accepted`);
   repo.git("switch", "-q", "main");
 }
 

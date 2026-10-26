@@ -101,11 +101,16 @@ export function generated(dir: string, files: string[]): Set<string> {
   return out;
 }
 
-/** A plan's uncommitted code in the worktree at `dir`: every change there except hub paths (`.crew/`), generated files and
- * files matching `secretGlobs` (the policy's `secrets.files`). */
+/** The hub's documents under `.crew/`: hubstate.ts's `STATE_RE` (the state the hub commits on the base branch) plus its
+ * scratch output, `drafts/` and `view/`. Not imported from hubstate.ts, which imports this module. */
+const NOT_CODE = /^\.crew\/((plans|items|goals|knowledge|drafts|view)\/|idea\.md$)/;
+
+/** A plan's uncommitted code in the worktree at `dir`: every change there except the hub's documents (`NOT_CODE`), generated
+ * files and files matching `secretGlobs` (the policy's `secrets.files`). Setup files under `.crew/` (config.yaml,
+ * policy.yaml, templates/, bin/) are code. */
 export function codeChanges(dir: string, secretGlobs: string[]): string[] {
   const secret = secretGlobs.map(globRe);
-  const files = changed(dir, ["."]).filter((f) => !f.startsWith(".crew/") && !secret.some((re) => re.test(f)));
+  const files = changed(dir, ["."]).filter((f) => !NOT_CODE.test(f) && !secret.some((re) => re.test(f)));
   const gen = generated(dir, files);
   return files.filter((f) => !gen.has(f));
 }

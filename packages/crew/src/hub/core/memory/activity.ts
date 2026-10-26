@@ -3,9 +3,11 @@
  * target (a repository-relative path or a command word) and the hub document it was about. Rotated by size. */
 import { appendFileSync, closeSync, existsSync, mkdirSync, openSync, readFileSync, readSync, realpathSync, renameSync, statSync } from "node:fs";
 import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
-import { acquireLock, type LedgerEvent, releaseLock } from "./ledger.js";
+import { acquireLock, countedUsage, type LedgerEvent, releaseLock } from "./ledger.js";
 
-export interface ActivityEvent { ts: string; run: string; role: string; ref: string | null; tool: string; target: string | null }
+export interface ActivityEvent {
+  ts: string; run: string; role: string; ref: string | null; tool: string; target: string | null; label?: string;
+}
 
 /** What a hook payload says about a tool call (the fields the feed reads). */
 export interface ToolCall { tool_name?: string; tool_input?: Record<string, unknown>; cwd?: string }
@@ -148,21 +150,68 @@ export function describe(h: ToolCall, root: string): { tool: string; target: str
       const first = segs.map(command).find((w) => w.length && !/^(cd|pushd)$/.test(w[0]));
       target = first ? basename(first[0]) || null : null;
     }
+    ref ??= input.command.split(/\s+/).map((w) => worktreePlan(unquote(w))).find((p) => p) ?? null;
   }
   return { tool, target, ref: ref ?? worktreePlan(path) ?? worktreePlan(h.cwd) };
 }
 
+// -- labelling a command (pure): "<role> <plan>: <what>"
+const WHAT_MAX = 80;
+const FILE_ARG = /[./]/;
+const VALUE_FLAG = /^(-[tcr]|--(config|root|dir|project|reporter|outputFile|testNamePattern))$/; // vitest flags taking a value
+
+/** What one segment runs, in a few words, or null for one that runs nothing worth naming (cd, export, assignments). */
+function segmentWhat(seg: string): string | null {
+  const hub = hubCall(seg);
+  if (hub) return hub.sub ? `${hub.sub}${hub.ref ? ` ${hub.ref}` : ""}` : "crew.mjs";
+  const w = command(seg);
+  const head = basename(w[0] ?? "");
+  if (!head || /^(cd|pushd|popd|export)$/.test(head)) return null;
+  const vitest = head === "vitest" ? 1 : /^(npx|pnpx|bunx)$/.test(head) && w[1] === "vitest" ? 2 : 0;
+  if (vitest) {
+    const files = w.slice(vitest).filter((a, i, all) => a !== "run" && !a.startsWith("-") && FILE_ARG.test(a)
+      && !VALUE_FLAG.test(all[i - 1] ?? "")).map((f) => basename(f));
+    return files.length ? `vitest ${files.slice(0, 2).join(" ")}${files.length > 2 ? ` +${files.length - 2}` : ""}` : "vitest (all)";
+  }
+  if (head === "npm") return w[1] === "run" && w[2] ? `npm run ${w[2]}` : w[1] ? `npm ${w[1]}` : "npm";
+  if (head === "git") {
+    let i = 1;
+    while (i < w.length && w[i].startsWith("-")) i += /^-[Cc]$/.test(w[i]) ? 2 : 1; // git -C dir status
+    return w[i] ? `git ${w[i]}` : "git";
+  }
+  return head;
+}
+
+const cap = (s: string) => (s.length > WHAT_MAX ? `${s.slice(0, WHAT_MAX - 1)}…` : s);
+
+/** A command in a few words: up to 3 segments joined with " + " (the rest as "+N"), at most 80 characters. */
+export function deriveWhat(cmd: string): string {
+  const parts = segments(cmd).map(segmentWhat).filter((p): p is string => !!p);
+  return cap(parts.slice(0, 3).join(" + ") + (parts.length > 3 ? ` +${parts.length - 3}` : ""));
+}
+
+/** The label of a crew agent's command: `<role> <ref>: <what>` (`<role>: <what>` without a ref). "What" is the agent's
+ * description, less any leading `<role>[ <plan>]:` (so a labelled description comes back unchanged), else derived. */
+export function label(role: string, ref: string | null, description: unknown, cmd: string): string {
+  const esc = role.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const given = typeof description === "string"
+    ? description.trim().replace(new RegExp(`^(?:${esc}|[a-z][\\w-]*(?= [A-Z]+-\\d+:))(?: [A-Z]+-\\d+)?:\\s*`), "") : "";
+  return `${role}${ref ? ` ${ref}` : ""}: ${given ? cap(given) : deriveWhat(cmd)}`;
+}
+
 // -- who is running now (pure)
 export interface LiveRun {
-  run: string; role: string; ref: string | null; task: string | null; tool: string; target: string | null;
+  run: string; role: string; ref: string | null; task: string | null; tool: string; target: string | null; label: string | null;
   ts: string; minutes: number; idle: boolean; tokens: number | null;
 }
 
 const STOPS = new Set(["usage", "report"]);
 
-/** The runs still going: activity in the last 24 hours and no `usage`/`report` of the run after its last activity (a run
- * that resumes after a report is live again). Idle: quiet for more than `idleMinutes`. Most recent first. */
-export function liveRuns(activity: ActivityEvent[], ledger: LedgerEvent[], now = Date.now(), idleMinutes = IDLE_MINUTES): LiveRun[] {
+/** The runs still going: activity in the last 24 hours, no `usage`/`report` of the run and no `end-run` naming it after
+ * its last activity (a run that resumes after either is live again), and a last activity whose ref isn't `closed` (a
+ * done or dropped plan, a closed item). Idle: quiet for more than `idleMinutes`. Most recent first. */
+export function liveRuns(activity: ActivityEvent[], ledger: LedgerEvent[], now = Date.now(), idleMinutes = IDLE_MINUTES,
+  closed: (ref: string) => boolean = () => false): LiveRun[] {
   const last = new Map<string, ActivityEvent>();
   for (const e of activity) {
     const prev = last.get(e.run);
@@ -171,15 +220,16 @@ export function liveRuns(activity: ActivityEvent[], ledger: LedgerEvent[], now =
   const out: LiveRun[] = [];
   for (const [run, a] of last) {
     const at = Date.parse(a.ts);
-    if (!(now - at <= DAY_MS)) continue;
+    if (!(now - at <= DAY_MS) || (a.ref && closed(a.ref))) continue;
     const mine = ledger.filter((e) => e.run === run);
     if (mine.some((e) => STOPS.has(e.type) && Date.parse(e.ts) > at)) continue;
+    if (ledger.some((e) => e.type === "end-run" && e.ended === run && Date.parse(e.ts) > at)) continue;
     const step = mine.filter((e) => e.type === "checkpoint" && e.ref === a.ref && e.step && !e.workflow).at(-1)?.step;
     const usage = mine.filter((e) => e.type === "usage");
     const minutes = Math.max(0, (now - at) / 60_000);
-    out.push({ run, role: a.role, ref: a.ref, task: step ? String(step) : null, tool: a.tool, target: a.target, ts: a.ts,
+    out.push({ run, role: a.role, ref: a.ref, task: step ? String(step) : null, tool: a.tool, target: a.target, label: a.label ?? null, ts: a.ts,
       minutes, idle: minutes > idleMinutes,
-      tokens: usage.length ? usage.reduce((n, e) => n + (Number(e.tokens_in) || 0) + (Number(e.tokens_out) || 0), 0) : null });
+      tokens: usage.length ? countedUsage(usage).reduce((n, e) => n + (Number(e.tokens_in) || 0) + (Number(e.tokens_out) || 0), 0) : null });
   }
   return out.sort((x, y) => Date.parse(y.ts) - Date.parse(x.ts));
 }

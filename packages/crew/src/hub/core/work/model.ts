@@ -20,7 +20,8 @@ export const PLAN_FLOW: Flow = {
   ready: ["in-progress", "draft", "dropped"],
   "in-progress": ["blocked", "in-review", "ready", "dropped"],
   blocked: ["in-progress", "dropped"],
-  "in-review": ["in-progress", "done", "dropped"],
+  "in-review": ["in-progress", "accepted", "dropped"],
+  accepted: ["done", "in-progress", "dropped"],      // accepted: QA and review passed; done: landed on the base
   done: [],
   dropped: ["draft"],
 };
@@ -30,19 +31,21 @@ export const GOAL_FLOW: Flow = {
   done: ["active"],
   dropped: ["proposed"],
 };
-/** Stored item states. Once an item is linked to a plan its status is derived from the plan. */
+/** Stored item states. Once an item is linked to a plan its open status is derived from the plan; it is stored `done`
+ * when its plan is done, and the PM closes any item from any status (done, wontfix, duplicate). */
 export const ITEM_FLOW: Flow = {
-  new: ["triaged", "wontfix", "duplicate"],
-  triaged: ["new", "wontfix", "duplicate"],
-  wontfix: ["new"],
-  duplicate: ["new"],
+  new: ["triaged", "done", "wontfix", "duplicate"],
+  triaged: ["new", "done", "wontfix", "duplicate"],
+  done: ["new", "wontfix", "duplicate"],
+  wontfix: ["new", "done", "duplicate"],
+  duplicate: ["new", "done", "wontfix"],
 };
 export const CLOSED = new Set(["done", "dropped"]);
 export const ACTIVE = new Set(["in-progress", "blocked", "in-review"]);
-export const ITEM_CLOSED = new Set(["wontfix", "duplicate"]);
+export const ITEM_CLOSED = new Set(["done", "wontfix", "duplicate"]);
 export const PLAN_TO_ITEM: Record<string, string> = {
   draft: "planned", ready: "planned", "in-progress": "in-progress",
-  blocked: "in-progress", "in-review": "in-progress", done: "done",
+  blocked: "in-progress", "in-review": "in-progress", accepted: "in-progress", done: "done",
 };
 
 export const KINDS: Record<string, Kind> = {
@@ -52,8 +55,9 @@ export const DIRS: Record<Exclude<Kind, "idea">, string> = { goal: "goals", plan
 export const FLOWS: Record<Kind, Flow> = { idea: IDEA_FLOW, goal: GOAL_FLOW, plan: PLAN_FLOW, item: ITEM_FLOW };
 export const ITEM_TYPES: Record<string, string> = { FEAT: "feat", BUG: "bug", CHORE: "chore", SPIKE: "spike" };
 export const TYPE_LABEL: Record<string, string> = { FEAT: "Features", BUG: "Fixes", CHORE: "Chores", SPIKE: "Spikes" };
-/** The roles of the team (docs/vision.md → Operating model); `executive` is the human who owns the idea. */
-export const ROLES = ["executive", "director", "pm", "architect", "developer", "qa", "release"] as const;
+/** The roles of the team (docs/vision.md → Operating model); `executive` is the human who owns the idea. The designer
+ * shapes and reviews UI plans (those whose touches overlap `design.ui_paths`). */
+export const ROLES = ["executive", "director", "pm", "architect", "developer", "qa", "release", "designer"] as const;
 /** Item types that may be worked on outside the focus goal. */
 export const OFF_FOCUS_OK = new Set(["BUG", "CHORE"]);
 /** Triage gate: sections that must have content before an item is triaged. */

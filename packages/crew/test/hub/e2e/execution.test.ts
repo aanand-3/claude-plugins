@@ -1,5 +1,5 @@
 /** The hub, end to end — execution state and evidence: resuming a crashed run, auto checkpoints, independent evidence
- * for done, human approval and reported results. Ported from tests/crew/test_hub.py (section "execution state and evidence"). */
+ * for accepted, human approval and reported results. Ported from tests/crew/test_hub.py (section "execution state and evidence"). */
 import { beforeEach, expect, it } from "vitest";
 import { Repo } from "../../helpers/repo.js";
 import { planFile, read, tr, write } from "./helpers.js";
@@ -45,7 +45,7 @@ it("auto checkpoints are cheap", () => {
   expect(cps.at(-1)!.step).toBe("T1");
 });
 
-it("done needs independent evidence for every criterion", () => {
+it("accepted needs independent evidence for every criterion", () => {
   started(repo);
   tr(repo, "checkpoint", "--run", "true", "--ac", "all"); // the implementer's own check
   const p = planFile(repo, "P-001");
@@ -54,18 +54,18 @@ it("done needs independent evidence for every criterion", () => {
   const handoff = read(p).split("## Handoff")[1].split("## Progress log")[0];
   expect(handoff).toContain("Generated");
   expect(handoff).toContain("evidence: AC1 ✓ (self)");
-  let r = tr(repo, "move", "P-001", "done");
+  let r = tr(repo, "move", "P-001", "accepted");
   expect(r.returncode).not.toBe(0);
   expect(r.stderr).toContain("this run (dev-run) implemented P-001");
   expect(r.stderr).toContain("only verified by the implementer");
   Object.assign(repo.env, { CREW_RUN: "qa-run", CREW_ACTOR: "qa" });
-  r = tr(repo, "move", "P-001", "done");
+  r = tr(repo, "move", "P-001", "accepted");
   expect(r.returncode).not.toBe(0);
   expect(r.stderr).toContain("only verified by the implementer");
   expect(tr(repo, "checkpoint", "P-001", "--run", "false", "--ac", "1").returncode).toBe(1);
-  expect(tr(repo, "move", "P-001", "done").stderr).toContain("AC1: its latest check failed (false)");
+  expect(tr(repo, "move", "P-001", "accepted").stderr).toContain("AC1: its latest check failed (false)");
   expect(tr(repo, "checkpoint", "P-001", "--run", "true", "--ac", "1").returncode).toBe(0);
-  r = tr(repo, "move", "P-001", "done");
+  r = tr(repo, "move", "P-001", "accepted");
   expect(r.returncode, r.stderr).toBe(0);
 });
 
@@ -75,8 +75,8 @@ it("human approval accepts evidence notes", () => {
   write(p, read(p).replaceAll("- [ ] T", "- [x] T").replaceAll("409 on duplicate email", "409 on duplicate email — evidence: demo video in PR #4")
     .trimEnd() + "\nShipped.\nLearnings: none\n");
   tr(repo, "move", "P-001", "in-review");
-  expect(tr(repo, "move", "P-001", "done").returncode).not.toBe(0);
-  expect(tr(repo, "move", "P-001", "done", "--approved-by", "Amit").returncode).toBe(0);
+  expect(tr(repo, "move", "P-001", "accepted").returncode).not.toBe(0);
+  expect(tr(repo, "move", "P-001", "accepted", "--approved-by", "Amit").returncode).toBe(0);
 });
 
 it("checkpoint records reported results and hides secrets", () => {

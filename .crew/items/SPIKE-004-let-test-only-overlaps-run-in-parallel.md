@@ -2,12 +2,13 @@
 id: SPIKE-004
 type: spike
 title: Let test-only overlaps run in parallel instead of becoming depends_on
-status: triaged
+status: done
 priority: P1
 goal: G-007
 plan: P-029
 created: 2026-10-24
-closed:
+closed: 2026-10-26
+completed: 2026-10-26
 ---
 
 # SPIKE-004: Let test-only overlaps run in parallel instead of becoming depends_on
@@ -31,3 +32,4 @@ Related: FEAT-025 (bundles built at release) and FEAT-028 (broad touches globs) 
 - 2026-10-24: status new → triaged — priority P3
 - 2026-10-25: re-triaged: priority P1
 - 2026-10-25: Findings: answered by K-2026-10-25-overlaps-on-hub-shared-paths-including (test files go in hub.shared like registries and docs; no test-file special case; broad globs still block). Implemented in P-029; tests: packages/crew/test/hub/e2e/shared-touches.test.ts.
+- 2026-10-26: status triaged → done — delivered by P-029

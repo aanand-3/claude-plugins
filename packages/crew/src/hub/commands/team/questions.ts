@@ -8,7 +8,7 @@ import { learn } from "../memory/knowledge.js";
 import { notify } from "./autonomy.js";
 
 export interface Question { id: string; ref: string | null; to: string; text: string; by: string; run: string; ts: string;
-  blocking: boolean; escalation: boolean; answer: { text: string; by: string; ts: string } | null }
+  blocking: boolean; escalation: boolean; options: string[]; answer: { text: string; by: string; ts: string } | null }
 
 /** Every question in the ledger, with its answer if there is one. */
 export function questions(events: LedgerEvent[]): Question[] {
@@ -16,7 +16,8 @@ export function questions(events: LedgerEvent[]): Question[] {
   for (const e of events) {
     if (e.type === "ask") {
       byId.set(String(e.qid), { id: String(e.qid), ref: e.ref, to: String(e.to), text: String(e.text), by: e.actor, run: e.run, ts: e.ts,
-        blocking: e.blocking !== false, escalation: e.escalation === true, answer: null });
+        blocking: e.blocking !== false, escalation: e.escalation === true,
+        options: Array.isArray(e.options) ? e.options.map(String) : [], answer: null });
     } else if (e.type === "answer" && byId.has(String(e.qid))) {
       byId.get(String(e.qid))!.answer = { text: String(e.text), by: String(e.approved_by ?? e.actor), ts: e.ts };
     }
@@ -40,9 +41,14 @@ export function escalationHolds(events: LedgerEvent[]): { held: Map<string, stri
 }
 
 /** Moves that take a document forward; an open blocking question stops these (blocked, dropped and going back stay allowed). */
-export const FORWARD = new Set(["ready", "in-progress", "in-review", "done", "active", "decided", "triaged"]);
+export const FORWARD = new Set(["ready", "in-progress", "in-review", "accepted", "done", "active", "decided", "triaged"]);
 
-export function ask(store: Store, ref: string | undefined, to: string, text: string, o: { fyi?: boolean; escalation?: boolean } = {}): string {
+/** `--options "A; B"` → ["A", "B"] (split on `;`, trimmed, empty dropped). */
+export const splitOptions = (raw?: string): string[] | undefined =>
+  raw === undefined ? undefined : raw.split(";").map((x) => x.trim()).filter(Boolean);
+
+export function ask(store: Store, ref: string | undefined, to: string, text: string,
+  o: { fyi?: boolean; escalation?: boolean; options?: string[] } = {}): string {
   store.require();
   const id = ref?.toUpperCase();
   if (id) {
@@ -53,15 +59,16 @@ export function ask(store: Store, ref: string | undefined, to: string, text: str
   if (!roles.includes(to)) fail(`--to must be one of ${roles.join(", ")}.`);
   if (!text.trim()) fail("Ask a question.");
   const qid = `Q-${randomBytes(3).toString("hex")}`;
-  store.ledger.record("ask", id ?? null, { qid, to, text, ...(o.fyi ? { blocking: false } : {}), ...(o.escalation ? { escalation: true } : {}) });
+  store.ledger.record("ask", id ?? null, { qid, to, text, ...(o.fyi ? { blocking: false } : {}), ...(o.escalation ? { escalation: true } : {}),
+    ...(o.options?.length ? { options: o.options } : {}) });
   store.say(`${qid} → ${to}${id ? ` about ${id}` : ""}${o.fyi ? "" : id ? ` (blocks ${id} until answered)` : ""}`);
   if (o.escalation || to === "executive") notify(store, "escalation", id ?? null, `${qid}: ${text}`, qid);
   return qid;
 }
 
 /** To the executive (the policy's escalation target): for reserved decisions, a goal at risk, or anything only a human can settle. */
-export function escalate(store: Store, ref: string | undefined, text: string): string {
-  return ask(store, ref, store.policy.policy.escalation.to, text, { escalation: true });
+export function escalate(store: Store, ref: string | undefined, text: string, o: { options?: string[] } = {}): string {
+  return ask(store, ref, store.policy.policy.escalation.to, text, { escalation: true, options: o.options });
 }
 
 export interface AnswerOptions { decision?: boolean; scope?: string; approvedBy?: string }
@@ -100,6 +107,7 @@ export function listQuestions(store: Store, o: { to?: string; ref?: string; all?
   if (!qs.length) store.say(o.all ? "No questions." : "No open questions.");
   for (const q of qs) {
     store.say(`${q.id}  ${q.escalation ? "ESCALATION " : ""}${q.by} → ${q.to}${q.ref ? ` about ${q.ref}` : ""}: ${q.text}`
+      + (q.options.length ? `  [options: ${q.options.join(" · ")}]` : "")
       + (q.answer ? `  — answered by ${q.answer.by}: ${q.answer.text}` : q.blocking && q.ref ? "  (blocking)" : ""));
   }
 }

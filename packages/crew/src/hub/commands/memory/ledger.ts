@@ -20,6 +20,7 @@ const DETAIL: Record<string, (e: LedgerEvent) => string> = {
   pause: (e) => String(e.reason ?? "paused"),
   resume: (e) => String(e.note ?? "resumed"),
   report: (e) => String(e.text ?? ""),
+  "end-run": (e) => `${e.ended}${e.note ? ` — ${e.note}` : ""}`,
   usage: (e) => `${e.tokens_in} in / ${e.tokens_out} out tokens, $${Number(e.cost ?? 0).toFixed(2)}${e.model ? ` (${e.model})` : ""}`,
 };
 

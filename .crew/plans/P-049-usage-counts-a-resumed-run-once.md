@@ -5,12 +5,13 @@ goal: G-007
 items: BUG-027
 touches: packages/crew/src/hub/core/memory/ledger.ts, packages/crew/src/hub/core/memory/activity.ts, packages/crew/test/ledger.test.ts, packages/crew/test/activity.test.ts, packages/crew/test/hub/e2e/team-2.test.ts
 depends_on:
-status: ready
+status: done
 branch: plan/P-049-usage-counts-a-resumed-run-once
 pr:
 created: 2026-10-25
-started:
-completed:
+started: 2026-10-26
+completed: 2026-10-26
+assignee: developer
 ---
 
 # P-049: Usage counts a resumed run once
@@ -53,10 +54,10 @@ Manual `usage --tokens-in …` events (no `source`) are increments as today and 
 - Tests: `usage(run, tokens, { source: "transcript", … })` with the existing helpers in ledger.test.ts; `led("usage", …, { source: "transcript" })` in activity.test.ts; the e2e case reuses team-2's `TRANSCRIPT`, `agent`, `events` and the hook payload, with a second transcript file.
 
 ## Tasks
-- [ ] T1: regression tests first (AC1–AC5), failing on the current code → verify: `cd packages/crew && npx vitest run test/ledger.test.ts test/activity.test.ts` fails on the new cases; after `npm run build`, `npx vitest run test/hub/e2e/team-2.test.ts -t "resumed"` fails
-- [ ] T2: `countedUsage` and `spend()` in ledger.ts → verify: `npx vitest run test/ledger.test.ts` (AC1–AC3)
-- [ ] T3: `liveRuns` tokens in activity.ts → verify: `npx vitest run test/activity.test.ts -t liveRuns` (AC4)
-- [ ] T4: end to end and types → verify: `npm run build && npx vitest run test/hub/e2e/team-2.test.ts -t "usage|resumed"`; `npm run typecheck`; `wc -l src/hub/core/memory/ledger.ts src/hub/core/memory/activity.ts` each under 300 (AC5, AC6)
+- [x] T1: regression tests first (AC1–AC5), failing on the current code → verify: `cd packages/crew && npx vitest run test/ledger.test.ts test/activity.test.ts` fails on the new cases; after `npm run build`, `npx vitest run test/hub/e2e/team-2.test.ts -t "resumed"` fails
+- [x] T2: `countedUsage` and `spend()` in ledger.ts → verify: `npx vitest run test/ledger.test.ts` (AC1–AC3)
+- [x] T3: `liveRuns` tokens in activity.ts → verify: `npx vitest run test/activity.test.ts -t liveRuns` (AC4)
+- [x] T4: end to end and types → verify: `npm run build && npx vitest run test/hub/e2e/team-2.test.ts -t "usage|resumed"`; `npm run typecheck`; `wc -l src/hub/core/memory/ledger.ts src/hub/core/memory/activity.ts` each under 300 (AC5, AC6)
 
 ## Test plan
 **Targeted checks** (from `packages/crew/`; the e2e file drives the built `dist/crew.mjs`: `npm run build` first, then discard the generated output, which Release builds):
@@ -74,8 +75,30 @@ n/a — internal; ships in the bundle (Release builds it) and reaches this repo 
 
 ## Handoff
 
+_Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
+
+- P-049: Usage counts a resumed run once [in-review] tasks 0/4 — claimed by Arpit Anand (developer:ac88522a5fe146410)
+- last checkpoint 2026-10-25 19:52 at T4 (a8f88a5) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
+- next: T1: regression tests first (AC1–AC5), failing on the current code → verify: `cd packages/crew && npx vitest run test/ledger.test.ts test/activity.test.ts` fails on the new cases; after `npm run build`, `npx vitest run test/hub/e2e/team-2.test.ts -t "resumed"` fails
+- evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —
+
+Latest log:
+- 2026-10-25: status draft → ready
+- 2026-10-26: assigned to the developer role
+- 2026-10-26: status ready → in-progress — branch plan/P-049-usage-counts-a-resumed-run-once
+
 ## Progress log
 
 - 2026-10-25: status draft → ready
+- 2026-10-26: assigned to the developer role
+- 2026-10-26: status ready → in-progress — branch plan/P-049-usage-counts-a-resumed-run-once
+- 2026-10-26: status in-progress → in-review
+- 2026-10-26: Executive authorized (team session, 2026-10-26): QA re-records P-049's AC2, AC3, AC5 and AC6 checkpoints under the qa identity, one direct checkpoint call each, appending ledger entries and editing nothing. Earlier QA checks passed but were recorded by a run with no role.
+- 2026-10-26: ticked T1-T4; work done and checkpointed earlier at a8f88a5
+- 2026-10-26: status in-review → done
+- 2026-10-26: merged to main as b249d20 (squash); full suite green on 32a3651 (exit 0, 572.6s); no rollout steps beyond merge
+- 2026-10-26: Note (session): P-049's recorded full suite ran in the main checkout (suites.jsonl 21:12Z), so it tested main, not the plan; its code is covered by later green suites of P-034 (21:23Z) and P-050 (21:37Z) run on branches that include b249d20. Filed as a bug.
 
 ## Outcome
+`countedUsage(events)` (exported, pure) in core/memory/ledger.ts returns the usage events in order with `tokens_in`, `tokens_out`, `cost` and `cache_read` replaced by what each adds: a `source: "transcript"` event adds its delta over the run's previous transcript event (in full when it is the first, or when `tokens_in`, `tokens_out` or `cache_read` dropped); any other usage event counts as recorded. `spend()` iterates it (attribution and run counting unchanged); `liveRuns` sums it for a run's `tokens`. The hook and recorded events are unchanged. Regression tests: 3 new `spend` cases in test/ledger.test.ts, 1 `liveRuns` case in test/activity.test.ts, and "usage of a resumed run counts its latest transcript once" in test/hub/e2e/team-2.test.ts (on the old code it reports 453 = 213 + 240). Awaiting QA.
+Learnings: K-2026-10-26-a-fresh-plan-worktree-has-no-packages

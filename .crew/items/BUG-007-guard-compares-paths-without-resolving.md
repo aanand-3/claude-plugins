@@ -2,13 +2,14 @@
 id: BUG-007
 type: bug
 title: Guard compares paths without resolving symlinks
-status: triaged
+status: done
 severity: S3
 priority: P2
 goal: G-001
 plan: P-019
 created: 2026-10-24
-closed:
+closed: 2026-10-26
+completed: 2026-10-26
 ---
 
 # BUG-007: Guard compares paths without resolving symlinks
@@ -33,3 +34,5 @@ The path is matched as given, so it can miss `paths.protected` and the write pas
 
 ## Notes
 - 2026-10-24: status new → triaged — priority P2, severity S3
+- 2026-10-26: DONE: fixed by P-019 (152650b). guard.test.ts 'guard_resolves_paths: relative and symlinked paths are matched where they lead (BUG-007)' (symlink to .crew denied); targets.ts resolves with realpathSync. P-050/P-051 kept it (test still on main). No remaining work.
+- 2026-10-26: status triaged → done — DONE per Architect review: fixed by P-019 (152650b).

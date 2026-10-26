@@ -5,8 +5,8 @@ import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import { HUB, Repo } from "../../helpers/repo.js";
-import { init, tr } from "./helpers.js";
-import { agent, events } from "./sections.js";
+import { finish, init, tr } from "./helpers.js";
+import { agent, events, readyPlan } from "./sections.js";
 
 let repo: Repo;
 const feed = () => join(repo.path, ".git/crew/activity.jsonl");
@@ -69,6 +69,15 @@ describe("activity --hook", () => {
     activity(call("Bash", { command: "ls" }, { agent_id: "other" })); // a new run with nothing to go on
     expect(lines().map((e) => [e.target, e.ref])).toEqual([["crew.mjs checkpoint", "P-004"], ["npm", "P-004"], ["src/b.ts", "P-007"], ["ls", null]]);
   });
+
+  it("labels a Bash call <role> <plan>: <what>, whether or not the guard's label reached it (P-056 AC4)", () => {
+    activity(call("Bash", { command: "node .crew/bin/crew.mjs checkpoint P-004 --step T1" }));
+    activity(call("Bash", { command: "npm run build && npx vitest run test/a.test.ts", description: "build + test" }));
+    activity(call("Bash", { command: "ls", description: "developer P-004: list files" }));
+    activity(call("Read", { file_path: join(repo.path, "src/a.ts") }));
+    expect(lines().map((e) => e.label)).toEqual(["developer P-004: checkpoint P-004", "developer P-004: build + test",
+      "developer P-004: list files", undefined]);
+  });
 });
 
 describe("usage --hook records the agent's report", () => {
@@ -112,9 +121,11 @@ describe("status: Running now", () => {
   };
 
   it("shows each live run with task, last action, age and tokens", () => {
-    put(feed(), [act(30, { target: "x" }), act(3), act(2, { run: "qa:q1", role: "qa", ref: "P-002", tool: "Bash", target: "npx" })]);
+    put(feed(), [act(30, { target: "x" }), act(3), act(2, { run: "qa:q1", role: "qa", ref: "P-002", tool: "Bash", target: "npx" }),
+      act(1, { run: "qa:q2", role: "qa", ref: "P-003", tool: "Bash", target: "npx", label: "qa P-003: vitest a.test.ts" })]);
     put(ledger(), [led(10, "checkpoint", { step: "T2" }), led(40, "usage", { tokens_in: 100, tokens_out: 20 })]);
     expect(running()?.split("\n")).toEqual([
+      "- qa (qa:q2) — P-003 · task — · qa P-003: vitest a.test.ts 1m ago · tokens —",
       "- qa (qa:q1) — P-002 · task — · Bash npx 2m ago · tokens —",
       "- developer (developer:a1) — P-001 · task T2 · Edit src/a.ts 3m ago · tokens 120",
     ]);
@@ -142,6 +153,55 @@ describe("status: Running now", () => {
   });
 });
 
+describe("stopped runs (BUG-034)", () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const director = (): any[] => {
+    const r = tr(repo, "dispatch", "--json");
+    expect(r.returncode, r.stderr).toBe(0);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return JSON.parse(r.stdout).entries.filter((e: any) => e.role === "director");
+  };
+  const live = () => tr(repo, "status").stdout.includes("developer (developer:a1)");
+  const ended = () => (existsSync(ledger()) ? readFileSync(ledger(), "utf8") : "").split("\n").filter((l) => l.includes('"end-run"'));
+
+  it("a run whose plan is done is not live and gives no director entry (AC1, AC4)", () => {
+    readyPlan(repo);
+    repo.commit("chore(hub): plan P-001");
+    const r = tr(repo, "start", "P-001");
+    expect(r.returncode, r.stderr).toBe(0);
+    finish(repo, "P-001");
+    put(feed(), [act(30)]);
+    expect(director()).toEqual([]);
+    expect(live()).toBe(false);
+  });
+
+  it("an idle run on an in-progress plan → director: resume or reassign, until end-run (AC2, AC3)", () => {
+    readyPlan(repo);
+    expect(tr(repo, "move", "P-001", "in-progress").returncode).toBe(0);
+    put(feed(), [act(30)]);
+    expect(director().map((e) => e.task)).toEqual(["run developer:a1 on P-001 idle for 30 min: resume or reassign"]);
+    const r = tr(repo, "--as", "director", "end-run", "developer:a1", "--note", "stopped with TaskStop");
+    expect([r.returncode, r.stdout.trim()], r.stderr).toEqual([0, "developer:a1 ended: no longer live."]);
+    expect(director()).toEqual([]);
+    expect(live()).toBe(false);
+    expect(ended()).toHaveLength(1);
+    put(feed(), [act(0)]); // it acts again: live again
+    expect(live()).toBe(true);
+  });
+
+  it("end-run: only the executive or the director, only a live run, and a refusal writes nothing (AC2)", () => {
+    put(feed(), [act(30)]);
+    const qa = tr(repo, "--as", "qa", "end-run", "developer:a1");
+    expect(qa.returncode).not.toBe(0);
+    expect(qa.stderr + qa.stdout).toContain("Only the executive or the director ends a run; this run is the qa role.");
+    const unknown = tr(repo, "--as", "director", "end-run", "pm:nobody");
+    expect(unknown.returncode).not.toBe(0);
+    expect(unknown.stderr + unknown.stdout).toContain("pm:nobody is not running.");
+    expect(ended()).toEqual([]);
+    expect(live()).toBe(true);
+  });
+});
+
 describe("watch", () => {
   it("prints the recent feed, then follows it", async () => {
     put(feed(), [act(9, { target: "one" }), act(8, { ref: "P-002", target: "two" })]);
@@ -165,8 +225,8 @@ describe("watch", () => {
       expect(only.out.text).not.toContain("one");
       expect(only.out.text).toContain("Edit two");
       activity(call("Bash", { command: "node .crew/bin/crew.mjs resume P-001" }));
-      expect(await until(() => all.out.text.includes("Bash crew.mjs resume"), 2_000)).toBe(true);
-      expect(only.out.text).not.toContain("crew.mjs resume");
+      expect(await until(() => all.out.text.includes("developer P-001: resume P-001"), 2_000)).toBe(true);
+      expect(only.out.text).not.toContain("resume P-001");
     } finally {
       all.p.kill();
       only.p.kill();

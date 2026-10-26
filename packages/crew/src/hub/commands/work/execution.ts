@@ -158,9 +158,10 @@ function autoWorktrees(store: Store, o: CheckpointOptions): number {
   return 0;
 }
 
-/** With plan worktrees, commit the plan's uncommitted code (`git.codeChanges`: not .crew/, generated or secret files) on its
- * branch, in its worktree. Hooks run; one that refuses fails the command with git's message. A command refused later
- * leaves no commit behind: the branch goes back to where it was, the changes stay in the worktree. Returns the new commit. */
+/** With plan worktrees, commit the plan's uncommitted code (`git.codeChanges`: not the hub's documents under .crew/,
+ * generated or secret files; setup files under .crew/ are code) on its branch, in its worktree. Hooks run; one that
+ * refuses fails the command with git's message. A command refused later leaves no commit behind: the branch goes back to
+ * where it was, the changes stay in the worktree. Returns the new commit. */
 export function commitWork(store: Store, plan: Doc, subject: string): string | null {
   const home = store.settings().plan_worktrees ? store.planHome(plan.id) : null;
   if (!home || git.git(["-C", home, "branch", "--show-current"])?.trim() !== plan.get("branch")) return null;

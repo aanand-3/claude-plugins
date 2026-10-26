@@ -12,11 +12,18 @@ Executive (human)   initiates the idea, adds context, decides go / pivot / kill;
       │  decided idea + success criteria
 Director (agent)    turns the idea into the focus goal, staffs teams, accepts results, reports, escalates
       │
-Team (agents)       PM · Architect · Developer · QA · Release, in one or more teams (e.g. backend / frontend)
+Team (agents)       PM · Architect · Designer · Developer · QA · Release, in one or more teams (e.g. backend / frontend)
 ```
+- **Who does what on a plan (RACI):** the PM opens and accepts it; the Architect specs it, makes it ready and reviews the
+  code; the Developer implements it; QA records the evidence; Release lands it. On a **UI plan** (its touches overlap
+  `design.ui_paths` in `.crew/config.yaml`) the **Designer** is responsible for its `## Design` section before it can be
+  ready (the layout from DESIGN.md's shell and inventory, the UI acceptance criteria) and for the design review after
+  it is built (`review --design`, in code and on screen at full size at 375/900/1440 px, light and dark), which
+  accepting it needs; the Developer builds with the design skill's `page` mode and QA records `layout_sweep.mjs` as
+  evidence. Projects without `ui_paths` have no UI plans and no design gate.
 - **`mode`** (`ai-native | ai-assisted | human-led`) decides where humans sit. It sets the defaults for human gates and lesson review.
   - ai-native: the human is involved until the idea is decided, then only for escalations.
-  - ai-assisted: + plan `ready`/`done` approval.
+  - ai-assisted: + plan `ready`/`accepted` approval.
   - human-led: humans drive.
 - **Reserved decisions** are always escalated:
   - changing the idea's outcome or success criteria;
@@ -57,7 +64,7 @@ built-in defaults (crew)
 **What it configures:**
 | Section | Global | Per role / team | Examples |
 |---|---|---|---|
-| `mode`, `human_gates`, role gates | ✓ | — | `in-review→done: qa`; `done` needs a human in ai-assisted mode |
+| `mode`, `human_gates`, role gates | ✓ | — | `in-review→accepted: pm`; `accepted` needs a human in ai-assisted mode; `accepted→done` once landed |
 | `reserved` actions | ✓ | — | prod deploy, publish, spend, delete data, policy change |
 | `models` | default model | per role | Architect on the strongest model, PM triage on a cheaper one; fallback model |
 | `tools` | allow/deny baseline | allow/deny per role | QA: read + run tests, no deploy; Release: deploy only via escalation; PM: no code edits |
@@ -109,7 +116,7 @@ Phases 0–7 and the dogfood step are built on stacked branches (`refactor/renam
   claimed a plan or moved it to in-progress is an implementer, and their checks never count as independent evidence.
 - **Teams:** `CREW_TEAM` selects a run's team, whose policy section (models, tools, paths, run budgets) then applies.
 - **Questions:** an `ask` records who must answer; only that role (or a human with `--approved-by`) answers, never the asker.
-- **Default mode** is `ai-assisted` (a breaking change): without `.crew/policy.yaml`, plan ready/done and goal done need a human.
+- **Default mode** is `ai-assisted` (a breaking change): without `.crew/policy.yaml`, plan ready/accepted and goal done need a human.
 - **Secrets in knowledge** are an error in `check`, not a hint: knowledge is committed.
 - **Deferred:** `ideate`/`architecture` skills (A, T); kickoff/onboard as ledger runs (T); the Claude Code policy adapter that
   applies models, tools, paths and secrets per role (T); automatic `usage` capture (budgets bite only when runs record usage);

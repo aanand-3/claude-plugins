@@ -2,8 +2,8 @@
 id: CHORE-003
 type: chore
 title: A wrong-role move reports content gates before the role gate
-status: new
-priority:
+status: triaged
+priority: P3
 goal: G-003
 plan:
 created: 2026-10-23
@@ -19,3 +19,4 @@ move checks a transition's content gate (evidence, review, readiness) before the
 - [ ]
 
 ## Notes
+- 2026-10-26: status new → triaged — priority P3

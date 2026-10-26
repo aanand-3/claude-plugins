@@ -23,7 +23,7 @@ const TABBED: Record<string, string[]> = {
   item: ["Evidence", "Environment", "Notes", "Findings"],
 };
 /** Child issues sort by where they are in the flow: open work first, closed last. */
-const STATUS_ORDER = ["in-progress", "in-review", "blocked", "ready", "planned", "triaged", "draft", "new", "done", "dropped", "wontfix", "duplicate"];
+const STATUS_ORDER = ["in-progress", "in-review", "accepted", "blocked", "ready", "planned", "triaged", "draft", "new", "done", "dropped", "wontfix", "duplicate"];
 const LONG_VERIFY = 80;
 
 function Gate({ doc }: { doc: GraphDoc }) {

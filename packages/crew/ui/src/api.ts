@@ -22,10 +22,12 @@ export function onHubChange(onChange: () => void): () => void {
 
 /** A live agent run and a feed event, as `GET api/activity` serves them (core/memory/activity.ts). */
 export interface LiveRun {
-  run: string; role: string; ref: string | null; task: string | null; tool: string; target: string | null;
+  run: string; role: string; ref: string | null; task: string | null; tool: string; target: string | null; label: string | null;
   ts: string; minutes: number; idle: boolean; tokens: number | null;
 }
-export interface ActivityEvent { ts: string; run: string; role: string; ref: string | null; tool: string; target: string | null }
+export interface ActivityEvent {
+  ts: string; run: string; role: string; ref: string | null; tool: string; target: string | null; label?: string;
+}
 export interface Activity { running: LiveRun[]; recent: ActivityEvent[] }
 /** One feed entry for a ref (`GET api/activity?ref=`): a tool call (`type` "tool") or a ledger event, with its text. */
 export interface FeedEntry { ts: string; type: string; run: string; ref: string | null; text: string }

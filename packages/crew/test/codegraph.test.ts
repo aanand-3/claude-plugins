@@ -12,6 +12,8 @@ it("hints until .githooks/post-commit runs graphify", () => {
   const dir = mkdtempSync(join(tmpdir(), "hub-graph-"));
   const tr = (...args: string[]) => execFileSync("node", [DIST, ...args], { cwd: dir, encoding: "utf8" });
   execFileSync("git", ["init", "-q", "-b", "main"], { cwd: dir });
+  execFileSync("git", ["config", "user.name", "Test"], { cwd: dir });
+  execFileSync("git", ["config", "user.email", "test@example.com"], { cwd: dir });
   tr("init");
   expect(tr("check")).toContain(HINT);
   mkdirSync(join(dir, ".githooks"));

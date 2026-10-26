@@ -9,7 +9,7 @@ import { HUB, Repo, type Result } from "../helpers/repo.js";
 import { PLAN_DRAFT } from "./e2e/fixtures.js";
 
 const tr = (r: Repo, ...args: string[]): Result => r.node(HUB, args);
-const UNMERGED = "1. P-001: Signup — merge plan/P-001-signup into main";
+const UNMERGED = "1. P-001: Signup — `land P-001`";
 const MERGED = "merged: P-001 (plan/P-001-signup)";
 
 /** A committed hub with plan_worktrees on, no human gates, and `files` committed on main. */
@@ -24,7 +24,7 @@ function worktreeHub(files: Record<string, string> = {}): Repo {
   return r;
 }
 
-/** P-001 taken to done in its worktree after `work` changed it there, its branch committed; QA's check from another run. */
+/** P-001 taken to accepted in its worktree after `work` changed it there, its branch committed; QA's check from another run. */
 function donePlan(r: Repo, work: (w: Repo) => void): Repo {
   r.write(".crew/drafts/plan.md", PLAN_DRAFT);
   expect(tr(r, "new-plan", "Signup", "--from", ".crew/drafts/plan.md", "--touches", "src/**").returncode).toBe(0);
@@ -41,7 +41,7 @@ function donePlan(r: Repo, work: (w: Repo) => void): Repo {
   const env = { ...r.env };
   Object.assign(r.env, { CREW_RUN: "qa-run", CREW_ACTOR: "qa" });
   expect(tr(r, "checkpoint", "P-001", "--run", "true", "--ac", "all").returncode).toBe(0);
-  const done = tr(r, "move", "P-001", "done");
+  const done = tr(r, "move", "P-001", "accepted");
   expect(done.returncode, done.stderr).toBe(0);
   r.env = env;
   w.env = env;

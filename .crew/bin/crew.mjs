@@ -1680,7 +1680,7 @@ var require_log = __commonJS({
       if (logLevel === "debug")
         console.log(...messages);
     }
-    function warn(logLevel, warning) {
+    function warn2(logLevel, warning) {
       if (logLevel === "debug" || logLevel === "warn") {
         if (typeof node_process.emitWarning === "function")
           node_process.emitWarning(warning);
@@ -1689,7 +1689,7 @@ var require_log = __commonJS({
       }
     }
     exports.debug = debug;
-    exports.warn = warn;
+    exports.warn = warn2;
   }
 });
 
@@ -4829,8 +4829,8 @@ var require_resolve_flow_scalar = __commonJS({
     };
     function parseCharCode(source, offset, length, onError) {
       const cc = source.substr(offset, length);
-      const ok = cc.length === length && /^[0-9a-fA-F]+$/.test(cc);
-      const code = ok ? parseInt(cc, 16) : NaN;
+      const ok2 = cc.length === length && /^[0-9a-fA-F]+$/.test(cc);
+      const code = ok2 ? parseInt(cc, 16) : NaN;
       try {
         return String.fromCodePoint(code);
       } catch {
@@ -7264,7 +7264,7 @@ var require_public_api = __commonJS({
       }
       return doc;
     }
-    function parse8(src, reviver, options) {
+    function parse10(src, reviver, options) {
       let _reviver = void 0;
       if (typeof reviver === "function") {
         _reviver = reviver;
@@ -7305,7 +7305,7 @@ var require_public_api = __commonJS({
         return value.toString(options);
       return new Document.Document(value, _replacer, options).toString(options);
     }
-    exports.parse = parse8;
+    exports.parse = parse10;
     exports.parseAllDocuments = parseAllDocuments;
     exports.parseDocument = parseDocument;
     exports.stringify = stringify2;
@@ -7369,7 +7369,7 @@ import { parseArgs } from "node:util";
 
 // src/hub/commands/work/planning.ts
 import { readFileSync as readFileSync9 } from "node:fs";
-import { join as join16, resolve as resolve7 } from "node:path";
+import { join as join18, resolve as resolve8 } from "node:path";
 
 // src/hub/core/git.ts
 import { spawnSync } from "node:child_process";
@@ -7414,7 +7414,9 @@ var PLAN_FLOW = {
   ready: ["in-progress", "draft", "dropped"],
   "in-progress": ["blocked", "in-review", "ready", "dropped"],
   blocked: ["in-progress", "dropped"],
-  "in-review": ["in-progress", "done", "dropped"],
+  "in-review": ["in-progress", "accepted", "dropped"],
+  accepted: ["done", "in-progress", "dropped"],
+  // accepted: QA and review passed; done: landed on the base
   done: [],
   dropped: ["draft"]
 };
@@ -7425,20 +7427,22 @@ var GOAL_FLOW = {
   dropped: ["proposed"]
 };
 var ITEM_FLOW = {
-  new: ["triaged", "wontfix", "duplicate"],
-  triaged: ["new", "wontfix", "duplicate"],
-  wontfix: ["new"],
-  duplicate: ["new"]
+  new: ["triaged", "done", "wontfix", "duplicate"],
+  triaged: ["new", "done", "wontfix", "duplicate"],
+  done: ["new", "wontfix", "duplicate"],
+  wontfix: ["new", "done", "duplicate"],
+  duplicate: ["new", "done", "wontfix"]
 };
 var CLOSED = /* @__PURE__ */ new Set(["done", "dropped"]);
 var ACTIVE = /* @__PURE__ */ new Set(["in-progress", "blocked", "in-review"]);
-var ITEM_CLOSED = /* @__PURE__ */ new Set(["wontfix", "duplicate"]);
+var ITEM_CLOSED = /* @__PURE__ */ new Set(["done", "wontfix", "duplicate"]);
 var PLAN_TO_ITEM = {
   draft: "planned",
   ready: "planned",
   "in-progress": "in-progress",
   blocked: "in-progress",
   "in-review": "in-progress",
+  accepted: "in-progress",
   done: "done"
 };
 var KINDS = {
@@ -7452,7 +7456,7 @@ var KINDS = {
 var DIRS = { goal: "goals", plan: "plans", item: "items" };
 var FLOWS = { idea: IDEA_FLOW, goal: GOAL_FLOW, plan: PLAN_FLOW, item: ITEM_FLOW };
 var ITEM_TYPES = { FEAT: "feat", BUG: "bug", CHORE: "chore", SPIKE: "spike" };
-var ROLES = ["executive", "director", "pm", "architect", "developer", "qa", "release"];
+var ROLES = ["executive", "director", "pm", "architect", "developer", "qa", "release", "designer"];
 var OFF_FOCUS_OK = /* @__PURE__ */ new Set(["BUG", "CHORE"]);
 var TRIAGE_SECTIONS = {
   FEAT: ["Summary"],
@@ -7660,10 +7664,10 @@ var ROOT = null;
 function useRoot(root) {
   ROOT = root;
 }
-function git(args, check2 = false) {
+function git(args, check3 = false) {
   const r = spawnSync("git", ROOT && args[0] !== "-C" ? ["-C", ROOT, ...args] : args, { encoding: "utf8" });
   if (r.status !== 0) {
-    if (check2) fail(`git ${args.join(" ")} failed: ${(r.stderr ?? "").trim()}`);
+    if (check3) fail(`git ${args.join(" ")} failed: ${(r.stderr ?? "").trim()}`);
     return null;
   }
   return r.stdout;
@@ -7722,9 +7726,10 @@ function generated(dir, files2) {
   for (let i = 0; i + 2 < attrs.length; i += 3) if (attrs[i + 2] === "true" || attrs[i + 2] === "set") out.add(attrs[i]);
   return out;
 }
+var NOT_CODE = /^\.crew\/((plans|items|goals|knowledge|drafts|view)\/|idea\.md$)/;
 function codeChanges(dir, secretGlobs) {
   const secret = secretGlobs.map(globRe);
-  const files2 = changed(dir, ["."]).filter((f) => !f.startsWith(".crew/") && !secret.some((re) => re.test(f)));
+  const files2 = changed(dir, ["."]).filter((f) => !NOT_CODE.test(f) && !secret.some((re) => re.test(f)));
   const gen = generated(dir, files2);
   return files2.filter((f) => !gen.has(f));
 }
@@ -7748,6 +7753,7 @@ function words(out) {
 }
 
 // src/hub/core/work/hubstate.ts
+import { spawnSync as spawnSync2 } from "node:child_process";
 import { existsSync as existsSync2, mkdirSync as mkdirSync2, realpathSync } from "node:fs";
 import { join as join2 } from "node:path";
 
@@ -7756,6 +7762,22 @@ import { createHash, randomBytes } from "node:crypto";
 import { appendFileSync, existsSync, linkSync, mkdirSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 var UNATTRIBUTED = "unattributed";
+var COUNTED = ["tokens_in", "tokens_out", "cost", "cache_read"];
+function countedUsage(events) {
+  const last = /* @__PURE__ */ new Map();
+  const out = [];
+  for (const ev of events) {
+    if (ev.type !== "usage") continue;
+    const n2 = (e, k) => Number(e[k]) || 0;
+    const prev = ev.source === "transcript" ? last.get(ev.run) : void 0;
+    const fresh = !prev || ["tokens_in", "tokens_out", "cache_read"].some((k) => n2(ev, k) < n2(prev, k));
+    const counted = { ...ev };
+    for (const k of COUNTED) counted[k] = n2(ev, k) - (fresh ? 0 : n2(prev, k));
+    if (ev.source === "transcript") last.set(ev.run, ev);
+    out.push(counted);
+  }
+  return out;
+}
 var LOCK_WAIT_MS = 5e3;
 var LOCK_STALE_MS = 3e4;
 function whoAmI(root) {
@@ -7834,8 +7856,7 @@ var Ledger = class _Ledger {
       if (!seen.has(run2)) u.runs++;
       runs.set(`${group}|${key}`, seen.add(run2));
     };
-    for (const ev of events) {
-      if (ev.type !== "usage") continue;
+    for (const ev of countedUsage(events)) {
       const cost = Number(ev.cost) || 0, tin = Number(ev.tokens_in) || 0, tout = Number(ev.tokens_out) || 0;
       s2.cost += cost;
       s2.tokensIn += tin;
@@ -7950,8 +7971,12 @@ function commitState(home2, message) {
     const changed2 = changed(home2, STATE_PATHS);
     if (!changed2.length) return null;
     git(["-C", home2, "add", "-A", "--", ...changed2], true);
-    const r = git(["-C", home2, "commit", "-q", "--only", "-m", message, "--", ...changed2]);
-    if (r === null) fail(`The hub's files are written but not committed (git commit failed in ${home2}); the next hub command commits them.`);
+    const r = spawnSync2("git", ["commit", "-q", "--only", "-m", message, "--", ...changed2], { cwd: home2, encoding: "utf8" });
+    if (r.status !== 0) {
+      const why = `${r.stderr ?? ""}
+${r.stdout ?? ""}`.split("\n").map((l) => l.trim()).find(Boolean) ?? "git commit failed";
+      fail(`The hub's files are written but not committed (git commit failed in ${home2}: ${why}); the next hub command commits them. \`crew.mjs doctor\` checks the hooks.`);
+    }
     return git(["-C", home2, "rev-parse", "--short", "HEAD"])?.trim() ?? null;
   } finally {
     releaseLock(lock, token);
@@ -8043,8 +8068,8 @@ ${line3}`;
     const out = [];
     for (const line3 of stripComments(this.section(name)).split("\n")) {
       const m = TASK_RE.exec(line3);
-      const label = m?.[2].trim();
-      if (m && label && label !== "T1: \u2026 \u2192 verify: \u2026") out.push([m[1] !== " ", label]);
+      const label2 = m?.[2].trim();
+      if (m && label2 && label2 !== "T1: \u2026 \u2192 verify: \u2026") out.push([m[1] !== " ", label2]);
     }
     return out;
   }
@@ -8059,8 +8084,8 @@ ${line3}`;
       const h = /^###\s+(.+?)\s*$/.exec(line3);
       if (h) phase = h[1];
       const m = TASK_RE.exec(line3);
-      const label = m?.[2].trim();
-      if (m && label && label !== "T1: \u2026 \u2192 verify: \u2026") out.push([m[1] !== " ", label, phase]);
+      const label2 = m?.[2].trim();
+      if (m && label2 && label2 !== "T1: \u2026 \u2192 verify: \u2026") out.push([m[1] !== " ", label2, phase]);
     }
     return out;
   }
@@ -8166,6 +8191,13 @@ var PRESETS = {
       role_gates: {
         "item.triaged": "pm",
         // only the PM triages and ranks
+        "item.done": "pm",
+        // … and closes any item from any status (a plan's done closes its own)
+        "item.wontfix": "pm",
+        "item.duplicate": "pm",
+        "item.regoaled": "pm",
+        // … and moves items, or plans with their items, between goals (`regoal`)
+        "plan.regoaled": "pm",
         "plan.ready": "architect",
         // only the Architect makes a spec ready
         "plan.assigned": "pm",
@@ -8174,15 +8206,21 @@ var PRESETS = {
         // only the assigned developer implements (and fixes what comes back)
         "plan.in-review": "developer",
         // … and hands over to test
+        "plan.accepted": "pm",
+        // the PM accepts, against QA's evidence and the review
         "plan.done": "pm",
-        // the PM completes, against QA's evidence
+        // … and completes once Release has landed it
+        "plan.landed": "release",
+        // Release lands it; a failed land sends it back (accepted → in-progress)
         "plan.dropped": "pm",
         "goal.done": "pm",
         // the PM verifies a goal's criteria and closes it
         "plan.reassigned": "director",
         // the Director moves stuck work to someone else
-        "plan.reviewed": "architect"
+        "plan.reviewed": "architect",
         // code review against the spec; done needs an approval of the current code
+        "plan.design-reviewed": "designer"
+        // design review of a UI plan (design.ui_paths), in code and on screen
       },
       // liveness: a claim quiet for a day is stale; a third bounce or a sixth failed attempt goes to the Director
       limits: { stale_claim_hours: 24, max_bounces: 2, max_attempts: 5 },
@@ -8195,12 +8233,20 @@ var PRESETS = {
 
 // src/hub/core/team/policy.ts
 var MODES = ["ai-native", "ai-assisted", "human-led"];
-var NOTIFY_ON = ["escalation", "budget", "stale", "goal-done", "paused"];
-var ACTIONS = /* @__PURE__ */ new Set(["plan.assigned", "plan.reassigned", "plan.reviewed"]);
+var NOTIFY_ON = ["escalation", "budget", "stale", "goal-done", "paused", "stopped", "goal-approval"];
+var ACTIONS = /* @__PURE__ */ new Set([
+  "plan.assigned",
+  "plan.reassigned",
+  "plan.reviewed",
+  "plan.design-reviewed",
+  "plan.landed",
+  "item.regoaled",
+  "plan.regoaled"
+]);
 var MODE_GATES = {
   "ai-native": [],
-  "ai-assisted": ["plan.ready", "plan.done", "goal.done"],
-  "human-led": ["plan.ready", "plan.done", "goal.done", "item.triaged"]
+  "ai-assisted": ["plan.ready", "plan.accepted", "goal.done"],
+  "human-led": ["plan.ready", "plan.accepted", "goal.done", "item.triaged"]
 };
 var BUILT_IN = {
   mode: "ai-assisted",
@@ -8249,14 +8295,14 @@ var CEILING = /^budgets\./;
 function loadLayers(root, crewDir, role, team) {
   const errors = [], hints = [], custom = [], charters = {};
   const teamScopes = {};
-  const read = (label, text2) => {
+  const read = (label2, text2) => {
     if (text2 === null) return null;
     try {
       const v = (0, import_yaml.parse)(text2) ?? {};
       if (typeof v !== "object" || Array.isArray(v)) throw new Error("not a mapping");
       return v;
     } catch (e) {
-      errors.push(`${label}: invalid YAML \u2014 ${e.message.split("\n")[0]}`);
+      errors.push(`${label2}: invalid YAML \u2014 ${e.message.split("\n")[0]}`);
       return null;
     }
   };
@@ -8375,12 +8421,12 @@ function resolveLayers(layers, roles = ROLES) {
           sources.set(path, layer.name);
         }
       } else if (CEILING.test(path) && typeof v === "number") {
-        const cap = ceilings.get(path);
-        if (cap && v > cap[0]) {
-          errors.push(`${layer.name}: ${path}: ${v} exceeds the ceiling ${cap[0]} set by ${cap[1]}`);
+        const cap2 = ceilings.get(path);
+        if (cap2 && v > cap2[0]) {
+          errors.push(`${layer.name}: ${path}: ${v} exceeds the ceiling ${cap2[0]} set by ${cap2[1]}`);
           continue;
         }
-        if (layer.org) ceilings.set(path, [Math.min(v, cap?.[0] ?? v), layer.name]);
+        if (layer.org) ceilings.set(path, [Math.min(v, cap2?.[0] ?? v), layer.name]);
         values.set(path, v);
         sources.set(path, layer.name);
       } else if (path === "human_gates") {
@@ -8418,7 +8464,7 @@ function resolveLayers(layers, roles = ROLES) {
   const allow = get("tools.allow", []);
   for (const t of allow.filter((a) => deny.includes(a))) errors.push(`tools.allow: '${t}' is denied by ${sources.get("tools.deny")} (deny wins)`);
   const num2 = (p) => get(p, null);
-  const policy = {
+  const policy2 = {
     mode,
     human_gates: gates,
     role_gates,
@@ -8446,7 +8492,7 @@ function resolveLayers(layers, roles = ROLES) {
       idle_minutes: num2("limits.idle_minutes")
     }
   };
-  return { policy, sources, errors };
+  return { policy: policy2, sources, errors };
 }
 function transitionProblem(t) {
   const [kind, step] = t.split(".");
@@ -8820,279 +8866,19 @@ var Store = class _Store {
   }
 };
 
-// src/hub/core/work/queries.ts
-var up = (s2) => (s2 ?? "").toUpperCase();
-function itemStatus(item, plans2) {
-  const st = item.get("status") || "new";
-  if (ITEM_CLOSED.has(st)) return st;
-  const p = plans2.get(up(item.get("plan")));
-  return p ? PLAN_TO_ITEM[p.get("status") ?? ""] ?? st : st;
-}
-function planItems(plan, items2) {
-  const linked = new Set([...items2].filter(([, it]) => up(it.get("plan")) === plan.id).map(([i]) => i));
-  for (const i of idList(plan.get("items"))) linked.add(i);
-  return [...linked].sort().filter((i) => items2.has(i)).map((i) => items2.get(i));
-}
-function planGoal(plan, items2) {
-  return up(plan.get("goal")) || planItems(plan, items2).map((i) => up(i.get("goal"))).find(Boolean) || "";
-}
-function onFocus(plan, items2, focus) {
-  if (!focus || planGoal(plan, items2) === focus) return true;
-  const linked = planItems(plan, items2);
-  return linked.length > 0 && linked.every((i) => OFF_FOCUS_OK.has(i.id.split("-")[0]));
-}
-function goalOrder(goals2) {
-  return new Map([...goals2.keys()].sort().map((e, i) => [e, i]));
-}
-function goalQueue(goals2, focus) {
-  const rank = (g) => {
-    const p = PRIORITIES.indexOf(g.get("priority") ?? "");
-    return [g.id !== focus, p < 0 ? PRIORITIES.length : p, g.id];
-  };
-  return [...goals2.values()].filter((g) => g.get("status") === "active").sort(byKey(rank)).map((g) => g.id);
-}
-function itemRank(it, goals2, focus) {
-  const eorder = goalOrder(goals2);
-  const prio = PRIORITIES.includes(it.get("priority") ?? "") ? it.get("priority") : "P9";
-  return [prio !== "P0", !focus || up(it.get("goal")) !== focus, prio, eorder.get(up(it.get("goal"))) ?? eorder.size, it.id];
-}
-function ranked(items2, goals2, focus) {
-  return [...items2.values()].sort(byKey((i) => itemRank(i, goals2, focus)));
-}
-function unmetDeps(doc, plans2) {
-  return doc.dependsOn().filter((d) => plans2.get(d)?.get("status") !== "done");
-}
-function goalItems(goalId, items2) {
-  return [...items2.values()].filter((i) => up(i.get("goal")) === goalId && !ITEM_CLOSED.has(i.get("status") ?? ""));
-}
-function goalPlans(goalId, plans2, items2) {
-  return [...plans2.values()].filter((p) => planGoal(p, items2) === goalId);
-}
-
-// src/hub/core/work/gates.ts
-function triageProblems(item) {
-  const prefix = item.id.split("-")[0];
-  const problems = item.missing(TRIAGE_SECTIONS[prefix]).map((n2) => `empty section: ${n2}`);
-  if (!PRIORITIES.includes(item.get("priority") ?? "")) problems.push("no priority (P0\u2013P3)");
-  if (prefix === "BUG" && !Object.hasOwn(SEVERITY_PRIORITY, item.get("severity") ?? "")) problems.push("no severity (S1\u2013S4)");
-  return problems;
-}
-function fastLane(store, plan) {
-  const { types, max_tasks } = store.policy.policy.fast_lane;
-  const items2 = planItems(plan, store.items());
-  return types.length > 0 && items2.length > 0 && items2.every((i) => types.includes(i.id.split("-")[0])) && (max_tasks === null || plan.tasks().length <= max_tasks);
-}
-function readinessProblems(store, plan) {
-  return [
-    ...plan.missing(READY_SECTIONS).map((n2) => `empty section: ${n2}`),
-    ...plan.touches().length ? [] : ["no touches: (the paths this plan will change)"],
-    ...taskProblems(store, plan),
-    ...itemProblems(store, plan)
-  ];
-}
-function learningsProblems(plan, known) {
-  const m = /^\s*[-*]?\s*\**learnings?\**\s*:\**\s*(.*)$/im.exec(stripComments(plan.section("Outcome")));
-  if (!m) return ["Outcome has no `Learnings:` line \u2014 list the K-\u2026 entries captured with `learn`, or write `Learnings: none`"];
-  const ids = m[1].match(K_ID_RE) ?? [];
-  if (!ids.length && !/^none\b/i.test(m[1].trim())) return ["`Learnings:` must list K-\u2026 entries or say none"];
-  return ids.filter((i) => !known.has(i)).map((i) => `Learnings: ${i} does not exist`);
-}
-function decisionProblems(idea2) {
-  const problems = idea2.missing(DECIDED_SECTIONS).map((n2) => `empty section: ${n2}`);
-  if (idea2.hasContent("Success criteria") && !idea2.checklist("Success criteria").length) {
-    problems.push("Success criteria must be a checklist (`- [ ] \u2026`) so each one can be verified");
-  }
-  return problems;
-}
-function taskProblems(store, plan) {
-  const tasks = plan.tasks();
-  const max = store.settings().max_tasks;
-  const problems = tasks.length ? [] : ["no tasks"];
-  const noVerify = tasks.filter(([, t]) => !t.toLowerCase().includes("verify")).map(([, t]) => t.split("\u2192")[0].trim());
-  if (noVerify.length) problems.push(`tasks without '\u2192 verify:': ${noVerify.join("; ")}`);
-  if (tasks.length > max) problems.push(`${tasks.length} tasks (> max_tasks ${max}) \u2014 split the plan`);
-  return problems;
-}
-function itemProblems(store, plan) {
-  const items2 = store.items();
-  const linked = idList(plan.get("items"));
-  const problems = [];
-  for (const i of linked) {
-    if (!items2.has(i)) problems.push(`unknown item ${i}`);
-    else if (items2.get(i).get("status") === "new") problems.push(`item ${i} is not triaged`);
-  }
-  if (linked.some((i) => i.startsWith("BUG-"))) {
-    const text2 = (plan.section("Acceptance criteria") + plan.section("Tasks") + plan.section("Test plan")).toLowerCase();
-    if (!text2.includes("regression")) {
-      problems.push("fixes a bug but names no regression test (acceptance criteria, tasks or test plan)");
-    }
-  }
-  return problems;
-}
-
-// src/hub/core/work/footprint.ts
-var import_yaml2 = __toESM(require_dist(), 1);
-import { join as join6 } from "node:path";
-var LIVE = /* @__PURE__ */ new Set(["ready", "in-progress", "blocked", "in-review"]);
-var BROAD = 10;
-function sharedSetting(store) {
-  try {
-    return (0, import_yaml2.parse)(store.ws.read(join6(store.dir, "config.yaml")) ?? "")?.hub?.shared;
-  } catch {
-    return void 0;
-  }
-}
-function sharedGlobs(store) {
-  const v = sharedSetting(store);
-  return globList(v) ? v : [];
-}
-var globList = (v) => Array.isArray(v) && v.every((g) => typeof g === "string");
-function sharedProblem(store) {
-  const v = sharedSetting(store);
-  return v === void 0 || v === null || globList(v) ? null : "hub.shared: expected a list of path globs";
-}
-function isShared(touch, shared) {
-  return shared.includes(touch) || !/[*?]/.test(touch) && shared.some((s2) => globRe(s2).test(touch));
-}
-function blockingGlobs(a, b, shared = []) {
-  const mine = a.touches();
-  return b.touches().filter((g) => mine.some((m) => globsOverlap(m, g) && !(isShared(m, shared) && isShared(g, shared))));
-}
-function overlapping(plan, plans2, shared = []) {
-  return [...plans2.values()].filter((p) => p.id !== plan.id && LIVE.has(p.get("status") ?? "") && !p.dependsOn().includes(plan.id) && !plan.dependsOn().includes(p.id)).flatMap((p) => {
-    const globs = blockingGlobs(plan, p, shared);
-    return globs.length ? [{ id: p.id, globs }] : [];
-  });
-}
-function trackedFiles(home2) {
-  const ls = (...spec) => (git(["-C", home2, "ls-files", "--", ...spec]) ?? "").split("\n").filter(Boolean);
-  return { files: ls(), generated: new Set(ls(":(attr:linguist-generated)", ":(attr:linguist-generated=true)")) };
-}
-function touchHints(plan, tracked, shared) {
-  const out = [];
-  for (const t of plan.touches()) {
-    const re = globRe(t), hits = tracked.files.filter((f) => re.test(f));
-    if (/[*?]/.test(t) && (hits.length > BROAD || hits.some((f) => shared.some((s2) => globRe(s2).test(f))))) {
-      out.push(`${plan.id}: touches glob ${t} is broad (${hits.length} tracked files) \u2014 list the exact files it changes`);
-    }
-    const gen = hits.find((f) => tracked.generated.has(f));
-    if (gen) out.push(`${plan.id}: touches ${t} lists a generated path (${gen}) \u2014 Release rebuilds those (hub.build); no plan lists them`);
-  }
-  return out;
-}
-function drift(plan, base2, home2) {
-  if (!home2 || !plan.touches().length) return null;
-  const at = (args) => git(["-C", home2, ...args]);
-  const fork = at(["merge-base", base2, "HEAD"])?.trim();
-  if (!fork) return null;
-  const changed2 = new Set([
-    ...at(["diff", "--name-only", fork])?.split("\n") ?? [],
-    ...at(["ls-files", "--others", "--exclude-standard"])?.split("\n") ?? []
-  ].filter(Boolean));
-  const globs = plan.touches().map(globRe);
-  const outside = [...changed2].filter((f) => !f.startsWith(".crew/") && !globs.some((g) => g.test(f)));
-  const generated2 = /* @__PURE__ */ new Set();
-  if (outside.length) {
-    const out = (at(["check-attr", "-z", "linguist-generated", "--", ...outside]) ?? "").split("\0");
-    for (let i = 0; i + 2 < out.length; i += 3) if (out[i + 2] === "true" || out[i + 2] === "set") generated2.add(out[i]);
-  }
-  return outside.filter((f) => !generated2.has(f)).sort();
-}
-
-// src/hub/commands/work/execution.ts
-import { spawnSync as spawnSync3 } from "node:child_process";
-import { createHash as createHash2 } from "node:crypto";
-import { existsSync as existsSync8 } from "node:fs";
-import { join as join10 } from "node:path";
-
-// src/hub/commands/team/questions.ts
-import { randomBytes as randomBytes2 } from "node:crypto";
-
-// src/hub/commands/memory/knowledge.ts
-import { join as join7 } from "node:path";
-function learn(store, type, title, o = {}) {
-  store.require();
-  if (!KNOWLEDGE_TYPES.includes(type)) fail(`Unknown type '${type}'. Use ${KNOWLEDGE_TYPES.join(", ")}.`);
-  if (Boolean(o.why) === Boolean(o.from)) fail("Give exactly one of --why TEXT or --from DRAFT: the reason or evidence behind the fact.");
-  const [draftFile, why] = o.from ? store.readDraft(o.from, "knowledge entry") : [null, o.why];
-  if (!stripComments(why).trim()) fail("The entry has no content. Nothing was written.");
-  const found = secretsIn(`${title}
-${why}`, store.policy.policy.secrets.patterns);
-  if (found.length) fail(`Refused: the entry looks like it contains a secret (${found.join(", ")}). Knowledge is committed; describe it instead.`);
-  const entries = store.knowledge(false);
-  const supersedes = (o.supersedes ?? "").trim();
-  if (supersedes && !entries.some((e) => e.id === supersedes)) fail(`--supersedes ${supersedes}: no such entry.`);
-  const risk = type === "risk" ? { likelihood: o.likelihood?.toUpperCase(), impact: o.impact?.toUpperCase(), owner: o.owner } : void 0;
-  if (risk && (!RISK_LEVELS.includes(risk.likelihood ?? "") || !RISK_LEVELS.includes(risk.impact ?? ""))) {
-    fail("A risk needs --likelihood and --impact (H, M or L).");
-  }
-  const id = knowledgeId(title, (k) => store.ws.isFile(join7(store.knowledgeDir, `${k}.md`)));
-  const branch = /^plan\/(P-\d+)/.exec(currentBranch() ?? "")?.[1];
-  const text2 = entryText({
-    id,
-    type,
-    title,
-    why,
-    risk,
-    supersedes,
-    tier: o.candidate ? TIERS[1] : TIERS[0],
-    scope: (o.scope ?? "").split(",").map((s2) => s2.trim()).filter(Boolean),
-    source: o.source?.toUpperCase() ?? branch ?? ""
-  });
-  store.ws.write(join7(store.knowledgeDir, `${id}.md`), text2);
-  if (draftFile) store.consume(draftFile, o.keep);
-  store.ledger.record("learn", id, { kind: type, title, ...supersedes ? { supersedes } : {} });
-  store.say(store.rel(join7(store.knowledgeDir, `${id}.md`)));
-  return id;
-}
-function recallCmd(store, o = {}) {
-  store.require();
-  let globs = [];
-  if (o.plan) {
-    const plan = store.plans(true).get(o.plan.toUpperCase()) ?? fail(`No plan ${o.plan.toUpperCase()}.`);
-    globs = plan.touches();
-    if (!globs.length) store.say(`note: ${plan.id} declares no touches: \u2014 showing everything`);
-  }
-  const paths = (o.paths ?? "").split(",").map((p) => p.trim()).filter(Boolean);
-  const hits = recall(store.knowledge(), { paths, globs, topic: o.topic, type: o.type, all: o.all });
-  if (o.json) {
-    for (const e of hits) store.say(JSON.stringify(view(e, store)));
-    return;
-  }
-  if (!hits.length) store.say("Nothing recalled.");
-  for (const e of hits) {
-    const where = e.scope.length ? e.scope.join(", ") : "everywhere";
-    store.say(`${e.id}  [${e.type}${e.origin === "playbook" ? ", playbook" : ""}${e.supersededBy ? `, superseded by ${e.supersededBy}` : ""}]  ${e.title}  (${where})`);
-  }
-}
-function view(e, store) {
-  return {
-    id: e.id,
-    type: e.type,
-    title: e.title,
-    scope: e.scope,
-    source: e.source,
-    tier: e.tier,
-    origin: e.origin,
-    supersededBy: e.supersededBy,
-    path: e.doc.path ? store.rel(e.doc.path) : null,
-    body: stripComments(e.doc.text.replace(/^---\n[\s\S]*?\n---\n/, "")).replace(/^# .*\n/m, "").trim()
-  };
-}
-
 // src/hub/commands/team/autonomy.ts
-import { spawnSync as spawnSync2 } from "node:child_process";
-import { readFileSync as readFileSync7 } from "node:fs";
+import { spawnSync as spawnSync5 } from "node:child_process";
+import { readFileSync as readFileSync8 } from "node:fs";
 
 // src/hub/core/memory/activity.ts
 import { appendFileSync as appendFileSync2, closeSync, existsSync as existsSync6, mkdirSync as mkdirSync4, openSync, readFileSync as readFileSync4, readSync, realpathSync as realpathSync3, renameSync as renameSync2, statSync as statSync4 } from "node:fs";
-import { basename as basename2, dirname as dirname4, isAbsolute, join as join8, relative as relative3, resolve as resolve4 } from "node:path";
+import { basename as basename2, dirname as dirname4, isAbsolute, join as join6, relative as relative3, resolve as resolve4 } from "node:path";
 var ROTATE_BYTES = 2 * 1024 * 1024;
 var LOCK_WAIT_MS2 = 300;
 var TAIL_BYTES = 64 * 1024;
 var DAY_MS = 24 * 36e5;
 var IDLE_MINUTES = 20;
-var activityPath = (ledgerPath) => join8(dirname4(ledgerPath), "activity.jsonl");
+var activityPath = (ledgerPath) => join6(dirname4(ledgerPath), "activity.jsonl");
 var rotated = (path) => path.replace(/\.jsonl$/, ".1.jsonl");
 function appendActivity(path, ev, maxBytes = ROTATE_BYTES) {
   mkdirSync4(dirname4(path), { recursive: true });
@@ -9126,7 +8912,7 @@ function tail(path, bytes) {
     closeSync(fd);
   }
 }
-var parse3 = (text2) => text2.split("\n").filter((l) => l.trim()).flatMap((l) => {
+var parse2 = (text2) => text2.split("\n").filter((l) => l.trim()).flatMap((l) => {
   try {
     const e = JSON.parse(l);
     return e && typeof e.ts === "string" && typeof e.run === "string" ? [e] : [];
@@ -9135,13 +8921,13 @@ var parse3 = (text2) => text2.split("\n").filter((l) => l.trim()).flatMap((l) =>
   }
 });
 function readActivity(path) {
-  return [rotated(path), path].flatMap((p) => existsSync6(p) ? parse3(readFileSync4(p, "utf8")) : []);
+  return [rotated(path), path].flatMap((p) => existsSync6(p) ? parse2(readFileSync4(p, "utf8")) : []);
 }
 function previousRef(path, run2) {
   for (const p of [path, rotated(path)]) {
     const text2 = tail(p, TAIL_BYTES);
     const cut = existsSync6(p) && statSync4(p).size > TAIL_BYTES;
-    const lines = parse3(cut ? text2.slice(text2.indexOf("\n") + 1) : text2);
+    const lines = parse2(cut ? text2.slice(text2.indexOf("\n") + 1) : text2);
     const prev = lines.filter((e) => e.run === run2).at(-1);
     if (prev) return prev.ref;
   }
@@ -9159,7 +8945,7 @@ function real2(p) {
     return realpathSync3(p);
   } catch {
     const up5 = dirname4(p);
-    return up5 === p ? p : join8(real2(up5), basename2(p));
+    return up5 === p ? p : join6(real2(up5), basename2(p));
   }
 }
 function command(seg) {
@@ -9200,11 +8986,44 @@ function describe(h, root) {
       const first = segs.map(command).find((w) => w.length && !/^(cd|pushd)$/.test(w[0]));
       target = first ? basename2(first[0]) || null : null;
     }
+    ref ??= input.command.split(/\s+/).map((w) => worktreePlan(unquote(w))).find((p) => p) ?? null;
   }
   return { tool, target, ref: ref ?? worktreePlan(path) ?? worktreePlan(h.cwd) };
 }
+var WHAT_MAX = 80;
+var FILE_ARG = /[./]/;
+var VALUE_FLAG = /^(-[tcr]|--(config|root|dir|project|reporter|outputFile|testNamePattern))$/;
+function segmentWhat(seg) {
+  const hub = hubCall(seg);
+  if (hub) return hub.sub ? `${hub.sub}${hub.ref ? ` ${hub.ref}` : ""}` : "crew.mjs";
+  const w = command(seg);
+  const head = basename2(w[0] ?? "");
+  if (!head || /^(cd|pushd|popd|export)$/.test(head)) return null;
+  const vitest = head === "vitest" ? 1 : /^(npx|pnpx|bunx)$/.test(head) && w[1] === "vitest" ? 2 : 0;
+  if (vitest) {
+    const files2 = w.slice(vitest).filter((a, i, all) => a !== "run" && !a.startsWith("-") && FILE_ARG.test(a) && !VALUE_FLAG.test(all[i - 1] ?? "")).map((f) => basename2(f));
+    return files2.length ? `vitest ${files2.slice(0, 2).join(" ")}${files2.length > 2 ? ` +${files2.length - 2}` : ""}` : "vitest (all)";
+  }
+  if (head === "npm") return w[1] === "run" && w[2] ? `npm run ${w[2]}` : w[1] ? `npm ${w[1]}` : "npm";
+  if (head === "git") {
+    let i = 1;
+    while (i < w.length && w[i].startsWith("-")) i += /^-[Cc]$/.test(w[i]) ? 2 : 1;
+    return w[i] ? `git ${w[i]}` : "git";
+  }
+  return head;
+}
+var cap = (s2) => s2.length > WHAT_MAX ? `${s2.slice(0, WHAT_MAX - 1)}\u2026` : s2;
+function deriveWhat(cmd) {
+  const parts = segments(cmd).map(segmentWhat).filter((p) => !!p);
+  return cap(parts.slice(0, 3).join(" + ") + (parts.length > 3 ? ` +${parts.length - 3}` : ""));
+}
+function label(role, ref, description, cmd) {
+  const esc = role.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const given = typeof description === "string" ? description.trim().replace(new RegExp(`^(?:${esc}|[a-z][\\w-]*(?= [A-Z]+-\\d+:))(?: [A-Z]+-\\d+)?:\\s*`), "") : "";
+  return `${role}${ref ? ` ${ref}` : ""}: ${given ? cap(given) : deriveWhat(cmd)}`;
+}
 var STOPS = /* @__PURE__ */ new Set(["usage", "report"]);
-function liveRuns(activity, ledger2, now = Date.now(), idleMinutes = IDLE_MINUTES) {
+function liveRuns(activity, ledger2, now = Date.now(), idleMinutes = IDLE_MINUTES, closed = () => false) {
   const last = /* @__PURE__ */ new Map();
   for (const e of activity) {
     const prev = last.get(e.run);
@@ -9213,9 +9032,10 @@ function liveRuns(activity, ledger2, now = Date.now(), idleMinutes = IDLE_MINUTE
   const out = [];
   for (const [run2, a] of last) {
     const at = Date.parse(a.ts);
-    if (!(now - at <= DAY_MS)) continue;
+    if (!(now - at <= DAY_MS) || a.ref && closed(a.ref)) continue;
     const mine = ledger2.filter((e) => e.run === run2);
     if (mine.some((e) => STOPS.has(e.type) && Date.parse(e.ts) > at)) continue;
+    if (ledger2.some((e) => e.type === "end-run" && e.ended === run2 && Date.parse(e.ts) > at)) continue;
     const step = mine.filter((e) => e.type === "checkpoint" && e.ref === a.ref && e.step && !e.workflow).at(-1)?.step;
     const usage2 = mine.filter((e) => e.type === "usage");
     const minutes = Math.max(0, (now - at) / 6e4);
@@ -9226,10 +9046,11 @@ function liveRuns(activity, ledger2, now = Date.now(), idleMinutes = IDLE_MINUTE
       task: step ? String(step) : null,
       tool: a.tool,
       target: a.target,
+      label: a.label ?? null,
       ts: a.ts,
       minutes,
       idle: minutes > idleMinutes,
-      tokens: usage2.length ? usage2.reduce((n2, e) => n2 + (Number(e.tokens_in) || 0) + (Number(e.tokens_out) || 0), 0) : null
+      tokens: usage2.length ? countedUsage(usage2).reduce((n2, e) => n2 + (Number(e.tokens_in) || 0) + (Number(e.tokens_out) || 0), 0) : null
     });
   }
   return out.sort((x, y) => Date.parse(y.ts) - Date.parse(x.ts));
@@ -9254,6 +9075,7 @@ var DETAIL = {
   pause: (e) => String(e.reason ?? "paused"),
   resume: (e) => String(e.note ?? "resumed"),
   report: (e) => String(e.text ?? ""),
+  "end-run": (e) => `${e.ended}${e.note ? ` \u2014 ${e.note}` : ""}`,
   usage: (e) => `${e.tokens_in} in / ${e.tokens_out} out tokens, $${Number(e.cost ?? 0).toFixed(2)}${e.model ? ` (${e.model})` : ""}`
 };
 var EVENT_TYPES = Object.keys(DETAIL);
@@ -9279,22 +9101,22 @@ function showLedger(store, o = {}) {
 }
 
 // src/hub/commands/team/guard.ts
-import { readFileSync as readFileSync5, realpathSync as realpathSync4 } from "node:fs";
-import { homedir, tmpdir } from "node:os";
-import { basename as basename4, dirname as dirname5, isAbsolute as isAbsolute2, join as join9, relative as relative4, resolve as resolve5 } from "node:path";
+import { readFileSync as readFileSync5, realpathSync as realpathSync5 } from "node:fs";
+import { homedir as homedir2, tmpdir as tmpdir2 } from "node:os";
+import { basename as basename5, dirname as dirname6, isAbsolute as isAbsolute2, join as join8, relative as relative4, resolve as resolve6 } from "node:path";
 
 // src/hub/commands/team/hubcall.ts
 import { basename as basename3 } from "node:path";
 var HUB = /\bcrew\.mjs\b/;
 var ASSIGN = /^[A-Za-z_]\w*=/;
-var PREFIX2 = /* @__PURE__ */ new Set(["{", "!", "if", "then", "else", "elif", "do", "while", "until", "time", "builtin", "command", "exec", "env", "nohup"]);
+var PREFIX2 = /* @__PURE__ */ new Set(["{", "(", "!", "if", "then", "else", "elif", "do", "while", "until", "time", "builtin", "command", "exec", "env", "nohup"]);
 var SHELLS = /* @__PURE__ */ new Set(["sh", "bash", "zsh", "dash", "ksh"]);
 var RUNTIMES = /* @__PURE__ */ new Set(["node", "bun", "deno"]);
 var WRAPPERS = /* @__PURE__ */ new Set(["eval", "xargs", "parallel", "watch", "timeout", "nice", "sudo", "ssh"]);
 var BREAK = " 	\n;&|()<>";
 var VARIABLE = "a hub path held in a shell variable can't be given your identity; call the hub literally (node .crew/bin/crew.mjs \u2026)";
 var NESTED = "the guard can't give your identity to a hub call inside nested shell code; call the hub directly as its own command";
-function parse4(s2) {
+function parse3(s2) {
   const all = [];
   const pending = [];
   const n2 = s2.length;
@@ -9361,6 +9183,7 @@ function parse4(s2) {
   const redirect = (cmd, stop) => {
     if (s2[i] === "&") i++;
     const op = s2[i++];
+    const out = op === ">";
     let heredoc = false, herestring = false, strip = false;
     if (op === "<" && s2[i] === "<") {
       i++;
@@ -9387,12 +9210,13 @@ function parse4(s2) {
     const target = word(stop);
     if (heredoc) pending.push({ delim: target.value, strip, cmd });
     else if (herestring) cmd.bodies.push(target.value);
+    else if (out) cmd.targets.push(target);
   };
   function list(stop) {
-    let cur = { words: [], bodies: [] };
+    let cur = { words: [], bodies: [], targets: [] };
     all.push(cur);
     const end = () => {
-      cur = { words: [], bodies: [] };
+      cur = { words: [], bodies: [], targets: [] };
       all.push(cur);
     };
     while (i < n2) {
@@ -9426,14 +9250,21 @@ function parse4(s2) {
     }
   }
   list("");
-  return all.filter((c) => c.words.length || c.bodies.length);
+  return all.filter((c) => c.words.length || c.bodies.length || c.targets.length);
 }
 var base = (w) => w ? basename3(w.value) : "";
-function headAt(c) {
+function skipPrefix(words3) {
   let h = 0;
-  while (h < c.words.length && (ASSIGN.test(c.words[h].raw) || PREFIX2.has(c.words[h].raw))) h++;
-  return h;
+  while (h < words3.length) {
+    const w = words3[h].raw;
+    if (ASSIGN.test(w) || PREFIX2.has(w) || w === "esac") h++;
+    else if (w === "function") h += 2;
+    else if (w === "case" && words3[h + 2]?.raw === "in") h += 4;
+    else break;
+  }
+  return Math.min(h, words3.length);
 }
+var headAt = (c) => skipPrefix(c.words);
 function hubWord(c) {
   const h = headAt(c), head = c.words[h];
   if (base(head) === "crew.mjs") return head;
@@ -9461,13 +9292,15 @@ function refusal(c) {
   if (RUNTIMES.has(name)) {
     const k = opt(/^(-[ep]|-pe|--eval|--print)(=|$)/);
     if (k >= 0 && later(k)) return NESTED;
+    const script = rest.find((w) => !w.value.startsWith("-"));
+    if (script && /^"?\$[A-Za-z_{]/.test(script.raw)) return VARIABLE;
   }
   if (name === "git" && rest.some((w) => /^!|=!/.test(w.value) && HUB.test(w.value))) return NESTED;
   return null;
 }
 function withIdentity(cmd, flags) {
   if (!HUB.test(cmd)) return { command: cmd };
-  const cmds = parse4(cmd);
+  const cmds = parse3(cmd);
   for (const c of cmds) {
     const why = refusal(c);
     if (why) return { deny: why };
@@ -9478,28 +9311,231 @@ function withIdentity(cmd, flags) {
   return { command: command2 };
 }
 
+// src/hub/commands/team/targets.ts
+import { readdirSync as readdirSync3, realpathSync as realpathSync4 } from "node:fs";
+import { homedir, tmpdir } from "node:os";
+import { basename as basename4, dirname as dirname5, join as join7, resolve as resolve5 } from "node:path";
+var MAX = 64;
+var WRITERS = /^(rm|mv|cp|ln|chmod|chown|truncate|tee|install|touch|mkdir)$/;
+var DECLARE = /^(export|local|declare|readonly|typeset)$/;
+var GLOB = /[*?[]/;
+var MKTEMP = /^\s*mktemp(?:\s+(?:-[dqu]+|-t\s+[^\s-]\S*))*\s*$/;
+function realTmp() {
+  try {
+    return realpathSync4(tmpdir());
+  } catch {
+    return tmpdir();
+  }
+}
+function closing(s2, i) {
+  for (let depth = 1; i < s2.length; i++) {
+    const c = s2[i];
+    if (c === "'") {
+      i = s2.indexOf("'", i + 1);
+      if (i < 0) return s2.length;
+    } else if (c === "\\") i++;
+    else if (c === "(") depth++;
+    else if (c === ")" && --depth === 0) return i;
+  }
+  return s2.length;
+}
+function expand(raw, look) {
+  let parts = [""], glob = false, quoted = false;
+  const add = (vs) => {
+    parts = parts.flatMap((p) => vs.map((v) => p + v));
+    return parts.length <= MAX;
+  };
+  for (let i = 0; i < raw.length; ) {
+    const c = raw[i];
+    if (c === "'" && !quoted) {
+      const j = raw.indexOf("'", i + 1) < 0 ? raw.length : raw.indexOf("'", i + 1);
+      add([raw.slice(i + 1, j)]);
+      i = j + 1;
+    } else if (c === '"') {
+      quoted = !quoted;
+      i++;
+    } else if (c === "\\") {
+      add([quoted && !'$`"\\'.includes(raw[i + 1] ?? "") ? `\\${raw[i + 1] ?? ""}` : raw[i + 1] ?? ""]);
+      i += 2;
+    } else if (c === "`") return null;
+    else if (raw.startsWith("$(", i)) {
+      const j = closing(raw, i + 2);
+      if (!MKTEMP.test(raw.slice(i + 2, j))) return null;
+      add([join7(realTmp(), "mktemp.XXXXXX")]);
+      i = j + 1;
+    } else if (c === "$") {
+      const m = /^\{([A-Za-z_]\w*)\}|^([A-Za-z_]\w*)/.exec(raw.slice(i + 1));
+      if (!m) {
+        if (/^[{\w@*#?$!-]/.test(raw.slice(i + 1))) return null;
+        add(["$"]);
+        i++;
+        continue;
+      }
+      const v = look(m[1] ?? m[2]);
+      if (!v || !add(v)) return null;
+      i += 1 + m[0].length;
+    } else {
+      if (!quoted && GLOB.test(c)) glob = true;
+      add([c]);
+      i++;
+    }
+    if (parts.length > MAX) return null;
+  }
+  return { values: parts, glob };
+}
+function globRe2(g) {
+  let re = "";
+  for (let i = 0; i < g.length; i++) {
+    const c = g[i];
+    if (c === "*") re += "[^/]*";
+    else if (c === "?") re += "[^/]";
+    else if (c === "[" && g.indexOf("]", i + 2) > 0) {
+      const j = g.indexOf("]", i + 2);
+      re += `[${g.slice(i + 1, j).replace(/^!/, "^").replace(/\\/g, "\\\\")}]`;
+      i = j;
+    } else re += c.replace(/[.+^${}()|\\]/g, "\\$&");
+  }
+  return new RegExp(`^${re}$`);
+}
+function globbed(v, base2) {
+  const d = dirname5(v), last = basename4(v);
+  if (GLOB.test(d)) return null;
+  if (!GLOB.test(last)) return [v];
+  const re = globRe2(last);
+  try {
+    const names = readdirSync3(resolve5(base2, d.replace(/^~(?=\/|$)/, homedir()))).filter((n2) => re.test(n2) && (last.startsWith(".") || !n2.startsWith("."))).sort();
+    return names.length ? names.map((n2) => d === "." && !v.startsWith("./") ? n2 : join7(d, n2)) : [v];
+  } catch {
+    return [v];
+  }
+}
+function forList(words3, look, base2) {
+  const values = [];
+  for (const w of words3) {
+    const r = expand(w.raw, look);
+    if (!r) return null;
+    for (const v of r.values) {
+      const vs = r.glob ? globbed(v, base2) : [v];
+      if (!vs) return null;
+      values.push(...vs);
+    }
+    if (values.length > MAX) return null;
+  }
+  return values;
+}
+function writeTargets(cmd, cwd) {
+  const vars = /* @__PURE__ */ new Map();
+  const look = (n2) => vars.has(n2) ? vars.get(n2) : n2 in process.env ? [process.env[n2]] : null;
+  const ex = (w) => expand(w.raw, look)?.values ?? [w.value];
+  const assign2 = (w) => {
+    const name = w.raw.slice(0, w.raw.indexOf("="));
+    vars.set(name, expand(w.raw.slice(name.length + 1), look)?.values ?? null);
+  };
+  const rooted = (t) => /^(\/|~|\$)/.test(t);
+  let dir = "";
+  const at = (t) => !dir || rooted(t) ? t : join7(dir, t);
+  const out = [];
+  const push = (ws, restore2 = false) => {
+    for (const w of ws) for (const t of ex(w)) if (t) out.push({ path: at(t), restore: restore2 });
+  };
+  for (const c of parse3(cmd)) {
+    const words3 = c.words;
+    const h = skipPrefix(words3);
+    for (const w of words3.slice(0, h)) if (ASSIGN.test(w.raw)) assign2(w);
+    push(c.targets);
+    if (h >= words3.length) continue;
+    const head = basename4(words3[h].value), args = words3.slice(h + 1);
+    const operands = (head === "git" ? args.slice(1) : args).filter((a) => !a.value.startsWith("-"));
+    if (DECLARE.test(head)) {
+      for (const a of args) if (ASSIGN.test(a.raw)) assign2(a);
+    } else if (head === "for") {
+      vars.set(args[0]?.value ?? "", args[1]?.raw === "in" ? forList(args.slice(2), look, resolve5(cwd, dir)) : null);
+    } else if (head === "read") {
+      for (const a of operands) vars.set(a.value, null);
+    } else if (head === "cd" || head === "pushd") {
+      const to = operands[0] ? ex(operands[0])[0] : "~";
+      dir = rooted(to) ? to : join7(dir, to);
+    } else if (head === "install" && args.some((a) => a.value === "-d" || a.value === "--directory")) {
+      push(operands);
+    } else if (/^(cp|ln|install)$/.test(head)) {
+      const t = args.findIndex((a) => a.value === "-t" || a.value === "--target-directory");
+      if (t >= 0) push(args.slice(t + 1, t + 2));
+      else if (head === "ln" && operands.length === 1) for (const v of ex(operands[0])) out.push({ path: at(basename4(v)), restore: false });
+      else push(operands.slice(-1));
+    } else if (WRITERS.test(head)) push(operands);
+    else if (head === "sed" && args.some((a) => a.value.startsWith("-i") || a.value === "--in-place")) {
+      const files2 = [];
+      let script = false;
+      for (let k = 0; k < args.length; k++) {
+        const v = args[k].value;
+        if (/^(-e|-f|--expression|--file)$/.test(v)) {
+          script = true;
+          k++;
+        } else if (/^(--expression|--file)=/.test(v)) script = true;
+        else if (v && !v.startsWith("-")) files2.push(args[k]);
+      }
+      push(script ? files2 : files2.slice(1));
+    } else if (head === "git" && /^(checkout|restore|rm|mv)$/.test(args[0]?.value ?? "")) {
+      push(operands, /^(checkout|restore)$/.test(args[0].value));
+    }
+  }
+  return out.map((t) => ({ ...t, path: t.path.replace(/^\.\//, "") }));
+}
+var INTERPRETER = /^(python[23]?(\.\d+)?|node|nodejs|bun|deno|perl|ruby|php)$/;
+var SHELL = /^(sh|bash|zsh|dash|ksh)$/;
+var WRAPPER = /^(env|nohup|nice|exec|timeout|xargs)$/;
+var OPTION_ARG = { env: /^-[uSC]$/, nice: /^-n$/, timeout: /^-[sk]$/, xargs: /^-[IndPLsEa]$/ };
+function inlineScript(cmd) {
+  for (const c of parse3(cmd)) {
+    const w = c.words.map((x) => x.value);
+    let h = 0;
+    while (h < w.length) {
+      const b = basename4(w[h]);
+      if (WRAPPER.test(b)) {
+        for (h++; h < w.length && (w[h].startsWith("-") || ASSIGN.test(c.words[h].raw)); ) h += OPTION_ARG[b]?.test(w[h]) ? 2 : 1;
+        if (b === "timeout") h++;
+      } else {
+        const s2 = skipPrefix(c.words.slice(h));
+        if (!s2) break;
+        h += s2;
+      }
+    }
+    if (h >= w.length) continue;
+    const head = basename4(w[h]), args = w.slice(h + 1);
+    if (head === "eval") return head;
+    const k = args.findIndex((a) => a === "-" || !a.startsWith("-"));
+    const operand = k < 0 ? void 0 : args[k], opts = k < 0 ? args : args.slice(0, k);
+    const has = (re) => opts.some((a) => re.test(a));
+    if (INTERPRETER.test(head)) {
+      const inline = head.startsWith("python") ? has(/^-[A-Za-z]*c[A-Za-z]*$/) : head === "deno" ? operand === "eval" : head === "php" ? has(/^-r$/) : /^(perl|ruby)$/.test(head) ? has(/^-[A-Za-z]*[eE]/) : has(/^(-[ep]|-pe|--eval|--print)(=|$)/);
+      if (inline || operand === "-" || !operand && !has(/^(-m|--version|-V|-h|--help)$/)) return head;
+    }
+    if (SHELL.test(head) && (has(/^-[A-Za-z]*c[A-Za-z]*$/) || !operand || operand === "-")) return head;
+  }
+  return null;
+}
+
 // src/hub/commands/team/guard.ts
 var HUB_MCP = /^mcp__(?:plugin_crew_)?hub__/;
 function real3(p) {
   try {
-    return realpathSync4(p);
+    return realpathSync5(p);
   } catch {
-    const up5 = dirname5(p);
-    return up5 === p ? p : join9(real3(up5), basename4(p));
+    const up5 = dirname6(p);
+    return up5 === p ? p : join8(real3(up5), basename5(p));
   }
 }
-var shellPath = (p) => p.replace(/^["']|["']$/g, "").replace(/^(~|\$HOME|\$\{HOME\})(?=\/|$)/, homedir());
+var shellPath = (p) => p.replace(/^["']|["']$/g, "").replace(/^(~|\$HOME|\$\{HOME\})(?=\/|$)/, homedir2());
 var within = (dir, p) => {
   const r = relative4(dir, p);
   return r !== ".." && !r.startsWith("../") && !isAbsolute2(r);
 };
 var CREW_CLI2 = /\bcrew\.mjs\b/;
 var EDITS = { Edit: "file_path", Write: "file_path", MultiEdit: "file_path", NotebookEdit: "notebook_path" };
-var WRITERS = /^(rm|mv|cp|ln|chmod|chown|truncate|tee|install|touch|mkdir)$/;
 function agentRole(root, agentType) {
   if (!/^[\w-]+$/.test(agentType)) return null;
   try {
-    return Doc.parse(readFileSync5(join9(root, ".claude", "agents", `${agentType}.md`), "utf8")).get("crew-role");
+    return Doc.parse(readFileSync5(join8(root, ".claude", "agents", `${agentType}.md`), "utf8")).get("crew-role");
   } catch {
     return null;
   }
@@ -9514,52 +9550,23 @@ function hubCommand(seg) {
   for (i++; i < w.length && w[i].startsWith("-"); i++) if (!w[i].includes("=")) i++;
   return w[i] ?? null;
 }
-var REDIRECT = /\d*&?>{1,2}\|?(&?)\s*([^\s;&|<>]+)/g;
-var PREFIX3 = /^(\{|!|if|then|else|elif|do|while|until|builtin|command|time)$/;
-function writeTargets(cmd) {
-  const out = [];
-  const vars = {};
-  const expand = (t) => t.replace(/^["']|["']$/g, "").replace(/^\$(?:\{(\w+)\}|(\w+))/, (m, a, b) => vars[a ?? b] ?? process.env[a ?? b] ?? m);
-  const rooted = (t) => /^(\/|~|\$)/.test(t);
-  let dir = "";
-  const at = (raw) => {
-    const t = expand(raw);
-    return !dir || rooted(t) ? t : join9(dir, t);
-  };
-  for (const seg of segments2(cmd)) {
-    const set = /^(?:export\s+)?(\w+)=(\S*)$/.exec(seg);
-    if (set) {
-      vars[set[1]] = expand(set[2]);
-      continue;
-    }
-    for (const m of seg.matchAll(REDIRECT)) if (!(m[1] && /^(\d+|-)$/.test(m[2]))) out.push(at(m[2]));
-    let [head, ...args] = words2(seg.replace(REDIRECT, ""));
-    while (head !== void 0 && PREFIX3.test(head.replace(/^\(+/, ""))) [head, ...args] = args;
-    head = head?.replace(/^\(+/, "");
-    if (head === "cd" || head === "pushd") {
-      const to = expand(args.find((a) => !a.startsWith("-")) ?? "~");
-      dir = rooted(to) ? to : join9(dir, to);
-      continue;
-    }
-    const operands = (head === "git" ? args.slice(1) : args).filter((a) => !a.startsWith("-"));
-    if (head && /^(cp|ln|install)$/.test(head)) {
-      const t = args.findIndex((a) => a === "-t" || a === "--target-directory");
-      const dest = t >= 0 ? args[t + 1] : head === "ln" && operands.length === 1 ? basename4(operands[0]) : operands.at(-1);
-      if (dest) out.push(at(dest));
-    } else if (head && WRITERS.test(head) || head === "sed" && args.some((a) => a.startsWith("-i")) || head === "git" && /^(checkout|restore|rm|mv)$/.test(args[0] ?? "")) {
-      out.push(...operands.map(at));
-    }
-  }
-  return out.map((t) => t.replace(/^\.\//, ""));
+var UI_COMMANDS = "/api/commands/";
+function uiCommand(h) {
+  const input = h.tool_input ?? {};
+  const cmd = h.tool_name === "Bash" ? String(input.command ?? "") : "";
+  const hit = h.tool_name === "WebFetch" ? String(input.url ?? "").includes(UI_COMMANDS) : cmd.includes(UI_COMMANDS) && /\b(curl|wget|node|python[\d.]*|fetch)\b/.test(cmd);
+  return hit ? { deny: "only the human answers and approves, from their own terminal or browser" } : null;
 }
 function decide(store, h) {
+  const ui = uiCommand(h);
+  if (ui) return ui;
   if (!h.agent_type) return null;
   const root = store.ws.root;
   const role = agentRole(root, h.agent_type);
   const run2 = role ? `${role}:${h.agent_id ?? "unknown"}` : null;
-  const { policy } = resolvePolicy(store.home, store.dir, role);
+  const { policy: policy2 } = resolvePolicy(store.home, store.dir, role);
   const top = real3(h.cwd && git(["-C", h.cwd, "rev-parse", "--show-toplevel"])?.trim() || root);
-  const abs = (p) => real3(resolve5(h.cwd || top, shellPath(p)));
+  const abs = (p) => real3(resolve6(h.cwd || top, shellPath(p)));
   let trees = null;
   const checkouts = () => trees ??= [...new Set([top, root, ...worktrees().map((w) => w.path)].map(real3))].sort((a, b) => b.length - a.length);
   const rel = (p) => {
@@ -9569,60 +9576,84 @@ function decide(store, h) {
   const hits = (globs, p) => globs.some((g) => globRe(g).test(rel(p)));
   const outside = (p) => {
     const a = abs(p);
-    return !a.startsWith("/dev/") && ![...checkouts(), real3(tmpdir()), real3("/tmp")].some((d) => within(d, a));
+    return !a.startsWith("/dev/") && ![...checkouts(), real3(tmpdir2()), real3("/tmp")].some((d) => within(d, a));
   };
   const HUB_STATE = "project state stays in the hub (CLAUDE.md, crew:hub-state): use crew.mjs handoff, log, new-item, learn or ask, and keep only a pointer to the hub ID elsewhere";
   const input = h.tool_input ?? {};
-  const home2 = real3(store.home), shared = store.settings().plan_worktrees;
+  const home2 = real3(store.home), shared2 = store.settings().plan_worktrees;
   const forked = (p) => {
-    if (!shared) return null;
+    if (!shared2) return null;
     const a = abs(p), d = checkouts().find((c) => within(c, a)) ?? top;
     const r = relative4(d, a), m = /^\.claude\/worktrees\/[^/]+\/(.*)$/.exec(r);
-    return (d !== home2 || m) && STATE_RE.test(m ? m[1] : r) ? join9(home2, m ? m[1] : r) : null;
+    return (d !== home2 || m) && STATE_RE.test(m ? m[1] : r) ? join8(home2, m ? m[1] : r) : null;
   };
   const ONE_HOME = "hub documents live in the main checkout only: change them with crew.mjs from any checkout, or edit";
   const path = EDITS[h.tool_name] ? String(input[EDITS[h.tool_name]] ?? "") : "";
-  if (path && hits(policy.paths.protected, path)) return { deny: `${rel(path)} is protected by the crew policy (paths.protected)` };
+  if (path && hits(policy2.paths.protected, path)) return { deny: `${rel(path)} is protected by the crew policy (paths.protected)` };
   const elsewhere = path ? forked(path) : null;
   if (elsewhere) return { deny: `${abs(path)} is a copy of hub state; ${ONE_HOME} ${elsewhere}` };
   if (path && outside(path)) return { deny: `${abs(path)} is outside the repository; ${HUB_STATE}` };
-  if (h.tool_name === "Read" && hits(policy.secrets.files, String(input.file_path ?? ""))) {
+  if (h.tool_name === "Read" && hits(policy2.secrets.files, String(input.file_path ?? ""))) {
     return { deny: `${rel(String(input.file_path))} is a secret file (secrets.files); agents never read it` };
   }
   const cmd = h.tool_name === "Bash" ? String(input.command ?? "") : "";
+  const written = cmd ? writeTargets(cmd, h.cwd || top) : [];
   if (cmd) {
-    const targets = writeTargets(cmd);
-    const target = targets.find((t) => hits(policy.paths.protected, t));
+    const targets = written.map((t) => t.path);
+    const target = targets.find((t) => hits(policy2.paths.protected, t));
     if (target) return { deny: `the command writes to ${rel(target)}, which the crew policy protects (paths.protected)` };
-    const unknown = targets.find((t) => t.startsWith("$"));
+    const unknown = targets.find((t) => /[$`]/.test(t));
     if (unknown) return { deny: `the command writes to ${unknown}, which the guard can't resolve (an unknown variable); use a literal path` };
     const copy = targets.find((t) => forked(t));
     if (copy) return { deny: `the command writes to ${abs(copy)}, a copy of hub state; ${ONE_HOME} ${forked(copy)}` };
     const away = targets.find(outside);
     if (away) return { deny: `the command writes to ${abs(away)}, outside the repository; ${HUB_STATE}` };
-    if (words2(cmd).some((w) => hits(policy.secrets.files, w))) return { deny: "the command touches a secret file (secrets.files)" };
+    if (words2(cmd).some((w) => hits(policy2.secrets.files, w))) return { deny: "the command touches a secret file (secrets.files)" };
     if (CREW_CLI2.test(cmd) && /--approved-by\b/.test(cmd)) return { deny: "only the human approves: agents never pass --approved-by" };
     if (segments2(cmd).some((c) => hubCommand(c) === "agents" && !/--check\b/.test(c))) {
       return { deny: "`crew.mjs agents` rewrites the agent definitions, which only the human renders (paths.protected)" };
     }
+    if (segments2(cmd).some((c) => hubCommand(c) === "init")) {
+      return { deny: "`crew.mjs init` vendors the hub and its agent templates, which only the human installs (paths.protected)" };
+    }
   }
   if (!role) return null;
-  for (const d of policy.tools.deny) {
+  for (const d of policy2.tools.deny) {
     const m = /^(\w+)\((.*)\)$/.exec(d);
     if (m ? m[1] === h.tool_name && segments2(cmd).some((c) => patternRe(m[2]).test(c)) : d === h.tool_name || d.endsWith("*") && h.tool_name.startsWith(d.slice(0, -1))) {
       return { deny: `${d} is denied for the ${role} role (tools.deny)` };
     }
   }
-  if (path && policy.paths.write.length && !hits(policy.paths.write, path)) {
-    return { deny: `the ${role} role may only write ${policy.paths.write.join(", ")} (paths.write)` };
+  if (path && policy2.paths.write.length && !hits(policy2.paths.write, path)) {
+    return { deny: `the ${role} role may only write ${policy2.paths.write.join(", ")} (paths.write)` };
   }
+  if (cmd && policy2.paths.write.length) {
+    const only = `the ${role} role may only write ${policy2.paths.write.join(", ")} (paths.write)`;
+    const head = inlineScript(cmd);
+    if (head) {
+      return { deny: `${only}; an inline or stdin ${head} script hides what it writes: use a hub command, or the Write tool on a path in paths.write` };
+    }
+    const temp = (a) => [real3(tmpdir2()), real3("/tmp")].some((d) => within(d, a)) && !checkouts().some((d) => within(d, a));
+    const exempt = (t) => t.restore || abs(t.path).startsWith("/dev/") || temp(abs(t.path));
+    const over = written.find((t) => !exempt(t) && !hits(policy2.paths.write, t.path));
+    if (over) return { deny: `the command writes to ${rel(over.path)}; ${only}` };
+  }
+  const blank = typeof input.description !== "string" || !input.description.trim();
+  if (h.tool_name === "Bash" && blank && (input.run_in_background === true || Number(input.timeout) > 12e4)) {
+    return { deny: 'a background or long Bash call needs a description: add "description": "<what it does>" (the guard prefixes "<role> <plan>:")' };
+  }
+  let command2 = cmd;
   if (cmd && CREW_CLI2.test(cmd)) {
     const claimed = [...cmd.matchAll(/--as[=\s]+(\S+)/g)].map((m) => m[1]);
     if (claimed.some((c) => c !== role)) return { deny: `you are the ${role} agent; don't pass --as for another role` };
     if (/--run-id\b|\bCREW_(ROLE|RUN|ACTOR|TEAM)=/.test(cmd)) return { deny: "the guard sets your identity; don't pass --run-id or CREW_* variables" };
     const r = withIdentity(cmd, `--as ${role} --run-id ${run2}`);
     if ("deny" in r) return r;
-    return r.command === cmd ? null : { input: { ...input, command: r.command } };
+    command2 = r.command;
+  }
+  if (h.tool_name === "Bash") {
+    const ref = describe(h, root).ref ?? previousRef(activityPath(store.ledger.path), run2);
+    return { input: { ...input, command: command2, description: label(role, ref, input.description, cmd) } };
   }
   if (HUB_MCP.test(h.tool_name)) {
     if (input.as !== void 0 && input.as !== role) return { deny: `you are the ${role} agent; don't set as for another role` };
@@ -9658,19 +9689,22 @@ function activityHook(store) {
   const role = h && typeof h.agent_type === "string" ? agentRole(store.ws.root, h.agent_type) : null;
   if (!role) return 0;
   const run2 = `${role}:${h.agent_id ?? "unknown"}`, path = feedPath(store);
-  const d = describe(h, store.ws.root);
-  appendActivity(path, { ts: (/* @__PURE__ */ new Date()).toISOString(), run: run2, role, ref: d.ref ?? previousRef(path, run2), tool: d.tool, target: d.target });
+  const d = describe(h, store.ws.root), ref = d.ref ?? previousRef(path, run2), input = h.tool_input ?? {};
+  const bash = d.tool === "Bash" && typeof input.command === "string" ? { label: label(role, ref, input.description, input.command) } : {};
+  appendActivity(path, { ts: (/* @__PURE__ */ new Date()).toISOString(), run: run2, role, ref, tool: d.tool, target: d.target, ...bash });
   return 0;
 }
 function running(store, now = Date.now()) {
-  return liveRuns(readActivity(feedPath(store)), store.ledger.events(), now, store.policy.policy.limits.idle_minutes ?? IDLE_MINUTES);
+  const plans2 = store.plans(), items2 = store.items();
+  const closed = (ref) => CLOSED.has(plans2.get(ref)?.get("status") ?? "") || ITEM_CLOSED.has(items2.get(ref)?.get("status") ?? "");
+  return liveRuns(readActivity(feedPath(store)), store.ledger.events(), now, store.policy.policy.limits.idle_minutes ?? IDLE_MINUTES, closed);
 }
 var ago = (minutes) => minutes < 1 ? "just now" : minutes < 60 ? `${Math.floor(minutes)}m ago` : `${Math.floor(minutes / 60)}h ${Math.floor(minutes % 60)}m ago`;
 var action = (tool, target) => target ? `${tool} ${target}` : tool;
 function runningLines(store) {
-  return running(store).map((r) => `- ${r.idle ? "**idle** " : ""}${r.role} (${r.run}) \u2014 ${r.ref ?? "\u2014"} \xB7 task ${r.task ?? "\u2014"} \xB7 ${action(r.tool, r.target)} ${ago(r.minutes)} \xB7 tokens ${r.tokens === null ? "\u2014" : r.tokens}`);
+  return running(store).map((r) => `- ${r.idle ? "**idle** " : ""}${r.role} (${r.run}) \u2014 ${r.ref ?? "\u2014"} \xB7 task ${r.task ?? "\u2014"} \xB7 ${r.label ?? action(r.tool, r.target)} ${ago(r.minutes)} \xB7 tokens ${r.tokens === null ? "\u2014" : r.tokens}`);
 }
-var fromActivity = (e) => ({ ts: e.ts, type: "tool", run: e.run, ref: e.ref, text: action(e.tool, e.target) });
+var fromActivity = (e) => ({ ts: e.ts, type: "tool", run: e.run, ref: e.ref, text: e.label ?? action(e.tool, e.target) });
 var fromLedger = (e) => ({ ts: e.ts, type: e.type, run: e.run, ref: e.ref, text: detail(e) });
 var byTime = (a, b) => Date.parse(a.ts) - Date.parse(b.ts);
 var forRef = (ref) => (e) => !ref || e.ref?.toUpperCase() === ref.toUpperCase();
@@ -9725,155 +9759,79 @@ function watch(store, o = {}) {
   return 0;
 }
 
-// src/hub/commands/team/autonomy.ts
-function notify(store, kind, ref, text2, key = "") {
-  const { command: command2, on } = store.policy.policy.notify;
-  if (!command2 || !on.includes(kind)) return;
-  const sent = store.ledger.events().some((e) => e.type === "notify" && e.kind === kind && e.ref === ref && (e.key ?? "") === key);
-  if (sent) return;
-  store.ledger.record("notify", ref, { kind, text: text2, ...key ? { key } : {} });
-  const event = { kind, ref, text: text2, project: store.ws.root, by: store.ledger.who.actor, role: store.ledger.who.role, ts: (/* @__PURE__ */ new Date()).toISOString() };
-  store.ws.beforeFlush(() => {
-    const r = spawnSync2(command2, { shell: true, input: JSON.stringify(event), encoding: "utf8", timeout: 3e4, cwd: store.ws.root });
-    if (r.status !== 0) store.say(`warning: notify.command failed (${r.status ?? r.signal}): ${(r.stderr ?? "").trim().split("\n")[0]}`);
-  });
-}
-function advanceFocus(store) {
-  const goals2 = store.goals(), from = store.focus(), status2 = goals2.get(from)?.get("status");
-  if (status2 && !CLOSED.has(status2) || !store.idea()) return null;
-  const to = goalQueue(goals2, "")[0];
-  if (!to) return null;
-  const mark = store.ws.output.length;
-  setFocus(store, to);
-  store.ws.output.splice(mark);
-  return { from, to };
-}
-function runState(store) {
-  const moved = advanceFocus(store);
-  const events = store.ledger.events(), reasons = [];
-  const { held, stops } = escalationHolds(events);
-  if (stops.length) reasons.push(`waiting for the executive: ${stops.map((x) => `${x.id} ${x.text}`).join("; ")}`);
-  const holds = [...held].map(([ref, qids]) => `${ref} (${qids.join(", ")})`);
-  if (holds.length) {
-    const open = (docs) => [...docs.values()].filter((d) => !CLOSED.has(d.get("status") ?? "") && !ITEM_CLOSED.has(d.get("status") ?? "") && !held.has(d.id));
-    if (!open(store.plans()).length && !open(store.items()).length) {
-      reasons.push(`waiting for the executive: escalations hold every open plan and item: ${holds.join("; ")}`);
-    }
-  }
-  const halt = paused(events);
-  if (halt) reasons.push(`paused by ${halt.actor}: ${halt.reason ?? "no reason given"}`);
-  const over = budgetProblems(store).filter((b) => b.startsWith("project"));
-  if (over.length) reasons.push(`budget: ${over.join("; ")}`);
-  const goals2 = store.goals(), focus = store.focus(), goal = goals2.get(focus), queue = goalQueue(goals2, focus);
-  if (!goal && queue.length) reasons.push("no focus goal: the executive or the director sets one (`focus G-###`)");
-  else if (!goal || CLOSED.has(goal.get("status") ?? "")) reasons.push(noGoalLeft([...goals2.values()]));
-  for (const s2 of staleClaims(store, events)) notify(store, "stale", s2.ref, `${s2.ref}: no activity for ${s2.hours}h from ${s2.actor}`, s2.run);
-  for (const b of over) notify(store, "budget", null, b, b.split(":")[0]);
-  return { stop: reasons.length > 0, reasons, held: holds, queue, moved };
-}
-function noGoalLeft(goals2) {
-  const done = goals2.filter((g) => g.get("status") === "done").sort(byKey((g) => [g.get("completed") ?? "", g.id])).map((g) => g.id);
-  const waiting = goals2.filter((g) => g.get("status") === "proposed").map((g) => g.id).sort();
-  const tail3 = waiting.length ? `; waiting for approval: ${waiting.join(", ")}` : "";
-  return done.length ? `all approved goals done: ${done.join(", ")}${tail3}` : `no approved goal: the executive approves one (\`move G-### active --approved-by <name>\`)${tail3}`;
-}
-var LOOP = `while node .crew/bin/crew.mjs run --check; do claude -p "/crew:team continue" || break; done`;
-function run(store, check2 = false, json = false) {
+// src/hub/commands/team/questions.ts
+import { randomBytes as randomBytes2 } from "node:crypto";
+
+// src/hub/commands/memory/knowledge.ts
+import { join as join9 } from "node:path";
+function learn(store, type, title, o = {}) {
   store.require();
-  const s2 = runState(store);
-  if (json) store.say(JSON.stringify(s2));
-  else if (check2) {
-    if (s2.moved) store.say(`FOCUS  ${s2.moved.from || "\u2014"} \u2192 ${s2.moved.to} (${movedWhy(store, s2.moved.from)})`);
-    store.say(s2.stop ? `STOP  ${s2.reasons.join("\nSTOP  ")}` : "GO    the team can continue");
-    if (!s2.stop && s2.queue.length) store.say(`QUEUE  ${s2.queue.join(", ")}`);
-    for (const h of s2.held) store.say(`HELD  ${h}: waiting for the executive`);
-  } else {
-    store.say('Run the team unattended (from the project root): each pass hands "continue" to the Director; the loop stops');
-    store.say("on an escalation that holds everything, a pause, an exhausted budget or no approved goal left (`run --check` exits 1).");
-    store.say(`  ${LOOP}`);
-    store.say('Scheduled instead (cron, a CI schedule): `node .crew/bin/crew.mjs run --check && claude -p "/crew:team continue"`.');
-    store.say(s2.stop ? `Now: stopped \u2014 ${s2.reasons.join("; ")}` : "Now: the team can continue.");
+  if (!KNOWLEDGE_TYPES.includes(type)) fail(`Unknown type '${type}'. Use ${KNOWLEDGE_TYPES.join(", ")}.`);
+  if (Boolean(o.why) === Boolean(o.from)) fail("Give exactly one of --why TEXT or --from DRAFT: the reason or evidence behind the fact.");
+  const [draftFile, why] = o.from ? store.readDraft(o.from, "knowledge entry") : [null, o.why];
+  if (!stripComments(why).trim()) fail("The entry has no content. Nothing was written.");
+  const found = secretsIn(`${title}
+${why}`, store.policy.policy.secrets.patterns);
+  if (found.length) fail(`Refused: the entry looks like it contains a secret (${found.join(", ")}). Knowledge is committed; describe it instead.`);
+  const entries = store.knowledge(false);
+  const supersedes = (o.supersedes ?? "").trim();
+  if (supersedes && !entries.some((e) => e.id === supersedes)) fail(`--supersedes ${supersedes}: no such entry.`);
+  const risk = type === "risk" ? { likelihood: o.likelihood?.toUpperCase(), impact: o.impact?.toUpperCase(), owner: o.owner } : void 0;
+  if (risk && (!RISK_LEVELS.includes(risk.likelihood ?? "") || !RISK_LEVELS.includes(risk.impact ?? ""))) {
+    fail("A risk needs --likelihood and --impact (H, M or L).");
   }
-  return check2 && s2.stop ? 1 : 0;
-}
-function movedWhy(store, from) {
-  const status2 = from ? store.goals().get(from)?.get("status") : void 0;
-  return !from ? "no focus goal" : status2 ? `${from} is ${status2}` : `${from} is not a goal`;
-}
-function transcriptUsage(text2) {
-  const byMessage = /* @__PURE__ */ new Map();
-  text2.split("\n").forEach((line3, i) => {
-    try {
-      const m = JSON.parse(line3).message;
-      if (m?.usage) byMessage.set(m.id ?? `line-${i}`, m);
-    } catch {
-    }
+  const id = knowledgeId(title, (k) => store.ws.isFile(join9(store.knowledgeDir, `${k}.md`)));
+  const branch = /^plan\/(P-\d+)/.exec(currentBranch() ?? "")?.[1];
+  const text2 = entryText({
+    id,
+    type,
+    title,
+    why,
+    risk,
+    supersedes,
+    tier: o.candidate ? TIERS[1] : TIERS[0],
+    scope: (o.scope ?? "").split(",").map((s2) => s2.trim()).filter(Boolean),
+    source: o.source?.toUpperCase() ?? branch ?? ""
   });
-  const sum = { tokensIn: 0, tokensOut: 0, cacheRead: 0, model: null };
-  for (const m of byMessage.values()) {
-    const u = m.usage;
-    sum.tokensIn += (u.input_tokens ?? 0) + (u.cache_creation_input_tokens ?? 0);
-    sum.tokensOut += u.output_tokens ?? 0;
-    sum.cacheRead += u.cache_read_input_tokens ?? 0;
-    sum.model = m.model ?? sum.model;
-  }
-  return sum;
+  store.ws.write(join9(store.knowledgeDir, `${id}.md`), text2);
+  if (draftFile) store.consume(draftFile, o.keep);
+  store.ledger.record("learn", id, { kind: type, title, ...supersedes ? { supersedes } : {} });
+  store.say(store.rel(join9(store.knowledgeDir, `${id}.md`)));
+  return id;
 }
-var REPORT_CAP = 2e4;
-var MASKS = Object.values(SECRET_PATTERNS).map((re) => new RegExp(re.source, `${re.flags.replace("g", "")}g`));
-function transcriptReport(text2) {
-  let handback = null, said = null;
-  for (const line3 of text2.split("\n")) {
-    let m;
-    try {
-      const rec = JSON.parse(line3);
-      m = rec.type === "assistant" || rec.message?.role === "assistant" ? rec.message : void 0;
-    } catch {
-      continue;
-    }
-    if (!m) continue;
-    const blocks = typeof m.content === "string" ? [{ type: "text", text: m.content }] : Array.isArray(m.content) ? m.content : [];
-    for (const b of blocks) {
-      if (b?.type === "tool_use" && b.name === "SubagentHandback" && typeof b.input?.message === "string") handback = b.input.message;
-    }
-    const prose = blocks.filter((b) => b?.type === "text" && typeof b.text === "string" && b.text.trim()).map((b) => b.text).join("\n");
-    if (prose) said = prose;
+function recallCmd(store, o = {}) {
+  store.require();
+  let globs = [];
+  if (o.plan) {
+    const plan = store.plans(true).get(o.plan.toUpperCase()) ?? fail(`No plan ${o.plan.toUpperCase()}.`);
+    globs = plan.touches();
+    if (!globs.length) store.say(`note: ${plan.id} declares no touches: \u2014 showing everything`);
   }
-  const report2 = (handback ?? said)?.trim();
-  return report2 ? MASKS.reduce((t, re) => t.replace(re, "[secret withheld]"), report2).slice(0, REPORT_CAP) : null;
+  const paths = (o.paths ?? "").split(",").map((p) => p.trim()).filter(Boolean);
+  const hits = recall(store.knowledge(), { paths, globs, topic: o.topic, type: o.type, all: o.all });
+  if (o.json) {
+    for (const e of hits) store.say(JSON.stringify(view(e, store)));
+    return;
+  }
+  if (!hits.length) store.say("Nothing recalled.");
+  for (const e of hits) {
+    const where = e.scope.length ? e.scope.join(", ") : "everywhere";
+    store.say(`${e.id}  [${e.type}${e.origin === "playbook" ? ", playbook" : ""}${e.supersededBy ? `, superseded by ${e.supersededBy}` : ""}]  ${e.title}  (${where})`);
+  }
 }
-function usageHook(store) {
-  let h;
-  try {
-    h = JSON.parse(readFileSync7(0, "utf8"));
-  } catch {
-    return 0;
-  }
-  const role = h.agent_type ? agentRole(store.ws.root, h.agent_type) : null;
-  if (!role || !h.agent_transcript_path) return 0;
-  let text2;
-  try {
-    text2 = readFileSync7(h.agent_transcript_path, "utf8");
-  } catch {
-    return 0;
-  }
-  const u = transcriptUsage(text2);
-  Object.assign(store.ledger.who, { role, run: `${role}:${h.agent_id ?? "unknown"}` });
-  const refs = new Set(store.ledger.events().filter((e) => e.run === store.ledger.who.run && e.type !== "usage" && e.ref).map((e) => e.ref));
-  const ref = refs.size === 1 ? [...refs][0] : null;
-  const report2 = transcriptReport(text2);
-  if (report2) store.ledger.record("report", ref ?? previousRef(feedPath(store), store.ledger.who.run), { text: report2 });
-  if (!u.tokensIn && !u.tokensOut) return 0;
-  store.ledger.record("usage", ref, {
-    tokens_in: u.tokensIn,
-    tokens_out: u.tokensOut,
-    cost: 0,
-    cache_read: u.cacheRead,
-    ...u.model ? { model: u.model } : {},
-    source: "transcript"
-  });
-  if (budgetProblems(store).some((b) => b.startsWith("project"))) notify(store, "budget", null, budgetProblems(store).join("; "), "project");
-  return 0;
+function view(e, store) {
+  return {
+    id: e.id,
+    type: e.type,
+    title: e.title,
+    scope: e.scope,
+    source: e.source,
+    tier: e.tier,
+    origin: e.origin,
+    supersededBy: e.supersededBy,
+    path: e.doc.path ? store.rel(e.doc.path) : null,
+    body: stripComments(e.doc.text.replace(/^---\n[\s\S]*?\n---\n/, "")).replace(/^# .*\n/m, "").trim()
+  };
 }
 
 // src/hub/commands/team/questions.ts
@@ -9891,6 +9849,7 @@ function questions(events) {
         ts: e.ts,
         blocking: e.blocking !== false,
         escalation: e.escalation === true,
+        options: Array.isArray(e.options) ? e.options.map(String) : [],
         answer: null
       });
     } else if (e.type === "answer" && byId.has(String(e.qid))) {
@@ -9909,7 +9868,8 @@ function escalationHolds(events) {
   }
   return { held, stops };
 }
-var FORWARD = /* @__PURE__ */ new Set(["ready", "in-progress", "in-review", "done", "active", "decided", "triaged"]);
+var FORWARD = /* @__PURE__ */ new Set(["ready", "in-progress", "in-review", "accepted", "done", "active", "decided", "triaged"]);
+var splitOptions = (raw) => raw === void 0 ? void 0 : raw.split(";").map((x) => x.trim()).filter(Boolean);
 function ask(store, ref, to, text2, o = {}) {
   store.require();
   const id = ref?.toUpperCase();
@@ -9921,13 +9881,20 @@ function ask(store, ref, to, text2, o = {}) {
   if (!roles.includes(to)) fail(`--to must be one of ${roles.join(", ")}.`);
   if (!text2.trim()) fail("Ask a question.");
   const qid = `Q-${randomBytes2(3).toString("hex")}`;
-  store.ledger.record("ask", id ?? null, { qid, to, text: text2, ...o.fyi ? { blocking: false } : {}, ...o.escalation ? { escalation: true } : {} });
+  store.ledger.record("ask", id ?? null, {
+    qid,
+    to,
+    text: text2,
+    ...o.fyi ? { blocking: false } : {},
+    ...o.escalation ? { escalation: true } : {},
+    ...o.options?.length ? { options: o.options } : {}
+  });
   store.say(`${qid} \u2192 ${to}${id ? ` about ${id}` : ""}${o.fyi ? "" : id ? ` (blocks ${id} until answered)` : ""}`);
   if (o.escalation || to === "executive") notify(store, "escalation", id ?? null, `${qid}: ${text2}`, qid);
   return qid;
 }
-function escalate(store, ref, text2) {
-  return ask(store, ref, store.policy.policy.escalation.to, text2, { escalation: true });
+function escalate(store, ref, text2, o = {}) {
+  return ask(store, ref, store.policy.policy.escalation.to, text2, { escalation: true, options: o.options });
 }
 function answer(store, qid, text2, o = {}) {
   store.require();
@@ -9957,7 +9924,7 @@ function listQuestions(store, o = {}) {
   }
   if (!qs.length) store.say(o.all ? "No questions." : "No open questions.");
   for (const q of qs) {
-    store.say(`${q.id}  ${q.escalation ? "ESCALATION " : ""}${q.by} \u2192 ${q.to}${q.ref ? ` about ${q.ref}` : ""}: ${q.text}` + (q.answer ? `  \u2014 answered by ${q.answer.by}: ${q.answer.text}` : q.blocking && q.ref ? "  (blocking)" : ""));
+    store.say(`${q.id}  ${q.escalation ? "ESCALATION " : ""}${q.by} \u2192 ${q.to}${q.ref ? ` about ${q.ref}` : ""}: ${q.text}` + (q.options.length ? `  [options: ${q.options.join(" \xB7 ")}]` : "") + (q.answer ? `  \u2014 answered by ${q.answer.by}: ${q.answer.text}` : q.blocking && q.ref ? "  (blocking)" : ""));
   }
 }
 
@@ -10000,12 +9967,20 @@ function resumeTeam(store, note) {
   store.ledger.record("resume", null, note ? { note } : {});
   store.say("Team resumed.");
 }
+function endRun(store, run2, note) {
+  store.require();
+  const role = store.ledger.who.role;
+  if (role && role !== "executive" && role !== "director") fail(`Only the executive or the director ends a run; this run is the ${role} role.`);
+  if (!running(store).some((r) => r.run === run2)) fail(`${run2} is not running.`);
+  store.ledger.record("end-run", null, { ended: run2, ...note ? { note } : {} });
+  store.say(`${run2} ended: no longer live.`);
+}
 function escalateLimit(store, ref, count, limit, what) {
   if (limit === null || count !== limit + 1) return;
   if (openQuestions(store.ledger.events(), ref).some((x) => x.to === "director")) return;
   ask(store, ref, "director", `${ref} ${what} ${count} times (limit ${limit}): decide \u2014 re-spec it, reassign it, split it or drop it.`);
 }
-var bounces = (events, ref) => events.filter((e) => e.type === "move" && e.ref === ref && e.from === "in-review" && e.to === "in-progress").length;
+var bounces = (events, ref) => events.filter((e) => e.type === "move" && e.ref === ref && (e.from === "in-review" || e.from === "accepted") && e.to === "in-progress").length;
 var attempts = (events, ref) => events.filter((e) => e.type === "checkpoint" && e.ref === ref && e.attempt).length;
 function livenessHints(store) {
   const events = store.ledger.events(), p = paused(events);
@@ -10015,7 +9990,201 @@ function livenessHints(store) {
   ];
 }
 
+// src/hub/core/work/queries.ts
+var up = (s2) => (s2 ?? "").toUpperCase();
+function itemStatus(item, plans2) {
+  const st = item.get("status") || "new";
+  if (ITEM_CLOSED.has(st)) return st;
+  const p = plans2.get(up(item.get("plan")));
+  return p ? PLAN_TO_ITEM[p.get("status") ?? ""] ?? st : st;
+}
+function planItems(plan, items2) {
+  const linked = new Set([...items2].filter(([, it]) => up(it.get("plan")) === plan.id).map(([i]) => i));
+  for (const i of idList(plan.get("items"))) linked.add(i);
+  return [...linked].sort().filter((i) => items2.has(i)).map((i) => items2.get(i));
+}
+function planGoal(plan, items2) {
+  return up(plan.get("goal")) || planItems(plan, items2).map((i) => up(i.get("goal"))).find(Boolean) || "";
+}
+function onFocus(plan, items2, focus) {
+  if (!focus || planGoal(plan, items2) === focus) return true;
+  const linked = planItems(plan, items2);
+  return linked.length > 0 && linked.every((i) => OFF_FOCUS_OK.has(i.id.split("-")[0]));
+}
+function goalOrder(goals2) {
+  return new Map([...goals2.keys()].sort().map((e, i) => [e, i]));
+}
+function goalQueue(goals2, focus) {
+  const rank = (g) => {
+    const p = PRIORITIES.indexOf(g.get("priority") ?? "");
+    return [g.id !== focus, p < 0 ? PRIORITIES.length : p, g.id];
+  };
+  return [...goals2.values()].filter((g) => g.get("status") === "active").sort(byKey(rank)).map((g) => g.id);
+}
+function itemRank(it, goals2, focus) {
+  const eorder = goalOrder(goals2);
+  const prio = PRIORITIES.includes(it.get("priority") ?? "") ? it.get("priority") : "P9";
+  return [prio !== "P0", !focus || up(it.get("goal")) !== focus, prio, eorder.get(up(it.get("goal"))) ?? eorder.size, it.id];
+}
+function ranked(items2, goals2, focus) {
+  return [...items2.values()].sort(byKey((i) => itemRank(i, goals2, focus)));
+}
+function unmetDeps(doc, plans2) {
+  return doc.dependsOn().filter((d) => plans2.get(d)?.get("status") !== "done");
+}
+function goalItems(goalId, items2) {
+  return [...items2.values()].filter((i) => up(i.get("goal")) === goalId && !ITEM_CLOSED.has(i.get("status") ?? ""));
+}
+function goalPlans(goalId, plans2, items2) {
+  return [...plans2.values()].filter((p) => planGoal(p, items2) === goalId);
+}
+
+// src/hub/core/work/footprint.ts
+var import_yaml2 = __toESM(require_dist(), 1);
+import { join as join10 } from "node:path";
+var LIVE = /* @__PURE__ */ new Set(["ready", "in-progress", "blocked", "in-review", "accepted"]);
+var BROAD = 10;
+function configSetting(store, block, key) {
+  try {
+    const doc = (0, import_yaml2.parse)(store.ws.read(join10(store.dir, "config.yaml")) ?? "");
+    return doc?.[block]?.[key];
+  } catch {
+    return void 0;
+  }
+}
+var sharedSetting = (store) => configSetting(store, "hub", "shared");
+function sharedGlobs(store) {
+  const v = sharedSetting(store);
+  return globList(v) ? v : [];
+}
+var globList = (v) => Array.isArray(v) && v.every((g) => typeof g === "string");
+function sharedProblem(store) {
+  const v = sharedSetting(store);
+  return v === void 0 || v === null || globList(v) ? null : "hub.shared: expected a list of path globs";
+}
+function uiPaths(store) {
+  const v = configSetting(store, "design", "ui_paths");
+  return globList(v) ? v : [];
+}
+function isUiPlan(store, plan) {
+  const ui = uiPaths(store);
+  return ui.length > 0 && plan.touches().some((t) => ui.some((g) => globsOverlap(t, g)));
+}
+function isShared(touch, shared2) {
+  return shared2.includes(touch) || !/[*?]/.test(touch) && shared2.some((s2) => globRe(s2).test(touch));
+}
+function blockingGlobs(a, b, shared2 = []) {
+  const mine = a.touches();
+  return b.touches().filter((g) => mine.some((m) => globsOverlap(m, g) && !(isShared(m, shared2) && isShared(g, shared2))));
+}
+function overlapping(plan, plans2, shared2 = []) {
+  return [...plans2.values()].filter((p) => p.id !== plan.id && LIVE.has(p.get("status") ?? "") && !p.dependsOn().includes(plan.id) && !plan.dependsOn().includes(p.id)).flatMap((p) => {
+    const globs = blockingGlobs(plan, p, shared2);
+    return globs.length ? [{ id: p.id, globs }] : [];
+  });
+}
+function trackedFiles(home2) {
+  const ls = (...spec) => (git(["-C", home2, "ls-files", "--", ...spec]) ?? "").split("\n").filter(Boolean);
+  return { files: ls(), generated: new Set(ls(":(attr:linguist-generated)", ":(attr:linguist-generated=true)")) };
+}
+function touchHints(plan, tracked, shared2) {
+  const out = [];
+  for (const t of plan.touches()) {
+    const re = globRe(t), hits = tracked.files.filter((f) => re.test(f));
+    if (/[*?]/.test(t) && (hits.length > BROAD || hits.some((f) => shared2.some((s2) => globRe(s2).test(f))))) {
+      out.push(`${plan.id}: touches glob ${t} is broad (${hits.length} tracked files) \u2014 list the exact files it changes`);
+    }
+    const gen = hits.find((f) => tracked.generated.has(f));
+    if (gen) out.push(`${plan.id}: touches ${t} lists a generated path (${gen}) \u2014 Release rebuilds those (hub.build); no plan lists them`);
+  }
+  return out;
+}
+function drift(plan, base2, home2) {
+  if (!home2 || !plan.touches().length) return null;
+  const at = (args) => git(["-C", home2, ...args]);
+  const fork = at(["merge-base", base2, "HEAD"])?.trim();
+  if (!fork) return null;
+  const changed2 = new Set([
+    ...at(["diff", "--name-only", fork])?.split("\n") ?? [],
+    ...at(["ls-files", "--others", "--exclude-standard"])?.split("\n") ?? []
+  ].filter(Boolean));
+  const globs = plan.touches().map(globRe);
+  const outside = [...changed2].filter((f) => !f.startsWith(".crew/") && !globs.some((g) => g.test(f)));
+  const generated3 = /* @__PURE__ */ new Set();
+  if (outside.length) {
+    const out = (at(["check-attr", "-z", "linguist-generated", "--", ...outside]) ?? "").split("\0");
+    for (let i = 0; i + 2 < out.length; i += 3) if (out[i + 2] === "true" || out[i + 2] === "set") generated3.add(out[i]);
+  }
+  return outside.filter((f) => !generated3.has(f)).sort();
+}
+
+// src/hub/core/work/gates.ts
+function triageProblems(item) {
+  const prefix = item.id.split("-")[0];
+  const problems = item.missing(TRIAGE_SECTIONS[prefix]).map((n2) => `empty section: ${n2}`);
+  if (!PRIORITIES.includes(item.get("priority") ?? "")) problems.push("no priority (P0\u2013P3)");
+  if (prefix === "BUG" && !Object.hasOwn(SEVERITY_PRIORITY, item.get("severity") ?? "")) problems.push("no severity (S1\u2013S4)");
+  return problems;
+}
+function fastLane(store, plan) {
+  const { types, max_tasks } = store.policy.policy.fast_lane;
+  const items2 = planItems(plan, store.items());
+  return types.length > 0 && items2.length > 0 && items2.every((i) => types.includes(i.id.split("-")[0])) && (max_tasks === null || plan.tasks().length <= max_tasks);
+}
+function readinessProblems(store, plan) {
+  return [
+    ...plan.missing(READY_SECTIONS).map((n2) => `empty section: ${n2}`),
+    ...plan.touches().length ? [] : ["no touches: (the paths this plan will change)"],
+    ...isUiPlan(store, plan) && plan.missing(["Design"]).length ? ["empty section: Design (a UI plan: touches overlap design.ui_paths)"] : [],
+    ...taskProblems(store, plan),
+    ...itemProblems(store, plan)
+  ];
+}
+function learningsProblems(plan, known) {
+  const m = /^\s*[-*]?\s*\**learnings?\**\s*:\**\s*(.*)$/im.exec(stripComments(plan.section("Outcome")));
+  if (!m) return ["Outcome has no `Learnings:` line \u2014 list the K-\u2026 entries captured with `learn`, or write `Learnings: none`"];
+  const ids = m[1].match(K_ID_RE) ?? [];
+  if (!ids.length && !/^none\b/i.test(m[1].trim())) return ["`Learnings:` must list K-\u2026 entries or say none"];
+  return ids.filter((i) => !known.has(i)).map((i) => `Learnings: ${i} does not exist`);
+}
+function decisionProblems(idea2) {
+  const problems = idea2.missing(DECIDED_SECTIONS).map((n2) => `empty section: ${n2}`);
+  if (idea2.hasContent("Success criteria") && !idea2.checklist("Success criteria").length) {
+    problems.push("Success criteria must be a checklist (`- [ ] \u2026`) so each one can be verified");
+  }
+  return problems;
+}
+function taskProblems(store, plan) {
+  const tasks = plan.tasks();
+  const max = store.settings().max_tasks;
+  const problems = tasks.length ? [] : ["no tasks"];
+  const noVerify = tasks.filter(([, t]) => !t.toLowerCase().includes("verify")).map(([, t]) => t.split("\u2192")[0].trim());
+  if (noVerify.length) problems.push(`tasks without '\u2192 verify:': ${noVerify.join("; ")}`);
+  if (tasks.length > max) problems.push(`${tasks.length} tasks (> max_tasks ${max}) \u2014 split the plan`);
+  return problems;
+}
+function itemProblems(store, plan) {
+  const items2 = store.items();
+  const linked = idList(plan.get("items"));
+  const problems = [];
+  for (const i of linked) {
+    if (!items2.has(i)) problems.push(`unknown item ${i}`);
+    else if (items2.get(i).get("status") === "new") problems.push(`item ${i} is not triaged`);
+  }
+  if (linked.some((i) => i.startsWith("BUG-"))) {
+    const text2 = (plan.section("Acceptance criteria") + plan.section("Tasks") + plan.section("Test plan")).toLowerCase();
+    if (!text2.includes("regression")) {
+      problems.push("fixes a bug but names no regression test (acceptance criteria, tasks or test plan)");
+    }
+  }
+  return problems;
+}
+
 // src/hub/commands/work/execution.ts
+import { spawnSync as spawnSync3 } from "node:child_process";
+import { createHash as createHash2 } from "node:crypto";
+import { existsSync as existsSync8 } from "node:fs";
+import { join as join11 } from "node:path";
 var OUTPUT_LINES = 15;
 var OUTPUT_CHARS = 2e3;
 var RUN_TIMEOUT_MS = 10 * 6e4;
@@ -10144,9 +10313,9 @@ function commitWork(store, plan, subject) {
   if (!home2 || git(["-C", home2, "branch", "--show-current"])?.trim() !== plan.get("branch")) return null;
   const files2 = codeChanges(home2, store.policy.policy.secrets.files);
   if (!files2.length) return null;
-  const at = (args, check2 = false) => git(["-C", home2, "--literal-pathspecs", ...args], check2);
+  const at = (args, check3 = false) => git(["-C", home2, "--literal-pathspecs", ...args], check3);
   const prev = at(["rev-parse", "HEAD"])?.trim();
-  const gone = files2.filter((f) => !existsSync8(join10(home2, f)));
+  const gone = files2.filter((f) => !existsSync8(join11(home2, f)));
   if (files2.length > gone.length) at(["add", "-A", "--", ...files2.filter((f) => !gone.includes(f))], true);
   if (gone.length) at(["rm", "-q", "--cached", "--ignore-unmatch", "--", ...gone], true);
   try {
@@ -10163,8 +10332,8 @@ function parseAc(spec, n2) {
   if (!spec) return [];
   if (spec === "all") return Array.from({ length: n2 }, (_, i) => i + 1);
   const nums = spec.split(",").map((x) => Number(x.trim().replace(/^AC/i, "")));
-  const bad = nums.filter((x) => !Number.isInteger(x) || x < 1 || x > n2);
-  if (bad.length) fail(`--ac: the plan has acceptance criteria 1\u2013${n2} (or "all").`);
+  const bad2 = nums.filter((x) => !Number.isInteger(x) || x < 1 || x > n2);
+  if (bad2.length) fail(`--ac: the plan has acceptance criteria 1\u2013${n2} (or "all").`);
   return nums;
 }
 function recovery(store, plan) {
@@ -10222,20 +10391,20 @@ function handoff(store, id) {
 }
 
 // src/hub/commands/views/checks.ts
-import { join as join13 } from "node:path";
+import { join as join14 } from "node:path";
 
 // src/hub/commands/views/legacy.ts
-import { isAbsolute as isAbsolute3, join as join11, relative as relative5 } from "node:path";
+import { isAbsolute as isAbsolute3, join as join12, relative as relative5 } from "node:path";
 var LEGACY = ["check_secrets", "check_structure", "check_design", "format_on_edit", "track_plan_draft"];
 var REFRESH = "`/crew:guidelines --refresh` moves crew's hooks and settings to the .mjs scripts and removes the .py once nothing calls it";
 function legacyHints(store) {
   const { ws } = store;
-  const at = (...p) => join11(ws.root, ...p);
+  const at = (...p) => join12(ws.root, ...p);
   const hints = [];
-  const leftovers = LEGACY.filter((n2) => ws.isFile(at(".crew", "bin", `${n2}.py`)));
-  if (leftovers.length) hints.push(`.crew/bin/ still has the Python scripts ${leftovers.map((n2) => `${n2}.py`).join(", ")} \u2014 ${REFRESH}`);
+  const leftovers2 = LEGACY.filter((n2) => ws.isFile(at(".crew", "bin", `${n2}.py`)));
+  if (leftovers2.length) hints.push(`.crew/bin/ still has the Python scripts ${leftovers2.map((n2) => `${n2}.py`).join(", ")} \u2014 ${REFRESH}`);
   const hookDirs = [git(["rev-parse", "--git-path", "hooks"])?.trim(), git(["config", "core.hooksPath"])?.trim()].filter((d) => !!d).map((d) => isAbsolute3(d) ? d : at(d));
-  const inDir = (dir) => ws.list(dir).filter((f) => !f.endsWith(".sample")).map((f) => relative5(ws.root, join11(dir, f)));
+  const inDir = (dir) => ws.list(dir).filter((f) => !f.endsWith(".sample")).map((f) => relative5(ws.root, join12(dir, f)));
   const files2 = [.../* @__PURE__ */ new Set([
     ...inDir(at(".githooks")),
     ...hookDirs.flatMap(inDir),
@@ -10249,7 +10418,7 @@ function legacyHints(store) {
     ...inDir(at(".husky"))
   ])];
   for (const file of files2) {
-    const text2 = ws.read(join11(ws.root, file));
+    const text2 = ws.read(join12(ws.root, file));
     const calls = text2 ? LEGACY.filter((n2) => text2.includes(`.crew/bin/${n2}.py`)) : [];
     if (calls.length) hints.push(`${file} still runs ${calls.map((n2) => `.crew/bin/${n2}.py`).join(", ")} \u2014 use node .crew/bin/<name>.mjs (${REFRESH})`);
   }
@@ -10260,14 +10429,14 @@ function legacyHints(store) {
 }
 
 // src/hub/commands/team/agents.ts
-import { join as join12 } from "node:path";
+import { join as join13 } from "node:path";
 var HUMAN = "executive";
 var PLAIN = /^[\w-]+$/;
-var agentsDir = (store) => join12(store.ws.root, ".claude", "agents");
-var agentFile = (store, role) => join12(agentsDir(store), `crew-${role}.md`);
+var agentsDir = (store) => join13(store.ws.root, ".claude", "agents");
+var agentFile = (store, role) => join13(agentsDir(store), `crew-${role}.md`);
 function template(store, name) {
-  for (const d of [join12(store.dir, "templates", "agents"), join12(SKILL_DIR, "agents")]) {
-    const text2 = store.ws.read(join12(d, `${name}.md`));
+  for (const d of [join13(store.dir, "templates", "agents"), join13(SKILL_DIR, "agents")]) {
+    const text2 = store.ws.read(join13(d, `${name}.md`));
     if (text2 !== null) return text2;
   }
   return fail(`Agent template ${name}.md not found. Re-run \`crew.mjs init\` from the plugin.`);
@@ -10307,8 +10476,8 @@ var agentRoles = (store) => resolvePolicy(store.home, store.dir).roles.filter((r
 function rendered(store) {
   const out = /* @__PURE__ */ new Map();
   for (const name of store.ws.list(agentsDir(store)).filter((n2) => /^crew-.*\.md$/.test(n2))) {
-    const role = Doc.parse(store.ws.read(join12(agentsDir(store), name)) ?? "").get("crew-role");
-    if (role) out.set(join12(agentsDir(store), name), role);
+    const role = Doc.parse(store.ws.read(join13(agentsDir(store), name)) ?? "").get("crew-role");
+    if (role) out.set(join13(agentsDir(store), name), role);
   }
   return out;
 }
@@ -10328,9 +10497,9 @@ function agentHints(store) {
   if (!rendered(store).size) return [];
   return agentProblems(store).map((p) => `agents: ${store.rel(p.path)} is ${p.problem} \u2014 run \`crew.mjs agents\``);
 }
-function agents(store, check2 = false) {
+function agents(store, check3 = false) {
   store.require();
-  if (check2) {
+  if (check3) {
     const problems = agentProblems(store);
     for (const p of problems) store.say(`STALE  ${store.rel(p.path)}: ${p.problem}`);
     if (!problems.length) store.say("Agents up to date.");
@@ -10504,7 +10673,7 @@ function plans(s2, f) {
     if (unknownItems.length) f.errors.push(`${pid}: links unknown items ${unknownItems.join(", ")}`);
     if (p.get("goal") && !s2.goals.has(up2(p.get("goal")))) f.errors.push(`${pid}: references missing goal ${p.get("goal")}`);
     if (st === "ready") f.errors.push(...readinessProblems(s2.store, p).map((problem) => `${pid}: ready but ${problem}`));
-    if (st === "done") donePlan(pid, p, f);
+    if (st === "done" || st === "accepted") donePlan(pid, p, f, st);
     if (ACTIVE.has(st ?? "")) activePlan(pid, p, s2, f, branches, here);
     const outside = drift(s2.allPlans.get(pid) ?? p, s2.store.baseBranch(), s2.store.planHome(pid));
     if (outside?.length) f.hints.push(`${pid}: changes outside its touches: ${outside.slice(0, 8).join(", ")} \u2014 widen touches (and log why) or move the work`);
@@ -10552,9 +10721,9 @@ function touches(s2, f) {
     }
   }
 }
-function donePlan(pid, p, f) {
-  if (p.tasks().some(([d]) => !d)) f.errors.push(`${pid}: done but has unchecked tasks`);
-  if (!stripComments(p.section("Outcome")).trim()) f.errors.push(`${pid}: done but Outcome section is empty`);
+function donePlan(pid, p, f, st) {
+  if (p.tasks().some(([d]) => !d)) f.errors.push(`${pid}: ${st} but has unchecked tasks`);
+  if (!stripComments(p.section("Outcome")).trim()) f.errors.push(`${pid}: ${st} but Outcome section is empty`);
 }
 function activePlan(pid, p, s2, f, branches, here) {
   const st = p.get("status");
@@ -10598,7 +10767,7 @@ function goals(s2, f) {
     if (eps.length && eps.every((p) => CLOSED.has(p.get("status") ?? "")) && !openItems.length && st === "active") {
       f.hints.push(`${eid}: all plans and items closed \u2014 verify acceptance criteria, then \`move ${eid} done\``);
     }
-    if (st === "proposed" && eps.some((p) => ["in-progress", "in-review", "blocked", "done"].includes(p.get("status") ?? ""))) {
+    if (st === "proposed" && eps.some((p) => ["in-progress", "in-review", "blocked", "accepted", "done"].includes(p.get("status") ?? ""))) {
       f.hints.push(`${eid}: has started plans but is still 'proposed' \u2014 \`move ${eid} active\` (on main)`);
     }
     if (!CLOSED.has(st ?? "") && !eps.length && !eitems.length) f.hints.push(`${eid}: no plans and no items \u2014 break the goal down`);
@@ -10642,17 +10811,17 @@ function hygiene(s2, f) {
   if (ahead.length > MAX_WRITTEN_AHEAD) {
     f.hints.push(`${ahead.length} plans written ahead of the work (> ${MAX_WRITTEN_AHEAD}) \u2014 keep later work as backlog items so plans don't go stale`);
   }
-  const leftovers = s2.store.ws.list(join13(s2.store.dir, "drafts")).filter((n2) => n2.endsWith(".md"));
-  if (leftovers.length) {
-    f.hints.push(`unconverted drafts in .crew/drafts/: ${leftovers.join(", ")} \u2014 create the document from them or delete`);
+  const leftovers2 = s2.store.ws.list(join14(s2.store.dir, "drafts")).filter((n2) => n2.endsWith(".md"));
+  if (leftovers2.length) {
+    f.hints.push(`unconverted drafts in .crew/drafts/: ${leftovers2.join(", ")} \u2014 create the document from them or delete`);
   }
-  if (s2.store.ws.isDir(join13(s2.store.ws.root, ".project"))) {
+  if (s2.store.ws.isDir(join14(s2.store.ws.root, ".project"))) {
     f.hints.push("a .project/ directory from project-kit is still here \u2014 `crew.mjs migrate` moves it into .crew/");
   }
-  if (!s2.store.ws.read(join13(s2.store.ws.root, "CLAUDE.md"))?.includes(HUB_STATE_MARKER)) {
+  if (!s2.store.ws.read(join14(s2.store.ws.root, "CLAUDE.md"))?.includes(HUB_STATE_MARKER)) {
     f.hints.push("CLAUDE.md has no hub-state section (project state stays in the hub) \u2014 `crew.mjs init` adds it");
   }
-  if (!s2.store.ws.read(join13(s2.store.ws.root, ".githooks", "post-commit"))?.includes("graphify")) {
+  if (!s2.store.ws.read(join14(s2.store.ws.root, ".githooks", "post-commit"))?.includes("graphify")) {
     f.hints.push("code graph not set up (no graphify hook in .githooks/post-commit) \u2014 `/crew:codemap` installs and wires it");
   }
   f.hints.push(...legacyHints(s2.store));
@@ -10695,12 +10864,18 @@ function uncommitted(store, plan) {
   const home2 = store.planHome(plan.id);
   return home2 ? codeChanges(home2, store.policy.policy.secrets.files) : [];
 }
+var GATE = { code: "plan.reviewed", design: "plan.design-reviewed" };
+var DESIGN_USAGE = "review P-### --design --approve | --changes TXT";
 function review(store, planId, o) {
   store.require();
   const plan = store.find(store.checkRef(planId, "plan"));
-  if (!!o.approve === !!o.changes) fail('Give one verdict: --approve, or --changes "<what to change>".');
+  const kind = o.design ? "design" : "code";
+  if (!!o.approve === !!o.changes) {
+    fail(o.design ? `usage: ${DESIGN_USAGE}` : 'Give one verdict: --approve, or --changes "<what to change>".');
+  }
   if (plan.get("status") !== "in-review") fail(`${plan.id} is '${plan.get("status")}': only a plan in review is reviewed.`);
-  authorize(store, plan.id, "plan.reviewed", void 0, void 0, `review ${plan.id}`);
+  if (o.design && !isUiPlan(store, plan)) fail(`${plan.id} is not a UI plan (its touches don't overlap design.ui_paths): it needs no design review.`);
+  authorize(store, plan.id, GATE[kind], void 0, void 0, `review ${plan.id}${o.design ? " --design" : ""}`);
   const me = store.ledger.who.run;
   if (implementers(store.ledger.events(), plan.id).has(me)) fail(`This run (${me}) implemented ${plan.id}; another role reviews it.`);
   const open = o.approve ? uncommitted(store, plan) ?? [] : [];
@@ -10709,24 +10884,151 @@ function review(store, planId, o) {
   }
   const branch = plan.get("branch") ?? "";
   const sha = branch && git(["rev-parse", "--verify", "-q", branch])?.trim() || null;
-  store.ledger.record("review", plan.id, { verdict: o.approve ? "approve" : "changes", sha, ...o.changes ? { text: o.changes } : {} });
+  store.ledger.record("review", plan.id, {
+    verdict: o.approve ? "approve" : "changes",
+    sha,
+    ...o.design ? { kind } : {},
+    ...o.changes ? { text: o.changes } : {}
+  });
+  const what = o.design ? "design review" : "review";
   if (o.changes) {
-    plan.appendLog(`review: changes requested \u2014 ${o.changes}`, "Progress log");
+    plan.appendLog(`${what}: changes requested \u2014 ${o.changes}`, "Progress log");
     plan.save();
-    move(store, plan.id, "in-progress", `changes requested: ${o.changes}`, false, void 0, "plan.reviewed");
-  } else store.say(`${plan.id}: approved${sha ? ` at ${sha.slice(0, 7)}` : ""}`);
+    move(store, plan.id, "in-progress", `${o.design ? "design " : ""}changes requested: ${o.changes}`, false, void 0, GATE[kind]);
+  } else store.say(`${plan.id}: ${o.design ? "design " : ""}approved${sha ? ` at ${sha.slice(0, 7)}` : ""}`);
 }
-function reviewProblems(store, plan) {
-  if (!store.policy.policy.role_gates["plan.reviewed"]) return [];
-  const last = store.ledger.events().filter((e) => e.type === "review" && e.ref === plan.id).at(-1);
-  const how = `\`review ${plan.id} --approve\` by the ${store.policy.policy.role_gates["plan.reviewed"]}`;
-  if (!last) return [`no code review yet: ${how}`];
-  if (last.verdict !== "approve") return [`the last review asked for changes: ${last.text}`];
+function reviewProblems(store, plan, kind) {
+  return (kind ? [kind] : ["code", "design"]).flatMap((k) => kindProblems(store, plan, k));
+}
+function kindProblems(store, plan, kind) {
+  const role = store.policy.policy.role_gates[GATE[kind]];
+  if (!role || kind === "design" && !isUiPlan(store, plan)) return [];
+  const last = store.ledger.events().filter((e) => e.type === "review" && e.ref === plan.id && (e.kind ?? "code") === kind).at(-1);
+  const how = `\`review ${plan.id}${kind === "design" ? " --design" : ""} --approve\` by the ${role}`;
+  const what = kind === "design" ? "design review" : "code review";
+  if (!last) return [`no ${what} yet: ${how}`];
+  if (last.verdict !== "approve") return [`the last ${kind === "design" ? "design " : ""}review asked for changes: ${last.text}`];
   const code = lastCode(plan.get("branch") ?? "");
   const dirty2 = uncommitted(store, plan) ?? (currentBranch() !== plan.get("branch") ? [] : (git(["status", "--porcelain"]) ?? "").split("\n").filter((l) => l.trim() && !l.slice(3).startsWith(".crew/")));
   const covered = !code || !!last.sha && git(["merge-base", "--is-ancestor", code, String(last.sha)]) !== null;
-  return covered && !dirty2.length ? [] : [`the code changed since the approving review (${String(last.sha ?? "?").slice(0, 7)}): ${how} again`];
+  return covered && !dirty2.length ? [] : [`the code changed since the approving ${kind === "design" ? "design " : ""}review (${String(last.sha ?? "?").slice(0, 7)}): ${how} again`];
 }
+
+// src/hub/commands/work/release.ts
+import { chmodSync as chmodSync2, copyFileSync as copyFileSync2, existsSync as existsSync9, readFileSync as readFileSync7, statSync as statSync6 } from "node:fs";
+import { isAbsolute as isAbsolute4, join as join15, normalize } from "node:path";
+var branchMerged = (branch, base2, pid) => git(["merge-base", "--is-ancestor", branch, base2]) !== null || squashMerge(branch, base2, pid) !== null;
+function landedProblems(store, plan) {
+  const base2 = store.baseBranch(), b = plan.get("branch") ?? "", how = `Release lands it with \`land ${plan.id}\``;
+  const wt = store.settings().plan_worktrees ? store.planWorktrees().get(plan.id) : void 0;
+  if (wt) return [`its worktree ${store.rel(wt) || wt} is still open: ${how}`];
+  if (b && planBranches().includes(b) && !branchMerged(b, base2, plan.id)) return [`${b} is not merged into ${base2}: ${how}`];
+  return [];
+}
+function mergeOrder(store) {
+  const base2 = store.baseBranch(), plans2 = store.plans(true), events = store.ledger.events(), moved = store.ledger.lastStatus(events);
+  const at = new Map(events.filter((e) => e.type === "move" && (e.to === "accepted" || e.to === "done")).map((e) => [`${e.ref} ${e.to}`, e.ts]));
+  const branches = new Set(planBranches());
+  const status2 = (p) => moved.get(p.id) ?? p.get("status") ?? "";
+  const landed2 = /* @__PURE__ */ new Map();
+  const isLanded = (p) => {
+    if (!landed2.has(p.id)) landed2.set(p.id, !landedProblems(store, p).length);
+    return landed2.get(p.id);
+  };
+  const out = { base: base2, merge: [], waiting: [], merged: [] };
+  const queue = [...plans2.values()].filter((p) => ["accepted", "done"].includes(status2(p)) && branches.has(p.get("branch") ?? "")).sort(byKey((p) => [at.get(`${p.id} ${status2(p)}`) ?? p.get("completed") ?? "", p.id]));
+  const pending = /* @__PURE__ */ new Set();
+  for (const p of queue) {
+    if (isLanded(p)) out.merged.push({ id: p.id, branch: p.get("branch"), ...status2(p) === "done" ? { legacy: true } : {} });
+    else pending.add(p.id);
+  }
+  const unlandedDep = (p) => p.dependsOn().filter((d) => {
+    const dep = plans2.get(d), s2 = dep ? status2(dep) : "";
+    return dep && s2 !== "dropped" && !((s2 === "done" || s2 === "accepted") && isLanded(dep));
+  });
+  const worktrees2 = store.settings().plan_worktrees ? store.planWorktrees() : /* @__PURE__ */ new Map();
+  const placed = /* @__PURE__ */ new Set();
+  for (let progress = true; progress; ) {
+    progress = false;
+    for (const p of queue.filter((x) => pending.has(x.id) && !placed.has(x.id))) {
+      if (unlandedDep(p).every((d) => placed.has(d))) {
+        const wt = worktrees2.get(p.id);
+        out.merge.push({
+          id: p.id,
+          title: p.get("title") ?? "",
+          branch: p.get("branch"),
+          ...wt ? { worktree: store.rel(wt) } : {},
+          ...status2(p) === "done" ? { legacy: true } : {}
+        });
+        placed.add(p.id);
+        progress = true;
+      }
+    }
+  }
+  for (const p of queue.filter((x) => pending.has(x.id) && !placed.has(x.id))) {
+    out.waiting.push({ id: p.id, why: `depends on ${unlandedDep(p).filter((d) => !placed.has(d)).join(", ")}, not landed yet` });
+  }
+  return out;
+}
+function mergeOrderCmd(store, json = false) {
+  store.require();
+  const m = mergeOrder(store);
+  if (json) return store.say(JSON.stringify(m, null, 2));
+  if (!m.merge.length && !m.waiting.length) store.say(`Nothing to merge into ${m.base}.`);
+  m.merge.forEach((p, i) => store.say(`${String(i + 1).padStart(2)}. ${p.id}: ${p.title} \u2014 ` + (!p.legacy ? `\`land ${p.id}\`` : (p.worktree ? `commit everything in ${p.worktree} once (\`<type>(${p.id}): ${p.title}\`), squash-merge ${p.branch} into ${m.base}, then \`git worktree remove ${p.worktree}\` and delete the branch` : `merge ${p.branch} into ${m.base}`) + " (completed before `accepted`: merge by hand)")));
+  for (const w of m.waiting) store.say(`WAIT ${w.id}: ${w.why}`);
+  for (const p of m.merged) store.say(`merged: ${p.id} (${p.branch}) \u2014 ${p.legacy ? "" : "the PM moves it done; "}delete the branch`);
+}
+function refreshBin(store, root, check3) {
+  const { from, files: files2 } = store.policy.policy.release.refresh_bin;
+  if (!from || !files2.length) {
+    if (check3) return store.say("refresh-bin: nothing to check (no release.refresh_bin in the policy)"), 0;
+    fail("refresh-bin: the policy has no release.refresh_bin (from, files); the executive sets it in .crew/policy.yaml");
+  }
+  const src = normalize(from).replace(/\\/g, "/").replace(/\/+$/, "");
+  if (isAbsolute4(from) || src === ".." || src.startsWith("../") || src === ".crew" || src.startsWith(".crew/")) {
+    fail(`refresh-bin: release.refresh_bin.from '${from}' must be a relative path inside the checkout, not under .crew/`);
+  }
+  const bad2 = files2.filter((f) => !/^\w[\w.-]*$/.test(f));
+  if (bad2.length) fail(`refresh-bin: release.refresh_bin.files must be bare file names in .crew/bin: ${bad2.join(", ")}`);
+  const stale = [];
+  for (const f of files2) {
+    const s2 = join15(root, src, f), t = join15(root, ".crew", "bin", f);
+    if (!existsSync9(s2) || !existsSync9(t)) {
+      store.say(`skipped .crew/bin/${f}: ${existsSync9(t) ? `${src}/${f} does not exist` : "not vendored here (refresh-bin never adds a file)"}`);
+    } else if (!readFileSync7(s2).equals(readFileSync7(t))) stale.push(f);
+  }
+  if (check3) {
+    for (const f of stale) store.say(`stale: .crew/bin/${f} differs from ${src}/${f} (Release runs \`crew.mjs refresh-bin\`)`);
+    if (!stale.length) store.say(`refresh-bin: .crew/bin is up to date with ${src}`);
+    return stale.length ? 1 : 0;
+  }
+  const role = store.ledger.who.role;
+  if (role !== "release") fail(`refresh-bin: only the release role refreshes .crew/bin; this run is ${role ? `the ${role} role` : "no role"}`);
+  const branch = git(["-C", root, "branch", "--show-current"])?.trim() ?? "";
+  const plan = [...store.plans().values()].find((p) => branch && p.get("branch") === branch && p.get("status") !== "dropped");
+  if (!plan) fail(`refresh-bin: this checkout (branch '${branch || "none"}') is not a plan's worktree; run it in the plan's worktree`);
+  for (const f of stale) {
+    const t = join15(root, ".crew", "bin", f), mode = statSync6(t).mode;
+    copyFileSync2(join15(root, src, f), t);
+    chmodSync2(t, mode & 4095);
+    store.say(`refreshed .crew/bin/${f} from ${src}/${f}`);
+  }
+  if (!stale.length) store.say(`refresh-bin: .crew/bin is up to date with ${src}`);
+  return 0;
+}
+
+// src/hub/core/work/transition-gates.ts
+var TRANSITION_GATES = {
+  "plan.ready": { gate: "Definition of Ready", label: "is not ready (Definition of Ready)" },
+  "plan.in-review": { gate: "Learnings recorded", label: "can't go to review" },
+  "plan.accepted": { gate: "Tasks, evidence and review", label: "can't be accepted" },
+  "plan.done": { gate: "Landed", label: "isn't landed" },
+  "goal.active": { gate: "Outcome and criteria written", label: "can't be active" },
+  "goal.done": { gate: "Criteria verified", label: "isn't reached" },
+  "item.triaged": { gate: "Triage", label: "can't be triaged" },
+  "idea.decided": { gate: "Decision agreed", label: "can't be decided" }
+};
 
 // src/hub/commands/work/workflow.ts
 var LOG_SECTION = { item: "Notes" };
@@ -10737,6 +11039,7 @@ function move(store, docId, status2, note, force = false, approvedBy, via) {
   const doc = store.find(docId);
   const flow = FLOWS[kind];
   const old = doc.get("status") ?? "";
+  if (kind === "plan" && old === "accepted" && status2 === "in-progress") via ??= "plan.landed";
   if (!Object.hasOwn(flow, status2)) fail(`Unknown status '${status2}'. Valid: ${Object.keys(flow).join(", ")}`);
   if (!(flow[old] ?? []).includes(status2) && !force) {
     const allowed = [...flow[old] ?? []].sort().join(", ") || "none";
@@ -10757,8 +11060,14 @@ function move(store, docId, status2, note, force = false, approvedBy, via) {
   stamp(kind, doc, status2);
   doc.set("status", status2);
   if (kind === "plan" && status2 === "in-review" && doc.source === "worktree") writeHandoff(store, doc);
-  if (kind === "plan" && old === "in-review" && status2 === "in-progress") {
-    escalateLimit(store, doc.id, bounces(store.ledger.events(), doc.id) + 1, store.policy.policy.limits.max_bounces, "came back from review");
+  if (kind === "plan" && (old === "in-review" || old === "accepted") && status2 === "in-progress") {
+    escalateLimit(
+      store,
+      doc.id,
+      bounces(store.ledger.events(), doc.id) + 1,
+      store.policy.policy.limits.max_bounces,
+      old === "accepted" ? "came back from review or a failed land" : "came back from review"
+    );
   }
   const approval = approvedBy ? ` (approved by ${approvedBy})` : "";
   doc.appendLog(`status ${old} \u2192 ${status2}` + (note ? ` \u2014 ${note}` : "") + approval, LOG_SECTION[kind] ?? "Progress log");
@@ -10771,23 +11080,24 @@ function move(store, docId, status2, note, force = false, approvedBy, via) {
     ...via ? { via } : {}
   });
   if (CLOSED.has(status2) && store.ledger.claims().has(doc.id)) store.ledger.record("release", doc.id, { reason: status2 });
+  if (kind === "plan" && status2 === "done") closeItems(store, doc);
   if (kind === "goal" && status2 === "done") notify(store, "goal-done", doc.id, `${doc.id} is done: ${doc.get("title")}`);
   store.say(`${doc.id}: ${old} \u2192 ${status2}`);
   return doc;
 }
 function authorize(store, id, transition, approvedBy, from, cmd = `move ${id} ${transition.split(".")[1]}`, also = []) {
-  const { policy, errors } = store.policy;
+  const { policy: policy2, errors } = store.policy;
   if (errors.length) fail(`The policy is invalid, so nothing moves until it is fixed (\`crew.mjs policy check\`):
   - ${errors.join("\n  - ")}`);
   if (approvedBy !== void 0 && !approvedBy.trim()) fail("--approved-by needs the approving person's name.");
   if (approvedBy) return;
-  const reason = approvalReason(policy, transition);
+  const reason = approvalReason(policy2, transition);
   const [, status2] = transition.split(".");
   if (reason) {
-    fail(`${id} \u2192 ${status2} is ${reason}: a human approves it with \`crew.mjs ${cmd} --approved-by <name>\` (agents over MCP can't). Ask the ${policy.escalation.to} first.`);
+    fail(`${id} \u2192 ${status2} is ${reason}: a human approves it with \`crew.mjs ${cmd} --approved-by <name>\` (agents over MCP can't). Ask the ${policy2.escalation.to} first.`);
   }
   const [kind] = transition.split(".");
-  const role = (from ? policy.role_gates[`${kind}.${from}>${status2}`] : void 0) ?? policy.role_gates[transition];
+  const role = (from ? policy2.role_gates[`${kind}.${from}>${status2}`] : void 0) ?? policy2.role_gates[transition];
   const mine = store.ledger.who.role;
   if (role && mine !== role && !also.includes(mine ?? "")) fail(`${id} \u2192 ${status2} is for the ${role} role; this run is ${mine ? `the ${mine} role` : "in no role"} (CREW_ROLE).`);
 }
@@ -10803,47 +11113,41 @@ function budgetProblems(store) {
   const { budgets } = store.policy.policy;
   const events = store.ledger.events(), me = store.ledger.who.run;
   const mine = store.ledger.spend(events.filter((e) => e.run === me)), all = store.ledger.spend(events);
-  const over = (what, used, cap, unit = "") => cap !== null && used >= cap ? [`${what}: ${unit}${+used.toFixed(2)} used of ${unit}${cap}`] : [];
+  const over = (what, used, cap2, unit = "") => cap2 !== null && used >= cap2 ? [`${what}: ${unit}${+used.toFixed(2)} used of ${unit}${cap2}`] : [];
   const holders = new Set([...store.ledger.claims(events).values()].map((c) => c.run));
-  const agents2 = budgets.max_agents !== null && !holders.has(me) && holders.size >= budgets.max_agents ? [`max_agents: ${holders.size} runs already hold work (limit ${budgets.max_agents})`] : [];
+  const agents3 = budgets.max_agents !== null && !holders.has(me) && holders.size >= budgets.max_agents ? [`max_agents: ${holders.size} runs already hold work (limit ${budgets.max_agents})`] : [];
   return [
     ...over("run cost", mine.cost, budgets.run.max_cost, "$"),
     ...over("run tokens", mine.tokensIn + mine.tokensOut, budgets.run.max_tokens),
     ...over("project cost", all.cost, budgets.project.max_cost, "$"),
     ...over("project tokens", all.tokensIn + all.tokensOut, budgets.project.max_tokens),
-    ...agents2
+    ...agents3
   ];
 }
 function guard2(store, kind, doc, status2, approvedBy) {
   let problems = [];
-  let label = "";
   if (kind === "plan" && status2 === "ready") {
     problems = readinessProblems(store, doc);
-    label = "is not ready (Definition of Ready)";
   } else if (kind === "plan" && status2 === "in-review") {
     problems = learningsProblems(doc, new Set(store.knowledge().map((e) => e.id)));
-    label = "can't go to review";
-  } else if (kind === "plan" && status2 === "done") {
+  } else if (kind === "plan" && status2 === "accepted") {
     problems = [
       ...doc.tasks().filter(([done]) => !done).map(([, t]) => `unchecked task: ${t}`),
       ...evidenceProblems(store, doc, approvedBy),
       ...reviewProblems(store, doc)
     ];
-    label = "can't be done";
+  } else if (kind === "plan" && status2 === "done") {
+    problems = landedProblems(store, doc);
   } else if (kind === "goal" && status2 === "done") {
     problems = goalProblems(store, doc);
-    label = "isn't reached";
   } else if (kind === "goal" && status2 === "active") {
     problems = doc.missing(["Outcome", "Acceptance criteria"]).map((n2) => `empty section: ${n2}`);
-    label = "can't be active";
   } else if (kind === "item" && status2 === "triaged") {
     problems = triageProblems(doc);
-    label = "can't be triaged";
   } else if (kind === "idea" && status2 === "decided") {
     problems = decisionProblems(doc);
-    label = "can't be decided";
   }
-  if (problems.length) fail(`${doc.id} ${label}:
+  if (problems.length) fail(`${doc.id} ${TRANSITION_GATES[`${kind}.${status2}`].label}:
   - ${problems.join("\n  - ")}
 (--force to override)`);
 }
@@ -10877,15 +11181,15 @@ function start(store, planId, force = false, approvedBy) {
   }
   assignedHere(store, doc.id);
   authorize(store, doc.id, "plan.in-progress", approvedBy, "ready");
-  const shared = store.settings().plan_worktrees;
-  if (!shared && !treeIsClean(store.rel(store.dir))) fail("Working tree not clean. Commit or stash first (changes under the hub's directory may stay).");
+  const shared2 = store.settings().plan_worktrees;
+  if (!shared2 && !treeIsClean(store.rel(store.dir))) fail("Working tree not clean. Commit or stash first (changes under the hub's directory may stay).");
   const focus = store.focus();
   if (!onFocus(doc, store.items(), focus)) store.say(`note: ${planId} does not serve the focus goal ${focus}`);
   const plans2 = store.plans(true);
   for (const o of overlapping(doc, plans2, sharedGlobs(store)).filter((x) => plans2.get(x.id)?.get("status") !== "ready")) {
     store.say(`warning: ${planId} overlaps ${o.id} (in progress) on ${o.globs.join(", ")} \u2014 expect conflicts at release; narrow touches or list the file in hub.shared`);
   }
-  if (shared) {
+  if (shared2) {
     const home2 = store.planHome(doc.id) ?? openPlanWorktree(store, doc.id, branch);
     claimPlan(store, planId, branch, force, takeover, approvedBy);
     store.say(`${doc.id}: work in ${store.ws.rel(home2) || "this checkout"} (${branch}) \u2014 claimed by ${store.ledger.who.actor} (${store.ledger.who.run}); checkpoints commit its code on the branch`);
@@ -10965,122 +11269,22 @@ function log(store, docId, text2) {
   doc.save();
   store.ledger.record("log", doc.id, { text: text2 });
 }
-
-// src/hub/commands/work/backlog.ts
-function createItem(store, prefix, title, body2, fields) {
-  const iid = store.nextId(prefix, "item");
-  const doc = store.build(`item-${ITEM_TYPES[prefix]}.md`, body2, { id: iid, title, type: ITEM_TYPES[prefix], ...fields });
-  return store.writeNew(doc, `${store.dirs.item}/${iid}-${slugify(title)}.md`);
-}
-function checkSeverity(severity) {
-  const s2 = (severity ?? "").toUpperCase();
-  if (s2 && !Object.hasOwn(SEVERITY_PRIORITY, s2)) fail(`Severity must be one of ${Object.keys(SEVERITY_PRIORITY).join(", ")}.`);
-  return s2;
-}
-function newItem(store, typ, title, draftPath, why, o = {}) {
-  store.require();
-  const prefix = typ.toUpperCase();
-  if (!Object.hasOwn(ITEM_TYPES, prefix)) fail(`Unknown item type '${typ}'. Use feat, bug, chore or spike.`);
-  if (Boolean(draftPath) === Boolean(why)) fail("Give exactly one of --from DRAFT or --why TEXT.");
-  const [draftFile, body2] = draftPath ? store.readDraft(draftPath, "item") : [null, `## Summary
-${why}
-`];
-  const severity = checkSeverity(o.severity);
-  if (severity && prefix !== "BUG") fail("--severity applies to bugs only.");
-  const fields = {
-    goal: store.checkRef(o.goal, "goal"),
-    priority: Store.checkPriority(o.priority) || (SEVERITY_PRIORITY[severity] ?? ""),
-    severity
-  };
-  const probe = store.build(`item-${ITEM_TYPES[prefix]}.md`, body2, { id: "X", title, ...fields });
-  if (!splitSections(probe.text)[1].some(([h]) => probe.hasContent(h))) fail("The item has no content. Nothing was created.");
-  const it = createItem(store, prefix, title, body2, fields);
-  if (draftFile) store.consume(draftFile, o.keep);
-  if (o.priority || severity) {
-    const problems = triageProblems(it);
-    const human = approvalReason(store.policy.policy, "item.triaged");
-    if (problems.length) store.say(`note: ${it.id} stays new until triaged \u2014 ${problems.join("; ")}`);
-    else if (human) store.say(`note: ${it.id} stays new \u2014 triage is ${human}: \`triage ${it.id} --approved-by <name>\``);
-    else move(store, it.id, "triaged", summary(it));
-  }
-}
-var summary = (it) => ["priority", "severity"].filter((k) => it.get(k)).map((k) => `${k} ${it.get(k)}`).join(", ");
-function triage(store, itemId, o = {}) {
-  store.require();
-  const item = store.find(itemId);
-  if (!item.get("type")) fail("triage works on FEAT/BUG/CHORE/SPIKE items.");
-  if (o.reject) {
-    if (!o.note) fail("--reject needs --note (why, or which item it duplicates).");
-    move(store, itemId, o.reject, o.note, false, o.approvedBy);
-    return;
-  }
-  let priority = o.priority;
-  const severity = checkSeverity(o.severity);
-  if (severity) {
-    item.set("severity", severity);
-    if (!priority && !item.get("priority")) priority = SEVERITY_PRIORITY[severity];
-  }
-  const updates = [["priority", Store.checkPriority(priority)], ["goal", store.checkRef(o.goal, "goal")]];
-  for (const [key, value] of updates) if (value) item.set(key, value);
-  const problems = triageProblems(item);
-  if (problems.length) fail(`${item.id} can't be triaged:
-  - ${problems.join("\n  - ")}
-Nothing was changed.`);
-  if (item.get("status") === "triaged") {
-    item.appendLog(`re-triaged: ${summary(item)}`, "Notes");
-    item.save();
-    store.say(`${item.id}: updated`);
-    return;
-  }
-  item.save();
-  move(store, item.id, "triaged", summary(item), false, o.approvedBy);
-}
-function breakdownToItems(store, goal) {
-  const items2 = store.items();
-  for (const cand of goal.bullets("Breakdown")) {
-    if (cand.startsWith("~~")) continue;
-    const m = /^(FEAT|BUG|CHORE|SPIKE)-\d+/.exec(cand);
-    if (m) {
-      linkExisting(goal, items2.get(m[0]) ?? null, m[0]);
-      continue;
-    }
-    const it = itemFromCandidate(store, goal, cand);
-    goal.text = goal.text.replace(`- ${cand}`, () => `- ${it.id}: ${cand}`);
-  }
-  goal.save();
-}
-function linkExisting(goal, item, itemId) {
-  if (!item) fail(`${goal.id}: Breakdown references unknown item ${itemId}.`);
-  if (!item.get("goal")) {
-    item.set("goal", goal.id);
-    item.save();
-  }
-}
-function itemFromCandidate(store, goal, cand) {
-  const sep2 = /\s+[—–-]\s+|:\s/.exec(cand);
-  const [name, desc] = sep2 ? [cand.slice(0, sep2.index).trim(), cand.slice(sep2.index + sep2[0].length).trim()] : [cand, ""];
-  const body2 = `## Summary
-${desc || name}
-
-Slice of ${goal.id} (${goal.get("title")}): ${cand}
-`;
-  const it = createItem(store, "FEAT", name, body2, { goal: goal.id, priority: goal.get("priority") || "P2" });
-  if (!triageProblems(it).length && !approvalReason(store.policy.policy, "item.triaged")) {
-    it.set("status", "triaged");
-    it.appendLog(`triaged from ${goal.id} breakdown`, "Notes");
+function closeItems(store, plan) {
+  for (const it of planItems(plan, store.items())) {
+    const old = it.get("status") || "new";
+    if (ITEM_CLOSED.has(old)) continue;
+    it.set("status", "done");
+    it.set("closed", today());
+    it.appendLog(`status ${old} \u2192 done \u2014 delivered by ${plan.id}`, "Notes");
     it.save();
+    store.ledger.record("move", it.id, { from: old, to: "done", via: "plan.done" });
   }
-  return it;
 }
 
-// src/hub/commands/views/export.ts
-import { join as join15, resolve as resolve6 } from "node:path";
-
-// src/hub/commands/views/graph.ts
-import { basename as basename5 } from "node:path";
-
-// src/hub/graph-types.ts
-var SCHEMA_VERSION = 6;
+// src/hub/commands/team/runner.ts
+var import_yaml4 = __toESM(require_dist(), 1);
+import { spawnSync as spawnSync4 } from "node:child_process";
+import { join as join16 } from "node:path";
 
 // src/hub/commands/team/team.ts
 var ACTIVE2 = /* @__PURE__ */ new Set(["in-progress", "blocked", "in-review"]);
@@ -11138,8 +11342,8 @@ function staffing(store) {
   const ready = [...plans2.values()].filter((p) => st(p) === "ready").sort(byKey((p) => [!onFocus(p, items2, focus), rank(p), p.id]));
   const busy = [...plans2.values()].filter((p) => ACTIVE2.has(st(p)));
   const out = { free, start: [], waiting: [] };
-  const shared = sharedGlobs(store);
-  const clash = (p, others) => others.find((o) => blockingGlobs(p, o, shared).length);
+  const shared2 = sharedGlobs(store);
+  const clash = (p, others) => others.find((o) => blockingGlobs(p, o, shared2).length);
   for (const p of ready) {
     const deps = unmetDeps(p, plans2), blocked2 = openQuestions(events, p.id).filter((x) => x.blocking);
     const hit = clash(p, [...busy, ...out.start.map((s2) => plans2.get(s2.id))]);
@@ -11166,99 +11370,676 @@ function staff(store, json = false) {
   if (!s2.start.length && !s2.waiting.length) store.say("  nothing ready to start \u2014 the PM ranks, the Architect specs the next plans");
 }
 
-// src/hub/commands/work/release.ts
-import { chmodSync as chmodSync2, copyFileSync as copyFileSync2, existsSync as existsSync9, readFileSync as readFileSync8, statSync as statSync6 } from "node:fs";
-import { isAbsolute as isAbsolute4, join as join14, normalize } from "node:path";
-function mergeOrder(store) {
-  const base2 = store.baseBranch(), plans2 = store.plans(true), events = store.ledger.events(), moved = store.ledger.lastStatus(events);
-  const doneAt = new Map(events.filter((e) => e.type === "move" && e.to === "done").map((e) => [e.ref, e.ts]));
-  const branches = new Set(planBranches());
-  const status2 = (p) => moved.get(p.id) ?? p.get("status") ?? "";
-  const worktrees2 = new Map([...store.settings().plan_worktrees ? store.planWorktrees() : []].filter(([, wt]) => dirty(wt, ".").length));
-  const merged = /* @__PURE__ */ new Map();
-  const isMerged = (p) => {
-    const b = p.get("branch");
-    if (!merged.has(p.id)) merged.set(p.id, !worktrees2.has(p.id) && (git(["merge-base", "--is-ancestor", b, base2]) !== null || squashMerge(b, base2, p.id) !== null));
-    return merged.get(p.id);
-  };
-  const out = { base: base2, merge: [], waiting: [], merged: [] };
-  const done = [...plans2.values()].filter((p) => status2(p) === "done" && branches.has(p.get("branch") ?? "")).sort(byKey((p) => [doneAt.get(p.id) ?? p.get("completed") ?? "", p.id]));
-  const pending = /* @__PURE__ */ new Set();
-  for (const p of done) {
-    if (isMerged(p)) out.merged.push({ id: p.id, branch: p.get("branch") });
-    else pending.add(p.id);
+// src/hub/commands/team/dispatch.ts
+var View = class {
+  constructor(store) {
+    this.store = store;
+    this.plans = store.plans();
+    this.items = store.items();
+    this.goals = store.goals();
+    this.focus = store.focus();
+    this.events = store.ledger.events();
+    this.max = store.policy.policy.budgets.max_agents;
+    this.moved = store.ledger.lastStatus(this.events);
   }
-  const unmergedDep = (p) => p.dependsOn().filter((d) => {
-    const dep = plans2.get(d), b = dep?.get("branch") ?? "";
-    return dep && status2(dep) !== "dropped" && (pending.has(d) || branches.has(b) && !isMerged(dep) || status2(dep) !== "done");
-  });
-  const placed = /* @__PURE__ */ new Set();
-  for (let progress = true; progress; ) {
-    progress = false;
-    for (const p of done.filter((x) => pending.has(x.id) && !placed.has(x.id))) {
-      if (unmergedDep(p).every((d) => placed.has(d))) {
-        const wt = worktrees2.get(p.id);
-        out.merge.push({ id: p.id, title: p.get("title") ?? "", branch: p.get("branch"), ...wt ? { worktree: store.rel(wt) } : {} });
-        placed.add(p.id);
-        progress = true;
-      }
+  store;
+  plans;
+  items;
+  goals;
+  focus;
+  events;
+  max;
+  moved;
+  /** A plan's status: the ledger knows it moved on even where its file doesn't yet. */
+  status(p) {
+    return this.moved.get(p.id) ?? p.get("status") ?? "";
+  }
+  withStatus(st) {
+    return [...this.plans.values()].filter((p) => this.status(p) === st).sort(byKey((p) => [!onFocus(p, this.items, this.focus), p.id]));
+  }
+  ranked(st) {
+    return ranked(this.items, this.goals, this.focus).filter((i) => itemStatus(i, this.plans) === st);
+  }
+  get claims() {
+    return this.store.ledger.claims(this.events);
+  }
+  /** The run of the last event of `type` on a plan (by `role`, when given), or null. */
+  lastRun(ref, type, role) {
+    return this.events.filter((e) => e.ref === ref && e.type === type && (!role || e.role === role)).at(-1)?.run ?? null;
+  }
+};
+var entry = (role, ref, task2, resume2 = null) => ({ role, ref, task: task2, resume: resume2 });
+var urgent = (i) => i.id.startsWith("BUG-") && (i.get("severity") === "S1" || i.get("priority") === "P0");
+var ROWS = [
+  // 1. questions to a role (escalations to the executive are the human's)
+  (v) => openQuestions(v.events).filter((x) => !x.escalation && x.to !== v.store.policy.policy.escalation.to).map((x) => entry(x.to, x.id, `answer ${x.id}${x.ref ? ` about ${x.ref}` : ""}: ${x.text}`)),
+  // 2. Director exceptions: stale claims, idle runs, blocked plans, a focus goal that is gone while another goal is active
+  (v) => staleClaims(v.store, v.events).map((s2) => entry(
+    "director",
+    s2.ref,
+    `reassign ${s2.ref}: its claim by ${s2.actor} (${s2.run}) has had no activity for ${s2.hours}h`
+  )),
+  (v) => running(v.store).filter((r) => r.idle).map((r) => entry(
+    "director",
+    r.ref,
+    `run ${r.run} on ${r.ref ?? "no document"} idle for ${Math.floor(r.minutes)} min: resume or reassign`
+  )),
+  (v) => v.withStatus("blocked").map((p) => entry("director", p.id, `unblock ${p.id}: ${p.get("title")}`)),
+  (v) => {
+    const g = v.goals.get(v.focus), next = goalQueue(v.goals, v.focus)[0];
+    return (!g || CLOSED.has(g.get("status") ?? "")) && next && next !== v.focus ? [entry("director", next, `focus ${next}: the focus goal ${v.focus || "(none)"} is ${g ? g.get("status") : "not set"}`)] : [];
+  },
+  // 3. urgent bugs
+  (v) => v.ranked("new").filter(urgent).map((i) => entry("pm", i.id, `triage ${i.id}: ${i.get("title")} (urgent)`)),
+  // 4. release: merging is serial
+  (v) => mergeOrder(v.store).merge.slice(0, 1).map((p) => entry("release", p.id, p.legacy ? `merge ${p.id}: ${p.branch} by hand (first in merge-order; completed before accepted)` : `land ${p.id}: ${p.title} (first in merge-order)`)),
+  // 4b. landed: the PM completes it
+  (v) => v.withStatus("accepted").filter((p) => !landedProblems(v.store, p).length).map((p) => entry("pm", p.id, `complete ${p.id}: move ${p.id} done`)),
+  // 5. in review: a failing check, then the code review, the design review (UI plans), QA's evidence, then completion
+  (v) => v.withStatus("in-review").map((p) => {
+    const ev = evidence(v.store, p);
+    if (ev.some((e) => e.verify && !e.verify.ok)) return entry("developer", p.id, `fix ${p.id}: a check failed`, v.lastRun(p.id, "claim"));
+    if (reviewProblems(v.store, p, "code").length) return entry("architect", p.id, `review ${p.id}: ${p.get("title")}`);
+    if (reviewProblems(v.store, p, "design").length) return entry("designer", p.id, `design review ${p.id}: ${p.get("title")}`);
+    if (ev.some((e) => !(e.verify?.ok && e.independent))) return entry("qa", p.id, `test ${p.id}: ${p.get("title")}`, v.lastRun(p.id, "checkpoint", "qa"));
+    return entry("pm", p.id, `accept ${p.id}: move ${p.id} accepted`);
+  }),
+  // 6. goal closure
+  (v) => {
+    const g = v.goals.get(v.focus);
+    if (g?.get("status") !== "active") return [];
+    const open = goalPlans(g.id, v.plans, v.items).some((p) => !CLOSED.has(v.status(p))) || goalItems(g.id, v.items).some((i) => itemStatus(i, v.plans) !== "done");
+    return open ? [] : [entry("pm", g.id, `close ${g.id}: verify each criterion, then move ${g.id} done`)];
+  },
+  // 7. in progress
+  (v) => v.withStatus("in-progress").map((p) => {
+    const claim = v.claims.get(p.id);
+    return claim ? entry("developer", p.id, `continue ${p.id}: resume ${p.id}`, claim.run) : entry("developer", p.id, `start ${p.id}: take over its branch`, v.lastRun(p.id, "claim"));
+  }),
+  // 8. ready to start
+  (v) => staffing(v.store).start.filter((p) => v.plans.has(p.id)).map((p) => p.assigned ? entry(p.assigned, p.id, `start ${p.id}: ${p.title}`) : entry("pm", p.id, `assign ${p.id} --to developer${p.team ? ` --team ${p.team}` : ""}: ${p.title}`)),
+  // 9. triage
+  (v) => v.ranked("new").filter((i) => !urgent(i)).map((i) => entry("pm", i.id, `triage ${i.id}: ${i.get("title")}`)),
+  // 10. spec, while fewer plans are ready and unclaimed than max_agents
+  (v, added) => {
+    const claims = v.claims, ready = v.withStatus("ready").filter((p) => !claims.has(p.id)).length;
+    const out = [], room = () => v.max === null || ready + out.length < v.max;
+    const drafts = v.withStatus("draft").map((p) => entry("architect", p.id, `spec ${p.id} to ready: ${p.get("title")}`));
+    const items2 = v.ranked("triaged").filter((i) => !i.get("plan") && (!v.focus || (i.get("goal") ?? "").toUpperCase() === v.focus || OFF_FOCUS_OK.has(i.id.split("-")[0]))).map((i) => entry("architect", i.id, `write a plan for ${i.id}: ${i.get("title")}`));
+    const taken = new Set(added.map((e) => e.ref));
+    for (const e of [...drafts, ...items2]) if (!taken.has(e.ref) && room()) out.push(e);
+    return out;
+  }
+];
+function dispatch(store) {
+  const v = new View(store), p = paused(v.events);
+  if (p) return { max_agents: v.max, paused: String(p.reason ?? "no reason given"), entries: [], more: 0 };
+  const { held } = escalationHolds(v.events);
+  const asked = new Set(openQuestions(v.events).filter((x) => x.blocking && x.ref).map((x) => x.ref));
+  const all = [], seen = /* @__PURE__ */ new Set();
+  for (const row of ROWS) {
+    for (const e of row(v, all)) {
+      if (e.ref && (held.has(e.ref) || seen.has(e.ref) || asked.has(e.ref) && !e.task.startsWith("answer "))) continue;
+      if (e.ref) seen.add(e.ref);
+      all.push(e);
     }
   }
-  for (const p of done.filter((x) => pending.has(x.id) && !placed.has(x.id))) {
-    out.waiting.push({ id: p.id, why: `depends on ${unmergedDep(p).filter((d) => !placed.has(d)).join(", ")}, not merged yet` });
-  }
-  return out;
+  if (!all.length) all.push(...stall(v, held));
+  const cut = v.max === null ? all.length : Math.min(v.max, all.length);
+  return { max_agents: v.max, paused: null, entries: all.slice(0, cut), more: all.length - cut };
 }
-function mergeOrderCmd(store, json = false) {
+function stall(v, held) {
+  const open = [...v.plans.values()].some((p) => !CLOSED.has(v.status(p))) || [...v.items.values()].some((i) => itemStatus(i, v.plans) !== "done" && !ITEM_CLOSED.has(itemStatus(i, v.plans)));
+  if (!open) return [];
+  const why = [
+    ...staffing(v.store).waiting.map((w) => `${w.id}: ${w.why}`),
+    ...[...held].map(([ref, qs]) => `${ref}: held by ${qs.join(", ")}`)
+  ];
+  return [entry("director", null, `stall: nothing can move${why.length ? ` \u2014 ${why.join("; ")}` : ""}`)];
+}
+function dispatchCmd(store, json = false) {
   store.require();
-  const m = mergeOrder(store);
-  if (json) return store.say(JSON.stringify(m, null, 2));
-  if (!m.merge.length && !m.waiting.length) store.say(`Nothing to merge into ${m.base}.`);
-  m.merge.forEach((p, i) => store.say(`${String(i + 1).padStart(2)}. ${p.id}: ${p.title} \u2014 ` + (p.worktree ? `commit everything in ${p.worktree} once (\`<type>(${p.id}): ${p.title}\`), squash-merge ${p.branch} into ${m.base}, then \`git worktree remove ${p.worktree}\` and delete the branch` : `merge ${p.branch} into ${m.base}`)));
-  for (const w of m.waiting) store.say(`WAIT ${w.id}: ${w.why}`);
-  for (const p of m.merged) store.say(`merged: ${p.id} (${p.branch}) \u2014 delete the branch`);
+  const d = dispatch(store);
+  if (json) {
+    store.say(JSON.stringify(d, null, 2));
+    return;
+  }
+  if (d.paused !== null) {
+    store.say(`nothing to dispatch: the team is paused (${d.paused}) \u2014 \`resume\` first`);
+    return;
+  }
+  if (!d.entries.length) store.say("nothing to dispatch: no open work");
+  for (const e of d.entries) store.say(`DISPATCH  ${e.role}  ${e.ref ?? "-"}  ${e.task}${e.resume ? `  (resume ${e.resume})` : ""}`);
+  if (d.more) store.say(`\u2026 and ${d.more} more (budgets.max_agents)`);
 }
-function refreshBin(store, root, check2) {
-  const { from, files: files2 } = store.policy.policy.release.refresh_bin;
-  if (!from || !files2.length) {
-    if (check2) return store.say("refresh-bin: nothing to check (no release.refresh_bin in the policy)"), 0;
-    fail("refresh-bin: the policy has no release.refresh_bin (from, files); the executive sets it in .crew/policy.yaml");
+
+// src/hub/commands/team/runner.ts
+var PASS_COMMAND = `claude -p "/crew:team continue"`;
+var MAX_PASSES = 20;
+function loadProblem(text2, stem2) {
+  const m = /^---\r?\n([\s\S]*?)\r?\n---/.exec(text2);
+  if (!m) return "no front matter";
+  let fm;
+  try {
+    fm = (0, import_yaml4.parse)(m[1]);
+  } catch (e) {
+    return `front matter doesn't parse (${e.message.split("\n")[0]})`;
   }
-  const src = normalize(from).replace(/\\/g, "/").replace(/\/+$/, "");
-  if (isAbsolute4(from) || src === ".." || src.startsWith("../") || src === ".crew" || src.startsWith(".crew/")) {
-    fail(`refresh-bin: release.refresh_bin.from '${from}' must be a relative path inside the checkout, not under .crew/`);
+  if (!fm || typeof fm !== "object") return "front matter isn't a mapping";
+  const { name, description } = fm;
+  if (name !== stem2) return `its name '${String(name ?? "")}' differs from its file name '${stem2}'`;
+  if (typeof description !== "string" || !description.trim()) return "no description";
+  return null;
+}
+function hookCommands(settings, event) {
+  const groups = settings?.hooks?.[event];
+  if (!Array.isArray(groups)) return [];
+  return groups.flatMap((g) => Array.isArray(g?.hooks) ? g.hooks : []).map((h) => h?.command).filter((c) => typeof c === "string");
+}
+var HOOKS = [
+  { event: "PreToolUse", needle: "crew.mjs guard", name: "the guard hook", fail: true },
+  { event: "SubagentStop", needle: "crew.mjs usage --hook", name: "the usage hook", fail: true },
+  { event: "PostToolUse", needle: "crew.mjs activity --hook", name: "the activity hook (idle runs go unseen)", fail: false }
+];
+var SETTINGS_FIX = "the human adds it from the guidelines template (plugins/crew/skills/guidelines/templates/settings.json)";
+function preflight(store, command2) {
+  const fails = [], warns = [], root = store.ws.root;
+  const agents3 = agentProblems(store);
+  if (agents3.length) {
+    fails.push(`crew agents not rendered or not current: ${agents3.map((p) => `${store.rel(p.path)} (${p.problem})`).join(", ")} \u2192 the human runs \`crew.mjs agents\`, then starts the runner again`);
   }
-  const bad = files2.filter((f) => !/^\w[\w.-]*$/.test(f));
-  if (bad.length) fail(`refresh-bin: release.refresh_bin.files must be bare file names in .crew/bin: ${bad.join(", ")}`);
-  const stale = [];
-  for (const f of files2) {
-    const s2 = join14(root, src, f), t = join14(root, ".crew", "bin", f);
-    if (!existsSync9(s2) || !existsSync9(t)) {
-      store.say(`skipped .crew/bin/${f}: ${existsSync9(t) ? `${src}/${f} does not exist` : "not vendored here (refresh-bin never adds a file)"}`);
-    } else if (!readFileSync8(s2).equals(readFileSync8(t))) stale.push(f);
+  const dir = join16(root, ".claude", "agents");
+  for (const name of store.ws.list(dir).filter((n2) => /^crew-.*\.md$/.test(n2))) {
+    const why = loadProblem(store.ws.read(join16(dir, name)) ?? "", name.slice(0, -3));
+    if (why) fails.push(`.claude/agents/${name} won't load: ${why} \u2192 the human re-renders it with \`crew.mjs agents\``);
   }
-  if (check2) {
-    for (const f of stale) store.say(`stale: .crew/bin/${f} differs from ${src}/${f} (Release runs \`crew.mjs refresh-bin\`)`);
-    if (!stale.length) store.say(`refresh-bin: .crew/bin is up to date with ${src}`);
-    return stale.length ? 1 : 0;
+  const text2 = store.ws.read(join16(root, ".claude", "settings.json"));
+  let settings = null;
+  if (text2 === null) fails.push(`no .claude/settings.json, so no crew hooks \u2192 ${SETTINGS_FIX}`);
+  else {
+    try {
+      settings = JSON.parse(text2);
+    } catch (e) {
+      fails.push(`.claude/settings.json doesn't parse (${e.message}) \u2192 the human fixes it`);
+    }
   }
-  const role = store.ledger.who.role;
-  if (role !== "release") fail(`refresh-bin: only the release role refreshes .crew/bin; this run is ${role ? `the ${role} role` : "no role"}`);
-  const branch = git(["-C", root, "branch", "--show-current"])?.trim() ?? "";
-  const plan = [...store.plans().values()].find((p) => branch && p.get("branch") === branch && p.get("status") !== "dropped");
-  if (!plan) fail(`refresh-bin: this checkout (branch '${branch || "none"}') is not a plan's worktree; run it in the plan's worktree`);
-  for (const f of stale) {
-    const t = join14(root, ".crew", "bin", f), mode = statSync6(t).mode;
-    copyFileSync2(join14(root, src, f), t);
-    chmodSync2(t, mode & 4095);
-    store.say(`refreshed .crew/bin/${f} from ${src}/${f}`);
+  if (settings !== null) {
+    for (const h of HOOKS) {
+      if (hookCommands(settings, h.event).some((c) => c.includes(h.needle))) continue;
+      (h.fail ? fails : warns).push(`${h.name} (${h.event} \`${h.needle}\`) is not in .claude/settings.json \u2192 ${SETTINGS_FIX}`);
+    }
   }
-  if (!stale.length) store.say(`refresh-bin: .crew/bin is up to date with ${src}`);
+  if (store.settings().plan_worktrees) {
+    try {
+      requireBase(store.home, store.baseBranch());
+    } catch (e) {
+      if (!(e instanceof HubError)) throw e;
+      fails.push(`${e.message} \u2192 then start the runner again`);
+    }
+  }
+  const word = command2.trim().split(/\s+/)[0] ?? "";
+  if (!word || spawnSync4("sh", ["-c", 'command -v "$1"', "sh", word], { stdio: "ignore" }).status !== 0) {
+    fails.push(`the pass command '${word}' is not on PATH \u2192 install it, or pass another with --command`);
+  }
+  return { fails, warns };
+}
+var say = (line3) => process.stdout.write(`${line3}
+`);
+var progressSince = (events, from) => events.slice(from).filter((e) => e.type !== "notify" && !(e.type === "report" && e.source === "runner")).length;
+function untilDone(store, { maxPasses = MAX_PASSES, command: command2 = PASS_COMMAND } = {}) {
+  store.require();
+  if (store.ledger.who.role) {
+    fail(`run --until-done: the runner is started by a human from a terminal, not by a crew agent (${store.ledger.who.role})`);
+  }
+  if (maxPasses < 1) fail("--max-passes: at least 1");
+  const { fails, warns } = preflight(store, command2);
+  for (const f2 of fails) say(`PREFLIGHT  ${f2}`);
+  for (const w of warns) say(`WARN  ${w}`);
+  if (fails.length) return 2;
+  const root = store.ws.root, start2 = (/* @__PURE__ */ new Date()).toISOString(), first = store.ledger.events().length;
+  let passes = 0, stalled = 0, stop = null;
+  while (!stop) {
+    const s2 = Store.open(root);
+    const state = runState(s2), d = state.stop ? null : dispatch(s2);
+    s2.ws.flush();
+    if (state.stop) stop = { reason: state.reasons.join("; "), code: 0 };
+    else if (!d.entries.length) stop = { reason: "nothing to dispatch", code: 0 };
+    if (stop) break;
+    const n2 = ++passes, before = Store.open(root).ledger.events().length;
+    say(`PASS  ${n2}: ${d.entries.length} dispatched \u2014 ${command2}`);
+    const r = spawnSync4(command2, { shell: true, stdio: "inherit", cwd: root });
+    const exit = r.status ?? -1;
+    const after = Store.open(root);
+    const progress = progressSince(after.ledger.events(), before), dispatched = d.entries.length;
+    const text2 = `pass ${n2}: ${dispatched} dispatched, ${progress} ledger events, exit ${exit}`;
+    after.ledger.record("report", null, { source: "runner", pass: n2, exit, dispatched, progress, text: text2 });
+    after.ws.flush();
+    say(`PASS  ${text2}`);
+    stalled = progress ? 0 : stalled + 1;
+    if (stalled >= 2) stop = { reason: "no progress in 2 passes", code: 1 };
+    else if (n2 >= maxPasses) stop = { reason: `max passes (${maxPasses})`, code: 1 };
+  }
+  const f = Store.open(root);
+  f.ledger.record("report", null, { source: "runner", stopped: stop.reason, passes, text: `stopped after ${passes} passes: ${stop.reason}` });
+  notify(f, "stopped", null, `${stop.reason} after ${passes} passes`, start2);
+  f.ws.flush();
+  say(`STOP  ${stop.reason}`);
+  say(`passes: ${passes}, ledger events: ${Store.open(root).ledger.events().length - first}`);
+  return stop.code;
+}
+
+// src/hub/commands/team/autonomy.ts
+function notify(store, kind, ref, text2, key = "") {
+  const { command: command2, on } = store.policy.policy.notify;
+  if (!command2 || !on.includes(kind)) return;
+  const sent = store.ledger.events().some((e) => e.type === "notify" && e.kind === kind && e.ref === ref && (e.key ?? "") === key);
+  if (sent) return;
+  store.ledger.record("notify", ref, { kind, text: text2, ...key ? { key } : {} });
+  const event = { kind, ref, text: text2, project: store.ws.root, by: store.ledger.who.actor, role: store.ledger.who.role, ts: (/* @__PURE__ */ new Date()).toISOString() };
+  store.ws.beforeFlush(() => {
+    const r = spawnSync5(command2, { shell: true, input: JSON.stringify(event), encoding: "utf8", timeout: 3e4, cwd: store.ws.root });
+    if (r.status !== 0) store.say(`warning: notify.command failed (${r.status ?? r.signal}): ${(r.stderr ?? "").trim().split("\n")[0]}`);
+  });
+}
+function advanceFocus(store) {
+  const goals2 = store.goals(), from = store.focus(), status2 = goals2.get(from)?.get("status");
+  if (status2 && !CLOSED.has(status2) || !store.idea()) return null;
+  const to = goalQueue(goals2, "")[0];
+  if (!to) return null;
+  const mark = store.ws.output.length;
+  setFocus(store, to);
+  store.ws.output.splice(mark);
+  return { from, to };
+}
+function runState(store) {
+  const moved = advanceFocus(store);
+  const events = store.ledger.events(), reasons = [];
+  const { held, stops } = escalationHolds(events);
+  if (stops.length) reasons.push(`waiting for the executive: ${stops.map((x) => `${x.id} ${x.text}`).join("; ")}`);
+  const holds = [...held].map(([ref, qids]) => `${ref} (${qids.join(", ")})`);
+  if (holds.length) {
+    const open = (docs) => [...docs.values()].filter((d) => !CLOSED.has(d.get("status") ?? "") && !ITEM_CLOSED.has(d.get("status") ?? "") && !held.has(d.id));
+    if (!open(store.plans()).length && !open(store.items()).length) {
+      reasons.push(`waiting for the executive: escalations hold every open plan and item: ${holds.join("; ")}`);
+    }
+  }
+  const halt = paused(events);
+  if (halt) reasons.push(`paused by ${halt.actor}: ${halt.reason ?? "no reason given"}`);
+  const over = budgetProblems(store).filter((b) => b.startsWith("project"));
+  if (over.length) reasons.push(`budget: ${over.join("; ")}`);
+  const goals2 = store.goals(), focus = store.focus(), goal = goals2.get(focus), queue = goalQueue(goals2, focus);
+  if (!goal && queue.length) reasons.push("no focus goal: the executive or the director sets one (`focus G-###`)");
+  else if (!goal || CLOSED.has(goal.get("status") ?? "")) reasons.push(noGoalLeft([...goals2.values()]));
+  for (const s2 of staleClaims(store, events)) notify(store, "stale", s2.ref, `${s2.ref}: no activity for ${s2.hours}h from ${s2.actor}`, s2.run);
+  for (const b of over) notify(store, "budget", null, b, b.split(":")[0]);
+  return { stop: reasons.length > 0, reasons, held: holds, queue, moved };
+}
+function noGoalLeft(goals2) {
+  const done = goals2.filter((g) => g.get("status") === "done").sort(byKey((g) => [g.get("completed") ?? "", g.id])).map((g) => g.id);
+  const waiting = goals2.filter((g) => g.get("status") === "proposed").map((g) => g.id).sort();
+  const tail4 = waiting.length ? `; waiting for approval: ${waiting.join(", ")}` : "";
+  return done.length ? `all approved goals done: ${done.join(", ")}${tail4}` : `no approved goal: the executive approves one (\`move G-### active --approved-by <name>\`)${tail4}`;
+}
+function run(store, check3 = false, json = false) {
+  store.require();
+  const s2 = runState(store);
+  if (json) store.say(JSON.stringify(s2));
+  else if (check3) {
+    if (s2.moved) store.say(`FOCUS  ${s2.moved.from || "\u2014"} \u2192 ${s2.moved.to} (${movedWhy(store, s2.moved.from)})`);
+    store.say(s2.stop ? `STOP  ${s2.reasons.join("\nSTOP  ")}` : "GO    the team can continue");
+    if (!s2.stop && s2.queue.length) store.say(`QUEUE  ${s2.queue.join(", ")}`);
+    for (const h of s2.held) store.say(`HELD  ${h}: waiting for the executive`);
+  } else {
+    store.say("Run the team unattended, from the project root in your own terminal:");
+    store.say("  node .crew/bin/crew.mjs run --until-done");
+    store.say(`It runs a preflight, then passes of \`${PASS_COMMAND}\` until \`run --check\` says stop, dispatch is empty, 2 passes make no progress or --max-passes (${MAX_PASSES}) is reached; --command CMD replaces the pass command.`);
+    store.say('Scheduled instead (cron, a CI schedule): `node .crew/bin/crew.mjs run --check && claude -p "/crew:team continue"`.');
+    store.say(s2.stop ? `Now: stopped \u2014 ${s2.reasons.join("; ")}` : "Now: the team can continue.");
+  }
+  return check3 && s2.stop ? 1 : 0;
+}
+function movedWhy(store, from) {
+  const status2 = from ? store.goals().get(from)?.get("status") : void 0;
+  return !from ? "no focus goal" : status2 ? `${from} is ${status2}` : `${from} is not a goal`;
+}
+function transcriptUsage(text2) {
+  const byMessage = /* @__PURE__ */ new Map();
+  text2.split("\n").forEach((line3, i) => {
+    try {
+      const m = JSON.parse(line3).message;
+      if (m?.usage) byMessage.set(m.id ?? `line-${i}`, m);
+    } catch {
+    }
+  });
+  const sum = { tokensIn: 0, tokensOut: 0, cacheRead: 0, model: null };
+  for (const m of byMessage.values()) {
+    const u = m.usage;
+    sum.tokensIn += (u.input_tokens ?? 0) + (u.cache_creation_input_tokens ?? 0);
+    sum.tokensOut += u.output_tokens ?? 0;
+    sum.cacheRead += u.cache_read_input_tokens ?? 0;
+    sum.model = m.model ?? sum.model;
+  }
+  return sum;
+}
+var REPORT_CAP = 2e4;
+var MASKS = Object.values(SECRET_PATTERNS).map((re) => new RegExp(re.source, `${re.flags.replace("g", "")}g`));
+function transcriptReport(text2) {
+  let handback = null, said = null;
+  for (const line3 of text2.split("\n")) {
+    let m;
+    try {
+      const rec = JSON.parse(line3);
+      m = rec.type === "assistant" || rec.message?.role === "assistant" ? rec.message : void 0;
+    } catch {
+      continue;
+    }
+    if (!m) continue;
+    const blocks = typeof m.content === "string" ? [{ type: "text", text: m.content }] : Array.isArray(m.content) ? m.content : [];
+    for (const b of blocks) {
+      if (b?.type === "tool_use" && b.name === "SubagentHandback" && typeof b.input?.message === "string") handback = b.input.message;
+    }
+    const prose = blocks.filter((b) => b?.type === "text" && typeof b.text === "string" && b.text.trim()).map((b) => b.text).join("\n");
+    if (prose) said = prose;
+  }
+  const report2 = (handback ?? said)?.trim();
+  return report2 ? MASKS.reduce((t, re) => t.replace(re, "[secret withheld]"), report2).slice(0, REPORT_CAP) : null;
+}
+function usageHook(store) {
+  let h;
+  try {
+    h = JSON.parse(readFileSync8(0, "utf8"));
+  } catch {
+    return 0;
+  }
+  const role = h.agent_type ? agentRole(store.ws.root, h.agent_type) : null;
+  if (!role || !h.agent_transcript_path) return 0;
+  let text2;
+  try {
+    text2 = readFileSync8(h.agent_transcript_path, "utf8");
+  } catch {
+    return 0;
+  }
+  const u = transcriptUsage(text2);
+  Object.assign(store.ledger.who, { role, run: `${role}:${h.agent_id ?? "unknown"}` });
+  const refs = new Set(store.ledger.events().filter((e) => e.run === store.ledger.who.run && e.type !== "usage" && e.ref).map((e) => e.ref));
+  const ref = refs.size === 1 ? [...refs][0] : null;
+  const report2 = transcriptReport(text2);
+  if (report2) store.ledger.record("report", ref ?? previousRef(feedPath(store), store.ledger.who.run), { text: report2 });
+  if (!u.tokensIn && !u.tokensOut) return 0;
+  store.ledger.record("usage", ref, {
+    tokens_in: u.tokensIn,
+    tokens_out: u.tokensOut,
+    cost: 0,
+    cache_read: u.cacheRead,
+    ...u.model ? { model: u.model } : {},
+    source: "transcript"
+  });
+  if (budgetProblems(store).some((b) => b.startsWith("project"))) notify(store, "budget", null, budgetProblems(store).join("; "), "project");
   return 0;
 }
 
+// src/hub/commands/work/overlap.ts
+var SIMILARITY = 0.5;
+var MIN_SHARED = 2;
+var MAX_ITEMS = 5;
+var STOP = /* @__PURE__ */ new Set(["the", "and", "for", "with", "from", "into", "when", "does", "not", "bug", "feat", "chore", "spike"]);
+var EXT = /\.(ts|tsx|mjs|js|json|md|yaml|yml|css)$/;
+var IN_FLIGHT = ["ready", "in-progress", "blocked", "in-review", "accepted"];
+var BUILDING = /* @__PURE__ */ new Set(["in-progress", "in-review", "accepted"]);
+function titleTokens(title) {
+  return new Set(title.toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length >= 3 && !STOP.has(w)));
+}
+function titleSimilarity(a, b) {
+  const [x, y] = [titleTokens(a), titleTokens(b)];
+  const shared2 = [...x].filter((t) => y.has(t)).length;
+  return shared2 < MIN_SHARED ? 0 : shared2 / (x.size + y.size - shared2);
+}
+function namedPaths(text2) {
+  const out = /* @__PURE__ */ new Set();
+  for (const raw of stripComments(text2).replaceAll("`", " ").split(/\s+/)) {
+    if (raw.includes("://")) continue;
+    const w = raw.replace(/^[("'<[]+/, "").replace(/[.,;:)\]"'>!?]+$/, "").replace(/(:\d+)+$/, "").replace(/^\.\//, "");
+    if (w && /[a-z]/i.test(w) && (w.includes("/") || EXT.test(w))) out.add(w);
+  }
+  return [...out];
+}
+function overlapCandidates(store, item) {
+  const title = item.get("title") ?? "";
+  const items2 = [...store.items().values()].filter((d) => d.id !== item.id && !ITEM_CLOSED.has(d.get("status") ?? "")).map((d) => ({ id: d.id, title: d.get("title") ?? "", status: d.get("status") ?? "", score: titleSimilarity(title, d.get("title") ?? "") })).filter((c) => c.score >= SIMILARITY).sort((a, b) => b.score - a.score || a.id.localeCompare(b.id, void 0, { numeric: true })).slice(0, MAX_ITEMS).map((c) => ({ ...c, score: Math.round(c.score * 100) / 100 }));
+  const paths = namedPaths(item.text.replace(/^---\n[\s\S]*?\n---\n/, ""));
+  const plans2 = [...store.plans().values()].filter((p) => IN_FLIGHT.includes(p.get("status") ?? "")).map((p) => ({
+    id: p.id,
+    title: p.get("title") ?? "",
+    status: p.get("status") ?? "",
+    paths: paths.filter((f) => p.touches().some((t) => globsOverlap(f, t)))
+  })).filter((p) => p.paths.length);
+  const why = [];
+  const building = plans2.filter((p) => BUILDING.has(p.status));
+  if (building.length) why.push(`${item.id} names paths of ${building.map((p) => `${p.id} (${p.status})`).join(", ")}, whose code is being built or landed`);
+  if (plans2.length >= 2) why.push(`${item.id}'s paths match ${plans2.length} plans in flight (${plans2.map((p) => p.id).join(", ")}): unclear which one causes it`);
+  return { id: item.id, paths, items: items2, plans: plans2, architect: why.length ? { why: why.join("; ") } : null };
+}
+function overlapLines(o) {
+  if (!o.items.length && !o.plans.length) return [];
+  const lines = [`overlap candidates for ${o.id}:`];
+  if (o.items.length) lines.push(
+    "  similar items (reject as duplicate if it is one):",
+    ...o.items.map((c) => `    ${c.id}: ${c.title} [${c.status}] \u2014 similarity ${c.score}`)
+  );
+  if (o.plans.length) lines.push("  plans in flight (never change their scope):");
+  for (const p of o.plans) lines.push(
+    `    ${p.id}: ${p.title} [${p.status}] \u2014 ${p.paths.join(", ")}`,
+    `      \u2192 a dependent plan: \`new-plan "<title>" --items ${o.id} --depends ${p.id}\``,
+    `      \u2192 or a note on it: \`log ${p.id} "${o.id} overlaps: \u2026"\`, then \`triage ${o.id} --reject duplicate --note "noted on ${p.id}"\` if it adds nothing`
+  );
+  if (o.architect) lines.push(`technical question \u2192 architect: ${o.architect.why} \u2014 \`ask ${o.id} --to architect "${o.architect.why}"\``);
+  return lines;
+}
+function overlaps2(store, itemId, json = false) {
+  store.require();
+  const item = store.find(itemId);
+  if (!item.get("type")) fail("overlaps works on FEAT/BUG/CHORE/SPIKE items.");
+  const o = overlapCandidates(store, item);
+  if (json) return store.say(JSON.stringify(o, null, 2));
+  const lines = overlapLines(o);
+  for (const line3 of lines.length ? lines : [`no overlap candidates for ${o.id}`]) store.say(line3);
+}
+
+// src/hub/commands/work/backlog.ts
+function createItem(store, prefix, title, body2, fields) {
+  const iid = store.nextId(prefix, "item");
+  const doc = store.build(`item-${ITEM_TYPES[prefix]}.md`, body2, { id: iid, title, type: ITEM_TYPES[prefix], ...fields });
+  return store.writeNew(doc, `${store.dirs.item}/${iid}-${slugify(title)}.md`);
+}
+function checkSeverity(severity) {
+  const s2 = (severity ?? "").toUpperCase();
+  if (s2 && !Object.hasOwn(SEVERITY_PRIORITY, s2)) fail(`Severity must be one of ${Object.keys(SEVERITY_PRIORITY).join(", ")}.`);
+  return s2;
+}
+function itemOrigin(store, explicit) {
+  if (explicit) {
+    const id = explicit.toUpperCase(), kind = kindOf(id);
+    if (kind !== "plan" && kind !== "item" || !store.docs(kind).has(id)) fail(`Origin ${id} does not exist.`);
+    return id;
+  }
+  const branch = /^plan\/(P-\d+)-/.exec(currentBranch() ?? "");
+  if (branch) return branch[1];
+  const mine = [...store.ledger.claims()].filter(([ref, c]) => kindOf(ref) === "plan" && c.run === store.ledger.who.run);
+  return mine.length === 1 ? mine[0][0] : "";
+}
+function suggestedGoal(store, item) {
+  const origin = item.get("origin"), kind = origin ? kindOf(origin) : null;
+  const goal = kind === "plan" || kind === "item" ? store.docs(kind).get(origin)?.get("goal") : null;
+  if (goal) return [goal, `origin ${origin}'s goal`];
+  const hint = [...item.section("Notes").matchAll(/goal hint (G-\d+)/g)].at(-1);
+  return hint ? [hint[1], "goal hint"] : null;
+}
+function suggestionText(item, store) {
+  const hint = item.get("goal") ? null : suggestedGoal(store, item);
+  return hint ? `suggested goal: ${hint[0]} (${hint[1]})` : null;
+}
+function newItem(store, typ, title, draftPath, why, o = {}) {
+  store.require();
+  const prefix = typ.toUpperCase();
+  if (!Object.hasOwn(ITEM_TYPES, prefix)) fail(`Unknown item type '${typ}'. Use feat, bug, chore or spike.`);
+  if (Boolean(draftPath) === Boolean(why)) fail("Give exactly one of --from DRAFT or --why TEXT.");
+  const [draftFile, body2] = draftPath ? store.readDraft(draftPath, "item") : [null, `## Summary
+${why}
+`];
+  const severity = checkSeverity(o.severity);
+  if (severity && prefix !== "BUG") fail("--severity applies to bugs only.");
+  const hint = store.checkRef(o.goal, "goal");
+  const origin = itemOrigin(store, o.origin);
+  const fields = { goal: "", priority: Store.checkPriority(o.priority) || (SEVERITY_PRIORITY[severity] ?? ""), severity };
+  const probe = store.build(`item-${ITEM_TYPES[prefix]}.md`, body2, { id: "X", title, ...fields });
+  const empty = prefix === "BUG" ? probe.missing(TRIAGE_SECTIONS.BUG) : [];
+  if (empty.length) fail(`A bug needs Steps to reproduce, Expected and Actual; empty: ${empty.join(", ")}. Nothing was created.`);
+  if (!splitSections(probe.text)[1].some(([h]) => probe.hasContent(h))) fail("The item has no content. Nothing was created.");
+  const it = createItem(store, prefix, title, body2, fields);
+  if (origin) it.set("origin", origin);
+  if (hint) it.appendLog(`goal hint ${hint} (by ${store.ledger.who.actor})`, "Notes");
+  if (origin || hint) it.save();
+  if (draftFile) store.consume(draftFile, o.keep);
+  if (o.priority || severity) {
+    const problems = triageProblems(it);
+    const human = approvalReason(store.policy.policy, "item.triaged");
+    const role = store.policy.policy.role_gates["item.triaged"], mine = store.ledger.who.role;
+    if (problems.length) store.say(`note: ${it.id} stays new until triaged \u2014 ${problems.join("; ")}`);
+    else if (human) store.say(`note: ${it.id} stays new \u2014 triage is ${human}: \`triage ${it.id} --approved-by <name>\``);
+    else if (role && mine !== role) store.say(`note: ${it.id} stays new \u2014 the ${role} triages it`);
+    else move(store, it.id, "triaged", summary(it));
+  }
+}
+var summary = (it) => ["priority", "severity"].filter((k) => it.get(k)).map((k) => `${k} ${it.get(k)}`).join(", ");
+function triage(store, itemId, o = {}) {
+  store.require();
+  const item = store.find(itemId);
+  if (!item.get("type")) fail("triage works on FEAT/BUG/CHORE/SPIKE items.");
+  if (o.reject) {
+    if (!o.note) fail("--reject needs --note (why, or which item it duplicates).");
+    move(store, itemId, o.reject, o.note, false, o.approvedBy);
+    return;
+  }
+  for (const line3 of overlapLines(overlapCandidates(store, item))) store.say(line3);
+  const target = o.goal === void 0 ? void 0 : parseGoal(store, o.goal);
+  const current2 = item.get("goal") || null;
+  if (target === null && !current2) fail(`${item.id} has no goal to clear. Nothing was changed.`);
+  const regoal2 = current2 !== null && target !== void 0 && target !== current2;
+  if (regoal2) regoalProblems(store, item, target, o.note, o.approvedBy, `triage ${item.id} --goal ${target ?? "none"}`);
+  let priority = o.priority;
+  const severity = checkSeverity(o.severity);
+  if (severity) {
+    item.set("severity", severity);
+    if (!priority && !item.get("priority")) priority = SEVERITY_PRIORITY[severity];
+  }
+  const p = Store.checkPriority(priority);
+  if (p) item.set("priority", p);
+  if (target && !current2) item.set("goal", target);
+  const problems = triageProblems(item);
+  if (problems.length) fail(`${item.id} can't be triaged:
+  - ${problems.join("\n  - ")}
+Nothing was changed.`);
+  if (regoal2) setGoal(store, [item], target, o.note);
+  if (item.get("status") === "triaged") {
+    item.appendLog(`re-triaged: ${summary(item)}`, "Notes");
+    item.save();
+    store.say(`${item.id}: updated`);
+  } else {
+    item.save();
+    move(store, item.id, "triaged", summary(item), false, o.approvedBy);
+  }
+  const text2 = suggestionText(item, store);
+  if (text2) store.say(`${text2} \u2014 confirm with \`triage ${item.id} --goal ${suggestedGoal(store, item)[0]}\` or pick another`);
+}
+function parseGoal(store, value) {
+  return ["", "NONE"].includes(value.trim().toUpperCase()) ? null : store.checkRef(value.trim(), "goal");
+}
+var isClosed = (doc) => (kindOf(doc.id) === "plan" ? CLOSED : ITEM_CLOSED).has(doc.get("status") ?? "");
+function regoalProblems(store, doc, target, note, approvedBy, cmd = `regoal ${doc.id} ${target ?? "none"} --note TXT`) {
+  if (!note?.trim()) fail(`Changing ${doc.id}'s goal is a re-goal: give --note (why). Nothing was changed.`);
+  const kind = kindOf(doc.id) === "plan" ? "plan" : "item";
+  authorize(store, doc.id, `${kind}.regoaled`, approvedBy, void 0, cmd);
+  const pid = kind === "item" ? (doc.get("plan") ?? "").toUpperCase() : "";
+  const plan = pid ? store.plans().get(pid) : void 0;
+  if (plan && !isClosed(plan)) fail(`${doc.id} is in ${pid}: re-goal the plan, which moves its items with it`);
+  const docs = kind === "plan" ? [doc, ...planItems(doc, store.items())] : [doc];
+  const goals2 = store.goals();
+  for (const d of docs) {
+    if (isClosed(d)) fail(`${d.id} is ${d.get("status")}: closed work keeps its goal. Nothing was changed.`);
+    for (const [g, which] of [[d.get("goal"), "its goal"], [target, "the target goal"]]) {
+      const st = g ? goals2.get(g.toUpperCase())?.get("status") : null;
+      if (st && CLOSED.has(st)) fail(`${d.id}: ${which} ${g} is ${st}, so its work is frozen. Nothing was changed.`);
+    }
+  }
+  return docs;
+}
+function setGoal(store, docs, target, note) {
+  for (const d of docs) {
+    const text2 = `re-goaled ${d.get("goal") || "none"} \u2192 ${target ?? "none"} by ${store.ledger.who.actor}: ${note}`;
+    d.set("goal", target ?? "");
+    d.appendLog(text2, kindOf(d.id) === "plan" ? "Progress log" : "Notes");
+    d.save();
+    store.ledger.record("log", d.id, { text: text2 });
+  }
+}
+function regoal(store, docId, goal, note) {
+  store.require();
+  const doc = store.find(docId);
+  if (!["plan", "item"].includes(kindOf(doc.id) ?? "")) fail("regoal works on plans and FEAT/BUG/CHORE/SPIKE items.");
+  const target = parseGoal(store, goal);
+  if ((doc.get("goal") || null) === target) fail(`${doc.id} is already on ${target ?? "no goal"}. Nothing was changed.`);
+  setGoal(store, regoalProblems(store, doc, target, note), target, note);
+  store.say(`${doc.id}: goal ${target ?? "none"}`);
+}
+function breakdownToItems(store, goal) {
+  const items2 = store.items();
+  for (const cand of goal.bullets("Breakdown")) {
+    if (cand.startsWith("~~")) continue;
+    const m = /^(FEAT|BUG|CHORE|SPIKE)-\d+/.exec(cand);
+    if (m) {
+      linkExisting(goal, items2.get(m[0]) ?? null, m[0]);
+      continue;
+    }
+    const it = itemFromCandidate(store, goal, cand);
+    goal.text = goal.text.replace(`- ${cand}`, () => `- ${it.id}: ${cand}`);
+  }
+  goal.save();
+}
+function linkExisting(goal, item, itemId) {
+  if (!item) fail(`${goal.id}: Breakdown references unknown item ${itemId}.`);
+  if (!item.get("goal")) {
+    item.set("goal", goal.id);
+    item.save();
+  }
+}
+function itemFromCandidate(store, goal, cand) {
+  const sep2 = /\s+[—–-]\s+|:\s/.exec(cand);
+  const [name, desc] = sep2 ? [cand.slice(0, sep2.index).trim(), cand.slice(sep2.index + sep2[0].length).trim()] : [cand, ""];
+  const body2 = `## Summary
+${desc || name}
+
+Slice of ${goal.id} (${goal.get("title")}): ${cand}
+`;
+  const it = createItem(store, "FEAT", name, body2, { goal: goal.id, priority: goal.get("priority") || "P2" });
+  if (!triageProblems(it).length && !approvalReason(store.policy.policy, "item.triaged")) {
+    it.set("status", "triaged");
+    it.appendLog(`triaged from ${goal.id} breakdown`, "Notes");
+    it.save();
+  }
+  return it;
+}
+
+// src/hub/commands/views/export.ts
+import { join as join17, resolve as resolve7 } from "node:path";
+
+// src/hub/commands/views/graph.ts
+import { basename as basename6 } from "node:path";
+
+// src/hub/graph-types.ts
+var SCHEMA_VERSION = 6;
+
 // src/hub/commands/team/roles.ts
-var View = class {
+var View2 = class {
   constructor(store) {
     this.store = store;
     this.plans = store.plans(true);
@@ -11289,43 +12070,40 @@ var View = class {
     return ranked(this.items, this.goals, this.focus).filter((i) => itemStatus(i, this.plans) === st);
   }
 };
+var suggested = (v, i) => {
+  const text2 = suggestionText(i, v.store);
+  return text2 ? ` \u2014 ${text2}` : "";
+};
 var RULES = {
   executive: [
     (v) => openQuestions(v.events).filter((x) => x.escalation).map((x) => `answer ${x.id} (${x.by}${x.ref ? ` about ${x.ref}` : ""}): ${x.text}`),
-    (v) => v.status("in-review").filter((p) => approvalReason(v.store.policy.policy, "plan.done") && evidence(v.store, p).every((e) => e.verify?.ok && e.independent)).map((p) => `approve ${p.id}: ${p.get("title")} \u2014 evidence complete \u2192 move ${p.id} done --approved-by <you>`),
+    (v) => v.status("in-review").filter((p) => approvalReason(v.store.policy.policy, "plan.accepted") && evidence(v.store, p).every((e) => e.verify?.ok && e.independent)).map((p) => `approve ${p.id}: ${p.get("title")} \u2014 evidence complete \u2192 move ${p.id} accepted --approved-by <you>`),
     (v) => ["exploring", "researching", "proposed"].includes(v.store.idea()?.get("status") ?? "") ? ["decide the idea (go / pivot / kill)"] : []
   ],
   director: [
     (v) => openQuestions(v.events).filter((x) => x.escalation).map((x) => `waiting on the executive: ${x.id} \u2014 ${x.text}`),
     (v) => budgetProblems(v.store).map((b) => `over budget: ${b}`),
     (v) => paused(v.events) ? ["the team is paused: no staffing or starts until the executive or you `resume`"] : [],
-    (v) => staleClaims(v.store, v.events).map((s2) => `stale: ${s2.ref} held by ${s2.actor} with no activity for ${s2.hours}h \u2192 reassign ${s2.ref}`),
-    (v) => v.status("blocked").map((p) => `unblock ${p.id}: ${p.get("title")}`),
-    (v) => {
-      if (paused(v.events)) return [];
-      const n2 = staffing(v.store).start.length;
-      return n2 ? [`staff ${n2} ready plan${n2 > 1 ? "s" : ""}: \`staff\` \u2192 the PM assigns, developers start`] : [];
-    },
-    (v) => [...v.plans.values()].filter((p) => p.get("status") === "in-progress").flatMap((p) => overlapping(p, v.plans, v.shared).map((o) => `${p.id} and ${o.id} overlap on ${o.globs.join(", ")} \u2014 sequence them, narrow touches or list the file in hub.shared`)),
-    (v) => {
-      const g = v.goals.get(v.focus);
-      if (!v.focus) return v.goals.size ? ["set the focus goal: focus G-###"] : [];
-      const open = goalPlans(v.focus, v.plans, v.items).filter((p) => !["done", "dropped"].includes(p.get("status") ?? ""));
-      return g && !open.length && !goalItems(v.focus, v.items).some((i) => itemStatus(i, v.plans) !== "done") ? [`${v.focus} has nothing open: confirm its acceptance criteria, move it done, and focus the next goal`] : [];
-    }
+    (v) => dispatch(v.store).entries.filter((e) => e.role === "director" && !e.ref?.startsWith("Q-")).map((e) => e.task)
   ],
   pm: [
-    (v) => v.ranked("new").filter((i) => i.id.startsWith("BUG-")).slice(0, 3).map((i) => `triage bug ${i.id}: ${i.get("title")}`),
-    (v) => v.ranked("new").filter((i) => !i.id.startsWith("BUG-")).slice(0, 3).map((i) => `triage ${i.id}: ${i.get("title")}`),
+    (v) => v.ranked("new").filter((i) => i.id.startsWith("BUG-")).slice(0, 3).map((i) => `triage bug ${i.id}: ${i.get("title")}${suggested(v, i)}`),
+    (v) => v.ranked("new").filter((i) => !i.id.startsWith("BUG-")).slice(0, 3).map((i) => `triage ${i.id}: ${i.get("title")}${suggested(v, i)}`),
     (v) => [...v.goals.values()].filter((g) => ["proposed", "active"].includes(g.get("status") ?? "") && !goalItems(g.id, v.items).some((i) => itemStatus(i, v.plans) !== "done")).map((g) => `break ${g.id} down: it has no open items`),
     (v) => (v.gate("plan.assigned") === "pm" ? v.status("ready").filter((p) => !v.assigned.has(p.id)) : []).map((p) => `open ${p.id}: ${p.get("title")} \u2192 assign ${p.id} --to developer (\`staff\` shows what can run now)`),
-    (v) => (v.gate("plan.done") === "pm" ? v.status("in-review") : []).filter((p) => complete(v, p) && !reviewProblems(v.store, p).length).map((p) => `complete ${p.id}: ${p.get("title")} \u2014 QA's evidence and the review are in \u2192 move ${p.id} done`)
+    (v) => (v.gate("plan.accepted") === "pm" ? v.status("in-review") : []).filter((p) => complete(v, p) && !reviewProblems(v.store, p).length).map((p) => `accept ${p.id}: ${p.get("title")} \u2014 QA's evidence and the review are in \u2192 move ${p.id} accepted`),
+    (v) => (v.gate("plan.done") === "pm" ? v.status("accepted") : []).filter((p) => !landedProblems(v.store, p).length).map((p) => `complete ${p.id}: landed on ${v.store.baseBranch()} \u2192 move ${p.id} done`)
   ],
   architect: [
-    (v) => (v.gate("plan.reviewed") === "architect" ? v.status("in-review") : []).filter((p) => reviewProblems(v.store, p).length && !implementers(v.events, p.id).has(v.store.ledger.who.run)).map((p) => `review ${p.id}: ${p.get("title")} \u2014 its diff against the spec \u2192 review ${p.id} --approve | --changes "\u2026"`),
+    (v) => (v.gate("plan.reviewed") === "architect" ? v.status("in-review") : []).filter((p) => reviewProblems(v.store, p, "code").length && !implementers(v.events, p.id).has(v.store.ledger.who.run)).map((p) => `review ${p.id}: ${p.get("title")} \u2014 its diff against the spec \u2192 review ${p.id} --approve | --changes "\u2026"`),
     (v) => v.status("draft").map((p) => `refine ${p.id}: ${p.get("title")} to the Definition of Ready`),
     (v) => v.ranked("triaged").slice(0, 2).map((i) => `write a plan for ${i.id}: ${i.get("title")} (${i.get("priority")})`),
     (v) => v.status("ready").flatMap((p) => overlapping(p, v.plans, v.shared).map((o) => `${p.id} overlaps ${o.id} (${o.globs.join(", ")}): narrow touches or list the file in hub.shared`))
+  ],
+  designer: [
+    // UI plans (design.ui_paths): review what was built, then shape what is about to be
+    (v) => v.status("in-review").filter((p) => reviewProblems(v.store, p, "design").length && !implementers(v.events, p.id).has(v.store.ledger.who.run)).map((p) => `design review ${p.id}: ${p.get("title")} \u2014 on screen at full size (375/900/1440 px, light and dark) and in code \u2192 review ${p.id} --design --approve | --changes "\u2026"`),
+    (v) => v.status("draft").filter((p) => isUiPlan(v.store, p) && p.missing(["Design"]).length).map((p) => `shape ${p.id}: ${p.get("title")} \u2014 write its ## Design (layout from the shell and inventory, UI acceptance criteria)`)
   ],
   developer: [
     (v) => [...v.plans.values()].filter((p) => ["in-progress", "blocked"].includes(p.get("status") ?? "") && v.store.ledger.claims(v.events).get(p.id)?.run === v.store.ledger.who.run).map((p) => `continue ${p.id}: ${p.get("title")} \u2192 resume ${p.id}`),
@@ -11334,13 +12112,13 @@ var RULES = {
   qa: [
     (v) => v.status("in-review").filter((p) => !implementers(v.events, p.id).has(v.store.ledger.who.run)).map((p) => {
       const missing = evidence(v.store, p).flatMap((e, i) => e.verify?.ok && e.independent ? [] : [`AC${i + 1}`]);
-      const closer = v.gate("plan.done");
-      return missing.length ? `verify ${p.id}: ${missing.join(", ")} \u2192 checkpoint ${p.id} --run "<check>" --ac \u2026` : closer && closer !== "qa" ? `${p.id}: evidence complete \u2192 report to the ${closer}, who completes it` : `${p.id}: evidence complete \u2192 move ${p.id} done`;
+      const closer = v.gate("plan.accepted");
+      return missing.length ? `verify ${p.id}: ${missing.join(", ")} \u2192 checkpoint ${p.id} --run "<check>" --ac \u2026` : closer && closer !== "qa" ? `${p.id}: evidence complete \u2192 report to the ${closer}, who accepts it` : `${p.id}: evidence complete \u2192 move ${p.id} accepted`;
     }),
     (v) => v.ranked("new").filter((i) => i.id.startsWith("BUG-")).slice(0, 2).map((i) => `reproduce ${i.id}: ${i.get("title")}`)
   ],
   release: [
-    (v) => mergeOrder(v.store).merge.slice(0, 1).map((p) => `ship ${p.id}: merge ${p.branch} (first in \`merge-order\`), follow its Rollout & rollback, then delete the branch`),
+    (v) => mergeOrder(v.store).merge.slice(0, 1).map((p) => p.legacy ? `ship ${p.id}: merge ${p.branch} by hand (first in \`merge-order\`; completed before \`accepted\`), follow its Rollout & rollback, then delete the branch` : `land ${p.id}: ${p.title} (first in \`merge-order\`) \u2192 land ${p.id}, then follow its Rollout & rollback`),
     (v) => v.status("in-review").filter((p) => !fastLane(v.store, p) && p.hasContent("Rollout & rollback") && !/^\s*n\/a\b/i.test(stripComments(p.section("Rollout & rollback")))).map((p) => `prepare the rollout of ${p.id}: ${p.get("title")} (see its Rollout & rollback)`)
   ]
 };
@@ -11348,7 +12126,7 @@ var complete = (v, p) => evidence(v.store, p).every((e) => e.verify?.ok && e.ind
 function roleLines(store, role) {
   const roles = store.policy.roles;
   if (!roles.includes(role)) fail(`Unknown role '${role}'. Roles: ${roles.join(", ")}.`);
-  const v = new View(store);
+  const v = new View2(store);
   const asked = openQuestions(v.events).filter((x) => x.to === role && !(role === "executive" && x.escalation)).map((x) => `QUESTION     ${x.id} from ${x.by}${x.ref ? ` about ${x.ref}` : ""}: ${x.text} \u2192 answer ${x.id} "\u2026"`);
   const work = (RULES[role] ?? []).flatMap((r) => r(v));
   return [
@@ -11493,7 +12271,7 @@ function buildGraph(store) {
   return {
     schemaVersion: SCHEMA_VERSION,
     generatedAt: (/* @__PURE__ */ new Date()).toISOString(),
-    project: { name: basename5(store.ws.root), branch: currentBranch(), today: today() },
+    project: { name: basename6(store.ws.root), branch: currentBranch(), today: today() },
     settings: store.settings(),
     focus: all.focus || null,
     docs,
@@ -11624,14 +12402,14 @@ function embed(graph) {
   return JSON.stringify(graph).replace(/</g, "\\u003c");
 }
 function renderHtmlShell(store) {
-  const shell = store.ws.read(join15(SCRIPT_DIR, UI_FILE));
+  const shell = store.ws.read(join17(SCRIPT_DIR, UI_FILE));
   if (shell === null || !shell.includes(DATA_SLOT)) {
     fail(`The UI bundle (${UI_FILE}) is missing next to crew.mjs. Re-run \`crew.mjs init\` from the plugin.`);
   }
   return shell;
 }
 function renderStudioShell(store) {
-  const shell = store.ws.read(join15(SCRIPT_DIR, STUDIO_FILE));
+  const shell = store.ws.read(join17(SCRIPT_DIR, STUDIO_FILE));
   if (shell === null || !shell.includes(STUDIO_SLOT)) {
     fail(`The design studio (${STUDIO_FILE}) is missing next to crew.mjs. Re-run \`crew.mjs init\` from the plugin.`);
   }
@@ -11646,30 +12424,30 @@ function exportGraph(store, format, out) {
     const text2 = `${JSON.stringify(graph, null, 2)}
 `;
     if (!out) return store.say(text2.trimEnd());
-    store.ws.write(resolve6(out), text2);
-    return store.say(`Wrote ${store.rel(resolve6(out))}`);
+    store.ws.write(resolve7(out), text2);
+    return store.say(`Wrote ${store.rel(resolve7(out))}`);
   }
-  const path = out ? resolve6(out) : join15(store.dir, "view", "index.html");
-  if (!out) store.ws.write(join15(store.dir, "view", ".gitignore"), "# generated by `crew.mjs export`\n*\n");
+  const path = out ? resolve7(out) : join17(store.dir, "view", "index.html");
+  if (!out) store.ws.write(join17(store.dir, "view", ".gitignore"), "# generated by `crew.mjs export`\n*\n");
   store.ws.write(path, renderHtml(store, graph));
   store.say(`Wrote ${store.rel(path)} \u2014 open it in a browser (it works offline; re-run export to refresh)`);
 }
 
 // src/hub/commands/work/planning.ts
 function init(store) {
-  for (const d of [...Object.values(store.dirs), store.knowledgeDir, join16(store.dir, "drafts")]) {
-    const keep = join16(d, ".gitkeep");
+  for (const d of [...Object.values(store.dirs), store.knowledgeDir, join18(store.dir, "drafts")]) {
+    const keep = join18(d, ".gitkeep");
     if (!store.ws.isFile(keep)) store.ws.write(keep, "");
   }
   vendor(store);
-  const readme = join16(store.dir, "README.md");
-  const model = store.ws.read(join16(SKILL_DIR, "references", "model.md"));
+  const readme = join18(store.dir, "README.md");
+  const model = store.ws.read(join18(SKILL_DIR, "references", "model.md"));
   if (!store.ws.isFile(readme) && model !== null) store.ws.write(readme, model);
   store.say(`Initialized ${store.rel(store.dir)}/`);
   hubStateRule(store);
 }
 function hubStateRule(store) {
-  const path = join16(store.ws.root, "CLAUDE.md");
+  const path = join18(store.ws.root, "CLAUDE.md");
   const text2 = store.ws.read(path);
   if (text2?.includes(HUB_STATE_MARKER)) return;
   store.ws.write(path, text2 === null ? HUB_STATE_RULE : `${text2.trimEnd()}
@@ -11678,20 +12456,20 @@ ${HUB_STATE_RULE}`);
   store.say(`${text2 === null ? "Created" : "Added the hub-state section to"} CLAUDE.md`);
 }
 function vendor(store) {
-  const bin = join16(store.dir, "bin");
-  if (resolve7(SCRIPT_DIR) === resolve7(bin)) return;
-  store.ws.write(join16(bin, "crew.mjs"), readFileSync9(SCRIPT_FILE, "utf8"), 493);
-  const ui = store.ws.read(join16(SCRIPT_DIR, UI_FILE));
-  if (ui !== null) store.ws.write(join16(bin, UI_FILE), ui);
-  const studio = store.ws.read(join16(SCRIPT_DIR, STUDIO_FILE));
-  if (studio !== null) store.ws.write(join16(bin, STUDIO_FILE), studio);
-  const templates = join16(store.dir, "templates");
-  for (const name of [...TEMPLATE_NAMES]) store.ws.write(join16(templates, name), store.ws.read(join16(SKILL_DIR, "templates", name)));
-  for (const name of store.ws.list(join16(SKILL_DIR, "agents"))) {
-    store.ws.write(join16(templates, "agents", name), store.ws.read(join16(SKILL_DIR, "agents", name)));
+  const bin = join18(store.dir, "bin");
+  if (resolve8(SCRIPT_DIR) === resolve8(bin)) return;
+  store.ws.write(join18(bin, "crew.mjs"), readFileSync9(SCRIPT_FILE, "utf8"), 493);
+  const ui = store.ws.read(join18(SCRIPT_DIR, UI_FILE));
+  if (ui !== null) store.ws.write(join18(bin, UI_FILE), ui);
+  const studio = store.ws.read(join18(SCRIPT_DIR, STUDIO_FILE));
+  if (studio !== null) store.ws.write(join18(bin, STUDIO_FILE), studio);
+  const templates = join18(store.dir, "templates");
+  for (const name of [...TEMPLATE_NAMES]) store.ws.write(join18(templates, name), store.ws.read(join18(SKILL_DIR, "templates", name)));
+  for (const name of store.ws.list(join18(SKILL_DIR, "agents"))) {
+    store.ws.write(join18(templates, "agents", name), store.ws.read(join18(SKILL_DIR, "agents", name)));
   }
-  const guide = store.ws.read(join16(SKILL_DIR, "references", "writing-guide.md"));
-  if (guide !== null) store.ws.write(join16(templates, "writing-guide.md"), guide);
+  const guide = store.ws.read(join18(SKILL_DIR, "references", "writing-guide.md"));
+  if (guide !== null) store.ws.write(join18(templates, "writing-guide.md"), guide);
 }
 function requireSections(doc, kind) {
   const missing = doc.missing(REQUIRED_ON_CREATE[kind]);
@@ -11727,15 +12505,16 @@ function newGoal(store, title, draftPath, priority, keep = false) {
   const eid = store.nextId("G", "goal");
   const doc = store.build("goal.md", draft, { id: eid, title, priority: Store.checkPriority(priority) || "P2" });
   requireSections(doc, "goal");
-  store.writeNew(doc, join16(store.dirs.goal, `${eid}-${slugify(title)}.md`));
+  store.writeNew(doc, join18(store.dirs.goal, `${eid}-${slugify(title)}.md`));
   breakdownToItems(store, doc);
   store.consume(draftFile, keep);
+  notify(store, "goal-approval", eid, `${eid} waits for approval: ${title} \u2014 move ${eid} active --approved-by <name>`);
 }
 function newPlan(store, title, draftPath, o = {}) {
   store.require();
   const [draftFile, draft] = store.readDraft(draftPath, "plan");
-  const shared = store.settings().plan_worktrees;
-  if (shared) requireBase(store.home, store.baseBranch());
+  const shared2 = store.settings().plan_worktrees;
+  if (shared2) requireBase(store.home, store.baseBranch());
   const goal = store.checkRef(o.goal, "goal");
   const deps = checkDeps(store, idList(o.depends));
   const linked = idList(o.items);
@@ -11754,8 +12533,8 @@ function newPlan(store, title, draftPath, o = {}) {
     touches: touches2.join(", ")
   });
   requireSections(doc, "plan");
-  if (shared) openPlanWorktree(store, pid, branch);
-  store.writeNew(doc, join16(store.dirs.plan, `${pid}-${slug}.md`));
+  if (shared2) openPlanWorktree(store, pid, branch);
+  store.writeNew(doc, join18(store.dirs.plan, `${pid}-${slug}.md`));
   for (const i of linked) {
     const item = items2.get(i);
     item.set("plan", pid);
@@ -11767,7 +12546,7 @@ function newPlan(store, title, draftPath, o = {}) {
 }
 function openPlanWorktree(store, pid, branch) {
   const main2 = worktrees()[0]?.path ?? store.ws.root;
-  const path = join16(main2, ".claude", "worktrees", branch.replace(/^plan\//, ""));
+  const path = join18(main2, ".claude", "worktrees", branch.replace(/^plan\//, ""));
   const exists = planBranches().includes(branch);
   git(["worktree", "add", "-q", "--no-checkout", ...exists ? [path, branch] : ["-b", branch, path, store.baseBranch()]], true);
   store.ws.onAbort(() => {
@@ -11775,7 +12554,7 @@ function openPlanWorktree(store, pid, branch) {
     if (!exists) git(["branch", "-D", branch]);
   });
   sparseCheckout(store, path);
-  const common = commonDir(store.ws.root), exclude = common ? join16(common, "info", "exclude") : null;
+  const common = commonDir(store.ws.root), exclude = common ? join18(common, "info", "exclude") : null;
   const ignored = exclude ? store.ws.read(exclude) ?? "" : null;
   if (exclude && ignored !== null && !/^\.claude\/worktrees\/?$/m.test(ignored)) {
     store.ws.write(exclude, `${ignored}${ignored && !ignored.endsWith("\n") ? "\n" : ""}.claude/worktrees/
@@ -11793,7 +12572,7 @@ function sparseCheckout(store, path) {
   git(["-C", path, "checkout", "-q"], true);
 }
 function restore(store, f, root = store.ws.root) {
-  const head = git(["-C", root, "show", `HEAD:${f}`]), path = join16(root, f);
+  const head = git(["-C", root, "show", `HEAD:${f}`]), path = join18(root, f);
   if (head === null) store.ws.remove(path);
   else store.ws.write(path, head);
 }
@@ -11818,6 +12597,43 @@ function checkLinkable(store, linked) {
 function hintUnplanned(store, goal, items2) {
   const open = [...items2.values()].filter((i) => (i.get("goal") ?? "").toUpperCase() === goal && !i.get("plan") && !ITEM_CLOSED.has(i.get("status") ?? "")).map((i) => i.id);
   if (open.length) store.say(`note: ${goal} has unplanned items (${open.join(", ")}) \u2014 link the one this plan delivers with --items`);
+}
+
+// src/hub/commands/work/setup.ts
+import { join as join19 } from "node:path";
+var config = (branch, worktrees2) => `# The hub's settings. \`crew.mjs doctor\` checks that they fit the autonomous loop.
+git:
+  # The branch plans start from and merge into; the main checkout stays on it.
+  default_branch: ${branch}
+hub:
+  # One shared worktree per plan, so several plans run side by side (the agent team's way of working). Needs git.
+  plan_worktrees: ${worktrees2}
+  # How many plans one run (agent or session) may have in progress.
+  wip_limit: 1
+  # The build that writes the generated files (mark them linguist-generated in .gitattributes): Release runs it.
+  # build: npm run build
+  # The full suite Release runs before each merge; never per task.
+  # full_suite: npm test
+  # Files many plans touch (registries, indexes, shared docs): overlaps on them never block staffing, the merge queue
+  # resolves them. Exact files, not directories.
+  # shared: [src/registry.ts, README.md]
+`;
+var POLICY = `# The team's policy: who may do what, and where a human decides.
+# A preset is a ready-made policy that the settings below adjust. \`lifecycle\` turns the team's roles into gates: the
+# human approves the goal set, and each step belongs to one role. Choosing a preset is your decision, so it is left
+# commented out here; \`crew.mjs policy show\` prints the effective policy and \`crew.mjs policy check\` validates this file.
+# preset: lifecycle
+`;
+function initDefaults(store) {
+  const files2 = [
+    [join19(store.dir, "config.yaml"), config(currentBranch() || "main", commonDir(store.home) !== null)],
+    [join19(store.dir, "policy.yaml"), POLICY]
+  ];
+  for (const [path, text2] of files2) {
+    if (store.ws.isFile(path)) continue;
+    store.ws.write(path, text2);
+    store.say(`Wrote ${store.rel(path)} (defaults; edit it)`);
+  }
 }
 
 // src/hub/registry.ts
@@ -11868,7 +12684,10 @@ var registration = {
     '  new-plan TITLE --from DRAFT [--goal] [--items FEAT-001,BUG-002] [--touches "src/a/**, docs/b.md"] [--depends P-002]'
   ],
   cli: {
-    init: { pos: [], run: (s2) => init(s2) },
+    init: { pos: [], run: (s2) => {
+      init(s2);
+      initDefaults(s2);
+    } },
     "new-idea": {
       pos: ["title"],
       ...DRAFTED,
@@ -11904,9 +12723,9 @@ var registration = {
 };
 
 // src/hub/commands/work/gather.ts
-import { existsSync as existsSync10, realpathSync as realpathSync5, statSync as statSync7 } from "node:fs";
-import { basename as basename6, dirname as dirname6, join as join17 } from "node:path";
-var real4 = (p) => existsSync10(p) ? realpathSync5(p) : p;
+import { existsSync as existsSync10, realpathSync as realpathSync6, statSync as statSync7 } from "node:fs";
+import { basename as basename7, dirname as dirname7, join as join20 } from "node:path";
+var real4 = (p) => existsSync10(p) ? realpathSync6(p) : p;
 var mtimeOf = (p) => statSync7(p, { throwIfNoEntry: false })?.mtimeMs ?? 0;
 function copies(store) {
   const out = [], base2 = store.baseBranch();
@@ -11915,9 +12734,9 @@ function copies(store) {
     const dirty2 = new Set(dirty(wt, ".crew").filter((f) => STATE_RE.test(f)));
     const ahead = (git(["-C", wt, "diff", "--name-only", "--diff-filter=AM", `${base2}...HEAD`, "--", ".crew"]) ?? "").split("\n").filter((f) => STATE_RE.test(f) && !dirty2.has(f));
     for (const f of [...dirty2, ...ahead]) {
-      const text2 = store.ws.read(join17(wt, f));
-      if (text2 !== null && text2 !== store.ws.read(join17(store.home, f))) {
-        out.push({ wt, f, text: text2, mtime: mtimeOf(join17(wt, f)), committed: !dirty2.has(f) });
+      const text2 = store.ws.read(join20(wt, f));
+      if (text2 !== null && text2 !== store.ws.read(join20(store.home, f))) {
+        out.push({ wt, f, text: text2, mtime: mtimeOf(join20(wt, f)), committed: !dirty2.has(f) });
       }
     }
   }
@@ -11932,7 +12751,7 @@ function gather(store) {
   const seen = /* @__PURE__ */ new Map();
   let n2 = 0;
   for (const c of copies(store)) {
-    const from = `${store.ws.rel(c.wt) || c.wt}`, target = join17(store.home, c.f);
+    const from = `${store.ws.rel(c.wt) || c.wt}`, target = join20(store.home, c.f);
     const doc = Doc.parse(c.text, target), key = `${doc.id} ${doc.get("title")}`;
     const prior = seen.get(c.f) ?? (doc.id ? seen.get(key) : void 0);
     if (prior) {
@@ -11945,7 +12764,7 @@ function gather(store) {
       } else if (same && same.path !== target && same.get("title") !== doc.get("title")) {
         const id = store.nextId(doc.id.replace(/-\d+$/, ""), kindOf(doc.id));
         const text2 = c.text.replace(new RegExp(`^id: ${doc.id}$`, "m"), `id: ${id}`).replace(new RegExp(`^# ${doc.id}:`, "m"), `# ${id}:`);
-        const path = join17(dirname6(target), basename6(target).replace(doc.id, id));
+        const path = join20(dirname7(target), basename7(target).replace(doc.id, id));
         store.ws.write(path, text2);
         store.say(`${doc.id} in ${from} clashes with ${same.id} "${same.get("title")}": gathered as ${id} (${store.rel(path)}); check what refers to ${doc.id}`);
       } else {
@@ -11964,8 +12783,8 @@ function gather(store) {
 }
 
 // src/hub/commands/work/migrate.ts
-import { existsSync as existsSync11, readdirSync as readdirSync3, statSync as statSync8 } from "node:fs";
-import { join as join18 } from "node:path";
+import { existsSync as existsSync11, readdirSync as readdirSync4, statSync as statSync8 } from "node:fs";
+import { join as join21 } from "node:path";
 var DROPPED = /^(bin|templates|view)\/|^(ROADMAP|BACKLOG|STATUS|README)\.md$/;
 var ARCHIVED = /^(milestones|sprints|releases)\/|^(project-plan|raid)\.md$/;
 var DOCS = { epics: "goals", items: "items", plans: "plans" };
@@ -11982,7 +12801,7 @@ var OLD_REFS = [
   ".github/workflows/ci.yml"
 ];
 function walk(dir, prefix = "") {
-  return readdirSync3(dir, { withFileTypes: true }).flatMap((e) => e.isDirectory() ? walk(join18(dir, e.name), `${prefix}${e.name}/`) : [`${prefix}${e.name}`]);
+  return readdirSync4(dir, { withFileTypes: true }).flatMap((e) => e.isDirectory() ? walk(join21(dir, e.name), `${prefix}${e.name}/`) : [`${prefix}${e.name}`]);
 }
 function renamed(text2) {
   return text2.replace(/\bEP-(\d+)/g, "G-$1").replace(/\.project\//g, ".crew/").replace(/\btracker\.mjs\b/g, "crew.mjs").replace(/project-kit:tracker/g, "crew:hub");
@@ -11993,11 +12812,11 @@ function leanDoc(text2, kind) {
   return t;
 }
 function migrate(store) {
-  const root = store.ws.root, old = join18(root, ".project");
+  const root = store.ws.root, old = join21(root, ".project");
   if (!existsSync11(old) || !statSync8(old).isDirectory()) fail("No .project/ directory to migrate.");
   if (existsSync11(store.dir)) fail(`${store.rel(store.dir)}/ already exists \u2014 move it aside first; nothing was changed.`);
   const files2 = walk(old);
-  const read = (rel) => store.ws.read(join18(old, rel)) ?? "";
+  const read = (rel) => store.ws.read(join21(old, rel)) ?? "";
   const exitCriteria = milestoneCriteria(files2.filter((f) => f.startsWith("milestones/")).map(read));
   let counts = { docs: 0, archived: 0, knowledge: 0, issues: 0, drafted: 0 };
   const targets = /* @__PURE__ */ new Map();
@@ -12011,12 +12830,12 @@ function migrate(store) {
     const [dir, name] = [rel.split("/")[0], rel.split("/").pop()];
     const topLevelDoc = DOCS[dir] && name.endsWith(".md") && rel.split("/").length === 2;
     if (!TEXT.test(rel)) {
-      const to = join18(store.dir, ARCHIVED.test(rel) ? "archive" : "", rel);
+      const to = join21(store.dir, ARCHIVED.test(rel) ? "archive" : "", rel);
       put(rel, to);
-      store.ws.copy(join18(old, rel), to);
+      store.ws.copy(join21(old, rel), to);
     } else if (ARCHIVED.test(rel)) {
-      put(rel, join18(store.dir, "archive", rel));
-      store.ws.write(join18(store.dir, "archive", rel), renamed(read(rel)));
+      put(rel, join21(store.dir, "archive", rel));
+      store.ws.write(join21(store.dir, "archive", rel), renamed(read(rel)));
       counts.archived++;
     } else if (topLevelDoc) {
       const doc = Doc.parse(leanDoc(read(rel), dir));
@@ -12026,22 +12845,22 @@ function migrate(store) {
         doc.appendLog("status ready \u2192 draft \u2014 migrated to crew: declare `touches:` before moving it back to ready");
         counts.drafted++;
       }
-      put(rel, join18(store.dir, DOCS[dir], name.replace(/^EP-/, "G-")));
-      store.ws.write(join18(store.dir, DOCS[dir], name.replace(/^EP-/, "G-")), `${doc.text.trimEnd()}
+      put(rel, join21(store.dir, DOCS[dir], name.replace(/^EP-/, "G-")));
+      store.ws.write(join21(store.dir, DOCS[dir], name.replace(/^EP-/, "G-")), `${doc.text.trimEnd()}
 `);
       counts.docs++;
     } else if (rel === "config.yaml") {
-      put(rel, join18(store.dir, rel));
-      store.ws.write(join18(store.dir, rel), renamed(read(rel)).replace(/^[ \t]+tracker:.*\n/m, "").replace(/^modules:[ \t]*\n(?![ \t])/m, ""));
+      put(rel, join21(store.dir, rel));
+      store.ws.write(join21(store.dir, rel), renamed(read(rel)).replace(/^[ \t]+tracker:.*\n/m, "").replace(/^modules:[ \t]*\n(?![ \t])/m, ""));
     } else {
-      const to = join18(store.dir, rel.replace(/^epics\//, "goals/"));
+      const to = join21(store.dir, rel.replace(/^epics\//, "goals/"));
       put(rel, to);
       store.ws.write(to, renamed(read(rel)));
     }
   }
   if (files2.includes("project-plan.md")) {
-    const config = join18(store.dir, "config.yaml");
-    store.ws.write(config, hubSettings(store.ws.read(config) ?? "", read("project-plan.md")));
+    const config2 = join21(store.dir, "config.yaml");
+    store.ws.write(config2, hubSettings(store.ws.read(config2) ?? "", read("project-plan.md")));
   }
   store.ws.remove(old);
   if (files2.includes("raid.md")) counts = { ...counts, ...raid(store, read("raid.md")) };
@@ -12055,7 +12874,7 @@ function migrate(store) {
   if (branches.length) {
     store.say(`note: plan branches still hold .project/ (${branches.join(", ")}) \u2014 finish them on the old layout, or merge this commit into each and run \`crew.mjs migrate\` there too; until then their live status is not visible from main`);
   }
-  const stale = OLD_REFS.filter((f) => /\.project\/|tracker\.mjs/.test(store.ws.read(join18(root, f)) ?? ""));
+  const stale = OLD_REFS.filter((f) => /\.project\/|tracker\.mjs/.test(store.ws.read(join21(root, f)) ?? ""));
   if (stale.length) {
     store.say(`next: these still mention .project/ or tracker.mjs \u2014 re-render them (/crew:guidelines --refresh, /crew:git-setup): ${stale.join(", ")}`);
   }
@@ -12073,10 +12892,10 @@ function addExitCriteria(goal, milestone, criteria2) {
   for (const c of criteria2.get(mid) ?? []) goal.appendTo("Acceptance criteria", `- [ ] ${c} (from ${mid} exit criteria)`);
   criteria2.delete(mid);
 }
-function hubSettings(config, projectPlan) {
+function hubSettings(config2, projectPlan) {
   const wip = projectPlan ? Doc.parse(projectPlan).get("wip_limit") : null;
-  if (!wip || /^hub:/m.test(config)) return config;
-  return `${config.trimEnd()}${config.trim() ? "\n\n" : ""}hub:                    # crew hub settings
+  if (!wip || /^hub:/m.test(config2)) return config2;
+  return `${config2.trimEnd()}${config2.trim() ? "\n\n" : ""}hub:                    # crew hub settings
   wip_limit: ${wip}
 `;
 }
@@ -12088,9 +12907,9 @@ function raid(store, text2) {
       const title = row.decision || row.assumption || row.risk || Object.values(row).find((v) => v && !/^[A-Z]+-?\d+$/.test(v)) || "";
       if (!title) continue;
       const fields = Object.entries(row).filter(([, v]) => v).map(([k, v]) => `- **${k}:** ${v}`).join("\n");
-      const id = knowledgeId(title, (k) => store.ws.isFile(join18(store.knowledgeDir, `${k}.md`)));
+      const id = knowledgeId(title, (k) => store.ws.isFile(join21(store.knowledgeDir, `${k}.md`)));
       const level = (v) => (v ?? "").trim().slice(0, 1).toUpperCase();
-      store.ws.write(join18(store.knowledgeDir, `${id}.md`), entryText({
+      store.ws.write(join21(store.knowledgeDir, `${id}.md`), entryText({
         id,
         type,
         title,
@@ -12135,16 +12954,20 @@ var registration2 = {
 var registration3 = {
   usage: [
     "  new-item feat|bug|chore|spike TITLE (--from DRAFT | --why TEXT) [--goal] [--priority] [--severity]",
+    "  new-item \u2026 --origin P-###|ID                       record where the item was found (else the caller's plan worktree or claim)",
     "  triage ID [--priority P1] [--severity S2] [--goal G-001] [--approved-by NAME]",
-    "  triage ID --reject wontfix|duplicate --note TXT"
+    "  triage ID --reject wontfix|duplicate --note TXT",
+    "  overlaps ID [--json]                          similar open items and plans in flight whose touches cover the item's paths (PM, at triage)",
+    "  regoal ID G-###|none --note TXT                  move an item or plan (with its items) to another goal, or off it (PM)"
   ],
   cli: {
     "new-item": {
       pos: ["type", "title"],
-      str: ["from", "why", "goal", "priority", "severity"],
+      str: ["from", "why", "goal", "origin", "priority", "severity"],
       flag: ["keep-draft"],
       run: (s2, a) => newItem(s2, a.pos[0], a.pos[1], str(a, "from"), str(a, "why"), {
         goal: str(a, "goal"),
+        origin: str(a, "origin"),
         priority: str(a, "priority"),
         severity: str(a, "severity"),
         keep: !!a.opt["keep-draft"]
@@ -12162,6 +12985,12 @@ var registration3 = {
         note: str(a, "note"),
         approvedBy: str(a, "approved-by")
       })
+    },
+    overlaps: { pos: ["id"], flag: ["json"], run: (s2, a) => overlaps2(s2, a.pos[0].toUpperCase(), !!a.opt.json) },
+    regoal: {
+      pos: ["id", "goal"],
+      str: ["note"],
+      run: (s2, a) => regoal(s2, a.pos[0].toUpperCase(), a.pos[1], str(a, "note"))
     }
   },
   tools: {
@@ -12195,6 +13024,16 @@ var registration3 = {
         reject: s(a, "reject"),
         note: s(a, "note")
       })
+    },
+    overlaps: {
+      description: "Overlap candidates for an item (`crew.mjs overlaps`), read-only: open items with similar titles and plans in flight whose touches cover a path the item names; `architect` is set when the hub flags a technical question.",
+      input: obj({ id: text("e.g. FEAT-003"), json: { type: "boolean" } }, ["id"]),
+      run: (st, a) => overlaps2(st, up4(a, "id"), a.json === true)
+    },
+    regoal: {
+      description: "Move an item, or a plan with all its items, to another goal or off any (`crew.mjs regoal`, the PM's): `goal` is G-### or `none`, `note` says why. Refused for closed work, done or dropped goals, and an item in an open plan.",
+      input: obj({ id: text("e.g. FEAT-003 or P-004"), goal: text("G-### or none"), note: text("why it moves") }, ["id", "goal", "note"]),
+      run: (st, a) => regoal(st, up4(a, "id"), s(a, "goal") ?? "", s(a, "note"))
     }
   }
 };
@@ -12303,10 +13142,17 @@ var registration6 = {
 // src/hub/commands/team/autonomy.reg.ts
 var registration7 = {
   usage: [
-    "  run [--check] [--json]                        run the team unattended: the loop, and whether it may go on (exit 1: stop)"
+    "  run [--check] [--json]                        run the team unattended: the loop, and whether it may go on (exit 1: stop)",
+    `  run --until-done [--max-passes N] [--command CMD]  the local runner: preflight, then one pass at a time until it stops (default ${MAX_PASSES} passes; 0 done, 1 no progress or limit, 2 preflight)`
   ],
   cli: {
-    run: { pos: [], flag: ["check", "json"], run: (s2, a) => run(s2, !!a.opt.check, !!a.opt.json) }
+    run: {
+      pos: [],
+      flag: ["check", "json", "until-done"],
+      int: ["max-passes"],
+      str: ["command"],
+      run: (s2, a) => a.opt["until-done"] ? untilDone(s2, { maxPasses: a.num["max-passes"] ?? MAX_PASSES, command: str(a, "command") ?? PASS_COMMAND }) : run(s2, !!a.opt.check, !!a.opt.json)
+    }
   }
 };
 
@@ -12540,14 +13386,15 @@ var registration10 = {
 // src/hub/commands/work/review.reg.ts
 var registration11 = {
   usage: [
-    "  review P-### --approve | --changes TXT        code review of a plan in review (never by its implementer)"
+    "  review P-### --approve | --changes TXT        code review of a plan in review (never by its implementer)",
+    "  review P-### --design --approve | --changes TXT   design review of a UI plan in review (design.ui_paths)"
   ],
   cli: {
     review: {
       pos: ["id"],
       str: ["changes"],
-      flag: ["approve"],
-      run: (s2, a) => review(s2, a.pos[0], { approve: !!a.opt.approve, changes: str(a, "changes") })
+      flag: ["approve", "design"],
+      run: (s2, a) => review(s2, a.pos[0], { approve: !!a.opt.approve, changes: str(a, "changes"), design: !!a.opt.design })
     }
   },
   tools: {
@@ -12556,6 +13403,13 @@ var registration11 = {
       input: obj({ id: text("e.g. P-004"), approve: { type: "boolean" }, changes: text("what must change") }, ["id"]),
       run: (st, a) => {
         review(st, s(a, "id"), { approve: a.approve === true, changes: s(a, "changes") });
+      }
+    },
+    design_review: {
+      description: "Design review of a UI plan in review (`crew.mjs review --design`): approve, or request changes, which sends it back to the developer. A UI plan's touches overlap design.ui_paths; never by its implementer; under the lifecycle preset the designer's, and accepting it needs an approval of the current code.",
+      input: obj({ id: text("e.g. P-004"), approve: { type: "boolean" }, changes: text("what must change") }, ["id"]),
+      run: (st, a) => {
+        review(st, s(a, "id"), { approve: a.approve === true, changes: s(a, "changes"), design: true });
       }
     }
   }
@@ -12581,19 +13435,19 @@ var registration12 = {
 };
 
 // src/hub/commands/work/suite.ts
-import { spawnSync as spawnSync4 } from "node:child_process";
+import { spawnSync as spawnSync6 } from "node:child_process";
 import { randomBytes as randomBytes3 } from "node:crypto";
 import { appendFileSync as appendFileSync3, existsSync as existsSync12, linkSync as linkSync2, mkdirSync as mkdirSync5, readFileSync as readFileSync10, renameSync as renameSync3, statSync as statSync9, unlinkSync as unlinkSync2, writeFileSync as writeFileSync3 } from "node:fs";
 import { hostname } from "node:os";
-import { join as join19 } from "node:path";
+import { join as join22 } from "node:path";
 var POLL_MS = 1e3;
 var UNWRITTEN_STALE_MS = 6e4;
 function home(store) {
   const common = commonDir(store.ws.root);
-  return common ? join19(common, "crew") : store.dir;
+  return common ? join22(common, "crew") : store.dir;
 }
 function suiteSettings(store) {
-  const hub = yamlBlock(store.ws.read(join19(store.dir, "config.yaml")) ?? "", "hub");
+  const hub = yamlBlock(store.ws.read(join22(store.dir, "config.yaml")) ?? "", "hub");
   const command2 = hub.full_suite;
   if (!command2) fail("No hub.full_suite in .crew/config.yaml.");
   const slots = hub.suite_slots ?? "1";
@@ -12657,19 +13511,19 @@ function takeSlot(dir, slots, me) {
   for (let said = false; ; ) {
     for (let i = 0; i < slots; i++) {
       try {
-        writeFileSync3(join19(dir, `slot-${i}.lock`), body2, { flag: "wx" });
+        writeFileSync3(join22(dir, `slot-${i}.lock`), body2, { flag: "wx" });
         return i;
       } catch (e) {
         if (e.code !== "EEXIST") throw e;
       }
     }
     let freed = false;
-    for (let i = 0; i < slots; i++) freed = takeOverIfStale2(join19(dir, `slot-${i}.lock`), me.token) || freed;
+    for (let i = 0; i < slots; i++) freed = takeOverIfStale2(join22(dir, `slot-${i}.lock`), me.token) || freed;
     if (freed) continue;
     if (!said) {
       const held = [...Array(slots).keys()].map((i) => {
         try {
-          return holder(readFileSync10(join19(dir, `slot-${i}.lock`), "utf8"));
+          return holder(readFileSync10(join22(dir, `slot-${i}.lock`), "utf8"));
         } catch {
           return null;
         }
@@ -12687,8 +13541,10 @@ function releaseSlot(file, token) {
   } catch {
   }
 }
-function runSuite(store, { cwd, ref }) {
+function runSuite(store, { cwd, ref, capture = false }) {
   const { command: command2, slots } = suiteSettings(store);
+  const sha = git(["-C", cwd, "rev-parse", "HEAD"])?.trim() || null;
+  const branch = git(["-C", cwd, "branch", "--show-current"])?.trim() || null;
   const dir = home(store), run2 = store.ledger.who.run, t0 = Date.now();
   const me = {
     token: `${process.pid}-${randomBytes3(6).toString("hex")}`,
@@ -12699,14 +13555,19 @@ function runSuite(store, { cwd, ref }) {
     worktree: cwd,
     started: (/* @__PURE__ */ new Date()).toISOString()
   };
-  const slot = takeSlot(join19(dir, "suite"), slots, me);
+  const slot = takeSlot(join22(dir, "suite"), slots, me);
   const t1 = Date.now();
-  let exit = 1;
+  let exit = 1, output;
   try {
-    const r = spawnSync4(command2, { shell: true, cwd, stdio: "inherit" });
+    const r = capture ? spawnSync6(command2, { shell: true, cwd, stdio: ["inherit", "pipe", "pipe"], encoding: "utf8", maxBuffer: 64 << 20 }) : spawnSync6(command2, { shell: true, cwd, stdio: "inherit" });
     exit = r.status ?? 1;
+    if (capture) {
+      process.stdout.write(r.stdout ?? "");
+      process.stderr.write(r.stderr ?? "");
+      output = `${r.stdout ?? ""}${r.stderr ?? ""}`;
+    }
   } finally {
-    releaseSlot(join19(dir, "suite", `slot-${slot}.lock`), me.token);
+    releaseSlot(join22(dir, "suite", `slot-${slot}.lock`), me.token);
   }
   const t2 = Date.now();
   const rec = {
@@ -12714,26 +13575,38 @@ function runSuite(store, { cwd, ref }) {
     ref: ref ?? null,
     run: run2,
     worktree: cwd,
+    sha,
+    branch,
     slot,
     wait_ms: t1 - t0,
     run_ms: t2 - t1,
     exit
   };
-  const file = join19(dir, "suites.jsonl");
+  const file = join22(dir, "suites.jsonl");
   const torn = existsSync12(file) && statSync9(file).size > 0 && !readFileSync10(file, "utf8").endsWith("\n");
   appendFileSync3(file, `${torn ? "\n" : ""}${JSON.stringify(rec)}
 `);
-  return { exit, waitMs: rec.wait_ms, runMs: rec.run_ms };
+  return { exit, waitMs: rec.wait_ms, runMs: rec.run_ms, sha, ...capture ? { output } : {} };
 }
 var secs = (ms) => (ms / 1e3).toFixed(1);
+function suiteHome(store, ref) {
+  if (!ref || !/^P-\d+$/.test(ref)) return store.ws.root;
+  const pid = store.checkRef(ref, "plan");
+  const wt = store.planWorktrees().get(pid);
+  if (wt) return wt;
+  const want = store.find(pid).get("branch") || null, here = currentBranch();
+  if (want && here === want) return store.ws.root;
+  return fail(`${pid} has no worktree and this checkout is on ${here ?? "a detached HEAD"}, not ${want ?? "a plan branch"}: run it where the plan's branch is checked out.`);
+}
 function suiteCmd(store, ref) {
   store.require();
-  const r = runSuite(store, { cwd: store.ws.root, ref: ref?.toUpperCase() });
+  ref = ref?.toUpperCase();
+  const r = runSuite(store, { cwd: suiteHome(store, ref), ref });
   store.say(`suite: exit ${r.exit} (waited ${secs(r.waitMs)}s, ran ${secs(r.runMs)}s)`);
   return r.exit;
 }
 function suites(store, limit = 20) {
-  const file = join19(home(store), "suites.jsonl");
+  const file = join22(home(store), "suites.jsonl");
   if (!existsSync12(file)) return [];
   const recs = readFileSync10(file, "utf8").split("\n").flatMap((l) => {
     try {
@@ -12749,14 +13622,14 @@ function suitesCmd(store, limit = 20, json = false) {
   if (json) return store.say(JSON.stringify(recs, null, 2));
   if (!recs.length) return store.say("No suite runs recorded.");
   for (const r of recs) {
-    store.say(`${r.ts}  ${r.ref ?? "-"}  ${r.run}  slot ${r.slot}  waited ${secs(r.wait_ms)}s  ran ${secs(r.run_ms)}s  exit ${r.exit}`);
+    store.say(`${r.ts}  ${r.ref ?? "-"}  ${r.sha?.slice(0, 7) ?? "-"}  ${r.run}  slot ${r.slot}  waited ${secs(r.wait_ms)}s  ran ${secs(r.run_ms)}s  exit ${r.exit}`);
   }
 }
 
 // src/hub/commands/work/suite.reg.ts
 var registration13 = {
   usage: [
-    "  suite [--ref P-###]                           run hub.full_suite under a slot shared by every worktree (Release)",
+    "  suite [--ref P-###]                           run hub.full_suite under a slot shared by every worktree, in P-###'s worktree (Release)",
     "  suites [--limit 20] [--json]                  recorded full-suite runs, newest first: queue wait and duration"
   ],
   cli: {
@@ -12765,10 +13638,212 @@ var registration13 = {
   },
   tools: {
     suites: {
-      description: "Recorded full-suite runs (`crew.mjs suites`), newest first: ts, ref, run, worktree, slot, wait_ms, run_ms, exit.",
+      description: "Recorded full-suite runs (`crew.mjs suites`), newest first: ts, ref, run, worktree, sha, branch, slot, wait_ms, run_ms, exit.",
       input: obj({ limit: num("how many, newest first (default 20)") }),
       run: (st, a) => suitesCmd(st, n(a, "limit"), true)
     }
+  }
+};
+
+// src/hub/commands/work/land.ts
+import { spawnSync as spawnSync7 } from "node:child_process";
+import { existsSync as existsSync13, mkdirSync as mkdirSync6, readdirSync as readdirSync5, rmSync as rmSync2 } from "node:fs";
+import { join as join23, relative as relative6 } from "node:path";
+var ROUNDS = 3;
+var OUTPUT_LINES2 = 5;
+var OUTPUT_CHARS2 = 600;
+var Bounce = class extends Error {
+};
+var Stop = class extends Error {
+};
+function tail3(store, text2) {
+  const lines = text2.trimEnd().split("\n").filter((l) => l.trim()).slice(-OUTPUT_LINES2).join(" \xB7 ").slice(-OUTPUT_CHARS2);
+  return secretsIn(lines, store.policy.policy.secrets.patterns).length ? "(output withheld: it looked like it contained a secret)" : lines;
+}
+function commitType(plan) {
+  const items2 = (plan.get("items") ?? "").toUpperCase();
+  return /\bFEAT-/.test(items2) ? "feat" : /\bBUG-/.test(items2) ? "fix" : "chore";
+}
+function land(store, id) {
+  store.require();
+  authorize(store, id?.toUpperCase() ?? "The merge queue", "plan.landed", void 0, void 0, `land${id ? ` ${id}` : ""}`);
+  if (!store.settings().plan_worktrees) fail("land: needs hub.plan_worktrees (each plan in its own worktree); merge by hand as `merge-order` says.");
+  if (spawnSync7("git", ["merge-tree", "--write-tree", "HEAD", "HEAD"], { cwd: store.home }).status !== 0) {
+    fail("land: needs git 2.38 or later (`git merge-tree --write-tree`).");
+  }
+  const base2 = store.baseBranch();
+  requireBase(store.home, base2);
+  const order = mergeOrder(store);
+  const queue = id ? [check2(store, id.toUpperCase(), order)] : order.merge.filter((p) => !p.legacy).map((p) => p.id);
+  if (!queue.length) return store.say(`Nothing to land on ${base2}.`), 0;
+  const failed = /* @__PURE__ */ new Set();
+  for (const pid of queue) {
+    const plan = store.find(pid);
+    const after = plan.dependsOn().filter((d) => failed.has(d));
+    if (after.length) {
+      store.say(`${pid}: skipped \u2014 it depends on ${after.join(", ")}, which did not land`);
+      failed.add(pid);
+      continue;
+    }
+    if (!store.planWorktrees().has(pid)) {
+      store.say(`${pid}: skipped \u2014 no worktree on ${plan.get("branch")}: merge it by hand`);
+      failed.add(pid);
+      continue;
+    }
+    try {
+      landOne(store, plan, base2);
+    } catch (e) {
+      if (e instanceof Bounce) {
+        failed.add(pid);
+        if (!bounce(store, plan, e.message)) return 1;
+      } else if (e instanceof Stop || e instanceof HubError) {
+        store.say(`${pid}: not landed \u2014 ${e.message}; it stays accepted with its worktree`);
+        return 1;
+      } else throw e;
+    }
+  }
+  return failed.size ? 1 : 0;
+}
+function check2(store, pid, order) {
+  const plan = store.plans().get(pid) ?? fail(`No plan ${pid}.`);
+  const status2 = plan.get("status");
+  const entry2 = order.merge.find((p) => p.id === pid);
+  if (status2 === "done" && entry2) fail(`${pid} was completed before \`accepted\` existed: merge it by hand as \`merge-order\` says.`);
+  if (status2 !== "accepted") fail(`${pid} is '${status2}': only an accepted plan lands.`);
+  const plans2 = store.plans();
+  const unlanded = plan.dependsOn().filter((d) => {
+    const dep = plans2.get(d), s2 = dep?.get("status");
+    return dep && s2 !== "dropped" && !((s2 === "accepted" || s2 === "done") && !landedProblems(store, dep).length);
+  });
+  if (unlanded.length) fail(`${pid} waits: depends on ${unlanded.join(", ")}, not landed yet.`);
+  if (!entry2) fail(`${pid} is not in \`merge-order\`'s list: nothing of it is left to land.`);
+  if (!store.planWorktrees().has(pid)) fail(`${pid} has no worktree on ${plan.get("branch")}: merge it by hand.`);
+  return pid;
+}
+function landOne(store, plan, base2) {
+  const pid = plan.id, branch = plan.get("branch"), wt = store.planWorktrees().get(pid);
+  const at = (args) => spawnSync7("git", ["-C", wt, ...args], { encoding: "utf8" });
+  const generated3 = () => [...generated(wt, changed(wt, ["."]))];
+  const stale = generated3().filter((f) => at(["cat-file", "-e", `HEAD:${f}`]).status === 0);
+  if (stale.length) at(["checkout", "HEAD", "--", ...stale]);
+  const open = codeChanges(wt, store.policy.policy.secrets.files);
+  if (open.length) throw new Bounce(`uncommitted code after acceptance: ${open.slice(0, 10).join(", ")}`);
+  for (let round = 1; ; round++) {
+    const from = git(["rev-parse", base2], true).trim();
+    const m = at(["merge", "--no-edit", "-m", `chore(${pid}): update to ${base2}`, from]);
+    if (m.status !== 0) {
+      const files2 = (at(["diff", "--name-only", "--diff-filter=U"]).stdout ?? "").split("\n").filter(Boolean);
+      at(["merge", "--abort"]);
+      throw new Bounce(`merging ${base2} conflicts in ${files2.join(", ") || tail3(store, `${m.stdout}${m.stderr}`)}`);
+    }
+    const hub = yamlBlock(store.ws.read(join23(store.dir, "config.yaml")) ?? "", "hub");
+    if (hub.build) {
+      const b = spawnSync7(hub.build, { shell: true, cwd: wt, encoding: "utf8", maxBuffer: 64 << 20 });
+      if (b.status !== 0) throw new Bounce(`hub.build failed (exit ${b.status}): ${tail3(store, `${b.stdout}${b.stderr}`)}`);
+    }
+    const { from: binFrom, files: binFiles } = store.policy.policy.release.refresh_bin;
+    if (binFrom && binFiles.length) refreshBin(store, wt, false);
+    const rebuilt = [.../* @__PURE__ */ new Set([...generated3(), ...codeChanges(wt, store.policy.policy.secrets.files)])];
+    if (rebuilt.length) {
+      at(["add", "-A", "--", ...rebuilt]);
+      const c = at(["commit", "-q", "--only", "-m", `chore(${pid}): rebuild generated files`, "--", ...rebuilt]);
+      if (c.status !== 0) throw new Stop(`git refused the rebuild commit: ${tail3(store, `${c.stdout}${c.stderr}`)}`);
+    }
+    if (hub.full_suite) {
+      const s2 = runSuite(store, { cwd: wt, ref: pid, capture: true });
+      if (s2.exit !== 0) throw new Bounce(`hub.full_suite failed (exit ${s2.exit}): ${tail3(store, s2.output ?? "")}`);
+      const tip = at(["rev-parse", branch]).stdout.trim();
+      if (tip !== s2.sha) {
+        throw new Stop(`its branch moved during the full suite (tested ${s2.sha?.slice(0, 7) ?? "-"}, now ${tip.slice(0, 7)}); run \`land ${pid}\` again`);
+      }
+    }
+    const sha = squash(store, plan, base2, from);
+    if (sha) return landed(store, plan, base2, branch, wt, sha);
+    if (round === ROUNDS) throw new Stop(`${base2} kept moving: ${ROUNDS} rounds of update, rebuild and suite; run \`land ${pid}\` again`);
+    store.say(`${pid}: ${base2} moved during the checks \u2014 updating again`);
+  }
+}
+function squash(store, plan, base2, from) {
+  const common = commonDir(store.home);
+  mkdirSync6(join23(common, "crew"), { recursive: true });
+  const lock = join23(common, "crew", "hub-commit.lock"), token = acquireLock(lock);
+  try {
+    const now = git(["rev-parse", base2], true).trim();
+    if (now !== from && (git(["diff", "--name-only", from, now, "--", ".", ":(exclude).crew"]) ?? "").trim()) return null;
+    const tree = spawnSync7("git", ["-C", store.home, "merge-tree", "--write-tree", now, plan.get("branch")], { encoding: "utf8" });
+    if (tree.status !== 0) throw new Bounce(`the squash onto ${base2} conflicts: ${tail3(store, tree.stdout)}`);
+    const subject = `${commitType(plan)}(${plan.id}): ${plan.get("title")}`;
+    const sha = git(["-C", store.home, "commit-tree", tree.stdout.split("\n")[0].trim(), "-p", now, "-m", subject], true).trim();
+    const ff = spawnSync7("git", ["-C", store.home, "merge", "--ff-only", "-q", sha], { encoding: "utf8" });
+    if (ff.status !== 0) throw new Stop(`the fast-forward of ${base2} in ${store.home} failed: ${tail3(store, `${ff.stdout}${ff.stderr}`)}`);
+    return sha;
+  } finally {
+    releaseLock(lock, token);
+  }
+}
+function landed(store, plan, base2, branch, wt, sha) {
+  const short = sha.slice(0, 7);
+  log(store, plan.id, `landed on ${base2} as ${short}`);
+  const warnings = [cleanupWorktree(store, wt)];
+  if (git(["branch", "-D", branch]) === null) warnings.push(`branch ${branch} was not deleted; delete it by hand`);
+  store.forgetWorktrees();
+  for (const dep of [...store.plans().values()].filter((p) => p.dependsOn().includes(plan.id))) {
+    const home2 = store.planWorktrees().get(dep.id);
+    if (home2) store.say(`${dep.id}: ${updateDependant(store, dep, home2, base2)}`);
+  }
+  store.say(`${plan.id}: landed on ${base2} as ${short} \u2014 the PM moves it done`);
+  for (const w of warnings) if (w) store.say(`${plan.id}: cleanup \u2014 ${w} (the landing stands)`);
+}
+function cleanupWorktree(store, wt) {
+  if (git(["worktree", "remove", "--force", wt]) !== null) return null;
+  let left = [];
+  try {
+    if (existsSync13(wt)) left = leftovers(wt, wt);
+    if (!left.length) rmSync2(wt, { recursive: true, force: true });
+  } catch (e) {
+    left = [`(${e.message})`];
+  }
+  git(["worktree", "prune"]);
+  if (!left.length) return null;
+  return `left ${store.rel(wt) || wt}: ${left.slice(0, 5).join(", ")}${left.length > 5 ? ", \u2026" : ""}; remove it by hand, then \`git worktree prune\``;
+}
+var OS_JUNK = /^(\.DS_Store|\._.*|Thumbs\.db|desktop\.ini)$/;
+function leftovers(dir, root) {
+  return readdirSync5(dir, { withFileTypes: true }).flatMap((e) => {
+    const path = join23(dir, e.name);
+    if (e.isDirectory()) return leftovers(path, root);
+    if (OS_JUNK.test(e.name) || e.isFile() && path === join23(root, ".git")) return [];
+    return [relative6(root, path)];
+  });
+}
+function updateDependant(store, dep, home2, base2) {
+  const at = (args) => spawnSync7("git", ["-C", home2, ...args], { encoding: "utf8" });
+  if (at(["merge", "--ff-only", "-q", base2]).status === 0) return `worktree fast-forwarded to ${base2}`;
+  const open = codeChanges(home2, store.policy.policy.secrets.files);
+  if (open.length) return `update ${dep.id} by hand: uncommitted code (${open.slice(0, 5).join(", ")})`;
+  const m = at(["merge", "--no-edit", "-q", "-m", `chore(${dep.id}): update to ${base2}`, base2]);
+  if (m.status === 0) return `merged ${base2} into its worktree`;
+  at(["merge", "--abort"]);
+  return `update ${dep.id} by hand: merging ${base2} conflicts (${tail3(store, `${m.stdout}${m.stderr}`)})`;
+}
+function bounce(store, plan, why) {
+  try {
+    move(store, plan.id, "in-progress", `land: ${why}`, false, void 0, "plan.landed");
+    return true;
+  } catch (e) {
+    if (!(e instanceof HubError)) throw e;
+    store.say(`${plan.id}: did not land (${why}), and it can't go back to the developer: ${e.message}`);
+    return false;
+  }
+}
+
+// src/hub/commands/work/land.reg.ts
+var registration14 = {
+  usage: [
+    "  land [P-###]                                  squash-merge accepted plans in merge order: update, rebuild, full suite, merge; a failure goes back to the developer (Release)"
+  ],
+  cli: {
+    land: { pos: [], rest: true, run: (s2, a) => land(s2, a.pos[0]) }
   }
 };
 
@@ -12897,7 +13972,7 @@ function context(store, o = {}) {
 }
 
 // src/hub/commands/memory/context.reg.ts
-var registration14 = {
+var registration15 = {
   usage: [
     "  context [P-###] [--role R] [--budget CHARS] [--json]   what you need right now, within a budget (default 6000 chars)"
   ],
@@ -12925,7 +14000,7 @@ var registration14 = {
 };
 
 // src/hub/commands/views/advisor.reg.ts
-var registration15 = {
+var registration16 = {
   usage: [
     "  next [--role R] \xB7 current \xB7 check \xB7 status [--write]    (roles: executive, director, pm, architect, developer, qa, release + the policy's)"
   ],
@@ -12948,7 +14023,7 @@ var registration15 = {
 };
 
 // src/hub/commands/team/guard.reg.ts
-var registration16 = {
+var registration17 = {
   usage: [
     "  guard                                         PreToolUse hook: reads the hook JSON on stdin, prints the decision"
   ],
@@ -12958,7 +14033,7 @@ var registration16 = {
 };
 
 // src/hub/commands/team/team.reg.ts
-var registration17 = {
+var registration18 = {
   usage: [
     "  assign PLAN_ID --to ROLE [--team T] [--note TXT]   open a ready plan for a role (start then needs it)",
     "  staff [--json]                                what can run in parallel now, within budgets.max_agents",
@@ -13007,143 +14082,8 @@ var registration17 = {
   }
 };
 
-// src/hub/commands/team/dispatch.ts
-var View2 = class {
-  constructor(store) {
-    this.store = store;
-    this.plans = store.plans();
-    this.items = store.items();
-    this.goals = store.goals();
-    this.focus = store.focus();
-    this.events = store.ledger.events();
-    this.max = store.policy.policy.budgets.max_agents;
-    this.moved = store.ledger.lastStatus(this.events);
-  }
-  store;
-  plans;
-  items;
-  goals;
-  focus;
-  events;
-  max;
-  moved;
-  /** A plan's status: the ledger knows it moved on even where its file doesn't yet. */
-  status(p) {
-    return this.moved.get(p.id) ?? p.get("status") ?? "";
-  }
-  withStatus(st) {
-    return [...this.plans.values()].filter((p) => this.status(p) === st).sort(byKey((p) => [!onFocus(p, this.items, this.focus), p.id]));
-  }
-  ranked(st) {
-    return ranked(this.items, this.goals, this.focus).filter((i) => itemStatus(i, this.plans) === st);
-  }
-  get claims() {
-    return this.store.ledger.claims(this.events);
-  }
-  /** The run of the last event of `type` on a plan (by `role`, when given), or null. */
-  lastRun(ref, type, role) {
-    return this.events.filter((e) => e.ref === ref && e.type === type && (!role || e.role === role)).at(-1)?.run ?? null;
-  }
-};
-var entry = (role, ref, task2, resume2 = null) => ({ role, ref, task: task2, resume: resume2 });
-var urgent = (i) => i.id.startsWith("BUG-") && (i.get("severity") === "S1" || i.get("priority") === "P0");
-var ROWS = [
-  // 1. questions to a role (escalations to the executive are the human's)
-  (v) => openQuestions(v.events).filter((x) => !x.escalation && x.to !== v.store.policy.policy.escalation.to).map((x) => entry(x.to, x.id, `answer ${x.id}${x.ref ? ` about ${x.ref}` : ""}: ${x.text}`)),
-  // 2. Director exceptions: stale claims, blocked plans, a focus goal that is gone while another goal is active
-  (v) => staleClaims(v.store, v.events).map((s2) => entry(
-    "director",
-    s2.ref,
-    `reassign ${s2.ref}: its claim by ${s2.actor} (${s2.run}) has had no activity for ${s2.hours}h`
-  )),
-  (v) => v.withStatus("blocked").map((p) => entry("director", p.id, `unblock ${p.id}: ${p.get("title")}`)),
-  (v) => {
-    const g = v.goals.get(v.focus), next = goalQueue(v.goals, v.focus)[0];
-    return (!g || CLOSED.has(g.get("status") ?? "")) && next && next !== v.focus ? [entry("director", next, `focus ${next}: the focus goal ${v.focus || "(none)"} is ${g ? g.get("status") : "not set"}`)] : [];
-  },
-  // 3. urgent bugs
-  (v) => v.ranked("new").filter(urgent).map((i) => entry("pm", i.id, `triage ${i.id}: ${i.get("title")} (urgent)`)),
-  // 4. release: merging is serial
-  (v) => mergeOrder(v.store).merge.slice(0, 1).map((p) => entry("release", p.id, `merge ${p.id}: ${p.branch} (first in merge-order)`)),
-  // 5. in review: a failing check, then the review, then QA's evidence, then completion
-  (v) => v.withStatus("in-review").map((p) => {
-    const ev = evidence(v.store, p);
-    if (ev.some((e) => e.verify && !e.verify.ok)) return entry("developer", p.id, `fix ${p.id}: a check failed`, v.lastRun(p.id, "claim"));
-    if (reviewProblems(v.store, p).length) return entry("architect", p.id, `review ${p.id}: ${p.get("title")}`);
-    if (ev.some((e) => !(e.verify?.ok && e.independent))) return entry("qa", p.id, `test ${p.id}: ${p.get("title")}`, v.lastRun(p.id, "checkpoint", "qa"));
-    return entry("pm", p.id, `complete ${p.id}: move ${p.id} done`);
-  }),
-  // 6. goal closure
-  (v) => {
-    const g = v.goals.get(v.focus);
-    if (g?.get("status") !== "active") return [];
-    const open = goalPlans(g.id, v.plans, v.items).some((p) => !CLOSED.has(v.status(p))) || goalItems(g.id, v.items).some((i) => itemStatus(i, v.plans) !== "done");
-    return open ? [] : [entry("pm", g.id, `close ${g.id}: verify each criterion, then move ${g.id} done`)];
-  },
-  // 7. in progress
-  (v) => v.withStatus("in-progress").map((p) => {
-    const claim = v.claims.get(p.id);
-    return claim ? entry("developer", p.id, `continue ${p.id}: resume ${p.id}`, claim.run) : entry("developer", p.id, `start ${p.id}: take over its branch`, v.lastRun(p.id, "claim"));
-  }),
-  // 8. ready to start
-  (v) => staffing(v.store).start.filter((p) => v.plans.has(p.id)).map((p) => p.assigned ? entry(p.assigned, p.id, `start ${p.id}: ${p.title}`) : entry("pm", p.id, `assign ${p.id} --to developer${p.team ? ` --team ${p.team}` : ""}: ${p.title}`)),
-  // 9. triage
-  (v) => v.ranked("new").filter((i) => !urgent(i)).map((i) => entry("pm", i.id, `triage ${i.id}: ${i.get("title")}`)),
-  // 10. spec, while fewer plans are ready and unclaimed than max_agents
-  (v, added) => {
-    const claims = v.claims, ready = v.withStatus("ready").filter((p) => !claims.has(p.id)).length;
-    const out = [], room = () => v.max === null || ready + out.length < v.max;
-    const drafts = v.withStatus("draft").map((p) => entry("architect", p.id, `spec ${p.id} to ready: ${p.get("title")}`));
-    const items2 = v.ranked("triaged").filter((i) => !i.get("plan") && (!v.focus || (i.get("goal") ?? "").toUpperCase() === v.focus || OFF_FOCUS_OK.has(i.id.split("-")[0]))).map((i) => entry("architect", i.id, `write a plan for ${i.id}: ${i.get("title")}`));
-    const taken = new Set(added.map((e) => e.ref));
-    for (const e of [...drafts, ...items2]) if (!taken.has(e.ref) && room()) out.push(e);
-    return out;
-  }
-];
-function dispatch(store) {
-  const v = new View2(store), p = paused(v.events);
-  if (p) return { max_agents: v.max, paused: String(p.reason ?? "no reason given"), entries: [], more: 0 };
-  const { held } = escalationHolds(v.events);
-  const asked = new Set(openQuestions(v.events).filter((x) => x.blocking && x.ref).map((x) => x.ref));
-  const all = [], seen = /* @__PURE__ */ new Set();
-  for (const row of ROWS) {
-    for (const e of row(v, all)) {
-      if (e.ref && (held.has(e.ref) || seen.has(e.ref) || asked.has(e.ref) && !e.task.startsWith("answer "))) continue;
-      if (e.ref) seen.add(e.ref);
-      all.push(e);
-    }
-  }
-  if (!all.length) all.push(...stall(v, held));
-  const cut = v.max === null ? all.length : Math.min(v.max, all.length);
-  return { max_agents: v.max, paused: null, entries: all.slice(0, cut), more: all.length - cut };
-}
-function stall(v, held) {
-  const open = [...v.plans.values()].some((p) => !CLOSED.has(v.status(p))) || [...v.items.values()].some((i) => itemStatus(i, v.plans) !== "done" && !ITEM_CLOSED.has(itemStatus(i, v.plans)));
-  if (!open) return [];
-  const why = [
-    ...staffing(v.store).waiting.map((w) => `${w.id}: ${w.why}`),
-    ...[...held].map(([ref, qs]) => `${ref}: held by ${qs.join(", ")}`)
-  ];
-  return [entry("director", null, `stall: nothing can move${why.length ? ` \u2014 ${why.join("; ")}` : ""}`)];
-}
-function dispatchCmd(store, json = false) {
-  store.require();
-  const d = dispatch(store);
-  if (json) {
-    store.say(JSON.stringify(d, null, 2));
-    return;
-  }
-  if (d.paused !== null) {
-    store.say(`nothing to dispatch: the team is paused (${d.paused}) \u2014 \`resume\` first`);
-    return;
-  }
-  if (!d.entries.length) store.say("nothing to dispatch: no open work");
-  for (const e of d.entries) store.say(`DISPATCH  ${e.role}  ${e.ref ?? "-"}  ${e.task}${e.resume ? `  (resume ${e.resume})` : ""}`);
-  if (d.more) store.say(`\u2026 and ${d.more} more (budgets.max_agents)`);
-}
-
 // src/hub/commands/team/dispatch.reg.ts
-var registration18 = {
+var registration19 = {
   usage: [
     "  dispatch [--json]                             who works on what next: one {role, ref, task, resume} per entry, within budgets.max_agents"
   ],
@@ -13160,24 +14100,31 @@ var registration18 = {
 };
 
 // src/hub/commands/team/liveness.reg.ts
-var registration19 = {
+var registration20 = {
   usage: [
-    "  pause [--reason TXT] \xB7 resume --team [--note TXT]     stop / restart staffing and starts (executive or director)"
+    "  pause [--reason TXT] \xB7 resume --team [--note TXT]     stop / restart staffing and starts (executive or director)",
+    "  end-run RUN [--note TXT]                            mark a stopped agent's run ended (executive or director)"
   ],
   cli: {
-    pause: { pos: [], str: ["reason"], run: (s2, a) => pauseTeam(s2, str(a, "reason")) }
+    pause: { pos: [], str: ["reason"], run: (s2, a) => pauseTeam(s2, str(a, "reason")) },
+    "end-run": { pos: ["run"], str: ["note"], run: (s2, a) => endRun(s2, a.pos[0], str(a, "note")) }
   },
   tools: {
     pause: {
       description: "Pause the team (`crew.mjs pause`), or resume it with resume: true: while paused, staff and start refuse. The executive's or the Director's call.",
       input: obj({ reason: text("why (pause) or a note (resume)"), resume: { type: "boolean" } }),
       run: (st, a) => a.resume === true ? resumeTeam(st, s(a, "reason")) : pauseTeam(st, s(a, "reason"))
+    },
+    end_run: {
+      description: "Mark a stopped or crashed agent's run ended (`crew.mjs end-run`): it stops being live and gives no dispatch entry until it acts again. The executive's or the Director's call.",
+      input: obj({ run: text("the run, e.g. developer:a1b2"), note: text("why") }, ["run"]),
+      run: (st, a) => endRun(st, s(a, "run"), s(a, "note"))
     }
   }
 };
 
 // src/hub/commands/team/agents.reg.ts
-var registration20 = {
+var registration21 = {
   usage: [
     "  agents [--check]                              render the role agents (.claude/agents/crew-<role>.md) from the policy"
   ],
@@ -13187,29 +14134,31 @@ var registration20 = {
 };
 
 // src/hub/commands/team/questions.reg.ts
-var registration21 = {
+var registration22 = {
   usage: [
     "  ask [ID] --to ROLE TEXT [--fyi] \xB7 escalate [ID] TEXT \xB7 answer Q-\u2026 TEXT [--decision [--scope GLOBS]] [--approved-by NAME]",
+    `  ask/escalate \u2026 [--options "A; B"]            the answers to choose from (split on ';'), shown by questions and inbox`,
     "  questions [--to ROLE] [--ref ID] [--all] [--json]       questions between roles; an open one blocks only its document"
   ],
   cli: {
     ask: {
       pos: ["text"],
       rest: true,
-      str: ["to"],
+      str: ["to", "options"],
       flag: ["fyi"],
       required: ["to"],
       run: (s2, a) => {
         const [ref, text2] = a.pos.length > 1 ? [a.pos[0], a.pos[1]] : [void 0, a.pos[0]];
-        ask(s2, ref, str(a, "to"), text2, { fyi: !!a.opt.fyi });
+        ask(s2, ref, str(a, "to"), text2, { fyi: !!a.opt.fyi, options: splitOptions(str(a, "options")) });
       }
     },
     escalate: {
       pos: ["text"],
       rest: true,
+      str: ["options"],
       run: (s2, a) => {
         const [ref, text2] = a.pos.length > 1 ? [a.pos[0], a.pos[1]] : [void 0, a.pos[0]];
-        escalate(s2, ref, text2);
+        escalate(s2, ref, text2, { options: splitOptions(str(a, "options")) });
       }
     },
     answer: {
@@ -13261,8 +14210,69 @@ var registration21 = {
   }
 };
 
+// src/hub/commands/team/inbox.ts
+function inboxEntries(store) {
+  const events = store.ledger.events(), policy2 = store.policy.policy;
+  const goals2 = [...store.goals().values()].filter((g) => g.get("status") === "proposed").sort(byKey((g) => [g.id])).map((g) => ({
+    kind: "goal",
+    ref: g.id,
+    question: `Approve ${g.id}: ${g.get("title")}?`,
+    options: ["approve", "drop"],
+    holds: "its plans and items wait until it is approved",
+    how: `move ${g.id} active --approved-by <you> \xB7 move ${g.id} dropped --approved-by <you>`
+  }));
+  const { held } = escalationHolds(events);
+  const escalations = openQuestions(events).filter((q) => q.escalation || q.to === "executive").map((q) => ({
+    kind: "escalation",
+    ref: q.id,
+    about: q.ref,
+    question: q.text,
+    options: q.options,
+    holds: q.ref && held.get(q.ref)?.includes(q.id) ? `holds ${q.ref}` : "stops the team",
+    how: `answer ${q.id} "<decision>" --approved-by <you>`
+  }));
+  const approvals = approvalReason(policy2, "plan.accepted") === null ? [] : [...store.plans(true).values()].filter((p) => p.get("status") === "in-review" && evidence(store, p).every((e) => e.verify?.ok && e.independent) && !reviewProblems(store, p).length).sort(byKey((p) => [p.id])).map((p) => ({
+    kind: "approval",
+    ref: p.id,
+    question: `Accept ${p.id}: ${p.get("title")}?`,
+    options: ["approve"],
+    holds: p.id,
+    how: `move ${p.id} accepted --approved-by <you>`
+  }));
+  return [...goals2, ...escalations, ...approvals];
+}
+function inbox(store, json = false) {
+  store.require();
+  const entries = inboxEntries(store);
+  if (json) return store.say(JSON.stringify({ entries }));
+  if (!entries.length) return store.say("Inbox empty \u2014 nothing waits on you.");
+  for (const e of entries) {
+    store.say(`${e.kind.toUpperCase()}  ${e.ref}${e.about ? ` about ${e.about}` : ""}: ${e.question}`);
+    if (e.options.length) store.say(`  options: ${e.options.join(" \xB7 ")}`);
+    store.say(`  holds:   ${e.holds}`);
+    store.say(`  answer:  ${e.how}`);
+  }
+}
+
+// src/hub/commands/team/inbox.reg.ts
+var registration23 = {
+  usage: [
+    "  inbox [--json]                                what waits on the human: goals to approve, escalations, human-gated steps"
+  ],
+  cli: {
+    inbox: { pos: [], flag: ["json"], run: (s2, a) => inbox(s2, !!a.opt.json) }
+  },
+  tools: {
+    inbox: {
+      description: "What waits on the human (`crew.mjs inbox --json`): goals to approve, escalations and plan steps the policy gates to a human, each with its question, options, what it holds and the command a human runs. Read-only.",
+      input: obj({}),
+      run: (st) => inbox(st, true)
+    }
+  }
+};
+
 // src/hub/commands/views/export.reg.ts
-var registration22 = {
+var registration24 = {
   usage: [
     "  export [--json] [--out FILE]                  interactive HTML view (.crew/view/index.html) or the graph as JSON"
   ],
@@ -13279,30 +14289,30 @@ var registration22 = {
 // src/hub/server.ts
 import { spawn } from "node:child_process";
 import { randomBytes as randomBytes4 } from "node:crypto";
-import { existsSync as existsSync14, mkdirSync as mkdirSync6, watch as watch2 } from "node:fs";
+import { existsSync as existsSync15, mkdirSync as mkdirSync7, watch as watch2 } from "node:fs";
 import { createServer } from "node:http";
-import { basename as basename7, dirname as dirname8, join as join21 } from "node:path";
+import { basename as basename8, dirname as dirname9, join as join25 } from "node:path";
 
 // src/hub/commands/views/design.ts
-var import_yaml4 = __toESM(require_dist(), 1);
-import { existsSync as existsSync13, readFileSync as readFileSync11 } from "node:fs";
-import { dirname as dirname7, join as join20 } from "node:path";
+var import_yaml5 = __toESM(require_dist(), 1);
+import { existsSync as existsSync14, readFileSync as readFileSync11 } from "node:fs";
+import { dirname as dirname8, join as join24 } from "node:path";
 var HANDOFF_KINDS = ["finalise", "locked", "revision", "screen-change", "screens-done", "screens-skipped"];
 var STAGES = ["palette", "directions", "tune", "finalise", "screens", "done"];
 var STATE_KEYS = ["stage", "shortlist", "variants", "current", "reviews"];
 var REQUIRED_COLORS = ["background", "foreground", "primary", "primary-foreground"];
 var FRONT = /^---\n([\s\S]*?)\n---\n/;
 function designPath(store) {
-  const cfg = store.ws.read(join20(store.dir, "config.yaml")) ?? "";
-  return join20(store.ws.root, yamlBlock(cfg, "design").file ?? "docs/design/DESIGN.md");
+  const cfg = store.ws.read(join24(store.dir, "config.yaml")) ?? "";
+  return join24(store.ws.root, yamlBlock(cfg, "design").file ?? "docs/design/DESIGN.md");
 }
-var studioPath = (store) => join20(dirname7(designPath(store)), "studio.json");
+var studioPath = (store) => join24(dirname8(designPath(store)), "studio.json");
 function readDesign(store) {
   const path = designPath(store);
   const text2 = store.ws.read(path);
   if (text2 === null) return null;
   const m = FRONT.exec(text2);
-  const tokens = m ? (0, import_yaml4.parse)(m[1]) ?? {} : {};
+  const tokens = m ? (0, import_yaml5.parse)(m[1]) ?? {} : {};
   return { path: store.rel(path), tokens, body: m ? text2.slice(m[0].length) : text2 };
 }
 function readStudio(store) {
@@ -13318,7 +14328,7 @@ var designPayload = (store) => ({ design: readDesign(store), studio: readStudio(
 var revisionOf = (t) => Number.isInteger(Number(t.revision)) ? Number(t.revision) : 0;
 function writeDesign(store, tokens, body2) {
   store.ws.write(designPath(store), `---
-${(0, import_yaml4.stringify)(tokens, { lineWidth: 0 })}---
+${(0, import_yaml5.stringify)(tokens, { lineWidth: 0 })}---
 ${body2}`);
 }
 function writeStudio(store, studio) {
@@ -13450,7 +14460,7 @@ function designWait(store, timeoutSec) {
   const path = studioPath(store);
   const pending = () => {
     try {
-      return existsSync13(path) ? JSON.parse(readFileSync11(path, "utf8")).handoffs ?? [] : [];
+      return existsSync14(path) ? JSON.parse(readFileSync11(path, "utf8")).handoffs ?? [] : [];
     } catch {
       return [];
     }
@@ -13477,6 +14487,7 @@ Do each, then \`crew.mjs design done <id>\` (the page updates live) and run \`de
 
 // src/hub/server.ts
 var str2 = (b, k) => typeof b[k] === "string" && b[k] ? b[k] : void 0;
+var approver = (b, how) => str2(b, "approved_by")?.trim() || fail(`a human answers it: \`crew.mjs ${how} --approved-by <name>\` \u2014 give your name`);
 var ACTIONS2 = {
   move: (s2, b) => {
     move(s2, str2(b, "id") ?? fail("id is required"), str2(b, "status") ?? fail("status is required"), str2(b, "note"));
@@ -13489,7 +14500,15 @@ var ACTIONS2 = {
   }),
   focus: (s2, b) => setFocus(s2, str2(b, "goal") ?? fail("goal is required")),
   "design-save": (s2, b) => saveDesign(s2, b),
-  "design-studio": (s2, b) => updateStudio(s2, b)
+  "design-studio": (s2, b) => updateStudio(s2, b),
+  answer: (s2, b) => {
+    const qid = str2(b, "qid") ?? fail("qid is required");
+    answer(s2, qid, str2(b, "text") ?? fail("text is required"), { approvedBy: approver(b, `answer ${qid} "\u2026"`) });
+  },
+  "approve-goal": (s2, b) => {
+    const id = (str2(b, "id") ?? fail("id is required")).toUpperCase();
+    move(s2, id, "active", void 0, false, approver(b, `move ${id} active`));
+  }
 };
 function runAction(open, name, body2) {
   const action2 = ACTIONS2[name];
@@ -13544,6 +14563,7 @@ function serve(store, o) {
     }
     if (req.method === "GET" && path === "/api/graph") return send(res, 200, buildGraph(open()));
     if (req.method === "GET" && path === "/api/design") return send(res, 200, designPayload(open()));
+    if (req.method === "GET" && path === "/api/inbox") return send(res, 200, { entries: inboxEntries(open()) });
     if (req.method === "GET" && path === "/api/activity") {
       const s2 = open(), ref = new URLSearchParams((req.url ?? "").split("?")[1] ?? "").get("ref");
       if (ref === null) return send(res, 200, { running: running(s2), recent: readActivity(feedPath(s2)).slice(-50) });
@@ -13583,20 +14603,20 @@ function serve(store, o) {
       for (const c of clients) c.write("event: change\ndata: {}\n\n");
     }, 150);
   }
-  const ledgerDir = dirname8(store.ledger.path), common = commonDir(store.ws.root);
-  mkdirSync6(ledgerDir, { recursive: true });
+  const ledgerDir = dirname9(store.ledger.path), common = commonDir(store.ws.root);
+  mkdirSync7(ledgerDir, { recursive: true });
   const watched = [
     store.dir,
-    dirname8(designPath(store)),
+    dirname9(designPath(store)),
     ...ledgerDir !== store.dir ? [ledgerDir] : [],
-    ...common ? [join21(common, "refs"), join21(common, "HEAD")] : []
+    ...common ? [join25(common, "refs"), join25(common, "HEAD")] : []
   ];
-  const watchers = [...new Set(watched)].filter((p) => existsSync14(p)).map((p) => watch2(p, { recursive: !p.endsWith("HEAD") && (p !== ledgerDir || p === store.dir) }, (_, file) => {
+  const watchers = [...new Set(watched)].filter((p) => existsSync15(p)).map((p) => watch2(p, { recursive: !p.endsWith("HEAD") && (p !== ledgerDir || p === store.dir) }, (_, file) => {
     const f = String(file ?? "");
-    if (/\.lock$|\.stale-/.test(basename7(f))) return;
+    if (/\.lock$|\.stale-/.test(basename8(f))) return;
     if (!(p === store.dir && f.startsWith("view"))) notify2();
   }));
-  return new Promise((resolve8, reject) => {
+  return new Promise((resolve10, reject) => {
     const listen = (port, tries) => {
       server.once("error", (e) => {
         if (e.code === "EADDRINUSE" && tries > 0) listen(port + 1, tries - 1);
@@ -13607,7 +14627,7 @@ function serve(store, o) {
         hosts = /* @__PURE__ */ new Set([`127.0.0.1:${actual}`, `localhost:${actual}`]);
         const url = `http://127.0.0.1:${actual}/${o.page ?? ""}`;
         if (o.open) openBrowser(url);
-        resolve8({ url, close: () => {
+        resolve10({ url, close: () => {
           watchers.forEach((w) => w.close());
           for (const c of clients) c.end();
           server.close();
@@ -13622,7 +14642,7 @@ function send(res, status2, body2) {
   res.end(JSON.stringify(body2));
 }
 function readJson(req) {
-  return new Promise((resolve8, reject) => {
+  return new Promise((resolve10, reject) => {
     let raw = "";
     req.on("data", (c) => {
       raw += c;
@@ -13631,7 +14651,7 @@ function readJson(req) {
     req.on("end", () => {
       try {
         const v = JSON.parse(raw || "{}");
-        resolve8(v && typeof v === "object" && !Array.isArray(v) ? v : {});
+        resolve10(v && typeof v === "object" && !Array.isArray(v) ? v : {});
       } catch {
         reject(new Error("Body must be JSON."));
       }
@@ -13645,7 +14665,7 @@ function openBrowser(url) {
 }
 
 // src/hub/commands/views/ui.reg.ts
-var registration23 = {
+var registration25 = {
   usage: [
     "  ui [--port 8765] [--no-open] [--design]       serve the view live on 127.0.0.1 (updates as files change);",
     "                                                --design opens the design studio (/design)"
@@ -13666,7 +14686,7 @@ var registration23 = {
 };
 
 // src/hub/commands/views/design.reg.ts
-var registration24 = {
+var registration26 = {
   usage: [
     "  design show [--json] \xB7 design wait [--timeout 1800] \xB7 design done ID|all",
     "                                                the design studio's state; wait blocks until the page hands a",
@@ -13696,7 +14716,7 @@ var registration24 = {
 };
 
 // src/hub/commands/views/checks.reg.ts
-var registration25 = {
+var registration27 = {
   cli: {
     check: { pos: [], run: (s2) => check(s2) }
   },
@@ -13705,6 +14725,202 @@ var registration25 = {
       description: "Validate .crew/ (`crew.mjs check`): ERROR and HINT lines; an error result means problems were found.",
       input: obj(),
       run: (st) => check(st)
+    }
+  }
+};
+
+// src/hub/commands/views/doctor.ts
+var import_yaml6 = __toESM(require_dist(), 1);
+import { spawnSync as spawnSync8 } from "node:child_process";
+import { accessSync, constants, mkdirSync as mkdirSync8, rmSync as rmSync3, statSync as statSync10, writeFileSync as writeFileSync4 } from "node:fs";
+import { join as join26, resolve as resolve9 } from "node:path";
+var ok = (id, detail2) => ({ id, level: "ok", detail: detail2, fix: null });
+var warn = (id, detail2, fix) => ({ id, level: "warn", detail: detail2, fix });
+var bad = (id, detail2, fix) => ({ id, level: "fail", detail: detail2, fix });
+function yamlFile(store, name) {
+  const text2 = store.ws.read(join26(store.dir, name));
+  try {
+    const v = (0, import_yaml6.parse)(text2 ?? "");
+    return v && typeof v === "object" ? v : {};
+  } catch {
+    return null;
+  }
+}
+var branchOf = (home2) => git(["-C", home2, "branch", "--show-current"])?.trim() || null;
+function baseBranch(store) {
+  const base2 = store.baseBranch();
+  return git(["-C", store.home, "rev-parse", "--verify", "-q", `refs/heads/${base2}`]) !== null ? ok("base-branch", base2) : bad("base-branch", `the base branch '${base2}' doesn't exist`, "set git.default_branch in .crew/config.yaml");
+}
+function mainCheckout(store) {
+  if (!store.settings().plan_worktrees) return ok("main-checkout", "not needed without hub.plan_worktrees");
+  const base2 = store.baseBranch(), at = branchOf(store.home);
+  return at === base2 ? ok("main-checkout", `${store.home} is on ${base2}`) : bad(
+    "main-checkout",
+    `the main checkout (${store.home}) is on ${at ?? "a detached HEAD"}, not ${base2}`,
+    `switch it back: git -C ${store.home} switch ${base2}`
+  );
+}
+function planWorktrees(store) {
+  return store.settings().plan_worktrees ? ok("plan-worktrees", "on") : warn("plan-worktrees", "hub.plan_worktrees is off: plans can't run side by side", "set hub.plan_worktrees: true in .crew/config.yaml");
+}
+function vendoredHub(store) {
+  return store.ws.isFile(join26(store.dir, "bin", "crew.mjs")) ? ok("vendored-hub", ".crew/bin/crew.mjs") : bad("vendored-hub", ".crew/bin/crew.mjs is missing", "run `crew.mjs init`");
+}
+function agents2(store) {
+  const problems = agentProblems(store);
+  if (!problems.length) return [ok("agents", "rendered and up to date")];
+  return problems.map((p) => warn(
+    "agents",
+    `${store.rel(p.path)} is ${p.problem}`,
+    "the human runs `crew.mjs agents` and starts a new session"
+  ));
+}
+function hookCommands2(store) {
+  const text2 = store.ws.read(join26(store.home, ".claude", "settings.json"));
+  if (text2 === null) return null;
+  try {
+    const hooks2 = JSON.parse(text2).hooks ?? {};
+    return Object.fromEntries(Object.entries(hooks2).map(([event, groups]) => [event, (Array.isArray(groups) ? groups : []).flatMap((g) => (g.hooks ?? []).map((h) => h.command ?? ""))]));
+  } catch {
+    return null;
+  }
+}
+var HOOKS2 = [
+  { event: "PreToolUse", re: /crew\.mjs guard\b/, name: "the PreToolUse guard (`crew.mjs guard`)", required: true },
+  { event: "SubagentStop", re: /crew\.mjs usage --hook\b/, name: "the SubagentStop `crew.mjs usage --hook`", required: false },
+  { event: "PostToolUse", re: /crew\.mjs activity --hook\b/, name: "the PostToolUse `crew.mjs activity --hook`", required: false }
+];
+function hooks(store) {
+  const commands = hookCommands2(store) ?? {}, fix = "the human runs `/crew:guidelines --refresh` (.claude/settings.json is protected)";
+  const out = HOOKS2.filter((h) => !(commands[h.event] ?? []).some((c) => h.re.test(c))).map((h) => (h.required ? bad : warn)("hooks", `.claude/settings.json has no ${h.name}`, fix));
+  return out.length ? out : [ok("hooks", "guard, usage and activity hooks are set")];
+}
+function generated2(store) {
+  const build = yamlBlock(store.ws.read(join26(store.dir, "config.yaml")) ?? "", "hub").build;
+  if (!build) return ok("generated", "no hub.build");
+  const n2 = trackedFiles(store.home).generated.size;
+  return n2 ? ok("generated", `${n2} tracked file(s) marked linguist-generated`) : warn(
+    "generated",
+    "hub.build is set but .gitattributes marks no tracked file linguist-generated: Release can't tell generated files from source",
+    "mark the build's outputs linguist-generated in .gitattributes"
+  );
+}
+function shared(store) {
+  const config2 = yamlFile(store, "config.yaml");
+  const v = config2?.hub?.shared;
+  if (v === void 0 || v === null) {
+    return warn(
+      "shared",
+      "no hub.shared: every overlap on a registry or doc blocks staffing",
+      "list the shared files (exact files, not directories) under hub.shared in .crew/config.yaml"
+    );
+  }
+  return Array.isArray(v) && v.every((g) => typeof g === "string") ? ok("shared", `${v.length} shared glob(s)`) : bad("shared", "hub.shared: expected a list of path globs", "write hub.shared as a YAML list of exact files");
+}
+function policy(store) {
+  const r = resolvePolicy(store.home, store.dir);
+  if (r.errors.length) return bad("policy", r.errors[0], "fix .crew/policy.yaml (`crew.mjs policy check`)");
+  const preset = yamlFile(store, "policy.yaml")?.preset;
+  return typeof preset === "string" ? ok("policy", `preset: ${preset}`) : warn(
+    "policy",
+    "no preset: the team runs best under `preset: lifecycle` \u2014 a policy change, yours",
+    "the human sets `preset: lifecycle` in .crew/policy.yaml, or decides against it"
+  );
+}
+function hubCommits(store) {
+  if (!store.settings().plan_worktrees) return ok("hub-commits", "not needed without hub.plan_worktrees");
+  const base2 = store.baseBranch(), refused = probeHubCommit(store.home);
+  return refused === null ? ok("hub-commits", `the git hooks accept a hub commit on ${base2}`) : bad(
+    "hub-commits",
+    `${refused.hook} refuses a hub commit on ${base2}: ${refused.message}`,
+    `allow commits on ${base2} whose staged paths are all under .crew/ in your pre-commit (crew's git-setup hook does), or turn hub.plan_worktrees off`
+  );
+}
+function doctorChecks(store, progress = () => {
+}) {
+  const checks = [
+    baseBranch(store),
+    mainCheckout(store),
+    planWorktrees(store),
+    vendoredHub(store),
+    ...agents2(store),
+    ...hooks(store),
+    generated2(store),
+    shared(store),
+    policy(store)
+  ];
+  if (store.settings().plan_worktrees) progress("doctor: running the git hooks against a probe hub commit (hub-commits)\u2026");
+  return [...checks, hubCommits(store)];
+}
+function doctor(store, json = false) {
+  store.require();
+  const checks = doctorChecks(store, json ? void 0 : (line3) => process.stderr.write(`${line3}
+`));
+  if (json) store.say(JSON.stringify({ checks }, null, 2));
+  else {
+    for (const c of checks) store.say(`${c.level.toUpperCase().padEnd(4)}  ${c.id}: ${c.detail}${c.fix ? ` \u2192 ${c.fix}` : ""}`);
+  }
+  return checks.some((c) => c.level === "fail") ? 1 : 0;
+}
+function runHook(home2, hook, args, env) {
+  const opts = { cwd: home2, env, encoding: "utf8" };
+  let r = spawnSync8("git", ["hook", "run", "--ignore-missing", hook, ...args.length ? ["--", ...args] : []], opts);
+  if (r.status === 129 || /not a git command|usage: git hook/.test(r.stderr ?? "")) {
+    const dir = git(["-C", home2, "rev-parse", "--git-path", "hooks"])?.trim();
+    const file = dir ? resolve9(home2, dir, hook) : null;
+    if (!file || !isExecutable(file)) return null;
+    r = spawnSync8(file, args, opts);
+  }
+  if (r.status === 0) return null;
+  const lines = `${r.stderr ?? ""}
+${r.stdout ?? ""}`.split("\n").map((l) => l.trim()).filter(Boolean);
+  return lines[0] ?? `exited with ${r.status ?? r.signal}`;
+}
+function isExecutable(file) {
+  try {
+    accessSync(file, constants.X_OK);
+    return statSync10(file).isFile();
+  } catch {
+    return false;
+  }
+}
+function probeHubCommit(home2) {
+  const common = commonDir(home2);
+  if (!common) return null;
+  const dir = join26(common, "crew");
+  mkdirSync8(dir, { recursive: true });
+  const index = join26(dir, `doctor-index-${process.pid}`), msg = join26(dir, `doctor-msg-${process.pid}`);
+  const env = { ...process.env, GIT_INDEX_FILE: index };
+  const g = (args, input) => spawnSync8("git", ["-C", home2, ...args], { env, input, encoding: "utf8" });
+  try {
+    if (g(["rev-parse", "--verify", "-q", "HEAD"]).status === 0) g(["read-tree", "HEAD"]);
+    else g(["read-tree", "--empty"]);
+    const existing = g(["ls-tree", "-r", "HEAD", "--", ".crew"]).stdout?.split("\n").find((l) => / blob /.test(l));
+    const blob = existing?.split(/\s+/)[2] ?? g(["hash-object", "-w", "--stdin"], "").stdout.trim();
+    g(["update-index", "--add", "--cacheinfo", `100644,${blob},.crew/.doctor-probe`]);
+    const pre = runHook(home2, "pre-commit", [], env);
+    if (pre !== null) return { hook: "pre-commit", message: pre };
+    writeFileSync4(msg, "chore(hub): doctor probe\n");
+    const cm = runHook(home2, "commit-msg", [msg], env);
+    return cm === null ? null : { hook: "commit-msg", message: cm };
+  } finally {
+    for (const f of [index, `${index}.lock`, msg]) rmSync3(f, { force: true });
+  }
+}
+
+// src/hub/commands/views/doctor.reg.ts
+var registration28 = {
+  usage: [
+    `  ${"doctor [--json]".padEnd(46)}is this project ready for the loop: OK/WARN/FAIL per check, with the fix`
+  ],
+  cli: {
+    doctor: { pos: [], flag: ["json"], run: (s2, a) => doctor(s2, !!a.opt.json) }
+  },
+  tools: {
+    doctor: {
+      description: "Whether this project is ready for the autonomous loop (`doctor --json`): each check's id, level (ok, warn, fail), detail and fix; an error result means a check failed.",
+      input: obj(),
+      run: (st) => doctor(st, true)
     }
   }
 };
@@ -13724,7 +14940,7 @@ function status(store, write) {
   const live = runningLines(store);
   if (live.length) lines.push("## Running now", "", ...live, "");
   const claims = store.ledger.claims();
-  lines.push("## Now", "", ...planTable(byStatus(plans2, ["in-progress", "in-review"]), plans2, items2, claims), "");
+  lines.push("## Now", "", ...planTable(byStatus(plans2, ["in-progress", "in-review", "accepted"]), plans2, items2, claims), "");
   lines.push("## Blocked", "", ...blocked(plans2), "");
   const asks = openQuestions(store.ledger.events());
   if (asks.length) {
@@ -13810,7 +15026,7 @@ function recentlyDone(plans2) {
 }
 
 // src/hub/commands/views/reports.reg.ts
-var registration26 = {
+var registration29 = {
   cli: {
     status: { pos: [], flag: ["write"], run: (s2, a) => status(s2, !!a.opt.write) }
   },
@@ -13824,7 +15040,7 @@ var registration26 = {
 };
 
 // src/hub/commands/views/graph.reg.ts
-var registration27 = {
+var registration30 = {
   tools: {
     graph: {
       description: "Every tracked document (idea, goals, items, plans) with status, gates, relations and the focus, as JSON (`crew.mjs export --json`).",
@@ -13852,20 +15068,23 @@ var REGISTRATIONS = [
   ["work/review.reg.ts", registration11],
   ["work/release.reg.ts", registration12],
   ["work/suite.reg.ts", registration13],
-  ["memory/context.reg.ts", registration14],
-  ["views/advisor.reg.ts", registration15],
-  ["team/guard.reg.ts", registration16],
-  ["team/team.reg.ts", registration17],
-  ["team/dispatch.reg.ts", registration18],
-  ["team/liveness.reg.ts", registration19],
-  ["team/agents.reg.ts", registration20],
-  ["team/questions.reg.ts", registration21],
-  ["views/export.reg.ts", registration22],
-  ["views/ui.reg.ts", registration23],
-  ["views/design.reg.ts", registration24],
-  ["views/checks.reg.ts", registration25],
-  ["views/reports.reg.ts", registration26],
-  ["views/graph.reg.ts", registration27]
+  ["work/land.reg.ts", registration14],
+  ["memory/context.reg.ts", registration15],
+  ["views/advisor.reg.ts", registration16],
+  ["team/guard.reg.ts", registration17],
+  ["team/team.reg.ts", registration18],
+  ["team/dispatch.reg.ts", registration19],
+  ["team/liveness.reg.ts", registration20],
+  ["team/agents.reg.ts", registration21],
+  ["team/questions.reg.ts", registration22],
+  ["team/inbox.reg.ts", registration23],
+  ["views/export.reg.ts", registration24],
+  ["views/ui.reg.ts", registration25],
+  ["views/design.reg.ts", registration26],
+  ["views/checks.reg.ts", registration27],
+  ["views/doctor.reg.ts", registration28],
+  ["views/reports.reg.ts", registration29],
+  ["views/graph.reg.ts", registration30]
 ];
 var REGISTRY = load(REGISTRATIONS);
 
@@ -13884,7 +15103,7 @@ var help = () => `${HEADER}${REGISTRY.usage.map((l) => `${l}
 var USAGE = help();
 var UsageError = class extends Error {
 };
-function parse7(argv) {
+function parse9(argv) {
   const [cmd, ...rest] = argv;
   const spec = COMMANDS[cmd];
   if (!spec) throw new UsageError(cmd ? `unknown command '${cmd}'` : "a command is required");
@@ -13939,7 +15158,7 @@ function main(argv, open = () => Store.open()) {
   }
   let parsed;
   try {
-    parsed = parse7(argv);
+    parsed = parse9(argv);
   } catch (e) {
     process.stderr.write(`usage: crew.mjs <command> \u2026  (crew.mjs --help)
 crew.mjs: error: ${e.message}

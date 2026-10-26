@@ -6,14 +6,15 @@
 import { basename } from "node:path";
 
 /** One shell word: its raw offsets in the command and its dequoted value. */
-interface Word { start: number; end: number; value: string; raw: string }
-/** One simple command: its words (redirections left out) and the heredoc / here-string bodies fed to it. */
-interface Simple { words: Word[]; bodies: string[] }
+export interface Word { start: number; end: number; value: string; raw: string }
+/** One simple command: its words (redirections left out), the heredoc / here-string bodies fed to it and the target word
+ * of each output redirection (`>`, `>>`, `>|`, `&>`, `&>>`, `>&WORD`). */
+export interface Simple { words: Word[]; bodies: string[]; targets: Word[] }
 
 const HUB = /\bcrew\.mjs\b/;
-const ASSIGN = /^[A-Za-z_]\w*=/;
+export const ASSIGN = /^[A-Za-z_]\w*=/;
 /** Words that can come before the command itself. */
-const PREFIX = new Set(["{", "!", "if", "then", "else", "elif", "do", "while", "until", "time", "builtin", "command", "exec", "env", "nohup"]);
+export const PREFIX = new Set(["{", "(", "!", "if", "then", "else", "elif", "do", "while", "until", "time", "builtin", "command", "exec", "env", "nohup"]);
 const SHELLS = new Set(["sh", "bash", "zsh", "dash", "ksh"]);
 const RUNTIMES = new Set(["node", "bun", "deno"]);
 /** Commands whose arguments are themselves run as code or as a command. */
@@ -99,6 +100,7 @@ export function parse(s: string): Simple[] {
   const redirect = (cmd: Simple, stop: string) => {
     if (s[i] === "&") i++;
     const op = s[i++];
+    const out = op === ">";
     let heredoc = false, herestring = false, strip = false;
     if (op === "<" && s[i] === "<") {
       i++;
@@ -119,13 +121,14 @@ export function parse(s: string): Simple[] {
     const target = word(stop);
     if (heredoc) pending.push({ delim: target.value, strip, cmd });
     else if (herestring) cmd.bodies.push(target.value);
+    else if (out) cmd.targets.push(target);
   };
 
   function list(stop: string): void {
-    let cur: Simple = { words: [], bodies: [] };
+    let cur: Simple = { words: [], bodies: [], targets: [] };
     all.push(cur);
     const end = () => {
-      cur = { words: [], bodies: [] };
+      cur = { words: [], bodies: [], targets: [] };
       all.push(cur);
     };
     while (i < n) {
@@ -161,17 +164,28 @@ export function parse(s: string): Simple[] {
   }
 
   list("");
-  return all.filter((c) => c.words.length || c.bodies.length);
+  return all.filter((c) => c.words.length || c.bodies.length || c.targets.length);
 }
 
 const base = (w: Word | undefined) => (w ? basename(w.value) : "");
 
-/** The index of a simple command's head: past `NAME=value` assignments and prefix words. */
-function headAt(c: Simple): number {
+/** The index of a command's head (BUG-012): past `NAME=value` assignments, prefix words, a function head (`function NAME`)
+ * and a case head (`case WORD in PATTERN`); a lone `esac` has none. parse() already splits `name()` and a case arm's
+ * `pattern)` off as commands of their own, so a function or arm body starts a command, and a body runs where it is defined. */
+export function skipPrefix(words: Word[]): number {
   let h = 0;
-  while (h < c.words.length && (ASSIGN.test(c.words[h].raw) || PREFIX.has(c.words[h].raw))) h++;
-  return h;
+  while (h < words.length) {
+    const w = words[h].raw;
+    if (ASSIGN.test(w) || PREFIX.has(w) || w === "esac") h++;
+    else if (w === "function") h += 2;
+    else if (w === "case" && words[h + 2]?.raw === "in") h += 4;
+    else break;
+  }
+  return Math.min(h, words.length);
 }
+
+/** The index of a simple command's head. */
+const headAt = (c: Simple) => skipPrefix(c.words);
 
 /** The word of a simple command that is the executed hub program, or null. */
 function hubWord(c: Simple): Word | null {
@@ -182,7 +196,8 @@ function hubWord(c: Simple): Word | null {
   return base(script) === "crew.mjs" ? script! : null;
 }
 
-/** Why the guard can't give a simple command's hub call identity, or null. */
+/** Why the guard can't give a simple command's hub call identity, or null. Only called once the command names crew.mjs, so
+ * a runtime running a `$VAR` script there is a hub path held in a variable (BUG-031). */
 function refusal(c: Simple): string | null {
   const h = headAt(c), head = c.words[h];
   if (!head) return null;
@@ -203,6 +218,8 @@ function refusal(c: Simple): string | null {
   if (RUNTIMES.has(name)) {
     const k = opt(/^(-[ep]|-pe|--eval|--print)(=|$)/);
     if (k >= 0 && later(k)) return NESTED;
+    const script = rest.find((w) => !w.value.startsWith("-"));
+    if (script && /^"?\$[A-Za-z_{]/.test(script.raw)) return VARIABLE;
   }
   if (name === "git" && rest.some((w) => /^!|=!/.test(w.value) && HUB.test(w.value))) return NESTED;
   return null;

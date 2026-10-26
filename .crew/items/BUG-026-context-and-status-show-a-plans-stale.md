@@ -2,13 +2,14 @@
 id: BUG-026
 type: bug
 title: context and status show a plan's stale branch copy over the main checkout's document
-status: triaged
+status: done
 severity: S2
 priority: P1
 goal: G-007
 plan: P-039
 created: 2026-10-25
-closed:
+closed: 2026-10-26
+completed: 2026-10-26
 ---
 
 # BUG-026: context and status show a plan's stale branch copy over the main checkout's document
@@ -41,3 +42,4 @@ The branch override looks like a migration path for plans specced before hub sta
 - 2026-10-25: Triaged S2/P1 under G-007; fixed by P-039 (drop plans(true)). Asked the Architect to add it to P-039's items.
 - 2026-10-25: Architect: linked to P-039 (items += BUG-026; AC7 is its regression test).
 - 2026-10-25: P-033: checkpoint fingerprints AC6 from the stale branch copy (ac_text a7a2c50567) while done reads main's amended AC6 (2e820ee525), so done refuses 'AC6 has no evidence' however often QA re-records
+- 2026-10-26: status triaged → done — delivered by P-039

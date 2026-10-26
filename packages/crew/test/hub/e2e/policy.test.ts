@@ -1,10 +1,12 @@
 /** The hub, end to end — policy: layered values and their sources, the org's ceilings, the pinned playbook ref, human
  * and role gates, budgets and human-led triage. Ported from tests/crew/test_hub.py (section "policy"). */
+import { join } from "node:path";
 import { beforeEach, expect, it } from "vitest";
 import { Repo } from "../../helpers/repo.js";
 import { GOAL_DRAFT } from "./fixtures.js";
 import { init, item, newGoal, newPlan, planFile, read, tr, write } from "./helpers.js";
 import { events, mcpCall, orgPlaybook, readyPlan } from "./sections.js";
+import { LIFECYCLE, lifecycle } from "./team-helpers.js";
 
 let repo: Repo;
 beforeEach(() => { repo = Repo.create(); });
@@ -94,7 +96,7 @@ it("a human gate is refused over MCP and approved on the CLI", () => {
 
 it("role gates", () => {
   init(repo, { commit: true, mode: "" });
-  repo.write(".crew/policy.yaml", "mode: ai-native\nrole_gates:\n  plan.done: qa\n");
+  repo.write(".crew/policy.yaml", "mode: ai-native\nrole_gates:\n  plan.accepted: qa\n");
   readyPlan(repo);
   repo.commit("chore(hub): plan");
   repo.env.CREW_ROLE = "developer";
@@ -104,12 +106,55 @@ it("role gates", () => {
   expect(tr(repo, "move", "P-001", "in-review").returncode).toBe(0);
   repo.env.CREW_RUN = "reviewer"; // another run, with evidence, but in the wrong role
   expect(tr(repo, "checkpoint", "P-001", "--run", "true", "--ac", "all").returncode).toBe(0);
-  const r = tr(repo, "move", "P-001", "done");
+  const r = tr(repo, "move", "P-001", "accepted");
   expect(r.returncode).not.toBe(0);
   expect(r.stderr).toContain("for the qa role; this run is the developer role");
   repo.env.CREW_ROLE = "qa";
-  expect(tr(repo, "move", "P-001", "done").returncode).toBe(0);
+  expect(tr(repo, "move", "P-001", "accepted").returncode).toBe(0);
   expect(events(repo, "--type", "move").at(-1)!.role).toBe("qa");
+});
+
+it("lifecycle gives regoal to the PM; policy show lists both steps (P-055 AC7)", () => {
+  init(repo, { commit: true, mode: "" });
+  repo.write(".crew/policy.yaml", "preset: lifecycle\n");
+  const show = tr(repo, "policy", "show").stdout;
+  expect(show).toMatch(/item\.regoaled.*pm/);
+  expect(show).toMatch(/plan\.regoaled.*pm/);
+  expect(tr(repo, "policy", "check").returncode).toBe(0);
+  expect(tr(repo, "--as", "pm", "new-item", "feat", "Dark mode", "--why", "users asked").returncode).toBe(0);
+  repo.write(".crew/drafts/goal.md", "## Outcome\nx\n\n## Scope\n- x\n\n## Acceptance criteria\n- [ ] x\n\n## Breakdown\n- FEAT-001\n");
+  expect(tr(repo, "new-goal", "Accounts", "--from", ".crew/drafts/goal.md").returncode).toBe(0);
+  let r = tr(repo, "--as", "developer", "regoal", "FEAT-001", "none", "--note", "x");
+  expect(r.returncode).not.toBe(0);
+  expect(r.stderr).toContain("is for the pm role; this run is the developer role");
+  expect(item(repo, "FEAT-001")).toContain("goal: G-001");
+  for (const who of [["--as", "executive"], []]) { // re-goal is the PM's alone (executive's decision on review)
+    for (const cmd of [["regoal", "FEAT-001", "none", "--note", "off"], ["triage", "FEAT-001", "--goal", "none", "--note", "off"]]) {
+      r = tr(repo, ...who, ...cmd);
+      expect(r.returncode, `${who.join(" ")} ${cmd[0]}`).not.toBe(0);
+      expect(r.stderr).toContain("is for the pm role");
+      expect(item(repo, "FEAT-001")).toContain("goal: G-001");
+    }
+  }
+  r = tr(repo, "--as", "pm", "regoal", "FEAT-001", "none", "--note", "off");
+  expect(r.returncode, r.stderr).toBe(0);
+  expect(item(repo, "FEAT-001")).toMatch(/^goal:\s*$/m);
+  r = tr(repo, "--as", "pm", "triage", "FEAT-001", "--priority", "P2", "--goal", "G-001");
+  expect(r.returncode, r.stderr).toBe(0);
+  expect(item(repo, "FEAT-001")).toContain("goal: G-001");
+});
+
+it("intake triage at capture leaves the item new for a caller outside item.triaged's role (P-055)", () => {
+  init(repo, { commit: true, mode: "" });
+  repo.write(".crew/policy.yaml", "preset: lifecycle\n");
+  for (const [who, id] of [[["--as", "executive"], "FEAT-001"], [[], "FEAT-002"], [["--as", "developer"], "FEAT-003"]] as const) {
+    const r = tr(repo, ...who, "new-item", "feat", `Feat ${id}`, "--why", "y", "--priority", "P2");
+    expect(r.returncode, `${who.join(" ")} ${r.stderr}`).toBe(0);
+    expect(r.stdout).toContain(`${id} stays new — the pm triages it`);
+    expect(item(repo, id)).toContain("status: new");
+  }
+  expect(tr(repo, "--as", "pm", "new-item", "feat", "By PM", "--why", "y", "--priority", "P2").returncode).toBe(0);
+  expect(item(repo, "FEAT-004")).toContain("status: triaged");
 });
 
 it("budgets stop new work until a human approves", () => {
@@ -146,4 +191,27 @@ it("human-led triage needs a human", () => {
   expect(tr(repo, "triage", "CHORE-001", "--approved-by", "Amit").returncode).toBe(0);
   newGoal(repo, "Accounts", GOAL_DRAFT, "--priority", "P1");
   expect(item(repo, "FEAT-001")).toContain("status: new"); // breakdown items wait for the human too
+});
+
+it("goal-approval tells the human once per new goal", () => {
+  lifecycle(repo);
+  const out = join(repo.path, "notified.jsonl");
+  const sent = () => read(out).split("\n").filter((line) => line.trim()).map((line) => JSON.parse(line));
+  repo.write(".crew/policy.yaml", LIFECYCLE + `notify: { command: "cat >> ${out}; echo >> ${out}", on: [goal-approval] }\n`);
+  expect(newGoal(repo).returncode).toBe(0);
+  expect(sent().map((e) => [e.kind, e.ref])).toEqual([["goal-approval", "G-001"]]);
+  for (const s of ["G-001", "Accounts", "move G-001 active --approved-by"]) expect(sent()[0].text).toContain(s);
+  expect(newGoal(repo, "Payments").returncode).toBe(0);
+  expect(tr(repo, "move", "G-001", "active", "--approved-by", "Amit").returncode).toBe(0);
+  tr(repo, "status");
+  expect(sent().map((e) => [e.kind, e.ref])).toEqual([["goal-approval", "G-001"], ["goal-approval", "G-002"]]);
+  expect(events(repo, "--type", "notify").map((e) => e.ref).sort()).toEqual(["G-001", "G-002"]);
+  repo.write(".crew/policy.yaml", LIFECYCLE + `notify: { command: "cat >> ${out}; echo >> ${out}", on: [escalation] }\n`);
+  expect(newGoal(repo, "Search").returncode).toBe(0);
+  expect(sent()).toHaveLength(2);
+  expect(events(repo, "--type", "notify").filter((e) => e.ref === "G-003")).toEqual([]);
+  repo.write(".crew/policy.yaml", LIFECYCLE + "notify: { on: [goal-approval] }\n");
+  expect(tr(repo, "policy", "check").stdout.trim()).toBe("Policy OK.");
+  repo.write(".crew/policy.yaml", LIFECYCLE + "notify: { on: [lunch] }\n");
+  expect(tr(repo, "policy", "check").stdout).toMatch(/notify.on: 'lunch' is not one of .*goal-approval/);
 });

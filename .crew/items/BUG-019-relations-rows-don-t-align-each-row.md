@@ -2,13 +2,14 @@
 id: BUG-019
 type: bug
 title: Relations rows don't align: each row sizes its own chip column
-status: triaged
+status: done
 severity: S4
 priority: P3
 goal: G-001
 plan: P-020
 created: 2026-10-24
-closed:
+closed: 2026-10-26
+completed: 2026-10-26
 ---
 
 # BUG-019: Relations rows don't align: each row sizes its own chip column
@@ -39,3 +40,5 @@ Cosmetic (S4): titles are harder to scan down a group. Fails the "aligned in a g
 ## Notes
 Found by QA while testing P-020.
 - 2026-10-24: status new → triaged — priority P3, severity S4
+- 2026-10-26: DONE: fixed by P-020 (78a3edf). ui/src/styles/views.css .relations__group li uses grid-template-columns 96px minmax(0,1fr) (fixed chip column sized for 'superseded'), so titles align. No remaining work.
+- 2026-10-26: status triaged → done — DONE per Architect review: fixed by P-020 (78a3edf).

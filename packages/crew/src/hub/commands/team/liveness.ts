@@ -5,6 +5,7 @@ import type { Store } from "../../core/store.js";
 import { fail } from "../../core/text.js";
 import { ask, openQuestions } from "./questions.js";
 import { notify } from "./autonomy.js";
+import { running } from "./activity.js";
 
 const HOUR = 3_600_000;
 const ACTIVITY = new Set(["claim", "checkpoint", "move", "log"]);
@@ -56,6 +57,17 @@ export function resumeTeam(store: Store, note?: string): void {
   store.say("Team resumed.");
 }
 
+/** `end-run`: mark a stopped or crashed agent's run ended (TaskStop fires no hook), so it stops being live and gives no
+ * dispatch entry until it acts again. The executive's or the Director's call. */
+export function endRun(store: Store, run: string, note?: string): void {
+  store.require();
+  const role = store.ledger.who.role;
+  if (role && role !== "executive" && role !== "director") fail(`Only the executive or the director ends a run; this run is the ${role} role.`);
+  if (!running(store).some((r) => r.run === run)) fail(`${run} is not running.`);
+  store.ledger.record("end-run", null, { ended: run, ...(note ? { note } : {}) });
+  store.say(`${run} ended: no longer live.`);
+}
+
 /** A limit (bounces, attempts) just crossed on a plan: ask the Director, once per crossing. The question blocks the plan. */
 export function escalateLimit(store: Store, ref: string, count: number, limit: number | null, what: string): void {
   if (limit === null || count !== limit + 1) return;
@@ -63,9 +75,9 @@ export function escalateLimit(store: Store, ref: string, count: number, limit: n
   ask(store, ref, "director", `${ref} ${what} ${count} times (limit ${limit}): decide — re-spec it, reassign it, split it or drop it.`);
 }
 
-/** How many times a plan came back from review (in-review → in-progress). */
-export const bounces = (events: LedgerEvent[], ref: string) =>
-  events.filter((e) => e.type === "move" && e.ref === ref && e.from === "in-review" && e.to === "in-progress").length;
+/** How many times a plan came back from review or a failed land (in-review or accepted → in-progress). */
+export const bounces = (events: LedgerEvent[], ref: string) => events.filter((e) => e.type === "move" && e.ref === ref
+  && (e.from === "in-review" || e.from === "accepted") && e.to === "in-progress").length;
 
 export const attempts = (events: LedgerEvent[], ref: string) =>
   events.filter((e) => e.type === "checkpoint" && e.ref === ref && e.attempt).length;

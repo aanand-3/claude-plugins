@@ -1,5 +1,6 @@
 /** planning: its CLI commands, help lines and MCP tools (moved verbatim from cli.ts and mcp.ts). */
 import { init, newGoal, newIdea, newPlan, setFocus } from "./planning.js";
+import { initDefaults } from "./setup.js";
 import { DRAFTED, obj, type Registration, s, str, text } from "../../registry.js";
 
 export const registration: Registration = {
@@ -11,7 +12,7 @@ export const registration: Registration = {
     "  new-plan TITLE --from DRAFT [--goal] [--items FEAT-001,BUG-002] [--touches \"src/a/**, docs/b.md\"] [--depends P-002]",
   ],
   cli: {
-    init: { pos: [], run: (s) => init(s) },
+    init: { pos: [], run: (s) => { init(s); initDefaults(s); } },
     "new-idea": { pos: ["title"], ...DRAFTED,
       run: (s, a) => newIdea(s, a.pos[0], str(a, "from")!, !!a.opt["keep-draft"]) },
     "new-goal": { pos: ["title"], ...DRAFTED, str: ["from", "priority"],

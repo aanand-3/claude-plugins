@@ -93,6 +93,21 @@ describe("hub calls the guard can't give identity to are refused", () => {
     expect(rewrite('D=/tmp; echo "$D"; $EDITOR x')).toBe('D=/tmp; echo "$D"; $EDITOR x'); // no hub named: not refused
   });
 
+  it("a runtime running a hub path held in a variable (BUG-031)", () => {
+    for (const cmd of [
+      "C=/x/.crew/bin/crew.mjs; node $C checkpoint P-1", "C=/x/.crew/bin/crew.mjs; bun $C next", "C=/x/.crew/bin/crew.mjs; deno $C next",
+      'C=/x/.crew/bin/crew.mjs; node "$C" next', "C=/x/.crew/bin/crew.mjs; node ${C} next", 'C=/x/.crew/bin/crew.mjs; node "${C}" next',
+      "C=/x/.crew/bin/crew.mjs\nnode --no-warnings $C next", "C=/x/.crew/bin/crew.mjs && cd /y && node $C next",
+    ]) expect(deny(cmd), cmd).toContain("variable");
+    for (const cmd of ["node $X build.js", 'X=dist/b.js; node "$X" build'])
+      expect(rewrite(cmd), cmd).toBe(cmd); // no hub named: not refused
+    for (const [cmd, out] of [
+      [`cd /repo && ${HUB} next`, `cd /repo && ${ID} next`],
+      ["node /abs/repo/.crew/bin/crew.mjs next", `node /abs/repo/.crew/bin/crew.mjs ${F} next`],
+      [`for p in P-1 P-2; do ${HUB} context $p; done`, `for p in P-1 P-2; do ${ID} context $p; done`],
+    ]) expect(rewrite(cmd), cmd).toBe(out);
+  });
+
   it("nested shell code (AC5)", () => {
     for (const cmd of [
       `bash -c '${HUB} next'`, `sh -c "${HUB} next"`, `zsh -lc '${HUB} next'`, `eval "${HUB} next"`,
@@ -120,4 +135,17 @@ it("hubcall.ts is pure and small (AC10)", () => {
   const src = readFileSync(new URL("../../src/hub/commands/team/hubcall.ts", import.meta.url), "utf8");
   expect([...src.matchAll(/^import .* from "([^"]+)";$/gm)].map((m) => m[1])).toEqual(["node:path"]);
   expect(src.split("\n").length).toBeLessThan(300);
+});
+
+describe("hub calls behind subshells, function heads and case arms (P-058, BUG-012)", () => {
+  it("still get identity (AC5)", () => {
+    for (const [cmd, out] of [
+      [`( ( ${HUB} next ) )`, `( ( ${ID} next ) )`],
+      [`f() { ${HUB} next; }; f`, `f() { ${ID} next; }; f`],
+      [`function f { ${HUB} next; }; f`, `function f { ${ID} next; }; f`],
+      [`function f() { ${HUB} next; }; f`, `function f() { ${ID} next; }; f`],
+      [`case x in x) ${HUB} next;; esac`, `case x in x) ${ID} next;; esac`],
+      [`case x in a|b) echo y;; *) ${HUB} next;; esac`, `case x in a|b) echo y;; *) ${ID} next;; esac`],
+    ]) expect(rewrite(cmd), cmd).toBe(out);
+  });
 });

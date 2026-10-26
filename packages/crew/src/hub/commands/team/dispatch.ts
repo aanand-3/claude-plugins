@@ -7,8 +7,9 @@ import * as q from "../../core/work/queries.js";
 import type { Store } from "../../core/store.js";
 import { byKey } from "../../core/text.js";
 import { evidence } from "../work/execution.js";
-import { mergeOrder } from "../work/release.js";
+import { landedProblems, mergeOrder } from "../work/release.js";
 import { reviewProblems } from "../work/review.js";
+import { running } from "./activity.js";
 import { paused, staleClaims } from "./liveness.js";
 import { escalationHolds, openQuestions } from "./questions.js";
 import { staffing } from "./team.js";
@@ -61,9 +62,11 @@ const ROWS: Row[] = [
   // 1. questions to a role (escalations to the executive are the human's)
   (v) => openQuestions(v.events).filter((x) => !x.escalation && x.to !== v.store.policy.policy.escalation.to)
     .map((x) => entry(x.to, x.id, `answer ${x.id}${x.ref ? ` about ${x.ref}` : ""}: ${x.text}`)),
-  // 2. Director exceptions: stale claims, blocked plans, a focus goal that is gone while another goal is active
+  // 2. Director exceptions: stale claims, idle runs, blocked plans, a focus goal that is gone while another goal is active
   (v) => staleClaims(v.store, v.events).map((s) => entry("director", s.ref,
     `reassign ${s.ref}: its claim by ${s.actor} (${s.run}) has had no activity for ${s.hours}h`)),
+  (v) => running(v.store).filter((r) => r.idle).map((r) => entry("director", r.ref,
+    `run ${r.run} on ${r.ref ?? "no document"} idle for ${Math.floor(r.minutes)} min: resume or reassign`)),
   (v) => v.withStatus("blocked").map((p) => entry("director", p.id, `unblock ${p.id}: ${p.get("title")}`)),
   (v) => {
     const g = v.goals.get(v.focus), next = q.goalQueue(v.goals, v.focus)[0];
@@ -73,14 +76,19 @@ const ROWS: Row[] = [
   // 3. urgent bugs
   (v) => v.ranked("new").filter(urgent).map((i) => entry("pm", i.id, `triage ${i.id}: ${i.get("title")} (urgent)`)),
   // 4. release: merging is serial
-  (v) => mergeOrder(v.store).merge.slice(0, 1).map((p) => entry("release", p.id, `merge ${p.id}: ${p.branch} (first in merge-order)`)),
-  // 5. in review: a failing check, then the review, then QA's evidence, then completion
+  (v) => mergeOrder(v.store).merge.slice(0, 1).map((p) => entry("release", p.id, p.legacy
+    ? `merge ${p.id}: ${p.branch} by hand (first in merge-order; completed before accepted)` : `land ${p.id}: ${p.title} (first in merge-order)`)),
+  // 4b. landed: the PM completes it
+  (v) => v.withStatus("accepted").filter((p) => !landedProblems(v.store, p).length)
+    .map((p) => entry("pm", p.id, `complete ${p.id}: move ${p.id} done`)),
+  // 5. in review: a failing check, then the code review, the design review (UI plans), QA's evidence, then completion
   (v) => v.withStatus("in-review").map((p) => {
     const ev = evidence(v.store, p);
     if (ev.some((e) => e.verify && !e.verify.ok)) return entry("developer", p.id, `fix ${p.id}: a check failed`, v.lastRun(p.id, "claim"));
-    if (reviewProblems(v.store, p).length) return entry("architect", p.id, `review ${p.id}: ${p.get("title")}`);
+    if (reviewProblems(v.store, p, "code").length) return entry("architect", p.id, `review ${p.id}: ${p.get("title")}`);
+    if (reviewProblems(v.store, p, "design").length) return entry("designer", p.id, `design review ${p.id}: ${p.get("title")}`);
     if (ev.some((e) => !(e.verify?.ok && e.independent))) return entry("qa", p.id, `test ${p.id}: ${p.get("title")}`, v.lastRun(p.id, "checkpoint", "qa"));
-    return entry("pm", p.id, `complete ${p.id}: move ${p.id} done`);
+    return entry("pm", p.id, `accept ${p.id}: move ${p.id} accepted`);
   }),
   // 6. goal closure
   (v) => {
