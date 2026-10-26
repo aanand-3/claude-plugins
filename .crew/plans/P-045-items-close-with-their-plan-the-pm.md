@@ -5,11 +5,11 @@ goal: G-007
 items: BUG-024
 touches: packages/crew/src/hub/core/work/model.ts, packages/crew/src/hub/commands/work/workflow.ts, packages/crew/src/hub/core/team/presets.ts, packages/crew/test/hub/e2e/item-close.test.ts, packages/crew/test/hub/e2e/items.test.ts, packages/crew/test/hub/e2e/team.test.ts, packages/crew/test/hub/e2e/review-fixes.test.ts, packages/crew/test/hub/e2e/policy.test.ts, packages/crew/test/hub-worktrees.test.ts, plugins/crew/skills/hub/references/model.md
 depends_on:
-status: ready
+status: in-progress
 branch: plan/P-045-items-close-with-their-plan-the-pm
 pr:
 created: 2026-10-25
-started:
+started: 2026-10-26
 completed:
 assignee: developer
 ---
@@ -134,5 +134,6 @@ needs none of its code, since it hooks the plan's move to `done` whichever edge 
 
 - 2026-10-25: status draft → ready — BUG-024 specced as its own plan (P-032 is at max_tasks and waits on six plans)
 - 2026-10-25: assigned to the developer role — BUG-024; touches overlap P-032/P-021/P-025/P-031 a few lines each
+- 2026-10-26: status ready → in-progress — branch plan/P-045-items-close-with-their-plan-the-pm
 
 ## Outcome
