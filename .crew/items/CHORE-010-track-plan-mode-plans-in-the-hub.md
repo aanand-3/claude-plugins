@@ -21,3 +21,4 @@ Plans made in plan mode live in `~/.claude/plans/`, outside the repo and untrack
 ## Notes
 Raised in chat on 2026-10-24. Six shipped, one (research) never landed, one (Node only) is still open as CHORE-007..009.
 - 2026-10-24: status new → triaged — priority P2
+- 2026-10-26: DONE: shipped by P-013 (669d819). Pre-hub plans are .crew/plans/P-005..P-012; .claude/settings.json sets plansDirectory .crew/drafts and runs .crew/bin/track_plan_draft.mjs on ExitPlanMode and SessionStart. No remaining work.
