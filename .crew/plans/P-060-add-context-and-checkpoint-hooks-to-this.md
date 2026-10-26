@@ -11,6 +11,7 @@ pr:
 created: 2026-10-26
 started:
 completed:
+assignee: developer
 ---
 
 # P-060: Add context and checkpoint hooks to this repo and check them in doctor
@@ -158,6 +159,7 @@ table change: three rows in `HOOKS`, one fix constant and the OK string.
 
 - 2026-10-26: status draft → ready
 - 2026-10-26: Human decision: keep the template's githooks-activation and format_on_edit hooks that the merge adds to this repo's .claude/settings.json (harmless no-ops now; they start working if .githooks/ or format_on_edit.mjs are added). No manual removal in the rollout.
+- 2026-10-26: assigned to the developer role — G-001 FEAT-002; assigned at the human's request; no overlap with in-flight G-007 plans
 
 ## Outcome
 - This repo's .claude/settings.json carries the SessionStart context hook and the Stop and PreCompact `checkpoint --auto` hooks, merged in via the guidelines refresh path.
