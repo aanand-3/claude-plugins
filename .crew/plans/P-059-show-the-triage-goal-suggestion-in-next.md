@@ -5,7 +5,7 @@ goal: G-007
 items: FEAT-051
 touches: packages/crew/src/hub/commands/work/backlog.ts, packages/crew/src/hub/commands/team/roles.ts, packages/crew/test/hub/e2e/pm-queue.test.ts
 depends_on: P-055
-status: in-progress
+status: in-review
 branch: plan/P-059-show-the-triage-goal-suggestion-in-next
 pr:
 created: 2026-10-26
@@ -73,7 +73,7 @@ and before `start` (K-2026-10-25-a-plan-worktree-cut-before-its-depends).
 
 _Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
 
-- P-059: Show the triage goal suggestion in next --role pm [in-progress] tasks 3/3 — claimed by Arpit Anand (developer:a6f625b7a35766451)
+- P-059: Show the triage goal suggestion in next --role pm [in-review] tasks 3/3 — claimed by Arpit Anand (developer:a6f625b7a35766451)
 - last checkpoint 2026-10-26 10:40 at T3 (b66c720) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —
 
@@ -87,6 +87,7 @@ Latest log:
 - 2026-10-26: status draft → ready
 - 2026-10-26: assigned to the developer role
 - 2026-10-26: status ready → in-progress — branch plan/P-059-show-the-triage-goal-suggestion-in-next
+- 2026-10-26: status in-progress → in-review
 
 ## Outcome
 `backlog.ts` exports `suggestedGoal` and a new `suggestionText(item, store)` (`suggested goal: G-### (<reason>)` or null); `triage` prints its suggestion through it, byte-identical. `roles.ts` appends ` — <suggestionText>` to both PM triage lines (bug and non-bug) when non-null; items without a suggestion or with a goal keep the bare `triage ID: title` line. New `test/hub/e2e/pm-queue.test.ts` covers origin, hint, bug and plain items and checks the text matches triage's. Targeted checks green after build: pm-queue 1/1, goal-links 14/14, team + dispatch green (48/48 with goal-links).
