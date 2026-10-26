@@ -99,6 +99,7 @@ Latest log:
 - 2026-10-26: status ready → in-progress — branch plan/P-047-director-next-and-run-printout-follow
 - 2026-10-26: status in-progress → in-review
 - 2026-10-26: status in-review → accepted
+- 2026-10-26: landed on main as fd1eab9
 
 ## Outcome
 
