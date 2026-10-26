@@ -2,9 +2,9 @@
 id: FEAT-065
 type: feat
 title: Role gate on escalate: only the Director escalates
-status: new
-priority:
-goal:
+status: triaged
+priority: P1
+goal: G-009
 plan:
 created: 2026-10-26
 closed:
@@ -26,3 +26,4 @@ As the executive, I want every exception to reach the Director first, so that I 
 ## Notes
 Goal G-009 (Director-first exceptions). Depends on BUG-044 (roles other than director/architect never close an ask, a G-007 prerequisite): without it a role's ask to the Director cannot be answered and closed. Source: Q-24ba43, Q-73467a.
 - 2026-10-26: goal hint G-009 (by Arpit Anand)
+- 2026-10-26: status new → triaged — priority P1
