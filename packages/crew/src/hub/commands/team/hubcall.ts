@@ -8,8 +8,9 @@ import { basename } from "node:path";
 /** One shell word: its raw offsets in the command and its dequoted value. */
 export interface Word { start: number; end: number; value: string; raw: string }
 /** One simple command: its words (redirections left out), the heredoc / here-string bodies fed to it and the target word
- * of each output redirection (`>`, `>>`, `>|`, `&>`, `&>>`, `>&WORD`). */
-export interface Simple { words: Word[]; bodies: string[]; targets: Word[] }
+ * of each output redirection (`>`, `>>`, `>|`, `&>`, `&>>`, `>&WORD`) and input redirection (`< WORD`, `<> WORD`); `live`
+ * holds the bodies of heredocs whose delimiter is unquoted (the shell expands `$(…)`, `${…}` and backticks in them). */
+export interface Simple { words: Word[]; bodies: string[]; targets: Word[]; inputs: Word[]; live: string[] }
 
 const HUB = /\bcrew\.mjs\b/;
 export const ASSIGN = /^[A-Za-z_]\w*=/;
@@ -27,7 +28,7 @@ const NESTED = "the guard can't give your identity to a hub call inside nested s
 /** The simple commands of a shell command line, nested ones included (their offsets are offsets into `s`). */
 export function parse(s: string): Simple[] {
   const all: Simple[] = [];
-  const pending: { delim: string; strip: boolean; cmd: Simple }[] = [];
+  const pending: { delim: string; strip: boolean; quoted: boolean; cmd: Simple }[] = [];
   const n = s.length;
   let i = 0;
 
@@ -48,6 +49,7 @@ export function parse(s: string): Simple[] {
       }
       if (i > n) i = n;
       h.cmd.bodies.push(body);
+      if (!h.quoted) h.cmd.live.push(body);
     }
   };
 
@@ -101,7 +103,7 @@ export function parse(s: string): Simple[] {
     if (s[i] === "&") i++;
     const op = s[i++];
     const out = op === ">";
-    let heredoc = false, herestring = false, strip = false;
+    let heredoc = false, herestring = false, strip = false, dup = false;
     if (op === "<" && s[i] === "<") {
       i++;
       if (s[i] === "<") { herestring = true; i++; } else heredoc = true;
@@ -111,24 +113,28 @@ export function parse(s: string): Simple[] {
       nested(")");
       return;
     } else if (s[i] === ">" || s[i] === "|" || s[i] === "&") {
-      if (s[i++] === "&" && /[\d-]/.test(s[i] ?? "")) {
-        while (i < n && /[\d-]/.test(s[i])) i++;
-        return;
+      if (s[i++] === "&") {
+        dup = true;
+        if (/[\d-]/.test(s[i] ?? "")) {
+          while (i < n && /[\d-]/.test(s[i])) i++;
+          return;
+        }
       }
     }
     while (s[i] === " " || s[i] === "\t") i++;
     if (i >= n || BREAK.includes(s[i])) return;
     const target = word(stop);
-    if (heredoc) pending.push({ delim: target.value, strip, cmd });
+    if (heredoc) pending.push({ delim: target.value, strip, quoted: /["'\\]/.test(target.raw), cmd });
     else if (herestring) cmd.bodies.push(target.value);
     else if (out) cmd.targets.push(target);
+    else if (!dup) cmd.inputs.push(target);
   };
 
   function list(stop: string): void {
-    let cur: Simple = { words: [], bodies: [], targets: [] };
+    let cur: Simple = { words: [], bodies: [], targets: [], inputs: [], live: [] };
     all.push(cur);
     const end = () => {
-      cur = { words: [], bodies: [], targets: [] };
+      cur = { words: [], bodies: [], targets: [], inputs: [], live: [] };
       all.push(cur);
     };
     while (i < n) {
@@ -164,7 +170,7 @@ export function parse(s: string): Simple[] {
   }
 
   list("");
-  return all.filter((c) => c.words.length || c.bodies.length || c.targets.length);
+  return all.filter((c) => c.words.length || c.bodies.length || c.targets.length || c.inputs.length);
 }
 
 const base = (w: Word | undefined) => (w ? basename(w.value) : "");
@@ -188,7 +194,7 @@ export function skipPrefix(words: Word[]): number {
 const headAt = (c: Simple) => skipPrefix(c.words);
 
 /** The word of a simple command that is the executed hub program, or null. */
-function hubWord(c: Simple): Word | null {
+export function hubWord(c: Simple): Word | null {
   const h = headAt(c), head = c.words[h];
   if (base(head) === "crew.mjs") return head;
   if (!RUNTIMES.has(base(head))) return null;

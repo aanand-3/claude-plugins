@@ -15,6 +15,7 @@ import { STATE_RE } from "../../core/work/hubstate.js";
 import { resolvePolicy } from "../../core/team/policy.js";
 import type { Store } from "../../core/store.js";
 import { withIdentity } from "./hubcall.js";
+import { touchesSecret } from "./secretrefs.js";
 import { inlineScript, writeTargets, type Target } from "./targets.js";
 
 export interface HookInput { tool_name: string; tool_input: Record<string, unknown>; agent_type?: string; agent_id?: string; cwd?: string }
@@ -53,7 +54,6 @@ export function agentRole(root: string, agentType: string): string | null {
 
 const patternRe = (p: string) => new RegExp(`^${p.trim().replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*").replace(/\?/g, ".")}$`);
 const segments = (cmd: string) => cmd.split(/&&|\|\||;|(?<!>)\||\n/).map((c) => c.trim()).filter(Boolean);
-const words = (cmd: string) => cmd.split(/[\s"'=]+/).map((w) => w.replace(/^>+/, "").replace(/^\.\//, "")).filter(Boolean);
 
 /** The hub command a shell segment runs (`crew.mjs [--as R] [--run-id X] <command> …`), or null. */
 function hubCommand(seg: string): string | null {
@@ -135,7 +135,7 @@ export function decide(store: Store, h: HookInput): Decision {
     if (copy) return { deny: `the command writes to ${abs(copy)}, a copy of hub state; ${ONE_HOME} ${forked(copy)}` };
     const away = targets.find(outside);
     if (away) return { deny: `the command writes to ${abs(away)}, outside the repository; ${HUB_STATE}` };
-    if (words(cmd).some((w) => hits(policy.secrets.files, w))) return { deny: "the command touches a secret file (secrets.files)" };
+    if (touchesSecret(cmd, h.cwd || top, policy.secrets.files, (w) => hits(policy.secrets.files, w))) return { deny: "the command touches a secret file (secrets.files)" };
     if (CREW_CLI.test(cmd) && /--approved-by\b/.test(cmd)) return { deny: "only the human approves: agents never pass --approved-by" };
     if (segments(cmd).some((c) => hubCommand(c) === "agents" && !/--check\b/.test(c))) {
       return { deny: "`crew.mjs agents` rewrites the agent definitions, which only the human renders (paths.protected)" };

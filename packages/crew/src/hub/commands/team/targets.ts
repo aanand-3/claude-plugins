@@ -6,7 +6,7 @@
 import { readdirSync, realpathSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
-import { ASSIGN, parse, skipPrefix, type Word } from "./hubcall.js";
+import { ASSIGN, parse, skipPrefix, type Simple, type Word } from "./hubcall.js";
 
 /** A path a command writes; `restore` marks a `git checkout`/`git restore` operand, which puts back committed content. */
 export interface Target { path: string; restore: boolean }
@@ -107,7 +107,7 @@ function globRe(g: string): RegExp {
 
 /** A `for` word's glob matches, listed in `base`; the word itself when nothing matches (as bash does); null for a glob in
  * an earlier segment. */
-function globbed(v: string, base: string): string[] | null {
+export function globbed(v: string, base: string): string[] | null {
   const d = dirname(v), last = basename(v);
   if (GLOB.test(d)) return null;
   if (!GLOB.test(last)) return [v];
@@ -199,11 +199,30 @@ export function writeTargets(cmd: string, cwd: string): Target[] {
   return out.map((t) => ({ ...t, path: t.path.replace(/^\.\//, "") }));
 }
 
-const INTERPRETER = /^(python[23]?(\.\d+)?|node|nodejs|bun|deno|perl|ruby|php)$/;
-const SHELL = /^(sh|bash|zsh|dash|ksh)$/;
+export const INTERPRETER = /^(python[23]?(\.\d+)?|node|nodejs|bun|deno|perl|ruby|php)$/;
+export const SHELL = /^(sh|bash|zsh|dash|ksh)$/;
 const WRAPPER = /^(env|nohup|nice|exec|timeout|xargs)$/;
 /** A wrapper's options that take the next word as their value. */
 const OPTION_ARG: Record<string, RegExp> = { env: /^-[uSC]$/, nice: /^-n$/, timeout: /^-[sk]$/, xargs: /^-[IndPLsEa]$/ };
+
+/** The index of a simple command's head past prefix words and the wrappers `env`, `nohup`, `nice`, `exec`, `timeout` and
+ * `xargs` (with their options); `c.words.length` when it has none. */
+export function headIndex(c: Simple): number {
+  const w = c.words.map((x) => x.value);
+  let h = 0;
+  while (h < w.length) {
+    const b = basename(w[h]);
+    if (WRAPPER.test(b)) {
+      for (h++; h < w.length && (w[h].startsWith("-") || ASSIGN.test(c.words[h].raw));) h += OPTION_ARG[b]?.test(w[h]) ? 2 : 1;
+      if (b === "timeout") h++; // the duration
+    } else {
+      const s = skipPrefix(c.words.slice(h));
+      if (!s) break;
+      h += s;
+    }
+  }
+  return h;
+}
 
 /** The head (`python3`, `node`, `bash`, `eval`, …) of the first command that runs an inline or stdin script, whose writes
  * no parser can see, or null. A script file is no inline script (`node x.js`, `bash x.sh`), nor is `-m`, `--version`,
@@ -211,18 +230,7 @@ const OPTION_ARG: Record<string, RegExp> = { env: /^-[uSC]$/, nice: /^-n$/, time
 export function inlineScript(cmd: string): string | null {
   for (const c of parse(cmd)) {
     const w = c.words.map((x) => x.value);
-    let h = 0;
-    while (h < w.length) {
-      const b = basename(w[h]);
-      if (WRAPPER.test(b)) {
-        for (h++; h < w.length && (w[h].startsWith("-") || ASSIGN.test(c.words[h].raw));) h += OPTION_ARG[b]?.test(w[h]) ? 2 : 1;
-        if (b === "timeout") h++; // the duration
-      } else {
-        const s = skipPrefix(c.words.slice(h));
-        if (!s) break;
-        h += s;
-      }
-    }
+    const h = headIndex(c);
     if (h >= w.length) continue;
     const head = basename(w[h]), args = w.slice(h + 1);
     if (head === "eval") return head;

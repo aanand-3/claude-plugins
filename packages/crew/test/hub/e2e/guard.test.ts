@@ -364,3 +364,36 @@ describe("guard_cd_forms: spaced subshells, function bodies, case arms and insta
     }
   });
 });
+
+it("the secrets check refuses real access only (BUG-042)", () => {
+  init(repo);
+  agent(repo, "crew-developer", "developer");
+  repo.write(".env", "X=1\n");
+  repo.write("certs/a.pem", "x\n");
+  const run = (cmd: string) => hook(repo, bash("crew-developer", cmd));
+  for (const cmd of [
+    "cat > .crew/drafts/x.md <<'EOF'\nNever commit the .env file; secrets stay in .env.\nEOF", // AC1
+    "cat > .crew/drafts/s.py <<'EOF'\nSKIP = ['.env']\nprint(open(__import__('sys').argv[1]).read())\nEOF", // AC2
+    "python3 .crew/drafts/s.py docs/a.md",
+    'node .crew/bin/crew.mjs new-item bug "the guard refuses prose naming .env files"', // AC3
+    'echo "never read .env"', "printf '%s\\n' 'the .env file stays local'",
+    'git commit -m "guard: allow prose naming .env"', 'git tag -a v1 -m "no .env access"',
+    'grep -n "reads the .env file" docs/a.md', "rg 'the .env file' docs",
+  ]) {
+    const out = run(cmd);
+    expect(out?.permissionDecision, cmd).toBeUndefined();
+    expect(out?.updatedInput?.command, cmd).toBeTruthy();
+  }
+  for (const cmd of [ // AC4, AC5
+    "cat .env", "head ./.env", 'grep KEY ".env"', "cp certs/a.pem /tmp/x", "source .env", "sort < .env", "echo x >> .env",
+    "docker run --env-file=.env img", "F=.env; wc -l $F", "cat .en*", "cat */*.pem", 'echo "$(cat .env)"', 'sh -c "cat .env"',
+    "python3 -c \"open('.env')\"", "cat <<EOF | sh\ncat .env\nEOF", "cat > docs/x.md <<EOF\n$(cat .env)\nEOF",
+  ]) {
+    const out = run(cmd);
+    expect(out?.permissionDecision, cmd).toBe("deny");
+    expect(out.permissionDecisionReason, cmd).toBe("crew guard: the command touches a secret file (secrets.files)");
+  }
+  const read = hook(repo, { tool_name: "Read", tool_input: { file_path: ".env" }, agent_type: "crew-developer", agent_id: "a1" });
+  expect(read?.permissionDecision).toBe("deny");
+  expect(read.permissionDecisionReason).toBe("crew guard: .env is a secret file (secrets.files); agents never read it");
+});
