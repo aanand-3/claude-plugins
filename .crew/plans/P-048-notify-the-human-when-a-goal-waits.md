@@ -65,6 +65,21 @@ n/a — off unless a project's `notify.on` lists `goal-approval`. Ships in the b
 
 ## Handoff
 
+_Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
+
+- P-048: Notify the human when a goal waits for approval [in-progress] tasks 0/3 — claimed by Arpit Anand (developer:ac6144f54a3bb12a7)
+- last checkpoint 2026-10-26 05:30 at T3 (dfa60d2) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-048-notify-the-human-when-a-goal-waits/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/policy.test.ts -t goal-approval ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-048-notify-the-human-when-a-goal-waits checkout -- plugins; exit $r (AC 1,2,3,4)
+- ✓ grep -n goal-approval /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-048-notify-the-human-when-a-goal-waits/plugins/crew/skills/hub/references/model.md /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-048-notify-the-human-when-a-goal-waits/plugins/crew/skills/team/SKILL.md (AC 5)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-048-notify-the-human-when-a-goal-waits/packages/crew && npm run typecheck && wc -l src/hub/commands/work/planning.ts src/hub/core/team/policy.ts && test $(wc -l < src/hub/commands/work/planning.ts) -lt 300 && test $(wc -l < src/hub/core/team/policy.ts) -lt 300 && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/team-2.test.ts -t notify ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-048-notify-the-human-when-a-goal-waits checkout -- plugins/crew/skills/hub/dist; exit $r (AC 6)
+- next: T1: the `goal-approval` kind and its emission in `newGoal` → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/policy.test.ts -t "goal-approval"` (AC1–AC4)
+- evidence: AC1 ✓ (self), AC2 ✓ (self), AC3 ✓ (self), AC4 ✓ (self), AC5 ✓ (self), AC6 ✓ (self)
+
+Latest log:
+- 2026-10-25: status draft → ready — Architect: specced (ACs, tasks, test plan, exact touches)
+- 2026-10-26: assigned to the developer role
+- 2026-10-26: status ready → in-progress — branch plan/P-048-notify-the-human-when-a-goal-waits
+
 ## Progress log
 
 - 2026-10-25: status draft → ready — Architect: specced (ACs, tasks, test plan, exact touches)
