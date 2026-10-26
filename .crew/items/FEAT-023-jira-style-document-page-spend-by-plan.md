@@ -27,3 +27,4 @@ As someone running a crew project, I want each plan, item and goal page to be la
 ## Notes
 - Design: /Users/aanand/.claude/plans/the-crew-ui-looks-declarative-coral.md (approved). No database: files, git and the ledger stay the source of truth.
 - 2026-10-24: status new → triaged — priority P2
+- 2026-10-26: DONE: shipped by P-020 (78a3edf). ui/src/styles/views.css .docpage grid with a 360px details rail; DocPage.tsx has child issues, tasks and spend per plan. Not needed for G-001's criteria. No remaining work.
