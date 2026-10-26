@@ -11,6 +11,7 @@ pr:
 created: 2026-10-26
 started:
 completed:
+assignee: developer
 ---
 
 # P-052: Release lets land bounce merge conflicts
@@ -62,5 +63,6 @@ BUG-036 (G-007). Since P-051 the guard binds every role's Bash writes to `paths.
 ## Progress log
 
 - 2026-10-26: status draft → ready
+- 2026-10-26: assigned to the developer role
 
 ## Outcome
