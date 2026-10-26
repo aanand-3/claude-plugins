@@ -5,7 +5,7 @@ goal:
 items: BUG-049
 touches: packages/crew/test/setup/sample.ts, packages/crew/test/view.test.ts, packages/crew/test/mcp.test.ts
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-077-give-the-sample-project-test-setups
 pr:
 created: 2026-10-26
@@ -87,8 +87,8 @@ that failed in BUG-028.
 ## Design
 
 ## Tasks
-- [ ] T1: `test/setup/sample.ts` with `buildSample`, `SAMPLE_BUILD_MS` and `SAMPLE_HOOK_MS` → verify: `cd packages/crew && npm run typecheck` (AC1, AC5)
-- [ ] T2: view.test.ts and mcp.test.ts use the helper and `SAMPLE_HOOK_MS` → verify: `npm run build && npx vitest run test/view.test.ts test/mcp.test.ts`; `grep -rn "sample-project.mjs" test`; `grep -n "120_000" test/view.test.ts test/mcp.test.ts` (AC2, AC3)
+- [x] T1: `test/setup/sample.ts` with `buildSample`, `SAMPLE_BUILD_MS` and `SAMPLE_HOOK_MS` → verify: `cd packages/crew && npm run typecheck` (AC1, AC5)
+- [x] T2: view.test.ts and mcp.test.ts use the helper and `SAMPLE_HOOK_MS` → verify: `npm run build && npx vitest run test/view.test.ts test/mcp.test.ts`; `grep -rn "sample-project.mjs" test`; `grep -n "120_000" test/view.test.ts test/mcp.test.ts` (AC2, AC3)
 - [ ] T3: regression under synthetic load → verify: the AC4 procedure in the Test plan, run once on the branch and once against the base branch's view.test.ts (AC4)
 
 ## Test plan
@@ -123,10 +123,10 @@ reverting the plan.
 
 _Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
 
-- P-077: Give the sample-project test setups a hang deadline, not a 120 s load limit [in-progress] tasks 0/3 — claimed by Arpit Anand (developer:adad9c24955ccc5a8)
+- P-077: Give the sample-project test setups a hang deadline, not a 120 s load limit [in-review] tasks 2/3 — claimed by Arpit Anand (developer:adad9c24955ccc5a8)
 - last checkpoint 2026-10-26 15:16 at T3 (36c2774) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
 - don't retry: AC4 procedure: 16 node busy loops, then vitest view.test.ts and timed sample-project.mjs — the permission system (dont-ask mode) denied the command that starts the synthetic load; not worked around
-- next: T1: `test/setup/sample.ts` with `buildSample`, `SAMPLE_BUILD_MS` and `SAMPLE_HOOK_MS` → verify: `cd packages/crew && npm run typecheck` (AC1, AC5)
+- next: T3: regression under synthetic load → verify: the AC4 procedure in the Test plan, run once on the branch and once against the base branch's view.test.ts (AC4)
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —
 
 Latest log:
@@ -139,5 +139,7 @@ Latest log:
 - 2026-10-26: status draft → ready
 - 2026-10-26: assigned to the developer role
 - 2026-10-26: status ready → in-progress — branch plan/P-077-give-the-sample-project-test-setups
+- 2026-10-26: status in-progress → in-review — T1, T2 done and checked; T3 (AC4 synthetic-load regression) was not run: the permission system denied starting the busy-loop load, so QA runs the AC4 procedure
 
 ## Outcome
+Learnings: none
