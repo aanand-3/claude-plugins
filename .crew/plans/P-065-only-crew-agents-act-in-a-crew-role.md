@@ -5,12 +5,12 @@ goal:
 items: BUG-043
 touches: packages/crew/src/hub/commands/team/guard.ts, packages/crew/test/hub/e2e/guard.test.ts, plugins/crew/skills/hub/SKILL.md
 depends_on:
-status: accepted
+status: done
 branch: plan/P-065-only-crew-agents-act-in-a-crew-role
 pr:
 created: 2026-10-26
 started: 2026-10-26
-completed:
+completed: 2026-10-26
 assignee: developer
 ---
 
@@ -152,6 +152,7 @@ Latest log:
 - 2026-10-26: status in-review → accepted
 - 2026-10-26: landed on main as 68a6a44
 - 2026-10-26: Landed on main as 68a6a44; full suite 662/662 passed; refresh-bin reported .crew/bin already up to date, so no further rollout step
+- 2026-10-26: status accepted → done
 
 ## Outcome
 
