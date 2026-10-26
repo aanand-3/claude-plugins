@@ -18,6 +18,9 @@ identity to every hub call; never pass `--as`, `--run-id` or `--approved-by`.
      the role that owns it as a question: `crew.mjs ask P-### --to architect|pm "<what to change and why>"`.
    - **`reassign P-###`** — a stale claim (its run went quiet): `crew.mjs reassign P-###`; the next developer takes it
      over with `start`.
+   - **`run … idle`** — a run went quiet: check `crew.mjs resume <ref>` and the run's last activity in `crew.mjs
+     status`. If the run was stopped or crashed, `crew.mjs end-run <run> --note "<why>"`, then `reassign` the plan if
+     its claim is stale. If the run is still working, report it and leave it.
    - **`unblock P-###`** — a blocked plan: find what it waits on (`crew.mjs resume P-###`, its questions) and get that
      moving — a question to the owning role, or an escalation if only the human can settle it.
    - **`focus G-###`** — the focus goal is done or gone while another goal is active: `crew.mjs focus G-###`.

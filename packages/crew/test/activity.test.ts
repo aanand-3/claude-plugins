@@ -143,6 +143,23 @@ group("liveRuns", () => {
     expect(liveRuns([ev({ ts: at(21) })], [], NOW)[0].idle).toBe(true);
   });
 
+  it("drops an idle run whose plan or item is closed, keeps one on an open plan (BUG-034)", () => {
+    const closed = (ref: string) => ref === "P-009" || ref === "BUG-003";
+    expect(liveRuns([ev({ ts: at(30), ref: "P-009" })], [], NOW, 20, closed)).toEqual([]);
+    expect(liveRuns([ev({ ts: at(30), ref: "BUG-003" })], [], NOW, 20, closed)).toEqual([]);
+    const open = liveRuns([ev({ ts: at(30), ref: "P-001" })], [], NOW, 20, closed);
+    expect(open).toHaveLength(1);
+    expect(open[0]).toMatchObject({ ref: "P-001", idle: true });
+    expect(liveRuns([ev({ ts: at(30), ref: null })], [], NOW, 20, closed)).toHaveLength(1);
+  });
+
+  it("drops a run an end-run names after its last activity, and shows it again once it acts", () => {
+    const end = led("end-run", 5, { run: "director:d1", role: "director", ref: null, ended: "developer:a1" });
+    expect(liveRuns([ev({ ts: at(30) })], [end], NOW)).toEqual([]);
+    expect(liveRuns([ev({ ts: at(30) }), ev({ ts: at(1) })], [end], NOW)).toHaveLength(1);
+    expect(liveRuns([ev({ ts: at(30), run: "qa:b" })], [end], NOW)).toHaveLength(1);
+  });
+
   it("lists the most recent run first", () => {
     const runs = liveRuns([ev({ ts: at(9), run: "qa:b" }), ev({ ts: at(3), run: "pm:c" }), ev({ ts: at(5) })], [], NOW);
     expect(runs.map((r) => r.run)).toEqual(["pm:c", "developer:a1", "qa:b"]);

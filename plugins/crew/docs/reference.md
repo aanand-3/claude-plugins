@@ -48,6 +48,7 @@ MCP tool runs the same code through the tool; the rest are CLI only.
 | `staff` | `staff` | `commands/team/team.reg.ts` |
 | `dispatch` | `dispatch` | `commands/team/dispatch.reg.ts` |
 | `pause` | `pause` | `commands/team/liveness.reg.ts` |
+| `end-run` | `end_run` | `commands/team/liveness.reg.ts` |
 | `agents` | CLI only | `commands/team/agents.reg.ts` |
 | `ask` | `ask` | `commands/team/questions.reg.ts` |
 | `escalate` | `escalate` | `commands/team/questions.reg.ts` |
@@ -92,6 +93,7 @@ From `packages/crew/src/hub/mcp.ts:TOOLS`.
 | `reassign` | `reassign` | Move stuck work to another run (`crew.mjs reassign`): releases a stale claim (limits.stale_claim_hours) and assigns the plan again; the next agent takes it over with start, which resumes its branch. |
 | `dispatch` | `dispatch` | Who works on what next (`crew.mjs dispatch`): one entry {role, ref, task, resume} per actionable document |
 | `pause` | `pause` | Pause the team (`crew.mjs pause`), or resume it with resume: true: while paused, staff and start refuse. |
+| `end_run` | `end-run` | Mark a stopped or crashed agent's run ended (`crew.mjs end-run`): it stops being live and gives no dispatch entry until it acts again. |
 | `ask` | `ask` | Ask another role a question (`crew.mjs ask`), recorded so it isn't lost. |
 | `escalate` | `escalate` | Escalate to the executive (`crew.mjs escalate`): reserved decisions, a goal at risk, anything only a human can settle. |
 | `answer` | `answer` | Answer a question addressed to your role (`crew.mjs answer`); decision: true also records it as a decision entry. |

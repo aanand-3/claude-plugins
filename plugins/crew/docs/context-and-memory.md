@@ -42,4 +42,5 @@ Every write to the hub records an event in the shared ledger
 | `review` | the Architect's verdict on a plan's code |
 | `notify` | something the human was told |
 | `report` | a run's or the runner's report |
+| `end-run` | a stopped run was marked ended (end-run) |
 <!-- /generated -->

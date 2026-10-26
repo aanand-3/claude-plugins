@@ -80,6 +80,7 @@ const EVENT_NOTES: Record<EventType, string> = {
   review: "the Architect's verdict on a plan's code",
   notify: "something the human was told",
   report: "a run's or the runner's report",
+  "end-run": "a stopped run was marked ended (end-run)",
 };
 
 /** The ledger's event types, in `EVENT_TYPES` order. */

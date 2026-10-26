@@ -9,7 +9,7 @@ import { fail } from "../text.js";
 import type { Workspace } from "../workspace.js";
 
 export const EVENT_TYPES = ["claim", "release", "move", "log", "usage", "learn", "checkpoint", "ask", "answer",
-  "assign", "pause", "resume", "review", "notify", "report"] as const;
+  "assign", "pause", "resume", "review", "notify", "report", "end-run"] as const;
 export type EventType = typeof EVENT_TYPES[number];
 
 export interface LedgerEvent {

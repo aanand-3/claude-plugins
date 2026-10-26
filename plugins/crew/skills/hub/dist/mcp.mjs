@@ -8978,7 +8978,7 @@ function describe(h, root) {
   return { tool, target, ref: ref ?? worktreePlan(path) ?? worktreePlan(h.cwd) };
 }
 var STOPS = /* @__PURE__ */ new Set(["usage", "report"]);
-function liveRuns(activity, ledger2, now = Date.now(), idleMinutes = IDLE_MINUTES) {
+function liveRuns(activity, ledger2, now = Date.now(), idleMinutes = IDLE_MINUTES, closed = () => false) {
   const last = /* @__PURE__ */ new Map();
   for (const e of activity) {
     const prev = last.get(e.run);
@@ -8987,9 +8987,10 @@ function liveRuns(activity, ledger2, now = Date.now(), idleMinutes = IDLE_MINUTE
   const out = [];
   for (const [run2, a] of last) {
     const at = Date.parse(a.ts);
-    if (!(now - at <= DAY_MS)) continue;
+    if (!(now - at <= DAY_MS) || a.ref && closed(a.ref)) continue;
     const mine = ledger2.filter((e) => e.run === run2);
     if (mine.some((e) => STOPS.has(e.type) && Date.parse(e.ts) > at)) continue;
+    if (ledger2.some((e) => e.type === "end-run" && e.ended === run2 && Date.parse(e.ts) > at)) continue;
     const step = mine.filter((e) => e.type === "checkpoint" && e.ref === a.ref && e.step && !e.workflow).at(-1)?.step;
     const usage2 = mine.filter((e) => e.type === "usage");
     const minutes = Math.max(0, (now - at) / 6e4);
@@ -9028,6 +9029,7 @@ var DETAIL = {
   pause: (e) => String(e.reason ?? "paused"),
   resume: (e) => String(e.note ?? "resumed"),
   report: (e) => String(e.text ?? ""),
+  "end-run": (e) => `${e.ended}${e.note ? ` \u2014 ${e.note}` : ""}`,
   usage: (e) => `${e.tokens_in} in / ${e.tokens_out} out tokens, $${Number(e.cost ?? 0).toFixed(2)}${e.model ? ` (${e.model})` : ""}`
 };
 var EVENT_TYPES = Object.keys(DETAIL);
@@ -9627,7 +9629,9 @@ function activityHook(store) {
   return 0;
 }
 function running(store, now = Date.now()) {
-  return liveRuns(readActivity(feedPath(store)), store.ledger.events(), now, store.policy.policy.limits.idle_minutes ?? IDLE_MINUTES);
+  const plans2 = store.plans(), items2 = store.items();
+  const closed = (ref) => CLOSED.has(plans2.get(ref)?.get("status") ?? "") || ITEM_CLOSED.has(items2.get(ref)?.get("status") ?? "");
+  return liveRuns(readActivity(feedPath(store)), store.ledger.events(), now, store.policy.policy.limits.idle_minutes ?? IDLE_MINUTES, closed);
 }
 var ago = (minutes) => minutes < 1 ? "just now" : minutes < 60 ? `${Math.floor(minutes)}m ago` : `${Math.floor(minutes / 60)}h ${Math.floor(minutes % 60)}m ago`;
 var action = (tool, target) => target ? `${tool} ${target}` : tool;
@@ -9896,6 +9900,14 @@ function resumeTeam(store, note) {
   if (!paused(store.ledger.events())) fail("The team isn't paused.");
   store.ledger.record("resume", null, note ? { note } : {});
   store.say("Team resumed.");
+}
+function endRun(store, run2, note) {
+  store.require();
+  const role = store.ledger.who.role;
+  if (role && role !== "executive" && role !== "director") fail(`Only the executive or the director ends a run; this run is the ${role} role.`);
+  if (!running(store).some((r) => r.run === run2)) fail(`${run2} is not running.`);
+  store.ledger.record("end-run", null, { ended: run2, ...note ? { note } : {} });
+  store.say(`${run2} ended: no longer live.`);
 }
 function escalateLimit(store, ref, count, limit, what) {
   if (limit === null || count !== limit + 1) return;
@@ -13773,16 +13785,23 @@ var registration19 = {
 // src/hub/commands/team/liveness.reg.ts
 var registration20 = {
   usage: [
-    "  pause [--reason TXT] \xB7 resume --team [--note TXT]     stop / restart staffing and starts (executive or director)"
+    "  pause [--reason TXT] \xB7 resume --team [--note TXT]     stop / restart staffing and starts (executive or director)",
+    "  end-run RUN [--note TXT]                            mark a stopped agent's run ended (executive or director)"
   ],
   cli: {
-    pause: { pos: [], str: ["reason"], run: (s2, a) => pauseTeam(s2, str(a, "reason")) }
+    pause: { pos: [], str: ["reason"], run: (s2, a) => pauseTeam(s2, str(a, "reason")) },
+    "end-run": { pos: ["run"], str: ["note"], run: (s2, a) => endRun(s2, a.pos[0], str(a, "note")) }
   },
   tools: {
     pause: {
       description: "Pause the team (`crew.mjs pause`), or resume it with resume: true: while paused, staff and start refuse. The executive's or the Director's call.",
       input: obj({ reason: text("why (pause) or a note (resume)"), resume: { type: "boolean" } }),
       run: (st, a) => a.resume === true ? resumeTeam(st, s(a, "reason")) : pauseTeam(st, s(a, "reason"))
+    },
+    end_run: {
+      description: "Mark a stopped or crashed agent's run ended (`crew.mjs end-run`): it stops being live and gives no dispatch entry until it acts again. The executive's or the Director's call.",
+      input: obj({ run: text("the run, e.g. developer:a1b2"), note: text("why") }, ["run"]),
+      run: (st, a) => endRun(st, s(a, "run"), s(a, "note"))
     }
   }
 };

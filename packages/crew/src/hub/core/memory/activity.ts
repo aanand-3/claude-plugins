@@ -160,9 +160,11 @@ export interface LiveRun {
 
 const STOPS = new Set(["usage", "report"]);
 
-/** The runs still going: activity in the last 24 hours and no `usage`/`report` of the run after its last activity (a run
- * that resumes after a report is live again). Idle: quiet for more than `idleMinutes`. Most recent first. */
-export function liveRuns(activity: ActivityEvent[], ledger: LedgerEvent[], now = Date.now(), idleMinutes = IDLE_MINUTES): LiveRun[] {
+/** The runs still going: activity in the last 24 hours, no `usage`/`report` of the run and no `end-run` naming it after
+ * its last activity (a run that resumes after either is live again), and a last activity whose ref isn't `closed` (a
+ * done or dropped plan, a closed item). Idle: quiet for more than `idleMinutes`. Most recent first. */
+export function liveRuns(activity: ActivityEvent[], ledger: LedgerEvent[], now = Date.now(), idleMinutes = IDLE_MINUTES,
+  closed: (ref: string) => boolean = () => false): LiveRun[] {
   const last = new Map<string, ActivityEvent>();
   for (const e of activity) {
     const prev = last.get(e.run);
@@ -171,9 +173,10 @@ export function liveRuns(activity: ActivityEvent[], ledger: LedgerEvent[], now =
   const out: LiveRun[] = [];
   for (const [run, a] of last) {
     const at = Date.parse(a.ts);
-    if (!(now - at <= DAY_MS)) continue;
+    if (!(now - at <= DAY_MS) || (a.ref && closed(a.ref))) continue;
     const mine = ledger.filter((e) => e.run === run);
     if (mine.some((e) => STOPS.has(e.type) && Date.parse(e.ts) > at)) continue;
+    if (ledger.some((e) => e.type === "end-run" && e.ended === run && Date.parse(e.ts) > at)) continue;
     const step = mine.filter((e) => e.type === "checkpoint" && e.ref === a.ref && e.step && !e.workflow).at(-1)?.step;
     const usage = mine.filter((e) => e.type === "usage");
     const minutes = Math.max(0, (now - at) / 60_000);

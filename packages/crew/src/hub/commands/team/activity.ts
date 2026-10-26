@@ -5,6 +5,7 @@ import { activityPath, type ActivityEvent, appendActivity, describe, IDLE_MINUTE
   readActivity, type ToolCall } from "../../core/memory/activity.js";
 import type { LedgerEvent } from "../../core/memory/ledger.js";
 import type { Store } from "../../core/store.js";
+import { CLOSED, ITEM_CLOSED } from "../../core/work/model.js";
 import { detail } from "../memory/ledger.js";
 import { agentRole } from "./guard.js";
 
@@ -27,9 +28,11 @@ export function activityHook(store: Store): number {
   return 0;
 }
 
-/** The live runs, with the policy's idle limit. */
+/** The live runs, with the policy's idle limit; a run whose last activity is about a closed plan or item is over. */
 export function running(store: Store, now = Date.now()): LiveRun[] {
-  return liveRuns(readActivity(feedPath(store)), store.ledger.events(), now, store.policy.policy.limits.idle_minutes ?? IDLE_MINUTES);
+  const plans = store.plans(), items = store.items();
+  const closed = (ref: string) => CLOSED.has(plans.get(ref)?.get("status") ?? "") || ITEM_CLOSED.has(items.get(ref)?.get("status") ?? "");
+  return liveRuns(readActivity(feedPath(store)), store.ledger.events(), now, store.policy.policy.limits.idle_minutes ?? IDLE_MINUTES, closed);
 }
 
 export const ago = (minutes: number) => (minutes < 1 ? "just now" : minutes < 60 ? `${Math.floor(minutes)}m ago`

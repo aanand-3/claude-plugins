@@ -5,8 +5,8 @@ import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import { HUB, Repo } from "../../helpers/repo.js";
-import { init, tr } from "./helpers.js";
-import { agent, events } from "./sections.js";
+import { finish, init, tr } from "./helpers.js";
+import { agent, events, readyPlan } from "./sections.js";
 
 let repo: Repo;
 const feed = () => join(repo.path, ".git/crew/activity.jsonl");
@@ -139,6 +139,55 @@ describe("status: Running now", () => {
     expect(tr(repo, "policy", "show").stdout).toMatch(/limits\.idle_minutes\s+5/);
     repo.write(".crew/policy.yaml", "mode: ai-native\nlimits: { idle_minutes: soon }\n");
     expect(tr(repo, "policy", "check").stdout).toContain("limits.idle_minutes: expected a number");
+  });
+});
+
+describe("stopped runs (BUG-034)", () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const director = (): any[] => {
+    const r = tr(repo, "dispatch", "--json");
+    expect(r.returncode, r.stderr).toBe(0);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return JSON.parse(r.stdout).entries.filter((e: any) => e.role === "director");
+  };
+  const live = () => tr(repo, "status").stdout.includes("developer (developer:a1)");
+  const ended = () => (existsSync(ledger()) ? readFileSync(ledger(), "utf8") : "").split("\n").filter((l) => l.includes('"end-run"'));
+
+  it("a run whose plan is done is not live and gives no director entry (AC1, AC4)", () => {
+    readyPlan(repo);
+    repo.commit("chore(hub): plan P-001");
+    const r = tr(repo, "start", "P-001");
+    expect(r.returncode, r.stderr).toBe(0);
+    finish(repo, "P-001");
+    put(feed(), [act(30)]);
+    expect(director()).toEqual([]);
+    expect(live()).toBe(false);
+  });
+
+  it("an idle run on an in-progress plan → director: resume or reassign, until end-run (AC2, AC3)", () => {
+    readyPlan(repo);
+    expect(tr(repo, "move", "P-001", "in-progress").returncode).toBe(0);
+    put(feed(), [act(30)]);
+    expect(director().map((e) => e.task)).toEqual(["run developer:a1 on P-001 idle for 30 min: resume or reassign"]);
+    const r = tr(repo, "--as", "director", "end-run", "developer:a1", "--note", "stopped with TaskStop");
+    expect([r.returncode, r.stdout.trim()], r.stderr).toEqual([0, "developer:a1 ended: no longer live."]);
+    expect(director()).toEqual([]);
+    expect(live()).toBe(false);
+    expect(ended()).toHaveLength(1);
+    put(feed(), [act(0)]); // it acts again: live again
+    expect(live()).toBe(true);
+  });
+
+  it("end-run: only the executive or the director, only a live run, and a refusal writes nothing (AC2)", () => {
+    put(feed(), [act(30)]);
+    const qa = tr(repo, "--as", "qa", "end-run", "developer:a1");
+    expect(qa.returncode).not.toBe(0);
+    expect(qa.stderr + qa.stdout).toContain("Only the executive or the director ends a run; this run is the qa role.");
+    const unknown = tr(repo, "--as", "director", "end-run", "pm:nobody");
+    expect(unknown.returncode).not.toBe(0);
+    expect(unknown.stderr + unknown.stdout).toContain("pm:nobody is not running.");
+    expect(ended()).toEqual([]);
+    expect(live()).toBe(true);
   });
 });
 

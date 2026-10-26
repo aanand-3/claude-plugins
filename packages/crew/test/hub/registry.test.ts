@@ -45,8 +45,12 @@ it("every help line from before the split is in the help text (AC2)", () => {
   expect((BEFORE.usage as string[]).filter((l) => !lines.has(l))).toEqual([]);
 });
 
+/** An enum from before only has to be in the current one (values may be added, like the ledger's event types). */
+const enums = (x: unknown): unknown => Array.isArray(x) ? x.map(enums) : x && typeof x === "object"
+  ? Object.fromEntries(Object.entries(x).map(([k, v]) => [k, k === "enum" ? expect.arrayContaining(v as string[]) : enums(v)])) : x;
+
 it("tools/list returns the same tools, descriptions and input schemas as before the split (AC3)", () => {
-  expect(pick(inventory().tools, BEFORE.tools)).toEqual(BEFORE.tools);
+  expect(pick(inventory().tools, BEFORE.tools)).toEqual(enums(BEFORE.tools));
 });
 
 const HUB = new URL("../../src/hub/", import.meta.url);

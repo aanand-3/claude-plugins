@@ -275,13 +275,16 @@ dispatch [--json]                             who works on what next: one {role,
 
 ```text
 pause [--reason TXT] · resume --team [--note TXT]     stop / restart staffing and starts (executive or director)
+end-run RUN [--note TXT]                            mark a stopped agent's run ended (executive or director)
 ```
 
 | Command | MCP tool |
 |---|---|
 | `pause` | `pause` |
+| `end-run` | `end_run` |
 
 - `pause`: Pause the team (`crew.mjs pause`), or resume it with resume: true: while paused, staff and start refuse. The executive's or the Director's call.
+- `end_run`: Mark a stopped or crashed agent's run ended (`crew.mjs end-run`): it stops being live and gives no dispatch entry until it acts again. The executive's or the Director's call.
 
 ## team/agents
 

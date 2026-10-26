@@ -5,6 +5,7 @@ import type { Store } from "../../core/store.js";
 import { fail } from "../../core/text.js";
 import { ask, openQuestions } from "./questions.js";
 import { notify } from "./autonomy.js";
+import { running } from "./activity.js";
 
 const HOUR = 3_600_000;
 const ACTIVITY = new Set(["claim", "checkpoint", "move", "log"]);
@@ -54,6 +55,17 @@ export function resumeTeam(store: Store, note?: string): void {
   if (!paused(store.ledger.events())) fail("The team isn't paused.");
   store.ledger.record("resume", null, note ? { note } : {});
   store.say("Team resumed.");
+}
+
+/** `end-run`: mark a stopped or crashed agent's run ended (TaskStop fires no hook), so it stops being live and gives no
+ * dispatch entry until it acts again. The executive's or the Director's call. */
+export function endRun(store: Store, run: string, note?: string): void {
+  store.require();
+  const role = store.ledger.who.role;
+  if (role && role !== "executive" && role !== "director") fail(`Only the executive or the director ends a run; this run is the ${role} role.`);
+  if (!running(store).some((r) => r.run === run)) fail(`${run} is not running.`);
+  store.ledger.record("end-run", null, { ended: run, ...(note ? { note } : {}) });
+  store.say(`${run} ended: no longer live.`);
 }
 
 /** A limit (bounces, attempts) just crossed on a plan: ask the Director, once per crossing. The question blocks the plan. */
