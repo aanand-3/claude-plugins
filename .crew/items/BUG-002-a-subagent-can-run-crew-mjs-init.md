@@ -2,13 +2,14 @@
 id: BUG-002
 type: bug
 title: A subagent can run crew.mjs init and rewrite .crew/bin
-status: triaged
+status: done
 severity: S3
 priority: P3
 goal: G-007
 plan: P-051
 created: 2026-10-23
-closed:
+closed: 2026-10-26
+completed: 2026-10-26
 ---
 
 # BUG-002: A subagent can run crew.mjs init and rewrite .crew/bin
@@ -54,3 +55,4 @@ The bug still reproduces, but only partly as the title says. Running the vendore
 - Release's `refresh_bin` (policy `release.refresh_bin`) is the sanctioned route for updating `.crew/bin` and is out of scope here.
 - 2026-10-26: Confirmed at b39b036: guard lets crew.mjs init through for subagents (only injects identity) from .crew/bin, plugins/crew/skills/hub/dist and plugin-cache paths. Real overwrite of .crew/bin and .crew/templates/agents happens only when init runs from a non-vendored copy (vendor() returns early for .crew/bin). Filled the report sections.
 - 2026-10-26: status new → triaged — priority P3, severity S3
+- 2026-10-26: status triaged → done — Fixed by P-051 (6273d49, landed)
