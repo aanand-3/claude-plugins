@@ -43,3 +43,4 @@ Breaks G-001's outcome ("nothing important lives only in chat"). Hits every crew
 ## Notes
 The executive found it while reviewing P-018's report (2026-10-24).
 - 2026-10-24: status new → triaged — priority P1, severity S2
+- 2026-10-26: DONE: fixed by P-019 (152650b). CLAUDE.md and templates/CLAUDE.project.md carry the 'Project state lives in the hub' block; guard.ts denies subagent writes outside the repository (guard.test.ts 'guard_outside_repo: subagents keep project state in the repository (BUG-006)'), tightened later by P-051 (paths.write). No remaining work.
