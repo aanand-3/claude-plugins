@@ -235,3 +235,65 @@ it("goal closure: a focus goal with nothing open goes to the PM, who closes it; 
   ok(as(repo, "pm", "move", "G-001", "done"));
   expect(tr(repo, "policy", "show").stdout).toMatch(/role_gates goal\.done +pm/);
 });
+
+// ------------------------------------------------------------------ P-047: `next --role director` follows dispatch
+const next = (role: string) => { const r = as(repo, role, "next"); ok(r); return r.stdout; };
+/** Each director entry of `dispatch --json` (questions aside) appears in `next --role director` as its task. */
+const directorTasks = () => dispatch().entries.filter((e: Json) => e.role === "director" && !e.ref?.startsWith("Q-")).map((e: Json) => e.task);
+
+it("director next: no staffing, overlap or goal-closure lines; the PM still assigns (P-047 AC1)", () => {
+  focused();
+  ok(newPlan(repo, "Signup endpoint", PLAN_DRAFT, "--goal", "G-001", "--items", "FEAT-001"));
+  ok(newPlan(repo, "Login", PLAN_DRAFT, "--goal", "G-001", "--items", "FEAT-002", "--touches", "src/login/**"));
+  for (const p of ["P-001", "P-002"]) ok(as(repo, "architect", "move", p, "ready"));
+  repo.commit("chore(hub): plans");
+  const out = next("director");
+  expect(out).not.toMatch(/staff \d/);
+  expect(out).not.toContain("overlap");
+  expect(out).not.toContain("has nothing open");
+  const pm = next("pm");
+  for (const p of ["P-001", "P-002"]) expect(pm).toMatch(new RegExp(`open ${p}: .* → assign ${p} --to developer`));
+});
+
+it("director next: a blocked plan's unblock entry, as dispatch gives it (P-047 AC2)", () => {
+  started(repo);
+  ok(as(repo, "developer", "move", "P-001", "blocked", "--note", "waiting on a vendor"));
+  const tasks = directorTasks();
+  expect(tasks).toEqual([expect.stringMatching(/^unblock P-001: /)]);
+  expect(next("director")).toContain(tasks[0]);
+});
+
+it("director next: a stale claim's reassign entry, as dispatch gives it (P-047 AC2)", () => {
+  started(repo, "dev-1");
+  repo.commit("chore(P-001): start");
+  repo.git("switch", "-q", "main");
+  policy("limits: { stale_claim_hours: 0 }\n");
+  const tasks = directorTasks();
+  expect(tasks).toEqual([expect.stringMatching(/^reassign P-001: /)]);
+  expect(next("director")).toContain(tasks[0]);
+});
+
+it("director next: a question to the director once, as QUESTION; an escalation waits on the executive (P-047 AC3)", () => {
+  lifecycle(repo);
+  ok(newPlan(repo));
+  ok(as(repo, "developer", "ask", "P-001", "--to", "director", "Who owns the vendor contract?"));
+  const qid = events(repo, "--type", "ask").at(-1).qid;
+  let out = next("director");
+  expect(out.split("\n").filter((l: string) => l.includes(qid))).toEqual([expect.stringMatching(/^QUESTION /)]);
+  expect(out).toMatch(new RegExp(`QUESTION +${qid} `));
+  ok(as(repo, "pm", "escalate", "P-001", "Drop it?"));
+  out = next("director");
+  expect(out).toMatch(/waiting on the executive: Q-\S+ — Drop it\?/);
+});
+
+it("director next: the stall line when open work can't move (P-047 AC4)", () => {
+  lifecycle(repo);
+  ok(newPlan(repo));
+  ok(newPlan(repo, "Login", PLAN_DRAFT, "--touches", "src/login/**", "--depends", "P-001"));
+  for (const p of ["P-001", "P-002"]) ok(as(repo, "architect", "move", p, "ready"));
+  ok(as(repo, "pm", "escalate", "P-001", "Ship it at all?"));
+  repo.commit("chore(hub): plans");
+  const tasks = directorTasks();
+  expect(tasks).toEqual([expect.stringMatching(/^stall: nothing can move — /)]);
+  expect(next("director")).toContain(tasks[0]);
+});

@@ -46,7 +46,7 @@ it("staff stays within max_agents", () => {
   expect(s.free).toBe(1);
   expect(s.start.map((p: { id: string }) => p.id)).toEqual(["P-002"]);
   expect(s.waiting).toContainEqual({ id: "P-003", why: "no free agent (budgets.max_agents)" });
-  expect(tr(repo, "next", "--as", "director").stdout).toContain("staff 1 ready plan");
+  expect(tr(repo, "next", "--as", "director").stdout).not.toMatch(/staff \d/); // staffing is dispatch's and the PM's
 });
 
 // ------------------------------------------------------------------ T3a: assignment and the lifecycle preset
@@ -184,7 +184,7 @@ it("a stale claim is flagged and reassigned", () => {
   repo.commit("chore(hub): stale after 0h");
   expect(tr(repo, "check").stdout).toContain("P-001: claim by");
   expect(tr(repo, "check").stdout).toContain("is stale");
-  expect(as(repo, "director", "next").stdout).toContain("stale: P-001");
+  expect(as(repo, "director", "next").stdout).toContain("reassign P-001: its claim by");
   let r = as(repo, "developer", "reassign", "P-001");
   expect(r.returncode).not.toBe(0);
   expect(r.stderr).toContain("for the director role");

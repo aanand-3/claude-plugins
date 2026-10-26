@@ -200,7 +200,10 @@ it("the runner stops on escalation, pause, budget and no approved goal left", ()
   r = tr(repo, "run", "--check"); // the goal queue focuses the approved goal
   expect(r.returncode).toBe(0);
   expect(r.stdout).toContain("FOCUS  — → G-001");
-  expect(tr(repo, "run").stdout).toContain("while node .crew/bin/crew.mjs run --check");
+  const printed = tr(repo, "run").stdout;
+  expect(printed).toContain("node .crew/bin/crew.mjs run --until-done");
+  for (const s of ["--max-passes", "--command"]) expect(printed).toContain(s);
+  expect(printed).not.toContain("while node");
   expect(as(repo, "director", "escalate", "G-001", "Ship to production?").returncode).toBe(0);
   r = tr(repo, "run", "--check");
   expect(r.returncode).toBe(1);

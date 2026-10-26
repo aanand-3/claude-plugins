@@ -8,11 +8,11 @@ import { byKey, fail, stripComments } from "../../core/text.js";
 import { evidence, implementers } from "../work/execution.js";
 import { budgetProblems } from "../work/workflow.js";
 import { openQuestions } from "./questions.js";
-import { staffing } from "./team.js";
+import { dispatch } from "./dispatch.js";
 import { reviewProblems } from "../work/review.js";
 import { landedProblems, mergeOrder } from "../work/release.js";
 import { fastLane } from "../../core/work/gates.js";
-import { paused, staleClaims } from "./liveness.js";
+import { paused } from "./liveness.js";
 
 type Rule = (s: View) => string[];
 
@@ -58,22 +58,7 @@ const RULES: Record<string, Rule[]> = {
     (v) => openQuestions(v.events).filter((x) => x.escalation).map((x) => `waiting on the executive: ${x.id} — ${x.text}`),
     (v) => budgetProblems(v.store).map((b) => `over budget: ${b}`),
     (v) => (paused(v.events) ? ["the team is paused: no staffing or starts until the executive or you `resume`"] : []),
-    (v) => staleClaims(v.store, v.events).map((s) => `stale: ${s.ref} held by ${s.actor} with no activity for ${s.hours}h → reassign ${s.ref}`),
-    (v) => v.status("blocked").map((p) => `unblock ${p.id}: ${p.get("title")}`),
-    (v) => {
-      if (paused(v.events)) return [];
-      const n = staffing(v.store).start.length;
-      return n ? [`staff ${n} ready plan${n > 1 ? "s" : ""}: \`staff\` → the PM assigns, developers start`] : [];
-    },
-    (v) => [...v.plans.values()].filter((p) => p.get("status") === "in-progress").flatMap((p) =>
-      overlapping(p, v.plans, v.shared).map((o) => `${p.id} and ${o.id} overlap on ${o.globs.join(", ")} — sequence them, narrow touches or list the file in hub.shared`)),
-    (v) => {
-      const g = v.goals.get(v.focus);
-      if (!v.focus) return v.goals.size ? ["set the focus goal: focus G-###"] : [];
-      const open = q.goalPlans(v.focus, v.plans, v.items).filter((p) => !["done", "dropped"].includes(p.get("status") ?? ""));
-      return g && !open.length && !q.goalItems(v.focus, v.items).some((i) => q.itemStatus(i, v.plans) !== "done")
-        ? [`${v.focus} has nothing open: confirm its acceptance criteria, move it done, and focus the next goal`] : [];
-    },
+    (v) => dispatch(v.store).entries.filter((e) => e.role === "director" && !e.ref?.startsWith("Q-")).map((e) => e.task),
   ],
   pm: [
     (v) => v.ranked("new").filter((i) => i.id.startsWith("BUG-")).slice(0, 3).map((i) => `triage bug ${i.id}: ${i.get("title")}`),
