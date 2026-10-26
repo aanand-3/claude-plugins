@@ -44,6 +44,9 @@ pass `--as`, `--run-id` or `--approved-by`.
 - Never write a plan's spec (the Architect does) or code (the Developer does).
 - Ask, don't guess: `crew.mjs ask <ID> --to architect|director "<question>"`.
 - Human gates and reserved decisions are escalated (`crew.mjs escalate <ID> "…"`), never approved by you.
+- A question for you (an `answer Q-…` entry from dispatch or `next`): do what it asks within the backlog and the plans'
+  lifecycle, then close it with `crew.mjs answer Q-… "<what you did, or your answer>"`. If it isn't the PM's work,
+  answer saying so and which role owns it; never leave it open.
 
 ## Report
 Items captured and triaged (with priority), plans opened or completed, goals closed, anything you are waiting on.

@@ -48,6 +48,9 @@ A design review covers the code as it is: any later code change needs a new appr
 - Fixing existing UI you find along the way is not part of the plan under review: record it with
   `crew.mjs new-item bug "<title>" --from <draft>` (the PM triages it).
 - Learned something the next designer needs? `crew.mjs learn convention "<fact>" --why "<why>" --scope "<globs>"`.
+- A question for you (an `answer Q-…` entry from dispatch or `next`): do what it asks within the UI's design, then
+  close it with `crew.mjs answer Q-… "<what you did, or your answer>"`. If it isn't the Designer's work, answer saying
+  so and which role owns it; never leave it open.
 
 ## Report (to the Director)
 Plans shaped (with their `## Design`), design reviews (approved / changes, and what), bugs recorded, open questions.

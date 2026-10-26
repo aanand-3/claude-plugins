@@ -65,6 +65,16 @@ it("a project role renders from the generic template", () => {
   expect(agentOut.updatedInput.command).toContain("--as copywriter --run-id copywriter:a1"); // the guard knows the rendered agent
 });
 
+it("every role template closes its asks with answer (BUG-044)", () => {
+  for (const name of templates()) expect(read(join(AGENT_TEMPLATES, name)), name).toContain("crew.mjs answer Q-");
+  init(repo, { mode: "" });
+  repo.write(".crew/policy.yaml", "mode: ai-native\nroles:\n  copywriter:\n    charter: owns the copy\n");
+  expect(tr(repo, "agents").returncode).toBe(0);
+  for (const role of ["pm", "copywriter"]) {
+    expect(read(join(repo.path, `.claude/agents/crew-${role}.md`)), role).toContain("crew.mjs answer Q-");
+  }
+});
+
 it("agents --check flags policy changes", () => {
   init(repo, { mode: "" });
   repo.write(".crew/policy.yaml", "mode: ai-native\nroles:\n  copywriter:\n    charter: owns the visual design\n");
