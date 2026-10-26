@@ -5,11 +5,11 @@ goal: G-006
 items: CHORE-016
 touches: plugins/crew/skills/hub/references/model.md, plugins/crew/skills/hub/SKILL.md, docs/vision.md
 depends_on:
-status: ready
+status: in-progress
 branch: plan/P-069-fix-stale-hub-references-in-model-md-hub
 pr:
 created: 2026-10-26
-started:
+started: 2026-10-26
 completed:
 assignee: developer
 ---
@@ -109,5 +109,6 @@ Docs only; lands with the plan. Rollback: revert the commit.
 - 2026-10-26: status draft → ready
 - 2026-10-26: re-goaled none → G-006 by Arpit Anand: CHORE-016 belongs to G-006 (docs true to the code); plan lost the goal
 - 2026-10-26: assigned to the developer role
+- 2026-10-26: status ready → in-progress — branch plan/P-069-fix-stale-hub-references-in-model-md-hub
 
 ## Outcome
