@@ -130,6 +130,23 @@ needs none of its code, since it hooks the plan's move to `done` whichever edge 
 
 ## Handoff
 
+_Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
+
+- P-045: Items close with their plan; the PM closes any item [in-progress] tasks 0/5 — claimed by Arpit Anand (developer:a90fc71287f45dcec)
+- last checkpoint 2026-10-26 04:51 at T5 (90cf10b) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-045-items-close-with-their-plan-the-pm/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/item-close.test.ts -t flow ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-045-items-close-with-their-plan-the-pm checkout -- plugins/crew/skills/hub/dist; exit $r (AC 1)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-045-items-close-with-their-plan-the-pm/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/item-close.test.ts -t 'follow|never blocks' ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-045-items-close-with-their-plan-the-pm checkout -- plugins/crew/skills/hub/dist; exit $r (AC 2,3)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-045-items-close-with-their-plan-the-pm/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/item-close.test.ts -t 'pm owns' ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-045-items-close-with-their-plan-the-pm checkout -- plugins/crew/skills/hub/dist; exit $r (AC 4)
+- ✓ grep -n item.done /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-045-items-close-with-their-plan-the-pm/plugins/crew/skills/hub/references/model.md (AC 5)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-045-items-close-with-their-plan-the-pm/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/items.test.ts test/hub/e2e/review-fixes.test.ts test/hub/e2e/policy.test.ts test/hub/e2e/team.test.ts test/hub-worktrees.test.ts && npm run typecheck ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-045-items-close-with-their-plan-the-pm checkout -- plugins/crew/skills/hub/dist; exit $r
+- next: T1: item flow and closed set in model.ts → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/item-close.test.ts -t "flow"` (AC1)
+- evidence: AC1 ✓ (self), AC2 ✓ (self), AC3 ✓ (self), AC4 ✓ (self), AC5 ✓ (self)
+
+Latest log:
+- 2026-10-25: status draft → ready — BUG-024 specced as its own plan (P-032 is at max_tasks and waits on six plans)
+- 2026-10-25: assigned to the developer role — BUG-024; touches overlap P-032/P-021/P-025/P-031 a few lines each
+- 2026-10-26: status ready → in-progress — branch plan/P-045-items-close-with-their-plan-the-pm
+
 ## Progress log
 
 - 2026-10-25: status draft → ready — BUG-024 specced as its own plan (P-032 is at max_tasks and waits on six plans)
