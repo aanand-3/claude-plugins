@@ -11,6 +11,7 @@ pr:
 created: 2026-10-26
 started:
 completed:
+assignee: developer
 ---
 
 # P-077: Give the sample-project test setups a hang deadline, not a 120 s load limit
@@ -123,5 +124,6 @@ reverting the plan.
 ## Progress log
 
 - 2026-10-26: status draft → ready
+- 2026-10-26: assigned to the developer role
 
 ## Outcome
