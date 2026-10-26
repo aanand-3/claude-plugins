@@ -12,6 +12,8 @@ it("hints at leftover .py scripts, files that still run them and a modules: bloc
   const tr = (...args: string[]) => execFileSync("node", [DIST, ...args], { cwd: dir, encoding: "utf8" });
   const write = (rel: string, text: string) => { mkdirSync(join(dir, rel, ".."), { recursive: true }); writeFileSync(join(dir, rel), text); };
   execFileSync("git", ["init", "-q", "-b", "main"], { cwd: dir });
+  execFileSync("git", ["config", "user.name", "Test"], { cwd: dir });
+  execFileSync("git", ["config", "user.email", "test@example.com"], { cwd: dir });
   tr("init");
   const clean = tr("check");
   write(".crew/bin/check_secrets.py", "# old\n");
