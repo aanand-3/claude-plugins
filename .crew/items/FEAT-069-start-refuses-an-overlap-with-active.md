@@ -2,9 +2,9 @@
 id: FEAT-069
 type: feat
 title: start refuses an overlap with active work, as staff does
-status: new
-priority:
-goal:
+status: triaged
+priority: P2
+goal: G-007
 plan: P-071
 created: 2026-10-26
 closed:
@@ -21,3 +21,4 @@ Remainder of FEAT-021 / P-003 from the unmerged branch claude/crew-bug-001-9d4b0
 - [ ]
 
 ## Notes
+- 2026-10-26: status new → triaged — priority P2
