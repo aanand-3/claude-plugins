@@ -2,13 +2,13 @@
 id: BUG-020
 type: bug
 title: Usage events repeat a resumed run's earlier tokens, so spend overcounts
-status: triaged
+status: duplicate
 severity: S3
 priority: P2
 goal: G-003
 plan:
 created: 2026-10-24
-closed:
+closed: 2026-10-26
 ---
 
 # BUG-020: Usage events repeat a resumed run's earlier tokens, so spend overcounts
@@ -44,3 +44,4 @@ S3: every spend figure (Overview KPI, Spend by agent, Top plans, doc Spend rows,
 ## Notes
 Predates P-020 (capture came with FEAT-020); P-020 AC7 only asks the UI to match the ledger, which it does. Found by QA while testing P-020.
 - 2026-10-24: status new → triaged — priority P2, severity S3
+- 2026-10-26: status triaged → duplicate — duplicate of BUG-027 (fixed by P-049, done): countedUsage() in ledger.ts counts each usage event as its delta over the run's previous one; spend() and liveRuns read through it; covered by packages/crew/test/ledger.test.ts
