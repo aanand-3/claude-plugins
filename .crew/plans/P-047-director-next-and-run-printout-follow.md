@@ -5,7 +5,7 @@ goal: G-007
 items: CHORE-021
 touches: packages/crew/src/hub/commands/team/roles.ts, packages/crew/src/hub/commands/team/autonomy.ts, packages/crew/test/hub/e2e/dispatch.test.ts, packages/crew/test/hub/e2e/team.test.ts, packages/crew/test/hub/e2e/team-2.test.ts
 depends_on: P-031, P-034
-status: in-review
+status: accepted
 branch: plan/P-047-director-next-and-run-printout-follow
 pr:
 created: 2026-10-25
@@ -98,6 +98,7 @@ Latest log:
 - 2026-10-26: assigned to the developer role
 - 2026-10-26: status ready → in-progress — branch plan/P-047-director-next-and-run-printout-follow
 - 2026-10-26: status in-progress → in-review
+- 2026-10-26: status in-review → accepted
 
 ## Outcome
 
