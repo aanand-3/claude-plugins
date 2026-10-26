@@ -5,11 +5,11 @@ goal: G-007
 items: CHORE-021
 touches: packages/crew/src/hub/commands/team/roles.ts, packages/crew/src/hub/commands/team/autonomy.ts, packages/crew/test/hub/e2e/dispatch.test.ts, packages/crew/test/hub/e2e/team.test.ts, packages/crew/test/hub/e2e/team-2.test.ts
 depends_on: P-031, P-034
-status: ready
+status: in-progress
 branch: plan/P-047-director-next-and-run-printout-follow
 pr:
 created: 2026-10-25
-started:
+started: 2026-10-26
 completed:
 assignee: developer
 ---
@@ -81,5 +81,6 @@ n/a — text only; ships in the bundle (Release builds it) and reaches this repo
 
 - 2026-10-25: status draft → ready — Architect: specced (ACs, tasks, test plan, exact touches)
 - 2026-10-26: assigned to the developer role
+- 2026-10-26: status ready → in-progress — branch plan/P-047-director-next-and-run-printout-follow
 
 ## Outcome
