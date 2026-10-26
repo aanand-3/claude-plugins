@@ -192,6 +192,7 @@ Latest log:
 - 2026-10-26: landed on main as b0cf2fc
 - 2026-10-26: landed on main as b0cf2fc; full suite 605/605 passed (exit 0); .crew/bin refreshed. Human step pending: run merge_settings.mjs per the plan's Rollout section.
 - 2026-10-26: status accepted → done
+- 2026-10-26: Rollout human step done: merge_settings.mjs applied, committed as aebf663; doctor shows OK hooks.
 
 ## Outcome
 - This repo's .claude/settings.json carries the SessionStart context hook and the Stop and PreCompact `checkpoint --auto` hooks, merged in via the guidelines refresh path.
