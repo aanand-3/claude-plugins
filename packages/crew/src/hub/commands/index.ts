@@ -23,6 +23,7 @@ import { registration as team_dispatch } from "./team/dispatch.reg.js";
 import { registration as team_liveness } from "./team/liveness.reg.js";
 import { registration as team_agents } from "./team/agents.reg.js";
 import { registration as team_questions } from "./team/questions.reg.js";
+import { registration as team_inbox } from "./team/inbox.reg.js";
 import { registration as views_export } from "./views/export.reg.js";
 import { registration as views_ui } from "./views/ui.reg.js";
 import { registration as views_design } from "./views/design.reg.js";
@@ -55,6 +56,7 @@ export const REGISTRATIONS: [file: string, registration: Registration][] = [
   ["team/liveness.reg.ts", team_liveness],
   ["team/agents.reg.ts", team_agents],
   ["team/questions.reg.ts", team_questions],
+  ["team/inbox.reg.ts", team_inbox],
   ["views/export.reg.ts", views_export],
   ["views/ui.reg.ts", views_ui],
   ["views/design.reg.ts", views_design],

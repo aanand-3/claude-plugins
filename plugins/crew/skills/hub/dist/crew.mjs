@@ -9491,7 +9491,16 @@ function hubCommand(seg) {
   for (i++; i < w.length && w[i].startsWith("-"); i++) if (!w[i].includes("=")) i++;
   return w[i] ?? null;
 }
+var UI_COMMANDS = "/api/commands/";
+function uiCommand(h) {
+  const input = h.tool_input ?? {};
+  const cmd = h.tool_name === "Bash" ? String(input.command ?? "") : "";
+  const hit = h.tool_name === "WebFetch" ? String(input.url ?? "").includes(UI_COMMANDS) : cmd.includes(UI_COMMANDS) && /\b(curl|wget|node|python[\d.]*|fetch)\b/.test(cmd);
+  return hit ? { deny: "only the human answers and approves, from their own terminal or browser" } : null;
+}
 function decide(store, h) {
+  const ui = uiCommand(h);
+  if (ui) return ui;
   if (!h.agent_type) return null;
   const root = store.ws.root;
   const role = agentRole(root, h.agent_type);
@@ -9769,6 +9778,7 @@ function questions(events) {
         ts: e.ts,
         blocking: e.blocking !== false,
         escalation: e.escalation === true,
+        options: Array.isArray(e.options) ? e.options.map(String) : [],
         answer: null
       });
     } else if (e.type === "answer" && byId.has(String(e.qid))) {
@@ -9788,6 +9798,7 @@ function escalationHolds(events) {
   return { held, stops };
 }
 var FORWARD = /* @__PURE__ */ new Set(["ready", "in-progress", "in-review", "accepted", "done", "active", "decided", "triaged"]);
+var splitOptions = (raw) => raw === void 0 ? void 0 : raw.split(";").map((x) => x.trim()).filter(Boolean);
 function ask(store, ref, to, text2, o = {}) {
   store.require();
   const id = ref?.toUpperCase();
@@ -9799,13 +9810,20 @@ function ask(store, ref, to, text2, o = {}) {
   if (!roles.includes(to)) fail(`--to must be one of ${roles.join(", ")}.`);
   if (!text2.trim()) fail("Ask a question.");
   const qid = `Q-${randomBytes2(3).toString("hex")}`;
-  store.ledger.record("ask", id ?? null, { qid, to, text: text2, ...o.fyi ? { blocking: false } : {}, ...o.escalation ? { escalation: true } : {} });
+  store.ledger.record("ask", id ?? null, {
+    qid,
+    to,
+    text: text2,
+    ...o.fyi ? { blocking: false } : {},
+    ...o.escalation ? { escalation: true } : {},
+    ...o.options?.length ? { options: o.options } : {}
+  });
   store.say(`${qid} \u2192 ${to}${id ? ` about ${id}` : ""}${o.fyi ? "" : id ? ` (blocks ${id} until answered)` : ""}`);
   if (o.escalation || to === "executive") notify(store, "escalation", id ?? null, `${qid}: ${text2}`, qid);
   return qid;
 }
-function escalate(store, ref, text2) {
-  return ask(store, ref, store.policy.policy.escalation.to, text2, { escalation: true });
+function escalate(store, ref, text2, o = {}) {
+  return ask(store, ref, store.policy.policy.escalation.to, text2, { escalation: true, options: o.options });
 }
 function answer(store, qid, text2, o = {}) {
   store.require();
@@ -9835,7 +9853,7 @@ function listQuestions(store, o = {}) {
   }
   if (!qs.length) store.say(o.all ? "No questions." : "No open questions.");
   for (const q of qs) {
-    store.say(`${q.id}  ${q.escalation ? "ESCALATION " : ""}${q.by} \u2192 ${q.to}${q.ref ? ` about ${q.ref}` : ""}: ${q.text}` + (q.answer ? `  \u2014 answered by ${q.answer.by}: ${q.answer.text}` : q.blocking && q.ref ? "  (blocking)" : ""));
+    store.say(`${q.id}  ${q.escalation ? "ESCALATION " : ""}${q.by} \u2192 ${q.to}${q.ref ? ` about ${q.ref}` : ""}: ${q.text}` + (q.options.length ? `  [options: ${q.options.join(" \xB7 ")}]` : "") + (q.answer ? `  \u2014 answered by ${q.answer.by}: ${q.answer.text}` : q.blocking && q.ref ? "  (blocking)" : ""));
   }
 }
 
@@ -13779,26 +13797,28 @@ var registration21 = {
 var registration22 = {
   usage: [
     "  ask [ID] --to ROLE TEXT [--fyi] \xB7 escalate [ID] TEXT \xB7 answer Q-\u2026 TEXT [--decision [--scope GLOBS]] [--approved-by NAME]",
+    `  ask/escalate \u2026 [--options "A; B"]            the answers to choose from (split on ';'), shown by questions and inbox`,
     "  questions [--to ROLE] [--ref ID] [--all] [--json]       questions between roles; an open one blocks only its document"
   ],
   cli: {
     ask: {
       pos: ["text"],
       rest: true,
-      str: ["to"],
+      str: ["to", "options"],
       flag: ["fyi"],
       required: ["to"],
       run: (s2, a) => {
         const [ref, text2] = a.pos.length > 1 ? [a.pos[0], a.pos[1]] : [void 0, a.pos[0]];
-        ask(s2, ref, str(a, "to"), text2, { fyi: !!a.opt.fyi });
+        ask(s2, ref, str(a, "to"), text2, { fyi: !!a.opt.fyi, options: splitOptions(str(a, "options")) });
       }
     },
     escalate: {
       pos: ["text"],
       rest: true,
+      str: ["options"],
       run: (s2, a) => {
         const [ref, text2] = a.pos.length > 1 ? [a.pos[0], a.pos[1]] : [void 0, a.pos[0]];
-        escalate(s2, ref, text2);
+        escalate(s2, ref, text2, { options: splitOptions(str(a, "options")) });
       }
     },
     answer: {
@@ -13850,8 +13870,69 @@ var registration22 = {
   }
 };
 
-// src/hub/commands/views/export.reg.ts
+// src/hub/commands/team/inbox.ts
+function inboxEntries(store) {
+  const events = store.ledger.events(), policy2 = store.policy.policy;
+  const goals2 = [...store.goals().values()].filter((g) => g.get("status") === "proposed").sort(byKey((g) => [g.id])).map((g) => ({
+    kind: "goal",
+    ref: g.id,
+    question: `Approve ${g.id}: ${g.get("title")}?`,
+    options: ["approve", "drop"],
+    holds: "its plans and items wait until it is approved",
+    how: `move ${g.id} active --approved-by <you> \xB7 move ${g.id} dropped --approved-by <you>`
+  }));
+  const { held } = escalationHolds(events);
+  const escalations = openQuestions(events).filter((q) => q.escalation || q.to === "executive").map((q) => ({
+    kind: "escalation",
+    ref: q.id,
+    about: q.ref,
+    question: q.text,
+    options: q.options,
+    holds: q.ref && held.get(q.ref)?.includes(q.id) ? `holds ${q.ref}` : "stops the team",
+    how: `answer ${q.id} "<decision>" --approved-by <you>`
+  }));
+  const approvals = approvalReason(policy2, "plan.accepted") === null ? [] : [...store.plans(true).values()].filter((p) => p.get("status") === "in-review" && evidence(store, p).every((e) => e.verify?.ok && e.independent) && !reviewProblems(store, p).length).sort(byKey((p) => [p.id])).map((p) => ({
+    kind: "approval",
+    ref: p.id,
+    question: `Accept ${p.id}: ${p.get("title")}?`,
+    options: ["approve"],
+    holds: p.id,
+    how: `move ${p.id} accepted --approved-by <you>`
+  }));
+  return [...goals2, ...escalations, ...approvals];
+}
+function inbox(store, json = false) {
+  store.require();
+  const entries = inboxEntries(store);
+  if (json) return store.say(JSON.stringify({ entries }));
+  if (!entries.length) return store.say("Inbox empty \u2014 nothing waits on you.");
+  for (const e of entries) {
+    store.say(`${e.kind.toUpperCase()}  ${e.ref}${e.about ? ` about ${e.about}` : ""}: ${e.question}`);
+    if (e.options.length) store.say(`  options: ${e.options.join(" \xB7 ")}`);
+    store.say(`  holds:   ${e.holds}`);
+    store.say(`  answer:  ${e.how}`);
+  }
+}
+
+// src/hub/commands/team/inbox.reg.ts
 var registration23 = {
+  usage: [
+    "  inbox [--json]                                what waits on the human: goals to approve, escalations, human-gated steps"
+  ],
+  cli: {
+    inbox: { pos: [], flag: ["json"], run: (s2, a) => inbox(s2, !!a.opt.json) }
+  },
+  tools: {
+    inbox: {
+      description: "What waits on the human (`crew.mjs inbox --json`): goals to approve, escalations and plan steps the policy gates to a human, each with its question, options, what it holds and the command a human runs. Read-only.",
+      input: obj({}),
+      run: (st) => inbox(st, true)
+    }
+  }
+};
+
+// src/hub/commands/views/export.reg.ts
+var registration24 = {
   usage: [
     "  export [--json] [--out FILE]                  interactive HTML view (.crew/view/index.html) or the graph as JSON"
   ],
@@ -14066,6 +14147,7 @@ Do each, then \`crew.mjs design done <id>\` (the page updates live) and run \`de
 
 // src/hub/server.ts
 var str2 = (b, k) => typeof b[k] === "string" && b[k] ? b[k] : void 0;
+var approver = (b, how) => str2(b, "approved_by")?.trim() || fail(`a human answers it: \`crew.mjs ${how} --approved-by <name>\` \u2014 give your name`);
 var ACTIONS2 = {
   move: (s2, b) => {
     move(s2, str2(b, "id") ?? fail("id is required"), str2(b, "status") ?? fail("status is required"), str2(b, "note"));
@@ -14078,7 +14160,15 @@ var ACTIONS2 = {
   }),
   focus: (s2, b) => setFocus(s2, str2(b, "goal") ?? fail("goal is required")),
   "design-save": (s2, b) => saveDesign(s2, b),
-  "design-studio": (s2, b) => updateStudio(s2, b)
+  "design-studio": (s2, b) => updateStudio(s2, b),
+  answer: (s2, b) => {
+    const qid = str2(b, "qid") ?? fail("qid is required");
+    answer(s2, qid, str2(b, "text") ?? fail("text is required"), { approvedBy: approver(b, `answer ${qid} "\u2026"`) });
+  },
+  "approve-goal": (s2, b) => {
+    const id = (str2(b, "id") ?? fail("id is required")).toUpperCase();
+    move(s2, id, "active", void 0, false, approver(b, `move ${id} active`));
+  }
 };
 function runAction(open, name, body2) {
   const action2 = ACTIONS2[name];
@@ -14133,6 +14223,7 @@ function serve(store, o) {
     }
     if (req.method === "GET" && path === "/api/graph") return send(res, 200, buildGraph(open()));
     if (req.method === "GET" && path === "/api/design") return send(res, 200, designPayload(open()));
+    if (req.method === "GET" && path === "/api/inbox") return send(res, 200, { entries: inboxEntries(open()) });
     if (req.method === "GET" && path === "/api/activity") {
       const s2 = open(), ref = new URLSearchParams((req.url ?? "").split("?")[1] ?? "").get("ref");
       if (ref === null) return send(res, 200, { running: running(s2), recent: readActivity(feedPath(s2)).slice(-50) });
@@ -14234,7 +14325,7 @@ function openBrowser(url) {
 }
 
 // src/hub/commands/views/ui.reg.ts
-var registration24 = {
+var registration25 = {
   usage: [
     "  ui [--port 8765] [--no-open] [--design]       serve the view live on 127.0.0.1 (updates as files change);",
     "                                                --design opens the design studio (/design)"
@@ -14255,7 +14346,7 @@ var registration24 = {
 };
 
 // src/hub/commands/views/design.reg.ts
-var registration25 = {
+var registration26 = {
   usage: [
     "  design show [--json] \xB7 design wait [--timeout 1800] \xB7 design done ID|all",
     "                                                the design studio's state; wait blocks until the page hands a",
@@ -14285,7 +14376,7 @@ var registration25 = {
 };
 
 // src/hub/commands/views/checks.reg.ts
-var registration26 = {
+var registration27 = {
   cli: {
     check: { pos: [], run: (s2) => check(s2) }
   },
@@ -14478,7 +14569,7 @@ function probeHubCommit(home2) {
 }
 
 // src/hub/commands/views/doctor.reg.ts
-var registration27 = {
+var registration28 = {
   usage: [
     `  ${"doctor [--json]".padEnd(46)}is this project ready for the loop: OK/WARN/FAIL per check, with the fix`
   ],
@@ -14595,7 +14686,7 @@ function recentlyDone(plans2) {
 }
 
 // src/hub/commands/views/reports.reg.ts
-var registration28 = {
+var registration29 = {
   cli: {
     status: { pos: [], flag: ["write"], run: (s2, a) => status(s2, !!a.opt.write) }
   },
@@ -14609,7 +14700,7 @@ var registration28 = {
 };
 
 // src/hub/commands/views/graph.reg.ts
-var registration29 = {
+var registration30 = {
   tools: {
     graph: {
       description: "Every tracked document (idea, goals, items, plans) with status, gates, relations and the focus, as JSON (`crew.mjs export --json`).",
@@ -14646,13 +14737,14 @@ var REGISTRATIONS = [
   ["team/liveness.reg.ts", registration20],
   ["team/agents.reg.ts", registration21],
   ["team/questions.reg.ts", registration22],
-  ["views/export.reg.ts", registration23],
-  ["views/ui.reg.ts", registration24],
-  ["views/design.reg.ts", registration25],
-  ["views/checks.reg.ts", registration26],
-  ["views/doctor.reg.ts", registration27],
-  ["views/reports.reg.ts", registration28],
-  ["views/graph.reg.ts", registration29]
+  ["team/inbox.reg.ts", registration23],
+  ["views/export.reg.ts", registration24],
+  ["views/ui.reg.ts", registration25],
+  ["views/design.reg.ts", registration26],
+  ["views/checks.reg.ts", registration27],
+  ["views/doctor.reg.ts", registration28],
+  ["views/reports.reg.ts", registration29],
+  ["views/graph.reg.ts", registration30]
 ];
 var REGISTRY = load(REGISTRATIONS);
 

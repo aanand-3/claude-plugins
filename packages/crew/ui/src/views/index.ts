@@ -1,9 +1,10 @@
 /** The view registry: adding a page is adding a file and one entry here. */
-import { FileText, KanbanSquare, LayoutDashboard, ListTree, type LucideIcon, Network } from "lucide-react";
+import { FileText, Inbox as InboxIcon, KanbanSquare, LayoutDashboard, ListTree, type LucideIcon, Network } from "lucide-react";
 import type { ComponentType } from "react";
 import { Board } from "./Board";
 import { DocPage } from "./DocPage";
 import { GraphView } from "./GraphView";
+import { Inbox } from "./Inbox";
 import { Overview } from "./Overview";
 import { Tree } from "./Tree";
 
@@ -20,5 +21,6 @@ export const VIEWS: ViewDef[] = [
   { route: "board", title: "Board", icon: KanbanSquare, component: Board, nav: true },
   { route: "tree", title: "Hierarchy", icon: ListTree, component: Tree, nav: true },
   { route: "graph", title: "Graph", icon: Network, component: GraphView, nav: true },
+  { route: "inbox", title: "Inbox", icon: InboxIcon, component: Inbox, nav: true },
   { route: "doc", title: "Document", icon: FileText, component: DocPage, nav: false },
 ];

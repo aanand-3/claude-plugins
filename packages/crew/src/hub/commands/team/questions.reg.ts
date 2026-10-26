@@ -1,18 +1,20 @@
 /** questions: its CLI commands, help lines and MCP tools (moved verbatim from cli.ts and mcp.ts). */
-import { answer, ask, escalate, listQuestions } from "./questions.js";
+import { answer, ask, escalate, listQuestions, splitOptions } from "./questions.js";
 import { obj, type Registration, s, str, text } from "../../registry.js";
 
 export const registration: Registration = {
   usage: [
     "  ask [ID] --to ROLE TEXT [--fyi] · escalate [ID] TEXT · answer Q-… TEXT [--decision [--scope GLOBS]] [--approved-by NAME]",
+    "  ask/escalate … [--options \"A; B\"]            the answers to choose from (split on ';'), shown by questions and inbox",
     "  questions [--to ROLE] [--ref ID] [--all] [--json]       questions between roles; an open one blocks only its document",
   ],
   cli: {
-    ask: { pos: ["text"], rest: true, str: ["to"], flag: ["fyi"], required: ["to"],
+    ask: { pos: ["text"], rest: true, str: ["to", "options"], flag: ["fyi"], required: ["to"],
       run: (s, a) => { const [ref, text] = a.pos.length > 1 ? [a.pos[0], a.pos[1]] : [undefined, a.pos[0]];
-        ask(s, ref, str(a, "to")!, text, { fyi: !!a.opt.fyi }); } },
-    escalate: { pos: ["text"], rest: true,
-      run: (s, a) => { const [ref, text] = a.pos.length > 1 ? [a.pos[0], a.pos[1]] : [undefined, a.pos[0]]; escalate(s, ref, text); } },
+        ask(s, ref, str(a, "to")!, text, { fyi: !!a.opt.fyi, options: splitOptions(str(a, "options")) }); } },
+    escalate: { pos: ["text"], rest: true, str: ["options"],
+      run: (s, a) => { const [ref, text] = a.pos.length > 1 ? [a.pos[0], a.pos[1]] : [undefined, a.pos[0]];
+        escalate(s, ref, text, { options: splitOptions(str(a, "options")) }); } },
     answer: { pos: ["id", "text"], str: ["scope", "approved-by"], flag: ["decision"],
       run: (s, a) => answer(s, a.pos[0], a.pos[1], { decision: !!a.opt.decision, scope: str(a, "scope"), approvedBy: str(a, "approved-by") }) },
     questions: { pos: [], str: ["to", "ref"], flag: ["all", "json"],

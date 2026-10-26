@@ -1,6 +1,7 @@
 /** `crew.mjs ui`: serves the view live on 127.0.0.1. The page reads /api/graph and /api/activity, listens on /api/events
  * (re-sent whenever .crew/, docs/design/, the ledger or activity feed, or a git ref changes) and runs a few commands through the same
- * functions the CLI uses, so every gate still applies. No --force, no document creation from the browser.
+ * functions the CLI uses, so every gate still applies. No --force, no document creation from the browser, and human
+ * approvals (the Inbox page's answers and goal approvals) need a name. /api/inbox lists what waits on the human.
  * /design is the design studio: it reads /api/design and saves through the design-* commands. */
 import { spawn } from "node:child_process";
 import { randomBytes } from "node:crypto";
@@ -14,6 +15,8 @@ import { triage } from "./commands/work/backlog.js";
 import { designPath, designPayload, saveDesign, updateStudio } from "./commands/views/design.js";
 import { DATA_SLOT, renderHtmlShell, renderStudioShell, STUDIO_SLOT } from "./commands/views/export.js";
 import { buildGraph } from "./commands/views/graph.js";
+import { inboxEntries } from "./commands/team/inbox.js";
+import { answer } from "./commands/team/questions.js";
 import { setFocus } from "./commands/work/planning.js";
 import { log, move } from "./commands/work/workflow.js";
 import { Store } from "./core/store.js";
@@ -21,6 +24,9 @@ import { fail, HubError } from "./core/text.js";
 
 type Body = Record<string, unknown>;
 const str = (b: Body, k: string) => (typeof b[k] === "string" && b[k] ? (b[k] as string) : undefined);
+/** The approver's name; a human approval without one is refused, as on the CLI. */
+const approver = (b: Body, how: string) => str(b, "approved_by")?.trim()
+  || fail(`a human answers it: \`crew.mjs ${how} --approved-by <name>\` — give your name`);
 
 /** The commands the page may run: name → (store, body). Adding one is one entry here. */
 export const ACTIONS: Record<string, (s: Store, b: Body) => void> = {
@@ -31,6 +37,14 @@ export const ACTIONS: Record<string, (s: Store, b: Body) => void> = {
   focus: (s, b) => setFocus(s, str(b, "goal") ?? fail("goal is required")),
   "design-save": (s, b) => saveDesign(s, b),
   "design-studio": (s, b) => updateStudio(s, b),
+  answer: (s, b) => {
+    const qid = str(b, "qid") ?? fail("qid is required");
+    answer(s, qid, str(b, "text") ?? fail("text is required"), { approvedBy: approver(b, `answer ${qid} "…"`) });
+  },
+  "approve-goal": (s, b) => {
+    const id = (str(b, "id") ?? fail("id is required")).toUpperCase();
+    move(s, id, "active", undefined, false, approver(b, `move ${id} active`));
+  },
 };
 
 /** Run one action like the CLI does: writes only land if it succeeds. */
@@ -88,6 +102,7 @@ export function serve(store: Store, o: ServeOptions): Promise<{ url: string; clo
     }
     if (req.method === "GET" && path === "/api/graph") return send(res, 200, buildGraph(open()));
     if (req.method === "GET" && path === "/api/design") return send(res, 200, designPayload(open()));
+    if (req.method === "GET" && path === "/api/inbox") return send(res, 200, { entries: inboxEntries(open()) });
     if (req.method === "GET" && path === "/api/activity") {
       const s = open(), ref = new URLSearchParams((req.url ?? "").split("?")[1] ?? "").get("ref");
       if (ref === null) return send(res, 200, { running: running(s), recent: readActivity(feedPath(s)).slice(-50) });

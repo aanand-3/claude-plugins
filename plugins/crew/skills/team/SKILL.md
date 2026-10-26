@@ -54,10 +54,14 @@ you ── this session ── dispatch ─┬─ crew-director ─ crew-pm ─ 
    6. Repeat until dispatch has no entries or `run --check` says STOP.
 
    This session never chooses the routing: it runs what dispatch gives, nothing else.
-3. Relay what moved, what is blocked, usage. For each **escalation** (`crew.mjs questions --to executive`),
-   put the question and options to the user. Record their answer with
-   `crew.mjs answer Q-… "<their decision>" --approved-by <their name>` only when they gave that decision in this
-   conversation; an approval for one step is never reused for another.
+3. Relay what moved, what is blocked, usage. This session is one view onto the hub: show `crew.mjs inbox` (goals to
+   approve, escalations, human-gated steps) and the live feed (`crew.mjs status`, `crew.mjs watch`), and put each inbox
+   entry — its question and options — to the user. Record their answer with
+   `crew.mjs answer Q-… "<their decision>" --approved-by <their name>` (or the entry's own command) only when they gave
+   that decision in this conversation; an approval for one step is never reused for another. The user can always answer
+   from the inbox instead, with no session open: from their own terminal (the entry's command) or the Inbox page of
+   `crew.mjs ui`. They steer from their terminal too: `crew.mjs ask --to director "…"` (dispatch routes it to the
+   Director on the next pass), `focus`, `pause`, `new-goal`.
 4. Continue with another pass while the user wants the team to keep going and nothing waits on them. A `resume` whose
    agent isn't in this session's roster (a new session, or the agent said its context is filling up) is a hint only:
    start a fresh agent; the hub has everything it needs (`resume P-###`).

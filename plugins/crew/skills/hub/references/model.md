@@ -54,6 +54,17 @@ policy's `escalation.to` and are answered only with `--approved-by`.
 questions, knowledge in scope, handoff and log (QA, architect and release get their own slices); without one — the idea and
 focus, next steps, who holds what, recent knowledge. What doesn't fit becomes a pointer to the full command.
 
+**Inbox.** `inbox [--json]` (MCP `inbox`, and the Inbox page of `crew.mjs ui`) lists what waits on the human, oldest
+first within each kind: goals to approve (`proposed`), open escalations (questions to the executive — how reserved
+decisions arrive; "holds P-###" for one about a plan or item, else "stops the team"), and plans in review whose
+`accepted` step the policy gates to a human, once their evidence is complete and the review approves. Each entry has
+`kind`, `ref`, `question`, `options`, `holds` and `how`, the command that answers it. The human answers from their own
+terminal (`answer Q-… "…" --approved-by <name>`, `move G-### active --approved-by <name>`, `move P-### accepted
+--approved-by <name>`) or from the page, which asks for their name once and records it as `approved_by`; no session needs
+to be open. `ask` and `escalate` take `--options "A; B"` (split on `;`), stored on the question and shown by `questions`
+and the inbox. The guard denies every Claude tool call that reaches the page's command endpoint (`/api/commands/`), so
+answers and approvals stay the human's. A human steers with `ask --to director "…"`, which dispatch routes to the Director.
+
 ## Execution state
 `checkpoint` events in the ledger record a plan's step, commit, dirty files, check results (command, pass/fail, the criteria
 it covers, the end of its output; `--run` executes the check, otherwise the result is *reported*) and failed attempts. The

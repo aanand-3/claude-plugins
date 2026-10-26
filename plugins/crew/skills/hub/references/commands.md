@@ -297,6 +297,7 @@ agents [--check]                              render the role agents (.claude/ag
 
 ```text
 ask [ID] --to ROLE TEXT [--fyi] · escalate [ID] TEXT · answer Q-… TEXT [--decision [--scope GLOBS]] [--approved-by NAME]
+ask/escalate … [--options "A; B"]            the answers to choose from (split on ';'), shown by questions and inbox
 questions [--to ROLE] [--ref ID] [--all] [--json]       questions between roles; an open one blocks only its document
 ```
 
@@ -311,6 +312,18 @@ questions [--to ROLE] [--ref ID] [--all] [--json]       questions between roles;
 - `escalate`: Escalate to the executive (`crew.mjs escalate`): reserved decisions, a goal at risk, anything only a human can settle. Blocks the document until a human answers.
 - `answer`: Answer a question addressed to your role (`crew.mjs answer`); decision: true also records it as a decision entry. Escalations can't be answered here — only a human, on the CLI.
 - `questions`: Open questions between roles (`crew.mjs questions --json`).
+
+## team/inbox
+
+```text
+inbox [--json]                                what waits on the human: goals to approve, escalations, human-gated steps
+```
+
+| Command | MCP tool |
+|---|---|
+| `inbox` | `inbox` |
+
+- `inbox`: What waits on the human (`crew.mjs inbox --json`): goals to approve, escalations and plan steps the policy gates to a human, each with its question, options, what it holds and the command a human runs. Read-only.
 
 ## views/export
 

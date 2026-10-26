@@ -2,7 +2,8 @@
  * Identity: a crew agent's role comes from `crew-role` in its definition (.claude/agents/<agent_type>.md); the guard injects
  * it into every hub call (`--as`/`--run-id` after crew.mjs, `as`/`run_id` on MCP tools) and refuses a call claiming anything else.
  * It never returns "allow": permissions are checked on the rewritten input as usual (T0 spike, docs/vision.md).
- * Applies to subagents only; the main session (no agent_type) is the human's own and is left alone. */
+ * Applies to subagents only; the main session (no agent_type) is the human's own and is left alone, except that no tool call
+ * reaches the `ui` command endpoint. */
 import { readFileSync, realpathSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
@@ -62,7 +63,20 @@ function hubCommand(seg: string): string | null {
   return w[i] ?? null;
 }
 
+/** The `ui` server's command endpoint (answers and approvals) is the human's, from their own terminal or browser: no Claude
+ * tool call reaches it, the main session's included. Matches literal text only, like the other command rules. */
+const UI_COMMANDS = "/api/commands/";
+function uiCommand(h: HookInput): Decision {
+  const input = h.tool_input ?? {};
+  const cmd = h.tool_name === "Bash" ? String(input.command ?? "") : "";
+  const hit = h.tool_name === "WebFetch" ? String(input.url ?? "").includes(UI_COMMANDS)
+    : cmd.includes(UI_COMMANDS) && /\b(curl|wget|node|python[\d.]*|fetch)\b/.test(cmd);
+  return hit ? { deny: "only the human answers and approves, from their own terminal or browser" } : null;
+}
+
 export function decide(store: Store, h: HookInput): Decision {
+  const ui = uiCommand(h);
+  if (ui) return ui;
   if (!h.agent_type) return null; // the main session: the human's own
   const root = store.ws.root;
   const role = agentRole(root, h.agent_type);

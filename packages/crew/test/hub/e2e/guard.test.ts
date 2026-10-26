@@ -24,6 +24,23 @@ it("identity flags win over the environment", () => {
   expect([e.role, e.run]).toEqual(["pm", "mcp-run"]);
 });
 
+it("no tool call reaches the ui's command endpoint, an agent's or the main session's (P-035 AC4)", () => {
+  init(repo);
+  agent(repo, "crew-qa", "qa");
+  for (const who of ["crew-qa", null]) {
+    const extra = who ? { agent_type: who, agent_id: "a1" } : {};
+    for (const payload of [
+      bash(who, "curl -X POST http://127.0.0.1:8765/api/commands/answer -d '{\"qid\":\"Q-abc123\",\"text\":\"yes\"}'"),
+      { tool_name: "WebFetch", tool_input: { url: "http://127.0.0.1:8765/api/commands/approve-goal", prompt: "x" }, ...extra },
+    ]) {
+      const out = hook(repo, payload);
+      expect(out?.permissionDecision, `${who} ${JSON.stringify(payload)}`).toBe("deny");
+      expect(out.permissionDecisionReason).toContain("only the human answers and approves, from their own terminal or browser");
+    }
+    expect(hook(repo, bash(who, "curl http://127.0.0.1:8765/api/graph"))?.permissionDecision).toBeUndefined();
+  }
+});
+
 it("the guard leaves the main session alone", () => {
   init(repo);
   expect(hook(repo, bash(null, "node .crew/bin/crew.mjs move P-001 done --approved-by Amit"))).toBeNull();
