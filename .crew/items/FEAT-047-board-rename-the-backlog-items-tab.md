@@ -4,7 +4,7 @@ type: feat
 title: Board: rename the Backlog items tab or show only unplanned items
 status: triaged
 priority: P3
-goal: G-001
+goal:
 plan:
 created: 2026-10-25
 closed:
@@ -25,3 +25,4 @@ The Board's toggle labels the item view 'Backlog items', but it shows every item
 - 2026-10-26: KEEP (small, P3): packages/crew/ui/src/views/Board.tsx still labels the item toggle 'Backlog items' over ITEM_COLUMNS new..done. Remaining: rename the label to 'Items' (one line plus a UI test). Not needed for G-001's criteria; the PM may unlink it from G-001 as a no-goal UI chore.
 - 2026-10-26: re-triaged: priority P3
 - 2026-10-26: PM grooming: MOVE off G-001 intended (P3 UI chore, not needed for its criteria). triage has no way to clear a goal; link remains until the human or a hub change unlinks it.
+- 2026-10-26: re-goaled G-001 → none by Arpit Anand: Board tab label is not a G-001 criterion; still needed, tiny (Board.tsx:26) (Q-848e65 triage)
