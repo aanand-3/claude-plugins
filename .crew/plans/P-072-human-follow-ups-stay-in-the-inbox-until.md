@@ -62,7 +62,9 @@ already show the follow-up through the open question. No `depends_on`.
   `waits for an answer: Q-… → <to>: <text>`, so a follow-up names itself as the plan's wait reason.
 - `ui` server: the `answer` action takes optional `follow_up` and `unblocks` and goes through `answerWithFollowUp`
   when `follow_up` is non-empty. Inbox page: the `follow-up` kind (chip, step, what it holds, a Done button), and an
-  optional "Then you…" field under an escalation's answer.
+  optional "Then you…" field inside an escalation's answer form, before Answer. An entry's question text (the step of
+  a follow-up, the question of an escalation) wraps inside its card, long unbroken tokens included: one new
+  `.inbox__text` rule in `ui/src/styles/views.css`.
 - `model.md` "Inbox" paragraph and `team/SKILL.md` "Each run": when an answer leaves a step to the human, record it
   with `--follow-up`; it stays in the inbox until answered `done`.
 
