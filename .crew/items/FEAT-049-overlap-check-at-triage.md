@@ -2,12 +2,12 @@
 id: FEAT-049
 type: feat
 title: Overlap check at triage
-status: triaged
+status: done
 priority: P2
 goal: G-007
 plan: P-057
 created: 2026-10-26
-closed:
+closed: 2026-10-26
 ---
 
 # FEAT-049: Overlap check at triage
@@ -30,3 +30,4 @@ As the PM, I want triage to show me likely duplicates and conflicting plans, so 
 - Independent of "Triage owns goal links"; can follow it.
 - Approved in principle by the executive via the coordinator, 2026-10-26 ("yes, lets do it").
 - 2026-10-26: status new → triaged — priority P2
+- 2026-10-26: status triaged → done — delivered by P-057
