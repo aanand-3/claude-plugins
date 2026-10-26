@@ -5,7 +5,7 @@ title: Overlap check at triage
 status: triaged
 priority: P2
 goal: G-007
-plan:
+plan: P-057
 created: 2026-10-26
 closed:
 ---
