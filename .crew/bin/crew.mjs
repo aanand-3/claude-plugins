@@ -11874,6 +11874,10 @@ function suggestedGoal(store, item) {
   const hint = [...item.section("Notes").matchAll(/goal hint (G-\d+)/g)].at(-1);
   return hint ? [hint[1], "goal hint"] : null;
 }
+function suggestionText(item, store) {
+  const hint = item.get("goal") ? null : suggestedGoal(store, item);
+  return hint ? `suggested goal: ${hint[0]} (${hint[1]})` : null;
+}
 function newItem(store, typ, title, draftPath, why, o = {}) {
   store.require();
   const prefix = typ.toUpperCase();
@@ -11944,8 +11948,8 @@ Nothing was changed.`);
     item.save();
     move(store, item.id, "triaged", summary(item), false, o.approvedBy);
   }
-  const hint = item.get("goal") ? null : suggestedGoal(store, item);
-  if (hint) store.say(`suggested goal: ${hint[0]} (${hint[1]}) \u2014 confirm with \`triage ${item.id} --goal ${hint[0]}\` or pick another`);
+  const text2 = suggestionText(item, store);
+  if (text2) store.say(`${text2} \u2014 confirm with \`triage ${item.id} --goal ${suggestedGoal(store, item)[0]}\` or pick another`);
 }
 function parseGoal(store, value) {
   return ["", "NONE"].includes(value.trim().toUpperCase()) ? null : store.checkRef(value.trim(), "goal");
@@ -12066,6 +12070,10 @@ var View2 = class {
     return ranked(this.items, this.goals, this.focus).filter((i) => itemStatus(i, this.plans) === st);
   }
 };
+var suggested = (v, i) => {
+  const text2 = suggestionText(i, v.store);
+  return text2 ? ` \u2014 ${text2}` : "";
+};
 var RULES = {
   executive: [
     (v) => openQuestions(v.events).filter((x) => x.escalation).map((x) => `answer ${x.id} (${x.by}${x.ref ? ` about ${x.ref}` : ""}): ${x.text}`),
@@ -12079,8 +12087,8 @@ var RULES = {
     (v) => dispatch(v.store).entries.filter((e) => e.role === "director" && !e.ref?.startsWith("Q-")).map((e) => e.task)
   ],
   pm: [
-    (v) => v.ranked("new").filter((i) => i.id.startsWith("BUG-")).slice(0, 3).map((i) => `triage bug ${i.id}: ${i.get("title")}`),
-    (v) => v.ranked("new").filter((i) => !i.id.startsWith("BUG-")).slice(0, 3).map((i) => `triage ${i.id}: ${i.get("title")}`),
+    (v) => v.ranked("new").filter((i) => i.id.startsWith("BUG-")).slice(0, 3).map((i) => `triage bug ${i.id}: ${i.get("title")}${suggested(v, i)}`),
+    (v) => v.ranked("new").filter((i) => !i.id.startsWith("BUG-")).slice(0, 3).map((i) => `triage ${i.id}: ${i.get("title")}${suggested(v, i)}`),
     (v) => [...v.goals.values()].filter((g) => ["proposed", "active"].includes(g.get("status") ?? "") && !goalItems(g.id, v.items).some((i) => itemStatus(i, v.plans) !== "done")).map((g) => `break ${g.id} down: it has no open items`),
     (v) => (v.gate("plan.assigned") === "pm" ? v.status("ready").filter((p) => !v.assigned.has(p.id)) : []).map((p) => `open ${p.id}: ${p.get("title")} \u2192 assign ${p.id} --to developer (\`staff\` shows what can run now)`),
     (v) => (v.gate("plan.accepted") === "pm" ? v.status("in-review") : []).filter((p) => complete(v, p) && !reviewProblems(v.store, p).length).map((p) => `accept ${p.id}: ${p.get("title")} \u2014 QA's evidence and the review are in \u2192 move ${p.id} accepted`),

@@ -13,6 +13,7 @@ import { reviewProblems } from "../work/review.js";
 import { landedProblems, mergeOrder } from "../work/release.js";
 import { fastLane } from "../../core/work/gates.js";
 import { paused } from "./liveness.js";
+import { suggestionText } from "../work/backlog.js";
 
 type Rule = (s: View) => string[];
 
@@ -46,6 +47,12 @@ class View {
   }
 }
 
+/** ` — suggested goal: G-### (<reason>)` for an untriaged item triage would suggest a goal for, else "". */
+const suggested = (v: View, i: Doc) => {
+  const text = suggestionText(i, v.store);
+  return text ? ` — ${text}` : "";
+};
+
 const RULES: Record<string, Rule[]> = {
   executive: [
     (v) => openQuestions(v.events).filter((x) => x.escalation).map((x) => `answer ${x.id} (${x.by}${x.ref ? ` about ${x.ref}` : ""}): ${x.text}`),
@@ -61,8 +68,8 @@ const RULES: Record<string, Rule[]> = {
     (v) => dispatch(v.store).entries.filter((e) => e.role === "director" && !e.ref?.startsWith("Q-")).map((e) => e.task),
   ],
   pm: [
-    (v) => v.ranked("new").filter((i) => i.id.startsWith("BUG-")).slice(0, 3).map((i) => `triage bug ${i.id}: ${i.get("title")}`),
-    (v) => v.ranked("new").filter((i) => !i.id.startsWith("BUG-")).slice(0, 3).map((i) => `triage ${i.id}: ${i.get("title")}`),
+    (v) => v.ranked("new").filter((i) => i.id.startsWith("BUG-")).slice(0, 3).map((i) => `triage bug ${i.id}: ${i.get("title")}${suggested(v, i)}`),
+    (v) => v.ranked("new").filter((i) => !i.id.startsWith("BUG-")).slice(0, 3).map((i) => `triage ${i.id}: ${i.get("title")}${suggested(v, i)}`),
     (v) => [...v.goals.values()].filter((g) => ["proposed", "active"].includes(g.get("status") ?? "")
       && !q.goalItems(g.id, v.items).some((i) => q.itemStatus(i, v.plans) !== "done"))
       .map((g) => `break ${g.id} down: it has no open items`),

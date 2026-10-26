@@ -39,12 +39,18 @@ function itemOrigin(store: Store, explicit: string | undefined): string {
 }
 
 /** The goal triage suggests for an item: its origin's goal, else the latest goal hint in its Notes. */
-function suggestedGoal(store: Store, item: Doc): [string, string] | null {
+export function suggestedGoal(store: Store, item: Doc): [string, string] | null {
   const origin = item.get("origin"), kind = origin ? kindOf(origin) : null;
   const goal = (kind === "plan" || kind === "item") ? store.docs(kind).get(origin!)?.get("goal") : null;
   if (goal) return [goal, `origin ${origin}'s goal`];
   const hint = [...item.section("Notes").matchAll(/goal hint (G-\d+)/g)].at(-1);
   return hint ? [hint[1], "goal hint"] : null;
+}
+
+/** `suggested goal: G-### (<reason>)` for an item with no goal and a suggestion, else null. */
+export function suggestionText(item: Doc, store: Store): string | null {
+  const hint = item.get("goal") ? null : suggestedGoal(store, item);
+  return hint ? `suggested goal: ${hint[0]} (${hint[1]})` : null;
 }
 
 export function newItem(store: Store, typ: string, title: string, draftPath: string | undefined, why: string | undefined,
@@ -118,8 +124,8 @@ export function triage(store: Store, itemId: string, o: TriageOptions = {}): voi
     item.save();
     move(store, item.id, "triaged", summary(item), false, o.approvedBy);
   }
-  const hint = item.get("goal") ? null : suggestedGoal(store, item);
-  if (hint) store.say(`suggested goal: ${hint[0]} (${hint[1]}) — confirm with \`triage ${item.id} --goal ${hint[0]}\` or pick another`);
+  const text = suggestionText(item, store);
+  if (text) store.say(`${text} — confirm with \`triage ${item.id} --goal ${suggestedGoal(store, item)![0]}\` or pick another`);
 }
 
 /** `none` or "" clears the goal (null); anything else must be an existing goal. */
