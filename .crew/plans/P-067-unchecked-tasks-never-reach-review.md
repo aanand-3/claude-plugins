@@ -94,6 +94,7 @@ Latest log:
 - 2026-10-26: status ready → in-progress — branch plan/P-067-unchecked-tasks-never-reach-review
 - 2026-10-26: status in-progress → in-review
 - 2026-10-26: status in-review → accepted
+- 2026-10-26: landed on main as 3eb5da3
 
 ## Outcome
 `move P-### in-review` now refuses unchecked tasks (each listed, with a hint to tick `- [x]`); `--force` still overrides. Dispatch row 5 sends an in-review plan with unchecked tasks to its developer (`finish P-###: … (T-ids unchecked)`) after a failing check and before review, design review, QA and accept. Gate docs regenerated. No existing fixture needed changes.
