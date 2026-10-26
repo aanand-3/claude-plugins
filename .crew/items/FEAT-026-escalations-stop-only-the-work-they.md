@@ -22,3 +22,4 @@ run --check (commands/team/autonomy.ts) stops the whole team on any open executi
 
 ## Notes
 - 2026-10-24: status new → triaged — priority P1
+- 2026-10-26: DONE: fixed by P-023 (eaa70df). autonomy.ts runState uses questions.ts escalationHolds: an escalation about a plan or item holds only that document; the run stops only when holds cover every open plan and item or an escalation has no ref. Tests: run-check.test.ts 'an escalation on one plan holds it; the team goes on with the others' and 'escalations holding every open plan and item stop the team'. No remaining work.
