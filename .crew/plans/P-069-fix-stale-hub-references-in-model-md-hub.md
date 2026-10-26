@@ -11,6 +11,7 @@ pr:
 created: 2026-10-26
 started:
 completed:
+assignee: developer
 ---
 
 # P-069: Fix stale hub references in model.md, hub SKILL.md and vision.md
@@ -107,5 +108,6 @@ Docs only; lands with the plan. Rollback: revert the commit.
 
 - 2026-10-26: status draft → ready
 - 2026-10-26: re-goaled none → G-006 by Arpit Anand: CHORE-016 belongs to G-006 (docs true to the code); plan lost the goal
+- 2026-10-26: assigned to the developer role
 
 ## Outcome
