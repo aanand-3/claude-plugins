@@ -1,7 +1,7 @@
 ---
 id: G-002
 title: Ideation loop
-status: proposed
+status: active
 priority: P2
 created: 2026-10-23
 completed:
@@ -36,3 +36,4 @@ success criteria and direction — recorded in the hub, with every finding and c
 ## Notes & decisions
 
 ## Progress log
+- 2026-10-26: status proposed → active (approved by Arpit Anand)
