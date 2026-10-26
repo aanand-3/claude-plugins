@@ -57,10 +57,10 @@ FEAT-049 (G-007). Triage today gives the PM no help spotting duplicates or confl
 - Depends on P-055 (triage, backlog.ts, backlog.reg.ts, pm.md, model.md); built on its merged code.
 
 ## Tasks
-- [ ] T1: Title tokens, the measure, path extraction (pure helpers in overlap.ts) → verify: `cd packages/crew && npx vitest run test/overlap.test.ts` (unit table: similar and dissimilar titles, one-word titles, paths with `:line`, backticks, extensions) (AC1, AC6)
-- [ ] T2: `overlapCandidates`, the architect flag, `overlaps` command and MCP tool; `overlaps` in `test/mcp.test.ts`'s tool list → verify: `npm run build && npx vitest run test/hub/e2e/overlap.test.ts -t "overlaps" test/mcp.test.ts test/hub/registry.test.ts` (AC1, AC3, AC4)
-- [ ] T3: Triage prints the block; the no-change and no-mid-flight checks → verify: `npx vitest run test/hub/e2e/overlap.test.ts -t "triage"` (AC2, AC5)
-- [ ] T4: Docs and PM template → verify: `npx vitest run test/docs.test.ts test/hub/e2e/agents.test.ts`; read pm.md against AC4/AC5
+- [x] T1: Title tokens, the measure, path extraction (pure helpers in overlap.ts) → verify: `cd packages/crew && npx vitest run test/overlap.test.ts` (unit table: similar and dissimilar titles, one-word titles, paths with `:line`, backticks, extensions) (AC1, AC6)
+- [x] T2: `overlapCandidates`, the architect flag, `overlaps` command and MCP tool; `overlaps` in `test/mcp.test.ts`'s tool list → verify: `npm run build && npx vitest run test/hub/e2e/overlap.test.ts -t "overlaps" test/mcp.test.ts test/hub/registry.test.ts` (AC1, AC3, AC4)
+- [x] T3: Triage prints the block; the no-change and no-mid-flight checks → verify: `npx vitest run test/hub/e2e/overlap.test.ts -t "triage"` (AC2, AC5)
+- [x] T4: Docs and PM template → verify: `npx vitest run test/docs.test.ts test/hub/e2e/agents.test.ts`; read pm.md against AC4/AC5
 
 ## Test plan
 **Targeted checks** (from `packages/crew/`; `npm run build` first, then `git checkout -- plugins/crew/skills/hub/dist plugins/crew/skills/hub/references/commands.md`):
@@ -78,6 +78,17 @@ Ships in the bundle; reaches this repo through refresh-bin. The PM template text
 
 ## Handoff
 
+_Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
+
+- P-057: Overlap check at triage [in-progress] tasks 4/4 — claimed by Arpit Anand (developer:a802d01ace9899ce3)
+- last checkpoint 2026-10-26 10:07 at T4 (7718983) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
+- evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —
+
+Latest log:
+- 2026-10-26: status draft → ready
+- 2026-10-26: assigned to the developer role
+- 2026-10-26: status ready → in-progress — branch plan/P-057-overlap-check-at-triage
+
 ## Progress log
 
 - 2026-10-26: status draft → ready
@@ -85,3 +96,5 @@ Ships in the bundle; reaches this repo through refresh-bin. The PM template text
 - 2026-10-26: status ready → in-progress — branch plan/P-057-overlap-check-at-triage
 
 ## Outcome
+`overlaps ID [--json]` (CLI and MCP tool) and `triage` list overlap candidates from the documents alone: open items with similar titles (Jaccard >= 0.5 with >= 2 shared tokens, top 5) and plans in flight whose touches cover a path the item names, with only the dependent-plan or note outcomes suggested and an architect flag for plans being built/landed or paths in two plans. New module commands/work/overlap.ts; triage adds one line in backlog.ts. Tests: test/overlap.test.ts (unit table), test/hub/e2e/overlap.test.ts (AC1-AC5, incl. a no-network, git-only, no-`claude` run).
+Learnings: an AC3-style "no subprocess but git, no network" check works as a NODE_OPTIONS `--import` preload that wraps child_process/net/dns/fetch and calls `syncBuiltinESMExports()`, with PATH reduced to symlinks of node and git.
