@@ -57,7 +57,7 @@ The fix has two parts:
 - [x] T1: In-review gate refuses unchecked tasks (`workflow.ts`, `transition-gates.ts`) → verify: `cd packages/crew && npx vitest run test/hub/e2e/execution.test.ts` passes with new AC1 and AC2 cases
 - [x] T2: Dispatch routes an in-review plan with unchecked tasks to its developer before review, QA or accept (`dispatch.ts`) → verify: `cd packages/crew && npx vitest run test/hub/e2e/dispatch.test.ts` passes with the new AC3 and AC4 cases
 - [x] T3: Regenerate the gate docs (`npm run docs`) → verify: `cd packages/crew && npx vitest run test/docs.test.ts` passes and `grep -n "Tasks checked and learnings recorded" plugins/crew/docs/policy.md plugins/crew/docs/plan-lifecycle.md` shows the policy table row, the lifecycle diagram line and the lifecycle table row
-- [ ] T4: Fix any fixture the new gate breaks in the targeted files (tick tasks, or `--force` where the test means to skip the gate) → verify: `cd packages/crew && npx vitest run test/hub/e2e/execution.test.ts test/hub/e2e/dispatch.test.ts test/hub/e2e/land.test.ts test/docs.test.ts` all pass, and `npm run typecheck` is clean
+- [x] T4: Fix any fixture the new gate breaks in the targeted files (tick tasks, or `--force` where the test means to skip the gate) → verify: `cd packages/crew && npx vitest run test/hub/e2e/execution.test.ts test/hub/e2e/dispatch.test.ts test/hub/e2e/land.test.ts test/docs.test.ts` all pass, and `npm run typecheck` is clean
 
 ## Test plan
 **Targeted checks:**
@@ -76,6 +76,17 @@ n/a: this changes hub behaviour only. The bundle is rebuilt by Release. To roll 
 
 ## Handoff
 
+_Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
+
+- P-067: Unchecked tasks never reach review, and dispatch never offers a refused accept [in-progress] tasks 4/4 — claimed by Arpit Anand (developer:a10bfc1495e94a99d)
+- last checkpoint 2026-10-26 14:16 at T4 (004e807) by Arpit Anand; since then 0 commit(s), 2 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs
+- evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —
+
+Latest log:
+- 2026-10-26: status draft → ready
+- 2026-10-26: assigned to the developer role
+- 2026-10-26: status ready → in-progress — branch plan/P-067-unchecked-tasks-never-reach-review
+
 ## Progress log
 
 - 2026-10-26: status draft → ready
@@ -83,3 +94,5 @@ n/a: this changes hub behaviour only. The bundle is rebuilt by Release. To roll 
 - 2026-10-26: status ready → in-progress — branch plan/P-067-unchecked-tasks-never-reach-review
 
 ## Outcome
+`move P-### in-review` now refuses unchecked tasks (each listed, with a hint to tick `- [x]`); `--force` still overrides. Dispatch row 5 sends an in-review plan with unchecked tasks to its developer (`finish P-###: … (T-ids unchecked)`) after a failing check and before review, design review, QA and accept. Gate docs regenerated. No existing fixture needed changes.
+Learnings: none
