@@ -33,3 +33,4 @@ The path is matched as given, so it can miss `paths.protected` and the write pas
 
 ## Notes
 - 2026-10-24: status new → triaged — priority P2, severity S3
+- 2026-10-26: DONE: fixed by P-019 (152650b). guard.test.ts 'guard_resolves_paths: relative and symlinked paths are matched where they lead (BUG-007)' (symlink to .crew denied); targets.ts resolves with realpathSync. P-050/P-051 kept it (test still on main). No remaining work.
