@@ -5,7 +5,7 @@ title: start refuses an overlap with active work, as staff does
 status: new
 priority:
 goal:
-plan:
+plan: P-071
 created: 2026-10-26
 closed:
 ---
