@@ -103,14 +103,15 @@ Ships with the next vendored hub refresh (Release builds the bundle and refreshe
 
 _Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
 
-- P-063: Guard refuses only real access to secrets files [in-review] tasks 5/5 — claimed by Arpit Anand (developer:a15018def85344c14)
-- last checkpoint 2026-10-26 11:59 at T5 (63dfd06) by Arpit Anand; since then 0 commit(s), 2 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs
+- P-063: Guard refuses only real access to secrets files [in-progress] tasks 5/5 — claimed by Arpit Anand (developer:a15018def85344c14)
+- last checkpoint 2026-10-26 12:11 at T5 (7f81a72) by Arpit Anand; since then 0 commit(s), 2 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs
+- don't retry: added the review's refused test cases with a Bash heredoc/python edit — the vendored guard (old token scan) refused it: the command text names the dotenv file
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —
 
 Latest log:
-- 2026-10-26: status draft → ready
-- 2026-10-26: assigned to the developer role
-- 2026-10-26: status ready → in-progress — branch plan/P-063-guard-refuses-only-real-access
+- 2026-10-26: status in-progress → in-review
+- 2026-10-26: review: changes requested — Real access slips through an unquoted heredoc body. With an unquoted delimiter bash runs command substitutions in the body, so cat > docs/x.md <<EOF with a body line $(cat <dotenv>) (also a backtick form, $(<<dotenv>) and ${X:-$(cat <dotenv>)}) copies the secret into docs/x.md. touchesSecret returns false for all four today (probed against secretrefs.ts); the old token scan refused them, so this breaks AC4 (real access still refused) and the Rollout claim that the change only removes refusals for prose. Fix in hubcall.ts parse() + secretrefs.ts: record per body whether its heredoc delimiter was quoted (target.raw has a quote or backslash), and treat an unquoted-delimiter body that contains $( , ${ or a backtick as not data, so it gets the token scan (or parse its substitutions and path-check them). Quoted-delimiter bodies and unquoted prose bodies (the existing tee docs/b.md case) stay allowed. Add refused cases for the four forms to test/hub/secretrefs.test.ts and one to the e2e BUG-042 case. Everything else checks out: diff matches Design, touches respected, files under 300 lines, typecheck and the five targeted suites (100 tests) pass, existing test files unedited.
+- 2026-10-26: status in-review → in-progress — changes requested: Real access slips through an unquoted heredoc body. With an unquoted delimiter bash runs command substitutions in the body, so cat > docs/x.md <<EOF with a body line $(cat <dotenv>) (also a backtick form, $(<<dotenv>) and ${X:-$(cat <dotenv>)}) copies the secret into docs/x.md. touchesSecret returns false for all four today (probed against secretrefs.ts); the old token scan refused them, so this breaks AC4 (real access still refused) and the Rollout claim that the change only removes refusals for prose. Fix in hubcall.ts parse() + secretrefs.ts: record per body whether its heredoc delimiter was quoted (target.raw has a quote or backslash), and treat an unquoted-delimiter body that contains $( , ${ or a backtick as not data, so it gets the token scan (or parse its substitutions and path-check them). Quoted-delimiter bodies and unquoted prose bodies (the existing tee docs/b.md case) stay allowed. Add refused cases for the four forms to test/hub/secretrefs.test.ts and one to the e2e BUG-042 case. Everything else checks out: diff matches Design, touches respected, files under 300 lines, typecheck and the five targeted suites (100 tests) pass, existing test files unedited.
 
 ## Progress log
 
