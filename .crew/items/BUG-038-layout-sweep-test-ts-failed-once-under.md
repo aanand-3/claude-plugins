@@ -2,13 +2,13 @@
 id: BUG-038
 type: bug
 title: layout-sweep.test.ts failed once under load at P-021 719ed77
-status: triaged
+status: wontfix
 severity: S3
 priority: P3
 goal: G-003
 plan:
 created: 2026-10-26
-closed:
+closed: 2026-10-26
 ---
 
 # BUG-038: layout-sweep.test.ts failed once under load at P-021 719ed77
@@ -39,3 +39,4 @@ A flaky check can block or mislead an acceptance (here it was resolved by two pa
 ## Notes
 - Likely a timing or timeout dependence under load, as with BUG-028 (full suite times out under load); the architect should check for a fixed timeout in the sweep.
 - 2026-10-26: status new → triaged — priority P3, severity S3
+- 2026-10-26: status triaged → wontfix — Not reproduced since the single failure under load at P-021; test now lives at test/tools/layout-sweep.test.ts. Reopen as a new bug if it recurs.
