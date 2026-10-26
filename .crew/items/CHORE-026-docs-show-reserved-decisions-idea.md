@@ -2,9 +2,9 @@
 id: CHORE-026
 type: chore
 title: Docs: show reserved decisions (idea.decided, idea.killed) as human-gated in the generated lifecycle diagrams
-status: new
-priority:
-goal:
+status: triaged
+priority: P3
+goal: G-006
 plan:
 created: 2026-10-26
 closed:
@@ -19,3 +19,4 @@ P-025's diagrams.ts labels edges from the lifecycle preset's role_gates and huma
 - [ ]
 
 ## Notes
+- 2026-10-26: status new → triaged — priority P3
