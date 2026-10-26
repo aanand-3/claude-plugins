@@ -5,12 +5,12 @@ goal: G-007
 items: FEAT-045
 touches: packages/crew/src/hub/commands/work/planning.ts, packages/crew/src/hub/core/team/policy.ts, packages/crew/test/hub/e2e/policy.test.ts, plugins/crew/skills/hub/references/model.md, plugins/crew/skills/team/SKILL.md
 depends_on:
-status: accepted
+status: done
 branch: plan/P-048-notify-the-human-when-a-goal-waits
 pr:
 created: 2026-10-25
 started: 2026-10-26
-completed:
+completed: 2026-10-26
 assignee: developer
 ---
 
@@ -88,6 +88,7 @@ Latest log:
 - 2026-10-26: status in-progress → in-review — T1-T3 done: goal-approval kind emitted by new-goal, docs, typecheck/sizes; checks pass at checkpoints
 - 2026-10-26: status in-review → accepted
 - 2026-10-26: landed on main as 5b7ec20
+- 2026-10-26: status accepted → done
 
 ## Outcome
 Learnings: none
