@@ -5,7 +5,7 @@ goal: G-007
 items: FEAT-048, BUG-037
 touches: packages/crew/src/hub/commands/work/backlog.ts, packages/crew/src/hub/commands/work/backlog.reg.ts, packages/crew/src/hub/core/team/policy.ts, packages/crew/src/hub/core/team/presets.ts, packages/crew/scripts/sample-project.mjs, plugins/crew/skills/hub/agents/pm.md, plugins/crew/skills/hub/references/model.md, plugins/crew/docs/reference.md, plugins/crew/docs/policy.md, packages/crew/test/hub/e2e/goal-links.test.ts, packages/crew/test/hub/e2e/basics.test.ts, packages/crew/test/hub/e2e/dispatch.test.ts, packages/crew/test/hub/e2e/doctor.test.ts, packages/crew/test/hub/e2e/items.test.ts, packages/crew/test/hub/e2e/sparse-worktrees.test.ts, packages/crew/test/hub/e2e/worktrees.test.ts, packages/crew/test/hub/e2e/runner.test.ts, packages/crew/test/hub/e2e/policy.test.ts, packages/crew/test/hub-worktrees.test.ts, packages/crew/test/mcp.test.ts, packages/crew/test/hub/registry.test.ts, packages/crew/src/docs/diagrams.ts, plugins/crew/docs/plan-lifecycle.md, packages/crew/test/docs.test.ts
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-055-triage-owns-goal-links
 pr:
 created: 2026-10-26
@@ -104,7 +104,7 @@ FEAT-048 and BUG-037 (G-007). Goal links should be decided at triage, not captur
 
 _Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
 
-- P-055: Triage owns goal links [in-progress] tasks 5/5 — claimed by Arpit Anand (developer:ae7abfea7422550fc)
+- P-055: Triage owns goal links [in-review] tasks 5/5 — claimed by Arpit Anand (developer:ae7abfea7422550fc)
 - last checkpoint 2026-10-26 08:58 at T5 (a47f0a8) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —, AC7 —, AC8 —
 
@@ -119,7 +119,8 @@ Latest log:
 - 2026-10-26: Architect: spec updated for the executive's rule 1 (Q-fcec4f): items record origin (--origin, plan worktree, single claim), --goal is a Notes hint, triage suggests the origin's goal (AC1, AC1b, Approach, T1). Rules 2-5 unchanged; touches unchanged.
 - 2026-10-26: assigned to the developer role
 - 2026-10-26: status ready → in-progress — branch plan/P-055-triage-owns-goal-links
+- 2026-10-26: status in-progress → in-review
 
 ## Outcome
 Capture records origin, not goal: `new-item` sets `origin:` (`--origin`, the plan branch it runs on, or the run's single open plan claim) and keeps `--goal` as a `goal hint` Notes line; bugs need Steps to reproduce, Expected and Actual; `triage` prints the suggested goal and can clear (`--goal none`/`""`) or change a goal as a noted, logged re-goal (BUG-037 fixed). New `regoal` CLI command and MCP tool, gated by `item.regoaled`/`plan.regoaled` (pm in the lifecycle preset; the executive and a human in no role pass), with frozen-work and plan-moves-whole rules. Beyond the spec: `diagrams.ts` STEP_NOTES and `plan-lifecycle.md` (Q-cf70a3), the `docs.test.ts` offFlowSteps pin (Q-5764d6), and intake triage at capture now leaves an item new with a note when the capturing run's role isn't `item.triaged`'s gate role (a developer filing an S1 bug used to fail the whole capture once bugs could pass the triage gate at intake).
-Learnings: the role-gate check in `authorize` refuses a run in no role, so a gate meant for "the role, the executive or a human" passes `also: ["executive", ""]`; and a generated docs block (plan-steps) lists every off-flow role gate, so a new gated action needs a STEP_NOTES line and touches on diagrams.ts and plan-lifecycle.md.
+Learnings: K-2026-10-26-authorize-refuses-a-run-in-no-role (also: a new off-flow gated action needs a STEP_NOTES line in diagrams.ts and a regenerated plan-lifecycle.md)
