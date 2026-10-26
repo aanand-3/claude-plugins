@@ -11,6 +11,7 @@ pr:
 created: 2026-10-26
 started:
 completed:
+assignee: developer
 ---
 
 # P-065: Only crew agents act in a crew role
@@ -134,5 +135,6 @@ already launches role agents instead (team SKILL.md uses only `--as executive`).
 ## Progress log
 
 - 2026-10-26: status draft → ready
+- 2026-10-26: assigned to the developer role
 
 ## Outcome
