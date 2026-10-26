@@ -22,3 +22,4 @@ Every code plan must rebuild and commit plugins/crew/skills/hub/dist/*.mjs (conv
 
 ## Notes
 - 2026-10-24: status new → triaged — priority P1
+- 2026-10-26: DONE: fixed by P-023 (eaa70df). Generated files are marked in .gitattributes and left out of plan touches; generated-drift.test.ts 'a changed generated file in a plan worktree is not drift'; since P-032 land.ts rebuilds hub.build and commits 'rebuild generated files' at landing. Item still triaged only because it predates P-045's item-close rule. No remaining work.
