@@ -5,12 +5,12 @@ goal: G-007
 items: FEAT-043
 touches: packages/crew/src/hub/commands/team/inbox.ts, packages/crew/src/hub/commands/team/inbox.reg.ts, packages/crew/src/hub/commands/team/questions.ts, packages/crew/src/hub/commands/team/questions.reg.ts, packages/crew/src/hub/commands/team/guard.ts, packages/crew/src/hub/commands/index.ts, packages/crew/src/hub/cli.ts, packages/crew/src/hub/mcp.ts, packages/crew/src/hub/server.ts, packages/crew/ui/src/views/Inbox.tsx, packages/crew/ui/src/views/index.ts, packages/crew/test/hub/e2e/inbox.test.ts, packages/crew/test/hub/e2e/guard.test.ts, packages/crew/test/mcp.test.ts, plugins/crew/skills/team/SKILL.md, plugins/crew/skills/hub/references/model.md
 depends_on: P-027, P-031
-status: accepted
+status: done
 branch: plan/P-035-human-inbox
 pr:
 created: 2026-10-25
 started: 2026-10-26
-completed:
+completed: 2026-10-26
 assignee: developer
 ---
 
@@ -164,6 +164,7 @@ Latest log:
 - 2026-10-26: status in-progress → in-review
 - 2026-10-26: status in-review → accepted
 - 2026-10-26: landed on main as dc412c8
+- 2026-10-26: status accepted → done
 
 ## Outcome
 The hub has an inbox: `crew.mjs inbox [--json]`, an MCP `inbox` tool and an Inbox page in `crew.mjs ui` list proposed goals, open escalations and plans in review whose `accepted` step is human-gated. Humans answer from their terminal or the page (`/api/inbox`, `answer` and `approve-goal` actions that need a name). `ask`/`escalate` take `--options` on the CLI. The guard denies every tool call that reaches `/api/commands/`.

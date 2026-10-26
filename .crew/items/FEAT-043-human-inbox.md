@@ -2,12 +2,12 @@
 id: FEAT-043
 type: feat
 title: Human inbox
-status: triaged
+status: done
 priority: P1
 goal: G-007
 plan: P-035
 created: 2026-10-25
-closed:
+closed: 2026-10-26
 ---
 
 # FEAT-043: Human inbox
@@ -24,3 +24,4 @@ Slice of G-007 (Autonomous parallel delivery): Human inbox — the human approve
 
 ## Notes
 - 2026-10-25: triaged from G-007 breakdown
+- 2026-10-26: status triaged → done — delivered by P-035
