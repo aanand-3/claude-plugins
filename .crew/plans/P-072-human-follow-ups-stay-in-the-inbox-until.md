@@ -151,6 +151,7 @@ Composition on the existing Inbox view (docs/design/DESIGN.md tokens; inventory 
 - [x] T6: `Inbox.tsx` follow-up kind, Done button and "Then you…" field per Design → verify: `npm run build`, then the manual Inbox check in the Test plan.
 - [x] T7: `model.md` Inbox paragraph and `team/SKILL.md` "Each run" line on `--follow-up` → verify: `grep -n "follow-up" plugins/crew/skills/hub/references/model.md plugins/crew/skills/team/SKILL.md` finds both.
 - [x] T8: Types and sizes → verify: `npm run typecheck`; `wc -l` of the five source files each under 300; `npx vitest run test/hub/e2e/inbox.test.ts` all green.
+- [ ] T9: Design review changes (AC6): the `.inbox__text` rule in `ui/src/styles/views.css` and `className="inbox__text"` on the entry's question `<p>` in `Inbox.tsx`; the "Then you…" input moved inside the answer `<form>` on its own `.actions__row` above the decision row, placeholder `Then you… (optional step you will do)`, aria-label kept → verify: the AC6 static check in the Test plan, `npm run build`, `npm run typecheck`, `wc -l ui/src/views/Inbox.tsx` under 300; then hand back for the Designer's re-review with the on-screen check.
 
 ## Test plan
 **Targeted checks:** (in the plan worktree, `cd packages/crew`; `npm ci --prefer-offline` first in a fresh worktree;
@@ -162,6 +163,14 @@ the e2e tests run the built bundle, so `npm run build` before running them; buil
   light and dark, no overflow with a 300-character step.
 - AC5: `npm run typecheck`; `wc -l src/hub/commands/team/followups.ts src/hub/commands/team/inbox.ts
   src/hub/commands/work/execution.ts src/hub/server.ts ui/src/views/Inbox.tsx`; `npx vitest run test/hub/e2e/inbox.test.ts`.
+- AC6 static: `grep -n "inbox__text" ui/src/styles/views.css ui/src/views/Inbox.tsx` finds the rule (with
+  `overflow-wrap: anywhere` and `min-width: 0`) and the `className` on the question `<p>`; in `Inbox.tsx`, the
+  `Follow-up for` input line comes after `<form` and before both the `Answer ${e.ref}` input and `</form>`
+  (`grep -n -e "<form" -e "Follow-up for" -e 'Answer ${e.ref}' -e "</form>" ui/src/views/Inbox.tsx` prints them in
+  that order), and `grep -n "optional step you will do" ui/src/views/Inbox.tsx` finds the placeholder;
+  `git diff main -- ui/src/styles/views.css` adds only that rule. AC6 on screen: the AC4 manual run (QA screenshots,
+  then the Designer's re-review) with a 300-character step and an escalation carrying one unbroken 80-character
+  token, at 375/900/1440 px, light and dark: no sideways scroll, text inside the card, placeholder not clipped.
 
 ## Rollout & rollback
 Ships in the hub bundle and UI (Release builds them); this repo gets it through `refresh-bin`. Old hubs read a
