@@ -27,3 +27,4 @@ model.md's lifecycle diagrams miss edges in PLAN_FLOW/GOAL_FLOW/ITEM_FLOW and it
 ## Notes
 - 2026-10-25: status new → triaged — priority P2
 - 2026-10-26: re-goaled G-006 → G-006 by Arpit Anand: CHORE-016 belongs to G-006 (docs true to the code); plan lost the goal
+- 2026-10-26: For the PM (from P-069): FEAT-011 (policy adapter: agents + guard), FEAT-012 (kickoff/onboard as ledger runs: checkpoint --workflow) and FEAT-020 (automatic usage capture: SubagentStop usage --hook) are shipped in code but still triaged; vision.md now lists them as shipped
