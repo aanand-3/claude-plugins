@@ -11,6 +11,7 @@ pr:
 created: 2026-10-25
 started:
 completed:
+assignee: developer
 ---
 
 # P-047: Director next and run printout follow dispatch and the runner
@@ -79,5 +80,6 @@ n/a — text only; ships in the bundle (Release builds it) and reaches this repo
 ## Progress log
 
 - 2026-10-25: status draft → ready — Architect: specced (ACs, tasks, test plan, exact touches)
+- 2026-10-26: assigned to the developer role
 
 ## Outcome
