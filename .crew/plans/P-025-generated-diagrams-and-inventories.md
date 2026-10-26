@@ -11,6 +11,7 @@ pr:
 created: 2026-10-25
 started:
 completed:
+assignee: developer
 ---
 
 # P-025: Generated diagrams and inventories for the docs
@@ -81,5 +82,6 @@ n/a: internal tooling and new docs files; revert the PR to back out. Release: `h
 ## Progress log
 
 - 2026-10-25: status draft → ready
+- 2026-10-26: assigned to the developer role
 
 ## Outcome
