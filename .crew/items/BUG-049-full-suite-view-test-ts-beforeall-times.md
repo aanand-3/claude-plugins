@@ -2,10 +2,10 @@
 id: BUG-049
 type: bug
 title: Full suite view.test.ts beforeAll times out under load (BUG-028 recurring)
-status: new
-severity:
-priority:
-goal:
+status: triaged
+severity: S2
+priority: P1
+goal: G-007
 plan:
 created: 2026-10-26
 closed:
@@ -41,3 +41,4 @@ Accepted plans bounce for no fault in their code and loop through review and QA 
 ## Notes
 Options: raise the hookTimeout of the sample-project beforeAll setups, make the fixture cheaper, or lower maxWorkers for hub.full_suite.
 - 2026-10-26: goal hint G-007 (by Arpit Anand)
+- 2026-10-26: status new → triaged — priority P1, severity S2
