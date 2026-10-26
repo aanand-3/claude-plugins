@@ -2,13 +2,14 @@
 id: BUG-008
 type: bug
 title: paths.protected matches .crew/bin in any directory
-status: triaged
+status: done
 severity: S4
 priority: P3
 goal:
 plan:
 created: 2026-10-24
-closed:
+closed: 2026-10-26
+completed: 2026-10-26
 ---
 
 # BUG-008: paths.protected matches .crew/bin in any directory
@@ -47,3 +48,4 @@ Suggested triage: close as fixed by P-019 (BUG-007's path resolution). Optionall
 - 2026-10-26: Architect: filled Environment, Steps, Expected, Actual, Evidence, Impact, Notes. Does not reproduce on main a4a4f99: nested fixture .crew/bin writes pass the guard; fixed by P-019 (BUG-007 path resolution). Suggest closing as fixed; optional negative assertion in guard.test.ts.
 - 2026-10-26: status new → triaged — priority P3, severity S4
 - 2026-10-26: Already fixed on main (P-019/BUG-007 152650b, P-026); does not reproduce. Triaged P3/S4 only to keep it in the backlog; close as fixed with P-45's general close. Optional negative assertion in guard.test.ts.
+- 2026-10-26: status triaged → done — Already fixed by P-019 (BUG-007 path resolution) and P-026; Architect re-check found it does not reproduce
