@@ -11,6 +11,7 @@ pr:
 created: 2026-10-26
 started:
 completed:
+assignee: developer
 ---
 
 # P-061: land tolerates untracked OS files in the worktree folder
@@ -76,5 +77,6 @@ n/a for config or data: a change to land's cleanup only. Release's next `land` b
 ## Progress log
 
 - 2026-10-26: status draft → ready
+- 2026-10-26: assigned to the developer role
 
 ## Outcome
