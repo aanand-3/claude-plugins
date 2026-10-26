@@ -163,14 +163,21 @@ table change: three rows in `HOOKS`, one fix constant and the OK string.
 _Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
 
 - P-060: Add context and checkpoint hooks to this repo and check them in doctor [in-review] tasks 0/5 — claimed by Arpit Anand (developer:a193aada253203405)
-- last checkpoint 2026-10-26 10:53 at T1 (abc6d81) by Arpit Anand; since then 0 commit(s), 1 uncommitted file(s): plugins/crew/skills/guidelines/scripts/merge_settings.mjs
+- last checkpoint 2026-10-26 12:07 at T5 (abc6d81) by Arpit Anand; since then 0 commit(s), 3 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs, plugins/crew/skills/guidelines/scripts/merge_settings.mjs
+- ✓ cd packages/crew && npx vitest run test/hub/e2e/context.test.ts test/plugin/contents.test.ts test/docs.test.ts test/tools/upgrade.test.ts (AC 1)
+- ✓ git diff --quiet main -- plugins/crew/docs/context-and-memory.md (AC 1)
+- ✓ cd packages/crew && npx vitest run test/tools/guidelines.test.ts -t merge_settings (AC 5)
+- ✓ cd packages/crew && npx vitest run test/tools/guidelines.test.ts -t 'this repo' (AC 4)
+- ✓ cd packages/crew && npx vitest run test/hub/e2e/doctor.test.ts (AC 6)
+- ✓ grep -c merge_settings.mjs plugins/crew/skills/guidelines/SKILL.md (AC 1,2,3,4,5,6)
+- ✓ cd packages/crew && test $(wc -l < src/tools/guidelines/merge_settings.ts) -lt 300 && test $(wc -l < src/hub/commands/views/doctor.ts) -lt 300 (AC 1,2,3,4,5,6)
 - next: T1: Split the template's SessionStart into three hooks and let `RUNS` in src/docs/inventory.ts skip an optional closing quote (AC1); update `context.test.ts` ("the SessionStart hook runs context") and `contents.test.ts` ("the settings template wires the hooks") to look across the group's hooks → verify: `npx vitest run test/hub/e2e/context.test.ts test/plugin/contents.test.ts test/docs.test.ts test/tools/upgrade.test.ts`
-- evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —
+- evidence: AC1 ✓, AC2 ✓, AC3 ✓, AC4 ✓, AC5 ✓, AC6 ✓
 
 Latest log:
-- 2026-10-26: assigned to the developer role
-- 2026-10-26: The PM's assignment to the developer role (95fe671) replaces the team session's assign entry 0734bc7, which the team session made in the PM's name; the PM owns this assignment.
 - 2026-10-26: status ready → in-progress — branch plan/P-060-add-context-and-checkpoint-hooks-to-this
+- 2026-10-26: status in-progress → in-review
+- 2026-10-26: PM: accept blocked - 5 tasks unchecked (T1-T5); hub parses only 6 criteria (nested bullets) from the 8 numbered ones, see BUG-047. QA verified AC7/AC8 by hand.
 
 ## Progress log
 
