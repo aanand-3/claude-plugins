@@ -132,6 +132,18 @@ already launches role agents instead (team SKILL.md uses only `--as executive`).
 
 ## Handoff
 
+_Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
+
+- P-065: Only crew agents act in a crew role [in-progress] tasks 0/3 — claimed by Arpit Anand (developer:a67bd3212d31b5186)
+- last checkpoint 2026-10-26 13:58 at T3 (8040e12) by Arpit Anand; since then 0 commit(s), 2 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs
+- next: T1: Regression test in `test/hub/e2e/guard.test.ts`, `it("callers that aren't crew agents can't claim a role (BUG-043)")`, covering AC1–AC4 for `who` in `[null, "Explore"]` (via `hook()` and `bash()`; `init(repo)` first), asserting the denied reasons' key words → verify: `npm run build`, then `npx vitest run test/hub/e2e/guard.test.ts -t "BUG-043"` fails on the current guard.ts (the AC1 repro returns null).
+- evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —
+
+Latest log:
+- 2026-10-26: status draft → ready
+- 2026-10-26: assigned to the developer role
+- 2026-10-26: status ready → in-progress — branch plan/P-065-only-crew-agents-act-in-a-crew-role
+
 ## Progress log
 
 - 2026-10-26: status draft → ready
