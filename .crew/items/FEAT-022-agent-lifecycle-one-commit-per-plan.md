@@ -2,12 +2,13 @@
 id: FEAT-022
 type: feat
 title: Agent lifecycle: one commit per plan, resumed agents, targeted tests
-status: triaged
+status: done
 priority: P1
 goal: G-003
 plan: P-004
 created: 2026-10-24
-closed:
+closed: 2026-10-26
+completed: 2026-10-26
 ---
 
 # FEAT-022: Agent lifecycle: one commit per plan, resumed agents, targeted tests
@@ -26,3 +27,4 @@ As the executive running a crew team, I want one commit per plan, agents that pi
 ## Notes
 Raised in chat on 2026-10-24. This repo has no CI yet (no `.github/`).
 - 2026-10-24: status new → triaged — priority P1
+- 2026-10-26: status triaged → done — Delivered by P-004 (done). Q-848e65 triage.
