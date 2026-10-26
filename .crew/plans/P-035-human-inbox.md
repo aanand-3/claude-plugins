@@ -3,7 +3,7 @@ id: P-035
 title: Human inbox
 goal: G-007
 items: FEAT-043
-touches: packages/crew/src/hub/commands/team/inbox.ts, packages/crew/src/hub/commands/team/inbox.reg.ts, packages/crew/src/hub/commands/team/questions.ts, packages/crew/src/hub/commands/team/questions.reg.ts, packages/crew/src/hub/commands/team/guard.ts, packages/crew/src/hub/commands/index.ts, packages/crew/src/hub/cli.ts, packages/crew/src/hub/mcp.ts, packages/crew/src/hub/server.ts, packages/crew/ui/src/views/Inbox.tsx, packages/crew/ui/src/views/index.ts, packages/crew/test/hub/e2e/inbox.test.ts, packages/crew/test/hub/e2e/guard.test.ts, plugins/crew/skills/team/SKILL.md, plugins/crew/skills/hub/references/model.md
+touches: packages/crew/src/hub/commands/team/inbox.ts, packages/crew/src/hub/commands/team/inbox.reg.ts, packages/crew/src/hub/commands/team/questions.ts, packages/crew/src/hub/commands/team/questions.reg.ts, packages/crew/src/hub/commands/team/guard.ts, packages/crew/src/hub/commands/index.ts, packages/crew/src/hub/cli.ts, packages/crew/src/hub/mcp.ts, packages/crew/src/hub/server.ts, packages/crew/ui/src/views/Inbox.tsx, packages/crew/ui/src/views/index.ts, packages/crew/test/hub/e2e/inbox.test.ts, packages/crew/test/hub/e2e/guard.test.ts, packages/crew/test/mcp.test.ts, plugins/crew/skills/team/SKILL.md, plugins/crew/skills/hub/references/model.md
 depends_on: P-027, P-031
 status: in-progress
 branch: plan/P-035-human-inbox
@@ -36,7 +36,7 @@ Overlaps, for staffing only: P-037 on `guard.ts`, and P-030 on `questions.reg.ts
   - **escalation**: each open question that is an escalation or addressed to the executive → `{ kind: "escalation", ref: "Q-…", about: <ref or null>, question, options, holds, how: "answer Q-… \"<decision>\" --approved-by <you>" }`. `holds` comes from `escalationHolds`: "holds P-###" for a plan or item, otherwise "stops the team".
   - **approval**: each plan in review whose `plan.accepted` the policy gates to a human (`approvalReason`) and that has nothing else missing (evidence complete, review approved) → `{ kind: "approval", ref: "P-###", question: "Accept P-###: <title>?", options: ["approve"], holds: "P-###", how: "move P-### accepted --approved-by <you>" }`.
   - Text form: one block per entry (kind, ref, question, options, holds, the command). `Inbox empty — nothing waits on you.` when there are none.
-- **Options on questions:** `ask` and `escalate` take `--options "A; B"` (split on `;`, trimmed, empty dropped), stored as `options: string[]` on the `ask` event. The `Question` type, `questions`/`questions --json` and the inbox show them. Without `--options`, nothing changes.
+- **Options on questions:** `ask` and `escalate` take `--options "A; B"` (split on `;`, trimmed, empty dropped), stored as `options: string[]` on the `ask` event. The `Question` type, `questions`/`questions --json` and the inbox show them. Without `--options`, nothing changes. `--options` is CLI-only in this plan: the MCP `ask`/`escalate` schemas stay as recorded in `test/hub/registry-before.json`, which is frozen (K-2026-10-25).
 - **`ui` server:**
   - `GET /api/inbox` returns `{ entries }`.
   - Two new `ACTIONS`, through the page's token check like the others: `answer` `{ qid, text, approved_by }` → `answer(store, qid, text, { approvedBy })`, and `approve-goal` `{ id, approved_by }` → `move(store, id, "active", …, approvedBy)`. Both refuse an empty `approved_by` with the same message as the CLI ("a human answers it … --approved-by <name>").
