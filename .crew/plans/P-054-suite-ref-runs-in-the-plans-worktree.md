@@ -66,6 +66,20 @@ n/a — internal hub change; ships in the bundle. Rollback: revert the commit.
 
 ## Handoff
 
+_Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
+
+- P-054: suite --ref runs in the plan's worktree [in-progress] tasks 4/4 — claimed by Arpit Anand (developer:a9f31b43a22b088e2)
+- last checkpoint 2026-10-26 06:54 at T4 (b56a8f5) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-054-suite-ref-runs-in-the-plans-worktree/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/suite.test.ts ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-054-suite-ref-runs-in-the-plans-worktree checkout -- plugins; exit $r (AC 1,2,4)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-054-suite-ref-runs-in-the-plans-worktree/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/land.test.ts ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-054-suite-ref-runs-in-the-plans-worktree checkout -- plugins; exit $r (AC 3)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-054-suite-ref-runs-in-the-plans-worktree/packages/crew && npx vitest run test/hub/registry.test.ts && npm run typecheck
+- evidence: AC1 ✓ (self), AC2 ✓ (self), AC3 ✓ (self), AC4 ✓ (self)
+
+Latest log:
+- 2026-10-26: status draft → ready
+- 2026-10-26: assigned to the developer role
+- 2026-10-26: status ready → in-progress — branch plan/P-054-suite-ref-runs-in-the-plans-worktree
+
 ## Progress log
 
 - 2026-10-26: status draft → ready
