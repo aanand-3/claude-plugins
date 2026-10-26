@@ -35,3 +35,4 @@ Cosmetic; file names and knowledge IDs read oddly. No workaround needed.
 
 ## Notes
 - 2026-10-23: status new → triaged — priority P3, severity S4
+- 2026-10-26: DONE: fixed by P-022 (fc812e2). core/text.ts slugify drops apostrophes; text.test.ts 'drops apostrophes instead of splitting on them' expects the-teams-first-job. No remaining work.
