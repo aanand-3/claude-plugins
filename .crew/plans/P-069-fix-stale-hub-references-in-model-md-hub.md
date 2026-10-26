@@ -5,7 +5,7 @@ goal: G-006
 items: CHORE-016
 touches: plugins/crew/skills/hub/references/model.md, plugins/crew/skills/hub/SKILL.md, docs/vision.md
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-069-fix-stale-hub-references-in-model-md-hub
 pr:
 created: 2026-10-26
@@ -106,7 +106,7 @@ Docs only; lands with the plan. Rollback: revert the commit.
 
 _Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
 
-- P-069: Fix stale hub references in model.md, hub SKILL.md and vision.md [in-progress] tasks 6/6 — claimed by Arpit Anand (developer:ac83238ac3dc75db9)
+- P-069: Fix stale hub references in model.md, hub SKILL.md and vision.md [in-review] tasks 6/6 — claimed by Arpit Anand (developer:ac83238ac3dc75db9)
 - last checkpoint 2026-10-26 15:48 at done (cad8d0f) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
 - ✓ Compared model.md Lifecycles edge by edge against IDEA_FLOW, PLAN_FLOW, GOAL_FLOW, ITEM_FLOW in model.ts: all edges present (idea 9, item 14, plan incl. ready>draft, in-progress>ready, in-review>in-progress, accepted>in-progress, dropped>draft; goal incl. active>proposed, done>active, dropped>proposed; triaged>new, researching>exploring, proposed>researching, killed>exploring), none extra; link ../../../docs/plan-lifecycle.md resolves to existing plugins/crew/docs/plan-lifecycle.md (AC 1) (reported)
 - ✓ Read model.md Git mapping: states both flows via plan_worktrees; worktree section covers sparse shared worktree from new-plan, hub docs committed on base in main checkout, checkpoint/hand-over commit WIP on plan branch, land squashes to one commit and removes worktree and branch, PM moves done; the status/next reads every plan/* branch line is marked branch-per-plan only (AC 2) (reported)
@@ -131,6 +131,7 @@ Latest log:
 - 2026-10-26: status in-review → accepted
 - 2026-10-26: status accepted → in-progress — land: hub.build failed (exit 1):     at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:610:35) ·     at ModuleJob.syncLink (node:internal/modules/esm/module_job:277:33) { ·   code: 'ERR_MODULE_NOT_FOUND' · } · Node.js v26.5.0
 - 2026-10-26: Land bounce cause: packages/crew/node_modules missing in the plan worktree, so build.mjs could not import 'esbuild' (ERR_MODULE_NOT_FOUND). Ran npm ci --prefer-offline in the worktree's packages/crew (185 packages; allow-scripts warned esbuild/fsevents install scripts not run, build works regardless). npm run build now succeeds and leaves 0 uncommitted files. No code change.
+- 2026-10-26: status in-progress → in-review
 
 ## Outcome
 Shipped (docs only: model.md, hub SKILL.md, docs/vision.md):
