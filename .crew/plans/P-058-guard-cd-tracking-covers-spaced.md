@@ -5,11 +5,11 @@ goal: G-007
 items: BUG-012
 touches: packages/crew/src/hub/commands/team/hubcall.ts, packages/crew/src/hub/commands/team/targets.ts, packages/crew/test/hub/targets.test.ts, packages/crew/test/hub/hubcall.test.ts, packages/crew/test/hub/e2e/guard.test.ts, packages/crew/test/hub/e2e/guard-writes.test.ts
 depends_on:
-status: ready
+status: in-progress
 branch: plan/P-058-guard-cd-tracking-covers-spaced
 pr:
 created: 2026-10-26
-started:
+started: 2026-10-26
 completed:
 assignee: developer
 ---
@@ -75,5 +75,6 @@ Ships in the bundle; the guard reaches this repo through refresh-bin. Rollback: 
 
 - 2026-10-26: status draft → ready
 - 2026-10-26: assigned to the developer role
+- 2026-10-26: status ready → in-progress — branch plan/P-058-guard-cd-tracking-covers-spaced
 
 ## Outcome
