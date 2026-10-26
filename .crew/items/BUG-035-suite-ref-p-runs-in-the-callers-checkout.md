@@ -2,13 +2,13 @@
 id: BUG-035
 type: bug
 title: suite --ref P-### runs in the caller's checkout, not the plan's worktree
-status: triaged
+status: done
 severity: S2
 priority: P1
 goal: G-007
 plan: P-054
 created: 2026-10-26
-closed:
+closed: 2026-10-26
 ---
 
 # BUG-035: suite --ref P-### runs in the caller's checkout, not the plan's worktree
@@ -51,3 +51,4 @@ Suggested severity S2 (a quality gate silently passes; no workaround inside the 
 - Targeted test: `suite --ref P-###` invoked from the main checkout runs with cwd = the plan's worktree and records its sha.
 - 2026-10-26: Completed the report against the code: suiteCmd (work/suite.ts:157-162) always runs hub.full_suite in the caller's checkout (store.ws.root); --ref is only a label, the record has no sha, and no hub code reads suites.jsonl before a merge (the gate is crew-release.md prose). suites.jsonl: P-049 21:12:30Z and P-050 21:30:41Z ran in the main checkout; P-049 merged as b249d20 18s later. Suggested S2/P1.
 - 2026-10-26: status new → triaged — priority P1, severity S2
+- 2026-10-26: status triaged → done — delivered by P-054
