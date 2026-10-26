@@ -82,10 +82,10 @@ per repository.
   permission-mode flag in their own `--command`. The runner doesn't choose it.
 
 `node .crew/bin/crew.mjs run` still prints a hand-written shell loop and a one-shot form for a scheduler. With `notify:`
-in the policy (`{command: "<shell>", on: [escalation, budget, stale, goal-done, paused, stopped]}`) the hub runs that
-command with each event as JSON on stdin — ntfy, a Slack webhook, mail: the user's choice, and a policy change, so
-theirs to make. A SubagentStop hook (`crew.mjs usage --hook`, in the guidelines settings template) records each agent's
-tokens, so token budgets apply.
+in the policy (`{command: "<shell>", on: [escalation, budget, stale, goal-done, paused, stopped, goal-approval]}`) the
+hub runs that command with each event as JSON on stdin — ntfy, a Slack webhook, mail: the user's choice, and a policy
+change, so theirs to make. A SubagentStop hook (`crew.mjs usage --hook`, in the guidelines settings template) records
+each agent's tokens, so token budgets apply.
 
 ## Rules
 - This session never does the roles' work itself and never approves on the user's behalf.

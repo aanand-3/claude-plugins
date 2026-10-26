@@ -7,6 +7,7 @@ import { requireBase, STATE_PATHS } from "../../core/work/hubstate.js";
 import { CLOSED, HUB_STATE_MARKER, HUB_STATE_RULE, ITEM_CLOSED, type Kind, REQUIRED_ON_CREATE, TEMPLATE_NAMES } from "../../core/work/model.js";
 import { SCRIPT_DIR, SCRIPT_FILE, SKILL_DIR, Store } from "../../core/store.js";
 import { fail, idList, slugify } from "../../core/text.js";
+import { notify } from "../team/autonomy.js";
 import { breakdownToItems } from "./backlog.js";
 import { STUDIO_FILE, UI_FILE } from "../views/export.js";
 
@@ -92,6 +93,7 @@ export function newGoal(store: Store, title: string, draftPath: string, priority
   store.writeNew(doc, join(store.dirs.goal, `${eid}-${slugify(title)}.md`));
   breakdownToItems(store, doc);
   store.consume(draftFile, keep);
+  notify(store, "goal-approval", eid, `${eid} waits for approval: ${title} — move ${eid} active --approved-by <name>`);
 }
 
 export interface PlanOptions { goal?: string; depends?: string; items?: string; touches?: string; keep?: boolean }

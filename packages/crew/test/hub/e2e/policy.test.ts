@@ -1,10 +1,12 @@
 /** The hub, end to end — policy: layered values and their sources, the org's ceilings, the pinned playbook ref, human
  * and role gates, budgets and human-led triage. Ported from tests/crew/test_hub.py (section "policy"). */
+import { join } from "node:path";
 import { beforeEach, expect, it } from "vitest";
 import { Repo } from "../../helpers/repo.js";
 import { GOAL_DRAFT } from "./fixtures.js";
 import { init, item, newGoal, newPlan, planFile, read, tr, write } from "./helpers.js";
 import { events, mcpCall, orgPlaybook, readyPlan } from "./sections.js";
+import { LIFECYCLE, lifecycle } from "./team-helpers.js";
 
 let repo: Repo;
 beforeEach(() => { repo = Repo.create(); });
@@ -146,4 +148,27 @@ it("human-led triage needs a human", () => {
   expect(tr(repo, "triage", "CHORE-001", "--approved-by", "Amit").returncode).toBe(0);
   newGoal(repo, "Accounts", GOAL_DRAFT, "--priority", "P1");
   expect(item(repo, "FEAT-001")).toContain("status: new"); // breakdown items wait for the human too
+});
+
+it("goal-approval tells the human once per new goal", () => {
+  lifecycle(repo);
+  const out = join(repo.path, "notified.jsonl");
+  const sent = () => read(out).split("\n").filter((line) => line.trim()).map((line) => JSON.parse(line));
+  repo.write(".crew/policy.yaml", LIFECYCLE + `notify: { command: "cat >> ${out}; echo >> ${out}", on: [goal-approval] }\n`);
+  expect(newGoal(repo).returncode).toBe(0);
+  expect(sent().map((e) => [e.kind, e.ref])).toEqual([["goal-approval", "G-001"]]);
+  for (const s of ["G-001", "Accounts", "move G-001 active --approved-by"]) expect(sent()[0].text).toContain(s);
+  expect(newGoal(repo, "Payments").returncode).toBe(0);
+  expect(tr(repo, "move", "G-001", "active", "--approved-by", "Amit").returncode).toBe(0);
+  tr(repo, "status");
+  expect(sent().map((e) => [e.kind, e.ref])).toEqual([["goal-approval", "G-001"], ["goal-approval", "G-002"]]);
+  expect(events(repo, "--type", "notify").map((e) => e.ref).sort()).toEqual(["G-001", "G-002"]);
+  repo.write(".crew/policy.yaml", LIFECYCLE + `notify: { command: "cat >> ${out}; echo >> ${out}", on: [escalation] }\n`);
+  expect(newGoal(repo, "Search").returncode).toBe(0);
+  expect(sent()).toHaveLength(2);
+  expect(events(repo, "--type", "notify").filter((e) => e.ref === "G-003")).toEqual([]);
+  repo.write(".crew/policy.yaml", LIFECYCLE + "notify: { on: [goal-approval] }\n");
+  expect(tr(repo, "policy", "check").stdout.trim()).toBe("Policy OK.");
+  repo.write(".crew/policy.yaml", LIFECYCLE + "notify: { on: [lunch] }\n");
+  expect(tr(repo, "policy", "check").stdout).toMatch(/notify.on: 'lunch' is not one of .*goal-approval/);
 });

@@ -95,7 +95,7 @@ the Outcome's `Learnings:` line lists the entries captured, or `none`, before `i
 | `role_gates` | global | `{plan.accepted: qa}` — the step needs the acting role; keys are `<kind>.<status>`, one edge `<kind>.<from>><to>` (wins over the status), or an action: `plan.assigned`, `plan.reassigned`, `plan.reviewed`, `plan.landed` |
 | `evidence.role` | global | only that role's checks count toward a plan's acceptance |
 | `limits` | global (`max_turns` also per role) | `stale_claim_hours`, `max_bounces`, `max_attempts` (over → a question to the director), `max_turns` (agents) |
-| `notify` | global | `{command, on: [escalation, budget, stale, goal-done, paused, stopped]}` — the command gets each event as JSON on stdin |
+| `notify` | global | `{command, on: [escalation, budget, stale, goal-done, paused, stopped, goal-approval]}` — the command gets each event as JSON on stdin |
 | `fast_lane` | global | `{types: [CHORE, BUG], max_tasks: 3}` — the PM may make such plans ready |
 | `release.refresh_bin` | global only | `{from: plugins/crew/skills/hub/dist, files: [crew.mjs, ui.html]}` — only the release role, in a plan's worktree, runs `refresh-bin` to copy each listed file from `from` over its existing `.crew/bin/` copy (it never adds a file); `refresh-bin --check` fails while a copy differs. No default |
 | `models`, `tools.allow`, `paths.write` | global, role, team | override |
