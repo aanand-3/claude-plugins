@@ -5,7 +5,7 @@ goal:
 items: BUG-043
 touches: packages/crew/src/hub/commands/team/guard.ts, packages/crew/test/hub/e2e/guard.test.ts, plugins/crew/skills/hub/SKILL.md
 depends_on:
-status: draft
+status: ready
 branch: plan/P-065-only-crew-agents-act-in-a-crew-role
 pr:
 created: 2026-10-26
@@ -132,5 +132,7 @@ already launches role agents instead (team SKILL.md uses only `--as executive`).
 ## Handoff
 
 ## Progress log
+
+- 2026-10-26: status draft → ready
 
 ## Outcome
