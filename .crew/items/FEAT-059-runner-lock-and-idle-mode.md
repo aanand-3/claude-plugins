@@ -5,7 +5,7 @@ title: Runner lock and idle mode
 status: triaged
 priority: P1
 goal: G-007
-plan:
+plan: P-066
 created: 2026-10-26
 closed:
 ---
