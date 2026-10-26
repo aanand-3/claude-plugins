@@ -98,15 +98,20 @@ then. Rollback: revert the commit and re-render.
 
 _Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
 
-- P-064: Every role closes the asks sent to it [in-review] tasks 0/2 — claimed by Arpit Anand (developer:a69325ed00930a177)
-- last checkpoint 2026-10-26 13:29 at T2 (db9a9b9) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
-- next: T1: Regression test in `test/hub/e2e/agents.test.ts`, `it("every role template closes its asks with answer (BUG-044)")`: each template file contains `crew.mjs answer Q-`; then `init(repo, { mode: "" })`, write a policy with a project role (as "a project role renders from the generic template" does), `tr(repo, "agents")`, and assert `.claude/agents/crew-pm.md` and the project role's agent contain it → verify: the new case fails on the current templates (six files lack the line).
-- evidence: AC1 —, AC2 —, AC3 —
+- P-064: Every role closes the asks sent to it [in-progress] tasks 2/2 — claimed by Arpit Anand (developer:a69325ed00930a177)
+- last checkpoint 2026-10-26 14:24 at done (6620206) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
+- ✓ cd packages/crew && npx vitest run test/hub/e2e/agents.test.ts -t BUG-044 (AC 2)
+- ✓ cd packages/crew && npx vitest run test/hub/e2e/agents.test.ts (AC 3)
+- ✓ git diff main --stat -- plugins/crew/skills/hub/agents/ (AC 3)
+- ✓ git diff main --numstat -- plugins/crew/skills/hub/agents/ | awk '{n++; if ($2!=0 || $1==0) bad=1} END{exit !(n==6 && !bad)}' (AC 3)
+- ✓ git diff main --name-only -- plugins/crew/skills/hub/agents/ | sort | tr '\n' ' ' | grep -qx 'plugins/crew/skills/hub/agents/designer.md plugins/crew/skills/hub/agents/developer.md plugins/crew/skills/hub/agents/generic.md plugins/crew/skills/hub/agents/pm.md plugins/crew/skills/hub/agents/qa.md plugins/crew/skills/hub/agents/release.md ' (AC 3)
+- ✓ QA verified AC1-AC3 (agents.test.ts BUG-044 case passes) (reported)
+- evidence: AC1 ✓, AC2 ✓, AC3 ✓
 
 Latest log:
-- 2026-10-26: status draft → ready
-- 2026-10-26: assigned to the developer role
-- 2026-10-26: status ready → in-progress — branch plan/P-064-every-role-closes-the-asks-sent-to-it
+- 2026-10-26: status in-progress → in-review
+- 2026-10-26: status in-review → accepted
+- 2026-10-26: status accepted → in-progress — land: hub.full_suite failed (exit 1):      15| beforeAll(() => { ·        | ^ ·      16|   execFileSync("node", [new URL("../scripts/sample-project.mjs", impor… ·      17|   graph = JSON.parse(tr("export", "--json")); · ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 
 ## Progress log
 
