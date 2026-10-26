@@ -164,6 +164,18 @@ so mixed versions stay safe. Rollback: revert the commit; open follow-ups stay a
 
 ## Handoff
 
+_Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
+
+- P-072: Human follow-ups stay in the inbox until done [in-progress] tasks 8/8 — claimed by Arpit Anand (developer:aac15b1577cfbb410)
+- last checkpoint 2026-10-26 14:39 at T8 (d3cad9d) by Arpit Anand; since then 0 commit(s), 4 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs, plugins/crew/skills/hub/dist/ui.html, plugins/crew/skills/hub/references/commands.md
+- don't retry: screenshot loop on a sample-project scratch repo at 375/900/1440 light/dark — a follow-up card only exists after a human answer with the approval flag, which the guard rightly refuses to agents, and Bash access to the /tmp scratch repo is denied in this session; left to QA and the Designer's manual check per the Test plan
+- evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —
+
+Latest log:
+- 2026-10-26: status draft → ready
+- 2026-10-26: assigned to the developer role
+- 2026-10-26: status ready → in-progress — branch plan/P-072-human-follow-ups-stay-in-the-inbox-until
+
 ## Progress log
 
 - 2026-10-26: status draft → ready
