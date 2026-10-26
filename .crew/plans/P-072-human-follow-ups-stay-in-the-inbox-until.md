@@ -5,11 +5,11 @@ goal:
 items: FEAT-068
 touches: packages/crew/src/hub/commands/team/followups.ts, packages/crew/src/hub/commands/team/questions.reg.ts, packages/crew/src/hub/commands/team/inbox.ts, packages/crew/src/hub/commands/work/execution.ts, packages/crew/src/hub/server.ts, packages/crew/ui/src/views/Inbox.tsx, packages/crew/test/hub/e2e/inbox.test.ts, plugins/crew/skills/hub/references/model.md, plugins/crew/skills/team/SKILL.md
 depends_on:
-status: ready
+status: in-progress
 branch: plan/P-072-human-follow-ups-stay-in-the-inbox-until
 pr:
 created: 2026-10-26
-started:
+started: 2026-10-26
 completed:
 assignee: developer
 ---
@@ -166,5 +166,6 @@ so mixed versions stay safe. Rollback: revert the commit; open follow-ups stay a
 
 - 2026-10-26: status draft → ready
 - 2026-10-26: assigned to the developer role
+- 2026-10-26: status ready → in-progress — branch plan/P-072-human-follow-ups-stay-in-the-inbox-until
 
 ## Outcome
