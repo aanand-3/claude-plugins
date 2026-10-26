@@ -2,13 +2,13 @@
 id: BUG-012
 type: bug
 title: Guard's cd tracking misses spaced subshells, function bodies and case arms; install -d checks one operand
-status: triaged
+status: done
 severity: S3
 priority: P3
 goal: G-007
 plan: P-058
 created: 2026-10-24
-closed:
+closed: 2026-10-26
 ---
 
 # BUG-012: Guard's cd tracking misses spaced subshells, function bodies and case arms; install -d checks one operand
@@ -47,3 +47,4 @@ These are deliberate-bypass forms that agents rarely write by accident. They wor
 ## Notes
 A nested shell (`sh -c "cd ~ && echo > x"`, `nohup sh -c …`) also passes. That is a general limit of static checking rather than part of this bug, but it may be worth a fail-closed rule for `sh|bash|zsh -c` with a redirect inside. A possible fix: treat a lone `(`, `case … )` arms and function heads (`name()`, `function name`) as prefixes; for `install -d`, check every operand.
 - 2026-10-26: status new → triaged — priority P3, severity S3
+- 2026-10-26: status triaged → done — delivered by P-058
