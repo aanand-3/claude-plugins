@@ -2,7 +2,7 @@
 id: BUG-037
 type: bug
 title: triage can't unlink an item from its goal
-status: new
+status: triaged
 severity: S3
 priority: P2
 goal: G-007
@@ -45,3 +45,4 @@ There is a way to unlink an item from its goal at triage (for example `--goal no
 - Suggested severity S3: it gets in the way of grooming and goal closure, has a manual workaround, and loses no data.
 
 ## Notes
+- 2026-10-26: status new → triaged — priority P2, severity S3
