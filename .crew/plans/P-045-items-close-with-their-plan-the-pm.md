@@ -5,7 +5,7 @@ goal: G-007
 items: BUG-024
 touches: packages/crew/src/hub/core/work/model.ts, packages/crew/src/hub/commands/work/workflow.ts, packages/crew/src/hub/core/team/presets.ts, packages/crew/test/hub/e2e/item-close.test.ts, packages/crew/test/hub/e2e/items.test.ts, packages/crew/test/hub/e2e/team.test.ts, packages/crew/test/hub/e2e/review-fixes.test.ts, packages/crew/test/hub/e2e/policy.test.ts, packages/crew/test/hub-worktrees.test.ts, plugins/crew/skills/hub/references/model.md
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-045-items-close-with-their-plan-the-pm
 pr:
 created: 2026-10-25
@@ -132,7 +132,7 @@ needs none of its code, since it hooks the plan's move to `done` whichever edge 
 
 _Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
 
-- P-045: Items close with their plan; the PM closes any item [in-progress] tasks 5/5 — claimed by Arpit Anand (developer:a90fc71287f45dcec)
+- P-045: Items close with their plan; the PM closes any item [in-review] tasks 5/5 — claimed by Arpit Anand (developer:a90fc71287f45dcec)
 - last checkpoint 2026-10-26 05:01 at T5 (da967e7) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
 - ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-045-items-close-with-their-plan-the-pm/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/item-close.test.ts -t flow ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-045-items-close-with-their-plan-the-pm checkout -- plugins/crew/skills/hub/dist; exit $r (AC 1)
 - ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-045-items-close-with-their-plan-the-pm/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/item-close.test.ts -t 'follow|never blocks' ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-045-items-close-with-their-plan-the-pm checkout -- plugins/crew/skills/hub/dist; exit $r (AC 2,3)
@@ -158,6 +158,7 @@ Latest log:
 - 2026-10-26: status in-progress → in-review
 - 2026-10-26: status in-review → accepted
 - 2026-10-26: status accepted → in-progress — land: merging main conflicts in plugins/crew/skills/hub/references/model.md
+- 2026-10-26: status in-progress → in-review — merged main; model.md conflict resolved
 
 ## Outcome
 Items now close: `ITEM_FLOW` has a stored `done` and every status closes to done/wontfix/duplicate; `ITEM_CLOSED`
