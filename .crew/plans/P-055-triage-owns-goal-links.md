@@ -18,11 +18,11 @@ completed:
 ## Context
 FEAT-048 and BUG-037 (G-007). Goal links should be decided at triage, not capture. BUG-037: `triage --goal none` errors ("Goal NONE does not exist") and `--goal ""` reports updated but changes nothing, so an item cannot be unlinked. Today a plan's goal is also fixed at `new-plan`.
 
-**Approval needed before a developer starts:** the capture rule (items are captured with no goal; a suggested goal goes in Notes) and the PM re-goal rule change role permissions. The executive must approve them first. The architect should spec the plan and raise that approval as one escalation naming the exact rules.
+**Approved by the executive (Q-fcec4f), with rule 1 changed:** at capture an item records its origin, not a goal. The origin is the plan it was found in (`found in P-###`) or the item it came from (`from BUG-###`); the hub fills it in when an agent files from inside a plan's work. At triage the hub suggests the origin's goal, and the PM confirms it or picks another. `--goal` at capture is only a hint, because its schema is frozen. Rules 2–5 are approved as specced below.
 
 ## Scope
 **In:**
-- `new-item` captures with no goal; a filer's suggested goal is recorded in Notes.
+- `new-item` captures with no goal and records the item's origin (`origin: P-###` or an item ID): explicit `--origin` (CLI), else the caller's plan worktree, else the caller's run's single open plan claim. A `--goal` hint goes in Notes. At triage the hub suggests a goal: the origin plan's or origin item's goal, else the hint.
 - `new-item bug` is refused when Steps to reproduce, Expected or Actual is empty.
 - `triage` can clear a goal (fixes BUG-037); `--goal ""` never reports updated while changing nothing.
 - The PM can re-goal items and plans, with a required `--note`; every re-goal is logged.
@@ -33,7 +33,13 @@ FEAT-048 and BUG-037 (G-007). Goal links should be decided at triage, not captur
 - Changing who may create or approve goals.
 
 ## Acceptance criteria
-- [ ] AC1 · Capture without a goal. `new-item feat "x" --why "y" --goal G-001` (G-001 exists) creates the item with an empty `goal:`. Its Notes get `- <date>: suggested goal G-001 (by <actor>)`, and the command prints `note: FEAT-### is captured without a goal; G-001 is suggested in Notes — the PM links it at triage`. An unknown goal still fails as today (`Goal G-009 does not exist.`). The MCP `new_item` tool behaves the same. A goal's Breakdown (`breakdownToItems`) still links the items it creates to that goal.
+- [ ] AC1 · Capture records origin, not goal.
+  - `new-item feat "x" --why "y"` run from P-003's worktree (or by a run whose only open claim is P-003) creates the item with an empty `goal:` and `origin: P-003`.
+  - `--origin BUG-002` (CLI) sets `origin: BUG-002` and wins over detection; an unknown or non-plan/non-item ref fails with `Origin <ref> does not exist.`. With no worktree, claim or `--origin`, there is no `origin:` field.
+  - `--goal G-001` is checked as today, then only recorded in Notes as `goal hint G-001 (by <actor>)`.
+  - The MCP `new_item` tool behaves the same, with detection only: its schema is frozen.
+  - A goal's Breakdown (`breakdownToItems`) still links the items it creates to that goal.
+- [ ] AC1b · Triage suggests the goal. `triage FEAT-### --priority P2` on a goal-less item leaves `goal:` empty and prints `suggested goal: G-### (<origin P-003's goal | origin BUG-002's goal | goal hint>) — confirm with \`triage FEAT-### --goal G-###\` or pick another`. The suggestion is the origin's goal, else the latest Notes hint; it prints nothing when there is none. `triage --goal G-###` links as today.
 - [ ] AC2 · Bug capture. `new-item bug` whose body leaves Steps to reproduce, Expected or Actual empty fails with `A bug needs Steps to reproduce, Expected and Actual; empty: <names>. Nothing was created.` That includes every `--why` bug. Nothing is created and the draft is kept. A bug from a draft with the three sections filled is created as today.
 - [ ] AC3 · BUG-037. `triage FEAT-### --goal none --note "off G-001"` on an item linked to G-001 clears `goal:`, appends a Notes line naming the old goal and the note, and records a `log` ledger event. `--goal ""` does the same, or fails with `use --goal none to clear the goal` if the parser drops the empty value; it is never reported as updated with no change. A regression test asserts the cleared front matter.
 - [ ] AC4 · Re-goal. `regoal <ID> <G-###|none> --note TXT` (CLI) and the `regoal` MCP tool change the goal of an item or a plan. `--note` is required. Each re-goal appends `re-goaled <old|none> → <new|none> by <actor>: <note>` to the document (Notes for items, Progress log for plans) and records a `log` ledger event on the ref. Changing an existing goal through `triage --goal` counts as a re-goal: it needs `--note` and passes the AC5 and AC6 checks. Linking a goal-less item at triage needs no note.
@@ -42,7 +48,12 @@ FEAT-048 and BUG-037 (G-007). Goal links should be decided at triage, not captur
 - [ ] AC7 · Permissions. `item.regoaled` and `plan.regoaled` are gated actions (`ACTIONS`), and the lifecycle preset gives both to `pm`. `regoal` run as another role is refused by the policy, while a human with no role and the executive pass, as with other role gates. `policy show` lists both. The PM template, `references/model.md` and the generated doc blocks describe the capture, bug and re-goal rules.
 
 ## Approach
-- **Capture (backlog.ts `newItem`).** `--goal` is checked with `checkRef`, then kept out of `fields`. After `createItem`, `it.appendLog("suggested goal G-### (by <actor>)", "Notes")` and save. Intake triage (priority/severity at capture) still runs, without a goal. The CLI flag and the MCP `goal` input stay: their spec, schema, help line and description are pinned by `test/hub/registry-before.json` (frozen, K-2026-10-25-approved-with-one-change-do-not-edit), so only the behaviour changes.
+- **Capture (backlog.ts `newItem`).**
+  - `--goal` is checked with `checkRef`, then kept out of `fields` and appended to Notes as a hint.
+  - `origin` comes from `itemOrigin(store, explicit)`, in order: (1) `--origin`, checked as an existing plan or item; (2) the plan whose worktree is `store.ws.root` (reverse of `store.planWorktrees()`); (3) the plan of the caller's run's open claim when exactly one exists (`store.ledger.claims()` filtered by `who.run`); (4) none. When there is an origin, `doc.set("origin", …)` runs after `store.build`, so the item templates, including the vendored `.crew/templates/item-*.md`, stay unchanged.
+  - Intake triage (priority/severity at capture) still runs, without a goal.
+  - The CLI gains `--origin` (adding an option is allowed by registry.test.ts) and a new, separate usage line: `  new-item … --origin P-###|ID                       record where the item was found (else the caller's plan worktree or claim)`. The existing help line, the MCP `new_item` schema and its description stay as `registry-before.json` pins them.
+- **Triage suggestion.** `suggestedGoal(store, item)`: the `origin` doc's `goal`, else the last `goal hint G-###` in Notes, else null. `triage` prints it when the item ends without a goal.
 - **Bug capture.** Before `createItem`, for `BUG` check `probe.missing(TRIAGE_SECTIONS.BUG)` (core/work/model.ts, the same sections `triageProblems` checks) and fail with AC2's text.
 - **One goal-link helper** in backlog.ts: `relink(store, doc, target: string | null, note, actor)`. It applies the AC5 checks, the AC6 item-in-open-plan refusal, `authorize(store, doc.id, "<kind>.regoaled", undefined, undefined, "regoal …")`, the set, the log line and `store.ledger.record("log", doc.id, { text })`. For a plan it first checks every linked item, then writes all of them (all or nothing). `parseGoal(value)` maps `none`/`""` to null, else `checkRef`.
   - `triage`: when `o.goal` is given (including `""` or `none`) and the item already has a goal different from the target, it calls `relink` (note required). When the item has no goal, it sets it as today. The `if (value)` skip no longer applies to `goal`.
@@ -62,7 +73,7 @@ FEAT-048 and BUG-037 (G-007). Goal links should be decided at triage, not captur
 - backlog.ts is 119 lines and stays under 300.
 
 ## Tasks
-- [ ] T1: Capture without a goal and the bug capture rule (`newItem`) → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/goal-links.test.ts -t "capture"` (AC1, AC2)
+- [ ] T1: Capture with origin, not goal (`newItem`, `itemOrigin`, `--origin` and its usage line), the triage suggestion, and the bug capture rule → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/goal-links.test.ts -t "capture"`. Cases: origin from the worktree, from the claim, from `--origin`, none; goal hint in Notes; triage suggestion from the origin and from the hint (AC1, AC1b, AC2)
 - [ ] T2: `relink`, `parseGoal`, triage's goal handling (BUG-037) → verify: `npx vitest run test/hub/e2e/goal-links.test.ts -t "triage"` (AC3, AC4 triage part)
 - [ ] T3: `regoal` command, MCP tool, `ACTIONS`, preset gates; `regoal` added to `test/mcp.test.ts`'s sorted tool list → verify: `npx vitest run test/hub/e2e/goal-links.test.ts -t "regoal" test/mcp.test.ts test/hub/registry.test.ts test/hub/e2e/policy.test.ts`; `git diff --quiet main -- test/hub/registry-before.json` (AC4–AC7)
 - [ ] T4: Existing tests and `sample-project.mjs` moved to the new rules → verify: `npx vitest run test/hub/e2e/basics.test.ts test/hub/e2e/dispatch.test.ts test/hub/e2e/doctor.test.ts test/hub/e2e/items.test.ts test/hub/e2e/sparse-worktrees.test.ts test/hub/e2e/worktrees.test.ts test/hub/e2e/runner.test.ts test/hub-worktrees.test.ts test/view.test.ts test/mcp.test.ts`
@@ -70,7 +81,7 @@ FEAT-048 and BUG-037 (G-007). Goal links should be decided at triage, not captur
 
 ## Test plan
 **Targeted checks** (from `packages/crew/`; the e2e suites drive the built bundles: `npm run build` first, then `git checkout -- plugins/crew/skills/hub/dist plugins/crew/skills/hub/references/commands.md`):
-- AC1, AC2 → `npx vitest run test/hub/e2e/goal-links.test.ts -t "capture"`
+- AC1, AC1b, AC2 → `npx vitest run test/hub/e2e/goal-links.test.ts -t "capture"`
 - AC3 (BUG-037 regression) → `npx vitest run test/hub/e2e/goal-links.test.ts -t "triage"`
 - AC4–AC6 → `npx vitest run test/hub/e2e/goal-links.test.ts -t "regoal"`
 - AC7 → `npx vitest run test/hub/e2e/policy.test.ts test/hub/registry.test.ts test/mcp.test.ts test/docs.test.ts`
@@ -85,12 +96,14 @@ FEAT-048 and BUG-037 (G-007). Goal links should be decided at triage, not captur
 
 ## Risks & open questions
 - Executive approval of the capture and re-goal rules is required first (see Context).
-- Existing items keep their goals; only new captures start goal-less.
+- Existing items keep their goals; only new captures start goal-less. Items captured before this plan have no `origin:`.
+- Origin detection from a claim is skipped when the run holds more than one open claim; then it needs `--origin`.
 
 ## Handoff
 
 ## Progress log
 
 - 2026-10-26: status draft → ready
+- 2026-10-26: Architect: spec updated for the executive's rule 1 (Q-fcec4f): items record origin (--origin, plan worktree, single claim), --goal is a Notes hint, triage suggests the origin's goal (AC1, AC1b, Approach, T1). Rules 2-5 unchanged; touches unchanged.
 
 ## Outcome
