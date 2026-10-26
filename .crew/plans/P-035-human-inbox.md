@@ -11,6 +11,7 @@ pr:
 created: 2026-10-25
 started:
 completed:
+assignee: developer
 ---
 
 # P-035: Human inbox
@@ -132,5 +133,6 @@ Overlaps, for staffing only: P-037 on `guard.ts`, and P-030 on `questions.reg.ts
 ## Progress log
 
 - 2026-10-25: status draft → ready
+- 2026-10-26: assigned to the developer role
 
 ## Outcome
