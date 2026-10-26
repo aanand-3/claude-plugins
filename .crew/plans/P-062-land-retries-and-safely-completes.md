@@ -5,7 +5,7 @@ goal: G-007
 items: BUG-041
 touches: packages/crew/src/hub/commands/work/land.ts, packages/crew/src/hub/commands/work/worktree-cleanup.ts, packages/crew/src/hub/commands/work/release.ts, packages/crew/test/hub/e2e/land.test.ts
 depends_on: P-061
-status: draft
+status: ready
 branch: plan/P-062-land-retries-and-safely-completes
 pr:
 created: 2026-10-26
@@ -94,5 +94,7 @@ n/a — internal change to land's cleanup, shipped in the hub bundle Release reb
 ## Handoff
 
 ## Progress log
+
+- 2026-10-26: status draft → ready
 
 ## Outcome
