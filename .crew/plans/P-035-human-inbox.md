@@ -5,7 +5,7 @@ goal: G-007
 items: FEAT-043
 touches: packages/crew/src/hub/commands/team/inbox.ts, packages/crew/src/hub/commands/team/inbox.reg.ts, packages/crew/src/hub/commands/team/questions.ts, packages/crew/src/hub/commands/team/questions.reg.ts, packages/crew/src/hub/commands/team/guard.ts, packages/crew/src/hub/commands/index.ts, packages/crew/src/hub/cli.ts, packages/crew/src/hub/mcp.ts, packages/crew/src/hub/server.ts, packages/crew/ui/src/views/Inbox.tsx, packages/crew/ui/src/views/index.ts, packages/crew/test/hub/e2e/inbox.test.ts, packages/crew/test/hub/e2e/guard.test.ts, packages/crew/test/mcp.test.ts, plugins/crew/skills/team/SKILL.md, plugins/crew/skills/hub/references/model.md
 depends_on: P-027, P-031
-status: in-progress
+status: in-review
 branch: plan/P-035-human-inbox
 pr:
 created: 2026-10-25
@@ -103,13 +103,13 @@ Overlaps, for staffing only: P-037 on `guard.ts`, and P-030 on `questions.reg.ts
   - The guard cases go in `test/hub/e2e/guard.test.ts`.
 
 ## Tasks
-- [ ] T1: `--options` on ask/escalate; `Question.options` → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/inbox.test.ts -t options` (AC2)
-- [ ] T2: inbox.ts + `inbox` command and MCP tool → verify: `npx vitest run test/hub/e2e/inbox.test.ts -t "lists|answer|steer"` (AC1, AC3, AC7)
-- [ ] T3: guard rule → verify: `npx vitest run test/hub/e2e/guard.test.ts` (AC4)
-- [ ] T4: server `/api/inbox`, `answer` and `approve-goal` actions → verify: `npx vitest run test/hub/e2e/inbox.test.ts -t ui` (AC5)
-- [ ] T5: Inbox page → verify: `npm run build`, then the manual check in the Test plan (AC6)
-- [ ] T6: team/SKILL.md "Each run", model.md → verify: `grep -n "inbox" plugins/crew/skills/team/SKILL.md plugins/crew/skills/hub/references/model.md`; `npx vitest run test/plugin` (AC8)
-- [ ] T7: types, sizes, unchanged suites → verify: `npm run typecheck`; `wc -l` of the touched modules; `npx vitest run test/hub/e2e/team-2.test.ts test/hub/e2e/live-ui.test.ts test/view.test.ts` (AC9)
+- [x] T1: `--options` on ask/escalate; `Question.options` → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/inbox.test.ts -t options` (AC2)
+- [x] T2: inbox.ts + `inbox` command and MCP tool → verify: `npx vitest run test/hub/e2e/inbox.test.ts -t "lists|answer|steer"` (AC1, AC3, AC7)
+- [x] T3: guard rule → verify: `npx vitest run test/hub/e2e/guard.test.ts` (AC4)
+- [x] T4: server `/api/inbox`, `answer` and `approve-goal` actions → verify: `npx vitest run test/hub/e2e/inbox.test.ts -t ui` (AC5)
+- [x] T5: Inbox page → verify: `npm run build`, then the manual check in the Test plan (AC6)
+- [x] T6: team/SKILL.md "Each run", model.md → verify: `grep -n "inbox" plugins/crew/skills/team/SKILL.md plugins/crew/skills/hub/references/model.md`; `npx vitest run test/plugin` (AC8)
+- [x] T7: types, sizes, unchanged suites → verify: `npm run typecheck`; `wc -l` of the touched modules; `npx vitest run test/hub/e2e/team-2.test.ts test/hub/e2e/live-ui.test.ts test/view.test.ts` (AC9)
 
 ## Test plan
 **Targeted checks** (from `packages/crew/`; e2e suites drive the built `dist/crew.mjs`: `npm run build` first, then discard the generated output, which Release builds):
@@ -132,7 +132,7 @@ Overlaps, for staffing only: P-037 on `guard.ts`, and P-030 on `questions.reg.ts
 
 _Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
 
-- P-035: Human inbox [in-progress] tasks 0/7 — claimed by Arpit Anand (developer:a6589ac899aeab61f)
+- P-035: Human inbox [in-review] tasks 7/7 — claimed by Arpit Anand (developer:a6589ac899aeab61f)
 - last checkpoint 2026-10-26 05:17 at T7 (dbd227b) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
 - ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-035-human-inbox/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/inbox.test.ts -t options ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-035-human-inbox checkout -- plugins; exit $r (AC 2)
 - ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-035-human-inbox/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/inbox.test.ts -t 'lists|answer|steer' ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-035-human-inbox checkout -- plugins; exit $r (AC 1,3,7)
@@ -141,7 +141,6 @@ _Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
 - ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-035-human-inbox/packages/crew && npm run build >/dev/null 2>&1 && npm run typecheck >/dev/null 2>&1 ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-035-human-inbox checkout -- plugins; exit $r
 - ✓ grep -n inbox /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-035-human-inbox/plugins/crew/skills/team/SKILL.md /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-035-human-inbox/plugins/crew/skills/hub/references/model.md && cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-035-human-inbox/packages/crew && npx vitest run test/plugin (AC 8)
 - ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-035-human-inbox/packages/crew && npm run build >/dev/null 2>&1 && npm run typecheck >/dev/null 2>&1 && wc -l src/hub/commands/team/inbox.ts src/hub/commands/team/questions.ts src/hub/commands/team/guard.ts src/hub/server.ts ui/src/views/Inbox.tsx && npx vitest run test/hub/e2e/inbox.test.ts test/hub/e2e/guard.test.ts test/hub/e2e/team-2.test.ts test/hub/e2e/live-ui.test.ts test/view.test.ts test/hub/e2e/dispatch.test.ts test/hub/registry.test.ts test/mcp.test.ts test/plugin ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-035-human-inbox checkout -- plugins; exit $r (AC 1,2,3,4,5,7,9)
-- next: T1: `--options` on ask/escalate; `Question.options` → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/inbox.test.ts -t options` (AC2)
 - evidence: AC1 ✓ (self), AC2 ✓ (self), AC3 ✓ (self), AC4 ✓ (self), AC5 ✓ (self), AC6 —, AC7 ✓ (self), AC8 ✓ (self), AC9 ✓ (self)
 
 Latest log:
@@ -154,5 +153,8 @@ Latest log:
 - 2026-10-25: status draft → ready
 - 2026-10-26: assigned to the developer role
 - 2026-10-26: status ready → in-progress — branch plan/P-035-human-inbox
+- 2026-10-26: status in-progress → in-review
 
 ## Outcome
+The hub has an inbox: `crew.mjs inbox [--json]`, an MCP `inbox` tool and an Inbox page in `crew.mjs ui` list proposed goals, open escalations and plans in review whose `accepted` step is human-gated. Humans answer from their terminal or the page (`/api/inbox`, `answer` and `approve-goal` actions that need a name). `ask`/`escalate` take `--options` on the CLI. The guard denies every tool call that reaches `/api/commands/`.
+Learnings: K-2026-10-26-adding-an-mcp-tool-or-changing-a-tools
