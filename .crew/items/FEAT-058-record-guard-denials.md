@@ -18,7 +18,9 @@ Guard denials only go back to the agent as hook output (guard.ts:199-200) and ar
 ## User story
 
 ## Acceptance criteria
-- [ ]
+- [ ] every guard denial appears in the ledger with role, run and rule
+- [ ] `crew.mjs audit` lists the denials since the last audit, grouped by role and rule
+- [ ] a role over the denial limit (set in policy.yaml) gets one Director entry in `dispatch`
 
 ## Notes
 - 2026-10-26: goal hint G-008 (by Arpit Anand)
