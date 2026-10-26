@@ -71,6 +71,20 @@ Ships in the bundle; the guard reaches this repo through refresh-bin. Rollback: 
 
 ## Handoff
 
+_Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
+
+- P-058: Guard cd tracking covers spaced subshells, functions and case arms [in-progress] tasks 3/3 — claimed by Arpit Anand (developer:a023f1c3f99597d85)
+- last checkpoint 2026-10-26 08:19 at T3 (e097a7d) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-058-guard-cd-tracking-covers-spaced/packages/crew && npx vitest run test/hub/targets.test.ts test/hub/hubcall.test.ts (AC 4)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-058-guard-cd-tracking-covers-spaced/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/guard.test.ts test/hub/e2e/guard-writes.test.ts ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-058-guard-cd-tracking-covers-spaced checkout -- plugins/crew/skills/hub/dist plugins/crew/skills/hub/references/commands.md plugins/crew/docs; exit $r (AC 1,2,3)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-058-guard-cd-tracking-covers-spaced/packages/crew && npm run typecheck && npx vitest run test/hub/targets.test.ts test/hub/hubcall.test.ts (AC 4,5)
+- evidence: AC1 ✓ (self), AC2 ✓ (self), AC3 ✓ (self), AC4 ✓ (self), AC5 ✓ (self)
+
+Latest log:
+- 2026-10-26: status draft → ready
+- 2026-10-26: assigned to the developer role
+- 2026-10-26: status ready → in-progress — branch plan/P-058-guard-cd-tracking-covers-spaced
+
 ## Progress log
 
 - 2026-10-26: status draft → ready
