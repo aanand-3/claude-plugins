@@ -83,9 +83,9 @@ Doc wording should be short and literal (real hub commands only; templates keep 
 ## Design
 
 ## Tasks
-- [ ] T1: Add `it("an ask to the executive from a role goes to the Director (CHORE-030)")` to `test/hub/e2e/dispatch.test.ts` (lifecycle, newPlan; `as developer ask P-001 --to executive`; assert last ask event `to: director`, output names the Director, `inbox --json` has no escalation, director's dispatch has `answer <qid>`; then `as director ask --to executive`, `as executive ask --to executive` and `as pm escalate` each record `to: executive` and appear in `inbox`) → verify: the new case fails before T2.
-- [ ] T2: Route the ask in `questions.ts` `ask()` as in Approach → verify: `npx vitest run test/hub/e2e/dispatch.test.ts test/hub/e2e/inbox.test.ts test/hub/run-check.test.ts` passes.
-- [ ] T3: Update `director.md`, `context-and-memory.md` (prose outside generated blocks) and the hub `SKILL.md` escalate sentence → verify: `npx vitest run test/hub/e2e/agents.test.ts test/docs.test.ts` passes and the grep in AC3 finds both files.
+- [x] T1: Add `it("an ask to the executive from a role goes to the Director (CHORE-030)")` to `test/hub/e2e/dispatch.test.ts` (lifecycle, newPlan; `as developer ask P-001 --to executive`; assert last ask event `to: director`, output names the Director, `inbox --json` has no escalation, director's dispatch has `answer <qid>`; then `as director ask --to executive`, `as executive ask --to executive` and `as pm escalate` each record `to: executive` and appear in `inbox`) → verify: the new case fails before T2.
+- [x] T2: Route the ask in `questions.ts` `ask()` as in Approach → verify: `npx vitest run test/hub/e2e/dispatch.test.ts test/hub/e2e/inbox.test.ts test/hub/run-check.test.ts` passes.
+- [x] T3: Update `director.md`, `context-and-memory.md` (prose outside generated blocks) and the hub `SKILL.md` escalate sentence → verify: `npx vitest run test/hub/e2e/agents.test.ts test/docs.test.ts` passes and the grep in AC3 finds both files.
 
 ## Test plan
 **Targeted checks:** (in the plan worktree, `cd packages/crew`; `npm ci --prefer-offline` first in a fresh worktree;
@@ -109,9 +109,8 @@ Ships in the hub bundle and plugin templates. In this repository the Director ag
 
 _Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
 
-- P-070: Asks for the executive go to the Director first [in-progress] tasks 0/3 — claimed by Arpit Anand (developer:ac46af70205372d20)
+- P-070: Asks for the executive go to the Director first [in-progress] tasks 3/3 — claimed by Arpit Anand (developer:ac46af70205372d20)
 - last checkpoint 2026-10-26 16:00 at T3 (68d6406) by Arpit Anand; since then 0 commit(s), 2 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs
-- next: T1: Add `it("an ask to the executive from a role goes to the Director (CHORE-030)")` to `test/hub/e2e/dispatch.test.ts` (lifecycle, newPlan; `as developer ask P-001 --to executive`; assert last ask event `to: director`, output names the Director, `inbox --json` has no escalation, director's dispatch has `answer <qid>`; then `as director ask --to executive`, `as executive ask --to executive` and `as pm escalate` each record `to: executive` and appear in `inbox`) → verify: the new case fails before T2.
 - evidence: AC1 —, AC2 —, AC3 —
 
 Latest log:
@@ -126,3 +125,10 @@ Latest log:
 - 2026-10-26: status ready → in-progress — branch plan/P-070-asks-for-the-executive-go
 
 ## Outcome
+Shipped: `ask()` in `questions.ts` routes an ask for the escalation target (executive) from a role other than the
+Director or the executive to `director` when the policy has a director role, and says so in its output; the Director's
+own ask, the executive's, `escalate` and director-less policies are unchanged. `director.md`, `context-and-memory.md`
+("Questions and exceptions") and the hub `SKILL.md` describe Director-first routing. New e2e case in
+`dispatch.test.ts` ("CHORE-030"). No deviations from the spec. Follow-ups: FEAT-065 (escalate role gate); after
+landing, the human refreshes `.crew/templates/agents/director.md` and re-renders agents (see Rollout).
+Learnings: none
