@@ -28,3 +28,4 @@ As the executive, I want a loop that keeps bouncing off the same refusal to be h
 Goal G-009 (Director-first exceptions). Source: Q-24ba43 (a)(b), Q-73467a.
 - 2026-10-26: goal hint G-009 (by Arpit Anand)
 - 2026-10-26: status new → triaged — priority P1
+- 2026-10-26: Add acceptance criterion (Architect Q-b1501e): a routed check hint still open after N runner passes (policy key, default 3) gives one Director stall entry naming the hint ref and text, using the first-seen pass recorded by FEAT-074. PM cannot edit the item body: Architect to include it in the plan spec.
