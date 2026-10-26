@@ -11,6 +11,7 @@ pr:
 created: 2026-10-26
 started:
 completed:
+assignee: developer
 ---
 
 # P-071: start refuses an overlap with active work, as staff does
@@ -114,5 +115,6 @@ Rollback: revert the plan's commit and rebuild.
 ## Progress log
 
 - 2026-10-26: status draft → ready
+- 2026-10-26: assigned to the developer role
 
 ## Outcome
