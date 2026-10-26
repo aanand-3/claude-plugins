@@ -4,7 +4,7 @@ type: feat
 title: Runner lock and idle mode
 status: triaged
 priority: P1
-goal:
+goal: G-007
 plan:
 created: 2026-10-26
 closed:
@@ -30,3 +30,4 @@ As the human, I want one runner that stays up and idles when there is nothing to
 Goal G-007 (AC5). Source draft: .crew/drafts/yes-pm-logs-them-recursive-sparkle.md step 4 ("Plan A").
 - 2026-10-26: goal hint G-007 (by Arpit Anand)
 - 2026-10-26: status new → triaged — priority P1
+- 2026-10-26: re-triaged: priority P1
