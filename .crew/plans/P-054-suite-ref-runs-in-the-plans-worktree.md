@@ -88,6 +88,7 @@ Latest log:
 - 2026-10-26: status ready → in-progress — branch plan/P-054-suite-ref-runs-in-the-plans-worktree
 - 2026-10-26: status in-progress → in-review
 - 2026-10-26: status in-review → accepted
+- 2026-10-26: landed on main as 722a1fd
 
 ## Outcome
 `suite --ref P-###` now runs `hub.full_suite` in the plan's worktree (else this checkout when it is on the plan's branch, else it refuses before taking a slot); every suite record carries the tested HEAD `sha` and `branch`, and `suites` shows the short sha. `land` stops (plan stays accepted) when the plan branch's tip is not the sha its suite tested. The AC1 regression case fails against main's suite.ts (where.txt not in the worktree) and passes now. Note on AC3's text: `land` prints every Stop as `P-###: not landed — <reason>; it stays accepted with its worktree`, so the line reads `P-001: not landed — its branch moved during the full suite (tested …, now …); run \`land P-001\` again; …`. Existing suite tests switched from P-00n to BUG-00n refs, since a P-### ref is now checked as a plan.
