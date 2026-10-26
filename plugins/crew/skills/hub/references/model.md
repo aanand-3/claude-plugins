@@ -203,6 +203,14 @@ appends `re-goaled <old> → <new> by <actor>: <note>` (Notes for items, Progres
 re-goal is refused for closed work, from or to a `done` or `dropped` goal, and for an item in an open plan; `regoal P-###`
 moves the plan with all its items, all or nothing.
 
+**Overlap candidates** (`overlaps ID [--json]`, read-only) are printed by `triage` too, before its own output (not with
+`--reject`): open items whose title is similar (Jaccard of title words ≥ 0.5 with at least 2 shared words, best 5) and
+plans in `ready`, `in-progress`, `blocked`, `in-review` or `accepted` whose `touches` cover a path the item's text names.
+They come from the documents alone and change nothing; the PM decides. A plan in flight never grows mid-flight: the
+item becomes a dependent plan (`new-plan --depends P-###`) or a note on the plan. The block ends with `technical question
+→ architect: <why>` only when a matching plan is `in-progress`, `in-review` or `accepted`, or the item's paths match two or
+more plans in flight; the PM then asks the Architect (`ask ID --to architect`).
+
 ## Lifecycles
 
 **Idea:** `exploring → researching → proposed → decided`, or `killed` from any open state. `decided` needs Problem,

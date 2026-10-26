@@ -11779,6 +11779,73 @@ function usageHook(store) {
   return 0;
 }
 
+// src/hub/commands/work/overlap.ts
+var SIMILARITY = 0.5;
+var MIN_SHARED = 2;
+var MAX_ITEMS = 5;
+var STOP = /* @__PURE__ */ new Set(["the", "and", "for", "with", "from", "into", "when", "does", "not", "bug", "feat", "chore", "spike"]);
+var EXT = /\.(ts|tsx|mjs|js|json|md|yaml|yml|css)$/;
+var IN_FLIGHT = ["ready", "in-progress", "blocked", "in-review", "accepted"];
+var BUILDING = /* @__PURE__ */ new Set(["in-progress", "in-review", "accepted"]);
+function titleTokens(title) {
+  return new Set(title.toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length >= 3 && !STOP.has(w)));
+}
+function titleSimilarity(a, b) {
+  const [x, y] = [titleTokens(a), titleTokens(b)];
+  const shared2 = [...x].filter((t) => y.has(t)).length;
+  return shared2 < MIN_SHARED ? 0 : shared2 / (x.size + y.size - shared2);
+}
+function namedPaths(text2) {
+  const out = /* @__PURE__ */ new Set();
+  for (const raw of stripComments(text2).replaceAll("`", " ").split(/\s+/)) {
+    if (raw.includes("://")) continue;
+    const w = raw.replace(/^[("'<[]+/, "").replace(/[.,;:)\]"'>!?]+$/, "").replace(/(:\d+)+$/, "").replace(/^\.\//, "");
+    if (w && /[a-z]/i.test(w) && (w.includes("/") || EXT.test(w))) out.add(w);
+  }
+  return [...out];
+}
+function overlapCandidates(store, item) {
+  const title = item.get("title") ?? "";
+  const items2 = [...store.items().values()].filter((d) => d.id !== item.id && !ITEM_CLOSED.has(d.get("status") ?? "")).map((d) => ({ id: d.id, title: d.get("title") ?? "", status: d.get("status") ?? "", score: titleSimilarity(title, d.get("title") ?? "") })).filter((c) => c.score >= SIMILARITY).sort((a, b) => b.score - a.score || a.id.localeCompare(b.id, void 0, { numeric: true })).slice(0, MAX_ITEMS).map((c) => ({ ...c, score: Math.round(c.score * 100) / 100 }));
+  const paths = namedPaths(item.text.replace(/^---\n[\s\S]*?\n---\n/, ""));
+  const plans2 = [...store.plans().values()].filter((p) => IN_FLIGHT.includes(p.get("status") ?? "")).map((p) => ({
+    id: p.id,
+    title: p.get("title") ?? "",
+    status: p.get("status") ?? "",
+    paths: paths.filter((f) => p.touches().some((t) => globsOverlap(f, t)))
+  })).filter((p) => p.paths.length);
+  const why = [];
+  const building = plans2.filter((p) => BUILDING.has(p.status));
+  if (building.length) why.push(`${item.id} names paths of ${building.map((p) => `${p.id} (${p.status})`).join(", ")}, whose code is being built or landed`);
+  if (plans2.length >= 2) why.push(`${item.id}'s paths match ${plans2.length} plans in flight (${plans2.map((p) => p.id).join(", ")}): unclear which one causes it`);
+  return { id: item.id, paths, items: items2, plans: plans2, architect: why.length ? { why: why.join("; ") } : null };
+}
+function overlapLines(o) {
+  if (!o.items.length && !o.plans.length) return [];
+  const lines = [`overlap candidates for ${o.id}:`];
+  if (o.items.length) lines.push(
+    "  similar items (reject as duplicate if it is one):",
+    ...o.items.map((c) => `    ${c.id}: ${c.title} [${c.status}] \u2014 similarity ${c.score}`)
+  );
+  if (o.plans.length) lines.push("  plans in flight (never change their scope):");
+  for (const p of o.plans) lines.push(
+    `    ${p.id}: ${p.title} [${p.status}] \u2014 ${p.paths.join(", ")}`,
+    `      \u2192 a dependent plan: \`new-plan "<title>" --items ${o.id} --depends ${p.id}\``,
+    `      \u2192 or a note on it: \`log ${p.id} "${o.id} overlaps: \u2026"\`, then \`triage ${o.id} --reject duplicate --note "noted on ${p.id}"\` if it adds nothing`
+  );
+  if (o.architect) lines.push(`technical question \u2192 architect: ${o.architect.why} \u2014 \`ask ${o.id} --to architect "${o.architect.why}"\``);
+  return lines;
+}
+function overlaps2(store, itemId, json = false) {
+  store.require();
+  const item = store.find(itemId);
+  if (!item.get("type")) fail("overlaps works on FEAT/BUG/CHORE/SPIKE items.");
+  const o = overlapCandidates(store, item);
+  if (json) return store.say(JSON.stringify(o, null, 2));
+  const lines = overlapLines(o);
+  for (const line3 of lines.length ? lines : [`no overlap candidates for ${o.id}`]) store.say(line3);
+}
+
 // src/hub/commands/work/backlog.ts
 function createItem(store, prefix, title, body2, fields) {
   const iid = store.nextId(prefix, "item");
@@ -11850,6 +11917,7 @@ function triage(store, itemId, o = {}) {
     move(store, itemId, o.reject, o.note, false, o.approvedBy);
     return;
   }
+  for (const line3 of overlapLines(overlapCandidates(store, item))) store.say(line3);
   const target = o.goal === void 0 ? void 0 : parseGoal(store, o.goal);
   const current2 = item.get("goal") || null;
   if (target === null && !current2) fail(`${item.id} has no goal to clear. Nothing was changed.`);
@@ -12882,6 +12950,7 @@ var registration3 = {
     "  new-item \u2026 --origin P-###|ID                       record where the item was found (else the caller's plan worktree or claim)",
     "  triage ID [--priority P1] [--severity S2] [--goal G-001] [--approved-by NAME]",
     "  triage ID --reject wontfix|duplicate --note TXT",
+    "  overlaps ID [--json]                          similar open items and plans in flight whose touches cover the item's paths (PM, at triage)",
     "  regoal ID G-###|none --note TXT                  move an item or plan (with its items) to another goal, or off it (PM)"
   ],
   cli: {
@@ -12910,6 +12979,7 @@ var registration3 = {
         approvedBy: str(a, "approved-by")
       })
     },
+    overlaps: { pos: ["id"], flag: ["json"], run: (s2, a) => overlaps2(s2, a.pos[0].toUpperCase(), !!a.opt.json) },
     regoal: {
       pos: ["id", "goal"],
       str: ["note"],
@@ -12947,6 +13017,11 @@ var registration3 = {
         reject: s(a, "reject"),
         note: s(a, "note")
       })
+    },
+    overlaps: {
+      description: "Overlap candidates for an item (`crew.mjs overlaps`), read-only: open items with similar titles and plans in flight whose touches cover a path the item names; `architect` is set when the hub flags a technical question.",
+      input: obj({ id: text("e.g. FEAT-003"), json: { type: "boolean" } }, ["id"]),
+      run: (st, a) => overlaps2(st, up4(a, "id"), a.json === true)
     },
     regoal: {
       description: "Move an item, or a plan with all its items, to another goal or off any (`crew.mjs regoal`, the PM's): `goal` is G-### or `none`, `note` says why. Refused for closed work, done or dropped goals, and an item in an open plan.",

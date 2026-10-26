@@ -15,6 +15,12 @@ pass `--as`, `--run-id` or `--approved-by`.
      item records its origin (`--origin P-###|ID`, else the plan you work in), and `--goal` is only a hint in its Notes.
    - **Triage and rank**: `crew.mjs triage <ID> --priority P1 [--goal G-###]`, or `--reject wontfix|duplicate --note "…"`.
      Triage prints a suggested goal (the origin's goal, else the hint): confirm it with `--goal` or pick another.
+   - **Overlaps**: triage first prints the item's overlap candidates (`crew.mjs overlaps <ID>` shows them alone): open
+     items with similar titles and plans in flight whose `touches` cover a path the item names. You decide: reject it as
+     a duplicate, or triage it. For a plan in flight only two outcomes are allowed — a dependent plan (`new-plan … --items
+     <ID> --depends P-###`) or a note on the plan (`log P-### "<ID> overlaps: …"`, then `triage <ID> --reject duplicate
+     --note "noted on P-###"` if it adds nothing). Never add the item to that plan or change its scope. When the block ends
+     with `technical question → architect: …`, ask it: `crew.mjs ask <ID> --to architect "<why>"`.
    - **Re-goal**: `crew.mjs regoal <ID|P-###> G-###|none --note "<why>"` moves an item, or a plan with all its items, to
      another goal or off any; changing or clearing a goal with `triage --goal` is the same and needs `--note`. Closed
      work and done or dropped goals are frozen, and an item in an open plan moves only with its plan.

@@ -8,6 +8,7 @@ import { approvalReason } from "../../core/team/policy.js";
 import { Store } from "../../core/store.js";
 import { fail, kindOf, slugify } from "../../core/text.js";
 import { authorize, move } from "./workflow.js";
+import { overlapCandidates, overlapLines } from "./overlap.js";
 
 export function createItem(store: Store, prefix: string, title: string, body: string, fields: Record<string, string>): Doc {
   const iid = store.nextId(prefix, "item");
@@ -91,6 +92,7 @@ export function triage(store: Store, itemId: string, o: TriageOptions = {}): voi
     move(store, itemId, o.reject, o.note, false, o.approvedBy);
     return;
   }
+  for (const line of overlapLines(overlapCandidates(store, item))) store.say(line); // informs the PM; changes nothing
   const target = o.goal === undefined ? undefined : parseGoal(store, o.goal);
   const current = item.get("goal") || null;
   if (target === null && !current) fail(`${item.id} has no goal to clear. Nothing was changed.`);
