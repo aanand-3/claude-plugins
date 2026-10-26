@@ -11,6 +11,7 @@ pr:
 created: 2026-10-26
 started:
 completed:
+assignee: developer
 ---
 
 # P-070: Asks for the executive go to the Director first
@@ -109,5 +110,6 @@ Ships in the hub bundle and plugin templates. In this repository the Director ag
 ## Progress log
 
 - 2026-10-26: status draft → ready
+- 2026-10-26: assigned to the developer role
 
 ## Outcome
