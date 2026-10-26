@@ -5,11 +5,11 @@ goal:
 items: BUG-048
 touches: packages/crew/src/hub/commands/work/workflow.ts, packages/crew/src/hub/core/work/transition-gates.ts, packages/crew/src/hub/commands/team/dispatch.ts, plugins/crew/docs/policy.md, plugins/crew/docs/plan-lifecycle.md, packages/crew/test/hub/e2e/execution.test.ts, packages/crew/test/hub/e2e/dispatch.test.ts
 depends_on:
-status: ready
+status: in-progress
 branch: plan/P-067-unchecked-tasks-never-reach-review
 pr:
 created: 2026-10-26
-started:
+started: 2026-10-26
 completed:
 assignee: developer
 ---
@@ -80,5 +80,6 @@ n/a: this changes hub behaviour only. The bundle is rebuilt by Release. To roll 
 
 - 2026-10-26: status draft → ready
 - 2026-10-26: assigned to the developer role
+- 2026-10-26: status ready → in-progress — branch plan/P-067-unchecked-tasks-never-reach-review
 
 ## Outcome
