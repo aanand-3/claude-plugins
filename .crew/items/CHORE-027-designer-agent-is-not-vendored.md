@@ -2,8 +2,8 @@
 id: CHORE-027
 type: chore
 title: Designer agent is not vendored or rendered in this repo
-status: new
-priority:
+status: triaged
+priority: P2
 goal:
 plan:
 created: 2026-10-26
@@ -25,3 +25,4 @@ The Designer also gets no work here because two more pieces are missing:
 - [ ] the Designer and the design checker find this repo's DESIGN.md without a manual path
 
 ## Notes
+- 2026-10-26: status new → triaged — priority P2
