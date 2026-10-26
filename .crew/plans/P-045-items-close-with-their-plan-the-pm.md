@@ -5,7 +5,7 @@ goal: G-007
 items: BUG-024
 touches: packages/crew/src/hub/core/work/model.ts, packages/crew/src/hub/commands/work/workflow.ts, packages/crew/src/hub/core/team/presets.ts, packages/crew/test/hub/e2e/item-close.test.ts, packages/crew/test/hub/e2e/items.test.ts, packages/crew/test/hub/e2e/team.test.ts, packages/crew/test/hub/e2e/review-fixes.test.ts, packages/crew/test/hub/e2e/policy.test.ts, packages/crew/test/hub-worktrees.test.ts, plugins/crew/skills/hub/references/model.md
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-045-items-close-with-their-plan-the-pm
 pr:
 created: 2026-10-25
@@ -93,11 +93,11 @@ needs none of its code, since it hooks the plan's move to `done` whichever edge 
   that assertion.
 
 ## Tasks
-- [ ] T1: item flow and closed set in model.ts → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/item-close.test.ts -t "flow"` (AC1)
-- [ ] T2: `closeItems` on a plan's move to done in workflow.ts → verify: `npx vitest run test/hub/e2e/item-close.test.ts -t "follow"` and `-t "never blocks"` (AC2, AC3)
-- [ ] T3: pm role gates for item.done, item.wontfix, item.duplicate in presets.ts → verify: `npx vitest run test/hub/e2e/item-close.test.ts -t "pm owns"` (AC4)
-- [ ] T4: model.md item lifecycle and lifecycle gate list → verify: `grep -n "item.done" plugins/crew/skills/hub/references/model.md` and the lifecycle paragraph reads as in AC5 (AC5)
-- [ ] T5: existing item, policy and worktree tests still pass → verify: `npx vitest run test/hub/e2e/items.test.ts test/hub/e2e/review-fixes.test.ts test/hub/e2e/policy.test.ts test/hub/e2e/team.test.ts test/hub-worktrees.test.ts` all green, and `npm run typecheck`
+- [x] T1: item flow and closed set in model.ts → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/item-close.test.ts -t "flow"` (AC1)
+- [x] T2: `closeItems` on a plan's move to done in workflow.ts → verify: `npx vitest run test/hub/e2e/item-close.test.ts -t "follow"` and `-t "never blocks"` (AC2, AC3)
+- [x] T3: pm role gates for item.done, item.wontfix, item.duplicate in presets.ts → verify: `npx vitest run test/hub/e2e/item-close.test.ts -t "pm owns"` (AC4)
+- [x] T4: model.md item lifecycle and lifecycle gate list → verify: `grep -n "item.done" plugins/crew/skills/hub/references/model.md` and the lifecycle paragraph reads as in AC5 (AC5)
+- [x] T5: existing item, policy and worktree tests still pass → verify: `npx vitest run test/hub/e2e/items.test.ts test/hub/e2e/review-fixes.test.ts test/hub/e2e/policy.test.ts test/hub/e2e/team.test.ts test/hub-worktrees.test.ts` all green, and `npm run typecheck`
 
 ## Test plan
 **Targeted checks:**
@@ -132,14 +132,13 @@ needs none of its code, since it hooks the plan's move to `done` whichever edge 
 
 _Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
 
-- P-045: Items close with their plan; the PM closes any item [in-progress] tasks 0/5 — claimed by Arpit Anand (developer:a90fc71287f45dcec)
+- P-045: Items close with their plan; the PM closes any item [in-review] tasks 5/5 — claimed by Arpit Anand (developer:a90fc71287f45dcec)
 - last checkpoint 2026-10-26 04:51 at T5 (90cf10b) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
 - ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-045-items-close-with-their-plan-the-pm/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/item-close.test.ts -t flow ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-045-items-close-with-their-plan-the-pm checkout -- plugins/crew/skills/hub/dist; exit $r (AC 1)
 - ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-045-items-close-with-their-plan-the-pm/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/item-close.test.ts -t 'follow|never blocks' ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-045-items-close-with-their-plan-the-pm checkout -- plugins/crew/skills/hub/dist; exit $r (AC 2,3)
 - ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-045-items-close-with-their-plan-the-pm/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/item-close.test.ts -t 'pm owns' ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-045-items-close-with-their-plan-the-pm checkout -- plugins/crew/skills/hub/dist; exit $r (AC 4)
 - ✓ grep -n item.done /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-045-items-close-with-their-plan-the-pm/plugins/crew/skills/hub/references/model.md (AC 5)
 - ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-045-items-close-with-their-plan-the-pm/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/items.test.ts test/hub/e2e/review-fixes.test.ts test/hub/e2e/policy.test.ts test/hub/e2e/team.test.ts test/hub-worktrees.test.ts && npm run typecheck ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-045-items-close-with-their-plan-the-pm checkout -- plugins/crew/skills/hub/dist; exit $r
-- next: T1: item flow and closed set in model.ts → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/item-close.test.ts -t "flow"` (AC1)
 - evidence: AC1 ✓ (self), AC2 ✓ (self), AC3 ✓ (self), AC4 ✓ (self), AC5 ✓ (self)
 
 Latest log:
@@ -152,5 +151,14 @@ Latest log:
 - 2026-10-25: status draft → ready — BUG-024 specced as its own plan (P-032 is at max_tasks and waits on six plans)
 - 2026-10-25: assigned to the developer role — BUG-024; touches overlap P-032/P-021/P-025/P-031 a few lines each
 - 2026-10-26: status ready → in-progress — branch plan/P-045-items-close-with-their-plan-the-pm
+- 2026-10-26: status in-progress → in-review
 
 ## Outcome
+Items now close: `ITEM_FLOW` has a stored `done` and every status closes to done/wontfix/duplicate; `ITEM_CLOSED`
+includes `done`. A plan's move to `done` (forced or not) stores each open item `done` with `closed:`, a Notes line and a
+ledger move `via: plan.done` (`closeItems`, workflow.ts); closed items keep the PM's closure. `preset: lifecycle` gates
+`item.done`, `item.wontfix`, `item.duplicate` → pm. model.md documents it. Tests: test/hub/e2e/item-close.test.ts.
+Deviation: AC2's lifecycle case drives a real lifecycle walk with the PM's `move P-001 done --force` (team-helpers'
+`finish` runs without roles, so it can't run under `preset: lifecycle`). Note: a hand `move <ITEM> done` also stamps
+`completed:` (the existing `stamp` line for any `done`); the plan-driven close sets only `closed:`.
+Learnings: none
