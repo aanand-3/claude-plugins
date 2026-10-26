@@ -5,7 +5,7 @@ goal: G-007
 items: CHORE-021
 touches: packages/crew/src/hub/commands/team/roles.ts, packages/crew/src/hub/commands/team/autonomy.ts, packages/crew/test/hub/e2e/dispatch.test.ts, packages/crew/test/hub/e2e/team.test.ts, packages/crew/test/hub/e2e/team-2.test.ts
 depends_on: P-031, P-034
-status: in-progress
+status: in-review
 branch: plan/P-047-director-next-and-run-printout-follow
 pr:
 created: 2026-10-25
@@ -57,10 +57,10 @@ CHORE-021 (G-007). P-031 makes `dispatch` the routing table: the Director runs o
 - Tests: dispatch.test.ts gets `it("director next lists the Director's dispatch entries")` (AC1–AC4), reusing its set-up helpers; team.test.ts line 49 asserts the staffing result and that `next --as director` has no `staff` line; team-2.test.ts line 200 expects `run --until-done` (AC5).
 
 ## Tasks
-- [ ] T1: Director rules from dispatch (roles.ts) → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/dispatch.test.ts -t "director next"` (AC1–AC4)
-- [ ] T2: the `run` printout (autonomy.ts) → verify: `npx vitest run test/hub/e2e/team-2.test.ts -t "runner stops"` (AC5)
-- [ ] T3: existing assertions moved → verify: `npx vitest run test/hub/e2e/team.test.ts test/hub/e2e/context.test.ts test/hub/e2e/branch-copies.test.ts` green
-- [ ] T4: types and size → verify: `npm run typecheck`; `wc -l src/hub/commands/team/roles.ts src/hub/commands/team/autonomy.ts` each under 300 (AC6)
+- [x] T1: Director rules from dispatch (roles.ts) → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/dispatch.test.ts -t "director next"` (AC1–AC4)
+- [x] T2: the `run` printout (autonomy.ts) → verify: `npx vitest run test/hub/e2e/team-2.test.ts -t "runner stops"` (AC5)
+- [x] T3: existing assertions moved → verify: `npx vitest run test/hub/e2e/team.test.ts test/hub/e2e/context.test.ts test/hub/e2e/branch-copies.test.ts` green
+- [x] T4: types and size → verify: `npm run typecheck`; `wc -l src/hub/commands/team/roles.ts src/hub/commands/team/autonomy.ts` each under 300 (AC6)
 
 ## Test plan
 **Targeted checks** (from `packages/crew/`; the e2e suites drive the built `dist/crew.mjs`: `npm run build` first, then discard the generated output, which Release builds):
@@ -79,13 +79,12 @@ n/a — text only; ships in the bundle (Release builds it) and reaches this repo
 
 _Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
 
-- P-047: Director next and run printout follow dispatch and the runner [in-progress] tasks 0/4 — claimed by Arpit Anand (developer:a34e356c20ee76803)
+- P-047: Director next and run printout follow dispatch and the runner [in-review] tasks 4/4 — claimed by Arpit Anand (developer:a34e356c20ee76803)
 - last checkpoint 2026-10-26 05:20 at T4 (71f2ca2) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
 - ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-047-director-next-and-run-printout-follow/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/dispatch.test.ts -t 'director next' ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-047-director-next-and-run-printout-follow checkout -- plugins; exit $r (AC 1,2,3,4)
 - ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-047-director-next-and-run-printout-follow/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/team-2.test.ts -t 'runner stops' ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-047-director-next-and-run-printout-follow checkout -- plugins; exit $r (AC 5)
 - ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-047-director-next-and-run-printout-follow/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/team.test.ts test/hub/e2e/context.test.ts test/hub/e2e/branch-copies.test.ts ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-047-director-next-and-run-printout-follow checkout -- plugins; exit $r (AC 6)
 - ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-047-director-next-and-run-printout-follow/packages/crew && npm run typecheck && wc -l src/hub/commands/team/roles.ts src/hub/commands/team/autonomy.ts && test $(wc -l < src/hub/commands/team/roles.ts) -lt 300 && test $(wc -l < src/hub/commands/team/autonomy.ts) -lt 300 (AC 6)
-- next: T1: Director rules from dispatch (roles.ts) → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/dispatch.test.ts -t "director next"` (AC1–AC4)
 - evidence: AC1 ✓ (self), AC2 ✓ (self), AC3 ✓ (self), AC4 ✓ (self), AC5 ✓ (self), AC6 ✓ (self)
 
 Latest log:
@@ -98,5 +97,10 @@ Latest log:
 - 2026-10-25: status draft → ready — Architect: specced (ACs, tasks, test plan, exact touches)
 - 2026-10-26: assigned to the developer role
 - 2026-10-26: status ready → in-progress — branch plan/P-047-director-next-and-run-printout-follow
+- 2026-10-26: status in-progress → in-review
 
 ## Outcome
+
+Director `next` now lists escalations, budget, the pause, then its own dispatch entries (question entries aside, which already show as QUESTION); `run` with no flags points at `run --until-done`. The stale-claim cases use P-001 (the `started` helper) rather than P-002; the blocked and stale cases are separate tests because dispatch keeps one entry per ref. autonomy.ts imports MAX_PASSES and PASS_COMMAND from runner.ts (runner.ts already imports autonomy.ts; values are read only at call time).
+
+Learnings: none
