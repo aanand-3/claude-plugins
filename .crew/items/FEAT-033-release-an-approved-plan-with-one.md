@@ -2,12 +2,12 @@
 id: FEAT-033
 type: feat
 title: Release an approved plan with one scripted command
-status: triaged
+status: duplicate
 priority: P2
 goal: G-001
 plan:
 created: 2026-10-25
-closed:
+closed: 2026-10-26
 ---
 
 # FEAT-033: Release an approved plan with one scripted command
@@ -23,3 +23,4 @@ Releasing an approved plan is mechanical: discard the generated files, update to
 ## Notes
 - 2026-10-26: status new → triaged — priority P2
 - 2026-10-26: DUPLICATE of FEAT-037, shipped by P-032 (2160165): 'crew.mjs land P-###' (commands/work/land.ts) brings the plan up to the base, runs hub.build and commits the rebuild, runs the full suite, squash-merges, never pushes, and bounces a conflict to the developer. No remaining work.
+- 2026-10-26: status triaged → duplicate — Duplicate of FEAT-037, shipped by P-032 (2160165): crew.mjs land.
