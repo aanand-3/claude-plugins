@@ -171,3 +171,17 @@ so mixed versions stay safe. Rollback: revert the commit; open follow-ups stay a
 - 2026-10-26: status ready → in-progress — branch plan/P-072-human-follow-ups-stay-in-the-inbox-until
 
 ## Outcome
+Shipped: `answer … --follow-up STEP [--unblocks ID]` records a follow-up (an `ask` to the executive with `after` and
+`step`, about the answered question's document or `--unblocks`) after the answer, with every refusal checked before
+anything is written (new `commands/team/followups.ts`); `inbox` lists it as kind `follow-up` (not as an escalation)
+until answered `done`; `resume`/handoff list each open blocking question as `waits for an answer: Q-… → to: text`; the
+`ui` `answer` action takes `follow_up`/`unblocks`; the Inbox page shows the follow-up card with a Done button and a
+"Then you…" field under each escalation's answer; `model.md` and `team/SKILL.md` describe it.
+Deviations: the escalation hint is a text-form `then:` line, not a change to the `how` field (the existing AC1 case
+asserts `how` exactly; agreed via the T3 wording); a usage line for `answer --follow-up` was added (registry test still
+green); the text form prints `FOLLOW-UP  Q-…` with two spaces like the other kinds. The developer's screenshot loop was
+not run: a follow-up card needs a human answer with the approval flag, which agents can't give — QA and the Designer
+do the manual Inbox check. A long unbroken step word may overflow the card (the existing escalation `<p>` has no
+`overflow-wrap` either; the styles are outside touches).
+Learnings: a UI state only a human's approval creates can't be seeded by an agent for screenshots; plan the visual
+check for QA or the Designer with a human-seeded scratch repo.
