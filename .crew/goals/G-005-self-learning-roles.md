@@ -1,7 +1,7 @@
 ---
 id: G-005
 title: Self-learning roles
-status: proposed
+status: active
 priority: P3
 created: 2026-10-23
 completed:
@@ -36,3 +36,4 @@ back in context when their trigger matches, and recurring mistakes strengthen or
 ## Notes & decisions
 
 ## Progress log
+- 2026-10-26: status proposed → active (approved by Arpit Anand)
