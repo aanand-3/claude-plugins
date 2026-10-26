@@ -7428,14 +7428,15 @@ var GOAL_FLOW = {
   dropped: ["proposed"]
 };
 var ITEM_FLOW = {
-  new: ["triaged", "wontfix", "duplicate"],
-  triaged: ["new", "wontfix", "duplicate"],
-  wontfix: ["new"],
-  duplicate: ["new"]
+  new: ["triaged", "done", "wontfix", "duplicate"],
+  triaged: ["new", "done", "wontfix", "duplicate"],
+  done: ["new", "wontfix", "duplicate"],
+  wontfix: ["new", "done", "duplicate"],
+  duplicate: ["new", "done", "wontfix"]
 };
 var CLOSED = /* @__PURE__ */ new Set(["done", "dropped"]);
 var ACTIVE = /* @__PURE__ */ new Set(["in-progress", "blocked", "in-review"]);
-var ITEM_CLOSED = /* @__PURE__ */ new Set(["wontfix", "duplicate"]);
+var ITEM_CLOSED = /* @__PURE__ */ new Set(["done", "wontfix", "duplicate"]);
 var PLAN_TO_ITEM = {
   draft: "planned",
   ready: "planned",
@@ -8191,6 +8192,10 @@ var PRESETS = {
       role_gates: {
         "item.triaged": "pm",
         // only the PM triages and ranks
+        "item.done": "pm",
+        // … and closes any item from any status (a plan's done closes its own)
+        "item.wontfix": "pm",
+        "item.duplicate": "pm",
         "plan.ready": "architect",
         // only the Architect makes a spec ready
         "plan.assigned": "pm",
@@ -11092,6 +11097,7 @@ function move(store, docId, status2, note, force = false, approvedBy, via) {
     ...via ? { via } : {}
   });
   if (CLOSED.has(status2) && store.ledger.claims().has(doc.id)) store.ledger.record("release", doc.id, { reason: status2 });
+  if (kind === "plan" && status2 === "done") closeItems(store, doc);
   if (kind === "goal" && status2 === "done") notify(store, "goal-done", doc.id, `${doc.id} is done: ${doc.get("title")}`);
   store.say(`${doc.id}: ${old} \u2192 ${status2}`);
   return doc;
@@ -11288,6 +11294,17 @@ function log(store, docId, text2) {
   doc.appendLog(text2, LOG_SECTION[kindOf(docId) ?? "plan"] ?? "Progress log");
   doc.save();
   store.ledger.record("log", doc.id, { text: text2 });
+}
+function closeItems(store, plan) {
+  for (const it of planItems(plan, store.items())) {
+    const old = it.get("status") || "new";
+    if (ITEM_CLOSED.has(old)) continue;
+    it.set("status", "done");
+    it.set("closed", today());
+    it.appendLog(`status ${old} \u2192 done \u2014 delivered by ${plan.id}`, "Notes");
+    it.save();
+    store.ledger.record("move", it.id, { from: old, to: "done", via: "plan.done" });
+  }
 }
 
 // src/hub/commands/work/backlog.ts

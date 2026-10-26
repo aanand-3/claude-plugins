@@ -12,6 +12,9 @@ export const PRESETS: Record<string, { global: Raw; roles: Record<string, Raw> }
       human_gates: ["goal.active"],
       role_gates: {
         "item.triaged": "pm",            // only the PM triages and ranks
+        "item.done": "pm",               // … and closes any item from any status (a plan's done closes its own)
+        "item.wontfix": "pm",
+        "item.duplicate": "pm",
         "plan.ready": "architect",       // only the Architect makes a spec ready
         "plan.assigned": "pm",           // the PM opens a plan for a developer; `start` then needs that assignment
         "plan.in-progress": "developer", // only the assigned developer implements (and fixes what comes back)

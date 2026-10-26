@@ -58,6 +58,7 @@ export function move(store: Store, docId: string, status: string, note?: string,
   store.ledger.record("move", doc.id, { from: old, to: status, ...(note ? { note } : {}), ...(approvedBy ? { approved_by: approvedBy } : {}),
     ...(via ? { via } : {}) });
   if (CLOSED.has(status) && store.ledger.claims().has(doc.id)) store.ledger.record("release", doc.id, { reason: status });
+  if (kind === "plan" && status === "done") closeItems(store, doc);
   if (kind === "goal" && status === "done") notify(store, "goal-done", doc.id, `${doc.id} is done: ${doc.get("title")}`);
   store.say(`${doc.id}: ${old} → ${status}`);
   return doc;
@@ -277,4 +278,18 @@ export function log(store: Store, docId: string, text: string): void {
   doc.appendLog(text, LOG_SECTION[kindOf(docId) ?? "plan"] ?? "Progress log");
   doc.save();
   store.ledger.record("log", doc.id, { text });
+}
+
+/** A plan's move to done stores its open items `done`: a consequence of the plan's move, so no item gate applies. An
+ * item already closed (done, wontfix, duplicate) keeps the PM's closure. */
+function closeItems(store: Store, plan: Doc): void {
+  for (const it of q.planItems(plan, store.items())) {
+    const old = it.get("status") || "new";
+    if (ITEM_CLOSED.has(old)) continue;
+    it.set("status", "done");
+    it.set("closed", today());
+    it.appendLog(`status ${old} → done — delivered by ${plan.id}`, "Notes");
+    it.save();
+    store.ledger.record("move", it.id, { from: old, to: "done", via: "plan.done" });
+  }
 }

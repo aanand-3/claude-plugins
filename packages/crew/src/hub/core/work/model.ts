@@ -31,16 +31,18 @@ export const GOAL_FLOW: Flow = {
   done: ["active"],
   dropped: ["proposed"],
 };
-/** Stored item states. Once an item is linked to a plan its status is derived from the plan. */
+/** Stored item states. Once an item is linked to a plan its open status is derived from the plan; it is stored `done`
+ * when its plan is done, and the PM closes any item from any status (done, wontfix, duplicate). */
 export const ITEM_FLOW: Flow = {
-  new: ["triaged", "wontfix", "duplicate"],
-  triaged: ["new", "wontfix", "duplicate"],
-  wontfix: ["new"],
-  duplicate: ["new"],
+  new: ["triaged", "done", "wontfix", "duplicate"],
+  triaged: ["new", "done", "wontfix", "duplicate"],
+  done: ["new", "wontfix", "duplicate"],
+  wontfix: ["new", "done", "duplicate"],
+  duplicate: ["new", "done", "wontfix"],
 };
 export const CLOSED = new Set(["done", "dropped"]);
 export const ACTIVE = new Set(["in-progress", "blocked", "in-review"]);
-export const ITEM_CLOSED = new Set(["wontfix", "duplicate"]);
+export const ITEM_CLOSED = new Set(["done", "wontfix", "duplicate"]);
 export const PLAN_TO_ITEM: Record<string, string> = {
   draft: "planned", ready: "planned", "in-progress": "in-progress",
   blocked: "in-progress", "in-review": "in-progress", accepted: "in-progress", done: "done",

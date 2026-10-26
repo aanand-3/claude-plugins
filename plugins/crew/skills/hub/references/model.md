@@ -123,9 +123,10 @@ interpreter fed a pipe or heredoc), `sh -c` or shell stdin, and `eval`, since no
 remains: a script file or build tool a role runs (`node x.js`, `bash x.sh`, `npm run`, `make`) is not seen by the guard.
 No subagent runs `crew.mjs init`. An invalid policy blocks every move until `policy check` passes.
 
-`preset: lifecycle`: mode `ai-native`; the executive approves `goal.active`; role gates `item.triaged`, `plan.assigned`,
-`plan.accepted`, `plan.done`, `plan.dropped`, `goal.done` → pm; `plan.ready`, `plan.reviewed` → architect; `plan.in-progress`,
-`plan.in-review` → developer; `plan.landed` → release; `plan.reassigned` → director; `evidence.role: qa`; `limits: {stale_claim_hours: 24, max_bounces:
+`preset: lifecycle`: mode `ai-native`; the executive approves `goal.active`; role gates `item.triaged`, `item.done`,
+`item.wontfix`, `item.duplicate`, `plan.assigned`, `plan.accepted`, `plan.done`, `plan.dropped`, `goal.done` → pm;
+`plan.ready`, `plan.reviewed` → architect; `plan.in-progress`, `plan.in-review` → developer; `plan.landed` → release;
+`plan.reassigned` → director; `evidence.role: qa`; `limits: {stale_claim_hours: 24, max_bounces:
 2, max_attempts: 5}`; the director, pm, qa and release roles write only `.crew/drafts/`. Under a policy that gates
 `plan.assigned`, `start` needs an assignment; under one that gates `plan.reviewed`, `accepted` needs an approving review that
 covers the last code change; under one that gates `goal.done`, the PM verifies a goal's criteria. `plan.landed` is the
@@ -184,7 +185,9 @@ There is no stored order: set priorities when approving, and `focus G-###` jumps
 **Idea:** `exploring → researching → proposed → decided`, or `killed` from any open state. `decided` needs Problem,
 Outcome and Success criteria written, with the criteria as a checklist. A pivot moves `decided → proposed`.
 
-**Item** (stored): `new → triaged → wontfix | duplicate`. Once a plan links it (`plan: P-###`), its status is *derived* from the plan:
+**Item** (stored): `new → triaged`, closed as `done | wontfix | duplicate`. The PM closes any item from any status (`move
+<ID> done|wontfix|duplicate`, or `triage --reject`), and a closed one reopens to `new`; closing stamps `closed:`. Until it
+is closed, an item a plan links (`plan: P-###`) has its status *derived* from the plan:
 
 | Plan status | Item status |
 |---|---|
@@ -192,7 +195,11 @@ Outcome and Success criteria written, with the criteria as a checklist. A pivot 
 | in-progress, blocked, in-review, accepted | `in-progress` |
 | done | `done` |
 
-Items are therefore never edited on plan branches. If a plan is dropped, clear the item's `plan:` to return it to the backlog.
+When the plan moves to `done` (with or without `--force`), each of its items not already closed is stored `done` with
+`closed:`, a Notes line `status <old> → done — delivered by P-###` and a ledger `move` event `via: plan.done`; no item gate
+applies. An item already closed keeps the PM's closure. Closing an item never blocks or moves its plan: a plan whose items
+are all closed keeps its status and gates, and whether it still has something to deliver is the PM's call (`move P-###
+dropped`). If a plan is dropped, clear the item's `plan:` to return it to the backlog.
 
 **Plan**
 ```
