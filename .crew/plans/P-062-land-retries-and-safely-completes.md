@@ -5,7 +5,7 @@ goal: G-007
 items: BUG-041
 touches: packages/crew/src/hub/commands/work/land.ts, packages/crew/src/hub/commands/work/worktree-cleanup.ts, packages/crew/src/hub/commands/work/release.ts, packages/crew/test/hub/e2e/land.test.ts
 depends_on: P-061
-status: in-review
+status: accepted
 branch: plan/P-062-land-retries-and-safely-completes
 pr:
 created: 2026-10-26
@@ -66,10 +66,10 @@ Move the worktree cleanup out of land.ts into a new module, `commands/work/workt
 - Decision K-2026-10-26-land-records-a-landing-before-cleanup is superseded by one recording this rule.
 
 ## Tasks
-- [ ] T1: In land.test.ts add the `stuck(r, fails, onRemove = "")` shim beside `finder()`: a `git` first on `r.env.PATH` whose `worktree remove` runs `onRemove` (a shell snippet; `$last` is the path), writes `.DS_Store` into the folder and exits 255 without running the real git for its first `fails` calls (99: always), then execs the real git; every `worktree remove` call appends a line to `<bin>/calls` (`finder()` gets the same counter). Write the tests of the Test plan and run them on P-061's land.ts → verify: the AC1 and AC2/AC5 tests fail (the folder stays); the AC3 keep tests already pass (kept + warning).
-- [ ] T2: Create worktree-cleanup.ts by moving `cleanupWorktree`, `leftovers` and `OS_JUNK` out of land.ts unchanged; export `branchMerged` from release.ts → verify: P-061's two cleanup tests and the rest of land.test.ts pass; `npx tsc --noEmit -p .` clean.
-- [ ] T3: Add `registered()`, `sweepJunk()`, `pause()` and the retry stage → verify: the AC1 test passes (3 `worktree remove` calls, no folder, no registration).
-- [ ] T4: Add `safeToDelete()` (checks a–f) and the full-delete stage with the post-prune `registered()` check → verify: every test of the Test plan passes; land.ts and worktree-cleanup.ts each under 300 lines.
+- [x] T1: In land.test.ts add the `stuck(r, fails, onRemove = "")` shim beside `finder()`: a `git` first on `r.env.PATH` whose `worktree remove` runs `onRemove` (a shell snippet; `$last` is the path), writes `.DS_Store` into the folder and exits 255 without running the real git for its first `fails` calls (99: always), then execs the real git; every `worktree remove` call appends a line to `<bin>/calls` (`finder()` gets the same counter). Write the tests of the Test plan and run them on P-061's land.ts → verify: the AC1 and AC2/AC5 tests fail (the folder stays); the AC3 keep tests already pass (kept + warning).
+- [x] T2: Create worktree-cleanup.ts by moving `cleanupWorktree`, `leftovers` and `OS_JUNK` out of land.ts unchanged; export `branchMerged` from release.ts → verify: P-061's two cleanup tests and the rest of land.test.ts pass; `npx tsc --noEmit -p .` clean.
+- [x] T3: Add `registered()`, `sweepJunk()`, `pause()` and the retry stage → verify: the AC1 test passes (3 `worktree remove` calls, no folder, no registration).
+- [x] T4: Add `safeToDelete()` (checks a–f) and the full-delete stage with the post-prune `registered()` check → verify: every test of the Test plan passes; land.ts and worktree-cleanup.ts each under 300 lines.
 
 ## Test plan
 **Targeted checks:** `cd packages/crew && npx vitest run test/hub/e2e/land.test.ts` (run `npm ci --prefer-offline` in the worktree's packages/crew first; the e2e tests run the built bundle, so run `hub.build` after each source change), plus `npx tsc --noEmit -p .`.
@@ -116,6 +116,7 @@ Latest log:
 - 2026-10-26: status in-review → in-progress — changes requested: One fault in check d (worktree-cleanup.ts whyKeep): git.codeChanges lists tracked deletions too (core/git.ts changed() keeps " D" entries), so in the real BUG-041 case, where git worktree remove deletes some tracked files before it stops, the dirty set gets those deletions and the folder is always kept as "uncommitted code"; AC2 never fires. Fix: build dirty from codeChanges less OS junk and less every path the status walk accepts as a tracked deletion (D , " D", DD) - or collect the deletions in the walk first and filter codeChanges by them. Test (land.test.ts, AC2 "a stuck worktree with tracked files and node_modules is deleted"): make onRemove also delete the tracked src/cli.ts (rm -f "$last/src/cli.ts"; then the .DS_Store write into src/ needs mkdir -p "$last/src"), so the test covers a tracked deletion; it must still end with the folder deleted. Spec Approach d and the AC2 test line are updated to say this. Both reported departures are accepted: check d accepting only "D ", " D" and "DD" is the safer reading (MD/AD hold staged content not on the branch); filtering untracked OS junk from codeChanges by basename inside worktree-cleanup.ts (git.ts unchanged) is right. Everything else matches the spec: touches respected, cleanupWorktree called only from landed(), retries only while registered, symlinks never followed, both files under 300 lines.
 - 2026-10-26: status in-progress → in-review
 - 2026-10-26: QA: AC1-AC6 verified; cleanup tests 7/7 pass; AC4 has no unlisted-path test (code-reviewed only). Tasks still 0/4 unchecked: BUG-048 precondition (also P-064 0/2, dispatch offers pm accept).
+- 2026-10-26: status in-review → accepted
 
 ## Outcome
 The worktree cleanup lives in commands/work/worktree-cleanup.ts. When `git worktree remove --force` fails and git still lists the path as the plan's worktree, land deletes OS junk and retries up to 3 times (200 ms apart). P-061's junk-only delete follows. Then comes a full delete (`rmSync`, `git worktree prune`, a check that git no longer lists the path), only when `safeToDelete()` checks a–f find nothing that could be lost. Otherwise the warning is `kept <rel>: <reason>`. A path git no longer lists keeps P-061's `left` warning, with no retry. `branchMerged` is exported from release.ts. land.test.ts passes 25/25 (6 new BUG-041 tests), and tsc is clean.
