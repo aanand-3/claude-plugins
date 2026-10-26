@@ -54,13 +54,13 @@ it("json templates parse", () => {
 
 it("the settings template wires the hooks", () => {
   const s = JSON.parse(read(join(SKILLS, "guidelines", "templates", "settings.json")));
-  const sessionStart = s.hooks.SessionStart[0].hooks[0].command as string;
+  const sessionStart = s.hooks.SessionStart[0].hooks.map((h: { command: string }) => h.command).join("\n") as string;
   expect(s.plansDirectory).toBe(".crew/drafts");
   expect(sessionStart).toContain("core.hooksPath .githooks");
   expect(s.hooks.PostToolUse[0].hooks[0].command).toContain("format_on_edit.mjs");
   const planHook = s.hooks.PostToolUse.find((h: { matcher: string }) => h.matcher === "ExitPlanMode");
   expect(planHook.hooks[0].command).toContain("track_plan_draft.mjs");
-  expect(sessionStart).toContain("track_plan_draft.mjs --session");
+  expect(sessionStart).toContain("track_plan_draft.mjs\" --session");
   const activity = s.hooks.PostToolUse.at(-1);
   expect(activity.matcher).toBe("*");
   expect(activity.hooks[0].command).toBe("cd \"$CLAUDE_PROJECT_DIR\" 2>/dev/null || exit 0; [ -f .crew/bin/crew.mjs ] && "

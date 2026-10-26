@@ -229,3 +229,113 @@ it("the tooling keeps the hub steps by default", () => {
   expect(/\{\{[#^/]/.test(ci)).toBe(false);
   expect(existsSync(join(repo.path, ".crew", "bin", `track_plan_draft.mjs`))).toBe(true);
 });
+
+const MERGE = script("guidelines", "merge_settings");
+const TEMPLATE_TEXT = readFileSync(join(SKILLS, "guidelines", "templates", "settings.json"), "utf8");
+type Group = { matcher?: string; hooks: { type: string; command: string }[] };
+const cmd = (command: string) => ({ type: "command", command });
+const commands = (groups: Group[] = []) => groups.flatMap((g) => g.hooks.map((h) => `${g.matcher ?? ""} :: ${h.command}`));
+const settingsOf = (r: Repo) => JSON.parse(r.read(".claude/settings.json"));
+
+it("merge_settings adds only the template's missing hooks and keeps everything else", () => {
+  const template = JSON.parse(TEMPLATE_TEXT);
+  const guard = template.hooks.PreToolUse[0].hooks[0].command;
+  const mine = { model: "opus", permissions: { allow: ["Bash(ls:*)"], deny: [] }, hooks: {
+    SessionStart: [{ hooks: [cmd("echo mine")] }],
+    PreToolUse: [{ matcher: "*", hooks: [cmd(guard)] }],
+    PostToolUse: [{ matcher: "Bash", hooks: [cmd("echo bash")] }],
+  } };
+  repo.write(".claude/settings.json", JSON.stringify(mine));
+  const r = repo.node(MERGE, ["--root", "."]);
+  expect(r.returncode, r.stderr).toBe(0);
+  const lines = r.stdout.trim().split("\n");
+  expect(lines.at(-1)).toBe("WRITE  .claude/settings.json");
+  expect(lines.slice(0, -1).every((l) => l.startsWith("ADD    "))).toBe(true);
+  expect(lines).toContain(`ADD    PostToolUse [Edit|Write|MultiEdit] ${template.hooks.PostToolUse[0].hooks[0].command}`);
+  expect(lines.some((l) => l.startsWith("ADD    PreToolUse"))).toBe(false); // the guard was there already
+  const text = repo.read(".claude/settings.json");
+  const s = JSON.parse(text);
+  expect(text).toBe(`${JSON.stringify(s, null, 2)}\n`);
+  expect({ ...s, hooks: undefined }).toEqual({ ...mine, hooks: undefined });
+  // the existing SessionStart group (no matcher) receives the template's three hooks after its own
+  expect(s.hooks.SessionStart).toHaveLength(1);
+  expect(s.hooks.SessionStart[0].hooks.map((h: { command: string }) => h.command))
+    .toEqual(["echo mine", ...template.hooks.SessionStart[0].hooks.map((h: { command: string }) => h.command)]);
+  expect(s.hooks.PreToolUse).toEqual(mine.hooks.PreToolUse);
+  expect(s.hooks.PostToolUse[0]).toEqual(mine.hooks.PostToolUse[0]); // kept first; template matchers appended
+  expect(s.hooks.PostToolUse.map((g: Group) => g.matcher)).toEqual(["Bash", "Edit|Write|MultiEdit", "ExitPlanMode", "*"]);
+  for (const event of Object.keys(template.hooks)) {
+    for (const c of commands(template.hooks[event])) expect(commands(s.hooks[event]), `${event} ${c}`).toContain(c);
+  }
+  expect(Object.keys(s.hooks).slice(0, 3)).toEqual(["SessionStart", "PreToolUse", "PostToolUse"]); // new events appended
+});
+
+it("merge_settings is idempotent and --dry-run writes nothing", () => {
+  repo.write(".claude/settings.json", JSON.stringify({ hooks: { Stop: [{ hooks: [cmd("echo stop")] }] } }));
+  const before = repo.read(".claude/settings.json");
+  const dry = repo.node(MERGE, ["--root", ".", "--dry-run"]);
+  expect(dry.returncode).toBe(0);
+  expect(dry.stdout.trim().split("\n").every((l) => l.startsWith("WOULD ADD "))).toBe(true);
+  expect(repo.read(".claude/settings.json")).toBe(before);
+  expect(repo.node(MERGE, ["--root", "."]).stdout).toContain("WRITE  .claude/settings.json");
+  const merged = repo.read(".claude/settings.json");
+  const again = repo.node(MERGE, ["--root", "."]);
+  expect(again.stdout).toBe("OK     .claude/settings.json (hooks up to date)\n");
+  expect(repo.read(".claude/settings.json")).toBe(merged);
+  expect(repo.node(MERGE, ["--root", ".", "--dry-run"]).stdout).toBe("OK     .claude/settings.json (hooks up to date)\n");
+});
+
+it("merge_settings writes the template when settings.json is missing and refuses invalid JSON", () => {
+  const r = repo.node(MERGE, ["--root", "."]);
+  expect(r.returncode).toBe(0);
+  expect(r.stdout).toBe("WRITE  .claude/settings.json\n");
+  expect(repo.read(".claude/settings.json")).toBe(TEMPLATE_TEXT);
+  repo.write(".claude/settings.json", "{ not json");
+  const bad = repo.node(MERGE, ["--root", "."]);
+  expect(bad.returncode).toBe(1);
+  expect(bad.stderr).toContain(".claude/settings.json");
+  expect(repo.read(".claude/settings.json")).toBe("{ not json");
+});
+
+/** This repo's .claude/settings.json as of P-060's base. */
+const THIS_REPO = {
+  plansDirectory: ".crew/drafts",
+  permissions: {
+    allow: ["Bash(node .crew/bin/crew.mjs:*)", "Bash(git status:*)", "Bash(git diff:*)", "Bash(git log:*)", "Bash(git branch:*)",
+      "Edit", "Write", "Bash(node:*)", "Bash(npm ci:*)", "Bash(npm run:*)", "Bash(npm test:*)", "Bash(npx vitest:*)",
+      "Bash(npx tsc:*)", "Bash(git show:*)", "Bash(git rev-parse:*)", "Bash(git add:*)", "Bash(git commit:*)",
+      "Bash(git merge:*)", "Bash(git worktree:*)"],
+    deny: ["Read(./.env)", "Read(./**/.env)", "Bash(git push --force:*)", "Bash(git commit --no-verify:*)"],
+  },
+  hooks: {
+    PreToolUse: [{ matcher: "*", hooks: [cmd("cd \"$CLAUDE_PROJECT_DIR\" 2>/dev/null || exit 0; [ -f .crew/bin/crew.mjs ] && node .crew/bin/crew.mjs guard; exit 0")] }],
+    SubagentStop: [{ hooks: [cmd("cd \"$CLAUDE_PROJECT_DIR\" 2>/dev/null || exit 0; [ -f .crew/bin/crew.mjs ] && node .crew/bin/crew.mjs usage --hook >/dev/null 2>&1; exit 0")] }],
+    SessionStart: [{ hooks: [cmd("[ -f \"$CLAUDE_PROJECT_DIR/.crew/bin/track_plan_draft.mjs\" ] && node \"$CLAUDE_PROJECT_DIR/.crew/bin/track_plan_draft.mjs\" --session; true")] }],
+    PostToolUse: [
+      { matcher: "*", hooks: [cmd("cd \"$CLAUDE_PROJECT_DIR\" 2>/dev/null || exit 0; [ -f .crew/bin/crew.mjs ] && node .crew/bin/crew.mjs activity --hook >/dev/null 2>&1; exit 0")] },
+      { matcher: "ExitPlanMode", hooks: [cmd("[ -f \"$CLAUDE_PROJECT_DIR/.crew/bin/track_plan_draft.mjs\" ] && node \"$CLAUDE_PROJECT_DIR/.crew/bin/track_plan_draft.mjs\"; true")] },
+    ],
+  },
+};
+
+it("merge_settings on this repo's settings adds the context, checkpoint, githooks and format hooks", () => {
+  repo.write(".claude/settings.json", `${JSON.stringify(THIS_REPO, null, 2)}\n`);
+  const r = repo.node(MERGE, ["--root", "."]);
+  expect(r.returncode, r.stderr).toBe(0);
+  const added = r.stdout.trim().split("\n").filter((l) => l.startsWith("ADD "));
+  expect(added).toHaveLength(5);
+  const s = settingsOf(repo);
+  const start = commands(s.hooks.SessionStart).join("\n");
+  expect(start).toContain("core.hooksPath .githooks");
+  expect(start).toContain("crew.mjs context");
+  expect(start.match(/track_plan_draft\.mjs" --session/g)).toHaveLength(1);
+  for (const event of ["Stop", "PreCompact"]) {
+    expect(commands(s.hooks[event]).filter((c) => c.includes("crew.mjs checkpoint --auto")), event).toHaveLength(1);
+  }
+  const format = s.hooks.PostToolUse.find((g: Group) => g.matcher === "Edit|Write|MultiEdit");
+  expect(format.hooks.map((h: { command: string }) => h.command).join()).toContain("format_on_edit.mjs");
+  for (const event of ["PreToolUse", "SubagentStop"]) expect(s.hooks[event]).toEqual(THIS_REPO.hooks[event as "PreToolUse"]);
+  expect(s.hooks.PostToolUse.slice(0, 2)).toEqual(THIS_REPO.hooks.PostToolUse); // activity * and ExitPlanMode unchanged
+  expect(s.permissions).toEqual(THIS_REPO.permissions);
+  expect(s.plansDirectory).toBe(THIS_REPO.plansDirectory);
+});

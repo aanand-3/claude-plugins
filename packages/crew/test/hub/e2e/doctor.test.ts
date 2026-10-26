@@ -14,6 +14,19 @@ const SETTINGS = readFileSync(join(SKILLS, "guidelines", "templates", "settings.
 const CONFIG = "git:\n  default_branch: main\nhub:\n  plan_worktrees: true\n  build: echo build\n  shared: [src/registry.ts]\n";
 const NO_MAIN = "#!/bin/sh\n[ \"$(git symbolic-ref --short HEAD)\" = main ] && { echo \"hook: no commits on main\" >&2; exit 1; }\nexit 0\n";
 const NO_HUB_MSG = "#!/bin/sh\ngrep -q '^chore(hub)' \"$1\" && { echo \"hook: no hub commits\" >&2; exit 1; }\nexit 0\n";
+const HOOKS_FIX = "the human runs `/crew:guidelines --refresh` (its merge_settings.mjs adds the template's missing hooks; "
+  + ".claude/settings.json is protected)";
+const cmd = (command: string) => ({ hooks: [{ type: "command", command }] });
+/** The hooks of this repo's .claude/settings.json as of P-060's base. */
+const THIS_REPO_HOOKS = {
+  PreToolUse: [{ matcher: "*", ...cmd("cd \"$CLAUDE_PROJECT_DIR\" 2>/dev/null || exit 0; [ -f .crew/bin/crew.mjs ] && node .crew/bin/crew.mjs guard; exit 0") }],
+  SubagentStop: [cmd("cd \"$CLAUDE_PROJECT_DIR\" 2>/dev/null || exit 0; [ -f .crew/bin/crew.mjs ] && node .crew/bin/crew.mjs usage --hook >/dev/null 2>&1; exit 0")],
+  SessionStart: [cmd("[ -f \"$CLAUDE_PROJECT_DIR/.crew/bin/track_plan_draft.mjs\" ] && node \"$CLAUDE_PROJECT_DIR/.crew/bin/track_plan_draft.mjs\" --session; true")],
+  PostToolUse: [
+    { matcher: "*", ...cmd("cd \"$CLAUDE_PROJECT_DIR\" 2>/dev/null || exit 0; [ -f .crew/bin/crew.mjs ] && node .crew/bin/crew.mjs activity --hook >/dev/null 2>&1; exit 0") },
+    { matcher: "ExitPlanMode", ...cmd("[ -f \"$CLAUDE_PROJECT_DIR/.crew/bin/track_plan_draft.mjs\" ] && node \"$CLAUDE_PROJECT_DIR/.crew/bin/track_plan_draft.mjs\"; true") },
+  ],
+};
 
 type Check = { id: string; level: string; detail: string; fix: string | null };
 const doctorJson = (r: Repo = repo): Check[] => JSON.parse(tr(r, "doctor", "--json").stdout).checks;
@@ -103,14 +116,35 @@ it("doctor: hooks and agents report what's missing (AC3)", () => {
   repo.write(".claude/settings.json", JSON.stringify(settings));
   expect(level("hooks")).toEqual(["warn"]);
   expect(tr(repo, "doctor").returncode).toBe(0);
+  for (const event of ["SessionStart", "Stop", "PreCompact"]) delete settings.hooks[event];
+  repo.write(".claude/settings.json", JSON.stringify(settings));
+  const out = tr(repo, "doctor");
+  expect(out.returncode).toBe(0); // only non-required hooks are missing
+  const hookLines = lineFor(out.stdout, "hooks");
+  for (const name of ["the PostToolUse `crew.mjs activity --hook`", "the SessionStart `crew.mjs context`",
+    "the Stop `crew.mjs checkpoint --auto`", "the PreCompact `crew.mjs checkpoint --auto`"]) {
+    expect(hookLines.filter((l) => l.startsWith(`WARN  hooks: .claude/settings.json has no ${name}`)), name).toHaveLength(1);
+  }
+  expect(hookLines).toHaveLength(4);
+  expect(hookLines.every((l) => l.includes(HOOKS_FIX))).toBe(true);
   delete settings.hooks.PreToolUse;
   repo.write(".claude/settings.json", JSON.stringify(settings));
-  expect(level("hooks").sort()).toEqual(["fail", "warn"]);
+  expect(level("hooks").sort()).toEqual(["fail", "warn", "warn", "warn", "warn"]);
   expect(tr(repo, "doctor").returncode).toBe(1);
   repo.git("rm", "-q", "-r", ".claude/agents");
   const agents = doctorJson().filter((c) => c.id === "agents");
   expect(agents.length).toBeGreaterThan(0);
   expect(agents.every((c) => c.level === "warn" && c.fix!.includes("crew.mjs agents"))).toBe(true);
+});
+
+it("doctor: the template's hooks are OK; this repo's hooks miss context and checkpoint (WARN, no FAIL)", () => {
+  loopRepo();
+  expect(lineFor(tr(repo, "doctor").stdout, "hooks")).toEqual(["OK    hooks: guard, usage, activity, context and checkpoint hooks are set"]);
+  repo.write(".claude/settings.json", JSON.stringify({ hooks: THIS_REPO_HOOKS }));
+  const r = tr(repo, "doctor");
+  expect(r.returncode, r.stdout).toBe(0);
+  expect(lineFor(r.stdout, "hooks")).toEqual(["the SessionStart `crew.mjs context`", "the Stop `crew.mjs checkpoint --auto`",
+    "the PreCompact `crew.mjs checkpoint --auto`"].map((name) => `WARN  hooks: .claude/settings.json has no ${name} → ${HOOKS_FIX}`));
 });
 
 it("doctor: generated, shared and policy WARN or FAIL (AC4)", () => {

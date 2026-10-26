@@ -24,8 +24,8 @@ const firstSentence = (s: string) => s.replace(/\s+/g, " ").trim().split(/(?<=\.
 /** When each hook event fires in a session, earliest first; events not listed here follow in the file's order. */
 const HOOK_ORDER = ["SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "PreCompact", "Stop", "SubagentStop"];
 
-/** A script a hook runs: `node <path>/<name>.mjs` and its subcommand and flags. */
-const RUNS = /\bnode\s+"?(?:[^\s"]*\/)?([\w-]+\.mjs(?: --?[\w-]+| [a-z][\w-]*)*)/g;
+/** A script a hook runs: `node <path>/<name>.mjs` (the path quoted or not) and its subcommand and flags. */
+const RUNS = /\bnode\s+"?(?:[^\s"]*\/)?([\w-]+\.mjs)"?((?: --?[\w-]+| [a-z][\w-]*)*)/g;
 type HookEntry = { matcher?: string; hooks: { command: string }[] };
 
 function hooks(root: string): Inventory["hooks"] {
@@ -34,7 +34,7 @@ function hooks(root: string): Inventory["hooks"] {
   const rank = (e: string) => (HOOK_ORDER.includes(e) ? HOOK_ORDER.indexOf(e) : HOOK_ORDER.length);
   const events = Object.keys(byEvent).sort((a, b) => rank(a) - rank(b));
   return events.flatMap((event) => byEvent[event].map((entry) => ({ event, matcher: entry.matcher ?? "",
-    runs: [...new Set(entry.hooks.flatMap((h) => [...h.command.matchAll(RUNS)].map((m) => m[1])))] })));
+    runs: [...new Set(entry.hooks.flatMap((h) => [...h.command.matchAll(RUNS)].map((m) => m[1] + m[2])))] })));
 }
 
 function skills(root: string): Inventory["skills"] {

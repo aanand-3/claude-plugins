@@ -127,7 +127,7 @@ it("role queues", () => {
 
 it("the SessionStart hook runs context", () => {
   const settings = JSON.parse(readFileSync(join(SKILLS, "guidelines/templates/settings.json"), "utf8"));
-  const start: string = settings.hooks.SessionStart[0].hooks[0].command;
+  const start = settings.hooks.SessionStart[0].hooks.map((h: { command: string }) => h.command).join("\n");
   expect(start).toContain("crew.mjs context");
   expect(start).not.toContain("crew.mjs current");
   for (const event of ["Stop", "PreCompact"]) expect(settings.hooks[event][0].hooks[0].command).toContain("checkpoint --auto");

@@ -21,7 +21,15 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd \"$CLAUDE_PROJECT_DIR\" || exit 0; [ -d .githooks ] && [ \"$(git config core.hooksPath)\" != \".githooks\" ] && git config core.hooksPath .githooks && echo \"crew: activated .githooks\"; [ -f .crew/bin/crew.mjs ] && node .crew/bin/crew.mjs context; [ -f .crew/bin/track_plan_draft.mjs ] && node .crew/bin/track_plan_draft.mjs --session; true"
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" || exit 0; [ -d .githooks ] && [ \"$(git config core.hooksPath)\" != \".githooks\" ] && git config core.hooksPath .githooks && echo \"crew: activated .githooks\"; true"
+          },
+          {
+            "type": "command",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" || exit 0; [ -f .crew/bin/crew.mjs ] && node .crew/bin/crew.mjs context; true"
+          },
+          {
+            "type": "command",
+            "command": "[ -f \"$CLAUDE_PROJECT_DIR/.crew/bin/track_plan_draft.mjs\" ] && node \"$CLAUDE_PROJECT_DIR/.crew/bin/track_plan_draft.mjs\" --session; true"
           }
         ]
       }

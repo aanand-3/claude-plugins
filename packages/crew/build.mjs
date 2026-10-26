@@ -25,6 +25,7 @@ const SKILLS = new URL("../../plugins/crew/skills/", import.meta.url).pathname;
 export const TOOLS = [
   ["git-setup", "setup_git"], ["git-setup", "check_secrets"],
   ["guidelines", "compose_rules"], ["guidelines", "check_structure"], ["guidelines", "format_on_edit"], ["guidelines", "track_plan_draft"],
+  ["guidelines", "merge_settings"],
   ["design", "check_design"], ["design", "wada"], ["design", "studio"], ["design", "layout_sweep"],
   ["research", "verify_evidence"], ["global-setup", "install_global"],
 ];

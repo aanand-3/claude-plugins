@@ -14789,12 +14789,16 @@ function hookCommands2(store) {
 var HOOKS2 = [
   { event: "PreToolUse", re: /crew\.mjs guard\b/, name: "the PreToolUse guard (`crew.mjs guard`)", required: true },
   { event: "SubagentStop", re: /crew\.mjs usage --hook\b/, name: "the SubagentStop `crew.mjs usage --hook`", required: false },
-  { event: "PostToolUse", re: /crew\.mjs activity --hook\b/, name: "the PostToolUse `crew.mjs activity --hook`", required: false }
+  { event: "PostToolUse", re: /crew\.mjs activity --hook\b/, name: "the PostToolUse `crew.mjs activity --hook`", required: false },
+  { event: "SessionStart", re: /crew\.mjs context\b/, name: "the SessionStart `crew.mjs context`", required: false },
+  { event: "Stop", re: /crew\.mjs checkpoint --auto\b/, name: "the Stop `crew.mjs checkpoint --auto`", required: false },
+  { event: "PreCompact", re: /crew\.mjs checkpoint --auto\b/, name: "the PreCompact `crew.mjs checkpoint --auto`", required: false }
 ];
+var HOOKS_FIX = "the human runs `/crew:guidelines --refresh` (its merge_settings.mjs adds the template's missing hooks; .claude/settings.json is protected)";
 function hooks(store) {
-  const commands = hookCommands2(store) ?? {}, fix = "the human runs `/crew:guidelines --refresh` (.claude/settings.json is protected)";
-  const out = HOOKS2.filter((h) => !(commands[h.event] ?? []).some((c) => h.re.test(c))).map((h) => (h.required ? bad : warn)("hooks", `.claude/settings.json has no ${h.name}`, fix));
-  return out.length ? out : [ok("hooks", "guard, usage and activity hooks are set")];
+  const commands = hookCommands2(store) ?? {};
+  const out = HOOKS2.filter((h) => !(commands[h.event] ?? []).some((c) => h.re.test(c))).map((h) => (h.required ? bad : warn)("hooks", `.claude/settings.json has no ${h.name}`, HOOKS_FIX));
+  return out.length ? out : [ok("hooks", "guard, usage, activity, context and checkpoint hooks are set")];
 }
 function generated2(store) {
   const build = yamlBlock(store.ws.read(join26(store.dir, "config.yaml")) ?? "", "hub").build;
