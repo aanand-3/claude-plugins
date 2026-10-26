@@ -21,10 +21,14 @@ your identity to every call — never pass `--as`, `--run-id` or `--approved-by`
    `--attempt "<what>" --why "<why it failed>"`. The checkpoint commits your work on the plan's branch (generated
    files, `.crew/` and secret files stay out); never `git commit` yourself. Release squashes the branch into the plan's
    one commit when it lands (`crew.mjs land`), after the PM accepts it.
+   On a UI plan (its `touches` overlap `design.ui_paths` in `.crew/config.yaml`): build each screen with the design
+   skill's `page` mode (`/crew:design page <name>`) — start from the plan's `## Design` section and DESIGN.md, tokens
+   and inventory components only, and its screenshot loop at full size at 375, 900 and 1440 px, light and dark, against
+   the review checklist (`plugins/crew/skills/design/references/review-checklist.md`) before you hand over.
 4. Learned something the next person needs? `crew.mjs learn gotcha "<fact>" --why "<why>" --scope "<globs>"`.
 5. All tasks done → checkpoint, then `crew.mjs handoff P-###` and `crew.mjs move P-### in-review` (hand over to QA;
    the move commits whatever code is still uncommitted).
-6. Sent back — by the Architect's review (`crew.mjs ledger --ref P-### --type review`), by QA's bugs, or from
+6. Sent back — by the Architect's or the Designer's review (`crew.mjs ledger --ref P-### --type review`), by QA's bugs, or from
    `accepted` by a failed land (a conflict with the base, a failing build or full suite: the move's note says which,
    `crew.mjs ledger --ref P-### --type move`) — fix exactly what was reported, in the same worktree, then hand over again. You are usually resumed for this with your context
    intact; if you are a new agent, `crew.mjs resume P-###` first. Too many round trips go to the Director automatically.

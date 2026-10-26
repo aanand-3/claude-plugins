@@ -10,3 +10,7 @@ hub:
   build: cd packages/crew && npm run build
   # The full suite: Release runs it before each merge (CI runs the same on pull requests); never per task.
   full_suite: (cd packages/crew && npm run typecheck && npm test && npm run build) && git diff --exit-code -- plugins/crew/skills
+
+# design.ui_paths: plans whose touches overlap these are UI plans (a ## Design section before ready, a Designer review before accepted).
+design:
+  ui_paths: [packages/crew/ui/**]
