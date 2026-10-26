@@ -77,6 +77,22 @@ n/a — text only; ships in the bundle (Release builds it) and reaches this repo
 
 ## Handoff
 
+_Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
+
+- P-047: Director next and run printout follow dispatch and the runner [in-progress] tasks 0/4 — claimed by Arpit Anand (developer:a34e356c20ee76803)
+- last checkpoint 2026-10-26 05:20 at T4 (71f2ca2) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-047-director-next-and-run-printout-follow/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/dispatch.test.ts -t 'director next' ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-047-director-next-and-run-printout-follow checkout -- plugins; exit $r (AC 1,2,3,4)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-047-director-next-and-run-printout-follow/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/team-2.test.ts -t 'runner stops' ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-047-director-next-and-run-printout-follow checkout -- plugins; exit $r (AC 5)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-047-director-next-and-run-printout-follow/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/team.test.ts test/hub/e2e/context.test.ts test/hub/e2e/branch-copies.test.ts ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-047-director-next-and-run-printout-follow checkout -- plugins; exit $r (AC 6)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-047-director-next-and-run-printout-follow/packages/crew && npm run typecheck && wc -l src/hub/commands/team/roles.ts src/hub/commands/team/autonomy.ts && test $(wc -l < src/hub/commands/team/roles.ts) -lt 300 && test $(wc -l < src/hub/commands/team/autonomy.ts) -lt 300 (AC 6)
+- next: T1: Director rules from dispatch (roles.ts) → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/dispatch.test.ts -t "director next"` (AC1–AC4)
+- evidence: AC1 ✓ (self), AC2 ✓ (self), AC3 ✓ (self), AC4 ✓ (self), AC5 ✓ (self), AC6 ✓ (self)
+
+Latest log:
+- 2026-10-25: status draft → ready — Architect: specced (ACs, tasks, test plan, exact touches)
+- 2026-10-26: assigned to the developer role
+- 2026-10-26: status ready → in-progress — branch plan/P-047-director-next-and-run-printout-follow
+
 ## Progress log
 
 - 2026-10-25: status draft → ready — Architect: specced (ACs, tasks, test plan, exact touches)
