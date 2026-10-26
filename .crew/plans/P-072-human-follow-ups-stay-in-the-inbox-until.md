@@ -54,8 +54,10 @@ already show the follow-up through the open question. No `depends_on`.
   (validate, then `answer()`, then record) and `openFollowUps(events)` (open questions whose `ask` event has `after`).
 - `inbox`: follow-ups become their own kind, after escalations: `{ kind: "follow-up", ref: Q-…, about: P-###,
   question: <step>, options: ["done"], holds: "holds P-###", how: "answer Q-… \"done\" --approved-by <you>" }`, and
-  no longer appear as escalations. Text form prints `FOLLOW-UP`. Escalation entries' `how` mentions
-  `[--follow-up "<your step>"]`. They leave the inbox when answered (the human marks them done).
+  no longer appear as escalations. Text form prints `FOLLOW-UP`. Escalation entries' `how` stays as today
+  (a runnable command; Q-015c91); the text form prints one more line under each escalation,
+  `  then:    add --follow-up "<your step>" if a step stays with you`, and the UI offers it through the "Then you…"
+  field (Design). Follow-ups leave the inbox when answered (the human marks them done).
 - `resume` (and so the generated `## Handoff`): one line per open blocking question on the plan,
   `waits for an answer: Q-… → <to>: <text>`, so a follow-up names itself as the plan's wait reason.
 - `ui` server: the `answer` action takes optional `follow_up` and `unblocks` and goes through `answerWithFollowUp`
@@ -129,7 +131,7 @@ Composition on the existing Inbox view (docs/design/DESIGN.md tokens; inventory 
 ## Tasks
 - [x] T1: Add the three FEAT-068 CLI cases to `test/hub/e2e/inbox.test.ts` (AC1-AC3) → verify: `npx vitest run test/hub/e2e/inbox.test.ts -t FEAT-068` fails before T2-T4.
 - [ ] T2: `followups.ts` and the `answer --follow-up/--unblocks` registration in `questions.reg.ts` → verify: `npx vitest run test/hub/e2e/inbox.test.ts -t "an answer records"` passes.
-- [ ] T3: `inbox.ts` follow-up kind and the escalation `how` hint → verify: `npx vitest run test/hub/e2e/inbox.test.ts -t "stays in the inbox"` passes.
+- [ ] T3: `inbox.ts` follow-up kind and the escalation `then:` hint line → verify: `npx vitest run test/hub/e2e/inbox.test.ts -t "stays in the inbox"` passes.
 - [ ] T4: `recovery()` wait lines in `execution.ts` → verify: `npx vitest run test/hub/e2e/inbox.test.ts -t "wait reason"` passes.
 - [ ] T5: `server.ts` `answer` action with `follow_up`, plus the ui case in `inbox.test.ts` → verify: `npx vitest run test/hub/e2e/inbox.test.ts -t "ui"` passes.
 - [ ] T6: `Inbox.tsx` follow-up kind, Done button and "Then you…" field per Design → verify: `npm run build`, then the manual Inbox check in the Test plan.
