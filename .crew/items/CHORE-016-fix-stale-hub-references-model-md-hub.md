@@ -5,7 +5,7 @@ title: Fix stale hub references: model.md, hub SKILL.md, vision.md
 status: triaged
 priority: P2
 goal: G-006
-plan:
+plan: P-069
 created: 2026-10-25
 closed:
 ---
