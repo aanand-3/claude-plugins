@@ -4,7 +4,7 @@ type: chore
 title: QA scratch scripts get a per-plan scratch folder that is never committed and is cleared at done
 status: triaged
 priority: P3
-goal:
+goal: G-007
 plan:
 created: 2026-10-26
 closed:
@@ -31,3 +31,4 @@ Asked by the executive ("both, do we need a scripts folder for QA?"). Goal G-007
 If this repository's `.crew/policy.yaml` overrides QA's paths.write, changing it is the executive's call (escalation), not the PM's or the developer's.
 - 2026-10-26: goal hint G-007 (by Arpit Anand)
 - 2026-10-26: status new → triaged — priority P3
+- 2026-10-26: re-triaged: priority P3
