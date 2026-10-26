@@ -2,9 +2,9 @@
 id: BUG-047
 type: bug
 title: Acceptance criteria written as a numbered list are not parsed (nested bullets become the criteria)
-status: new
-severity:
-priority:
+status: triaged
+severity: S3
+priority: P2
 goal:
 plan:
 created: 2026-10-26
@@ -34,3 +34,4 @@ Each numbered criterion is one acceptance criterion (AC1..AC8); `--ac 7` and `--
 
 ## Notes
 Fix: also accept `N. ` numbered items in criteria() (and keep the nested-bullet fallback only when none exist). Affects P-060 acceptance evidence mapping.
+- 2026-10-26: status new → triaged — priority P2, severity S3
