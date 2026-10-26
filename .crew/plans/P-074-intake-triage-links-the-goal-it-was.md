@@ -68,7 +68,7 @@ Whenever the item stays `new`, capture still links no goal.
 ## Test plan
 **Targeted checks** (from `packages/crew/`; e2e suites drive the built bundle: run `npm run build` first, then `git checkout -- plugins/crew/skills/hub/dist plugins/crew/skills/hub/references/commands.md`):
 - AC1, AC2, AC3, AC4 → `npx vitest run test/hub/e2e/goal-links.test.ts -t "capture"`
-- AC5 → `npx vitest run test/hub/e2e/goal-links.test.ts -t "MCP"`
+- AC5 → `npx vitest run test/hub/e2e/goal-links.test.ts -t "capture"` (the new BUG-046 case, MCP `new_item` with `goal` and `priority`) and `-t "MCP"` (the existing `new_item` hint case, `goal` alone)
 - AC6 → `npx vitest run test/hub/e2e/agents.test.ts test/docs.test.ts`
 - `npm run typecheck`
 
@@ -78,8 +78,9 @@ Whenever the item stays `new`, capture still links no goal.
 - Rollback: revert the commit. Items linked at capture keep their goals, which are valid links.
 
 ## Risks & open questions
-- This narrows P-055's executive-approved rule (Q-fcec4f) for the one case where capture is also triage. The PM confirms
-  the change before this plan is made ready (question to the PM on BUG-046).
+- This narrows P-055's executive-approved rule (Q-fcec4f) for the one case where capture is also triage. Resolved: the PM
+  escalated it (Q-d11997, Q-2a7842) and the executive chose B: a new-item call that also triages is the PM confirming the
+  goal at triage, so linking it follows rule 1; --goal stays a hint for captures that do not triage.
 - Overlap: P-073 also edits backlog.ts (`itemFromCandidate`/`breakdownToItems`, a different function), so this plan is
   staffed after P-073. The test file and model.md are `hub.shared`.
 
