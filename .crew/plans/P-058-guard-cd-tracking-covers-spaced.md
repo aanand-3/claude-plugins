@@ -5,7 +5,7 @@ goal: G-007
 items: BUG-012
 touches: packages/crew/src/hub/commands/team/hubcall.ts, packages/crew/src/hub/commands/team/targets.ts, packages/crew/test/hub/targets.test.ts, packages/crew/test/hub/hubcall.test.ts, packages/crew/test/hub/e2e/guard.test.ts, packages/crew/test/hub/e2e/guard-writes.test.ts
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-058-guard-cd-tracking-covers-spaced
 pr:
 created: 2026-10-26
@@ -73,7 +73,7 @@ Ships in the bundle; the guard reaches this repo through refresh-bin. Rollback: 
 
 _Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
 
-- P-058: Guard cd tracking covers spaced subshells, functions and case arms [in-progress] tasks 3/3 — claimed by Arpit Anand (developer:a023f1c3f99597d85)
+- P-058: Guard cd tracking covers spaced subshells, functions and case arms [in-review] tasks 3/3 — claimed by Arpit Anand (developer:a023f1c3f99597d85)
 - last checkpoint 2026-10-26 08:19 at T3 (e097a7d) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
 - ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-058-guard-cd-tracking-covers-spaced/packages/crew && npx vitest run test/hub/targets.test.ts test/hub/hubcall.test.ts (AC 4)
 - ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-058-guard-cd-tracking-covers-spaced/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/guard.test.ts test/hub/e2e/guard-writes.test.ts ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-058-guard-cd-tracking-covers-spaced checkout -- plugins/crew/skills/hub/dist plugins/crew/skills/hub/references/commands.md plugins/crew/docs; exit $r (AC 1,2,3)
@@ -90,7 +90,9 @@ Latest log:
 - 2026-10-26: status draft → ready
 - 2026-10-26: assigned to the developer role
 - 2026-10-26: status ready → in-progress — branch plan/P-058-guard-cd-tracking-covers-spaced
+- 2026-10-26: status in-progress → in-review
 
 ## Outcome
 `skipPrefix(words)` in hubcall.ts now skips assignments, prefix words (plus a lone `(`), `function NAME`, `case WORD in PATTERN` and a lone `esac`. `headAt` (the hub-call finder) and `writeTargets` both use it. `install -d`/`--directory` checks every operand. Unit cases cover AC4/AC5, and the guard e2e block `guard_cd_forms` covers AC1–AC3 from a plan worktree.
-Learnings: three of the five repros (`( ( cd ~ … ) )`, `f() { … }`, case arms) already passed on the base. The P-051 parser splits at every `(`/`)`, so `name()` and `pattern)` end their own commands. Only `function f {` and `install -d` really needed fixing. The cost of that split is that a case pattern named `cd` or `pushd` reads as a bare `cd` (it fails toward deny). `inlineScript` still has its own prefix loop and does not see `function f { python3 -c …; }`.
+Notes: three of the five repros (`( ( cd ~ … ) )`, `f() { … }`, case arms) already passed on the base. The P-051 parser splits at every `(`/`)`, so `name()` and `pattern)` end their own commands. Only `function f {` and `install -d` really needed fixing. The cost of that split is that a case pattern named `cd` or `pushd` reads as a bare `cd` (it fails toward deny). `inlineScript` still has its own prefix loop and does not see `function f { python3 -c …; }`.
+Learnings: K-2026-10-26-the-guards-shell-parser-hubcall-ts-parse
