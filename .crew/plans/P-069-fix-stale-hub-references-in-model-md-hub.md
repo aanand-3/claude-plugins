@@ -5,7 +5,7 @@ goal: G-006
 items: CHORE-016
 touches: plugins/crew/skills/hub/references/model.md, plugins/crew/skills/hub/SKILL.md, docs/vision.md
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-069-fix-stale-hub-references-in-model-md-hub
 pr:
 created: 2026-10-26
@@ -106,7 +106,7 @@ Docs only; lands with the plan. Rollback: revert the commit.
 
 _Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
 
-- P-069: Fix stale hub references in model.md, hub SKILL.md and vision.md [in-progress] tasks 6/6 — claimed by Arpit Anand (developer:ac83238ac3dc75db9)
+- P-069: Fix stale hub references in model.md, hub SKILL.md and vision.md [in-review] tasks 6/6 — claimed by Arpit Anand (developer:ac83238ac3dc75db9)
 - last checkpoint 2026-10-26 14:23 at T6 (d80d443) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —
 
@@ -121,6 +121,7 @@ Latest log:
 - 2026-10-26: re-goaled none → G-006 by Arpit Anand: CHORE-016 belongs to G-006 (docs true to the code); plan lost the goal
 - 2026-10-26: assigned to the developer role
 - 2026-10-26: status ready → in-progress — branch plan/P-069-fix-stale-hub-references-in-model-md-hub
+- 2026-10-26: status in-progress → in-review
 
 ## Outcome
 Shipped (docs only: model.md, hub SKILL.md, docs/vision.md):
