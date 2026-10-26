@@ -5,12 +5,12 @@ goal: G-007
 items: BUG-024
 touches: packages/crew/src/hub/core/work/model.ts, packages/crew/src/hub/commands/work/workflow.ts, packages/crew/src/hub/core/team/presets.ts, packages/crew/test/hub/e2e/item-close.test.ts, packages/crew/test/hub/e2e/items.test.ts, packages/crew/test/hub/e2e/team.test.ts, packages/crew/test/hub/e2e/review-fixes.test.ts, packages/crew/test/hub/e2e/policy.test.ts, packages/crew/test/hub-worktrees.test.ts, plugins/crew/skills/hub/references/model.md
 depends_on:
-status: accepted
+status: done
 branch: plan/P-045-items-close-with-their-plan-the-pm
 pr:
 created: 2026-10-25
 started: 2026-10-26
-completed:
+completed: 2026-10-26
 assignee: developer
 ---
 
@@ -161,6 +161,7 @@ Latest log:
 - 2026-10-26: status in-progress → in-review — merged main; model.md conflict resolved
 - 2026-10-26: status in-review → accepted
 - 2026-10-26: landed on main as 0503bf1
+- 2026-10-26: status accepted → done
 
 ## Outcome
 Items now close: `ITEM_FLOW` has a stored `done` and every status closes to done/wontfix/duplicate; `ITEM_CLOSED`

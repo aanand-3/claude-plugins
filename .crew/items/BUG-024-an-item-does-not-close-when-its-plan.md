@@ -2,13 +2,13 @@
 id: BUG-024
 type: bug
 title: An item does not close when its plan reaches done; items have no closing status
-status: triaged
+status: done
 severity: S3
 priority: P2
 goal: G-007
 plan: P-045
 created: 2026-10-25
-closed:
+closed: 2026-10-26
 ---
 
 # BUG-024: An item does not close when its plan reaches done; items have no closing status
@@ -37,3 +37,4 @@ Delivered items and finished spikes look open, so triage queues and goal progres
 
 ## Notes
 - 2026-10-25: status new → triaged — priority P2, severity S3
+- 2026-10-26: status triaged → done — delivered by P-045
