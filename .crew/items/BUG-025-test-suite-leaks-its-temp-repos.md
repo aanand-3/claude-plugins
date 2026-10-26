@@ -2,13 +2,14 @@
 id: BUG-025
 type: bug
 title: Test suite leaks its temp repos and filled the disk
-status: triaged
+status: done
 severity: S1
 priority: P1
 goal: G-007
 plan: P-041
 created: 2026-10-25
-closed:
+closed: 2026-10-26
+completed: 2026-10-26
 ---
 
 # BUG-025: Test suite leaks its temp repos and filled the disk
@@ -36,3 +37,4 @@ The count grows by hundreds per run; on 2026-10-25 7,120 crew-tools-* dirs (18 G
 
 ## Notes
 - 2026-10-25: status new → triaged — priority P1, severity S1
+- 2026-10-26: status triaged → done — delivered by P-041
