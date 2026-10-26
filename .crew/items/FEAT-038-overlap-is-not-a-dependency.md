@@ -2,12 +2,13 @@
 id: FEAT-038
 type: feat
 title: Overlap is not a dependency
-status: triaged
+status: done
 priority: P1
 goal: G-007
 plan: P-029
 created: 2026-10-25
-closed:
+closed: 2026-10-26
+completed: 2026-10-26
 ---
 
 # FEAT-038: Overlap is not a dependency
@@ -24,3 +25,4 @@ Slice of G-007 (Autonomous parallel delivery): Overlap is not a dependency — s
 
 ## Notes
 - 2026-10-25: triaged from G-007 breakdown
+- 2026-10-26: status triaged → done — delivered by P-029
