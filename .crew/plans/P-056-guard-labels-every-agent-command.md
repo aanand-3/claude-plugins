@@ -118,6 +118,7 @@ Latest log:
 - 2026-10-26: status in-progress → in-review
 - 2026-10-26: status in-review → accepted
 - 2026-10-26: landed on main as bbb37ec
+- 2026-10-26: released: ships in the bundle, .crew/bin already up to date via refresh-bin; no further rollout
 
 ## Outcome
 The guard now labels every allowed crew-agent Bash call `<role> <plan>: <what>` (identity flags still injected) and refuses a background or >120 s call with no description. `deriveWhat`/`label` live in core/memory/activity.ts, and `describe` also takes the plan from a worktree path in the command. The activity hook records `label` on Bash events, and `watch`, `status` Running now, `/api/activity` and the UI Live panel show it, falling back to `tool target`. guard.ts is 217 lines, activity.ts 235. live-ui.test.ts was added to touches (Q-2f4b62).
