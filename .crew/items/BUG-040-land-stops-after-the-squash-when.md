@@ -2,10 +2,10 @@
 id: BUG-040
 type: bug
 title: land stops after the squash when the worktree folder holds untracked OS files (.DS_Store)
-status: new
-severity:
-priority:
-goal:
+status: triaged
+severity: S3
+priority: P2
+goal: G-007
 plan:
 created: 2026-10-26
 closed:
@@ -38,3 +38,4 @@ Every landing on macOS with a Finder-touched worktree needs manual completion; d
 
 ## Notes
 Found while completing P-057.
+- 2026-10-26: status new → triaged — priority P2, severity S3
