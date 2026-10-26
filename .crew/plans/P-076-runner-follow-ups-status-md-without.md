@@ -5,7 +5,7 @@ goal:
 items: CHORE-031
 touches: packages/crew/src/hub/commands/team/runner.ts, packages/crew/src/hub/commands/views/reports.ts, plugins/crew/skills/team/SKILL.md, packages/crew/test/hub/e2e/runner.test.ts
 depends_on: P-066
-status: draft
+status: ready
 branch: plan/P-076-runner-follow-ups-status-md-without
 pr:
 created: 2026-10-26
@@ -95,12 +95,11 @@ K-2026-10-24-release-builds-the-generated-files-plans.
 - [ ] T1: `status --write` leaves out the runner line; runner.test.ts case for AC1 → verify:
   `npx vitest run test/hub/e2e/runner.test.ts -t "STATUS.md"` green (AC1), and the existing `status` assertions in
   runner.test.ts and `test/hub/e2e/idea.test.ts` (`status --write`) still green.
-- [ ] T2: Grace timer in `Interrupt` with SIGKILL after `SIGNAL_GRACE_MS`, cleared when the pass exits; runner.test.ts
-  cases for SIGTERM and SIGHUP with a pass that ignores them → verify: those cases green and the P-066 "signals" cases
-  green (AC2, AC3).
-- [ ] T3: `error` listeners on stdout/stderr and a quiet `say` in `untilDone`; runner.test.ts case for AC4 → verify:
-  that case fails before the change and passes after (AC4).
-- [ ] T4: SKILL "Unattended" bullets (grace kill, STATUS.md without the runner line) → verify: the exit bullet names the
+- [ ] T2: Grace timer in `Interrupt` (SIGKILL after `SIGNAL_GRACE_MS`) → verify: new runner.test.ts cases for SIGTERM
+  and SIGHUP with a pass that ignores them green, and the P-066 "signals" cases green (AC2, AC3).
+- [ ] T3: `error` listeners on stdout/stderr and a quiet `say` in `untilDone` → verify: a new runner.test.ts case for
+  AC4 fails before the change and passes after (AC4).
+- [ ] T4: SKILL "Unattended" bullets (grace kill, STATUS.md without runner line) → verify: the exit bullet names the
   10 s kill and the "Is it running?" bullet names `status --write`; `npm run typecheck` passes; `wc -l` of runner.ts
   and reports.ts < 300 (AC5).
 
@@ -127,5 +126,7 @@ old code until the human restarts it. Rollback: revert the squash commit and ref
 ## Handoff
 
 ## Progress log
+
+- 2026-10-26: status draft → ready
 
 ## Outcome
