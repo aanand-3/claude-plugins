@@ -6,7 +6,7 @@
 import { readdirSync, realpathSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
-import { ASSIGN, PREFIX, parse, type Word } from "./hubcall.js";
+import { ASSIGN, parse, skipPrefix, type Word } from "./hubcall.js";
 
 /** A path a command writes; `restore` marks a `git checkout`/`git restore` operand, which puts back committed content. */
 export interface Target { path: string; restore: boolean }
@@ -158,10 +158,8 @@ export function writeTargets(cmd: string, cwd: string): Target[] {
 
   for (const c of parse(cmd)) {
     const words = c.words;
-    let h = 0;
-    for (; h < words.length && (ASSIGN.test(words[h].raw) || PREFIX.has(words[h].raw)); h++) {
-      if (ASSIGN.test(words[h].raw)) assign(words[h]);
-    }
+    const h = skipPrefix(words);
+    for (const w of words.slice(0, h)) if (ASSIGN.test(w.raw)) assign(w);
     push(c.targets);
     if (h >= words.length) continue;
     const head = basename(words[h].value), args = words.slice(h + 1);
@@ -175,6 +173,8 @@ export function writeTargets(cmd: string, cwd: string): Target[] {
     } else if (head === "cd" || head === "pushd") {
       const to = operands[0] ? ex(operands[0])[0] : "~";
       dir = rooted(to) ? to : join(dir, to);
+    } else if (head === "install" && args.some((a) => a.value === "-d" || a.value === "--directory")) {
+      push(operands); // every operand is a directory it creates
     } else if (/^(cp|ln|install)$/.test(head)) {
       const t = args.findIndex((a) => a.value === "-t" || a.value === "--target-directory");
       if (t >= 0) push(args.slice(t + 1, t + 2));
@@ -217,8 +217,11 @@ export function inlineScript(cmd: string): string | null {
       if (WRAPPER.test(b)) {
         for (h++; h < w.length && (w[h].startsWith("-") || ASSIGN.test(c.words[h].raw));) h += OPTION_ARG[b]?.test(w[h]) ? 2 : 1;
         if (b === "timeout") h++; // the duration
-      } else if (ASSIGN.test(c.words[h].raw) || PREFIX.has(c.words[h].raw)) h++;
-      else break;
+      } else {
+        const s = skipPrefix(c.words.slice(h));
+        if (!s) break;
+        h += s;
+      }
     }
     if (h >= w.length) continue;
     const head = basename(w[h]), args = w.slice(h + 1);

@@ -136,3 +136,16 @@ it("hubcall.ts is pure and small (AC10)", () => {
   expect([...src.matchAll(/^import .* from "([^"]+)";$/gm)].map((m) => m[1])).toEqual(["node:path"]);
   expect(src.split("\n").length).toBeLessThan(300);
 });
+
+describe("hub calls behind subshells, function heads and case arms (P-058, BUG-012)", () => {
+  it("still get identity (AC5)", () => {
+    for (const [cmd, out] of [
+      [`( ( ${HUB} next ) )`, `( ( ${ID} next ) )`],
+      [`f() { ${HUB} next; }; f`, `f() { ${ID} next; }; f`],
+      [`function f { ${HUB} next; }; f`, `function f { ${ID} next; }; f`],
+      [`function f() { ${HUB} next; }; f`, `function f() { ${ID} next; }; f`],
+      [`case x in x) ${HUB} next;; esac`, `case x in x) ${ID} next;; esac`],
+      [`case x in a|b) echo y;; *) ${HUB} next;; esac`, `case x in a|b) echo y;; *) ${ID} next;; esac`],
+    ]) expect(rewrite(cmd), cmd).toBe(out);
+  });
+});

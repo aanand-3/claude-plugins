@@ -9065,7 +9065,7 @@ import { basename as basename5, dirname as dirname6, isAbsolute as isAbsolute2, 
 import { basename as basename3 } from "node:path";
 var HUB = /\bcrew\.mjs\b/;
 var ASSIGN = /^[A-Za-z_]\w*=/;
-var PREFIX2 = /* @__PURE__ */ new Set(["{", "!", "if", "then", "else", "elif", "do", "while", "until", "time", "builtin", "command", "exec", "env", "nohup"]);
+var PREFIX2 = /* @__PURE__ */ new Set(["{", "(", "!", "if", "then", "else", "elif", "do", "while", "until", "time", "builtin", "command", "exec", "env", "nohup"]);
 var SHELLS = /* @__PURE__ */ new Set(["sh", "bash", "zsh", "dash", "ksh"]);
 var RUNTIMES = /* @__PURE__ */ new Set(["node", "bun", "deno"]);
 var WRAPPERS = /* @__PURE__ */ new Set(["eval", "xargs", "parallel", "watch", "timeout", "nice", "sudo", "ssh"]);
@@ -9209,11 +9209,18 @@ function parse3(s2) {
   return all.filter((c) => c.words.length || c.bodies.length || c.targets.length);
 }
 var base = (w) => w ? basename3(w.value) : "";
-function headAt(c) {
+function skipPrefix(words3) {
   let h = 0;
-  while (h < c.words.length && (ASSIGN.test(c.words[h].raw) || PREFIX2.has(c.words[h].raw))) h++;
-  return h;
+  while (h < words3.length) {
+    const w = words3[h].raw;
+    if (ASSIGN.test(w) || PREFIX2.has(w) || w === "esac") h++;
+    else if (w === "function") h += 2;
+    else if (w === "case" && words3[h + 2]?.raw === "in") h += 4;
+    else break;
+  }
+  return Math.min(h, words3.length);
 }
+var headAt = (c) => skipPrefix(c.words);
 function hubWord(c) {
   const h = headAt(c), head = c.words[h];
   if (base(head) === "crew.mjs") return head;
@@ -9389,10 +9396,8 @@ function writeTargets(cmd, cwd) {
   };
   for (const c of parse3(cmd)) {
     const words3 = c.words;
-    let h = 0;
-    for (; h < words3.length && (ASSIGN.test(words3[h].raw) || PREFIX2.has(words3[h].raw)); h++) {
-      if (ASSIGN.test(words3[h].raw)) assign2(words3[h]);
-    }
+    const h = skipPrefix(words3);
+    for (const w of words3.slice(0, h)) if (ASSIGN.test(w.raw)) assign2(w);
     push(c.targets);
     if (h >= words3.length) continue;
     const head = basename4(words3[h].value), args = words3.slice(h + 1);
@@ -9406,6 +9411,8 @@ function writeTargets(cmd, cwd) {
     } else if (head === "cd" || head === "pushd") {
       const to = operands[0] ? ex(operands[0])[0] : "~";
       dir = rooted(to) ? to : join7(dir, to);
+    } else if (head === "install" && args.some((a) => a.value === "-d" || a.value === "--directory")) {
+      push(operands);
     } else if (/^(cp|ln|install)$/.test(head)) {
       const t = args.findIndex((a) => a.value === "-t" || a.value === "--target-directory");
       if (t >= 0) push(args.slice(t + 1, t + 2));
@@ -9443,8 +9450,11 @@ function inlineScript(cmd) {
       if (WRAPPER.test(b)) {
         for (h++; h < w.length && (w[h].startsWith("-") || ASSIGN.test(c.words[h].raw)); ) h += OPTION_ARG[b]?.test(w[h]) ? 2 : 1;
         if (b === "timeout") h++;
-      } else if (ASSIGN.test(c.words[h].raw) || PREFIX2.has(c.words[h].raw)) h++;
-      else break;
+      } else {
+        const s2 = skipPrefix(c.words.slice(h));
+        if (!s2) break;
+        h += s2;
+      }
     }
     if (h >= w.length) continue;
     const head = basename4(w[h]), args = w.slice(h + 1);

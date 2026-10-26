@@ -3,7 +3,7 @@
 import { mkdirSync, realpathSync, symlinkSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
-import { beforeEach, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { Repo } from "../../helpers/repo.js";
 import { init, newPlan, tr } from "./helpers.js";
 import { agent, bash, events, hook, knowledge, mcpCall } from "./sections.js";
@@ -295,4 +295,32 @@ it("projects can define their own roles", () => {
   expect(out).toContain("lower-case letters");
   expect(out).toContain("needs a charter");
   expect(tr(repo, "--as", "wizard", "move", "P-001", "draft").returncode).not.toBe(0); // an unknown acting role fails closed
+});
+
+describe("guard_cd_forms: spaced subshells, function bodies, case arms and install -d (P-058, BUG-012)", () => {
+  it("are tracked from a plan worktree", () => {
+    init(repo, { commit: true });
+    agent(repo, "crew-developer", "developer");
+    const worktree = join(realpathSync(repo.path), ".claude", "worktrees", "P-001-x");
+    repo.git("worktree", "add", "-q", worktree, "-b", "plan/P-001-x");
+    const run = (cmd: string) => hook(repo, { ...bash("crew-developer", cmd), cwd: worktree });
+    // AC1: the item's five repros
+    for (const cmd of ["( ( cd ~; echo hi > x.md ) )", "f() { cd ~; echo hi > x.md; }; f", "function f { cd ~; echo hi > x.md; }; f",
+      "case x in x) cd ~; echo hi > x.md;; esac", "install -d ~/a docs/b"]) {
+      expect(run(cmd)?.permissionDecisionReason, cmd).toContain("outside the repository; project state stays in the hub");
+    }
+    // AC2: the same forms reaching a protected path
+    for (const cmd of ["f() { cd .crew; echo x > policy.yaml; }; f", "case x in x) cd .crew; echo x > policy.yaml;; esac"]) {
+      expect(run(cmd)?.permissionDecisionReason, cmd).toContain("protected");
+    }
+    // AC3: forms already denied still are, harmless forms still pass
+    for (const cmd of ["{ cd ~; echo hi > x.md; }", "if cd ~; then echo hi > x.md; fi", "(cd ~; echo hi > x.md)",
+      "while true; do cd ~; echo hi > x.md; done", "builtin cd ~ && echo hi > x.md", "command cd ~ && echo hi > x.md"]) {
+      expect(run(cmd)?.permissionDecisionReason, cmd).toContain("outside the repository");
+    }
+    for (const cmd of ["( echo hi > x.md )", "f() { echo hi > x.md; }; f", "case $x in a) echo hi > x.md;; esac",
+      "install -d docs/a docs/b"]) {
+      expect(run(cmd), cmd).toBeNull();
+    }
+  });
 });

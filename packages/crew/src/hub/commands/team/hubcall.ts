@@ -14,7 +14,7 @@ export interface Simple { words: Word[]; bodies: string[]; targets: Word[] }
 const HUB = /\bcrew\.mjs\b/;
 export const ASSIGN = /^[A-Za-z_]\w*=/;
 /** Words that can come before the command itself. */
-export const PREFIX = new Set(["{", "!", "if", "then", "else", "elif", "do", "while", "until", "time", "builtin", "command", "exec", "env", "nohup"]);
+export const PREFIX = new Set(["{", "(", "!", "if", "then", "else", "elif", "do", "while", "until", "time", "builtin", "command", "exec", "env", "nohup"]);
 const SHELLS = new Set(["sh", "bash", "zsh", "dash", "ksh"]);
 const RUNTIMES = new Set(["node", "bun", "deno"]);
 /** Commands whose arguments are themselves run as code or as a command. */
@@ -169,12 +169,23 @@ export function parse(s: string): Simple[] {
 
 const base = (w: Word | undefined) => (w ? basename(w.value) : "");
 
-/** The index of a simple command's head: past `NAME=value` assignments and prefix words. */
-function headAt(c: Simple): number {
+/** The index of a command's head (BUG-012): past `NAME=value` assignments, prefix words, a function head (`function NAME`)
+ * and a case head (`case WORD in PATTERN`); a lone `esac` has none. parse() already splits `name()` and a case arm's
+ * `pattern)` off as commands of their own, so a function or arm body starts a command, and a body runs where it is defined. */
+export function skipPrefix(words: Word[]): number {
   let h = 0;
-  while (h < c.words.length && (ASSIGN.test(c.words[h].raw) || PREFIX.has(c.words[h].raw))) h++;
-  return h;
+  while (h < words.length) {
+    const w = words[h].raw;
+    if (ASSIGN.test(w) || PREFIX.has(w) || w === "esac") h++;
+    else if (w === "function") h += 2;
+    else if (w === "case" && words[h + 2]?.raw === "in") h += 4;
+    else break;
+  }
+  return Math.min(h, words.length);
 }
+
+/** The index of a simple command's head. */
+const headAt = (c: Simple) => skipPrefix(c.words);
 
 /** The word of a simple command that is the executed hub program, or null. */
 function hubWord(c: Simple): Word | null {

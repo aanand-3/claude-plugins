@@ -114,3 +114,41 @@ describe("inlineScript", () => {
     }
   });
 });
+
+describe("cd behind subshells, function heads and case arms (P-058, BUG-012)", () => {
+  it("is tracked (AC4)", () => {
+    for (const cmd of [
+      "( ( cd ~; echo hi > x.md ) )",
+      "f() { cd ~; echo hi > x.md; }; f",
+      "function f { cd ~; echo hi > x.md; }; f",
+      "function f() { cd ~; echo hi > x.md; }; f",
+      "case x in x) cd ~; echo hi > x.md;; esac",
+      "case x in a|b) echo y;; *) cd ~; echo hi > x.md;; esac",
+    ]) expect(paths(cmd), cmd).toEqual(["~/x.md"]);
+  });
+
+  it("harmless forms stay in place (AC4)", () => {
+    expect(paths("( echo hi > x.md )")).toEqual(["x.md"]);
+    expect(paths("f() { echo hi > x.md; }; f")).toEqual(["x.md"]);
+    expect(paths("function f { touch x.md; }; f")).toEqual(["x.md"]);
+    expect(paths("case $x in a) echo hi > x.md;; esac")).toEqual(["x.md"]);
+    expect(paths("case $x in a) rm y.md;; esac")).toEqual(["y.md"]);
+  });
+});
+
+describe("install operands (P-058, BUG-012)", () => {
+  it("install -d creates every operand, install src dest only dest (AC4)", () => {
+    expect(paths("install -d ~/a docs/b")).toEqual(["~/a", "docs/b"]);
+    expect(paths("install --directory docs/a docs/b")).toEqual(["docs/a", "docs/b"]);
+    expect(paths("install src dest")).toEqual(["dest"]);
+    expect(paths("install -m 644 src dest")).toEqual(["dest"]);
+  });
+});
+
+describe("inlineScript behind function heads and case arms (P-058 review)", () => {
+  it("finds the interpreter, and nothing in a harmless body", () => {
+    expect(inlineScript("function f { python3 -c x; }; f")).toBe("python3");
+    expect(inlineScript("case x in x) node -e y;; esac")).toBe("node");
+    expect(inlineScript("function f { echo hi; }; f")).toBeNull();
+  });
+});

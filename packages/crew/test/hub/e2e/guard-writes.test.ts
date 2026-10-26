@@ -4,7 +4,7 @@
 import { mkdirSync, realpathSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { beforeEach, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { Repo } from "../../helpers/repo.js";
 import { init } from "./helpers.js";
 import { agent, bash, hook } from "./sections.js";
@@ -104,4 +104,10 @@ it("heredoc bodies and quoted text are not write targets", () => {
   expect(run("crew-developer", "cat > /tmp/x.ts <<'EOF'\nconst f = (a) => a > b;\necho > ~/x\nEOF")).toBeNull();
   expect(allowed("crew-developer", 'node .crew/bin/crew.mjs log P-001 "wrote > ~/x"').updatedInput.command)
     .toBe('node .crew/bin/crew.mjs --as developer --run-id developer:a1 log P-001 "wrote > ~/x"');
+});
+
+describe("inline scripts behind function heads (P-058 review)", () => {
+  it("are refused for a drafts-only role", () => {
+    denied("crew-qa", 'function f { python3 -c "open(1)"; }; f', "inline", "(paths.write)");
+  });
 });
