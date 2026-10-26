@@ -5,11 +5,11 @@ goal: G-007
 items: FEAT-045
 touches: packages/crew/src/hub/commands/work/planning.ts, packages/crew/src/hub/core/team/policy.ts, packages/crew/test/hub/e2e/policy.test.ts, plugins/crew/skills/hub/references/model.md, plugins/crew/skills/team/SKILL.md
 depends_on:
-status: ready
+status: in-progress
 branch: plan/P-048-notify-the-human-when-a-goal-waits
 pr:
 created: 2026-10-25
-started:
+started: 2026-10-26
 completed:
 assignee: developer
 ---
@@ -69,5 +69,6 @@ n/a — off unless a project's `notify.on` lists `goal-approval`. Ships in the b
 
 - 2026-10-25: status draft → ready — Architect: specced (ACs, tasks, test plan, exact touches)
 - 2026-10-26: assigned to the developer role
+- 2026-10-26: status ready → in-progress — branch plan/P-048-notify-the-human-when-a-goal-waits
 
 ## Outcome
