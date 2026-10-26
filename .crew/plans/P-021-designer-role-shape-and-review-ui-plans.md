@@ -11,6 +11,7 @@ pr:
 created: 2026-10-24
 started:
 completed:
+assignee: developer
 ---
 
 # P-021: Designer role: shape and review UI plans
@@ -98,5 +99,6 @@ This plan adds a built-in `designer` role that shapes a UI plan before it is bui
 
 - 2026-10-24: status draft → ready
 - 2026-10-25: Architect: depends_on P-031, P-032 added (presets.ts, model.ts, config.yaml); e2e, hub-skill, test/tools and design-skill globs narrowed to exact files
+- 2026-10-26: assigned to the developer role
 
 ## Outcome
