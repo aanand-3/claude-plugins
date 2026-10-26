@@ -2,9 +2,9 @@
 id: CHORE-028
 type: chore
 title: Architect ADRs in docs/adr are never committed or reviewed
-status: new
-priority:
-goal:
+status: triaged
+priority: P3
+goal: G-001
 plan:
 created: 2026-10-26
 closed:
@@ -19,3 +19,4 @@ architect.md:25 tells the Architect to write an ADR in docs/adr/ for stack or ar
 - [ ]
 
 ## Notes
+- 2026-10-26: status new → triaged — priority P3
