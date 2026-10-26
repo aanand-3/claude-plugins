@@ -11,6 +11,7 @@ pr:
 created: 2026-10-26
 started:
 completed:
+assignee: developer
 ---
 
 # P-058: Guard cd tracking covers spaced subshells, functions and case arms
@@ -73,5 +74,6 @@ Ships in the bundle; the guard reaches this repo through refresh-bin. Rollback: 
 ## Progress log
 
 - 2026-10-26: status draft → ready
+- 2026-10-26: assigned to the developer role
 
 ## Outcome
