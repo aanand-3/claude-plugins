@@ -5,7 +5,7 @@ goal:
 items: BUG-043
 touches: packages/crew/src/hub/commands/team/guard.ts, packages/crew/test/hub/e2e/guard.test.ts, plugins/crew/skills/hub/SKILL.md
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-065-only-crew-agents-act-in-a-crew-role
 pr:
 created: 2026-10-26
@@ -102,9 +102,9 @@ and subagents that aren't crew agents act as the executive: the guard refuses th
 ## Design
 
 ## Tasks
-- [ ] T1: Regression test in `test/hub/e2e/guard.test.ts`, `it("callers that aren't crew agents can't claim a role (BUG-043)")`, covering AC1–AC4 for `who` in `[null, "Explore"]` (via `hook()` and `bash()`; `init(repo)` first), asserting the denied reasons' key words → verify: `npm run build`, then `npx vitest run test/hub/e2e/guard.test.ts -t "BUG-043"` fails on the current guard.ts (the AC1 repro returns null).
-- [ ] T2: Add `unclaimed()` to `guard.ts` and call it at both early returns; update the header comment → verify: `npm run build`, then `npx vitest run test/hub/e2e/guard.test.ts test/hub/e2e/guard-writes.test.ts` pass; `wc -l src/hub/commands/team/guard.ts` under 300.
-- [ ] T3: Update the SKILL.md sentence (AC6) → verify: `grep -n "main session" plugins/crew/skills/hub/SKILL.md` shows the new wording; `npx vitest run test/docs.test.ts` passes.
+- [x] T1: Regression test in `test/hub/e2e/guard.test.ts`, `it("callers that aren't crew agents can't claim a role (BUG-043)")`, covering AC1–AC4 for `who` in `[null, "Explore"]` (via `hook()` and `bash()`; `init(repo)` first), asserting the denied reasons' key words → verify: `npm run build`, then `npx vitest run test/hub/e2e/guard.test.ts -t "BUG-043"` fails on the current guard.ts (the AC1 repro returns null).
+- [x] T2: Add `unclaimed()` to `guard.ts` and call it at both early returns; update the header comment → verify: `npm run build`, then `npx vitest run test/hub/e2e/guard.test.ts test/hub/e2e/guard-writes.test.ts` pass; `wc -l src/hub/commands/team/guard.ts` under 300.
+- [x] T3: Update the SKILL.md sentence (AC6) → verify: `grep -n "main session" plugins/crew/skills/hub/SKILL.md` shows the new wording; `npx vitest run test/docs.test.ts` passes.
 
 ## Test plan
 **Targeted checks:** (in the plan worktree, `cd packages/crew`; `npm ci --prefer-offline` first in a fresh worktree;
@@ -134,9 +134,8 @@ already launches role agents instead (team SKILL.md uses only `--as executive`).
 
 _Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
 
-- P-065: Only crew agents act in a crew role [in-progress] tasks 0/3 — claimed by Arpit Anand (developer:a67bd3212d31b5186)
+- P-065: Only crew agents act in a crew role [in-review] tasks 3/3 — claimed by Arpit Anand (developer:a67bd3212d31b5186)
 - last checkpoint 2026-10-26 13:58 at T3 (8040e12) by Arpit Anand; since then 0 commit(s), 2 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs
-- next: T1: Regression test in `test/hub/e2e/guard.test.ts`, `it("callers that aren't crew agents can't claim a role (BUG-043)")`, covering AC1–AC4 for `who` in `[null, "Explore"]` (via `hook()` and `bash()`; `init(repo)` first), asserting the denied reasons' key words → verify: `npm run build`, then `npx vitest run test/hub/e2e/guard.test.ts -t "BUG-043"` fails on the current guard.ts (the AC1 repro returns null).
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —
 
 Latest log:
@@ -149,5 +148,13 @@ Latest log:
 - 2026-10-26: status draft → ready
 - 2026-10-26: assigned to the developer role
 - 2026-10-26: status ready → in-progress — branch plan/P-065-only-crew-agents-act-in-a-crew-role
+- 2026-10-26: status in-progress → in-review — T1-T3 done. Branch predates P-063 on main; no overlapping hunks in guard.ts
 
 ## Outcome
+
+The main session and subagents that aren't crew agents now go through `unclaimed()` in `guard.ts`: a hub call claiming
+another role (`--as`), a run (`--run-id`), `CREW_ROLE/RUN/ACTOR/TEAM=` or MCP `as`/`run_id` is refused with a reason
+pointing at the role's agent; `--as executive` and plain calls pass. SKILL.md says so. The branch was cut before P-063
+landed on main; the two changes touch different hunks of guard.ts.
+
+Learnings: none
