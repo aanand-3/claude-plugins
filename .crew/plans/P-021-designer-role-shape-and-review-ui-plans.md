@@ -61,7 +61,7 @@ This plan adds a built-in `designer` role that shapes a UI plan before it is bui
 
 ## Tasks
 - [x] T1: Add the `designer` role, the `plan.design-reviewed` gate in the lifecycle preset, and `isUiPlan` from `design.ui_paths` → verify: `policy show` lists the gate; unit test for `isUiPlan` (overlap, no overlap, no `ui_paths`) (AC1 part)
-- [ ] T2: `## Design` in the Definition of Ready for UI plans, plus the optional section in the plan template → verify: e2e test for AC2
+- [x] T2: `## Design` in the Definition of Ready for UI plans, plus the optional section in the plan template → verify: e2e test for AC2
 - [ ] T3: `review --design` and the design part of done (`reviewProblems` by kind, staleness, implementer and role checks), in CLI and MCP → verify: e2e tests for AC3 and AC4
 - [ ] T4: The designer's queue in `roles.ts` and the `designer.md` agent template → verify: e2e test for `next --role designer` ordering; `agents` renders it and `agents --check` is clean in a sandbox (AC1)
 - [ ] T5: `layout_sweep.ts` → `plugins/crew/skills/design/scripts/layout_sweep.mjs` (CDP over undici, own `ui` server or `--url`, widths × themes × routes, exit 0/1/2), registered in `TOOLS` in `packages/crew/build.mjs` → verify: new `test/tools/layout-sweep.test.ts` against a sandbox hub with and without the planted overflow and sideways scroll, skipped with a visible reason when no browser is found (AC5, AC6); `npm run build` and `git diff --exit-code -- plugins/crew/skills` clean
