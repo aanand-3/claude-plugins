@@ -5,7 +5,7 @@ goal: G-006
 items: CHORE-016
 touches: plugins/crew/skills/hub/references/model.md, plugins/crew/skills/hub/SKILL.md, docs/vision.md
 depends_on:
-status: in-review
+status: accepted
 branch: plan/P-069-fix-stale-hub-references-in-model-md-hub
 pr:
 created: 2026-10-26
@@ -132,6 +132,7 @@ Latest log:
 - 2026-10-26: status accepted → in-progress — land: hub.build failed (exit 1):     at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:610:35) ·     at ModuleJob.syncLink (node:internal/modules/esm/module_job:277:33) { ·   code: 'ERR_MODULE_NOT_FOUND' · } · Node.js v26.5.0
 - 2026-10-26: Land bounce cause: packages/crew/node_modules missing in the plan worktree, so build.mjs could not import 'esbuild' (ERR_MODULE_NOT_FOUND). Ran npm ci --prefer-offline in the worktree's packages/crew (185 packages; allow-scripts warned esbuild/fsevents install scripts not run, build works regardless). npm run build now succeeds and leaves 0 uncommitted files. No code change.
 - 2026-10-26: status in-progress → in-review
+- 2026-10-26: status in-review → accepted
 
 ## Outcome
 Shipped (docs only: model.md, hub SKILL.md, docs/vision.md):
