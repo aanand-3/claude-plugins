@@ -82,20 +82,24 @@ Ships in the bundle; reaches this repo through refresh-bin. Rollback: revert the
 
 _Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
 
-- P-056: Guard labels every agent command [in-review] tasks 5/5 — claimed by Arpit Anand (developer:a903b303fd5033b36)
-- last checkpoint 2026-10-26 08:23 at T3 (8aa8f85) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
+- P-056: Guard labels every agent command [in-progress] tasks 5/5 — claimed by Arpit Anand (developer:a903b303fd5033b36)
+- last checkpoint 2026-10-26 08:52 at T5 (21bcad0) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
 - ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-056-guard-labels-every-agent-command/packages/crew && npx vitest run test/activity.test.ts -t label (AC 2)
 - ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-056-guard-labels-every-agent-command/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/guard.test.ts -t label ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-056-guard-labels-every-agent-command checkout -- plugins/crew/skills/hub/dist plugins/crew/skills/hub/references/commands.md plugins/crew/docs; exit $r (AC 1)
 - ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-056-guard-labels-every-agent-command/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/activity.test.ts test/hub/e2e/activity.test.ts ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-056-guard-labels-every-agent-command checkout -- plugins/crew/skills/hub/dist plugins/crew/skills/hub/references/commands.md plugins/crew/docs; exit $r (AC 4)
 - ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-056-guard-labels-every-agent-command/packages/crew && npm run typecheck && npm run build >/dev/null 2>&1 ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-056-guard-labels-every-agent-command checkout -- plugins/crew/skills/hub/dist plugins/crew/skills/hub/references/commands.md plugins/crew/docs; exit $r (AC 5)
 - ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-056-guard-labels-every-agent-command/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/guard.test.ts test/hub/e2e/guard-writes.test.ts ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-056-guard-labels-every-agent-command checkout -- plugins/crew/skills/hub/dist plugins/crew/skills/hub/references/commands.md plugins/crew/docs; exit $r (AC 3)
 - ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-056-guard-labels-every-agent-command/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/activity.test.ts test/hub/e2e/activity.test.ts test/hub/e2e/live-ui.test.ts ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-056-guard-labels-every-agent-command checkout -- plugins/crew/skills/hub/dist plugins/crew/skills/hub/references/commands.md plugins/crew/docs; exit $r (AC 4)
-- evidence: AC1 ✓ (self), AC2 ✓ (self), AC3 ✓ (self), AC4 ✓ (self), AC5 ✓ (self)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-056-guard-labels-every-agent-command/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/guard.test.ts test/hub/e2e/guard-writes.test.ts test/activity.test.ts test/hub/e2e/activity.test.ts ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-056-guard-labels-every-agent-command checkout -- plugins/crew/skills/hub/dist plugins/crew/skills/hub/references/commands.md plugins/crew/docs; exit $r (AC 1,2,3,4)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-056-guard-labels-every-agent-command/packages/crew && npm run typecheck >/dev/null 2>&1 && wc -l src/hub/commands/team/guard.ts src/hub/core/memory/activity.ts && test $(wc -l < src/hub/commands/team/guard.ts) -lt 300 && test $(wc -l < src/hub/core/memory/activity.ts) -lt 300 (AC 5)
+- ✓ Manual UI part of AC4: built hub from the worktree, scratch sample project, two Bash PostToolUse events fed to 'activity --hook' (one with a description, one without); the feed stores label on each ('developer P-006: build and run the check-in tests' and a derived 'developer P-006: npm run build + vitest a.test.ts'); /api/activity returns label for running and recent; the served UI Overview (port 8791, 1280 px, full-size screenshot) shows the labels in both Running now and Recent activity instead of 'Bash npm'. POST-LAND (not done): whether Claude Code's own task list shows the rewritten description, since the live guard runs from .crew/bin, which gets this build only after land. (AC 4) (reported)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-056-guard-labels-every-agent-command/packages/crew && npm run typecheck && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/guard.test.ts test/hub/e2e/guard-writes.test.ts test/hub/targets.test.ts test/hub/hubcall.test.ts test/activity.test.ts test/hub/e2e/activity.test.ts test/hub/e2e/live-ui.test.ts ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-056-guard-labels-every-agent-command checkout -- plugins/crew/skills/hub/dist plugins/crew/skills/hub/references/commands.md plugins/crew/docs; exit $r (AC 1)
+- evidence: AC1 ✓ (self), AC2 ✓, AC3 ✓, AC4 ✓, AC5 ✓
 
 Latest log:
-- 2026-10-26: status draft → ready
-- 2026-10-26: assigned to the developer role
-- 2026-10-26: status ready → in-progress — branch plan/P-056-guard-labels-every-agent-command
+- 2026-10-26: status in-progress → in-review
+- 2026-10-26: status in-review → accepted
+- 2026-10-26: status accepted → in-progress — land: merging main conflicts in packages/crew/test/hub/e2e/guard.test.ts
 
 ## Progress log
 
