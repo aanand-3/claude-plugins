@@ -5,11 +5,11 @@ goal: G-007
 items: FEAT-048, BUG-037
 touches: packages/crew/src/hub/commands/work/backlog.ts, packages/crew/src/hub/commands/work/backlog.reg.ts, packages/crew/src/hub/core/team/policy.ts, packages/crew/src/hub/core/team/presets.ts, packages/crew/scripts/sample-project.mjs, plugins/crew/skills/hub/agents/pm.md, plugins/crew/skills/hub/references/model.md, plugins/crew/docs/reference.md, plugins/crew/docs/policy.md, packages/crew/test/hub/e2e/goal-links.test.ts, packages/crew/test/hub/e2e/basics.test.ts, packages/crew/test/hub/e2e/dispatch.test.ts, packages/crew/test/hub/e2e/doctor.test.ts, packages/crew/test/hub/e2e/items.test.ts, packages/crew/test/hub/e2e/sparse-worktrees.test.ts, packages/crew/test/hub/e2e/worktrees.test.ts, packages/crew/test/hub/e2e/runner.test.ts, packages/crew/test/hub/e2e/policy.test.ts, packages/crew/test/hub-worktrees.test.ts, packages/crew/test/mcp.test.ts, packages/crew/test/hub/registry.test.ts
 depends_on:
-status: ready
+status: in-progress
 branch: plan/P-055-triage-owns-goal-links
 pr:
 created: 2026-10-26
-started:
+started: 2026-10-26
 completed:
 assignee: developer
 ---
@@ -107,5 +107,6 @@ FEAT-048 and BUG-037 (G-007). Goal links should be decided at triage, not captur
 - 2026-10-26: status draft → ready
 - 2026-10-26: Architect: spec updated for the executive's rule 1 (Q-fcec4f): items record origin (--origin, plan worktree, single claim), --goal is a Notes hint, triage suggests the origin's goal (AC1, AC1b, Approach, T1). Rules 2-5 unchanged; touches unchanged.
 - 2026-10-26: assigned to the developer role
+- 2026-10-26: status ready → in-progress — branch plan/P-055-triage-owns-goal-links
 
 ## Outcome

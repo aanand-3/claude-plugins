@@ -3,7 +3,7 @@ id: P-056
 title: Guard labels every agent command
 goal: G-007
 items: FEAT-050
-touches: packages/crew/src/hub/commands/team/guard.ts, packages/crew/src/hub/core/memory/activity.ts, packages/crew/src/hub/commands/team/activity.ts, packages/crew/ui/src/api.ts, packages/crew/ui/src/components/LivePanel.tsx, packages/crew/test/activity.test.ts, packages/crew/test/hub/e2e/activity.test.ts, packages/crew/test/hub/e2e/guard.test.ts, packages/crew/test/hub/e2e/guard-writes.test.ts
+touches: packages/crew/src/hub/commands/team/guard.ts, packages/crew/src/hub/core/memory/activity.ts, packages/crew/src/hub/commands/team/activity.ts, packages/crew/ui/src/api.ts, packages/crew/ui/src/components/LivePanel.tsx, packages/crew/test/activity.test.ts, packages/crew/test/hub/e2e/activity.test.ts, packages/crew/test/hub/e2e/guard.test.ts, packages/crew/test/hub/e2e/guard-writes.test.ts, packages/crew/test/hub/e2e/live-ui.test.ts
 depends_on:
 status: in-progress
 branch: plan/P-056-guard-labels-every-agent-command
