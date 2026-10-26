@@ -5,7 +5,7 @@ goal:
 items: BUG-049
 touches: packages/crew/test/setup/sample.ts, packages/crew/test/view.test.ts, packages/crew/test/mcp.test.ts
 depends_on:
-status: draft
+status: ready
 branch: plan/P-077-give-the-sample-project-test-setups
 pr:
 created: 2026-10-26
@@ -121,5 +121,7 @@ reverting the plan.
 ## Handoff
 
 ## Progress log
+
+- 2026-10-26: status draft → ready
 
 ## Outcome
