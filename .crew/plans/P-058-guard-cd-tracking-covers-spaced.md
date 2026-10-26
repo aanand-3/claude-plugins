@@ -5,7 +5,7 @@ goal: G-007
 items: BUG-012
 touches: packages/crew/src/hub/commands/team/hubcall.ts, packages/crew/src/hub/commands/team/targets.ts, packages/crew/test/hub/targets.test.ts, packages/crew/test/hub/hubcall.test.ts, packages/crew/test/hub/e2e/guard.test.ts, packages/crew/test/hub/e2e/guard-writes.test.ts
 depends_on:
-status: in-review
+status: accepted
 branch: plan/P-058-guard-cd-tracking-covers-spaced
 pr:
 created: 2026-10-26
@@ -95,6 +95,7 @@ Latest log:
 - 2026-10-26: review: changes requested — The cd tracking, install -d and the tests are right. The first limit is acceptable: a case pattern named cd reads as a bare cd, which fails toward deny. The second needs doing now. inlineScript (targets.ts) is the paths.write rule for roles limited to .crew/drafts/ (BUG-021). It still has its own prefix loop, so 'function f { python3 -c "<writes>"; }; f' hides an inline script from that rule. That lets a drafts-only role write anywhere, the same class of hole as BUG-012, in a file already in touches. Fix: in inlineScript's loop, after the WRAPPER branch, skip with skipPrefix instead of the ASSIGN/PREFIX test: s = skipPrefix(c.words.slice(h)); if s is 0 break, else h += s. Then wrappers and prefixes can still interleave. Add unit cases in targets.test.ts's inlineScript block: 'function f { python3 -c x; }; f' and 'case x in x) node -e y;; esac' return the interpreter, and 'function f { echo hi; }; f' returns null. Add one e2e case in guard-writes.test.ts: a drafts-only role (e.g. qa) running 'function f { python3 -c "open(1)"; }; f' is denied with the inline-script message.
 - 2026-10-26: status in-review → in-progress — changes requested: The cd tracking, install -d and the tests are right. The first limit is acceptable: a case pattern named cd reads as a bare cd, which fails toward deny. The second needs doing now. inlineScript (targets.ts) is the paths.write rule for roles limited to .crew/drafts/ (BUG-021). It still has its own prefix loop, so 'function f { python3 -c "<writes>"; }; f' hides an inline script from that rule. That lets a drafts-only role write anywhere, the same class of hole as BUG-012, in a file already in touches. Fix: in inlineScript's loop, after the WRAPPER branch, skip with skipPrefix instead of the ASSIGN/PREFIX test: s = skipPrefix(c.words.slice(h)); if s is 0 break, else h += s. Then wrappers and prefixes can still interleave. Add unit cases in targets.test.ts's inlineScript block: 'function f { python3 -c x; }; f' and 'case x in x) node -e y;; esac' return the interpreter, and 'function f { echo hi; }; f' returns null. Add one e2e case in guard-writes.test.ts: a drafts-only role (e.g. qa) running 'function f { python3 -c "open(1)"; }; f' is denied with the inline-script message.
 - 2026-10-26: status in-progress → in-review
+- 2026-10-26: status in-review → accepted
 
 ## Outcome
 `skipPrefix(words)` in hubcall.ts now skips assignments, prefix words (plus a lone `(`), `function NAME`, `case WORD in PATTERN` and a lone `esac`. `headAt` (the hub-call finder) and `writeTargets` both use it. `install -d`/`--directory` checks every operand. Unit cases cover AC4/AC5, and the guard e2e block `guard_cd_forms` covers AC1–AC3 from a plan worktree.
