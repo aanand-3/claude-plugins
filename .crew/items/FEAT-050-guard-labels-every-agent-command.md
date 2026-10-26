@@ -2,12 +2,12 @@
 id: FEAT-050
 type: feat
 title: Guard labels every agent command
-status: triaged
+status: done
 priority: P2
 goal: G-007
 plan: P-056
 created: 2026-10-26
-closed:
+closed: 2026-10-26
 ---
 
 # FEAT-050: Guard labels every agent command
@@ -31,3 +31,4 @@ As the executive watching agents live (G-007's outcome), I want every agent comm
 - Approved in principle by the executive via the coordinator, 2026-10-26 ("yes, lets do it").
 - The architect decides what counts as "long" and which commands the derivation recognises.
 - 2026-10-26: status new → triaged — priority P2
+- 2026-10-26: status triaged → done — delivered by P-056

@@ -5,12 +5,12 @@ goal: G-007
 items: FEAT-050
 touches: packages/crew/src/hub/commands/team/guard.ts, packages/crew/src/hub/core/memory/activity.ts, packages/crew/src/hub/commands/team/activity.ts, packages/crew/ui/src/api.ts, packages/crew/ui/src/components/LivePanel.tsx, packages/crew/test/activity.test.ts, packages/crew/test/hub/e2e/activity.test.ts, packages/crew/test/hub/e2e/guard.test.ts, packages/crew/test/hub/e2e/guard-writes.test.ts, packages/crew/test/hub/e2e/live-ui.test.ts, packages/crew/test/hub-worktrees.test.ts, packages/crew/test/hub/e2e/playbook-home.test.ts
 depends_on:
-status: accepted
+status: done
 branch: plan/P-056-guard-labels-every-agent-command
 pr:
 created: 2026-10-26
 started: 2026-10-26
-completed:
+completed: 2026-10-26
 assignee: developer
 ---
 
@@ -119,6 +119,7 @@ Latest log:
 - 2026-10-26: status in-review → accepted
 - 2026-10-26: landed on main as bbb37ec
 - 2026-10-26: released: ships in the bundle, .crew/bin already up to date via refresh-bin; no further rollout
+- 2026-10-26: status accepted → done
 
 ## Outcome
 The guard now labels every allowed crew-agent Bash call `<role> <plan>: <what>` (identity flags still injected) and refuses a background or >120 s call with no description. `deriveWhat`/`label` live in core/memory/activity.ts, and `describe` also takes the plan from a worktree path in the command. The activity hook records `label` on Bash events, and `watch`, `status` Running now, `/api/activity` and the UI Live panel show it, falling back to `tool target`. guard.ts is 217 lines, activity.ts 235. live-ui.test.ts was added to touches (Q-2f4b62).
