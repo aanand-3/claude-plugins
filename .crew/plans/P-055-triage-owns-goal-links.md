@@ -74,11 +74,11 @@ FEAT-048 and BUG-037 (G-007). Goal links should be decided at triage, not captur
 - backlog.ts is 119 lines and stays under 300.
 
 ## Tasks
-- [ ] T1: Capture with origin, not goal (`newItem`, `itemOrigin`, `--origin` and its usage line), the triage suggestion, and the bug capture rule → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/goal-links.test.ts -t "capture"`. Cases: origin from the worktree, from the claim, from `--origin`, none; goal hint in Notes; triage suggestion from the origin and from the hint (AC1, AC1b, AC2)
-- [ ] T2: `relink`, `parseGoal`, triage's goal handling (BUG-037) → verify: `npx vitest run test/hub/e2e/goal-links.test.ts -t "triage"` (AC3, AC4 triage part)
-- [ ] T3: `regoal` command, MCP tool, `ACTIONS`, preset gates; `regoal` added to `test/mcp.test.ts`'s sorted tool list → verify: `npx vitest run test/hub/e2e/goal-links.test.ts -t "regoal" test/mcp.test.ts test/hub/registry.test.ts test/hub/e2e/policy.test.ts`; `git diff --quiet main -- test/hub/registry-before.json` (AC4–AC7)
-- [ ] T4: Existing tests and `sample-project.mjs` moved to the new rules → verify: `npx vitest run test/hub/e2e/basics.test.ts test/hub/e2e/dispatch.test.ts test/hub/e2e/doctor.test.ts test/hub/e2e/items.test.ts test/hub/e2e/sparse-worktrees.test.ts test/hub/e2e/worktrees.test.ts test/hub/e2e/runner.test.ts test/hub-worktrees.test.ts test/view.test.ts test/mcp.test.ts`
-- [ ] T5: Docs and templates (`model.md`, `pm.md`, regenerated `reference.md` and `policy.md`) → verify: `npx vitest run test/docs.test.ts test/hub/e2e/agents.test.ts`; read the PM template and model.md against AC7
+- [x] T1: Capture with origin, not goal (`newItem`, `itemOrigin`, `--origin` and its usage line), the triage suggestion, and the bug capture rule → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/goal-links.test.ts -t "capture"`. Cases: origin from the worktree, from the claim, from `--origin`, none; goal hint in Notes; triage suggestion from the origin and from the hint (AC1, AC1b, AC2)
+- [x] T2: `relink`, `parseGoal`, triage's goal handling (BUG-037) → verify: `npx vitest run test/hub/e2e/goal-links.test.ts -t "triage"` (AC3, AC4 triage part)
+- [x] T3: `regoal` command, MCP tool, `ACTIONS`, preset gates; `regoal` added to `test/mcp.test.ts`'s sorted tool list → verify: `npx vitest run test/hub/e2e/goal-links.test.ts -t "regoal" test/mcp.test.ts test/hub/registry.test.ts test/hub/e2e/policy.test.ts`; `git diff --quiet main -- test/hub/registry-before.json` (AC4–AC7)
+- [x] T4: Existing tests and `sample-project.mjs` moved to the new rules → verify: `npx vitest run test/hub/e2e/basics.test.ts test/hub/e2e/dispatch.test.ts test/hub/e2e/doctor.test.ts test/hub/e2e/items.test.ts test/hub/e2e/sparse-worktrees.test.ts test/hub/e2e/worktrees.test.ts test/hub/e2e/runner.test.ts test/hub-worktrees.test.ts test/view.test.ts test/mcp.test.ts`
+- [x] T5: Docs and templates (`model.md`, `pm.md`, regenerated `reference.md` and `policy.md`) → verify: `npx vitest run test/docs.test.ts test/hub/e2e/agents.test.ts`; read the PM template and model.md against AC7
 
 ## Test plan
 **Targeted checks** (from `packages/crew/`; the e2e suites drive the built bundles: `npm run build` first, then `git checkout -- plugins/crew/skills/hub/dist plugins/crew/skills/hub/references/commands.md`):
@@ -102,6 +102,17 @@ FEAT-048 and BUG-037 (G-007). Goal links should be decided at triage, not captur
 
 ## Handoff
 
+_Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
+
+- P-055: Triage owns goal links [in-progress] tasks 5/5 — claimed by Arpit Anand (developer:ae7abfea7422550fc)
+- last checkpoint 2026-10-26 08:58 at T5 (a47f0a8) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
+- evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —, AC7 —, AC8 —
+
+Latest log:
+- 2026-10-26: Architect: spec updated for the executive's rule 1 (Q-fcec4f): items record origin (--origin, plan worktree, single claim), --goal is a Notes hint, triage suggests the origin's goal (AC1, AC1b, Approach, T1). Rules 2-5 unchanged; touches unchanged.
+- 2026-10-26: assigned to the developer role
+- 2026-10-26: status ready → in-progress — branch plan/P-055-triage-owns-goal-links
+
 ## Progress log
 
 - 2026-10-26: status draft → ready
@@ -110,3 +121,5 @@ FEAT-048 and BUG-037 (G-007). Goal links should be decided at triage, not captur
 - 2026-10-26: status ready → in-progress — branch plan/P-055-triage-owns-goal-links
 
 ## Outcome
+Capture records origin, not goal: `new-item` sets `origin:` (`--origin`, the plan branch it runs on, or the run's single open plan claim) and keeps `--goal` as a `goal hint` Notes line; bugs need Steps to reproduce, Expected and Actual; `triage` prints the suggested goal and can clear (`--goal none`/`""`) or change a goal as a noted, logged re-goal (BUG-037 fixed). New `regoal` CLI command and MCP tool, gated by `item.regoaled`/`plan.regoaled` (pm in the lifecycle preset; the executive and a human in no role pass), with frozen-work and plan-moves-whole rules. Beyond the spec: `diagrams.ts` STEP_NOTES and `plan-lifecycle.md` (Q-cf70a3), the `docs.test.ts` offFlowSteps pin (Q-5764d6), and intake triage at capture now leaves an item new with a note when the capturing run's role isn't `item.triaged`'s gate role (a developer filing an S1 bug used to fail the whole capture once bugs could pass the triage gate at intake).
+Learnings: the role-gate check in `authorize` refuses a run in no role, so a gate meant for "the role, the executive or a human" passes `also: ["executive", ""]`; and a generated docs block (plan-steps) lists every off-flow role gate, so a new gated action needs a STEP_NOTES line and touches on diagrams.ts and plan-lifecycle.md.
