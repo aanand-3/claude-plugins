@@ -167,14 +167,20 @@ ignored by the old runner and can be deleted.
 
 _Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
 
-- P-066: Runner lock and idle mode [in-review] tasks 6/6 — claimed by Arpit Anand (developer:a90435617251059e2)
-- last checkpoint 2026-10-26 14:30 at T6 (8f81673) by Arpit Anand; since then 0 commit(s), 3 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs, plugins/crew/skills/hub/references/commands.md
-- evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —, AC7 —, AC8 —, AC9 —, AC10 —, AC11 —, AC12 —
+- P-066: Runner lock and idle mode [in-progress] tasks 5/6 — claimed by Arpit Anand (developer:a90435617251059e2)
+- last checkpoint 2026-10-26 15:46 at T1 (483709a) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
+- ✓ npm run --prefix /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-066-runner-lock-and-idle-mode/packages/crew test -- test/hub/lock.test.ts (AC 2)
+- ✓ npm run --prefix /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-066-runner-lock-and-idle-mode/packages/crew test -- test/hub/e2e/suite.test.ts (AC 11)
+- ✓ npm run --prefix /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-066-runner-lock-and-idle-mode/packages/crew test -- test/hub/e2e/runner.test.ts (AC 1,3,4,5,6,7,8,9,10,12)
+- ✓ npm run --prefix /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-066-runner-lock-and-idle-mode/packages/crew test -- test/hub/e2e/team-2.test.ts test/hub/registry.test.ts (AC 9)
+- ✓ npm run --prefix /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-066-runner-lock-and-idle-mode/packages/crew typecheck (AC 12)
+- next: T1: Extract `core/lock.ts` from suite.ts (with `processStart`, `machineId`); suite.ts uses it; add `test/hub/lock.test.ts`; `lock.ts` stays loose in `hub/core/` (a domain-neutral primitive like git.ts and store.ts), so add it to the loose-module allow-list in `test/structure.test.ts` ("hub sources sit in their domain folders") → verify: `npx vitest run test/hub/lock.test.ts test/hub/e2e/suite.test.ts test/structure.test.ts` green (AC11).
+- evidence: AC1 ✓, AC2 ✓, AC3 ✓, AC4 ✓, AC5 ✓, AC6 ✓, AC7 ✓, AC8 ✓, AC9 ✓, AC10 ✓, AC11 ✓, AC12 ✓
 
 Latest log:
-- 2026-10-26: status draft → ready
-- 2026-10-26: assigned to the developer role
-- 2026-10-26: status ready → in-progress — branch plan/P-066-runner-lock-and-idle-mode
+- 2026-10-26: status in-progress → in-review
+- 2026-10-26: status in-review → accepted
+- 2026-10-26: status accepted → in-progress — land: hub.full_suite failed (exit 1):      41|   expect(loose("hub/core/").sort()).toEqual(["git.ts", "store.ts", "te… ·        |                                     ^ ·      42| }); ·      43| · ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 
 ## Progress log
 
