@@ -5,7 +5,7 @@ title: QA scratch scripts get a per-plan scratch folder that is never committed 
 status: triaged
 priority: P3
 goal: G-007
-plan:
+plan: P-068
 created: 2026-10-26
 closed:
 ---
