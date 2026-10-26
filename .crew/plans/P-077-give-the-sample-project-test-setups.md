@@ -124,15 +124,23 @@ reverting the plan.
 _Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
 
 - P-077: Give the sample-project test setups a hang deadline, not a 120 s load limit [in-review] tasks 2/3 — claimed by Arpit Anand (developer:adad9c24955ccc5a8)
-- last checkpoint 2026-10-26 15:16 at T3 (36c2774) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
+- last checkpoint 2026-10-26 15:20 at T3 (36c2774) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
+- ✗ npm run typecheck (AC 5) — npm error A complete log of this run can be found in: /Users/aanand/.npm/_logs/2026-10-26T15_18_43_927Z-debug-0.log
+- ✓ cd packages/crew && npm run typecheck (AC 5)
+- ✓ cd packages/crew && grep -c 'SAMPLE_BUILD_MS = 600_000' test/setup/sample.ts && grep -c 'SAMPLE_HOOK_MS = 660_000' test/setup/sample.ts && grep -c 'timeout: SAMPLE_BUILD_MS' test/setup/sample.ts (AC 1)
+- ✓ cd packages/crew && test "$(grep -rln 'sample-project.mjs' test)" = test/setup/sample.ts && ! grep -n '120_000' test/view.test.ts test/mcp.test.ts && grep -n -B1 -A8 'buildSample(' test/view.test.ts test/mcp.test.ts (AC 2)
+- ✓ Read view.test.ts and mcp.test.ts: both first beforeAll call buildSample and end with SAMPLE_HOOK_MS (view line 19, mcp line 42); no 120_000 left (AC 2) (reported)
+- ✓ cd packages/crew && npx vitest run test/view.test.ts test/mcp.test.ts (AC 3)
+- ✗ cd packages/crew && for i in $(seq 16); do timeout 400 node -e 'for(;;);' & done; /usr/bin/time -p node scripts/sample-project.mjs /tmp/p077-load/habitly ../../plugins/crew/skills/hub/dist/crew.mjs; kill $(jobs -p) (AC 4) — kill: usage: kill [-s sigspec | -n signum | -sigspec] pid | jobspec ... or kill -l [sigspec]
+- ✗ AC4 NOT RUN: synthetic 16-process load was not completed. My one attempt via checkpoint --run exited 1 before producing usable timing (shell harness error, probably no GNU timeout on macOS; no load established), so the preceding red AC4 entry is a harness failure, not a product failure. Not pass, not reproduced. (AC 4) (reported)
 - don't retry: AC4 procedure: 16 node busy loops, then vitest view.test.ts and timed sample-project.mjs — the permission system (dont-ask mode) denied the command that starts the synthetic load; not worked around
 - next: T3: regression under synthetic load → verify: the AC4 procedure in the Test plan, run once on the branch and once against the base branch's view.test.ts (AC4)
-- evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —
+- evidence: AC1 ✓, AC2 ✓, AC3 ✓, AC4 ✗, AC5 ✓
 
 Latest log:
-- 2026-10-26: status draft → ready
-- 2026-10-26: assigned to the developer role
-- 2026-10-26: status ready → in-progress — branch plan/P-077-give-the-sample-project-test-setups
+- 2026-10-26: QA: AC1,2,3,5 verified at 36c2774; AC4 not run (my one load attempt failed in the shell harness, no timing; developer's was permission-denied). Needs a human-run or a corrected load procedure.
+- 2026-10-26: Developer: no code fix for the red checks. Both are harness failures, not product failures: AC5's red entry ran npm run typecheck from the worktree root (green from packages/crew); AC4's red entry failed in the shell wrapper (no GNU timeout on macOS, kill $(jobs -p) usage error) before any load or timing. No stray busy-loop processes are running (pgrep). AC4 still needs a run of the Test plan procedure (no timeout binary; stop with pkill -f 'for(;;){}') by someone the permission system lets start the 16-process load, or the PM's call to record it as not reproduced. Not retried here: the earlier developer attempt was denied by the permission system.
+- 2026-10-26: PM: AC4 accepted as not reproduced (harness/permission limit; plan risks allow). No human run requested. Red AC5 (worktree root) and AC4 wrapper entries are harness failures, not product failures.
 
 ## Progress log
 
