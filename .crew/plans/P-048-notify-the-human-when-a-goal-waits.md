@@ -5,7 +5,7 @@ goal: G-007
 items: FEAT-045
 touches: packages/crew/src/hub/commands/work/planning.ts, packages/crew/src/hub/core/team/policy.ts, packages/crew/test/hub/e2e/policy.test.ts, plugins/crew/skills/hub/references/model.md, plugins/crew/skills/team/SKILL.md
 depends_on:
-status: in-review
+status: accepted
 branch: plan/P-048-notify-the-human-when-a-goal-waits
 pr:
 created: 2026-10-25
@@ -46,9 +46,9 @@ FEAT-045 (G-007). A new goal is `proposed` (the goal template's status) and wait
 - Tests: a new `it("new-goal notifies goal-approval once per goal")` in test/hub/e2e/policy.test.ts, with team-helpers' `lifecycle`, `LIFECYCLE` and `as`, and helpers' `newGoal`, set up as team-2.test.ts's "notify runs the policy command once per event" does.
 
 ## Tasks
-- [ ] T1: the `goal-approval` kind and its emission in `newGoal` → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/policy.test.ts -t "goal-approval"` (AC1–AC4)
-- [ ] T2: docs → verify: `grep -n "goal-approval" ../../plugins/crew/skills/hub/references/model.md ../../plugins/crew/skills/team/SKILL.md` lists both (AC5); `npx vitest run test/plugin`
-- [ ] T3: types, sizes, the existing notify test → verify: `npm run typecheck`; `wc -l src/hub/commands/work/planning.ts src/hub/core/team/policy.ts` each under 300; `npx vitest run test/hub/e2e/team-2.test.ts -t notify` (AC6)
+- [x] T1: the `goal-approval` kind and its emission in `newGoal` → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/policy.test.ts -t "goal-approval"` (AC1–AC4)
+- [x] T2: docs → verify: `grep -n "goal-approval" ../../plugins/crew/skills/hub/references/model.md ../../plugins/crew/skills/team/SKILL.md` lists both (AC5); `npx vitest run test/plugin`
+- [x] T3: types, sizes, the existing notify test → verify: `npm run typecheck`; `wc -l src/hub/commands/work/planning.ts src/hub/core/team/policy.ts` each under 300; `npx vitest run test/hub/e2e/team-2.test.ts -t notify` (AC6)
 
 ## Test plan
 **Targeted checks** (from `packages/crew/`; the e2e suites drive the built `dist/crew.mjs`: `npm run build` first, then discard the generated output, which Release builds):
@@ -86,6 +86,7 @@ Latest log:
 - 2026-10-26: assigned to the developer role
 - 2026-10-26: status ready → in-progress — branch plan/P-048-notify-the-human-when-a-goal-waits
 - 2026-10-26: status in-progress → in-review — T1-T3 done: goal-approval kind emitted by new-goal, docs, typecheck/sizes; checks pass at checkpoints
+- 2026-10-26: status in-review → accepted
 
 ## Outcome
 Learnings: none
