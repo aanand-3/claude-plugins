@@ -2,13 +2,13 @@
 id: BUG-034
 type: bug
 title: A stopped agent's run stays live for 24h and keeps a director dispatch entry
-status: triaged
+status: done
 severity: S3
 priority: P2
 goal: G-007
 plan: P-053
 created: 2026-10-26
-closed:
+closed: 2026-10-26
 ---
 
 # BUG-034: A stopped agent's run stays live for 24h and keeps a director dispatch entry
@@ -50,3 +50,4 @@ Suggested severity S3 (wrong routing, workaround is to ignore it), priority P2.
 - A test for `liveRuns()`/dispatch: activity for run X on a done plan, no STOPS event, idle > idle_minutes -> no Director entry.
 - 2026-10-26: Completed the report against the code: liveRuns() (core/memory/activity.ts:161-185) ends a run only after 24h or a usage/report event from that run, never checks plan status; dispatch.ts:68-69 turns every idle run into a director entry. qa:af405bc1f1c24a473: last activity 2026-10-25T20:46:14Z, 9 checkpoints, no usage/report; P-034 done 21:03Z, merged 4a124be; dispatch still lists it (53 min at 21:39Z). Suggested S3/P2.
 - 2026-10-26: status new → triaged — priority P2, severity S3
+- 2026-10-26: status triaged → done — delivered by P-053
