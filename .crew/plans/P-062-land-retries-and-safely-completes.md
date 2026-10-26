@@ -97,7 +97,7 @@ n/a — internal change to land's cleanup, shipped in the hub bundle Release reb
 _Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
 
 - P-062: land retries and safely completes a worktree removal that fails early [in-progress] tasks 0/4 — claimed by Arpit Anand (developer:acd4138b45ba70200)
-- last checkpoint 2026-10-26 11:53 at T2 (2d821fd) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
+- last checkpoint 2026-10-26 12:14 at T4 (8c456b7) by Arpit Anand; since then 0 commit(s), 2 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs
 - next: T1: In land.test.ts add the `stuck(r, fails, onRemove = "")` shim beside `finder()`: a `git` first on `r.env.PATH` whose `worktree remove` runs `onRemove` (a shell snippet; `$last` is the path), writes `.DS_Store` into the folder and exits 255 without running the real git for its first `fails` calls (99: always), then execs the real git; every `worktree remove` call appends a line to `<bin>/calls` (`finder()` gets the same counter). Write the tests of the Test plan and run them on P-061's land.ts → verify: the AC1 and AC2/AC5 tests fail (the folder stays); the AC3 keep tests already pass (kept + warning).
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —
 
