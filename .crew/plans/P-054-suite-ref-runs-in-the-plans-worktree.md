@@ -46,10 +46,10 @@ BUG-035 (G-007, S2/P1). `suite --ref P-###` runs `hub.full_suite` in the caller'
 - Tests: suite.test.ts uses its existing repo helpers plus a plan with a worktree (the `start` flow land.test.ts uses for its worktree cases).
 
 ## Tasks
-- [ ] T1: `sha`/`branch` in `SuiteRecord` and `runSuite`; the `suites` text sha → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/suite.test.ts` (AC1 record fields)
-- [ ] T2: `suite --ref P-###` resolves the plan's worktree, the branch fallback and the refusal → verify: `npx vitest run test/hub/e2e/suite.test.ts -t "worktree"`. Cases: from main with a worktree (pwd file in the worktree, record fields); no worktree on another branch (refusal, no record, no slot left); no worktree but on the plan's branch (runs there); no `--ref` (caller's checkout, as before) (AC1, AC2, AC4)
-- [ ] T3: `land`'s tested-sha check → verify: `npx vitest run test/hub/e2e/land.test.ts`. A new case uses a `full_suite` that commits to the plan branch in the worktree (`git commit --allow-empty -m moved`): land stops with AC3's text, the plan stays accepted, main is unchanged. The existing land cases stay green, and a landed plan's suites record has the squashed sha (AC3)
-- [ ] T4: usage line and `suites` tool description → verify: `npx vitest run test/hub/registry.test.ts`; `npm run typecheck`
+- [x] T1: `sha`/`branch` in `SuiteRecord` and `runSuite`; the `suites` text sha → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/suite.test.ts` (AC1 record fields)
+- [x] T2: `suite --ref P-###` resolves the plan's worktree, the branch fallback and the refusal → verify: `npx vitest run test/hub/e2e/suite.test.ts -t "worktree"`. Cases: from main with a worktree (pwd file in the worktree, record fields); no worktree on another branch (refusal, no record, no slot left); no worktree but on the plan's branch (runs there); no `--ref` (caller's checkout, as before) (AC1, AC2, AC4)
+- [x] T3: `land`'s tested-sha check → verify: `npx vitest run test/hub/e2e/land.test.ts`. A new case uses a `full_suite` that commits to the plan branch in the worktree (`git commit --allow-empty -m moved`): land stops with AC3's text, the plan stays accepted, main is unchanged. The existing land cases stay green, and a landed plan's suites record has the squashed sha (AC3)
+- [x] T4: usage line and `suites` tool description → verify: `npx vitest run test/hub/registry.test.ts`; `npm run typecheck`
 
 ## Test plan
 **Targeted checks** (from `packages/crew/`; the e2e suites drive the built `dist/crew.mjs`: `npm run build` first, then `git checkout -- plugins/crew/skills/hub/dist`):
@@ -73,3 +73,5 @@ n/a — internal hub change; ships in the bundle. Rollback: revert the commit.
 - 2026-10-26: status ready → in-progress — branch plan/P-054-suite-ref-runs-in-the-plans-worktree
 
 ## Outcome
+`suite --ref P-###` now runs `hub.full_suite` in the plan's worktree (else this checkout when it is on the plan's branch, else it refuses before taking a slot); every suite record carries the tested HEAD `sha` and `branch`, and `suites` shows the short sha. `land` stops (plan stays accepted) when the plan branch's tip is not the sha its suite tested. The AC1 regression case fails against main's suite.ts (where.txt not in the worktree) and passes now. Note on AC3's text: `land` prints every Stop as `P-###: not landed — <reason>; it stays accepted with its worktree`, so the line reads `P-001: not landed — its branch moved during the full suite (tested …, now …); run \`land P-001\` again; …`. Existing suite tests switched from P-00n to BUG-00n refs, since a P-### ref is now checked as a plan.
+Learnings: since P-025 a change to an MCP tool description regenerates plugins/crew/docs/reference.md, which is outside touches and not marked generated (Q-d5eddf).
