@@ -23,3 +23,4 @@ The Board's toggle labels the item view 'Backlog items', but it shows every item
 ## Notes
 - 2026-10-26: status new → triaged — priority P3
 - 2026-10-26: KEEP (small, P3): packages/crew/ui/src/views/Board.tsx still labels the item toggle 'Backlog items' over ITEM_COLUMNS new..done. Remaining: rename the label to 'Items' (one line plus a UI test). Not needed for G-001's criteria; the PM may unlink it from G-001 as a no-goal UI chore.
+- 2026-10-26: re-triaged: priority P3
