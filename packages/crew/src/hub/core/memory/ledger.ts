@@ -8,8 +8,9 @@ import * as git from "../git.js";
 import { fail } from "../text.js";
 import type { Workspace } from "../workspace.js";
 
-export type EventType = "claim" | "release" | "move" | "log" | "usage" | "learn" | "checkpoint" | "ask" | "answer"
-  | "assign" | "pause" | "resume" | "review" | "notify" | "report";
+export const EVENT_TYPES = ["claim", "release", "move", "log", "usage", "learn", "checkpoint", "ask", "answer",
+  "assign", "pause", "resume", "review", "notify", "report"] as const;
+export type EventType = typeof EVENT_TYPES[number];
 
 export interface LedgerEvent {
   ts: string;                       // ISO timestamp

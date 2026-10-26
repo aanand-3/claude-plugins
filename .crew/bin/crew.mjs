@@ -10911,6 +10911,18 @@ function refreshBin(store, root, check3) {
   return 0;
 }
 
+// src/hub/core/work/transition-gates.ts
+var TRANSITION_GATES = {
+  "plan.ready": { gate: "Definition of Ready", label: "is not ready (Definition of Ready)" },
+  "plan.in-review": { gate: "Learnings recorded", label: "can't go to review" },
+  "plan.accepted": { gate: "Tasks, evidence and review", label: "can't be accepted" },
+  "plan.done": { gate: "Landed", label: "isn't landed" },
+  "goal.active": { gate: "Outcome and criteria written", label: "can't be active" },
+  "goal.done": { gate: "Criteria verified", label: "isn't reached" },
+  "item.triaged": { gate: "Triage", label: "can't be triaged" },
+  "idea.decided": { gate: "Decision agreed", label: "can't be decided" }
+};
+
 // src/hub/commands/work/workflow.ts
 var LOG_SECTION = { item: "Notes" };
 function move(store, docId, status2, note, force = false, approvedBy, via) {
@@ -11007,37 +11019,28 @@ function budgetProblems(store) {
 }
 function guard2(store, kind, doc, status2, approvedBy) {
   let problems = [];
-  let label = "";
   if (kind === "plan" && status2 === "ready") {
     problems = readinessProblems(store, doc);
-    label = "is not ready (Definition of Ready)";
   } else if (kind === "plan" && status2 === "in-review") {
     problems = learningsProblems(doc, new Set(store.knowledge().map((e) => e.id)));
-    label = "can't go to review";
   } else if (kind === "plan" && status2 === "accepted") {
     problems = [
       ...doc.tasks().filter(([done]) => !done).map(([, t]) => `unchecked task: ${t}`),
       ...evidenceProblems(store, doc, approvedBy),
       ...reviewProblems(store, doc)
     ];
-    label = "can't be accepted";
   } else if (kind === "plan" && status2 === "done") {
     problems = landedProblems(store, doc);
-    label = "isn't landed";
   } else if (kind === "goal" && status2 === "done") {
     problems = goalProblems(store, doc);
-    label = "isn't reached";
   } else if (kind === "goal" && status2 === "active") {
     problems = doc.missing(["Outcome", "Acceptance criteria"]).map((n2) => `empty section: ${n2}`);
-    label = "can't be active";
   } else if (kind === "item" && status2 === "triaged") {
     problems = triageProblems(doc);
-    label = "can't be triaged";
   } else if (kind === "idea" && status2 === "decided") {
     problems = decisionProblems(doc);
-    label = "can't be decided";
   }
-  if (problems.length) fail(`${doc.id} ${label}:
+  if (problems.length) fail(`${doc.id} ${TRANSITION_GATES[`${kind}.${status2}`].label}:
   - ${problems.join("\n  - ")}
 (--force to override)`);
 }

@@ -14,6 +14,7 @@ import { landedProblems } from "./release.js";
 import { bounces, escalateLimit, refuseWhilePaused } from "../team/liveness.js";
 import { notify } from "../team/autonomy.js";
 import { CLOSED, FLOWS, ITEM_CLOSED, type Kind } from "../../core/work/model.js";
+import { TRANSITION_GATES } from "../../core/work/transition-gates.js";
 import * as q from "../../core/work/queries.js";
 import type { Store } from "../../core/store.js";
 import { fail, kindOf, slugify, today } from "../../core/text.js";
@@ -114,34 +115,25 @@ export function budgetProblems(store: Store): string[] {
 /** Refuse a transition whose gate isn't met (bypassed only with --force). */
 function guard(store: Store, kind: Kind, doc: Doc, status: string, approvedBy?: string): void {
   let problems: string[] = [];
-  let label = "";
   if (kind === "plan" && status === "ready") {
     problems = readinessProblems(store, doc);
-    label = "is not ready (Definition of Ready)";
   } else if (kind === "plan" && status === "in-review") {
     problems = learningsProblems(doc, new Set(store.knowledge().map((e) => e.id)));
-    label = "can't go to review";
   } else if (kind === "plan" && status === "accepted") {
     problems = [...doc.tasks().filter(([done]) => !done).map(([, t]) => `unchecked task: ${t}`),
       ...evidenceProblems(store, doc, approvedBy), ...reviewProblems(store, doc)];
-    label = "can't be accepted";
   } else if (kind === "plan" && status === "done") {
     problems = landedProblems(store, doc);
-    label = "isn't landed";
   } else if (kind === "goal" && status === "done") {
     problems = goalProblems(store, doc);
-    label = "isn't reached";
   } else if (kind === "goal" && status === "active") {
     problems = doc.missing(["Outcome", "Acceptance criteria"]).map((n) => `empty section: ${n}`);
-    label = "can't be active";
   } else if (kind === "item" && status === "triaged") {
     problems = triageProblems(doc);
-    label = "can't be triaged";
   } else if (kind === "idea" && status === "decided") {
     problems = decisionProblems(doc);
-    label = "can't be decided";
   }
-  if (problems.length) fail(`${doc.id} ${label}:\n  - ${problems.join("\n  - ")}\n(--force to override)`);
+  if (problems.length) fail(`${doc.id} ${TRANSITION_GATES[`${kind}.${status}`].label}:\n  - ${problems.join("\n  - ")}\n(--force to override)`);
 }
 
 function stamp(kind: Kind, doc: Doc, status: string): void {

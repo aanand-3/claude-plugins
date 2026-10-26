@@ -8,7 +8,8 @@
     "node": ">=20.18.1"
   },
   "scripts": {
-    "build": "node build.mjs",
+    "build": "node build.mjs && node scripts/docs.mjs",
+    "docs": "node scripts/docs.mjs",
     "typecheck": "tsc --noEmit && tsc --noEmit -p ui",
     "test": "vitest run"
   },
