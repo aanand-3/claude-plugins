@@ -1,7 +1,7 @@
 ---
 id: G-009
 title: One runner, many views
-status: proposed
+status: active
 priority: P1
 created: 2026-10-26
 completed:
@@ -46,3 +46,4 @@ Source: .crew/drafts/yes-pm-logs-them-recursive-sparkle.md. Human decisions: the
 
 ## Progress log
 - 2026-10-26: Q-24ba43/Q-73467a: items FEAT-065 (escalate gate), FEAT-066 (Director stall entries), FEAT-067 (Director pass before runner stop), CHORE-030 (ask routing and docs) captured and triaged under G-009. Goal document NOT yet updated: PM may write only .crew/drafts/**. Pending edit by executive: Outcome add 'exceptions reach the Director first; the executive only sees what the Director escalates'; Scope In add Director-first exceptions (escalate gate; dispatch stall entries for 2x-refused refs, no-progress passes, permission denials; one Director-only pass before a no-progress or escalation stop); Scope Out add 'Director never launches agents, runner stays role-less'; prerequisite BUG-044 on G-007; Breakdown add FEAT-065..067, CHORE-030; add 4 acceptance criteria per Q-24ba43 answer (incl. P-060 BUG-048 regression test). Notes line 'Starts after G-007 closes' stays.
+- 2026-10-26: status proposed → active (approved by Arpit Anand)
