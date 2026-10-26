@@ -191,6 +191,7 @@ Latest log:
 - 2026-10-26: status in-review → accepted
 - 2026-10-26: status accepted → in-progress — land: hub.full_suite failed (exit 1):      41|   expect(loose("hub/core/").sort()).toEqual(["git.ts", "store.ts", "te… ·        |                                     ^ ·      42| }); ·      43| · ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 - 2026-10-26: status in-progress → in-review
+- 2026-10-26: PM: accept blocked - T1 unchecked in plan tasks (all 12 ACs have passing evidence). Needs developer to tick T1 (or architect to fix the task list); not forcing.
 
 ## Outcome
 The runner is one per clone and idles instead of exiting. `core/lock.ts` (extracted from suite.ts, which now uses it)
