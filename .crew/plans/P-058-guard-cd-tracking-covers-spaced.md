@@ -52,9 +52,9 @@ BUG-012 (G-007, S3/P3). After the BUG-010 fix, the guard's cd tracking still mis
 - **Collision with P-056.** P-056 changes guard.ts and core/memory/activity.ts; this plan changes only hubcall.ts and targets.ts (230 and 240 lines, both under 300), so they don't collide and no dependency is needed. Nested shells (`sh -c "…"`) stay out, as the item says.
 
 ## Tasks
-- [ ] T1: `skipPrefix` in hubcall.ts (lone `(`, function heads, case heads and arms) used by `hubCommand` and `writeTargets` → verify: `cd packages/crew && npx vitest run test/hub/targets.test.ts test/hub/hubcall.test.ts`. New unit cases for the four cd forms, the harmless forms, and a hub call behind `(`, `f() {` and a case arm (AC4, AC5)
-- [ ] T2: `install -d` takes every operand → verify: `npx vitest run test/hub/targets.test.ts -t "install"` (AC4)
-- [ ] T3: Guard e2e for the five repros, the protected-path variants, and the previously denied and harmless forms → verify: `npm run build && npx vitest run test/hub/e2e/guard.test.ts test/hub/e2e/guard-writes.test.ts`, then `git checkout -- plugins/crew/skills/hub/dist plugins/crew/skills/hub/references/commands.md` (AC1–AC3)
+- [x] T1: `skipPrefix` in hubcall.ts (lone `(`, function heads, case heads and arms) used by `hubCommand` and `writeTargets` → verify: `cd packages/crew && npx vitest run test/hub/targets.test.ts test/hub/hubcall.test.ts`. New unit cases for the four cd forms, the harmless forms, and a hub call behind `(`, `f() {` and a case arm (AC4, AC5)
+- [x] T2: `install -d` takes every operand → verify: `npx vitest run test/hub/targets.test.ts -t "install"` (AC4)
+- [x] T3: Guard e2e for the five repros, the protected-path variants, and the previously denied and harmless forms → verify: `npm run build && npx vitest run test/hub/e2e/guard.test.ts test/hub/e2e/guard-writes.test.ts`, then `git checkout -- plugins/crew/skills/hub/dist plugins/crew/skills/hub/references/commands.md` (AC1–AC3)
 
 ## Test plan
 **Targeted checks** (from `packages/crew/`):
@@ -78,3 +78,5 @@ Ships in the bundle; the guard reaches this repo through refresh-bin. Rollback: 
 - 2026-10-26: status ready → in-progress — branch plan/P-058-guard-cd-tracking-covers-spaced
 
 ## Outcome
+`skipPrefix(words)` in hubcall.ts now skips assignments, prefix words (plus a lone `(`), `function NAME`, `case WORD in PATTERN` and a lone `esac`. `headAt` (the hub-call finder) and `writeTargets` both use it. `install -d`/`--directory` checks every operand. Unit cases cover AC4/AC5, and the guard e2e block `guard_cd_forms` covers AC1–AC3 from a plan worktree.
+Learnings: three of the five repros (`( ( cd ~ … ) )`, `f() { … }`, case arms) already passed on the base. The P-051 parser splits at every `(`/`)`, so `name()` and `pattern)` end their own commands. Only `function f {` and `install -d` really needed fixing. The cost of that split is that a case pattern named `cd` or `pushd` reads as a bare `cd` (it fails toward deny). `inlineScript` still has its own prefix loop and does not see `function f { python3 -c …; }`.
