@@ -2,9 +2,9 @@
 id: FEAT-067
 type: feat
 title: One Director pass before the runner stops
-status: new
-priority:
-goal:
+status: triaged
+priority: P1
+goal: G-009
 plan:
 created: 2026-10-26
 closed:
@@ -27,3 +27,4 @@ As the executive, I want the runner to give the Director one chance to unblock b
 ## Notes
 Goal G-009 (Director-first exceptions). Source: Q-24ba43 (d), Q-73467a.
 - 2026-10-26: goal hint G-009 (by Arpit Anand)
+- 2026-10-26: status new → triaged — priority P1
