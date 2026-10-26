@@ -11,6 +11,7 @@ pr:
 created: 2026-10-26
 started:
 completed:
+assignee: developer
 ---
 
 # P-053: A stopped agent's run stops staying live
@@ -64,5 +65,6 @@ BUG-034 (G-007). A stopped agent (TaskStop, a crashed session) writes no usage o
 ## Progress log
 
 - 2026-10-26: status draft → ready
+- 2026-10-26: assigned to the developer role
 
 ## Outcome
