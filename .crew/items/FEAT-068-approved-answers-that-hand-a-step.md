@@ -5,7 +5,7 @@ title: Approved answers that hand a step to the human stay in the inbox until it
 status: triaged
 priority: P2
 goal: G-007
-plan:
+plan: P-072
 created: 2026-10-26
 closed:
 ---
