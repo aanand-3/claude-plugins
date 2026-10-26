@@ -151,7 +151,7 @@ Composition on the existing Inbox view (docs/design/DESIGN.md tokens; inventory 
 - [x] T6: `Inbox.tsx` follow-up kind, Done button and "Then you…" field per Design → verify: `npm run build`, then the manual Inbox check in the Test plan.
 - [x] T7: `model.md` Inbox paragraph and `team/SKILL.md` "Each run" line on `--follow-up` → verify: `grep -n "follow-up" plugins/crew/skills/hub/references/model.md plugins/crew/skills/team/SKILL.md` finds both.
 - [x] T8: Types and sizes → verify: `npm run typecheck`; `wc -l` of the five source files each under 300; `npx vitest run test/hub/e2e/inbox.test.ts` all green.
-- [ ] T9: Design review changes (AC6): the `.inbox__text` rule in `ui/src/styles/views.css` and `className="inbox__text"` on the entry's question `<p>` in `Inbox.tsx`; the "Then you…" input moved inside the answer `<form>` on its own `.actions__row` above the decision row, placeholder `Then you… (optional step you will do)`, aria-label kept → verify: the AC6 static check in the Test plan, `npm run build`, `npm run typecheck`, `wc -l ui/src/views/Inbox.tsx` under 300; then hand back for the Designer's re-review with the on-screen check.
+- [x] T9: Design review changes (AC6): the `.inbox__text` rule in `ui/src/styles/views.css` and `className="inbox__text"` on the entry's question `<p>` in `Inbox.tsx`; the "Then you…" input moved inside the answer `<form>` on its own `.actions__row` above the decision row, placeholder `Then you… (optional step you will do)`, aria-label kept → verify: the AC6 static check in the Test plan, `npm run build`, `npm run typecheck`, `wc -l ui/src/views/Inbox.tsx` under 300; then hand back for the Designer's re-review with the on-screen check.
 
 ## Test plan
 **Targeted checks:** (in the plan worktree, `cd packages/crew`; `npm ci --prefer-offline` first in a fresh worktree;
@@ -189,15 +189,15 @@ so mixed versions stay safe. Rollback: revert the commit; open follow-ups stay a
 
 _Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
 
-- P-072: Human follow-ups stay in the inbox until done [in-review] tasks 8/8 — claimed by Arpit Anand (developer:aac15b1577cfbb410)
-- last checkpoint 2026-10-26 14:39 at T8 (d3cad9d) by Arpit Anand; since then 0 commit(s), 4 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs, plugins/crew/skills/hub/dist/ui.html, plugins/crew/skills/hub/references/commands.md
+- P-072: Human follow-ups stay in the inbox until done [in-progress] tasks 9/9 — claimed by Arpit Anand (developer:aac15b1577cfbb410)
+- last checkpoint 2026-10-26 15:02 at T9 (13949d7) by Arpit Anand; since then 0 commit(s), 4 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs, plugins/crew/skills/hub/dist/ui.html, plugins/crew/skills/hub/references/commands.md
 - don't retry: screenshot loop on a sample-project scratch repo at 375/900/1440 light/dark — a follow-up card only exists after a human answer with the approval flag, which the guard rightly refuses to agents, and Bash access to the /tmp scratch repo is denied in this session; left to QA and the Designer's manual check per the Test plan
-- evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —
+- evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —
 
 Latest log:
-- 2026-10-26: status draft → ready
-- 2026-10-26: assigned to the developer role
-- 2026-10-26: status ready → in-progress — branch plan/P-072-human-follow-ups-stay-in-the-inbox-until
+- 2026-10-26: status in-progress → in-review
+- 2026-10-26: design review: changes requested — Inbox.tsx (packages/crew/ui/src/views/Inbox.tsx) - two changes, then a new design review. (1) Long step text overflows the card: the entry's question <p> (line 68, shared by follow-ups and escalations) has no wrapping rule, and .card has min-width:0 but no overflow-wrap, so an unbroken token longer than the card (a branch name like plan/P-072-human-follow-ups-stay-in-the-inbox-until, a path, a URL - the typical content of a follow-up step) runs past the card edge and scrolls the page sideways at 375 px. This breaks the Design section's criterion 'long step text wraps inside the card'. Fix: add one rule in packages/crew/ui/src/styles/views.css next to the other .live__/.actions__ rules, e.g. '.inbox__text { overflow-wrap: anywhere; min-width: 0; }', and put className="inbox__text" on that <p>; ask the Architect to add views.css to touches. (2) The 'Then you...' field sits after the Answer button and outside the <form>, so the natural flow (type the decision, press Enter or Answer) submits before the human reaches it, and Enter inside it does nothing. Fix: move the follow-up input inside the answer <form>, on its own .actions__row above the row with the decision input and Answer button, so Enter in either field submits both; shorten its placeholder so it is not clipped at 375 px, e.g. 'Then you... (optional step you will do)', keeping the aria-label. This amends the Design wording 'under the existing answer form' to 'inside the answer form, before Answer'. Everything else matches the Design section: inventory only (Card, Chip tone=primary dot, .id, IdLink, btn, input.actions__note, code.live__action, Result), tokens only, check_design --all clean. Not done in this review: the on-screen full-size check at 375/900/1440 light/dark (this session could not serve the UI or create a follow-up card, which needs a human answer with the approval flag); the re-review needs those screenshots from QA or the executive, with a 300-character step and one unbroken 80-character token.
+- 2026-10-26: status in-review → in-progress — design changes requested: Inbox.tsx (packages/crew/ui/src/views/Inbox.tsx) - two changes, then a new design review. (1) Long step text overflows the card: the entry's question <p> (line 68, shared by follow-ups and escalations) has no wrapping rule, and .card has min-width:0 but no overflow-wrap, so an unbroken token longer than the card (a branch name like plan/P-072-human-follow-ups-stay-in-the-inbox-until, a path, a URL - the typical content of a follow-up step) runs past the card edge and scrolls the page sideways at 375 px. This breaks the Design section's criterion 'long step text wraps inside the card'. Fix: add one rule in packages/crew/ui/src/styles/views.css next to the other .live__/.actions__ rules, e.g. '.inbox__text { overflow-wrap: anywhere; min-width: 0; }', and put className="inbox__text" on that <p>; ask the Architect to add views.css to touches. (2) The 'Then you...' field sits after the Answer button and outside the <form>, so the natural flow (type the decision, press Enter or Answer) submits before the human reaches it, and Enter inside it does nothing. Fix: move the follow-up input inside the answer <form>, on its own .actions__row above the row with the decision input and Answer button, so Enter in either field submits both; shorten its placeholder so it is not clipped at 375 px, e.g. 'Then you... (optional step you will do)', keeping the aria-label. This amends the Design wording 'under the existing answer form' to 'inside the answer form, before Answer'. Everything else matches the Design section: inventory only (Card, Chip tone=primary dot, .id, IdLink, btn, input.actions__note, code.live__action, Result), tokens only, check_design --all clean. Not done in this review: the on-screen full-size check at 375/900/1440 light/dark (this session could not serve the UI or create a follow-up card, which needs a human answer with the approval flag); the re-review needs those screenshots from QA or the executive, with a 300-character step and one unbroken 80-character token.
 
 ## Progress log
 
@@ -214,11 +214,14 @@ Shipped: `answer … --follow-up STEP [--unblocks ID]` records a follow-up (an `
 anything is written (new `commands/team/followups.ts`); `inbox` lists it as kind `follow-up` (not as an escalation)
 until answered `done`; `resume`/handoff list each open blocking question as `waits for an answer: Q-… → to: text`; the
 `ui` `answer` action takes `follow_up`/`unblocks`; the Inbox page shows the follow-up card with a Done button and a
-"Then you…" field under each escalation's answer; `model.md` and `team/SKILL.md` describe it.
+"Then you…" field inside each escalation's answer form, on its own row above the decision row, so Enter in either
+input submits both; every entry's question text wraps inside its card (one new `.inbox__text` rule in `views.css`);
+`model.md` and `team/SKILL.md` describe it.
 Deviations: the escalation hint is a text-form `then:` line, not a change to the `how` field (the existing AC1 case
 asserts `how` exactly; agreed via the T3 wording); a usage line for `answer --follow-up` was added (registry test still
 green); the text form prints `FOLLOW-UP  Q-…` with two spaces like the other kinds. The developer's screenshot loop was
 not run: a follow-up card needs a human answer with the approval flag, which agents can't give — QA and the Designer
-do the manual Inbox check. A long unbroken step word may overflow the card (the existing escalation `<p>` has no
-`overflow-wrap` either; the styles are outside touches).
+do the manual Inbox check (AC4, and AC6 on screen). The answer `<form>` now carries the existing `actions` class
+(a flex column with the card's `--space-3` gap) so its two `.actions__row`s are spaced like the card's other rows; no
+style change beyond the one `.inbox__text` rule.
 Learnings: K-2026-10-26-a-ui-state-that-only-a-human-approval
