@@ -5,11 +5,11 @@ goal:
 items: BUG-044
 touches: plugins/crew/skills/hub/agents/pm.md, plugins/crew/skills/hub/agents/developer.md, plugins/crew/skills/hub/agents/qa.md, plugins/crew/skills/hub/agents/release.md, plugins/crew/skills/hub/agents/designer.md, plugins/crew/skills/hub/agents/generic.md, packages/crew/test/hub/e2e/agents.test.ts
 depends_on:
-status: ready
+status: in-progress
 branch: plan/P-064-every-role-closes-the-asks-sent-to-it
 pr:
 created: 2026-10-26
-started:
+started: 2026-10-26
 completed:
 assignee: developer
 ---
@@ -100,5 +100,6 @@ then. Rollback: revert the commit and re-render.
 
 - 2026-10-26: status draft → ready
 - 2026-10-26: assigned to the developer role
+- 2026-10-26: status ready → in-progress — branch plan/P-064-every-role-closes-the-asks-sent-to-it
 
 ## Outcome
