@@ -5,11 +5,11 @@ goal: G-003
 items: FEAT-024
 touches: packages/crew/src/hub/core/work/model.ts, packages/crew/src/hub/core/work/gates.ts, packages/crew/src/hub/core/work/footprint.ts, packages/crew/src/hub/core/store.ts, packages/crew/src/hub/core/team/presets.ts, packages/crew/src/hub/commands/work/review.ts, packages/crew/src/hub/commands/team/roles.ts, packages/crew/src/hub/cli.ts, packages/crew/src/hub/mcp.ts, packages/crew/src/tools/design/**, packages/crew/src/tools/cli.ts, packages/crew/build.mjs, packages/crew/test/hub/e2e/policy.test.ts, packages/crew/test/hub/e2e/team.test.ts, packages/crew/test/hub/e2e/team-2.test.ts, packages/crew/test/hub/e2e/execution.test.ts, packages/crew/test/hub/e2e/review-fixes.test.ts, packages/crew/test/hub/e2e/design-review.test.ts, packages/crew/test/hub/e2e/agents.test.ts, packages/crew/test/tools/layout-sweep.test.ts, packages/crew/test/tools/design.test.ts, plugins/crew/skills/hub/agents/designer.md, plugins/crew/skills/hub/agents/developer.md, plugins/crew/skills/hub/agents/qa.md, plugins/crew/skills/hub/SKILL.md, plugins/crew/skills/hub/references/model.md, plugins/crew/skills/hub/references/writing-guide.md, plugins/crew/skills/hub/templates/plan.md, plugins/crew/skills/design/SKILL.md, plugins/crew/skills/design/references/review-checklist.md, plugins/crew/skills/team/SKILL.md, .crew/templates/plan.md, .crew/templates/writing-guide.md, .crew/templates/agents/**, .claude/agents/**, .crew/config.yaml, docs/vision.md
 depends_on: P-020, P-031, P-032
-status: ready
+status: in-progress
 branch: plan/P-021-designer-role-shape-and-review-ui-plans
 pr:
 created: 2026-10-24
-started:
+started: 2026-10-26
 completed:
 assignee: developer
 ---
@@ -100,5 +100,6 @@ This plan adds a built-in `designer` role that shapes a UI plan before it is bui
 - 2026-10-24: status draft → ready
 - 2026-10-25: Architect: depends_on P-031, P-032 added (presets.ts, model.ts, config.yaml); e2e, hub-skill, test/tools and design-skill globs narrowed to exact files
 - 2026-10-26: assigned to the developer role
+- 2026-10-26: status ready → in-progress — branch plan/P-021-designer-role-shape-and-review-ui-plans
 
 ## Outcome
