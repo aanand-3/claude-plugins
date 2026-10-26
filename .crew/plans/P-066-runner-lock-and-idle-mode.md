@@ -11,6 +11,7 @@ pr:
 created: 2026-10-26
 started:
 completed:
+assignee: developer
 ---
 
 # P-066: Runner lock and idle mode
@@ -165,5 +166,6 @@ ignored by the old runner and can be deleted.
 ## Progress log
 
 - 2026-10-26: status draft → ready
+- 2026-10-26: assigned to the developer role
 
 ## Outcome
