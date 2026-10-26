@@ -131,8 +131,8 @@ Composition on the existing Inbox view (docs/design/DESIGN.md tokens; inventory 
 ## Tasks
 - [x] T1: Add the three FEAT-068 CLI cases to `test/hub/e2e/inbox.test.ts` (AC1-AC3) → verify: `npx vitest run test/hub/e2e/inbox.test.ts -t FEAT-068` fails before T2-T4.
 - [x] T2: `followups.ts` and the `answer --follow-up/--unblocks` registration in `questions.reg.ts` → verify: `npx vitest run test/hub/e2e/inbox.test.ts -t "an answer records"` passes.
-- [ ] T3: `inbox.ts` follow-up kind and the escalation `then:` hint line → verify: `npx vitest run test/hub/e2e/inbox.test.ts -t "stays in the inbox"` passes.
-- [ ] T4: `recovery()` wait lines in `execution.ts` → verify: `npx vitest run test/hub/e2e/inbox.test.ts -t "wait reason"` passes.
+- [x] T3: `inbox.ts` follow-up kind and the escalation `then:` hint line → verify: `npx vitest run test/hub/e2e/inbox.test.ts -t "stays in the inbox"` passes.
+- [x] T4: `recovery()` wait lines in `execution.ts` → verify: `npx vitest run test/hub/e2e/inbox.test.ts -t "wait reason"` passes.
 - [ ] T5: `server.ts` `answer` action with `follow_up`, plus the ui case in `inbox.test.ts` → verify: `npx vitest run test/hub/e2e/inbox.test.ts -t "ui"` passes.
 - [ ] T6: `Inbox.tsx` follow-up kind, Done button and "Then you…" field per Design → verify: `npm run build`, then the manual Inbox check in the Test plan.
 - [ ] T7: `model.md` Inbox paragraph and `team/SKILL.md` "Each run" line on `--follow-up` → verify: `grep -n "follow-up" plugins/crew/skills/hub/references/model.md plugins/crew/skills/team/SKILL.md` finds both.

@@ -163,6 +163,18 @@ ignored by the old runner and can be deleted.
 
 ## Handoff
 
+_Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
+
+- P-066: Runner lock and idle mode [in-progress] tasks 0/6 — claimed by Arpit Anand (developer:a90435617251059e2)
+- last checkpoint 2026-10-26 14:30 at T6 (8f81673) by Arpit Anand; since then 0 commit(s), 3 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs, plugins/crew/skills/hub/references/commands.md
+- next: T1: Extract `core/lock.ts` from suite.ts (with `processStart`, `machineId`); suite.ts uses it; add `test/hub/lock.test.ts` → verify: `npx vitest run test/hub/lock.test.ts test/hub/e2e/suite.test.ts` green (AC11).
+- evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —, AC7 —, AC8 —, AC9 —, AC10 —, AC11 —, AC12 —
+
+Latest log:
+- 2026-10-26: status draft → ready
+- 2026-10-26: assigned to the developer role
+- 2026-10-26: status ready → in-progress — branch plan/P-066-runner-lock-and-idle-mode
+
 ## Progress log
 
 - 2026-10-26: status draft → ready
