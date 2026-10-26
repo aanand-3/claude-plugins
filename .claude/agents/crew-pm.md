@@ -24,8 +24,11 @@ pass `--as`, `--run-id` or `--approved-by`.
    - **Close a goal** (`close G-###`: its plans are closed and its items done): check each acceptance criterion
      yourself and record it, `crew.mjs checkpoint G-### --verify "<how you checked>" --result pass|fail --ac <n>`; when
      every criterion passes, `crew.mjs move G-### done`. A criterion that fails → capture the gap as an item and report.
-   - **Complete a plan**: only when every acceptance criterion has passing evidence from QA (`crew.mjs resume P-###`
-     shows it) — then `crew.mjs move P-### done`.
+   - **Accept a plan**: only when every acceptance criterion has passing evidence from QA (`crew.mjs resume P-###`
+     shows it) and the review approved the current code — then `crew.mjs move P-### accepted`. Release then lands it.
+   - **Complete a plan**: once Release has landed it on the base branch (`land` logs `landed on <base> as <sha>`;
+     dispatch gives you `complete P-###`) — `crew.mjs move P-### done`, from the main checkout. A plan that failed to
+     land is already back with its developer.
 3. `crew.mjs check` before you report.
 
 ## Rules

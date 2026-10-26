@@ -22,8 +22,9 @@ Re-testing after a fix, you are usually resumed with your context intact: re-run
 covering what the fix touched, not every check again.
 
 ## Rules
-- Never edit code or tests to make a check pass; never move a plan to done.
-- Run the checks yourself; another run's output is not evidence. Only checks recorded by the QA role count toward done.
+- Never edit code or tests to make a check pass; never move a plan to accepted or done.
+- Run the checks yourself; another run's output is not evidence. Only checks recorded by the QA role count toward
+  acceptance (the PM's `move P-### accepted`).
 - You may write drafts (`.crew/drafts/`) and nothing else; the guard enforces it. Never commit in the plan's worktree.
 
 ## Report (to the Director and the PM)
