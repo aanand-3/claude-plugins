@@ -5,7 +5,7 @@ goal: G-007
 items: FEAT-045
 touches: packages/crew/src/hub/commands/work/planning.ts, packages/crew/src/hub/core/team/policy.ts, packages/crew/test/hub/e2e/policy.test.ts, plugins/crew/skills/hub/references/model.md, plugins/crew/skills/team/SKILL.md
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-048-notify-the-human-when-a-goal-waits
 pr:
 created: 2026-10-25
@@ -67,7 +67,7 @@ n/a — off unless a project's `notify.on` lists `goal-approval`. Ships in the b
 
 _Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
 
-- P-048: Notify the human when a goal waits for approval [in-progress] tasks 0/3 — claimed by Arpit Anand (developer:ac6144f54a3bb12a7)
+- P-048: Notify the human when a goal waits for approval [in-review] tasks 0/3 — claimed by Arpit Anand (developer:ac6144f54a3bb12a7)
 - last checkpoint 2026-10-26 05:30 at T3 (dfa60d2) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
 - ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-048-notify-the-human-when-a-goal-waits/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/policy.test.ts -t goal-approval ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-048-notify-the-human-when-a-goal-waits checkout -- plugins; exit $r (AC 1,2,3,4)
 - ✓ grep -n goal-approval /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-048-notify-the-human-when-a-goal-waits/plugins/crew/skills/hub/references/model.md /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-048-notify-the-human-when-a-goal-waits/plugins/crew/skills/team/SKILL.md (AC 5)
@@ -85,5 +85,7 @@ Latest log:
 - 2026-10-25: status draft → ready — Architect: specced (ACs, tasks, test plan, exact touches)
 - 2026-10-26: assigned to the developer role
 - 2026-10-26: status ready → in-progress — branch plan/P-048-notify-the-human-when-a-goal-waits
+- 2026-10-26: status in-progress → in-review — T1-T3 done: goal-approval kind emitted by new-goal, docs, typecheck/sizes; checks pass at checkpoints
 
 ## Outcome
+Learnings: none
