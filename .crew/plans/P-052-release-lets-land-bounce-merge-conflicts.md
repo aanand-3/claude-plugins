@@ -5,7 +5,7 @@ goal: G-007
 items: BUG-036
 touches: plugins/crew/skills/hub/agents/release.md, packages/crew/test/hub/e2e/agents.test.ts
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-052-release-lets-land-bounce-merge-conflicts
 pr:
 created: 2026-10-26
@@ -62,7 +62,7 @@ BUG-036 (G-007). Since P-051 the guard binds every role's Bash writes to `paths.
 
 _Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
 
-- P-052: Release lets land bounce merge conflicts [in-progress] tasks 2/2 — claimed by Arpit Anand (developer:a22625ccf29413479)
+- P-052: Release lets land bounce merge conflicts [in-review] tasks 2/2 — claimed by Arpit Anand (developer:a22625ccf29413479)
 - last checkpoint 2026-10-26 07:33 at T1 (55a6469) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
 - ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-052-release-lets-land-bounce-merge-conflicts/packages/crew && npm run build && npx vitest run test/hub/e2e/agents.test.ts -t 'release template'; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-052-release-lets-land-bounce-merge-conflicts checkout -- plugins/crew/skills/hub/dist plugins/crew/skills/hub/references/commands.md plugins/crew/docs; exit $r (AC 1)
 - ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-052-release-lets-land-bounce-merge-conflicts/packages/crew && npx vitest run test/hub/e2e/agents.test.ts -t 'release template' (AC 2)
@@ -83,6 +83,7 @@ Latest log:
 - 2026-10-26: status in-progress → in-review
 - 2026-10-26: review: changes requested — Loop step 3 and the new Rules line are right. The hand-merge Rules line in plugins/crew/skills/hub/agents/release.md tells Release to do something the hub refuses. A plan merge-order marks 'completed before accepted' is done, and PLAN_FLOW has done: [] (no way out), and under lifecycle plan.in-progress is the developer's role gate. So 'crew.mjs move P-### in-progress --note …' fails for Release. That is my spec's error; the Approach is now amended. Replace that sentence with: if that merge conflicts, git merge --abort and hand it to the developer with crew.mjs ask P-### --to developer "hand merge of P-### conflicts in <files>: merge <base> into its branch and resolve", then merge again once it is answered; never resolve it. In agents.test.ts's 'release template' case, also assert that the template no longer contains 'move P-### in-progress'. Only the template body changes; the frontmatter and paths.write stay as they are.
 - 2026-10-26: status in-review → in-progress — changes requested: Loop step 3 and the new Rules line are right. The hand-merge Rules line in plugins/crew/skills/hub/agents/release.md tells Release to do something the hub refuses. A plan merge-order marks 'completed before accepted' is done, and PLAN_FLOW has done: [] (no way out), and under lifecycle plan.in-progress is the developer's role gate. So 'crew.mjs move P-### in-progress --note …' fails for Release. That is my spec's error; the Approach is now amended. Replace that sentence with: if that merge conflicts, git merge --abort and hand it to the developer with crew.mjs ask P-### --to developer "hand merge of P-### conflicts in <files>: merge <base> into its branch and resolve", then merge again once it is answered; never resolve it. In agents.test.ts's 'release template' case, also assert that the template no longer contains 'move P-### in-progress'. Only the template body changes; the frontmatter and paths.write stay as they are.
+- 2026-10-26: status in-progress → in-review
 
 ## Outcome
 Release's template (plugins/crew/skills/hub/agents/release.md, body only) now leaves every merge conflict to land's bounce: loop step 3 says Release only reports the bounce (no Edit, sed, checkout --ours/--theirs or manual reroute), a new Rules line says it never resolves a conflict, and the hand-merge rule for pre-accepted plans aborts a conflicting merge, asks the developer (ask --to developer) to merge the base into the branch and resolve, and merges again once answered (review fix: a done plan has no transitions and in-progress is the developer's). agents.test.ts gains the regression case, which fails on the base template and passes on the new one; the whole file is green. The vendored .crew/templates/agents/release.md and .claude/agents/crew-release.md are unchanged (protected); the executive re-vendors after landing.
