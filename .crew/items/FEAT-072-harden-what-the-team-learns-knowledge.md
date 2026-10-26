@@ -21,11 +21,10 @@ As the executive, I want what the team learns and what `check` reports to turn i
 ## Acceptance criteria
 - [ ] Knowledge entries of type gotcha and convention carry a `harden:` disposition: `recall`, `check`, `guard`, `policy`, `gate`, `template`, `process` or `code`. A new entry without one gets a dispatch entry for the Architect to set it.
 - [ ] A disposition other than `recall` creates (or links) a backlog item for it, recorded on the entry; when that item's plan lands, the entry is superseded by, or points to, the enforcement that replaced it.
-- [ ] Recurrence reopens a disposition: when a mistake an entry covers happens again after the entry was recalled (a bounce, a refusal or an escalation on the same scope; FEAT-018 measures these), the Architect is asked to review its disposition.
-- [ ] `check` hints get owners: dispatch routes knowledge-scope hints to the Architect, plan hints to the plan's owner (or Release for landing artefacts), and drafts and backlog-shape hints to the PM. A hint still open after a set number of passes becomes a Director stall entry.
 - [ ] A one-off pass dispositions the existing 63 gotchas and 12 conventions, and reports which became items.
 
 ## Notes
 Executive's request 2026-10-26. Examples where hardening happened only by hand that day: "the team session never runs a role's step with --as" (a convention) became guard enforcement through BUG-043/P-065; "checkpoint and handoff never tick tasks" (a gotcha) became a hub refusal through BUG-048/P-067. `check` that day: 0 errors, 14 hints, none owned (stale knowledge scopes, a superseded entry still cited by P-062, P-064 file vs ledger mismatch, stray .vitest output outside P-062's touches, 8 plans written ahead, 3 unconverted drafts). Complements G-005's lesson loop (FEAT-016–018), which keeps lessons as recalled text and leaves out automatic prompt edits.
 - 2026-10-26: status new → triaged — priority P1
+- 2026-10-26: Executive (Q-088a6e): dropped the recurrence criterion (now FEAT-073) and the hint-owner criterion (now FEAT-074) from the body.
 - 2026-10-26: Narrowed per Architect Q-b1501e: scope is AC1, AC2, AC5 only. AC3 (recurrence reopens disposition) is FEAT-073 (G-005, depends on FEAT-072 and FEAT-018); AC4 (hint owners) is FEAT-074. Item body still lists AC3/AC4: PM cannot edit it, Architect to drop them in the plan spec.

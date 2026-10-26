@@ -22,6 +22,7 @@ As the executive, I want a loop that keeps bouncing off the same refusal to be h
 - [ ] A ref refused or bounced N times in a row (default 2, e.g. P-060 PM accept refused, BUG-048) yields one Director stall entry naming the ref and reason.
 - [ ] A runner pass that made no progress, and a reported permission denial (a checkpoint "don't retry" attempt or an auto-mode denial), each yield one Director stall entry.
 - [ ] The role is not re-offered that work until the Director has moved it.
+- [ ] A routed check hint still open after N runner passes (policy key, default 3) yields one Director stall entry naming the hint's ref and text, using the first-seen pass FEAT-074 records.
 - [ ] The P-060 / BUG-048 loop is a regression test; the full suite passes.
 
 ## Notes
