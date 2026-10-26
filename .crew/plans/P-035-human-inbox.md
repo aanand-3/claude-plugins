@@ -5,11 +5,11 @@ goal: G-007
 items: FEAT-043
 touches: packages/crew/src/hub/commands/team/inbox.ts, packages/crew/src/hub/commands/team/inbox.reg.ts, packages/crew/src/hub/commands/team/questions.ts, packages/crew/src/hub/commands/team/questions.reg.ts, packages/crew/src/hub/commands/team/guard.ts, packages/crew/src/hub/commands/index.ts, packages/crew/src/hub/cli.ts, packages/crew/src/hub/mcp.ts, packages/crew/src/hub/server.ts, packages/crew/ui/src/views/Inbox.tsx, packages/crew/ui/src/views/index.ts, packages/crew/test/hub/e2e/inbox.test.ts, packages/crew/test/hub/e2e/guard.test.ts, plugins/crew/skills/team/SKILL.md, plugins/crew/skills/hub/references/model.md
 depends_on: P-027, P-031
-status: ready
+status: in-progress
 branch: plan/P-035-human-inbox
 pr:
 created: 2026-10-25
-started:
+started: 2026-10-26
 completed:
 assignee: developer
 ---
@@ -134,5 +134,6 @@ Overlaps, for staffing only: P-037 on `guard.ts`, and P-030 on `questions.reg.ts
 
 - 2026-10-25: status draft → ready
 - 2026-10-26: assigned to the developer role
+- 2026-10-26: status ready → in-progress — branch plan/P-035-human-inbox
 
 ## Outcome
