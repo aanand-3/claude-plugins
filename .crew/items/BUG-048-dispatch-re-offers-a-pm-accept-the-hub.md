@@ -6,7 +6,7 @@ status: triaged
 severity: S2
 priority: P2
 goal: G-001
-plan:
+plan: P-067
 created: 2026-10-26
 closed:
 origin: P-060
