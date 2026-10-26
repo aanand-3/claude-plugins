@@ -5,7 +5,7 @@ goal: G-007
 items: BUG-036
 touches: plugins/crew/skills/hub/agents/release.md, packages/crew/test/hub/e2e/agents.test.ts
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-052-release-lets-land-bounce-merge-conflicts
 pr:
 created: 2026-10-26
@@ -62,7 +62,7 @@ BUG-036 (G-007). Since P-051 the guard binds every role's Bash writes to `paths.
 
 _Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
 
-- P-052: Release lets land bounce merge conflicts [in-progress] tasks 2/2 — claimed by Arpit Anand (developer:a22625ccf29413479)
+- P-052: Release lets land bounce merge conflicts [in-review] tasks 2/2 — claimed by Arpit Anand (developer:a22625ccf29413479)
 - last checkpoint 2026-10-26 07:30 at T2 (c2c3e19) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
 - ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-052-release-lets-land-bounce-merge-conflicts/packages/crew && npm run build && npx vitest run test/hub/e2e/agents.test.ts -t 'release template'; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-052-release-lets-land-bounce-merge-conflicts checkout -- plugins/crew/skills/hub/dist plugins/crew/skills/hub/references/commands.md plugins/crew/docs; exit $r (AC 1)
 - ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-052-release-lets-land-bounce-merge-conflicts/packages/crew && npx vitest run test/hub/e2e/agents.test.ts -t 'release template' (AC 2)
@@ -79,8 +79,9 @@ Latest log:
 - 2026-10-26: status draft → ready
 - 2026-10-26: assigned to the developer role
 - 2026-10-26: status ready → in-progress — branch plan/P-052-release-lets-land-bounce-merge-conflicts
+- 2026-10-26: status in-progress → in-review
 
 ## Outcome
 Release's template (plugins/crew/skills/hub/agents/release.md, body only) now leaves every merge conflict to land's bounce: loop step 3 says Release only reports the bounce (no Edit, sed, checkout --ours/--theirs or manual reroute), a new Rules line says it never resolves a conflict, and the hand-merge rule for pre-accepted plans aborts a conflicting merge and moves the plan back to in-progress. agents.test.ts gains the regression case, which fails on the base template and passes on the new one; the whole file is green. The vendored .crew/templates/agents/release.md and .claude/agents/crew-release.md are unchanged (protected); the executive re-vendors after landing.
 
-Learnings: to prove a test fails on the base version inside one checkpoint --run, write the old file from git show BASE:path, negate the test run, then restore from git show HEAD:path before building; no stash is needed.
+Learnings: none new — the base-version check followed K-2026-10-25-a-plan-task-that-says-to-git-stash (write the old file from git show BASE:path, negate the test run, restore from git show HEAD:path, all inside one checkpoint --run).
