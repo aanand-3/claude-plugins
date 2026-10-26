@@ -75,11 +75,11 @@ at the same position (after the write-target checks, before the approval check),
 **Targets** — `targets.ts`: export `globbed`, `INTERPRETER`, `SHELL` and the new `headIndex`; no other change.
 
 ## Tasks
-- [ ] T1 · `hubcall.ts`: add `Simple.inputs` (input redirection targets per Design) and export `hubWord`. Verify: `npx vitest run test/hub/hubcall.test.ts` passes unchanged; the `inputs` cases in `test/hub/secretrefs.test.ts` (T5) pass.
-- [ ] T2 · `targets.ts`: export `globbed`, `INTERPRETER`, `SHELL`; extract `headIndex(c)` from `inlineScript`'s head loop and use it there. Verify: `npx vitest run test/hub/targets.test.ts test/hub/e2e/guard-writes.test.ts` pass unchanged; `wc -l` of targets.ts under 300.
-- [ ] T3 · New `secretrefs.ts` with `touchesSecret` per Design (path mode, token mode, prose and data lists), moving `words()` there; under 300 lines. Verify: `npx vitest run test/hub/secretrefs.test.ts`.
-- [ ] T4 · `guard.ts`: call `touchesSecret` in place of the token scan, same position and message; drop the unused `words`. Verify: `npm run build`, then `npx vitest run test/hub/e2e/guard.test.ts test/hub/e2e/guard-writes.test.ts`.
-- [ ] T5 · Tests. `test/hub/secretrefs.test.ts` (new, unit, a temp dir holding a dotenv file and a `certs/a.pem`, with `hit` built from the default `secrets.files`): every AC2–AC4 case in both directions, plus `inputs` parsing. `test/hub/e2e/guard.test.ts`: a new `it("the secrets check refuses real access only (BUG-042)")` through `hook()` with a crew agent (role with no paths.write, e.g. developer, so inline scripts reach the secrets check) asserting AC1, AC2, AC3 allowed and a representative AC4 set denied with exactly the AC5 message; plus a Read of a dotenv file still denied with its message. Show AC1 fails before the fix: write base guard.ts from `git show main:packages/crew/src/hub/commands/team/guard.ts` into the worktree, `npm run build`, run the new case and record that it fails, then restore from `git show HEAD:…` (K-2026-10-25-a-plan-task-that-says-to-git-stash) and rebuild. Verify: the targeted checks below.
+- [x] T1 · `hubcall.ts`: add `Simple.inputs` (input redirection targets per Design) and export `hubWord`. Verify: `npx vitest run test/hub/hubcall.test.ts` passes unchanged; the `inputs` cases in `test/hub/secretrefs.test.ts` (T5) pass.
+- [x] T2 · `targets.ts`: export `globbed`, `INTERPRETER`, `SHELL`; extract `headIndex(c)` from `inlineScript`'s head loop and use it there. Verify: `npx vitest run test/hub/targets.test.ts test/hub/e2e/guard-writes.test.ts` pass unchanged; `wc -l` of targets.ts under 300.
+- [x] T3 · New `secretrefs.ts` with `touchesSecret` per Design (path mode, token mode, prose and data lists), moving `words()` there; under 300 lines. Verify: `npx vitest run test/hub/secretrefs.test.ts`.
+- [x] T4 · `guard.ts`: call `touchesSecret` in place of the token scan, same position and message; drop the unused `words`. Verify: `npm run build`, then `npx vitest run test/hub/e2e/guard.test.ts test/hub/e2e/guard-writes.test.ts`.
+- [x] T5 · Tests. `test/hub/secretrefs.test.ts` (new, unit, a temp dir holding a dotenv file and a `certs/a.pem`, with `hit` built from the default `secrets.files`): every AC2–AC4 case in both directions, plus `inputs` parsing. `test/hub/e2e/guard.test.ts`: a new `it("the secrets check refuses real access only (BUG-042)")` through `hook()` with a crew agent (role with no paths.write, e.g. developer, so inline scripts reach the secrets check) asserting AC1, AC2, AC3 allowed and a representative AC4 set denied with exactly the AC5 message; plus a Read of a dotenv file still denied with its message. Show AC1 fails before the fix: write base guard.ts from `git show main:packages/crew/src/hub/commands/team/guard.ts` into the worktree, `npm run build`, run the new case and record that it fails, then restore from `git show HEAD:…` (K-2026-10-25-a-plan-task-that-says-to-git-stash) and rebuild. Verify: the targeted checks below.
 
 ## Test plan
 **Targeted checks:** (in the plan worktree, `cd packages/crew`; `npm ci --prefer-offline` first in a fresh worktree; the e2e tests run the built bundle, so `npm run build` after source changes, and the built files are not part of the plan's change, K-2026-10-24-release-builds-the-generated-files-plans)
@@ -103,9 +103,8 @@ Ships with the next vendored hub refresh (Release builds the bundle and refreshe
 
 _Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
 
-- P-063: Guard refuses only real access to secrets files [in-progress] tasks 0/5 — claimed by Arpit Anand (developer:a15018def85344c14)
-- last checkpoint 2026-10-26 11:50 at T4 (63dfd06) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
-- next: T1 · `hubcall.ts`: add `Simple.inputs` (input redirection targets per Design) and export `hubWord`. Verify: `npx vitest run test/hub/hubcall.test.ts` passes unchanged; the `inputs` cases in `test/hub/secretrefs.test.ts` (T5) pass.
+- P-063: Guard refuses only real access to secrets files [in-progress] tasks 5/5 — claimed by Arpit Anand (developer:a15018def85344c14)
+- last checkpoint 2026-10-26 11:59 at T5 (63dfd06) by Arpit Anand; since then 0 commit(s), 2 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —
 
 Latest log:
@@ -120,3 +119,5 @@ Latest log:
 - 2026-10-26: status ready → in-progress — branch plan/P-063-guard-refuses-only-real-access
 
 ## Outcome
+The guard's Bash secrets check is now `touchesSecret` in the new `secretrefs.ts`: path mode resolves real candidates (path arguments, redirect targets in and out, option values, `@FILE`, assignments, `for` lists, globs incl. unlistable ones) and token mode keeps the old token scan wherever real access can't be ruled out (inline interpreter code, `sh -c`/`eval` strings, heredoc bodies a shell/interpreter/xargs can reach, arguments of non-prose commands, a hub call's `--run` value, and wrapper/assignment words before a prose command). Prose in heredocs written to files, `echo`/`printf`, hub-call text, commit/tag messages and grep/rg patterns is no longer refused. The refusal message is unchanged. The new e2e BUG-042 case failed on the base guard.ts (the AC1 heredoc was denied) and passes now; secretrefs.test.ts, guard, guard-writes, targets and hubcall tests pass (100), with no edits to the existing test files.
+Learnings: K-2026-10-26-the-guards-bash-secrets-check-matches
