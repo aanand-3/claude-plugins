@@ -8,19 +8,19 @@
       "Bash(git log:*)",
       "Bash(git branch:*)",
       "Edit",
-"Write",
-"Bash(node:*)",
-"Bash(npm ci:*)",
-"Bash(npm run:*)",
-"Bash(npm test:*)",
-"Bash(npx vitest:*)",
-"Bash(npx tsc:*)",
-"Bash(git show:*)",
-"Bash(git rev-parse:*)",
-"Bash(git add:*)",
-"Bash(git commit:*)",
-"Bash(git merge:*)",
-"Bash(git worktree:*)"
+      "Write",
+      "Bash(node:*)",
+      "Bash(npm ci:*)",
+      "Bash(npm run:*)",
+      "Bash(npm test:*)",
+      "Bash(npx vitest:*)",
+      "Bash(npx tsc:*)",
+      "Bash(git show:*)",
+      "Bash(git rev-parse:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git merge:*)",
+      "Bash(git worktree:*)"
     ],
     "deny": [
       "Read(./.env)",
@@ -57,6 +57,14 @@
           {
             "type": "command",
             "command": "[ -f \"$CLAUDE_PROJECT_DIR/.crew/bin/track_plan_draft.mjs\" ] && node \"$CLAUDE_PROJECT_DIR/.crew/bin/track_plan_draft.mjs\" --session; true"
+          },
+          {
+            "type": "command",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" || exit 0; [ -d .githooks ] && [ \"$(git config core.hooksPath)\" != \".githooks\" ] && git config core.hooksPath .githooks && echo \"crew: activated .githooks\"; true"
+          },
+          {
+            "type": "command",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" || exit 0; [ -f .crew/bin/crew.mjs ] && node .crew/bin/crew.mjs context; true"
           }
         ]
       }
@@ -77,6 +85,35 @@
           {
             "type": "command",
             "command": "[ -f \"$CLAUDE_PROJECT_DIR/.crew/bin/track_plan_draft.mjs\" ] && node \"$CLAUDE_PROJECT_DIR/.crew/bin/track_plan_draft.mjs\"; true"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -f \"$CLAUDE_PROJECT_DIR/.crew/bin/format_on_edit.mjs\" ] && node \"$CLAUDE_PROJECT_DIR/.crew/bin/format_on_edit.mjs\"; true"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" || exit 0; [ -f .crew/bin/crew.mjs ] && node .crew/bin/crew.mjs checkpoint --auto >/dev/null 2>&1; true"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" || exit 0; [ -f .crew/bin/crew.mjs ] && node .crew/bin/crew.mjs checkpoint --auto >/dev/null 2>&1; true"
           }
         ]
       }
