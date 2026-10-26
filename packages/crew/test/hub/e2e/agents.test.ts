@@ -106,6 +106,16 @@ it("only the human renders agents", () => {
   expect(out.permissionDecision).toBe("deny"); // nor rewrites the templates the next render reads
 });
 
+it("the release template leaves merge conflicts to land's bounce", () => {
+  const text = read(join(AGENT_TEMPLATES, "release.md"));
+  expect(text).toContain("Never resolve a merge conflict");
+  expect(text).toContain("git merge --abort");
+  expect(text).toContain("--to developer");
+  expect(text).not.toContain("move P-### in-progress"); // a done plan has no transitions; in-progress is the developer's
+  const resolving = text.split("\n").filter((l) => /resolve (the |a |any )?conflict/i.test(l) && !/never/i.test(l));
+  expect(resolving).toEqual([]);
+});
+
 it("agent templates are valid and name real commands", () => {
   const usage = tr(repo, "--help").stdout;
   const commands = new Set([...usage.matchAll(/(?:^ {2}|· )([a-z][a-z-]*)/gm)].map((m) => m[1]));
