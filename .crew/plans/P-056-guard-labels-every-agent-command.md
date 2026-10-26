@@ -51,16 +51,16 @@ FEAT-050 (G-007). The executive watches agents live (G-007's outcome), but backg
 - **Overlaps.** None with P-055 (backlog.ts, policy.ts, presets.ts). No generated doc block changes: no command, tool, ledger event, hook or gate is added. The guard and activity tests are `hub.shared`.
 
 ## Tasks
-- [ ] T1: `deriveWhat` and `label` in core/memory/activity.ts → verify: `cd packages/crew && npx vitest run test/activity.test.ts -t "label"`. A table: hub calls with and without a ref, a `cd … && npx vitest run a.test.ts b.test.ts c.test.ts`, `npm run build && npx vitest run x.test.ts`, git, env-prefixed commands, an 80-character cap, and an already labelled description returned unchanged (AC2)
-- [ ] T2: Guard labelling and the AC3 refusal in `decide` → verify: `npm run build && npx vitest run test/hub/e2e/guard.test.ts -t "label"`. Cases:
+- [x] T1: `deriveWhat` and `label` in core/memory/activity.ts → verify: `cd packages/crew && npx vitest run test/activity.test.ts -t "label"`. A table: hub calls with and without a ref, a `cd … && npx vitest run a.test.ts b.test.ts c.test.ts`, `npm run build && npx vitest run x.test.ts`, git, env-prefixed commands, an 80-character cap, and an already labelled description returned unchanged (AC2)
+- [x] T2: Guard labelling and the AC3 refusal in `decide` → verify: `npm run build && npx vitest run test/hub/e2e/guard.test.ts -t "label"`. Cases:
   - a qa agent's `checkpoint P-001` gets `qa P-001: checkpoint P-001` and its identity flags;
   - a description `build + suite tests` from a P-054 worktree cwd gets `qa P-054: build + suite tests`;
   - no plan gives `pm: grep`;
   - the main session gets no `updatedInput`;
   - background with no description is refused, with a timeout of 300000 and no description refused, and a foreground call with no description is labelled (AC1–AC3)
-- [ ] T3: The feed label (activity hook, `LiveRun.label`, `fromActivity`, `runningLines`) → verify: `npx vitest run test/activity.test.ts test/hub/e2e/activity.test.ts`. A Bash hook payload yields a `label` in the feed; `watch`, `status` and `/api/activity` show it; an event without a label still shows `Bash <target>` (AC4)
-- [ ] T4: UI Live panel and `api.ts` types → verify: `npm run typecheck`; `npm run build` (the UI bundle builds); then `git checkout -- plugins/crew/skills/hub/dist plugins/crew/skills/hub/references/commands.md` (AC4, AC5)
-- [ ] T5: Existing guard tests still green → verify: `npx vitest run test/hub/e2e/guard.test.ts test/hub/e2e/guard-writes.test.ts`. Expectations that compare a whole `updatedInput` (identity injection) gain the description (AC1, AC5)
+- [x] T3: The feed label (activity hook, `LiveRun.label`, `fromActivity`, `runningLines`) → verify: `npx vitest run test/activity.test.ts test/hub/e2e/activity.test.ts`. A Bash hook payload yields a `label` in the feed; `watch`, `status` and `/api/activity` show it; an event without a label still shows `Bash <target>` (AC4)
+- [x] T4: UI Live panel and `api.ts` types → verify: `npm run typecheck`; `npm run build` (the UI bundle builds); then `git checkout -- plugins/crew/skills/hub/dist plugins/crew/skills/hub/references/commands.md` (AC4, AC5)
+- [x] T5: Existing guard tests still green → verify: `npx vitest run test/hub/e2e/guard.test.ts test/hub/e2e/guard-writes.test.ts`. Expectations that compare a whole `updatedInput` (identity injection) gain the description (AC1, AC5)
 
 ## Test plan
 **Targeted checks** (from `packages/crew/`; the e2e suites drive the built `dist/crew.mjs`: `npm run build` first, then `git checkout -- plugins/crew/skills/hub/dist plugins/crew/skills/hub/references/commands.md`):
