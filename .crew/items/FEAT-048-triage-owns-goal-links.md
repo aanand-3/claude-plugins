@@ -2,12 +2,12 @@
 id: FEAT-048
 type: feat
 title: Triage owns goal links
-status: triaged
+status: done
 priority: P2
 goal: G-007
 plan: P-055
 created: 2026-10-26
-closed:
+closed: 2026-10-26
 ---
 
 # FEAT-048: Triage owns goal links
@@ -32,3 +32,4 @@ As the PM, I want to own which goal an item or plan belongs to, and to change it
 - Capture and re-goal rules change role permissions (PM, filers) and need the executive's approval before the plan is built.
 - Approved in principle by the executive via the coordinator, 2026-10-26 ("yes, lets do it"); the permission change still needs their explicit approval at plan time.
 - 2026-10-26: status new → triaged — priority P2
+- 2026-10-26: status triaged → done — delivered by P-055

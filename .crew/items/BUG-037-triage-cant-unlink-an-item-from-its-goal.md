@@ -2,13 +2,13 @@
 id: BUG-037
 type: bug
 title: triage can't unlink an item from its goal
-status: triaged
+status: done
 severity: S3
 priority: P2
 goal: G-007
 plan: P-055
 created: 2026-10-26
-closed:
+closed: 2026-10-26
 ---
 
 # BUG-037: triage can't unlink an item from its goal
@@ -46,3 +46,4 @@ There is a way to unlink an item from its goal at triage (for example `--goal no
 
 ## Notes
 - 2026-10-26: status new → triaged — priority P2, severity S3
+- 2026-10-26: status triaged → done — delivered by P-055

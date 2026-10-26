@@ -5,12 +5,12 @@ goal: G-007
 items: FEAT-048, BUG-037
 touches: packages/crew/src/hub/commands/work/backlog.ts, packages/crew/src/hub/commands/work/backlog.reg.ts, packages/crew/src/hub/core/team/policy.ts, packages/crew/src/hub/core/team/presets.ts, packages/crew/scripts/sample-project.mjs, plugins/crew/skills/hub/agents/pm.md, plugins/crew/skills/hub/references/model.md, plugins/crew/docs/reference.md, plugins/crew/docs/policy.md, packages/crew/test/hub/e2e/goal-links.test.ts, packages/crew/test/hub/e2e/basics.test.ts, packages/crew/test/hub/e2e/dispatch.test.ts, packages/crew/test/hub/e2e/doctor.test.ts, packages/crew/test/hub/e2e/items.test.ts, packages/crew/test/hub/e2e/sparse-worktrees.test.ts, packages/crew/test/hub/e2e/worktrees.test.ts, packages/crew/test/hub/e2e/runner.test.ts, packages/crew/test/hub/e2e/policy.test.ts, packages/crew/test/hub-worktrees.test.ts, packages/crew/test/mcp.test.ts, packages/crew/test/hub/registry.test.ts, packages/crew/src/docs/diagrams.ts, plugins/crew/docs/plan-lifecycle.md, packages/crew/test/docs.test.ts
 depends_on:
-status: accepted
+status: done
 branch: plan/P-055-triage-owns-goal-links
 pr:
 created: 2026-10-26
 started: 2026-10-26
-completed:
+completed: 2026-10-26
 assignee: developer
 ---
 
@@ -126,6 +126,7 @@ Latest log:
 - 2026-10-26: status in-progress → in-review
 - 2026-10-26: status in-review → accepted
 - 2026-10-26: landed on main as 6468c7b
+- 2026-10-26: status accepted → done
 
 ## Outcome
 Capture records origin, not goal: `new-item` sets `origin:` (`--origin`, the plan branch it runs on, or the run's single open plan claim) and keeps `--goal` as a `goal hint` Notes line; bugs need Steps to reproduce, Expected and Actual; `triage` prints the suggested goal and can clear (`--goal none`/`""`) or change a goal as a noted, logged re-goal (BUG-037 fixed). New `regoal` CLI command and MCP tool, gated by `item.regoaled`/`plan.regoaled` (pm in the lifecycle preset, and the PM's alone: the executive and a run in no role are refused, per review), with frozen-work and plan-moves-whole rules. Beyond the spec: `diagrams.ts` STEP_NOTES and `plan-lifecycle.md` (Q-cf70a3), the `docs.test.ts` offFlowSteps pin (Q-5764d6), and intake triage at capture now leaves an item new with a note when the capturing run's role (including the executive or no role) isn't `item.triaged`'s gate role (a developer filing an S1 bug used to fail the whole capture once bugs could pass the triage gate at intake).
