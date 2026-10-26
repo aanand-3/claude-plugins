@@ -5,7 +5,7 @@ goal:
 items: CHORE-016
 touches: plugins/crew/skills/hub/references/model.md, plugins/crew/skills/hub/SKILL.md, docs/vision.md
 depends_on:
-status: draft
+status: ready
 branch: plan/P-069-fix-stale-hub-references-in-model-md-hub
 pr:
 created: 2026-10-26
@@ -104,5 +104,7 @@ Docs only; lands with the plan. Rollback: revert the commit.
 ## Handoff
 
 ## Progress log
+
+- 2026-10-26: status draft → ready
 
 ## Outcome
