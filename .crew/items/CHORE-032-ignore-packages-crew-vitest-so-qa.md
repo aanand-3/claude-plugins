@@ -2,9 +2,9 @@
 id: CHORE-032
 type: chore
 title: Ignore packages/crew/.vitest/ so QA reporter output is never committed
-status: new
-priority:
-goal:
+status: triaged
+priority: P2
+goal: G-007
 plan:
 created: 2026-10-26
 closed:
@@ -20,3 +20,4 @@ QA's --reporter=json/junit runs wrote packages/crew/.vitest/json/output.json and
 - [ ]
 
 ## Notes
+- 2026-10-26: status new → triaged — priority P2
