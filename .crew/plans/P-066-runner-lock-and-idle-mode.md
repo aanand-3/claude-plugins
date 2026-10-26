@@ -5,7 +5,7 @@ goal:
 items: FEAT-059
 touches: packages/crew/src/hub/core/lock.ts, packages/crew/src/hub/commands/work/suite.ts, packages/crew/src/hub/commands/team/runner.ts, packages/crew/src/hub/commands/team/runnerlock.ts, packages/crew/src/hub/commands/team/autonomy.ts, packages/crew/src/hub/commands/team/autonomy.reg.ts, packages/crew/src/hub/commands/views/reports.ts, packages/crew/src/hub/registry.ts, packages/crew/src/hub/cli.ts, packages/crew/src/hub/main.ts, plugins/crew/skills/team/SKILL.md, packages/crew/test/hub/lock.test.ts, packages/crew/test/hub/e2e/runner.test.ts
 depends_on:
-status: accepted
+status: in-progress
 branch: plan/P-066-runner-lock-and-idle-mode
 pr:
 created: 2026-10-26
@@ -181,6 +181,7 @@ Latest log:
 - 2026-10-26: status ready → in-progress — branch plan/P-066-runner-lock-and-idle-mode
 - 2026-10-26: status in-progress → in-review
 - 2026-10-26: status in-review → accepted
+- 2026-10-26: status accepted → in-progress — land: hub.full_suite failed (exit 1):      41|   expect(loose("hub/core/").sort()).toEqual(["git.ts", "store.ts", "te… ·        |                                     ^ ·      42| }); ·      43| · ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 
 ## Outcome
 The runner is one per clone and idles instead of exiting. `core/lock.ts` (extracted from suite.ts, which now uses it)
