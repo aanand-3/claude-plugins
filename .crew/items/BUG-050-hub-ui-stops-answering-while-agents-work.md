@@ -42,3 +42,4 @@ G-007's outcome ("the human can watch every agent live in the hub and answer wha
 ## Notes
 Directions, not a spec: cache git answers (branch per worktree) and compiled glob regexes for the length of one build; skip or cache `findings` when no hub document changed (activity-only writes shouldn't rebuild the graph); serve `/api/inbox` without building the graph; coalesce rebuilds so at most one runs and the latest result is reused.
 - 2026-10-26: status new → triaged — priority P1, severity S2
+- 2026-10-26: re-triaged: priority P1, severity S2
