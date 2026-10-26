@@ -5,11 +5,11 @@ goal: G-006
 items: FEAT-029
 touches: packages/crew/src/docs/**, packages/crew/scripts/docs.mjs, packages/crew/test/docs.test.ts, packages/crew/package.json, packages/crew/src/hub/cli.ts, packages/crew/src/hub/commands/work/workflow.ts, packages/crew/src/hub/core/work/transition-gates.ts, packages/crew/src/hub/core/memory/ledger.ts, plugins/crew/docs/**
 depends_on: P-023
-status: ready
+status: in-progress
 branch: plan/P-025-generated-diagrams-and-inventories
 pr:
 created: 2026-10-25
-started:
+started: 2026-10-26
 completed:
 assignee: developer
 ---
@@ -83,5 +83,6 @@ n/a: internal tooling and new docs files; revert the PR to back out. Release: `h
 
 - 2026-10-25: status draft → ready
 - 2026-10-26: assigned to the developer role
+- 2026-10-26: status ready → in-progress — branch plan/P-025-generated-diagrams-and-inventories
 
 ## Outcome
