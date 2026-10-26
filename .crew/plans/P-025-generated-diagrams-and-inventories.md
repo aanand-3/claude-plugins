@@ -79,6 +79,26 @@ n/a: internal tooling and new docs files; revert the PR to back out. Release: `h
 
 ## Handoff
 
+_Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
+
+- P-025: Generated diagrams and inventories for the docs [in-progress] tasks 0/6 — claimed by Arpit Anand (developer:a2da2c0248382d944)
+- last checkpoint 2026-10-26 06:25 at T6 (2fac4fe) by Arpit Anand; since then 0 commit(s), 1 uncommitted file(s): .crew/plans/P-025-generated-diagrams-and-inventories.md
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-025-generated-diagrams-and-inventories/packages/crew && npm run typecheck >/dev/null 2>&1 && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/basics.test.ts test/mcp.test.ts test/view.test.ts test/ledger.test.ts ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-025-generated-diagrams-and-inventories checkout -- plugins; exit $r (AC 6)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-025-generated-diagrams-and-inventories/packages/crew && npx vitest run test/docs.test.ts (AC 5)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-025-generated-diagrams-and-inventories/packages/crew && npm run docs && npm run docs && git diff --exit-code ../../plugins/crew/docs && test -z "$(git status --porcelain ../../plugins/crew/docs)" (AC 1)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-025-generated-diagrams-and-inventories/packages/crew && npx vitest run test/docs.test.ts -t 'filled|PLAN_FLOW edge' (AC 4)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-025-generated-diagrams-and-inventories/packages/crew && sed -i '' 's/| `init` | CLI only |/| `init` | `init` |/' ../../plugins/crew/docs/reference.md && ! npx vitest run test/docs.test.ts -t 'fresh' ; a=$?; git checkout -- ../../plugins/crew/docs; printf '\nSee `packages/crew/src/hub/cli.ts:NO_SUCH_SYMBOL`.\n' >> ../../plugins/crew/docs/policy.md && ! npx vitest run test/docs.test.ts -t 'pointer in the doc pages' ; b=$?; git checkout -- ../../plugins/crew/docs; echo hand-edit-failed=$a fake-pointer-failed=$b; [ $a = 0 ] && [ $b = 0 ] && npx vitest run test/docs.test.ts (AC 2)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-025-generated-diagrams-and-inventories/packages/crew && printf '\nSee `packages/crew/src/hub/nope.ts:main`.\n' >> ../../plugins/crew/docs/policy.md && ! npx vitest run test/docs.test.ts -t 'pointer' ; b=$?; git checkout -- ../../plugins/crew/docs; [ $b = 0 ] && npx vitest run test/docs.test.ts -t 'pointer' (AC 3)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-025-generated-diagrams-and-inventories/packages/crew && npx vitest run test/docs.test.ts -t 'inventory' (AC 5)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-025-generated-diagrams-and-inventories/packages/crew && npm run typecheck >/dev/null 2>&1 && npm run build >/dev/null 2>&1 && npx vitest run test/structure.test.ts test/docs.test.ts test/hub/e2e/basics.test.ts test/mcp.test.ts test/view.test.ts test/ledger.test.ts ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-025-generated-diagrams-and-inventories checkout -- plugins; [ $r = 0 ] && git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-025-generated-diagrams-and-inventories diff --exit-code $(git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-025-generated-diagrams-and-inventories merge-base HEAD main) -- plugins/crew/skills/hub/dist .crew/bin && ! grep -E 'from "\.\./hub/(cli|mcp|server|commands)' src/docs/diagrams.ts (AC 6)
+- next: T1: `core/work/transition-gates.ts` with `TRANSITION_GATES`; `guard()` takes its labels from it; `export` on `COMMANDS` in `cli.ts`; `EVENT_TYPES` in `ledger.ts` → verify: `npm run typecheck`; after `npm run build`, `npx vitest run test/hub/e2e/basics.test.ts test/mcp.test.ts test/view.test.ts test/ledger.test.ts` pass unchanged (they assert guard's refusal text)
+- evidence: AC1 ✓ (self), AC2 ✓ (self), AC3 ✓ (self), AC4 ✓ (self), AC5 ✓ (self), AC6 ✓ (self)
+
+Latest log:
+- 2026-10-25: status draft → ready
+- 2026-10-26: assigned to the developer role
+- 2026-10-26: status ready → in-progress — branch plan/P-025-generated-diagrams-and-inventories
+
 ## Progress log
 
 - 2026-10-25: status draft → ready
