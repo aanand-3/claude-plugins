@@ -5,7 +5,7 @@ goal:
 items: FEAT-068
 touches: packages/crew/src/hub/commands/team/followups.ts, packages/crew/src/hub/commands/team/questions.reg.ts, packages/crew/src/hub/commands/team/inbox.ts, packages/crew/src/hub/commands/work/execution.ts, packages/crew/src/hub/server.ts, packages/crew/ui/src/views/Inbox.tsx, packages/crew/test/hub/e2e/inbox.test.ts, plugins/crew/skills/hub/references/model.md, plugins/crew/skills/team/SKILL.md
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-072-human-follow-ups-stay-in-the-inbox-until
 pr:
 created: 2026-10-26
@@ -166,7 +166,7 @@ so mixed versions stay safe. Rollback: revert the commit; open follow-ups stay a
 
 _Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
 
-- P-072: Human follow-ups stay in the inbox until done [in-progress] tasks 8/8 — claimed by Arpit Anand (developer:aac15b1577cfbb410)
+- P-072: Human follow-ups stay in the inbox until done [in-review] tasks 8/8 — claimed by Arpit Anand (developer:aac15b1577cfbb410)
 - last checkpoint 2026-10-26 14:39 at T8 (d3cad9d) by Arpit Anand; since then 0 commit(s), 4 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs, plugins/crew/skills/hub/dist/ui.html, plugins/crew/skills/hub/references/commands.md
 - don't retry: screenshot loop on a sample-project scratch repo at 375/900/1440 light/dark — a follow-up card only exists after a human answer with the approval flag, which the guard rightly refuses to agents, and Bash access to the /tmp scratch repo is denied in this session; left to QA and the Designer's manual check per the Test plan
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —
@@ -181,6 +181,7 @@ Latest log:
 - 2026-10-26: status draft → ready
 - 2026-10-26: assigned to the developer role
 - 2026-10-26: status ready → in-progress — branch plan/P-072-human-follow-ups-stay-in-the-inbox-until
+- 2026-10-26: status in-progress → in-review
 
 ## Outcome
 Shipped: `answer … --follow-up STEP [--unblocks ID]` records a follow-up (an `ask` to the executive with `after` and
@@ -195,5 +196,4 @@ green); the text form prints `FOLLOW-UP  Q-…` with two spaces like the other k
 not run: a follow-up card needs a human answer with the approval flag, which agents can't give — QA and the Designer
 do the manual Inbox check. A long unbroken step word may overflow the card (the existing escalation `<p>` has no
 `overflow-wrap` either; the styles are outside touches).
-Learnings: a UI state only a human's approval creates can't be seeded by an agent for screenshots; plan the visual
-check for QA or the Designer with a human-seeded scratch repo.
+Learnings: K-2026-10-26-a-ui-state-that-only-a-human-approval
