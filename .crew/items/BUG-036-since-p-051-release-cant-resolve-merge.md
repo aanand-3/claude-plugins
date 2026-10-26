@@ -2,13 +2,13 @@
 id: BUG-036
 type: bug
 title: Since P-051 Release can't resolve merge conflicts: its Bash writes are bound to paths.write .crew/drafts/**
-status: triaged
+status: done
 severity: S3
 priority: P2
 goal: G-007
 plan: P-052
 created: 2026-10-26
-closed:
+closed: 2026-10-26
 ---
 
 # BUG-036: Since P-051 Release can't resolve merge conflicts: its Bash writes are bound to paths.write .crew/drafts/**
@@ -46,3 +46,4 @@ Open choice (the executive's decision, policy):
 
 ## Notes
 - 2026-10-26: status new → triaged — priority P2, severity S3
+- 2026-10-26: status triaged → done — delivered by P-052

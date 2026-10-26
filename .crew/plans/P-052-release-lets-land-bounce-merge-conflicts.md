@@ -5,12 +5,12 @@ goal: G-007
 items: BUG-036
 touches: plugins/crew/skills/hub/agents/release.md, packages/crew/test/hub/e2e/agents.test.ts
 depends_on:
-status: accepted
+status: done
 branch: plan/P-052-release-lets-land-bounce-merge-conflicts
 pr:
 created: 2026-10-26
 started: 2026-10-26
-completed:
+completed: 2026-10-26
 assignee: developer
 ---
 
@@ -86,6 +86,7 @@ Latest log:
 - 2026-10-26: status in-progress → in-review
 - 2026-10-26: status in-review → accepted
 - 2026-10-26: landed on main as 31c8cc6
+- 2026-10-26: status accepted → done
 
 ## Outcome
 Release's template (plugins/crew/skills/hub/agents/release.md, body only) now leaves every merge conflict to land's bounce: loop step 3 says Release only reports the bounce (no Edit, sed, checkout --ours/--theirs or manual reroute), a new Rules line says it never resolves a conflict, and the hand-merge rule for pre-accepted plans aborts a conflicting merge, asks the developer (ask --to developer) to merge the base into the branch and resolve, and merges again once answered (review fix: a done plan has no transitions and in-progress is the developer's). agents.test.ts gains the regression case, which fails on the base template and passes on the new one; the whole file is green. The vendored .crew/templates/agents/release.md and .claude/agents/crew-release.md are unchanged (protected); the executive re-vendors after landing.
