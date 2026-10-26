@@ -3,7 +3,8 @@
  * it into every hub call (`--as`/`--run-id` after crew.mjs, `as`/`run_id` on MCP tools) and refuses a call claiming anything else.
  * It never returns "allow": permissions are checked on the rewritten input as usual (T0 spike, docs/vision.md).
  * Applies to subagents only; the main session (no agent_type) is the human's own and is left alone, except that no tool call
- * reaches the `ui` command endpoint. */
+ * reaches the `ui` command endpoint and it claims no crew role: it and subagents that aren't crew agents act as the
+ * executive, so their `--as` for another role, `--run-id`, CREW_* assignments and MCP `as`/`run_id` are refused. */
 import { readFileSync, realpathSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
@@ -75,10 +76,31 @@ function uiCommand(h: HookInput): Decision {
   return hit ? { deny: "only the human answers and approves, from their own terminal or browser" } : null;
 }
 
+/** The main session and subagents that aren't crew agents act as the executive (the human's role): they never claim a
+ * crew role, a run or CREW_* identity (BUG-043). Returns a deny, or null. */
+function unclaimed(h: HookInput): Decision {
+  const input = h.tool_input ?? {};
+  const NOT_CREW = "you aren't a crew agent:";
+  const launch = (c: string, flag: string) => ({ deny: `${NOT_CREW} launch the ${c} role's agent (crew-${c}) instead of ${flag} ${c}` });
+  const cmd = h.tool_name === "Bash" ? String(input.command ?? "") : "";
+  if (cmd && CREW_CLI.test(cmd)) {
+    const claimed = [...cmd.matchAll(/--as[=\s]+(\S+)/g)].map((m) => m[1]).find((c) => c !== "executive");
+    if (claimed) return launch(claimed, "passing --as");
+    if (/--run-id\b|\bCREW_(ROLE|RUN|ACTOR|TEAM)=/.test(cmd)) {
+      return { deny: `${NOT_CREW} don't pass --run-id or CREW_* variables; launch the role's agent to act in a role` };
+    }
+  }
+  if (HUB_MCP.test(h.tool_name)) {
+    if (input.as !== undefined && input.as !== "executive") return launch(String(input.as), "setting as");
+    if (input.run_id !== undefined) return { deny: `${NOT_CREW} don't pass run_id; launch the role's agent to act in a role` };
+  }
+  return null;
+}
+
 export function decide(store: Store, h: HookInput): Decision {
   const ui = uiCommand(h);
   if (ui) return ui;
-  if (!h.agent_type) return null; // the main session: the human's own
+  if (!h.agent_type) return unclaimed(h); // the main session: the human's own, acting as the executive
   const root = store.ws.root;
   const role = agentRole(root, h.agent_type);
   const run = role ? `${role}:${h.agent_id ?? "unknown"}` : null;
@@ -144,7 +166,7 @@ export function decide(store: Store, h: HookInput): Decision {
       return { deny: "`crew.mjs init` vendors the hub and its agent templates, which only the human installs (paths.protected)" };
     }
   }
-  if (!role) return null;
+  if (!role) return unclaimed(h);
 
   // crew agents: the role's own policy
   for (const d of policy.tools.deny) {

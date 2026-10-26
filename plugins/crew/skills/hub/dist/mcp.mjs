@@ -9637,10 +9637,28 @@ function uiCommand(h) {
   const hit = h.tool_name === "WebFetch" ? String(input.url ?? "").includes(UI_COMMANDS) : cmd.includes(UI_COMMANDS) && /\b(curl|wget|node|python[\d.]*|fetch)\b/.test(cmd);
   return hit ? { deny: "only the human answers and approves, from their own terminal or browser" } : null;
 }
+function unclaimed(h) {
+  const input = h.tool_input ?? {};
+  const NOT_CREW = "you aren't a crew agent:";
+  const launch = (c, flag) => ({ deny: `${NOT_CREW} launch the ${c} role's agent (crew-${c}) instead of ${flag} ${c}` });
+  const cmd = h.tool_name === "Bash" ? String(input.command ?? "") : "";
+  if (cmd && CREW_CLI2.test(cmd)) {
+    const claimed = [...cmd.matchAll(/--as[=\s]+(\S+)/g)].map((m) => m[1]).find((c) => c !== "executive");
+    if (claimed) return launch(claimed, "passing --as");
+    if (/--run-id\b|\bCREW_(ROLE|RUN|ACTOR|TEAM)=/.test(cmd)) {
+      return { deny: `${NOT_CREW} don't pass --run-id or CREW_* variables; launch the role's agent to act in a role` };
+    }
+  }
+  if (HUB_MCP.test(h.tool_name)) {
+    if (input.as !== void 0 && input.as !== "executive") return launch(String(input.as), "setting as");
+    if (input.run_id !== void 0) return { deny: `${NOT_CREW} don't pass run_id; launch the role's agent to act in a role` };
+  }
+  return null;
+}
 function decide(store, h) {
   const ui = uiCommand(h);
   if (ui) return ui;
-  if (!h.agent_type) return null;
+  if (!h.agent_type) return unclaimed(h);
   const root = store.ws.root;
   const role = agentRole(root, h.agent_type);
   const run2 = role ? `${role}:${h.agent_id ?? "unknown"}` : null;
@@ -9697,7 +9715,7 @@ function decide(store, h) {
       return { deny: "`crew.mjs init` vendors the hub and its agent templates, which only the human installs (paths.protected)" };
     }
   }
-  if (!role) return null;
+  if (!role) return unclaimed(h);
   for (const d of policy2.tools.deny) {
     const m = /^(\w+)\((.*)\)$/.exec(d);
     if (m ? m[1] === h.tool_name && segments2(cmd).some((c) => patternRe(m[2]).test(c)) : d === h.tool_name || d.endsWith("*") && h.tool_name.startsWith(d.slice(0, -1))) {

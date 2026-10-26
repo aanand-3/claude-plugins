@@ -47,6 +47,37 @@ it("the guard leaves the main session alone", () => {
   expect(hook(repo, { tool_name: "Edit", tool_input: { file_path: ".crew/policy.yaml" } })).toBeNull();
 });
 
+it("callers that aren't crew agents can't claim a role (BUG-043)", () => {
+  init(repo);
+  const HUB = "node .crew/bin/crew.mjs";
+  for (const who of [null, "Explore"]) {
+    const extra = who ? { agent_type: who, agent_id: "a1" } : {};
+    for (const [cmd, why] of [[`${HUB} assign P-060 --to developer --as pm`, "launch the pm role's agent (crew-pm)"],
+      [`${HUB} --as=pm next`, "launch the pm role's agent (crew-pm)"],
+      [`${HUB} next --run-id x`, "don't pass --run-id or CREW_* variables"],
+      [`CREW_ROLE=pm ${HUB} next`, "don't pass --run-id or CREW_* variables"],
+      [`export CREW_ROLE=pm && ${HUB} next`, "don't pass --run-id or CREW_* variables"],
+      [`env CREW_RUN=x ${HUB} next`, "don't pass --run-id or CREW_* variables"],
+      [`CREW_ACTOR=x ${HUB} next`, "don't pass --run-id or CREW_* variables"],
+      [`CREW_TEAM=web ${HUB} next`, "don't pass --run-id or CREW_* variables"]]) {
+      const out = hook(repo, bash(who, cmd));
+      expect(out?.permissionDecision, `${who} ${cmd}`).toBe("deny");
+      expect(out.permissionDecisionReason, `${who} ${cmd}`).toContain(why);
+      expect(out.permissionDecisionReason, `${who} ${cmd}`).toContain("you aren't a crew agent");
+    }
+    const mcp = (input: object) => hook(repo, { tool_name: "mcp__plugin_crew_hub__next", tool_input: input, ...extra });
+    expect(mcp({ as: "pm" })?.permissionDecision, `${who} as`).toBe("deny");
+    expect(mcp({ as: "pm" }).permissionDecisionReason).toContain("launch the pm role's agent (crew-pm)");
+    expect(mcp({ run_id: "x" })?.permissionDecision, `${who} run_id`).toBe("deny");
+    expect(mcp({ run_id: "x" }).permissionDecisionReason).toContain("don't pass run_id");
+    for (const cmd of [`${HUB} next`, `${HUB} context --as executive`, "grep -rn CREW_ROLE= src"]) {
+      expect(hook(repo, bash(who, cmd)), `${who} ${cmd}`).toBeNull();
+    }
+    expect(mcp({}), `${who} no as`).toBeNull();
+    expect(mcp({ as: "executive" }), `${who} as executive`).toBeNull();
+  }
+});
+
 it("the guard injects identity and refuses other claims", () => {
   init(repo);
   agent(repo, "crew-qa", "qa");
