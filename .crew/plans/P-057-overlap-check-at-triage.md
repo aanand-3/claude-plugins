@@ -5,7 +5,7 @@ goal: G-007
 items: FEAT-049
 touches: packages/crew/src/hub/commands/work/overlap.ts, packages/crew/src/hub/commands/work/backlog.ts, packages/crew/src/hub/commands/work/backlog.reg.ts, plugins/crew/skills/hub/agents/pm.md, plugins/crew/skills/hub/references/model.md, plugins/crew/docs/reference.md, packages/crew/test/overlap.test.ts, packages/crew/test/hub/e2e/overlap.test.ts, packages/crew/test/mcp.test.ts, packages/crew/test/hub/registry.test.ts
 depends_on: P-055
-status: in-review
+status: accepted
 branch: plan/P-057-overlap-check-at-triage
 pr:
 created: 2026-10-26
@@ -95,6 +95,7 @@ Latest log:
 - 2026-10-26: assigned to the developer role
 - 2026-10-26: status ready → in-progress — branch plan/P-057-overlap-check-at-triage
 - 2026-10-26: status in-progress → in-review
+- 2026-10-26: status in-review → accepted
 
 ## Outcome
 `overlaps ID [--json]` (CLI and MCP tool) and `triage` list overlap candidates from the documents alone: open items with similar titles (Jaccard >= 0.5 with >= 2 shared tokens, top 5) and plans in flight whose touches cover a path the item names, with only the dependent-plan or note outcomes suggested and an architect flag for plans being built/landed or paths in two plans. New module commands/work/overlap.ts; triage adds one line in backlog.ts. Tests: test/overlap.test.ts (unit table), test/hub/e2e/overlap.test.ts (AC1-AC5, incl. a no-network, git-only, no-`claude` run).
