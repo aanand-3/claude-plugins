@@ -21,3 +21,4 @@ architect.md:25 tells the Architect to write an ADR in docs/adr/ for stack or ar
 ## Notes
 - 2026-10-26: status new → triaged — priority P3
 - 2026-10-26: re-goaled G-001 → none by Arpit Anand: Not a G-001 criterion; docs/adr does not exist while crew-architect.md points at it; needs a drop-or-create decision (Q-848e65 triage)
+- 2026-10-26: Architect (Q-e45ff2 follow-up) proposed direction: keep docs/adr, but the ADR file is written inside the plan that carries the decision (its touches list docs/adr/NNNN-*.md, reviewed with the code); learn decision stays the hub record. Change: plugins/crew/skills/hub/agents/architect.md lines 25 and 38, re-render .claude/agents/crew-architect.md, agents.test.ts. No overlap with P-064.
