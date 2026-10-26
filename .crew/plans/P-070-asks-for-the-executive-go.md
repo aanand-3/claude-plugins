@@ -107,6 +107,18 @@ Ships in the hub bundle and plugin templates. In this repository the Director ag
 
 ## Handoff
 
+_Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
+
+- P-070: Asks for the executive go to the Director first [in-progress] tasks 0/3 — claimed by Arpit Anand (developer:ac46af70205372d20)
+- last checkpoint 2026-10-26 16:00 at T3 (68d6406) by Arpit Anand; since then 0 commit(s), 2 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs
+- next: T1: Add `it("an ask to the executive from a role goes to the Director (CHORE-030)")` to `test/hub/e2e/dispatch.test.ts` (lifecycle, newPlan; `as developer ask P-001 --to executive`; assert last ask event `to: director`, output names the Director, `inbox --json` has no escalation, director's dispatch has `answer <qid>`; then `as director ask --to executive`, `as executive ask --to executive` and `as pm escalate` each record `to: executive` and appear in `inbox`) → verify: the new case fails before T2.
+- evidence: AC1 —, AC2 —, AC3 —
+
+Latest log:
+- 2026-10-26: status draft → ready
+- 2026-10-26: assigned to the developer role
+- 2026-10-26: status ready → in-progress — branch plan/P-070-asks-for-the-executive-go
+
 ## Progress log
 
 - 2026-10-26: status draft → ready
