@@ -5,12 +5,12 @@ goal: G-001
 items: FEAT-002
 touches: packages/crew/src/tools/guidelines/merge_settings.ts, packages/crew/build.mjs, plugins/crew/skills/guidelines/templates/settings.json, plugins/crew/skills/guidelines/SKILL.md, packages/crew/src/hub/commands/views/doctor.ts, packages/crew/src/docs/inventory.ts, packages/crew/test/tools/guidelines.test.ts, packages/crew/test/hub/e2e/doctor.test.ts, packages/crew/test/hub/e2e/context.test.ts, packages/crew/test/plugin/contents.test.ts
 depends_on:
-status: accepted
+status: done
 branch: plan/P-060-add-context-and-checkpoint-hooks-to-this
 pr:
 created: 2026-10-26
 started: 2026-10-26
-completed:
+completed: 2026-10-26
 assignee: developer
 ---
 
@@ -191,6 +191,7 @@ Latest log:
 - 2026-10-26: status in-review → accepted
 - 2026-10-26: landed on main as b0cf2fc
 - 2026-10-26: landed on main as b0cf2fc; full suite 605/605 passed (exit 0); .crew/bin refreshed. Human step pending: run merge_settings.mjs per the plan's Rollout section.
+- 2026-10-26: status accepted → done
 
 ## Outcome
 - This repo's .claude/settings.json carries the SessionStart context hook and the Stop and PreCompact `checkpoint --auto` hooks, merged in via the guidelines refresh path.
