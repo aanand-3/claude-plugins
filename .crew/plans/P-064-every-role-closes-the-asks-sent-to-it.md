@@ -5,7 +5,7 @@ goal:
 items: BUG-044
 touches: plugins/crew/skills/hub/agents/pm.md, plugins/crew/skills/hub/agents/developer.md, plugins/crew/skills/hub/agents/qa.md, plugins/crew/skills/hub/agents/release.md, plugins/crew/skills/hub/agents/designer.md, plugins/crew/skills/hub/agents/generic.md, packages/crew/test/hub/e2e/agents.test.ts
 depends_on:
-status: in-review
+status: accepted
 branch: plan/P-064-every-role-closes-the-asks-sent-to-it
 pr:
 created: 2026-10-26
@@ -122,6 +122,7 @@ Latest log:
 - 2026-10-26: status in-review → accepted
 - 2026-10-26: status accepted → in-progress — land: hub.full_suite failed (exit 1):      15| beforeAll(() => { ·        | ^ ·      16|   execFileSync("node", [new URL("../scripts/sample-project.mjs", impor… ·      17|   graph = JSON.parse(tr("export", "--json")); · ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 - 2026-10-26: status in-progress → in-review — land bounce was not P-064: view.test.ts times out its beforeAll on main too under load (see the done checkpoint); no code change
+- 2026-10-26: status in-review → accepted
 
 ## Outcome
 Learnings: none
