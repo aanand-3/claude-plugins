@@ -80,6 +80,23 @@ Ships in the bundle; reaches this repo through refresh-bin. Rollback: revert the
 
 ## Handoff
 
+_Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
+
+- P-056: Guard labels every agent command [in-progress] tasks 5/5 — claimed by Arpit Anand (developer:a903b303fd5033b36)
+- last checkpoint 2026-10-26 08:23 at T3 (8aa8f85) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-056-guard-labels-every-agent-command/packages/crew && npx vitest run test/activity.test.ts -t label (AC 2)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-056-guard-labels-every-agent-command/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/guard.test.ts -t label ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-056-guard-labels-every-agent-command checkout -- plugins/crew/skills/hub/dist plugins/crew/skills/hub/references/commands.md plugins/crew/docs; exit $r (AC 1)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-056-guard-labels-every-agent-command/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/activity.test.ts test/hub/e2e/activity.test.ts ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-056-guard-labels-every-agent-command checkout -- plugins/crew/skills/hub/dist plugins/crew/skills/hub/references/commands.md plugins/crew/docs; exit $r (AC 4)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-056-guard-labels-every-agent-command/packages/crew && npm run typecheck && npm run build >/dev/null 2>&1 ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-056-guard-labels-every-agent-command checkout -- plugins/crew/skills/hub/dist plugins/crew/skills/hub/references/commands.md plugins/crew/docs; exit $r (AC 5)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-056-guard-labels-every-agent-command/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/guard.test.ts test/hub/e2e/guard-writes.test.ts ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-056-guard-labels-every-agent-command checkout -- plugins/crew/skills/hub/dist plugins/crew/skills/hub/references/commands.md plugins/crew/docs; exit $r (AC 3)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-056-guard-labels-every-agent-command/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/activity.test.ts test/hub/e2e/activity.test.ts test/hub/e2e/live-ui.test.ts ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-056-guard-labels-every-agent-command checkout -- plugins/crew/skills/hub/dist plugins/crew/skills/hub/references/commands.md plugins/crew/docs; exit $r (AC 4)
+- evidence: AC1 ✓ (self), AC2 ✓ (self), AC3 ✓ (self), AC4 ✓ (self), AC5 ✓ (self)
+
+Latest log:
+- 2026-10-26: status draft → ready
+- 2026-10-26: assigned to the developer role
+- 2026-10-26: status ready → in-progress — branch plan/P-056-guard-labels-every-agent-command
+
 ## Progress log
 
 - 2026-10-26: status draft → ready
@@ -87,3 +104,5 @@ Ships in the bundle; reaches this repo through refresh-bin. Rollback: revert the
 - 2026-10-26: status ready → in-progress — branch plan/P-056-guard-labels-every-agent-command
 
 ## Outcome
+The guard now labels every allowed crew-agent Bash call `<role> <plan>: <what>` (identity flags still injected) and refuses a background or >120 s call with no description. `deriveWhat`/`label` live in core/memory/activity.ts, and `describe` also takes the plan from a worktree path in the command. The activity hook records `label` on Bash events, and `watch`, `status` Running now, `/api/activity` and the UI Live panel show it, falling back to `tool target`. guard.ts is 217 lines, activity.ts 235. live-ui.test.ts was added to touches (Q-2f4b62).
+Learnings: any guard change that returns `updatedInput` for more calls breaks every e2e expectation of `toBeNull()` for an allowed crew Bash call. Assert "not denied, command unchanged" instead. Fixtures that contain another role's hub claim must be written with Edit/Write, not a Bash heredoc (K-2026-10-26-test-code-holding-a-hub-call-that-claims).
