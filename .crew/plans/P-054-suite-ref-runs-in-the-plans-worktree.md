@@ -11,6 +11,7 @@ pr:
 created: 2026-10-26
 started:
 completed:
+assignee: developer
 ---
 
 # P-054: suite --ref runs in the plan's worktree
@@ -68,5 +69,6 @@ n/a — internal hub change; ships in the bundle. Rollback: revert the commit.
 ## Progress log
 
 - 2026-10-26: status draft → ready
+- 2026-10-26: assigned to the developer role
 
 ## Outcome
