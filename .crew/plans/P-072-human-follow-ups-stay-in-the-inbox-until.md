@@ -127,7 +127,7 @@ Composition on the existing Inbox view (docs/design/DESIGN.md tokens; inventory 
   chip and button readable; keyboard: Done and the new input reachable by Tab with visible focus.
 
 ## Tasks
-- [ ] T1: Add the three FEAT-068 CLI cases to `test/hub/e2e/inbox.test.ts` (AC1-AC3) → verify: `npx vitest run test/hub/e2e/inbox.test.ts -t FEAT-068` fails before T2-T4.
+- [x] T1: Add the three FEAT-068 CLI cases to `test/hub/e2e/inbox.test.ts` (AC1-AC3) → verify: `npx vitest run test/hub/e2e/inbox.test.ts -t FEAT-068` fails before T2-T4.
 - [ ] T2: `followups.ts` and the `answer --follow-up/--unblocks` registration in `questions.reg.ts` → verify: `npx vitest run test/hub/e2e/inbox.test.ts -t "an answer records"` passes.
 - [ ] T3: `inbox.ts` follow-up kind and the escalation `how` hint → verify: `npx vitest run test/hub/e2e/inbox.test.ts -t "stays in the inbox"` passes.
 - [ ] T4: `recovery()` wait lines in `execution.ts` → verify: `npx vitest run test/hub/e2e/inbox.test.ts -t "wait reason"` passes.
