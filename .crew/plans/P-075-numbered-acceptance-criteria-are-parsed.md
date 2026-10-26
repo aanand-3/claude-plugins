@@ -5,7 +5,7 @@ goal:
 items: BUG-047
 touches: packages/crew/src/hub/core/work/doc.ts, packages/crew/src/hub/commands/work/execution.ts, packages/crew/test/doc.test.ts, packages/crew/test/hub/e2e/execution.test.ts
 depends_on:
-status: draft
+status: ready
 branch: plan/P-075-numbered-acceptance-criteria-are-parsed
 pr:
 created: 2026-10-26
@@ -82,5 +82,7 @@ recorded earlier against a nested bullet's text no longer matches a criterion an
 ## Handoff
 
 ## Progress log
+
+- 2026-10-26: status draft → ready
 
 ## Outcome
