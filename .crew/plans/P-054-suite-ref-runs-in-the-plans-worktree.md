@@ -5,11 +5,11 @@ goal: G-007
 items: BUG-035
 touches: packages/crew/src/hub/commands/work/suite.ts, packages/crew/src/hub/commands/work/suite.reg.ts, packages/crew/src/hub/commands/work/land.ts, packages/crew/test/hub/e2e/suite.test.ts, packages/crew/test/hub/e2e/land.test.ts
 depends_on:
-status: ready
+status: in-progress
 branch: plan/P-054-suite-ref-runs-in-the-plans-worktree
 pr:
 created: 2026-10-26
-started:
+started: 2026-10-26
 completed:
 assignee: developer
 ---
@@ -70,5 +70,6 @@ n/a — internal hub change; ships in the bundle. Rollback: revert the commit.
 
 - 2026-10-26: status draft → ready
 - 2026-10-26: assigned to the developer role
+- 2026-10-26: status ready → in-progress — branch plan/P-054-suite-ref-runs-in-the-plans-worktree
 
 ## Outcome
