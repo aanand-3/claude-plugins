@@ -4,7 +4,7 @@ type: chore
 title: Architect ADRs in docs/adr are never committed or reviewed
 status: triaged
 priority: P3
-goal: G-001
+goal:
 plan:
 created: 2026-10-26
 closed:
@@ -20,3 +20,4 @@ architect.md:25 tells the Architect to write an ADR in docs/adr/ for stack or ar
 
 ## Notes
 - 2026-10-26: status new → triaged — priority P3
+- 2026-10-26: re-goaled G-001 → none by Arpit Anand: Not a G-001 criterion; docs/adr does not exist while crew-architect.md points at it; needs a drop-or-create decision (Q-848e65 triage)
