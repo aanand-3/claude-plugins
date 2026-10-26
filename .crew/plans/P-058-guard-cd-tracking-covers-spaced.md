@@ -5,7 +5,7 @@ goal: G-007
 items: BUG-012
 touches: packages/crew/src/hub/commands/team/hubcall.ts, packages/crew/src/hub/commands/team/targets.ts, packages/crew/test/hub/targets.test.ts, packages/crew/test/hub/hubcall.test.ts, packages/crew/test/hub/e2e/guard.test.ts, packages/crew/test/hub/e2e/guard-writes.test.ts
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-058-guard-cd-tracking-covers-spaced
 pr:
 created: 2026-10-26
@@ -73,7 +73,7 @@ Ships in the bundle; the guard reaches this repo through refresh-bin. Rollback: 
 
 _Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
 
-- P-058: Guard cd tracking covers spaced subshells, functions and case arms [in-progress] tasks 3/3 — claimed by Arpit Anand (developer:a023f1c3f99597d85)
+- P-058: Guard cd tracking covers spaced subshells, functions and case arms [in-review] tasks 3/3 — claimed by Arpit Anand (developer:a023f1c3f99597d85)
 - last checkpoint 2026-10-26 08:24 at T3 (7c93acd) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
 - ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-058-guard-cd-tracking-covers-spaced/packages/crew && npx vitest run test/hub/targets.test.ts test/hub/hubcall.test.ts (AC 4)
 - ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-058-guard-cd-tracking-covers-spaced/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/guard.test.ts test/hub/e2e/guard-writes.test.ts ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-058-guard-cd-tracking-covers-spaced checkout -- plugins/crew/skills/hub/dist plugins/crew/skills/hub/references/commands.md plugins/crew/docs; exit $r (AC 1,2,3)
@@ -94,6 +94,7 @@ Latest log:
 - 2026-10-26: status in-progress → in-review
 - 2026-10-26: review: changes requested — The cd tracking, install -d and the tests are right. The first limit is acceptable: a case pattern named cd reads as a bare cd, which fails toward deny. The second needs doing now. inlineScript (targets.ts) is the paths.write rule for roles limited to .crew/drafts/ (BUG-021). It still has its own prefix loop, so 'function f { python3 -c "<writes>"; }; f' hides an inline script from that rule. That lets a drafts-only role write anywhere, the same class of hole as BUG-012, in a file already in touches. Fix: in inlineScript's loop, after the WRAPPER branch, skip with skipPrefix instead of the ASSIGN/PREFIX test: s = skipPrefix(c.words.slice(h)); if s is 0 break, else h += s. Then wrappers and prefixes can still interleave. Add unit cases in targets.test.ts's inlineScript block: 'function f { python3 -c x; }; f' and 'case x in x) node -e y;; esac' return the interpreter, and 'function f { echo hi; }; f' returns null. Add one e2e case in guard-writes.test.ts: a drafts-only role (e.g. qa) running 'function f { python3 -c "open(1)"; }; f' is denied with the inline-script message.
 - 2026-10-26: status in-review → in-progress — changes requested: The cd tracking, install -d and the tests are right. The first limit is acceptable: a case pattern named cd reads as a bare cd, which fails toward deny. The second needs doing now. inlineScript (targets.ts) is the paths.write rule for roles limited to .crew/drafts/ (BUG-021). It still has its own prefix loop, so 'function f { python3 -c "<writes>"; }; f' hides an inline script from that rule. That lets a drafts-only role write anywhere, the same class of hole as BUG-012, in a file already in touches. Fix: in inlineScript's loop, after the WRAPPER branch, skip with skipPrefix instead of the ASSIGN/PREFIX test: s = skipPrefix(c.words.slice(h)); if s is 0 break, else h += s. Then wrappers and prefixes can still interleave. Add unit cases in targets.test.ts's inlineScript block: 'function f { python3 -c x; }; f' and 'case x in x) node -e y;; esac' return the interpreter, and 'function f { echo hi; }; f' returns null. Add one e2e case in guard-writes.test.ts: a drafts-only role (e.g. qa) running 'function f { python3 -c "open(1)"; }; f' is denied with the inline-script message.
+- 2026-10-26: status in-progress → in-review
 
 ## Outcome
 `skipPrefix(words)` in hubcall.ts now skips assignments, prefix words (plus a lone `(`), `function NAME`, `case WORD in PATTERN` and a lone `esac`. `headAt` (the hub-call finder) and `writeTargets` both use it. `install -d`/`--directory` checks every operand. Unit cases cover AC4/AC5, and the guard e2e block `guard_cd_forms` covers AC1–AC3 from a plan worktree.
