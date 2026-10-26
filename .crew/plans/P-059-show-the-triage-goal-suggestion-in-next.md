@@ -5,11 +5,11 @@ goal: G-007
 items: FEAT-051
 touches: packages/crew/src/hub/commands/work/backlog.ts, packages/crew/src/hub/commands/team/roles.ts, packages/crew/test/hub/e2e/pm-queue.test.ts
 depends_on: P-055
-status: ready
+status: in-progress
 branch: plan/P-059-show-the-triage-goal-suggestion-in-next
 pr:
 created: 2026-10-26
-started:
+started: 2026-10-26
 completed:
 assignee: developer
 ---
@@ -75,5 +75,6 @@ and before `start` (K-2026-10-25-a-plan-worktree-cut-before-its-depends).
 
 - 2026-10-26: status draft → ready
 - 2026-10-26: assigned to the developer role
+- 2026-10-26: status ready → in-progress — branch plan/P-059-show-the-triage-goal-suggestion-in-next
 
 ## Outcome
