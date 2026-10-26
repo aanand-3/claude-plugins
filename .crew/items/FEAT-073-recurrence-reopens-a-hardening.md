@@ -2,9 +2,9 @@
 id: FEAT-073
 type: feat
 title: Recurrence reopens a hardening disposition
-status: new
-priority:
-goal:
+status: triaged
+priority: P1
+goal: G-005
 plan:
 created: 2026-10-26
 closed:
@@ -26,3 +26,4 @@ As the executive, I want a repeated mistake to reopen the disposition of the ent
 
 ## Notes
 Depends on FEAT-072 (disposition field) and FEAT-018 (recalled and recurrence events); order after both. Priority after FEAT-071 (P0) and BUG-050. Source: Q-b1501e, Q-232a2b.
+- 2026-10-26: status new → triaged — priority P1
