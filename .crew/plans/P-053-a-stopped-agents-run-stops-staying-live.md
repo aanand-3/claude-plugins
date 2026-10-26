@@ -88,6 +88,7 @@ Latest log:
 - 2026-10-26: status ready → in-progress — branch plan/P-053-a-stopped-agents-run-stops-staying-live
 - 2026-10-26: status in-progress → in-review
 - 2026-10-26: status in-review → accepted
+- 2026-10-26: landed on main as c6cf703
 
 ## Outcome
 A run whose last activity names a done or dropped plan, or a closed item, is no longer live: it drops out of `status`, `/api/activity` and dispatch's idle row. `end-run <run> --note` (CLI) and `end_run` (MCP), for the executive or the director, record an `end-run` event that ends a live run until it acts again. The Director's step 2 gained a `run … idle` entry. The ledger docs and reference were regenerated. registry.test.ts now accepts a tool enum that gained values, because the ledger tool's `type` enum lists the event types.
