@@ -13267,6 +13267,8 @@ function releaseSlot(file, token) {
 }
 function runSuite(store, { cwd, ref, capture = false }) {
   const { command: command2, slots } = suiteSettings(store);
+  const sha = git(["-C", cwd, "rev-parse", "HEAD"])?.trim() || null;
+  const branch = git(["-C", cwd, "branch", "--show-current"])?.trim() || null;
   const dir = home(store), run2 = store.ledger.who.run, t0 = Date.now();
   const me = {
     token: `${process.pid}-${randomBytes3(6).toString("hex")}`,
@@ -13297,6 +13299,8 @@ function runSuite(store, { cwd, ref, capture = false }) {
     ref: ref ?? null,
     run: run2,
     worktree: cwd,
+    sha,
+    branch,
     slot,
     wait_ms: t1 - t0,
     run_ms: t2 - t1,
@@ -13306,12 +13310,22 @@ function runSuite(store, { cwd, ref, capture = false }) {
   const torn = existsSync12(file) && statSync9(file).size > 0 && !readFileSync10(file, "utf8").endsWith("\n");
   appendFileSync3(file, `${torn ? "\n" : ""}${JSON.stringify(rec)}
 `);
-  return { exit, waitMs: rec.wait_ms, runMs: rec.run_ms, ...capture ? { output } : {} };
+  return { exit, waitMs: rec.wait_ms, runMs: rec.run_ms, sha, ...capture ? { output } : {} };
 }
 var secs = (ms) => (ms / 1e3).toFixed(1);
+function suiteHome(store, ref) {
+  if (!ref || !/^P-\d+$/.test(ref)) return store.ws.root;
+  const pid = store.checkRef(ref, "plan");
+  const wt = store.planWorktrees().get(pid);
+  if (wt) return wt;
+  const want = store.find(pid).get("branch") || null, here = currentBranch();
+  if (want && here === want) return store.ws.root;
+  return fail(`${pid} has no worktree and this checkout is on ${here ?? "a detached HEAD"}, not ${want ?? "a plan branch"}: run it where the plan's branch is checked out.`);
+}
 function suiteCmd(store, ref) {
   store.require();
-  const r = runSuite(store, { cwd: store.ws.root, ref: ref?.toUpperCase() });
+  ref = ref?.toUpperCase();
+  const r = runSuite(store, { cwd: suiteHome(store, ref), ref });
   store.say(`suite: exit ${r.exit} (waited ${secs(r.waitMs)}s, ran ${secs(r.runMs)}s)`);
   return r.exit;
 }
@@ -13332,14 +13346,14 @@ function suitesCmd(store, limit = 20, json = false) {
   if (json) return store.say(JSON.stringify(recs, null, 2));
   if (!recs.length) return store.say("No suite runs recorded.");
   for (const r of recs) {
-    store.say(`${r.ts}  ${r.ref ?? "-"}  ${r.run}  slot ${r.slot}  waited ${secs(r.wait_ms)}s  ran ${secs(r.run_ms)}s  exit ${r.exit}`);
+    store.say(`${r.ts}  ${r.ref ?? "-"}  ${r.sha?.slice(0, 7) ?? "-"}  ${r.run}  slot ${r.slot}  waited ${secs(r.wait_ms)}s  ran ${secs(r.run_ms)}s  exit ${r.exit}`);
   }
 }
 
 // src/hub/commands/work/suite.reg.ts
 var registration13 = {
   usage: [
-    "  suite [--ref P-###]                           run hub.full_suite under a slot shared by every worktree (Release)",
+    "  suite [--ref P-###]                           run hub.full_suite under a slot shared by every worktree, in P-###'s worktree (Release)",
     "  suites [--limit 20] [--json]                  recorded full-suite runs, newest first: queue wait and duration"
   ],
   cli: {
@@ -13348,7 +13362,7 @@ var registration13 = {
   },
   tools: {
     suites: {
-      description: "Recorded full-suite runs (`crew.mjs suites`), newest first: ts, ref, run, worktree, slot, wait_ms, run_ms, exit.",
+      description: "Recorded full-suite runs (`crew.mjs suites`), newest first: ts, ref, run, worktree, sha, branch, slot, wait_ms, run_ms, exit.",
       input: obj({ limit: num("how many, newest first (default 20)") }),
       run: (st, a) => suitesCmd(st, n(a, "limit"), true)
     }
@@ -13462,6 +13476,10 @@ function landOne(store, plan, base2) {
     if (hub.full_suite) {
       const s2 = runSuite(store, { cwd: wt, ref: pid, capture: true });
       if (s2.exit !== 0) throw new Bounce(`hub.full_suite failed (exit ${s2.exit}): ${tail3(store, s2.output ?? "")}`);
+      const tip = at(["rev-parse", branch]).stdout.trim();
+      if (tip !== s2.sha) {
+        throw new Stop(`its branch moved during the full suite (tested ${s2.sha?.slice(0, 7) ?? "-"}, now ${tip.slice(0, 7)}); run \`land ${pid}\` again`);
+      }
     }
     const sha = squash(store, plan, base2, from);
     if (sha) return landed(store, plan, base2, branch, wt, sha);

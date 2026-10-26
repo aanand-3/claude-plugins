@@ -205,6 +205,36 @@ describe("land", () => {
     ok(runAs(repo, "pm", "pm", "move", "P-001", "done"));
   });
 
+  it("tested sha: a branch that moved during the full suite stops the land; the plan stays accepted (BUG-035)", () => {
+    repo = hub("  full_suite: git commit -q --allow-empty -m moved\n");
+    const w = started(repo, "P-001", "Signup");
+    accepted(repo, "P-001", w, 1);
+    const head = repo.git("rev-parse", "main").stdout.trim();
+    const r = land(repo, "P-001");
+    expect(r.returncode).toBe(1);
+    const tested = JSON.parse(tr(repo, "suites", "--json").stdout)[0].sha as string;
+    const now = repo.git("rev-parse", "plan/P-001-signup").stdout.trim();
+    expect(r.stdout).toContain(`P-001: not landed — its branch moved during the full suite (tested ${tested.slice(0, 7)}, `
+      + `now ${now.slice(0, 7)}); run \`land P-001\` again`);
+    expect(tested).not.toBe(now);
+    expect(status(repo, "P-001")).toBe("accepted");
+    expect(repo.git("log", "--format=%s", `${head}..main`).stdout.split("\n").filter((s) => s && !s.startsWith("chore(hub)"))).toEqual([]);
+    expect(repo.read("src/cli.ts")).toBe(CLI);
+    expect(hasWorktree(repo, "P-001")).toBe(true);
+    expect(clean(w)).toBe("");
+  });
+
+  it("tested sha: a landed plan's suite record has the sha of the commit it squashed (BUG-035)", () => {
+    repo = hub("  full_suite: true\n");
+    const w = started(repo, "P-001", "Signup");
+    accepted(repo, "P-001", w, 1);
+    ok(land(repo, "P-001"));
+    const rec = JSON.parse(tr(repo, "suites", "--json").stdout)[0];
+    expect(rec).toMatchObject({ ref: "P-001", branch: "plan/P-001-signup", exit: 0 });
+    const squashed = repo.git("log", "--format=%H", "--grep", "^feat(P-001): Signup$", "main").stdout.trim();
+    expect(repo.git("rev-parse", `${rec.sha}^{tree}`).stdout).toBe(repo.git("rev-parse", `${squashed}^{tree}`).stdout);
+  });
+
   it("refuses and writes nothing: the developer, an in-review plan, an unlanded dependency, a legacy done plan (AC7)", () => {
     const w1 = started(repo, "P-001", "Signup");
     inReview(repo, "P-001", w1, 1);

@@ -131,6 +131,11 @@ function landOne(store: Store, plan: Doc, base: string): void {
     if (hub.full_suite) {
       const s = runSuite(store, { cwd: wt, ref: pid, capture: true });
       if (s.exit !== 0) throw new Bounce(`hub.full_suite failed (exit ${s.exit}): ${tail(store, s.output ?? "")}`);
+      // what gets squashed is what the suite tested (BUG-035)
+      const tip = at(["rev-parse", branch]).stdout.trim();
+      if (tip !== s.sha) {
+        throw new Stop(`its branch moved during the full suite (tested ${s.sha?.slice(0, 7) ?? "-"}, now ${tip.slice(0, 7)}); run \`land ${pid}\` again`);
+      }
     }
     // 6. the plan's one commit on the base, unless the base gained code meanwhile (then again from step 3)
     const sha = squash(store, plan, base, from);

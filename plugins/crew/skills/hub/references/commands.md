@@ -184,7 +184,7 @@ refresh-bin [--check]                         copy the policy's release.refresh_
 ## work/suite
 
 ```text
-suite [--ref P-###]                           run hub.full_suite under a slot shared by every worktree (Release)
+suite [--ref P-###]                           run hub.full_suite under a slot shared by every worktree, in P-###'s worktree (Release)
 suites [--limit 20] [--json]                  recorded full-suite runs, newest first: queue wait and duration
 ```
 
@@ -193,7 +193,7 @@ suites [--limit 20] [--json]                  recorded full-suite runs, newest f
 | `suite` | — |
 | `suites` | `suites` |
 
-- `suites`: Recorded full-suite runs (`crew.mjs suites`), newest first: ts, ref, run, worktree, slot, wait_ms, run_ms, exit.
+- `suites`: Recorded full-suite runs (`crew.mjs suites`), newest first: ts, ref, run, worktree, sha, branch, slot, wait_ms, run_ms, exit.
 
 ## work/land
 
