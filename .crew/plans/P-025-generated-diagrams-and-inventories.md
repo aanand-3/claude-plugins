@@ -5,7 +5,7 @@ goal: G-006
 items: FEAT-029
 touches: packages/crew/src/docs/**, packages/crew/scripts/docs.mjs, packages/crew/test/docs.test.ts, packages/crew/package.json, packages/crew/src/hub/cli.ts, packages/crew/src/hub/commands/work/workflow.ts, packages/crew/src/hub/core/work/transition-gates.ts, packages/crew/src/hub/core/memory/ledger.ts, plugins/crew/docs/**
 depends_on: P-023
-status: in-progress
+status: in-review
 branch: plan/P-025-generated-diagrams-and-inventories
 pr:
 created: 2026-10-25
@@ -56,12 +56,12 @@ G-006, FEAT-029. The doc set (FEAT-030) and the UI docs view (FEAT-031) both nee
 - Ordering. depends_on P-023: this plan leaves `dist/` to Release and regenerates its doc blocks through `npm run build`, which is what P-023's `hub.build` and Release instructions run; until P-023 lands, Release still expects plans to commit their bundles. No overlap with P-023's touches. No depends_on P-021, P-022 or P-024: with the generated paths out, the only shared file is `cli.ts` (P-021, P-024), where this plan adds one `export` keyword on the `COMMANDS` declaration line, which neither of them edits (they add entries inside the table); whichever lands second takes the other's text when it updates to the base. After this plan, their new commands reach the reference block through Release's `npm run build`.
 
 ## Tasks
-- [ ] T1: `core/work/transition-gates.ts` with `TRANSITION_GATES`; `guard()` takes its labels from it; `export` on `COMMANDS` in `cli.ts`; `EVENT_TYPES` in `ledger.ts` → verify: `npm run typecheck`; after `npm run build`, `npx vitest run test/hub/e2e/basics.test.ts test/mcp.test.ts test/view.test.ts test/ledger.test.ts` pass unchanged (they assert guard's refusal text)
-- [ ] T2: `src/docs/diagrams.ts` for the four flows (gates, lifecycle roles, non-edge role gates), the policy layer order and the ledger event types → verify: `docs.test.ts` cases that every `PLAN_FLOW` edge appears with the four edges of AC4 labelled, every `TRANSITION_GATES` key labels at least one edge, and the static layer order equals `loadLayers()`'s on a fixture (org playbook via `CREW_PLAYBOOK`, `preset: lifecycle`, a role and a team)
-- [ ] T3: `src/docs/inventory.ts` for commands, MCP tools, UI actions, hooks and skills → verify: `docs.test.ts` case that every `TOOLS` and `COMMANDS` key is listed and the CLI-only set is `COMMANDS` minus `TOOLS`
-- [ ] T4: `src/docs/render.ts` (Mermaid and tables), `scripts/docs.mjs` with the marker rewrite and its header note, and `docs`/`build` in `package.json` → verify: `npm run docs` twice, then `git diff --exit-code plugins/crew/docs` after the second run is empty
-- [ ] T5: Stub pages in `plugins/crew/docs/` with their generated blocks → verify: after `npm run docs` every `<!-- generated:<id> -->` block in the four pages is non-empty (`docs.test.ts` case), and the Mermaid blocks open in a Markdown preview with Mermaid support (manual, noted in the checkpoint)
-- [ ] T6: `test/docs.test.ts` freshness and pointer checks → verify: passes; fails after a hand edit in a block and after a fake pointer (both demonstrated in the checkpoint note)
+- [x] T1: `core/work/transition-gates.ts` with `TRANSITION_GATES`; `guard()` takes its labels from it; `export` on `COMMANDS` in `cli.ts`; `EVENT_TYPES` in `ledger.ts` → verify: `npm run typecheck`; after `npm run build`, `npx vitest run test/hub/e2e/basics.test.ts test/mcp.test.ts test/view.test.ts test/ledger.test.ts` pass unchanged (they assert guard's refusal text)
+- [x] T2: `src/docs/diagrams.ts` for the four flows (gates, lifecycle roles, non-edge role gates), the policy layer order and the ledger event types → verify: `docs.test.ts` cases that every `PLAN_FLOW` edge appears with the four edges of AC4 labelled, every `TRANSITION_GATES` key labels at least one edge, and the static layer order equals `loadLayers()`'s on a fixture (org playbook via `CREW_PLAYBOOK`, `preset: lifecycle`, a role and a team)
+- [x] T3: `src/docs/inventory.ts` for commands, MCP tools, UI actions, hooks and skills → verify: `docs.test.ts` case that every `TOOLS` and `COMMANDS` key is listed and the CLI-only set is `COMMANDS` minus `TOOLS`
+- [x] T4: `src/docs/render.ts` (Mermaid and tables), `scripts/docs.mjs` with the marker rewrite and its header note, and `docs`/`build` in `package.json` → verify: `npm run docs` twice, then `git diff --exit-code plugins/crew/docs` after the second run is empty
+- [x] T5: Stub pages in `plugins/crew/docs/` with their generated blocks → verify: after `npm run docs` every `<!-- generated:<id> -->` block in the four pages is non-empty (`docs.test.ts` case), and the Mermaid blocks open in a Markdown preview with Mermaid support (manual, noted in the checkpoint)
+- [x] T6: `test/docs.test.ts` freshness and pointer checks → verify: passes; fails after a hand edit in a block and after a fake pointer (both demonstrated in the checkpoint note)
 
 ## Test plan
 **Targeted checks** (from `packages/crew/`):
@@ -81,8 +81,8 @@ n/a: internal tooling and new docs files; revert the PR to back out. Release: `h
 
 _Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
 
-- P-025: Generated diagrams and inventories for the docs [in-progress] tasks 0/6 — claimed by Arpit Anand (developer:a2da2c0248382d944)
-- last checkpoint 2026-10-26 06:25 at T6 (2fac4fe) by Arpit Anand; since then 0 commit(s), 1 uncommitted file(s): .crew/plans/P-025-generated-diagrams-and-inventories.md
+- P-025: Generated diagrams and inventories for the docs [in-review] tasks 6/6 — claimed by Arpit Anand (developer:a2da2c0248382d944)
+- last checkpoint 2026-10-26 06:25 at T6 (2fac4fe) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
 - ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-025-generated-diagrams-and-inventories/packages/crew && npm run typecheck >/dev/null 2>&1 && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/basics.test.ts test/mcp.test.ts test/view.test.ts test/ledger.test.ts ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-025-generated-diagrams-and-inventories checkout -- plugins; exit $r (AC 6)
 - ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-025-generated-diagrams-and-inventories/packages/crew && npx vitest run test/docs.test.ts (AC 5)
 - ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-025-generated-diagrams-and-inventories/packages/crew && npm run docs && npm run docs && git diff --exit-code ../../plugins/crew/docs && test -z "$(git status --porcelain ../../plugins/crew/docs)" (AC 1)
@@ -91,7 +91,6 @@ _Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
 - ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-025-generated-diagrams-and-inventories/packages/crew && printf '\nSee `packages/crew/src/hub/nope.ts:main`.\n' >> ../../plugins/crew/docs/policy.md && ! npx vitest run test/docs.test.ts -t 'pointer' ; b=$?; git checkout -- ../../plugins/crew/docs; [ $b = 0 ] && npx vitest run test/docs.test.ts -t 'pointer' (AC 3)
 - ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-025-generated-diagrams-and-inventories/packages/crew && npx vitest run test/docs.test.ts -t 'inventory' (AC 5)
 - ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-025-generated-diagrams-and-inventories/packages/crew && npm run typecheck >/dev/null 2>&1 && npm run build >/dev/null 2>&1 && npx vitest run test/structure.test.ts test/docs.test.ts test/hub/e2e/basics.test.ts test/mcp.test.ts test/view.test.ts test/ledger.test.ts ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-025-generated-diagrams-and-inventories checkout -- plugins; [ $r = 0 ] && git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-025-generated-diagrams-and-inventories diff --exit-code $(git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-025-generated-diagrams-and-inventories merge-base HEAD main) -- plugins/crew/skills/hub/dist .crew/bin && ! grep -E 'from "\.\./hub/(cli|mcp|server|commands)' src/docs/diagrams.ts (AC 6)
-- next: T1: `core/work/transition-gates.ts` with `TRANSITION_GATES`; `guard()` takes its labels from it; `export` on `COMMANDS` in `cli.ts`; `EVENT_TYPES` in `ledger.ts` → verify: `npm run typecheck`; after `npm run build`, `npx vitest run test/hub/e2e/basics.test.ts test/mcp.test.ts test/view.test.ts test/ledger.test.ts` pass unchanged (they assert guard's refusal text)
 - evidence: AC1 ✓ (self), AC2 ✓ (self), AC3 ✓ (self), AC4 ✓ (self), AC5 ✓ (self), AC6 ✓ (self)
 
 Latest log:
@@ -104,5 +103,9 @@ Latest log:
 - 2026-10-25: status draft → ready
 - 2026-10-26: assigned to the developer role
 - 2026-10-26: status ready → in-progress — branch plan/P-025-generated-diagrams-and-inventories
+- 2026-10-26: status in-progress → in-review — T1-T6 done; checks per AC in checkpoints; dist/ untouched (Release rebuilds; build now also runs npm run docs)
 
 ## Outcome
+`TRANSITION_GATES` (core/work/transition-gates.ts) now holds every gate's name and refusal label, and `guard()` reads its labels from it, so its refusals read as before. `EVENT_TYPES` is a runtime list in ledger.ts. `src/docs/diagrams.ts` builds the four flows as data (each edge with its gate, its `lifecycle` role and any human gate), the role gates that aren't flow edges, the policy layer order and the ledger events. It imports only hub/core. `src/docs/inventory.ts` reads commands, MCP tools, UI actions, hooks and skills. `src/docs/render.ts` turns that data into Mermaid and tables. `npm run docs` (also run by `npm run build`) rewrites the marker blocks in four stub pages under `plugins/crew/docs/`. `test/docs.test.ts` checks freshness, staleness after a hand edit or a new edge, filled blocks, pointers, the layer order against `loadLayers()` and the inventory. COMMANDS was already exported in cli.ts, so cli.ts is unchanged. Not done: reserved decisions (`idea.decided`, `idea.killed`) don't show as human-gated, because the built-in list is private to policy.ts; that is CHORE-026.
+
+Learnings: K-2026-10-26-skill-md-frontmatter-in-plugins-crew
