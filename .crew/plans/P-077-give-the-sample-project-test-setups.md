@@ -140,6 +140,7 @@ Latest log:
 - 2026-10-26: assigned to the developer role
 - 2026-10-26: status ready → in-progress — branch plan/P-077-give-the-sample-project-test-setups
 - 2026-10-26: status in-progress → in-review — T1, T2 done and checked; T3 (AC4 synthetic-load regression) was not run: the permission system denied starting the busy-loop load, so QA runs the AC4 procedure
+- 2026-10-26: QA: AC1,2,3,5 verified at 36c2774; AC4 not run (my one load attempt failed in the shell harness, no timing; developer's was permission-denied). Needs a human-run or a corrected load procedure.
 
 ## Outcome
 Learnings: none
