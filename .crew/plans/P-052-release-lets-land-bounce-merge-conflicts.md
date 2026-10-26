@@ -42,8 +42,8 @@ BUG-036 (G-007). Since P-051 the guard binds every role's Bash writes to `paths.
 - Test: in `agents.test.ts`, `it("the release template leaves merge conflicts to land's bounce")` reads the plugin template (`AGENT_TEMPLATES/release.md`). It asserts the text contains "Never resolve a merge conflict" and `git merge --abort`, and that no line tells Release to resolve or edit a conflict: no match for `/resolve (the |a |any )?conflict/i` outside lines starting with "Never" or containing "never".
 
 ## Tasks
-- [ ] T1: Rewrite Release's conflict handling in `plugins/crew/skills/hub/agents/release.md` (loop step 3, the hand-merge rule, the new Rules line), under the YAML frontmatter rules (K-2026-10-23-agent-frontmatter-values-are-yaml: only the body changes) → verify: `cd packages/crew && npx vitest run test/hub/e2e/agents.test.ts -t "release template"` (AC1, AC2)
-- [ ] T2: The template test in `agents.test.ts` → verify: the same command fails with the old template (`git stash` the template edit) and passes with the new one; the whole of `agents.test.ts` is green (AC3)
+- [x] T1: Rewrite Release's conflict handling in `plugins/crew/skills/hub/agents/release.md` (loop step 3, the hand-merge rule, the new Rules line), under the YAML frontmatter rules (K-2026-10-23-agent-frontmatter-values-are-yaml: only the body changes) → verify: `cd packages/crew && npx vitest run test/hub/e2e/agents.test.ts -t "release template"` (AC1, AC2)
+- [x] T2: The template test in `agents.test.ts` → verify: the same command fails with the old template (`git stash` the template edit) and passes with the new one; the whole of `agents.test.ts` is green (AC3)
 
 ## Test plan
 **Targeted checks** (from `packages/crew/`; agents.test.ts drives the built `dist/crew.mjs`, so `npm run build` first, then `git checkout -- plugins/crew/skills/hub/dist`):
@@ -60,6 +60,20 @@ BUG-036 (G-007). Since P-051 the guard binds every role's Bash writes to `paths.
 
 ## Handoff
 
+_Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
+
+- P-052: Release lets land bounce merge conflicts [in-progress] tasks 2/2 — claimed by Arpit Anand (developer:a22625ccf29413479)
+- last checkpoint 2026-10-26 07:30 at T2 (c2c3e19) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-052-release-lets-land-bounce-merge-conflicts/packages/crew && npm run build && npx vitest run test/hub/e2e/agents.test.ts -t 'release template'; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-052-release-lets-land-bounce-merge-conflicts checkout -- plugins/crew/skills/hub/dist plugins/crew/skills/hub/references/commands.md plugins/crew/docs; exit $r (AC 1)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-052-release-lets-land-bounce-merge-conflicts/packages/crew && npx vitest run test/hub/e2e/agents.test.ts -t 'release template' (AC 2)
+- ✓ W=/Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-052-release-lets-land-bounce-merge-conflicts; cd $W/packages/crew && git -C $W show 817ff12:plugins/crew/skills/hub/agents/release.md > $W/plugins/crew/skills/hub/agents/release.md && ! npx vitest run test/hub/e2e/agents.test.ts -t 'release template'; old=$?; git -C $W show HEAD:plugins/crew/skills/hub/agents/release.md > $W/plugins/crew/skills/hub/agents/release.md; [ $old -eq 0 ] && npm run build && npx vitest run test/hub/e2e/agents.test.ts; r=$?; git -C $W checkout -- plugins/crew/skills/hub/dist plugins/crew/skills/hub/references/commands.md plugins/crew/docs; exit $r (AC 3)
+- evidence: AC1 ✓ (self), AC2 ✓ (self), AC3 ✓ (self)
+
+Latest log:
+- 2026-10-26: status draft → ready
+- 2026-10-26: assigned to the developer role
+- 2026-10-26: status ready → in-progress — branch plan/P-052-release-lets-land-bounce-merge-conflicts
+
 ## Progress log
 
 - 2026-10-26: status draft → ready
@@ -67,3 +81,6 @@ BUG-036 (G-007). Since P-051 the guard binds every role's Bash writes to `paths.
 - 2026-10-26: status ready → in-progress — branch plan/P-052-release-lets-land-bounce-merge-conflicts
 
 ## Outcome
+Release's template (plugins/crew/skills/hub/agents/release.md, body only) now leaves every merge conflict to land's bounce: loop step 3 says Release only reports the bounce (no Edit, sed, checkout --ours/--theirs or manual reroute), a new Rules line says it never resolves a conflict, and the hand-merge rule for pre-accepted plans aborts a conflicting merge and moves the plan back to in-progress. agents.test.ts gains the regression case, which fails on the base template and passes on the new one; the whole file is green. The vendored .crew/templates/agents/release.md and .claude/agents/crew-release.md are unchanged (protected); the executive re-vendors after landing.
+
+Learnings: to prove a test fails on the base version inside one checkpoint --run, write the old file from git show BASE:path, negate the test run, then restore from git show HEAD:path before building; no stash is needed.
