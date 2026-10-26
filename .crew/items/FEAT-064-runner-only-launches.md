@@ -4,7 +4,7 @@ type: feat
 title: Runner-only launches
 status: triaged
 priority: P1
-goal:
+goal: G-009
 plan:
 created: 2026-10-26
 closed:
@@ -38,3 +38,4 @@ As the human, I want only the runner to launch crew agents, so that there is one
 Goal G-009. Source draft: .crew/drafts/yes-pm-logs-them-recursive-sparkle.md step 6.
 - 2026-10-26: goal hint G-009 (by Arpit Anand)
 - 2026-10-26: status new → triaged — priority P1
+- 2026-10-26: re-triaged: priority P1
