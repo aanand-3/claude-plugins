@@ -2,12 +2,12 @@
 id: FEAT-060
 type: feat
 title: SPIKE
-status: triaged
+status: duplicate
 priority: P1
 goal: G-009
 plan:
 created: 2026-10-26
-closed:
+closed: 2026-10-26
 ---
 
 # FEAT-060: SPIKE
@@ -24,3 +24,4 @@ Slice of G-009 (One runner, many views): SPIKE: Hook facts for runner-only launc
 
 ## Notes
 - 2026-10-26: triaged from G-009 breakdown
+- 2026-10-26: status triaged → duplicate — Breakdown parser mangled the title; replaced by a proper SPIKE
