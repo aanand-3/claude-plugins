@@ -2,8 +2,8 @@
 id: FEAT-070
 type: feat
 title: escalate --follow-up: the asker attaches a human follow-up step when it escalates
-status: new
-priority:
+status: triaged
+priority: P3
 goal:
 plan:
 created: 2026-10-26
@@ -22,3 +22,4 @@ FEAT-068 AC1 allows the asker to attach a follow-up at escalation; P-072 deferre
 - [ ]
 
 ## Notes
+- 2026-10-26: status new → triaged — priority P3
