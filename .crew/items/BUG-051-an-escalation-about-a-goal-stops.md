@@ -39,3 +39,4 @@ One document-edit question froze every plan, landing and review for the whole wa
 ## Notes
 Decide the rule rather than special-casing G-005: a goal escalation holds the goal's status moves and, if it's about scope, its unstarted plans; only an escalation with no ref at all (or about the idea or policy) stops the team. Found with FEAT-075's gap (roles can't edit goal and item bodies), which is what made the PM escalate.
 - 2026-10-26: Correction to Notes: the companion gap (roles can't edit goal and item bodies) is FEAT-075, not FEAT-075.
+- 2026-10-26: Disregard the previous correction: the Notes' reference to FEAT-075 was right (FEAT-075: the PM amends the goals and items it owns).
