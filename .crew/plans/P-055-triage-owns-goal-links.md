@@ -127,6 +127,7 @@ Latest log:
 - 2026-10-26: status in-review → accepted
 - 2026-10-26: landed on main as 6468c7b
 - 2026-10-26: status accepted → done
+- 2026-10-26: landed on main as 6468c7b; full suite green (67 files, 571 tests); no rollout steps beyond refreshed .crew/bin
 
 ## Outcome
 Capture records origin, not goal: `new-item` sets `origin:` (`--origin`, the plan branch it runs on, or the run's single open plan claim) and keeps `--goal` as a `goal hint` Notes line; bugs need Steps to reproduce, Expected and Actual; `triage` prints the suggested goal and can clear (`--goal none`/`""`) or change a goal as a noted, logged re-goal (BUG-037 fixed). New `regoal` CLI command and MCP tool, gated by `item.regoaled`/`plan.regoaled` (pm in the lifecycle preset, and the PM's alone: the executive and a run in no role are refused, per review), with frozen-work and plan-moves-whole rules. Beyond the spec: `diagrams.ts` STEP_NOTES and `plan-lifecycle.md` (Q-cf70a3), the `docs.test.ts` offFlowSteps pin (Q-5764d6), and intake triage at capture now leaves an item new with a note when the capturing run's role (including the executive or no role) isn't `item.triaged`'s gate role (a developer filing an S1 bug used to fail the whole capture once bugs could pass the triage gate at intake).
