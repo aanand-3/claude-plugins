@@ -5,11 +5,11 @@ goal: G-007
 items: BUG-034
 touches: packages/crew/src/hub/core/memory/activity.ts, packages/crew/src/hub/core/memory/ledger.ts, packages/crew/src/hub/commands/team/activity.ts, packages/crew/src/hub/commands/team/liveness.ts, packages/crew/src/hub/commands/team/liveness.reg.ts, plugins/crew/skills/hub/agents/director.md, packages/crew/test/activity.test.ts, packages/crew/test/hub/e2e/activity.test.ts, packages/crew/test/mcp.test.ts, packages/crew/test/hub/registry.test.ts
 depends_on:
-status: ready
+status: in-progress
 branch: plan/P-053-a-stopped-agents-run-stops-staying-live
 pr:
 created: 2026-10-26
-started:
+started: 2026-10-26
 completed:
 assignee: developer
 ---
@@ -66,5 +66,6 @@ BUG-034 (G-007). A stopped agent (TaskStop, a crashed session) writes no usage o
 
 - 2026-10-26: status draft → ready
 - 2026-10-26: assigned to the developer role
+- 2026-10-26: status ready → in-progress — branch plan/P-053-a-stopped-agents-run-stops-staying-live
 
 ## Outcome
