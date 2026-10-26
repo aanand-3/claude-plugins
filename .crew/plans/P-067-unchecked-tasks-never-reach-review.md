@@ -5,12 +5,12 @@ goal:
 items: BUG-048
 touches: packages/crew/src/hub/commands/work/workflow.ts, packages/crew/src/hub/core/work/transition-gates.ts, packages/crew/src/hub/commands/team/dispatch.ts, plugins/crew/docs/policy.md, plugins/crew/docs/plan-lifecycle.md, packages/crew/test/hub/e2e/execution.test.ts, packages/crew/test/hub/e2e/dispatch.test.ts
 depends_on:
-status: accepted
+status: done
 branch: plan/P-067-unchecked-tasks-never-reach-review
 pr:
 created: 2026-10-26
 started: 2026-10-26
-completed:
+completed: 2026-10-26
 assignee: developer
 ---
 
@@ -96,6 +96,7 @@ Latest log:
 - 2026-10-26: status in-review → accepted
 - 2026-10-26: landed on main as 3eb5da3
 - 2026-10-26: landed on main as 3eb5da3; full suite 71 files / 667 tests passed; no rollout steps beyond merge
+- 2026-10-26: status accepted → done
 
 ## Outcome
 `move P-### in-review` now refuses unchecked tasks (each listed, with a hint to tick `- [x]`); `--force` still overrides. Dispatch row 5 sends an in-review plan with unchecked tasks to its developer (`finish P-###: … (T-ids unchecked)`) after a failing check and before review, design review, QA and accept. Gate docs regenerated. No existing fixture needed changes.
