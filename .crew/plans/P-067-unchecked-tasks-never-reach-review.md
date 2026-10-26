@@ -5,7 +5,7 @@ goal:
 items: BUG-048
 touches: packages/crew/src/hub/commands/work/workflow.ts, packages/crew/src/hub/core/work/transition-gates.ts, packages/crew/src/hub/commands/team/dispatch.ts, plugins/crew/docs/policy.md, plugins/crew/docs/plan-lifecycle.md, packages/crew/test/hub/e2e/execution.test.ts, packages/crew/test/hub/e2e/dispatch.test.ts
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-067-unchecked-tasks-never-reach-review
 pr:
 created: 2026-10-26
@@ -78,7 +78,7 @@ n/a: this changes hub behaviour only. The bundle is rebuilt by Release. To roll 
 
 _Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
 
-- P-067: Unchecked tasks never reach review, and dispatch never offers a refused accept [in-progress] tasks 4/4 — claimed by Arpit Anand (developer:a10bfc1495e94a99d)
+- P-067: Unchecked tasks never reach review, and dispatch never offers a refused accept [in-review] tasks 4/4 — claimed by Arpit Anand (developer:a10bfc1495e94a99d)
 - last checkpoint 2026-10-26 14:16 at T4 (004e807) by Arpit Anand; since then 0 commit(s), 2 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —
 
@@ -92,6 +92,7 @@ Latest log:
 - 2026-10-26: status draft → ready
 - 2026-10-26: assigned to the developer role
 - 2026-10-26: status ready → in-progress — branch plan/P-067-unchecked-tasks-never-reach-review
+- 2026-10-26: status in-progress → in-review
 
 ## Outcome
 `move P-### in-review` now refuses unchecked tasks (each listed, with a hint to tick `- [x]`); `--force` still overrides. Dispatch row 5 sends an in-review plan with unchecked tasks to its developer (`finish P-###: … (T-ids unchecked)`) after a failing check and before review, design review, QA and accept. Gate docs regenerated. No existing fixture needed changes.
