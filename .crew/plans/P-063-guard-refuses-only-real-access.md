@@ -5,7 +5,7 @@ goal: G-007
 items: BUG-042
 touches: packages/crew/src/hub/commands/team/guard.ts, packages/crew/src/hub/commands/team/secretrefs.ts, packages/crew/src/hub/commands/team/targets.ts, packages/crew/src/hub/commands/team/hubcall.ts, packages/crew/test/hub/secretrefs.test.ts, packages/crew/test/hub/e2e/guard.test.ts
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-063-guard-refuses-only-real-access
 pr:
 created: 2026-10-26
@@ -103,7 +103,7 @@ Ships with the next vendored hub refresh (Release builds the bundle and refreshe
 
 _Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
 
-- P-063: Guard refuses only real access to secrets files [in-progress] tasks 5/5 — claimed by Arpit Anand (developer:a15018def85344c14)
+- P-063: Guard refuses only real access to secrets files [in-review] tasks 5/5 — claimed by Arpit Anand (developer:a15018def85344c14)
 - last checkpoint 2026-10-26 11:59 at T5 (63dfd06) by Arpit Anand; since then 0 commit(s), 2 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —
 
@@ -117,6 +117,7 @@ Latest log:
 - 2026-10-26: status draft → ready
 - 2026-10-26: assigned to the developer role
 - 2026-10-26: status ready → in-progress — branch plan/P-063-guard-refuses-only-real-access
+- 2026-10-26: status in-progress → in-review
 
 ## Outcome
 The guard's Bash secrets check is now `touchesSecret` in the new `secretrefs.ts`: path mode resolves real candidates (path arguments, redirect targets in and out, option values, `@FILE`, assignments, `for` lists, globs incl. unlistable ones) and token mode keeps the old token scan wherever real access can't be ruled out (inline interpreter code, `sh -c`/`eval` strings, heredoc bodies a shell/interpreter/xargs can reach, arguments of non-prose commands, a hub call's `--run` value, and wrapper/assignment words before a prose command). Prose in heredocs written to files, `echo`/`printf`, hub-call text, commit/tag messages and grep/rg patterns is no longer refused. The refusal message is unchanged. The new e2e BUG-042 case failed on the base guard.ts (the AC1 heredoc was denied) and passes now; secretrefs.test.ts, guard, guard-writes, targets and hubcall tests pass (100), with no edits to the existing test files.
