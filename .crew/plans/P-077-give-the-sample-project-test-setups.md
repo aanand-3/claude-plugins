@@ -121,6 +121,19 @@ reverting the plan.
 
 ## Handoff
 
+_Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
+
+- P-077: Give the sample-project test setups a hang deadline, not a 120 s load limit [in-progress] tasks 0/3 — claimed by Arpit Anand (developer:adad9c24955ccc5a8)
+- last checkpoint 2026-10-26 15:16 at T3 (36c2774) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
+- don't retry: AC4 procedure: 16 node busy loops, then vitest view.test.ts and timed sample-project.mjs — the permission system (dont-ask mode) denied the command that starts the synthetic load; not worked around
+- next: T1: `test/setup/sample.ts` with `buildSample`, `SAMPLE_BUILD_MS` and `SAMPLE_HOOK_MS` → verify: `cd packages/crew && npm run typecheck` (AC1, AC5)
+- evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —
+
+Latest log:
+- 2026-10-26: status draft → ready
+- 2026-10-26: assigned to the developer role
+- 2026-10-26: status ready → in-progress — branch plan/P-077-give-the-sample-project-test-setups
+
 ## Progress log
 
 - 2026-10-26: status draft → ready
