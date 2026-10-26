@@ -130,6 +130,25 @@ Overlaps, for staffing only: P-037 on `guard.ts`, and P-030 on `questions.reg.ts
 
 ## Handoff
 
+_Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
+
+- P-035: Human inbox [in-progress] tasks 0/7 — claimed by Arpit Anand (developer:a6589ac899aeab61f)
+- last checkpoint 2026-10-26 05:17 at T7 (dbd227b) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-035-human-inbox/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/inbox.test.ts -t options ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-035-human-inbox checkout -- plugins; exit $r (AC 2)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-035-human-inbox/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/inbox.test.ts -t 'lists|answer|steer' ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-035-human-inbox checkout -- plugins; exit $r (AC 1,3,7)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-035-human-inbox/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/guard.test.ts ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-035-human-inbox checkout -- plugins; exit $r (AC 4)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-035-human-inbox/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/inbox.test.ts -t ui ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-035-human-inbox checkout -- plugins; exit $r (AC 5)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-035-human-inbox/packages/crew && npm run build >/dev/null 2>&1 && npm run typecheck >/dev/null 2>&1 ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-035-human-inbox checkout -- plugins; exit $r
+- ✓ grep -n inbox /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-035-human-inbox/plugins/crew/skills/team/SKILL.md /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-035-human-inbox/plugins/crew/skills/hub/references/model.md && cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-035-human-inbox/packages/crew && npx vitest run test/plugin (AC 8)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-035-human-inbox/packages/crew && npm run build >/dev/null 2>&1 && npm run typecheck >/dev/null 2>&1 && wc -l src/hub/commands/team/inbox.ts src/hub/commands/team/questions.ts src/hub/commands/team/guard.ts src/hub/server.ts ui/src/views/Inbox.tsx && npx vitest run test/hub/e2e/inbox.test.ts test/hub/e2e/guard.test.ts test/hub/e2e/team-2.test.ts test/hub/e2e/live-ui.test.ts test/view.test.ts test/hub/e2e/dispatch.test.ts test/hub/registry.test.ts test/mcp.test.ts test/plugin ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-035-human-inbox checkout -- plugins; exit $r (AC 1,2,3,4,5,7,9)
+- next: T1: `--options` on ask/escalate; `Question.options` → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/inbox.test.ts -t options` (AC2)
+- evidence: AC1 ✓ (self), AC2 ✓ (self), AC3 ✓ (self), AC4 ✓ (self), AC5 ✓ (self), AC6 —, AC7 ✓ (self), AC8 ✓ (self), AC9 ✓ (self)
+
+Latest log:
+- 2026-10-25: status draft → ready
+- 2026-10-26: assigned to the developer role
+- 2026-10-26: status ready → in-progress — branch plan/P-035-human-inbox
+
 ## Progress log
 
 - 2026-10-25: status draft → ready
