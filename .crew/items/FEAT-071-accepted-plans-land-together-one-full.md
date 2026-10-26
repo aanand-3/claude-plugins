@@ -2,9 +2,9 @@
 id: FEAT-071
 type: feat
 title: Accepted plans land together: one full-suite run per batch
-status: new
-priority:
-goal:
+status: triaged
+priority: P0
+goal: G-007
 plan:
 created: 2026-10-26
 closed:
@@ -28,3 +28,4 @@ As the executive, I want accepted plans to land together, so that the team's fin
 
 ## Notes
 Executive's request 2026-10-26, top priority. Evidence from `crew.mjs suites` the same day: P-060 11.0 min, P-063 10.9 min, P-064 18.7 min (failed), P-062 22.1 min (failed), P-065 12.6 min; P-064, P-069, P-066 and P-067 accepted and queued behind one another.
+- 2026-10-26: status new → triaged — priority P0
