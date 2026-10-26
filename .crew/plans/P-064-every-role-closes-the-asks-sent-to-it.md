@@ -125,6 +125,7 @@ Latest log:
 - 2026-10-26: status in-review → accepted
 - 2026-10-26: BUG-049 overlaps: the full-suite view.test.ts beforeAll timeout under load bounced this landing; not caused by this plan's code (view passes alone). Tracked as BUG-049 (P1, G-007).
 - 2026-10-26: landed on main as 35e92db
+- 2026-10-26: landed on main as 35e92db (full suite 663/663 passed). Rollout: human must refresh .crew/templates/agents/ from plugins/crew/skills/hub/agents/ and run 'node .crew/bin/crew.mjs agents' (protected paths); 'agents --check' flags stale ones until then.
 
 ## Outcome
 Learnings: none
