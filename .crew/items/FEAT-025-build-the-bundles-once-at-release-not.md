@@ -2,12 +2,13 @@
 id: FEAT-025
 type: feat
 title: Build the bundles once at release, not in every plan
-status: triaged
+status: done
 priority: P1
 goal: G-001
 plan: P-023
 created: 2026-10-24
-closed:
+closed: 2026-10-26
+completed: 2026-10-26
 ---
 
 # FEAT-025: Build the bundles once at release, not in every plan
@@ -23,3 +24,4 @@ Every code plan must rebuild and commit plugins/crew/skills/hub/dist/*.mjs (conv
 ## Notes
 - 2026-10-24: status new → triaged — priority P1
 - 2026-10-26: DONE: fixed by P-023 (eaa70df). Generated files are marked in .gitattributes and left out of plan touches; generated-drift.test.ts 'a changed generated file in a plan worktree is not drift'; since P-032 land.ts rebuilds hub.build and commits 'rebuild generated files' at landing. Item still triaged only because it predates P-045's item-close rule. No remaining work.
+- 2026-10-26: status triaged → done — DONE per Architect review: fixed by P-023 (eaa70df); land rebuilds generated files since P-032.
