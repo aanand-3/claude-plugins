@@ -5,7 +5,7 @@ title: Runner follow-ups from P-066 review
 status: triaged
 priority: P3
 goal: G-007
-plan:
+plan: P-076
 created: 2026-10-26
 closed:
 ---
