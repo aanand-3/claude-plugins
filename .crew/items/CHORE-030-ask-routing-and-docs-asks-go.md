@@ -5,7 +5,7 @@ title: Ask routing and docs: asks go to the Director first
 status: triaged
 priority: P2
 goal: G-009
-plan:
+plan: P-070
 created: 2026-10-26
 closed:
 ---
