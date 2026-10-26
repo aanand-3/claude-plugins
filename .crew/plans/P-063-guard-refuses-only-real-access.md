@@ -5,7 +5,7 @@ goal: G-007
 items: BUG-042
 touches: packages/crew/src/hub/commands/team/guard.ts, packages/crew/src/hub/commands/team/secretrefs.ts, packages/crew/src/hub/commands/team/targets.ts, packages/crew/src/hub/commands/team/hubcall.ts, packages/crew/test/hub/secretrefs.test.ts, packages/crew/test/hub/e2e/guard.test.ts
 depends_on:
-status: in-review
+status: accepted
 branch: plan/P-063-guard-refuses-only-real-access
 pr:
 created: 2026-10-26
@@ -126,6 +126,7 @@ Latest log:
 - 2026-10-26: status in-review → in-progress — changes requested: The unquoted-heredoc fix still misses real access when the body has a single quote or a # before the substitution. In a heredoc body quotes and # are literal and bash still runs the substitution, but code(b) parses the body as a command line, where an apostrophe opens a quote that swallows the rest and # starts a comment. Probed against secretrefs.ts at 7f81a72, each of these returns false but copies the secret: body lines (1) it's here: $(cat <dotenv>) (2) a line it's here, then $(cat <dotenv>) on the next line (3) don't; $(cat <dotenv>) (4) see #1 $(cat <dotenv>). Prose with apostrophes is the common case, so this is a real hole. The tokens(b) side misses them because the split leaves <dotenv>) with the paren attached. Fix in secretrefs.ts: do not run a live body through parse() as a command line. For a live body that matches SUBST, fail closed with a token scan whose split also breaks on ( ) { } < > | ; & and backtick (a separate splitter; leave words() as it is), and drop the ${ to '{ ' rewrite and the recursive code(b) call. Alternatively, extract each $(...) and backtick span and parse only those, but the extended token scan is simpler and fail-closed. Add the four bodies above as refused cases in test/hub/secretrefs.test.ts. The existing allowed cases (plain unquoted prose, quoted-delimiter body with $(...) as text) must stay allowed. Everything else at 7f81a72 is fine.
 - 2026-10-26: status in-progress → in-review
 - 2026-10-26: QA: AC6 verified (guard/guard-writes/targets/hubcall pass; only guard.test.ts additions, no removed lines). All AC1-AC6 verified.
+- 2026-10-26: status in-review → accepted
 
 ## Outcome
 The guard's Bash secrets check is now `touchesSecret` in the new `secretrefs.ts`: path mode resolves real candidates (path arguments, redirect targets in and out, option values, `@FILE`, assignments, `for` lists, globs incl. unlistable ones) and token mode keeps the old token scan wherever real access can't be ruled out (inline interpreter code, `sh -c`/`eval` strings, heredoc bodies a shell/interpreter/xargs can reach, arguments of non-prose commands, a hub call's `--run` value, and wrapper/assignment words before a prose command). Prose in heredocs written to files, `echo`/`printf`, hub-call text, commit/tag messages and grep/rg patterns is no longer refused. The refusal message is unchanged. The new e2e BUG-042 case failed on the base guard.ts (the AC1 heredoc was denied) and passes now; secretrefs.test.ts, guard, guard-writes, targets and hubcall tests pass (100), with no edits to the existing test files.

@@ -72,8 +72,8 @@ The templates must name only real hub commands (`answer` is one). Keep each line
 ## Design
 
 ## Tasks
-- [ ] T1: Regression test in `test/hub/e2e/agents.test.ts`, `it("every role template closes its asks with answer (BUG-044)")`: each template file contains `crew.mjs answer Q-`; then `init(repo, { mode: "" })`, write a policy with a project role (as "a project role renders from the generic template" does), `tr(repo, "agents")`, and assert `.claude/agents/crew-pm.md` and the project role's agent contain it → verify: the new case fails on the current templates (six files lack the line).
-- [ ] T2: Add the line to `pm.md`, `developer.md`, `qa.md`, `release.md`, `designer.md` and `generic.md` → verify: `npx vitest run test/hub/e2e/agents.test.ts` passes (new and existing cases).
+- [x] T1: Regression test in `test/hub/e2e/agents.test.ts`, `it("every role template closes its asks with answer (BUG-044)")`: each template file contains `crew.mjs answer Q-`; then `init(repo, { mode: "" })`, write a policy with a project role (as "a project role renders from the generic template" does), `tr(repo, "agents")`, and assert `.claude/agents/crew-pm.md` and the project role's agent contain it → verify: the new case fails on the current templates (six files lack the line).
+- [x] T2: Add the line to `pm.md`, `developer.md`, `qa.md`, `release.md`, `designer.md` and `generic.md` → verify: `npx vitest run test/hub/e2e/agents.test.ts` passes (new and existing cases).
 
 ## Test plan
 **Targeted checks:** (in the plan worktree, `cd packages/crew`; `npm ci --prefer-offline` first in a fresh worktree;
