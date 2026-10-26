@@ -5,11 +5,11 @@ goal: G-007
 items: FEAT-049
 touches: packages/crew/src/hub/commands/work/overlap.ts, packages/crew/src/hub/commands/work/backlog.ts, packages/crew/src/hub/commands/work/backlog.reg.ts, plugins/crew/skills/hub/agents/pm.md, plugins/crew/skills/hub/references/model.md, plugins/crew/docs/reference.md, packages/crew/test/overlap.test.ts, packages/crew/test/hub/e2e/overlap.test.ts, packages/crew/test/mcp.test.ts, packages/crew/test/hub/registry.test.ts
 depends_on: P-055
-status: ready
+status: in-progress
 branch: plan/P-057-overlap-check-at-triage
 pr:
 created: 2026-10-26
-started:
+started: 2026-10-26
 completed:
 assignee: developer
 ---
@@ -82,5 +82,6 @@ Ships in the bundle; reaches this repo through refresh-bin. The PM template text
 
 - 2026-10-26: status draft → ready
 - 2026-10-26: assigned to the developer role
+- 2026-10-26: status ready → in-progress — branch plan/P-057-overlap-check-at-triage
 
 ## Outcome
