@@ -5,7 +5,7 @@ goal: G-007
 items: BUG-035
 touches: packages/crew/src/hub/commands/work/suite.ts, packages/crew/src/hub/commands/work/suite.reg.ts, packages/crew/src/hub/commands/work/land.ts, packages/crew/test/hub/e2e/suite.test.ts, packages/crew/test/hub/e2e/land.test.ts, plugins/crew/docs/reference.md
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-054-suite-ref-runs-in-the-plans-worktree
 pr:
 created: 2026-10-26
@@ -68,11 +68,12 @@ n/a — internal hub change; ships in the bundle. Rollback: revert the commit.
 
 _Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
 
-- P-054: suite --ref runs in the plan's worktree [in-progress] tasks 4/4 — claimed by Arpit Anand (developer:a9f31b43a22b088e2)
-- last checkpoint 2026-10-26 06:54 at T4 (b56a8f5) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
+- P-054: suite --ref runs in the plan's worktree [in-review] tasks 4/4 — claimed by Arpit Anand (developer:a9f31b43a22b088e2)
+- last checkpoint 2026-10-26 07:05 at T4 (8281fe5) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
 - ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-054-suite-ref-runs-in-the-plans-worktree/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/suite.test.ts ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-054-suite-ref-runs-in-the-plans-worktree checkout -- plugins; exit $r (AC 1,2,4)
 - ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-054-suite-ref-runs-in-the-plans-worktree/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/land.test.ts ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-054-suite-ref-runs-in-the-plans-worktree checkout -- plugins; exit $r (AC 3)
 - ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-054-suite-ref-runs-in-the-plans-worktree/packages/crew && npx vitest run test/hub/registry.test.ts && npm run typecheck
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-054-suite-ref-runs-in-the-plans-worktree/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/docs.test.ts test/hub/registry.test.ts test/mcp.test.ts test/hub/e2e/suite.test.ts test/hub/e2e/land.test.ts ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-054-suite-ref-runs-in-the-plans-worktree checkout -- plugins/crew/skills; exit $r (AC 1,2,3,4)
 - evidence: AC1 ✓ (self), AC2 ✓ (self), AC3 ✓ (self), AC4 ✓ (self)
 
 Latest log:
@@ -85,6 +86,7 @@ Latest log:
 - 2026-10-26: status draft → ready
 - 2026-10-26: assigned to the developer role
 - 2026-10-26: status ready → in-progress — branch plan/P-054-suite-ref-runs-in-the-plans-worktree
+- 2026-10-26: status in-progress → in-review
 
 ## Outcome
 `suite --ref P-###` now runs `hub.full_suite` in the plan's worktree (else this checkout when it is on the plan's branch, else it refuses before taking a slot); every suite record carries the tested HEAD `sha` and `branch`, and `suites` shows the short sha. `land` stops (plan stays accepted) when the plan branch's tip is not the sha its suite tested. The AC1 regression case fails against main's suite.ts (where.txt not in the worktree) and passes now. Note on AC3's text: `land` prints every Stop as `P-###: not landed — <reason>; it stays accepted with its worktree`, so the line reads `P-001: not landed — its branch moved during the full suite (tested …, now …); run \`land P-001\` again; …`. Existing suite tests switched from P-00n to BUG-00n refs, since a P-### ref is now checked as a plan.
