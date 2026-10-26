@@ -5,11 +5,11 @@ goal: G-007
 items: BUG-040
 touches: packages/crew/src/hub/commands/work/land.ts, packages/crew/test/hub/e2e/land.test.ts
 depends_on:
-status: ready
+status: in-progress
 branch: plan/P-061-land-tolerates-untracked-os-files
 pr:
 created: 2026-10-26
-started:
+started: 2026-10-26
 completed:
 assignee: developer
 ---
@@ -78,5 +78,6 @@ n/a for config or data: a change to land's cleanup only. Release's next `land` b
 
 - 2026-10-26: status draft → ready
 - 2026-10-26: assigned to the developer role
+- 2026-10-26: status ready → in-progress — branch plan/P-061-land-tolerates-untracked-os-files
 
 ## Outcome
