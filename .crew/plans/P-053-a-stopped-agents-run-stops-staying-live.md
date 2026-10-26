@@ -3,7 +3,7 @@ id: P-053
 title: A stopped agent's run stops staying live
 goal: G-007
 items: BUG-034
-touches: packages/crew/src/hub/core/memory/activity.ts, packages/crew/src/hub/core/memory/ledger.ts, packages/crew/src/hub/commands/team/activity.ts, packages/crew/src/hub/commands/team/liveness.ts, packages/crew/src/hub/commands/team/liveness.reg.ts, plugins/crew/skills/hub/agents/director.md, packages/crew/test/activity.test.ts, packages/crew/test/hub/e2e/activity.test.ts, packages/crew/test/mcp.test.ts, packages/crew/test/hub/registry.test.ts, plugins/crew/docs/reference.md, plugins/crew/docs/context-and-memory.md
+touches: packages/crew/src/hub/core/memory/activity.ts, packages/crew/src/hub/core/memory/ledger.ts, packages/crew/src/hub/commands/team/activity.ts, packages/crew/src/hub/commands/team/liveness.ts, packages/crew/src/hub/commands/team/liveness.reg.ts, plugins/crew/skills/hub/agents/director.md, packages/crew/test/activity.test.ts, packages/crew/test/hub/e2e/activity.test.ts, packages/crew/test/mcp.test.ts, packages/crew/test/hub/registry.test.ts, plugins/crew/docs/reference.md, plugins/crew/docs/context-and-memory.md, packages/crew/src/docs/diagrams.ts, packages/crew/src/hub/commands/memory/ledger.ts
 depends_on:
 status: in-progress
 branch: plan/P-053-a-stopped-agents-run-stops-staying-live
@@ -40,10 +40,10 @@ BUG-034 (G-007). A stopped agent (TaskStop, a crashed session) writes no usage o
 - No module passes 300 lines (activity.ts 185, liveness.ts 79). core imports no commands.
 
 ## Tasks
-- [ ] T1: `liveRuns` closed-ref predicate and `end-run` stops; `running()` passes the predicate → verify: `cd packages/crew && npx vitest run test/activity.test.ts` with new cases (a closed plan's run, a closed item's run, an open plan's run still live and idle, an `end-run` after the last activity, activity after `end-run` live again) (AC1, AC3, AC4 unit)
-- [ ] T2: `end-run` command, event type, registration (CLI, usage line, MCP `end_run`), add `end_run` to `test/mcp.test.ts`'s sorted tool list → verify: `npm run build && npx vitest run test/hub/e2e/activity.test.ts test/mcp.test.ts test/hub/registry.test.ts`, then `git checkout -- plugins/crew/skills/hub/dist` (AC2)
-- [ ] T3: e2e cases in `test/hub/e2e/activity.test.ts`. A run on P-001, then P-001 moved done: `dispatch --json` has no director entry, and `status` has no "Running now" line for it. A run idle on an in-progress plan gives the `resume or reassign` entry. `end-run` by the director removes it. `end-run` by QA is refused, and an unknown run fails, with no event written → verify: `npx vitest run test/hub/e2e/activity.test.ts` (AC1–AC4)
-- [ ] T4: Director template entry → verify: read step 2 of `director.md` against the Approach; `npx vitest run test/hub/e2e/agents.test.ts` green (the render still works)
+- [x] T1: `liveRuns` closed-ref predicate and `end-run` stops; `running()` passes the predicate → verify: `cd packages/crew && npx vitest run test/activity.test.ts` with new cases (a closed plan's run, a closed item's run, an open plan's run still live and idle, an `end-run` after the last activity, activity after `end-run` live again) (AC1, AC3, AC4 unit)
+- [x] T2: `end-run` command, event type, registration (CLI, usage line, MCP `end_run`), add `end_run` to `test/mcp.test.ts`'s sorted tool list → verify: `npm run build && npx vitest run test/hub/e2e/activity.test.ts test/mcp.test.ts test/hub/registry.test.ts`, then `git checkout -- plugins/crew/skills/hub/dist` (AC2)
+- [x] T3: e2e cases in `test/hub/e2e/activity.test.ts`. A run on P-001, then P-001 moved done: `dispatch --json` has no director entry, and `status` has no "Running now" line for it. A run idle on an in-progress plan gives the `resume or reassign` entry. `end-run` by the director removes it. `end-run` by QA is refused, and an unknown run fails, with no event written → verify: `npx vitest run test/hub/e2e/activity.test.ts` (AC1–AC4)
+- [x] T4: Director template entry → verify: read step 2 of `director.md` against the Approach; `npx vitest run test/hub/e2e/agents.test.ts` green (the render still works)
 
 ## Test plan
 **Targeted checks** (from `packages/crew/`; the e2e suites and mcp.test.ts use the built bundles, so `npm run build` first, then `git checkout -- plugins/crew/skills/hub/dist`):

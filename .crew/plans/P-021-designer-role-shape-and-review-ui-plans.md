@@ -67,7 +67,7 @@ This plan adds a built-in `designer` role that shapes a UI plan before it is bui
 - [x] T5: `layout_sweep.ts` → `plugins/crew/skills/design/scripts/layout_sweep.mjs` (CDP over undici, own `ui` server or `--url`, widths × themes × routes, exit 0/1/2), registered in `TOOLS` in `packages/crew/build.mjs` → verify: new `test/tools/layout-sweep.test.ts` against a sandbox hub with and without the planted overflow and sideways scroll, skipped with a visible reason when no browser is found (AC5, AC6); `npm run build` and `git diff --exit-code -- plugins/crew/skills` clean
 - [x] T6: `references/review-checklist.md`, with `review` and `page` modes linking it and the full-size 375/900/1440 light/dark screenshot rule → verify: `test/tools/design.test.ts` checks that every checklist entry is present and linked (AC7)
 - [ ] T7: Wire the loop: `developer.md` (`page` mode on UI plans), `qa.md` (sweep as evidence), the writing guide's UI line, `docs/vision.md` RACI, team and hub skills, `design.ui_paths` in this repo's config; render the agents into `.claude/agents/` and `.crew/templates/agents/` with the executive's approval. Setting `design.ui_paths` in `.crew/config.yaml` and rendering the agents are the executive's: the developer finishes everything else first, then raises `escalate P-021 "…"` naming both commands, and does neither itself → verify: `agents --check` clean in this repo; grep the templates for the sweep and `page` mode (AC8)
-- [ ] T8: Visual QA → verify: `layout_sweep.mjs` clean against this repo's hub; `check_design.mjs --all` clean
+- [x] T8: Visual QA → verify: `layout_sweep.mjs` clean against this repo's hub; `check_design.mjs --all` clean
 
 ## Test plan
 **Targeted checks:**
@@ -95,6 +95,26 @@ This plan adds a built-in `designer` role that shapes a UI plan before it is bui
 
 ## Handoff
 
+_Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
+
+- P-021: Designer role: shape and review UI plans [in-progress] tasks 7/8 — claimed by Arpit Anand (developer:a1e6187368d8b2f24)
+- last checkpoint 2026-10-26 07:02 at T7 (f6a419c) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-021-designer-role-shape-and-review-ui-plans/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/design-review.test.ts ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-021-designer-role-shape-and-review-ui-plans checkout -- plugins; exit $r
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-021-designer-role-shape-and-review-ui-plans/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/design-review.test.ts test/hub/e2e/execution.test.ts ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-021-designer-role-shape-and-review-ui-plans checkout -- plugins/crew/skills/hub/dist plugins/crew/skills/design/scripts; exit $r (AC 2)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-021-designer-role-shape-and-review-ui-plans/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/design-review.test.ts test/hub/e2e/team-2.test.ts test/hub/e2e/review-fixes.test.ts test/hub/e2e/policy.test.ts test/hub/e2e/dispatch.test.ts test/hub/e2e/land.test.ts test/hub/registry.test.ts test/mcp.test.ts ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-021-designer-role-shape-and-review-ui-plans checkout -- plugins/crew/skills/hub/dist plugins/crew/skills/design/scripts; exit $r (AC 3,4)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-021-designer-role-shape-and-review-ui-plans/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/design-review.test.ts test/hub/e2e/agents.test.ts test/hub/e2e/team.test.ts test/hub/e2e/team-2.test.ts test/hub/e2e/policy.test.ts test/hub/e2e/guard.test.ts test/hub/e2e/dispatch.test.ts ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-021-designer-role-shape-and-review-ui-plans checkout -- plugins/crew/skills/hub/dist plugins/crew/skills/design/scripts; exit $r (AC 1)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-021-designer-role-shape-and-review-ui-plans/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/tools/layout-sweep.test.ts test/dist.test.ts ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-021-designer-role-shape-and-review-ui-plans checkout -- plugins/crew/skills/hub/dist plugins/crew/skills/hub/references/commands.md; rm -f /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-021-designer-role-shape-and-review-ui-plans/plugins/crew/skills/design/scripts/layout_sweep.mjs; exit $r (AC 5,6)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-021-designer-role-shape-and-review-ui-plans/packages/crew && npx vitest run test/tools/design.test.ts (AC 7)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-021-designer-role-shape-and-review-ui-plans/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/agents.test.ts test/plugin/contents.test.ts test/hub/e2e/basics.test.ts test/hub/e2e/design-review.test.ts ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-021-designer-role-shape-and-review-ui-plans checkout -- plugins/crew/skills/hub/dist plugins/crew/skills/hub/references/commands.md; rm -f /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-021-designer-role-shape-and-review-ui-plans/plugins/crew/skills/design/scripts/layout_sweep.mjs; exit $r (AC 8)
+- ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-021-designer-role-shape-and-review-ui-plans/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/tools/layout-sweep.test.ts ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-021-designer-role-shape-and-review-ui-plans checkout -- plugins/crew/skills/hub/dist plugins/crew/skills/hub/references/commands.md; rm -f /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-021-designer-role-shape-and-review-ui-plans/plugins/crew/skills/design/scripts/layout_sweep.mjs; exit $r (AC 5,6)
+- next: T7: Wire the loop: `developer.md` (`page` mode on UI plans), `qa.md` (sweep as evidence), the writing guide's UI line, `docs/vision.md` RACI, team and hub skills, `design.ui_paths` in this repo's config; render the agents into `.claude/agents/` and `.crew/templates/agents/` with the executive's approval. Setting `design.ui_paths` in `.crew/config.yaml` and rendering the agents are the executive's: the developer finishes everything else first, then raises `escalate P-021 "…"` naming both commands, and does neither itself → verify: `agents --check` clean in this repo; grep the templates for the sweep and `page` mode (AC8)
+- evidence: AC1 ✓ (self), AC2 ✓ (self), AC3 ✓ (self), AC4 ✓ (self), AC5 ✓ (self), AC6 ✓ (self), AC7 ✓ (self), AC8 ✓ (self)
+
+Latest log:
+- 2026-10-25: Architect: depends_on P-031, P-032 added (presets.ts, model.ts, config.yaml); e2e, hub-skill, test/tools and design-skill globs narrowed to exact files
+- 2026-10-26: assigned to the developer role
+- 2026-10-26: status ready → in-progress — branch plan/P-021-designer-role-shape-and-review-ui-plans
+
 ## Progress log
 
 - 2026-10-24: status draft → ready
@@ -103,3 +123,20 @@ This plan adds a built-in `designer` role that shapes a UI plan before it is bui
 - 2026-10-26: status ready → in-progress — branch plan/P-021-designer-role-shape-and-review-ui-plans
 
 ## Outcome
+<!-- partial until the executive's T7 steps -->
+- Shipped: `designer` built-in role; `plan.design-reviewed: designer` in the lifecycle preset (and in policy ACTIONS);
+  `isUiPlan`/`uiPaths` from `design.ui_paths` (footprint.ts); `## Design` in the Definition of Ready for UI plans and in
+  both plan templates; `review --design --approve | --changes` (CLI flag + help line, MCP `design_review` tool), review
+  events with `kind: design`, `reviewProblems(store, plan, kind?)` (both kinds at accepted); dispatch sends the design
+  review to the designer; the designer's queue in `next`; `designer.md` agent template; `layout_sweep.mjs`
+  (cdp.ts + layout_scan.ts + layout_sweep.ts, Chrome over CDP with undici's WebSocket, exit 0/1/2); the design skill's
+  review checklist, linked from `page` and `review` with full-size 375/900/1440 light/dark screenshots; developer, QA
+  and designer templates, writing guide, vision RACI, team and hub skills, model.md.
+- Deviations: touches amended by the Architect (Q-f034a9, Q-ed81fc): review.reg.ts, dispatch.ts, policy.ts, mcp.test.ts.
+  AC3 is tested against `move accepted` (the review gate moved there with P-032). `docs/vision.md` had no RACI table, so
+  the RACI is a paragraph under Operating model.
+- T8: `check_design.mjs --all` clean; the sweep of this repo's hub is not clean: 252 findings at 375 px light in
+  existing document pages (long knowledge IDs, BUG-004's title) — filed as BUG-038 (fixing existing UI is out of scope).
+- Left for the executive (T7): `design.ui_paths` in `.crew/config.yaml`; rendering `.claude/agents/crew-designer.md`
+  and vendoring `.crew/templates/agents/designer.md` (protected paths).
+Learnings: K-2026-10-26-a-long-unbroken-word-overflows-as-text, K-2026-10-26-a-card-on-the-board-sits-inside-board
