@@ -3,7 +3,7 @@ id: P-066
 title: Runner lock and idle mode
 goal:
 items: FEAT-059
-touches: packages/crew/src/hub/core/lock.ts, packages/crew/src/hub/commands/work/suite.ts, packages/crew/src/hub/commands/team/runner.ts, packages/crew/src/hub/commands/team/runnerlock.ts, packages/crew/src/hub/commands/team/autonomy.ts, packages/crew/src/hub/commands/team/autonomy.reg.ts, packages/crew/src/hub/commands/views/reports.ts, packages/crew/src/hub/registry.ts, packages/crew/src/hub/cli.ts, packages/crew/src/hub/main.ts, plugins/crew/skills/team/SKILL.md, packages/crew/test/hub/lock.test.ts, packages/crew/test/hub/e2e/runner.test.ts
+touches: packages/crew/src/hub/core/lock.ts, packages/crew/src/hub/commands/work/suite.ts, packages/crew/src/hub/commands/team/runner.ts, packages/crew/src/hub/commands/team/runnerlock.ts, packages/crew/src/hub/commands/team/autonomy.ts, packages/crew/src/hub/commands/team/autonomy.reg.ts, packages/crew/src/hub/commands/views/reports.ts, packages/crew/src/hub/registry.ts, packages/crew/src/hub/cli.ts, packages/crew/src/hub/main.ts, plugins/crew/skills/team/SKILL.md, packages/crew/test/hub/lock.test.ts, packages/crew/test/hub/e2e/runner.test.ts, packages/crew/test/structure.test.ts
 depends_on:
 status: in-progress
 branch: plan/P-066-runner-lock-and-idle-mode
@@ -127,7 +127,7 @@ K-2026-10-25-unattended-runs-use-claude-p-permission.
 ## Design
 
 ## Tasks
-- [x] T1: Extract `core/lock.ts` from suite.ts (with `processStart`, `machineId`); suite.ts uses it; add `test/hub/lock.test.ts` → verify: `npx vitest run test/hub/lock.test.ts test/hub/e2e/suite.test.ts` green (AC11).
+- [ ] T1: Extract `core/lock.ts` from suite.ts (with `processStart`, `machineId`); suite.ts uses it; add `test/hub/lock.test.ts`; `lock.ts` stays loose in `hub/core/` (a domain-neutral primitive like git.ts and store.ts), so add it to the loose-module allow-list in `test/structure.test.ts` ("hub sources sit in their domain folders") → verify: `npx vitest run test/hub/lock.test.ts test/hub/e2e/suite.test.ts test/structure.test.ts` green (AC11).
 - [x] T2: `commands/team/runnerlock.ts` (acquire or refuse naming the holder, stale take-over, `--unlock`, state.json), the CLAUDECODE and linked-worktree refusals in runner.ts, `--unlock` in autonomy.reg.ts → verify: runner.test.ts cases for AC1–AC4 green.
 - [x] T3: Async CLI path (registry run type, cli.ts `main`, main.ts) and async `untilDone` with `spawn`, signal forwarding, `stopped: "interrupted"`, lock release on every exit, per-pass `CREW_RUNNER` → verify: AC5 and AC8 cases green; the existing no-progress and max-passes cases green (AC12).
 - [x] T4: Idle mode (report once per reason, notify `stopped` once per reason, watch + backoff, WAKE, counter reset); the old AC4/AC7 tests rewritten to idle then SIGINT → verify: AC6 and AC7 cases green.
@@ -140,6 +140,8 @@ the e2e tests run the built hub):
 - `npx vitest run test/hub/lock.test.ts` — AC2, AC11 (unit: create, stale by dead pid, stale by reused pid start time,
   other machine not stale, release only by token).
 - `npx vitest run test/hub/e2e/suite.test.ts` — AC11 (suite unchanged on the extracted module).
+- `npx vitest run test/structure.test.ts` — AC12 (core layout: `lock.ts` is an allowed loose core module, core imports
+  only core and shared/, modules under 300 lines).
 - `npx vitest run test/hub/e2e/runner.test.ts` — AC1, AC3, AC4, AC5, AC6, AC7, AC8, AC9, AC10, AC12 (background runner
   driven by node pass scripts; each test kills its runner in `afterEach`).
 - `npx vitest run test/hub/e2e/team-2.test.ts test/hub/registry.test.ts` — `run`/`run --check` output and the help

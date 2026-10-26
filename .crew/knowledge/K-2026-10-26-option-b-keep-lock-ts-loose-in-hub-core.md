@@ -1,0 +1,14 @@
+---
+id: K-2026-10-26-option-b-keep-lock-ts-loose-in-hub-core
+type: decision
+title: Option (b): keep lock.ts loose in hub/core/ and add it to the allow-list. The four loose core modules (git, store, text, workspace) are the domain-neutral primitives the domain folders build on; lock.ts is the same kind (exclusive file create, pid/machine liveness, stale takeover, release) and serves two domains, work (suite slots) and team (runner lock), so putting it in either folder would be wrong for the other, and core/memory does not fit. Change: in packages/crew/test/structure.test.ts line 41 the expected list becomes ["git.ts", "lock.ts", "store.ts", "text.ts", "workspace.ts"]; no import or file moves. Done in the spec: packages/crew/test/structure.test.ts added to P-066 touches, T1 reopened with that edit and verify now runs test/structure.test.ts too, test plan lists it. Next: developer makes the one-line edit, checkpoints, then architect re-review, QA re-check, PM re-accept, land.
+scope: 
+source: P-066
+supersedes:
+tier: project
+created: 2026-10-26
+---
+
+# Option (b): keep lock.ts loose in hub/core/ and add it to the allow-list. The four loose core modules (git, store, text, workspace) are the domain-neutral primitives the domain folders build on; lock.ts is the same kind (exclusive file create, pid/machine liveness, stale takeover, release) and serves two domains, work (suite slots) and team (runner lock), so putting it in either folder would be wrong for the other, and core/memory does not fit. Change: in packages/crew/test/structure.test.ts line 41 the expected list becomes ["git.ts", "lock.ts", "store.ts", "text.ts", "workspace.ts"]; no import or file moves. Done in the spec: packages/crew/test/structure.test.ts added to P-066 touches, T1 reopened with that edit and verify now runs test/structure.test.ts too, test plan lists it. Next: developer makes the one-line edit, checkpoints, then architect re-review, QA re-check, PM re-accept, land.
+
+Answer to Q-0d187f (architect): Land bounced P-066: test/structure.test.ts:41 'hub sources sit in their domain folders' allows only git.ts, store.ts, text.ts, workspace.ts loose in hub/core/, but the spec'd touches put the new lock.ts at packages/crew/src/hub/core/lock.ts. lock.ts is a domain-neutral process-lock primitive (exclusive file create, holder pid/machine/start-time liveness, stale takeover, release) used by commands/work/suite.ts (slots) and commands/team/runnerlock.ts (runner lock). Both fixes leave touches: (a) move it into a core domain folder, e.g. hub/core/team/lock.ts or hub/core/work/lock.ts (which?), and update the two importers plus test/hub/lock.test.ts; or (b) keep it in core/ as a fifth loose module and add lock.ts to the allow-list in packages/crew/test/structure.test.ts. Which one, and please add the resulting path(s) to P-066 touches.
