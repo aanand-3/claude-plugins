@@ -5,7 +5,7 @@ goal:
 items: FEAT-059
 touches: packages/crew/src/hub/core/lock.ts, packages/crew/src/hub/commands/work/suite.ts, packages/crew/src/hub/commands/team/runner.ts, packages/crew/src/hub/commands/team/runnerlock.ts, packages/crew/src/hub/commands/team/autonomy.ts, packages/crew/src/hub/commands/team/autonomy.reg.ts, packages/crew/src/hub/commands/views/reports.ts, packages/crew/src/hub/registry.ts, packages/crew/src/hub/cli.ts, packages/crew/src/hub/main.ts, plugins/crew/skills/team/SKILL.md, packages/crew/test/hub/lock.test.ts, packages/crew/test/hub/e2e/runner.test.ts
 depends_on:
-status: draft
+status: ready
 branch: plan/P-066-runner-lock-and-idle-mode
 pr:
 created: 2026-10-26
@@ -126,21 +126,12 @@ K-2026-10-25-unattended-runs-use-claude-p-permission.
 ## Design
 
 ## Tasks
-- [ ] T1: Extract `core/lock.ts` from suite.ts (with `processStart`, `machineId`); suite.ts uses it; add
-  `test/hub/lock.test.ts` → verify: `npx vitest run test/hub/lock.test.ts test/hub/e2e/suite.test.ts` green (AC11).
-- [ ] T2: `commands/team/runnerlock.ts`: acquire/refuse naming the holder, stale take-over, `--unlock`, state.json;
-  the CLAUDECODE and linked-worktree refusals in runner.ts; `--unlock` in autonomy.reg.ts → verify: runner.test.ts cases
-  for AC1–AC4 green.
-- [ ] T3: Async CLI path (registry run type, cli.ts `main`, main.ts) and async `untilDone` with `spawn`, signal
-  forwarding, `stopped: "interrupted"`, lock release on every exit, per-pass `CREW_RUNNER` → verify: AC5 and AC8 cases
-  green; existing no-progress and max-passes cases green (AC12).
-- [ ] T4: Idle mode (report once per reason, notify `stopped` once per reason, watch + backoff, WAKE, counter reset) →
-  verify: AC6 and AC7 cases green; the old AC4/AC7 tests rewritten to idle then SIGINT.
-- [ ] T5: RUNNER line in `run --check` (text and JSON) and the `**Runner:**` line in `status`; the permission-mode
-  preflight warning → verify: AC9 and AC10 cases green; team-2.test.ts and registry.test.ts green.
-- [ ] T6: SKILL "Unattended" rewritten for lock, unlock, idle, Ctrl-C, RUNNER line and the warning → verify: the
-  section names `--unlock`, idle mode and the RUNNER line; `npm run typecheck` passes; `wc -l` of every touched
-  src module < 300 (AC12).
+- [ ] T1: Extract `core/lock.ts` from suite.ts (with `processStart`, `machineId`); suite.ts uses it; add `test/hub/lock.test.ts` → verify: `npx vitest run test/hub/lock.test.ts test/hub/e2e/suite.test.ts` green (AC11).
+- [ ] T2: `commands/team/runnerlock.ts` (acquire or refuse naming the holder, stale take-over, `--unlock`, state.json), the CLAUDECODE and linked-worktree refusals in runner.ts, `--unlock` in autonomy.reg.ts → verify: runner.test.ts cases for AC1–AC4 green.
+- [ ] T3: Async CLI path (registry run type, cli.ts `main`, main.ts) and async `untilDone` with `spawn`, signal forwarding, `stopped: "interrupted"`, lock release on every exit, per-pass `CREW_RUNNER` → verify: AC5 and AC8 cases green; the existing no-progress and max-passes cases green (AC12).
+- [ ] T4: Idle mode (report once per reason, notify `stopped` once per reason, watch + backoff, WAKE, counter reset); the old AC4/AC7 tests rewritten to idle then SIGINT → verify: AC6 and AC7 cases green.
+- [ ] T5: RUNNER line in `run --check` (text and JSON), the `**Runner:**` line in `status`, the permission-mode preflight warning → verify: AC9 and AC10 cases green; team-2.test.ts and registry.test.ts green.
+- [ ] T6: SKILL "Unattended" rewritten for lock, unlock, idle, Ctrl-C, RUNNER line and the warning → verify: the section names `--unlock`, idle mode and the RUNNER line; `npm run typecheck` passes; `wc -l` of every touched src module < 300 (AC12).
 
 ## Test plan
 **Targeted checks** (in packages/crew of the plan worktree, after `npm ci --prefer-offline` and `npm run build`, since
@@ -172,5 +163,7 @@ ignored by the old runner and can be deleted.
 ## Handoff
 
 ## Progress log
+
+- 2026-10-26: status draft → ready
 
 ## Outcome
