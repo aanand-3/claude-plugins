@@ -160,6 +160,7 @@ Latest log:
 - 2026-10-26: status accepted → in-progress — land: merging main conflicts in plugins/crew/skills/hub/references/model.md
 - 2026-10-26: status in-progress → in-review — merged main; model.md conflict resolved
 - 2026-10-26: status in-review → accepted
+- 2026-10-26: landed on main as 0503bf1
 
 ## Outcome
 Items now close: `ITEM_FLOW` has a stored `done` and every status closes to done/wontfix/duplicate; `ITEM_CLOSED`
