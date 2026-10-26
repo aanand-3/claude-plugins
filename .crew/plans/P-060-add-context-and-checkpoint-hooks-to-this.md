@@ -5,11 +5,11 @@ goal: G-001
 items: FEAT-002
 touches: packages/crew/src/tools/guidelines/merge_settings.ts, packages/crew/build.mjs, plugins/crew/skills/guidelines/templates/settings.json, plugins/crew/skills/guidelines/SKILL.md, packages/crew/src/hub/commands/views/doctor.ts, packages/crew/test/tools/guidelines.test.ts, packages/crew/test/hub/e2e/doctor.test.ts, packages/crew/test/hub/e2e/context.test.ts, packages/crew/test/plugin/contents.test.ts
 depends_on:
-status: ready
+status: in-progress
 branch: plan/P-060-add-context-and-checkpoint-hooks-to-this
 pr:
 created: 2026-10-26
-started:
+started: 2026-10-26
 completed:
 assignee: developer
 ---
@@ -162,6 +162,7 @@ table change: three rows in `HOOKS`, one fix constant and the OK string.
 - 2026-10-26: assigned to the developer role — G-001 FEAT-002; assigned at the human's request; no overlap with in-flight G-007 plans
 - 2026-10-26: assigned to the developer role
 - 2026-10-26: The PM's assignment to the developer role (95fe671) replaces the team session's assign entry 0734bc7, which the team session made in the PM's name; the PM owns this assignment.
+- 2026-10-26: status ready → in-progress — branch plan/P-060-add-context-and-checkpoint-hooks-to-this
 
 ## Outcome
 - This repo's .claude/settings.json carries the SessionStart context hook and the Stop and PreCompact `checkpoint --auto` hooks, merged in via the guidelines refresh path.
