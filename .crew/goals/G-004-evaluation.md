@@ -1,7 +1,7 @@
 ---
 id: G-004
 title: Evaluation
-status: proposed
+status: active
 priority: P2
 created: 2026-10-23
 completed:
@@ -36,3 +36,4 @@ from drift before anything is promoted.
 ## Notes & decisions
 
 ## Progress log
+- 2026-10-26: status proposed → active (approved by Arpit Anand)
