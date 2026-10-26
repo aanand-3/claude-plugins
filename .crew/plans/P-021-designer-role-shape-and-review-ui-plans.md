@@ -5,7 +5,7 @@ goal: G-003
 items: FEAT-024
 touches: packages/crew/src/hub/core/work/model.ts, packages/crew/src/hub/core/work/gates.ts, packages/crew/src/hub/core/work/footprint.ts, packages/crew/src/hub/core/store.ts, packages/crew/src/hub/core/team/presets.ts, packages/crew/src/hub/commands/work/review.ts, packages/crew/src/hub/commands/work/review.reg.ts, packages/crew/src/hub/commands/team/dispatch.ts, packages/crew/src/hub/core/team/policy.ts, packages/crew/test/mcp.test.ts, packages/crew/src/hub/commands/team/roles.ts, packages/crew/src/hub/cli.ts, packages/crew/src/hub/mcp.ts, packages/crew/src/tools/design/**, packages/crew/src/tools/cli.ts, packages/crew/build.mjs, packages/crew/test/hub/e2e/policy.test.ts, packages/crew/test/hub/e2e/team.test.ts, packages/crew/test/hub/e2e/team-2.test.ts, packages/crew/test/hub/e2e/execution.test.ts, packages/crew/test/hub/e2e/review-fixes.test.ts, packages/crew/test/hub/e2e/design-review.test.ts, packages/crew/test/hub/e2e/agents.test.ts, packages/crew/test/tools/layout-sweep.test.ts, packages/crew/test/tools/design.test.ts, plugins/crew/skills/hub/agents/designer.md, plugins/crew/skills/hub/agents/developer.md, plugins/crew/skills/hub/agents/qa.md, plugins/crew/skills/hub/SKILL.md, plugins/crew/skills/hub/references/model.md, plugins/crew/skills/hub/references/writing-guide.md, plugins/crew/skills/hub/templates/plan.md, plugins/crew/skills/design/SKILL.md, plugins/crew/skills/design/references/review-checklist.md, plugins/crew/skills/team/SKILL.md, .crew/templates/plan.md, .crew/templates/writing-guide.md, .crew/templates/agents/**, .claude/agents/**, .crew/config.yaml, docs/vision.md, packages/crew/src/docs/diagrams.ts, packages/crew/test/docs.test.ts, plugins/crew/docs/plan-lifecycle.md, plugins/crew/docs/reference.md
 depends_on: P-020, P-031, P-032
-status: in-progress
+status: in-review
 branch: plan/P-021-designer-role-shape-and-review-ui-plans
 pr:
 created: 2026-10-24
@@ -98,7 +98,7 @@ This plan adds a built-in `designer` role that shapes a UI plan before it is bui
 
 _Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
 
-- P-021: Designer role: shape and review UI plans [in-progress] tasks 8/8 — claimed by Arpit Anand (developer:a1e6187368d8b2f24)
+- P-021: Designer role: shape and review UI plans [in-review] tasks 8/8 — claimed by Arpit Anand (developer:a1e6187368d8b2f24)
 - last checkpoint 2026-10-26 07:38 at T8 (a1b8bee) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
 - ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-021-designer-role-shape-and-review-ui-plans/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/design-review.test.ts ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-021-designer-role-shape-and-review-ui-plans checkout -- plugins; exit $r
 - ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-021-designer-role-shape-and-review-ui-plans/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/design-review.test.ts test/hub/e2e/execution.test.ts ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-021-designer-role-shape-and-review-ui-plans checkout -- plugins/crew/skills/hub/dist plugins/crew/skills/design/scripts; exit $r (AC 2)
@@ -131,6 +131,7 @@ Latest log:
 - 2026-10-26: status in-progress → in-review
 - 2026-10-26: status in-review → accepted
 - 2026-10-26: status accepted → in-progress — land: merging main conflicts in packages/crew/test/mcp.test.ts
+- 2026-10-26: status in-progress → in-review
 
 ## Outcome
 - Shipped: `designer` built-in role; `plan.design-reviewed: designer` in the lifecycle preset (and in policy ACTIONS);
