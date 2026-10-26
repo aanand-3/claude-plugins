@@ -5,7 +5,7 @@ goal: G-007
 items: BUG-041
 touches: packages/crew/src/hub/commands/work/land.ts, packages/crew/src/hub/commands/work/worktree-cleanup.ts, packages/crew/src/hub/commands/work/release.ts, packages/crew/test/hub/e2e/land.test.ts
 depends_on: P-061
-status: in-progress
+status: in-review
 branch: plan/P-062-land-retries-and-safely-completes
 pr:
 created: 2026-10-26
@@ -96,7 +96,7 @@ n/a — internal change to land's cleanup, shipped in the hub bundle Release reb
 
 _Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
 
-- P-062: land retries and safely completes a worktree removal that fails early [in-progress] tasks 0/4 — claimed by Arpit Anand (developer:acd4138b45ba70200)
+- P-062: land retries and safely completes a worktree removal that fails early [in-review] tasks 0/4 — claimed by Arpit Anand (developer:acd4138b45ba70200)
 - last checkpoint 2026-10-26 12:14 at T4 (8c456b7) by Arpit Anand; since then 0 commit(s), 2 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs
 - next: T1: In land.test.ts add the `stuck(r, fails, onRemove = "")` shim beside `finder()`: a `git` first on `r.env.PATH` whose `worktree remove` runs `onRemove` (a shell snippet; `$last` is the path), writes `.DS_Store` into the folder and exits 255 without running the real git for its first `fails` calls (99: always), then execs the real git; every `worktree remove` call appends a line to `<bin>/calls` (`finder()` gets the same counter). Write the tests of the Test plan and run them on P-061's land.ts → verify: the AC1 and AC2/AC5 tests fail (the folder stays); the AC3 keep tests already pass (kept + warning).
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —
@@ -111,5 +111,8 @@ Latest log:
 - 2026-10-26: status draft → ready
 - 2026-10-26: assigned to the developer role
 - 2026-10-26: status ready → in-progress — branch plan/P-062-land-retries-and-safely-completes
+- 2026-10-26: status in-progress → in-review
 
 ## Outcome
+The worktree cleanup lives in commands/work/worktree-cleanup.ts. When `git worktree remove --force` fails and git still lists the path as the plan's worktree, land deletes OS junk and retries up to 3 times (200 ms apart). P-061's junk-only delete follows. Then comes a full delete (`rmSync`, `git worktree prune`, a check that git no longer lists the path), only when `safeToDelete()` checks a–f find nothing that could be lost. Otherwise the warning is `kept <rel>: <reason>`. A path git no longer lists keeps P-061's `left` warning, with no retry. `branchMerged` is exported from release.ts. land.test.ts passes 25/25 (6 new BUG-041 tests), and tsc is clean.
+Learnings: K-2026-10-26-git-codechanges-dir-secrets-counts
