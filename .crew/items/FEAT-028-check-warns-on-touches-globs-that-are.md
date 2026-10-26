@@ -2,12 +2,13 @@
 id: FEAT-028
 type: feat
 title: check warns on touches globs that are too broad
-status: triaged
+status: done
 priority: P1
 goal: G-007
 plan: P-029
 created: 2026-10-24
-closed:
+closed: 2026-10-26
+completed: 2026-10-26
 ---
 
 # FEAT-028: check warns on touches globs that are too broad
@@ -23,3 +24,4 @@ P-020 claims packages/crew/test/** and .crew/bin/**; P-021 claims plugins/crew/s
 ## Notes
 - 2026-10-24: status new → triaged — priority P2
 - 2026-10-25: re-triaged: priority P1
+- 2026-10-26: status triaged → done — delivered by P-029
