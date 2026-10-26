@@ -5,7 +5,7 @@ goal: G-007
 items: FEAT-043
 touches: packages/crew/src/hub/commands/team/inbox.ts, packages/crew/src/hub/commands/team/inbox.reg.ts, packages/crew/src/hub/commands/team/questions.ts, packages/crew/src/hub/commands/team/questions.reg.ts, packages/crew/src/hub/commands/team/guard.ts, packages/crew/src/hub/commands/index.ts, packages/crew/src/hub/cli.ts, packages/crew/src/hub/mcp.ts, packages/crew/src/hub/server.ts, packages/crew/ui/src/views/Inbox.tsx, packages/crew/ui/src/views/index.ts, packages/crew/test/hub/e2e/inbox.test.ts, packages/crew/test/hub/e2e/guard.test.ts, packages/crew/test/mcp.test.ts, plugins/crew/skills/team/SKILL.md, plugins/crew/skills/hub/references/model.md
 depends_on: P-027, P-031
-status: in-progress
+status: in-review
 branch: plan/P-035-human-inbox
 pr:
 created: 2026-10-25
@@ -132,7 +132,7 @@ Overlaps, for staffing only: P-037 on `guard.ts`, and P-030 on `questions.reg.ts
 
 _Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
 
-- P-035: Human inbox [in-progress] tasks 7/7 — claimed by Arpit Anand (developer:a6589ac899aeab61f)
+- P-035: Human inbox [in-review] tasks 7/7 — claimed by Arpit Anand (developer:a6589ac899aeab61f)
 - last checkpoint 2026-10-26 05:50 at T5 (b3addb7) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
 - ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-035-human-inbox/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/inbox.test.ts -t options ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-035-human-inbox checkout -- plugins; exit $r (AC 2)
 - ✓ cd /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-035-human-inbox/packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/hub/e2e/inbox.test.ts -t 'lists|answer|steer' ; r=$?; git -C /Users/aanand/Documents/Projects/Personal/claude-plugins/.claude/worktrees/P-035-human-inbox checkout -- plugins; exit $r (AC 1,3,7)
@@ -161,6 +161,7 @@ Latest log:
 - 2026-10-26: status in-progress → in-review
 - 2026-10-26: status in-review → accepted
 - 2026-10-26: status accepted → in-progress — land: hub.full_suite failed (exit 1):      51|       expect(["hub/graph-types", "hub/core/work/model"], `${f.pathname… ·        |                                                                                            ^ ·      52|     } ·      53|   } · ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+- 2026-10-26: status in-progress → in-review
 
 ## Outcome
 The hub has an inbox: `crew.mjs inbox [--json]`, an MCP `inbox` tool and an Inbox page in `crew.mjs ui` list proposed goals, open escalations and plans in review whose `accepted` step is human-gated. Humans answer from their terminal or the page (`/api/inbox`, `answer` and `approve-goal` actions that need a name). `ask`/`escalate` take `--options` on the CLI. The guard denies every tool call that reaches `/api/commands/`.
