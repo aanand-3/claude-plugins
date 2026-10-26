@@ -49,3 +49,4 @@ A crew subagent can still keep project state outside the repo, or write a protec
 ## Notes
 A possible fix: skip a leading `{`, `if`, `then`, `else`, `elif`, `do`, `while`, `until`, `!`, `builtin` or `command` before looking for `cd`. For a `cd` target with `$`, other than `$HOME`/`${HOME}`, or with a command substitution, treat later relative targets as unresolved and deny, or match them conservatively.
 - 2026-10-24: status new → triaged — priority P2, severity S3
+- 2026-10-26: DONE: fixed by P-019 (152650b). guard.test.ts 'guard_shell_forms' denies every form in the report: '{ cd ~; ...; }', 'if cd ~; then ...', 'builtin cd', 'command cd', 'D=~/.claude; cd $D', and the .crew/policy.yaml variants; targets.ts expands variables or leaves them unresolved (fail closed). Still on main after P-051. No remaining work.
