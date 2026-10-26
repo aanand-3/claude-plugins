@@ -11,6 +11,7 @@ pr:
 created: 2026-10-26
 started:
 completed:
+assignee: developer
 ---
 
 # P-057: Overlap check at triage
@@ -80,5 +81,6 @@ Ships in the bundle; reaches this repo through refresh-bin. The PM template text
 ## Progress log
 
 - 2026-10-26: status draft → ready
+- 2026-10-26: assigned to the developer role
 
 ## Outcome
