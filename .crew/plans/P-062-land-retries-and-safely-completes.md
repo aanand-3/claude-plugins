@@ -5,7 +5,7 @@ goal: G-007
 items: BUG-041
 touches: packages/crew/src/hub/commands/work/land.ts, packages/crew/src/hub/commands/work/worktree-cleanup.ts, packages/crew/src/hub/commands/work/release.ts, packages/crew/test/hub/e2e/land.test.ts
 depends_on: P-061
-status: accepted
+status: in-progress
 branch: plan/P-062-land-retries-and-safely-completes
 pr:
 created: 2026-10-26
@@ -117,6 +117,7 @@ Latest log:
 - 2026-10-26: status in-progress → in-review
 - 2026-10-26: QA: AC1-AC6 verified; cleanup tests 7/7 pass; AC4 has no unlisted-path test (code-reviewed only). Tasks still 0/4 unchecked: BUG-048 precondition (also P-064 0/2, dispatch offers pm accept).
 - 2026-10-26: status in-review → accepted
+- 2026-10-26: status accepted → in-progress — land: hub.full_suite failed (exit 1):      15| beforeAll(() => { ·        | ^ ·      16|   execFileSync("node", [new URL("../scripts/sample-project.mjs", impor… ·      17|   graph = JSON.parse(tr("export", "--json")); · ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 
 ## Outcome
 The worktree cleanup lives in commands/work/worktree-cleanup.ts. When `git worktree remove --force` fails and git still lists the path as the plan's worktree, land deletes OS junk and retries up to 3 times (200 ms apart). P-061's junk-only delete follows. Then comes a full delete (`rmSync`, `git worktree prune`, a check that git no longer lists the path), only when `safeToDelete()` checks a–f find nothing that could be lost. Otherwise the warning is `kept <rel>: <reason>`. A path git no longer lists keeps P-061's `left` warning, with no retry. `branchMerged` is exported from release.ts. land.test.ts passes 25/25 (6 new BUG-041 tests), and tsc is clean.

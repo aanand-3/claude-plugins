@@ -136,7 +136,7 @@ Composition on the existing Inbox view (docs/design/DESIGN.md tokens; inventory 
 - [x] T5: `server.ts` `answer` action with `follow_up`, plus the ui case in `inbox.test.ts` → verify: `npx vitest run test/hub/e2e/inbox.test.ts -t "ui"` passes.
 - [x] T6: `Inbox.tsx` follow-up kind, Done button and "Then you…" field per Design → verify: `npm run build`, then the manual Inbox check in the Test plan.
 - [x] T7: `model.md` Inbox paragraph and `team/SKILL.md` "Each run" line on `--follow-up` → verify: `grep -n "follow-up" plugins/crew/skills/hub/references/model.md plugins/crew/skills/team/SKILL.md` finds both.
-- [ ] T8: Types and sizes → verify: `npm run typecheck`; `wc -l` of the five source files each under 300; `npx vitest run test/hub/e2e/inbox.test.ts` all green.
+- [x] T8: Types and sizes → verify: `npm run typecheck`; `wc -l` of the five source files each under 300; `npx vitest run test/hub/e2e/inbox.test.ts` all green.
 
 ## Test plan
 **Targeted checks:** (in the plan worktree, `cd packages/crew`; `npm ci --prefer-offline` first in a fresh worktree;
