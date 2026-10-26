@@ -3,7 +3,7 @@ id: P-072
 title: Human follow-ups stay in the inbox until done
 goal:
 items: FEAT-068
-touches: packages/crew/src/hub/commands/team/followups.ts, packages/crew/src/hub/commands/team/questions.reg.ts, packages/crew/src/hub/commands/team/inbox.ts, packages/crew/src/hub/commands/work/execution.ts, packages/crew/src/hub/server.ts, packages/crew/ui/src/views/Inbox.tsx, packages/crew/test/hub/e2e/inbox.test.ts, plugins/crew/skills/hub/references/model.md, plugins/crew/skills/team/SKILL.md
+touches: packages/crew/src/hub/commands/team/followups.ts, packages/crew/src/hub/commands/team/questions.reg.ts, packages/crew/src/hub/commands/team/inbox.ts, packages/crew/src/hub/commands/work/execution.ts, packages/crew/src/hub/server.ts, packages/crew/ui/src/views/Inbox.tsx, packages/crew/ui/src/styles/views.css, packages/crew/test/hub/e2e/inbox.test.ts, plugins/crew/skills/hub/references/model.md, plugins/crew/skills/team/SKILL.md
 depends_on:
 status: in-progress
 branch: plan/P-072-human-follow-ups-stay-in-the-inbox-until
