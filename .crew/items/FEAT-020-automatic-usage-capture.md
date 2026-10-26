@@ -2,12 +2,13 @@
 id: FEAT-020
 type: feat
 title: Automatic usage capture
-status: triaged
+status: done
 priority: P2
 goal: G-003
 plan:
 created: 2026-10-23
-closed:
+closed: 2026-10-26
+completed: 2026-10-26
 ---
 
 # FEAT-020: Automatic usage capture
@@ -23,3 +24,4 @@ Budgets only see usage a run records with crew.mjs usage; nothing captures token
 ## Notes
 - 2026-10-23: status new → triaged — priority P2
 - 2026-10-23: T7: usage --hook (SubagentStop) sums each crew agent's transcript tokens under its role and run (branch feat/team-autonomy)
+- 2026-10-26: status triaged → done — Delivered by P-011 T7 (usageHook in autonomy.ts), fixed by P-049. Q-848e65 triage.
