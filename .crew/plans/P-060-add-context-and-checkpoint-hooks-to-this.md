@@ -3,7 +3,7 @@ id: P-060
 title: Add context and checkpoint hooks to this repo and check them in doctor
 goal: G-001
 items: FEAT-002
-touches: packages/crew/src/tools/guidelines/merge_settings.ts, packages/crew/build.mjs, plugins/crew/skills/guidelines/templates/settings.json, plugins/crew/skills/guidelines/SKILL.md, packages/crew/src/hub/commands/views/doctor.ts, packages/crew/test/tools/guidelines.test.ts, packages/crew/test/hub/e2e/doctor.test.ts, packages/crew/test/hub/e2e/context.test.ts, packages/crew/test/plugin/contents.test.ts
+touches: packages/crew/src/tools/guidelines/merge_settings.ts, packages/crew/build.mjs, plugins/crew/skills/guidelines/templates/settings.json, plugins/crew/skills/guidelines/SKILL.md, packages/crew/src/hub/commands/views/doctor.ts, packages/crew/src/docs/inventory.ts, packages/crew/test/tools/guidelines.test.ts, packages/crew/test/hub/e2e/doctor.test.ts, packages/crew/test/hub/e2e/context.test.ts, packages/crew/test/plugin/contents.test.ts
 depends_on:
 status: in-progress
 branch: plan/P-060-add-context-and-checkpoint-hooks-to-this
@@ -51,6 +51,8 @@ Applying the merge to this repo's `.claude/settings.json` is the human's step (R
   hooks instead of a hand merge.
 - `doctor`: three more non-required `HOOKS` entries, a WARN fix text that names the merge, and the OK detail.
 - Updated test expectations for the split SessionStart (contents.test.ts, context.test.ts).
+- `src/docs/inventory.ts` `RUNS`: skip an optional closing quote after `<name>.mjs` so quoted-path hook commands keep
+  their flags in the generated hooks table (Q-f74680).
 
 **Out (explicitly not doing):**
 - Editing this repo's `.claude/settings.json` (the human applies the merge, see Rollout).
@@ -66,8 +68,11 @@ Applying the merge to this repo's `.claude/settings.json` is the human's step (R
 1. **Template split.** In `templates/settings.json`, `hooks.SessionStart` has exactly one group with three hooks. Hook 1
    activates `.githooks`. Hook 2 runs `crew.mjs context`. Hook 3 is exactly
    `[ -f "$CLAUDE_PROJECT_DIR/.crew/bin/track_plan_draft.mjs" ] && node "$CLAUDE_PROJECT_DIR/.crew/bin/track_plan_draft.mjs" --session; true`.
-   Every other event in the template is byte-identical to main. `test/docs.test.ts` passes with
-   `plugins/crew/docs/context-and-memory.md` unchanged.
+   Every other event in the template is byte-identical to main. The `RUNS` regex in `src/docs/inventory.ts` accepts an
+   optional closing `"` after the script name (script name and flags captured separately and joined), so a quoted-path
+   command keeps its flags. `test/docs.test.ts` passes with `plugins/crew/docs/context-and-memory.md` unchanged (the
+   SessionStart row still lists `crew.mjs context`, `track_plan_draft.mjs --session`; the ExitPlanMode row still lists
+   `track_plan_draft.mjs`).
 2. **Add-only merge.** `merge_settings.mjs --root R` reads the template from `../templates/settings.json` next to the
    script. For each template group and hook, the hook counts as present when the same event already has a group with the
    same `matcher` (absent equals absent) that holds a hook with the identical `command` string. A missing hook joins that
@@ -118,7 +123,7 @@ table change: three rows in `HOOKS`, one fix constant and the OK string.
   the only hook the loop can't run without.
 
 ## Tasks
-- [ ] T1: Split the template's SessionStart into three hooks (AC1); update `context.test.ts` ("the SessionStart hook runs context") and `contents.test.ts` ("the settings template wires the hooks") to look across the group's hooks → verify: `npx vitest run test/hub/e2e/context.test.ts test/plugin/contents.test.ts test/docs.test.ts test/tools/upgrade.test.ts`
+- [ ] T1: Split the template's SessionStart into three hooks and let `RUNS` in src/docs/inventory.ts skip an optional closing quote (AC1); update `context.test.ts` ("the SessionStart hook runs context") and `contents.test.ts` ("the settings template wires the hooks") to look across the group's hooks → verify: `npx vitest run test/hub/e2e/context.test.ts test/plugin/contents.test.ts test/docs.test.ts test/tools/upgrade.test.ts`
 - [ ] T2: `src/tools/guidelines/merge_settings.ts` and its `TOOLS` entry in build.mjs (AC2, AC3, AC5, AC8); tests in `test/tools/guidelines.test.ts` run the built script (`npm run build` in the plan worktree first; leave the build output uncommitted) → verify: `npx vitest run test/tools/guidelines.test.ts`
 - [ ] T3: The this-repo fixture test (AC4). The current hooks section is a literal in guidelines.test.ts, not read from the repo root → verify: `npx vitest run test/tools/guidelines.test.ts -t "this repo"`
 - [ ] T4: Doctor rows, fix text and OK detail (AC6); extend `doctor.test.ts` "hooks and agents report what's missing" and add a case with this repo's hooks fixture → verify: `npx vitest run test/hub/e2e/doctor.test.ts`
