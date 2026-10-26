@@ -3,7 +3,7 @@ id: P-054
 title: suite --ref runs in the plan's worktree
 goal: G-007
 items: BUG-035
-touches: packages/crew/src/hub/commands/work/suite.ts, packages/crew/src/hub/commands/work/suite.reg.ts, packages/crew/src/hub/commands/work/land.ts, packages/crew/test/hub/e2e/suite.test.ts, packages/crew/test/hub/e2e/land.test.ts
+touches: packages/crew/src/hub/commands/work/suite.ts, packages/crew/src/hub/commands/work/suite.reg.ts, packages/crew/src/hub/commands/work/land.ts, packages/crew/test/hub/e2e/suite.test.ts, packages/crew/test/hub/e2e/land.test.ts, plugins/crew/docs/reference.md
 depends_on:
 status: in-progress
 branch: plan/P-054-suite-ref-runs-in-the-plans-worktree
@@ -55,7 +55,7 @@ BUG-035 (G-007, S2/P1). `suite --ref P-###` runs `hub.full_suite` in the caller'
 **Targeted checks** (from `packages/crew/`; the e2e suites drive the built `dist/crew.mjs`: `npm run build` first, then `git checkout -- plugins/crew/skills/hub/dist`):
 - AC1, AC2, AC4 → `npx vitest run test/hub/e2e/suite.test.ts`
 - AC3 → `npx vitest run test/hub/e2e/land.test.ts`
-- Registration → `npx vitest run test/hub/registry.test.ts`; `npm run typecheck`
+- Registration → `npx vitest run test/hub/registry.test.ts test/docs.test.ts`; `npm run typecheck`. `npm run build` (or `npm run docs`) regenerates the `mcp-tools` and `commands` blocks of `plugins/crew/docs/reference.md`; they are source, not generated files, so the checkpoint commits them with the code
 
 ## Rollout & rollback
 n/a — internal hub change; ships in the bundle. Rollback: revert the commit.
@@ -88,4 +88,4 @@ Latest log:
 
 ## Outcome
 `suite --ref P-###` now runs `hub.full_suite` in the plan's worktree (else this checkout when it is on the plan's branch, else it refuses before taking a slot); every suite record carries the tested HEAD `sha` and `branch`, and `suites` shows the short sha. `land` stops (plan stays accepted) when the plan branch's tip is not the sha its suite tested. The AC1 regression case fails against main's suite.ts (where.txt not in the worktree) and passes now. Note on AC3's text: `land` prints every Stop as `P-###: not landed — <reason>; it stays accepted with its worktree`, so the line reads `P-001: not landed — its branch moved during the full suite (tested …, now …); run \`land P-001\` again; …`. Existing suite tests switched from P-00n to BUG-00n refs, since a P-### ref is now checked as a plan.
-Learnings: since P-025 a change to an MCP tool description regenerates plugins/crew/docs/reference.md, which is outside touches and not marked generated (Q-d5eddf).
+Learnings: K-2026-10-26-since-p-025-npm-run-build-also

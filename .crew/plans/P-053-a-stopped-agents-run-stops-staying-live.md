@@ -3,7 +3,7 @@ id: P-053
 title: A stopped agent's run stops staying live
 goal: G-007
 items: BUG-034
-touches: packages/crew/src/hub/core/memory/activity.ts, packages/crew/src/hub/core/memory/ledger.ts, packages/crew/src/hub/commands/team/activity.ts, packages/crew/src/hub/commands/team/liveness.ts, packages/crew/src/hub/commands/team/liveness.reg.ts, plugins/crew/skills/hub/agents/director.md, packages/crew/test/activity.test.ts, packages/crew/test/hub/e2e/activity.test.ts, packages/crew/test/mcp.test.ts, packages/crew/test/hub/registry.test.ts
+touches: packages/crew/src/hub/core/memory/activity.ts, packages/crew/src/hub/core/memory/ledger.ts, packages/crew/src/hub/commands/team/activity.ts, packages/crew/src/hub/commands/team/liveness.ts, packages/crew/src/hub/commands/team/liveness.reg.ts, plugins/crew/skills/hub/agents/director.md, packages/crew/test/activity.test.ts, packages/crew/test/hub/e2e/activity.test.ts, packages/crew/test/mcp.test.ts, packages/crew/test/hub/registry.test.ts, plugins/crew/docs/reference.md, plugins/crew/docs/context-and-memory.md
 depends_on:
 status: in-progress
 branch: plan/P-053-a-stopped-agents-run-stops-staying-live
@@ -50,6 +50,7 @@ BUG-034 (G-007). A stopped agent (TaskStop, a crashed session) writes no usage o
 - AC1, AC3, AC4 → `npx vitest run test/activity.test.ts test/hub/e2e/activity.test.ts`
 - AC2 → `npx vitest run test/hub/e2e/activity.test.ts -t "end-run"`; `npx vitest run test/mcp.test.ts test/hub/registry.test.ts` (new tool and help line; registry-before.json unchanged: `git diff --quiet main -- test/hub/registry-before.json`)
 - Template → `npx vitest run test/hub/e2e/agents.test.ts`; `npm run typecheck`
+- Docs → `npx vitest run test/docs.test.ts`. `npm run build` (or `npm run docs`) regenerates `reference.md` (`end-run`, `end_run`) and the `ledger-events` block of `context-and-memory.md` (`end-run`); they are source, not generated files, so the checkpoint commits them with the code
 
 ## Rollout & rollback
 - The hub change ships in the bundle (Release builds it; it reaches `.crew/bin` through `refresh-bin`). Old ledgers have no `end-run` events, so nothing changes for them. An old hub reading a new `end-run` event ignores it.
