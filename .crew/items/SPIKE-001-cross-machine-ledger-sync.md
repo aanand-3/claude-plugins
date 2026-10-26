@@ -4,7 +4,7 @@ type: spike
 title: Cross-machine ledger sync
 status: triaged
 priority: P3
-goal: G-001
+goal:
 plan:
 created: 2026-10-23
 closed:
@@ -33,3 +33,4 @@ and follow-up items if it's go.
 - 2026-10-26: MOVE: off G-001. G-001 Scope lists cross-machine ledger sync as Out (later, via refs/crew/ledger), and G-007 lists it as Out too. Park it with no goal until a multi-machine or cloud-runner goal exists; the question is still open (ledger.jsonl stays in the local git common dir).
 - 2026-10-26: re-triaged: priority P3
 - 2026-10-26: PM grooming: MOVE off G-001 intended (parked, out of scope). triage has no way to clear a goal; link remains until the human or a hub change unlinks it.
+- 2026-10-26: re-goaled G-001 → none by Arpit Anand: Cross-machine sync is outside G-001 scope; parked until a goal needs it (Q-848e65 triage)
