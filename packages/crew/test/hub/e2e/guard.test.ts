@@ -1,6 +1,6 @@
 /** The hub, end to end — Workstream T1: identity flags and the guard (the PreToolUse hook behind `crew.mjs guard`).
  * Ported from tests/crew/test_hub.py (section "Workstream T1: identity and the guard"). */
-import { mkdirSync, realpathSync, symlinkSync } from "node:fs";
+import { mkdirSync, realpathSync, symlinkSync, writeFileSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -66,7 +66,7 @@ it("the guard injects identity and refuses other claims", () => {
   expect(mcp.updatedInput).toEqual({ as: "qa", run_id: "qa:a1" });
   expect(hook(repo, { tool_name: "mcp__hub__move", agent_type: "crew-qa", agent_id: "a1",
     tool_input: { id: "P-001", status: "done", as: "pm" } }).permissionDecision).toBe("deny");
-  expect(hook(repo, bash("crew-qa", "npm test"))).toBeNull(); // not a hub call: untouched
+  expect(hook(repo, bash("crew-qa", "npm test")).updatedInput).toEqual({ command: "npm test", description: "qa: npm test" }); // not a hub call: only labelled
 });
 
 it("injected identity reaches the ledger", () => {
@@ -104,14 +104,15 @@ it("a script's arguments are left alone (BUG-017)", () => {
     "bash .crew/drafts/x.sh /abs/.crew/bin/crew.mjs P-001", "X=1 QA_DIR=/x bash .crew/drafts/x.sh /abs/.crew/bin/crew.mjs P-001",
     "sh x.sh .crew/bin/crew.mjs",
   ]) {
-    expect(hook(repo, bash("crew-qa", cmd)), cmd).toBeNull();
+    expect(hook(repo, bash("crew-qa", cmd))?.updatedInput?.command, cmd).toBe(cmd);
   }
 });
 
 it("heredoc bodies are left alone (BUG-017)", () => {
   init(repo);
   agent(repo, "crew-qa", "qa");
-  expect(hook(repo, bash("crew-qa", `cat > /tmp/x.sh <<'EOF'\n${HUB} next\nEOF`))).toBeNull();
+  const heredoc = `cat > /tmp/x.sh <<'EOF'\n${HUB} next\nEOF`;
+  expect(hook(repo, bash("crew-qa", heredoc))?.updatedInput?.command).toBe(heredoc);
 });
 
 it("a hub path in a variable is refused (BUG-017)", () => {
@@ -158,7 +159,7 @@ it("the guard protects its own files from every subagent", () => {
     "sed -i '' s/a/b/ .claude/agents/crew-developer.md", "git checkout -- .crew/policy.yaml"]) {
     expect(hook(repo, bash("Explore", cmd)).permissionDecision, cmd).toBe("deny");
   }
-  expect(hook(repo, bash("crew-developer", "cat .crew/policy.yaml"))).toBeNull(); // reading the policy is fine
+  expect(hook(repo, bash("crew-developer", "cat .crew/policy.yaml"))?.permissionDecision).toBeUndefined(); // reading the policy is fine
   expect(hook(repo, { tool_name: "Read", agent_type: "Explore", agent_id: "a", tool_input: { file_path: ".env" } }).permissionDecision).toBe("deny");
   expect(hook(repo, bash("Explore", "cat .env")).permissionDecision).toBe("deny");
 });
@@ -186,7 +187,7 @@ it("guard_outside_repo: subagents keep project state in the repository (BUG-006)
     expect(w("crew-developer", p), p).toBeNull();
   }
   for (const cmd of ["npm test > /tmp/out.log 2>&1", "node x.js > /dev/null", "echo x > notes/a.md"]) {
-    expect(hook(repo, bash("crew-developer", cmd)), cmd).toBeNull();
+    expect(hook(repo, bash("crew-developer", cmd))?.updatedInput?.command, cmd).toBe(cmd);
   }
 });
 
@@ -219,7 +220,7 @@ it("guard_outside_repo: only destinations count, cd is followed, fd redirects ar
   }
   for (const cmd of ["cp ~/.npmrc fixtures/npmrc", "ln -s /opt/homebrew/bin/node bin/node", "cp .crew/policy.yaml /tmp/policy.yaml",
     "cd src && echo x > a.txt", "npm test 2>&1 | tee out.txt", "(cd docs && touch b.md)"]) {
-    expect(run(cmd), cmd).toBeNull();
+    expect(run(cmd)?.updatedInput?.command, cmd).toBe(cmd);
   }
 });
 
@@ -241,7 +242,7 @@ it("guard_shell_forms: >| and >&FILE, cd behind keywords, variables, one-operand
   }
   for (const cmd of ["ls >&2", "ls 2>&1 >&-", "ln -s /opt/homebrew/bin/node", "D=/tmp; echo x > $D/out.log",
     "if true; then echo x > out.txt; fi", "{ cd src; echo x > a.txt; }"]) {
-    expect(run(cmd), cmd).toBeNull();
+    expect(run(cmd)?.updatedInput?.command, cmd).toBe(cmd);
   }
 });
 
@@ -269,7 +270,7 @@ it("the guard applies the role's policy", () => {
   agent(repo, "crew-developer", "developer");
   agent(repo, "crew-qa", "qa");
   expect(hook(repo, bash("crew-developer", "git add -A && git push origin main")).permissionDecision).toBe("deny");
-  expect(hook(repo, bash("crew-developer", "git status"))).toBeNull();
+  expect(hook(repo, bash("crew-developer", "git status"))?.permissionDecision).toBeUndefined();
   expect(hook(repo, { tool_name: "WebFetch", agent_type: "crew-developer", agent_id: "a", tool_input: {} }).permissionDecision).toBe("deny");
   const w = (who: string, p: string) => hook(repo, { tool_name: "Write", agent_type: who, agent_id: "a", tool_input: { file_path: p } });
   expect(w("crew-developer", "src/app.py")).toBeNull();
@@ -297,6 +298,45 @@ it("projects can define their own roles", () => {
   expect(tr(repo, "--as", "wizard", "move", "P-001", "draft").returncode).not.toBe(0); // an unknown acting role fails closed
 });
 
+it("the guard labels every crew agent command <role> <plan>: <what> (P-056 AC1, AC2)", () => {
+  init(repo);
+  agent(repo, "crew-qa", "qa");
+  agent(repo, "crew-pm", "pm");
+  agent(repo, "Explore", null);
+  let out = hook(repo, bash("crew-qa", `${HUB} checkpoint P-001`));
+  expect(out.updatedInput).toEqual({ command: `${ID} checkpoint P-001`, description: "qa P-001: checkpoint P-001" });
+  const wt = join(repo.path, ".claude", "worktrees", "P-054-x");
+  mkdirSync(wt, { recursive: true });
+  out = hook(repo, { tool_name: "Bash", agent_type: "crew-qa", agent_id: "a1", cwd: wt,
+    tool_input: { command: "npm run build && npx vitest run", description: "build + suite tests", timeout: 600000 } });
+  expect(out.updatedInput).toEqual({ command: "npm run build && npx vitest run", description: "qa P-054: build + suite tests", timeout: 600000 });
+  expect(hook(repo, { ...bash("crew-qa", "ls"), cwd: wt, tool_input: { command: "ls", description: "qa P-054: build + suite tests" } })
+    .updatedInput.description).toBe("qa P-054: build + suite tests"); // relabelling changes nothing
+  expect(hook(repo, bash("crew-pm", "grep -r x src")).updatedInput.description).toBe("pm: grep");
+  mkdirSync(join(repo.path, ".git", "crew"), { recursive: true });
+  writeFileSync(join(repo.path, ".git", "crew", "activity.jsonl"),
+    `${JSON.stringify({ ts: new Date().toISOString(), run: "pm:a1", role: "pm", ref: "P-009", tool: "Bash", target: "ls" })}\n`);
+  expect(hook(repo, bash("crew-pm", "grep -r x src")).updatedInput.description).toBe("pm P-009: grep"); // the run's previous ref
+  expect(hook(repo, bash(null, "grep -r x src"))).toBeNull(); // the main session
+  expect(hook(repo, bash("Explore", "grep -r x src"))).toBeNull(); // not a crew agent
+});
+
+it("the guard refuses a background or long Bash call with no description, and labels a short one (P-056 AC3)", () => {
+  init(repo);
+  agent(repo, "crew-qa", "qa");
+  const WHY = 'crew guard: a background or long Bash call needs a description: add "description": "<what it does>" (the guard prefixes "<role> <plan>:")';
+  for (const extra of [{ run_in_background: true }, { run_in_background: true, description: "  " }, { timeout: 300000 }]) {
+    const out = hook(repo, { ...bash("crew-qa", "npx vitest run"), tool_input: { command: "npx vitest run", ...extra } });
+    expect(out?.permissionDecision, JSON.stringify(extra)).toBe("deny");
+    expect(out.permissionDecisionReason).toBe(WHY);
+  }
+  const ok = hook(repo, { ...bash("crew-qa", "npx vitest run"), tool_input: { command: "npx vitest run", timeout: 120000 } });
+  expect(ok.updatedInput).toEqual({ command: "npx vitest run", timeout: 120000, description: "qa: vitest (all)" });
+  expect(hook(repo, { ...bash("crew-qa", "x"), tool_input: { command: "sleep 1", run_in_background: true, description: "nap" } })
+    .updatedInput.description).toBe("qa: nap");
+  expect(hook(repo, { tool_name: "Bash", tool_input: { command: "sleep 1", run_in_background: true } })).toBeNull(); // the main session
+});
+
 describe("guard_cd_forms: spaced subshells, function bodies, case arms and install -d (P-058, BUG-012)", () => {
   it("are tracked from a plan worktree", () => {
     init(repo, { commit: true });
@@ -320,7 +360,7 @@ describe("guard_cd_forms: spaced subshells, function bodies, case arms and insta
     }
     for (const cmd of ["( echo hi > x.md )", "f() { echo hi > x.md; }; f", "case $x in a) echo hi > x.md;; esac",
       "install -d docs/a docs/b"]) {
-      expect(run(cmd), cmd).toBeNull();
+      expect(run(cmd)?.updatedInput?.command, cmd).toBe(cmd);
     }
   });
 });

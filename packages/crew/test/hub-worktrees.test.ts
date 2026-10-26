@@ -233,7 +233,9 @@ describe("guard", () => {
     const r = Repo.create();
     expect(tr(r, "init").returncode).toBe(0);
     r.write(".claude/agents/crew-qa.md", "---\nname: crew-qa\ncrew-role: qa\n---\nbody\n");
-    for (const cmd of ["ls .crew/bin/crew.mjs", "cmp .crew/bin/crew.mjs x", "git diff -- .crew/bin/crew.mjs"]) expect(hook(r, cmd), cmd).toBeNull();
+    for (const cmd of ["ls .crew/bin/crew.mjs", "cmp .crew/bin/crew.mjs x", "git diff -- .crew/bin/crew.mjs"]) {
+      expect((hook(r, cmd)?.updatedInput as { command?: string } | undefined)?.command, cmd).toBe(cmd); // labelled, not rewritten
+    }
     const id = "--as qa --run-id qa:a1";
     const cases: [string, string][] = [
       ["node .crew/bin/crew.mjs next", `node .crew/bin/crew.mjs ${id} next`],

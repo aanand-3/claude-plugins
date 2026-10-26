@@ -101,7 +101,7 @@ it("subagents can't run crew.mjs init (BUG-002)", () => {
 });
 
 it("heredoc bodies and quoted text are not write targets", () => {
-  expect(run("crew-developer", "cat > /tmp/x.ts <<'EOF'\nconst f = (a) => a > b;\necho > ~/x\nEOF")).toBeNull();
+  allowed("crew-developer", "cat > /tmp/x.ts <<'EOF'\nconst f = (a) => a > b;\necho > ~/x\nEOF");
   expect(allowed("crew-developer", 'node .crew/bin/crew.mjs log P-001 "wrote > ~/x"').updatedInput.command)
     .toBe('node .crew/bin/crew.mjs --as developer --run-id developer:a1 log P-001 "wrote > ~/x"');
 });

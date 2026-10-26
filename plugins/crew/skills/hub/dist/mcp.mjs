@@ -8069,8 +8069,8 @@ ${line3}`;
     const out = [];
     for (const line3 of stripComments(this.section(name)).split("\n")) {
       const m = TASK_RE.exec(line3);
-      const label = m?.[2].trim();
-      if (m && label && label !== "T1: \u2026 \u2192 verify: \u2026") out.push([m[1] !== " ", label]);
+      const label2 = m?.[2].trim();
+      if (m && label2 && label2 !== "T1: \u2026 \u2192 verify: \u2026") out.push([m[1] !== " ", label2]);
     }
     return out;
   }
@@ -8085,8 +8085,8 @@ ${line3}`;
       const h = /^###\s+(.+?)\s*$/.exec(line3);
       if (h) phase = h[1];
       const m = TASK_RE.exec(line3);
-      const label = m?.[2].trim();
-      if (m && label && label !== "T1: \u2026 \u2192 verify: \u2026") out.push([m[1] !== " ", label, phase]);
+      const label2 = m?.[2].trim();
+      if (m && label2 && label2 !== "T1: \u2026 \u2192 verify: \u2026") out.push([m[1] !== " ", label2, phase]);
     }
     return out;
   }
@@ -8285,14 +8285,14 @@ var CEILING = /^budgets\./;
 function loadLayers(root, crewDir, role, team) {
   const errors = [], hints = [], custom = [], charters = {};
   const teamScopes = {};
-  const read = (label, text2) => {
+  const read = (label2, text2) => {
     if (text2 === null) return null;
     try {
       const v = (0, import_yaml.parse)(text2) ?? {};
       if (typeof v !== "object" || Array.isArray(v)) throw new Error("not a mapping");
       return v;
     } catch (e) {
-      errors.push(`${label}: invalid YAML \u2014 ${e.message.split("\n")[0]}`);
+      errors.push(`${label2}: invalid YAML \u2014 ${e.message.split("\n")[0]}`);
       return null;
     }
   };
@@ -8411,12 +8411,12 @@ function resolveLayers(layers, roles = ROLES) {
           sources.set(path, layer.name);
         }
       } else if (CEILING.test(path) && typeof v === "number") {
-        const cap = ceilings.get(path);
-        if (cap && v > cap[0]) {
-          errors.push(`${layer.name}: ${path}: ${v} exceeds the ceiling ${cap[0]} set by ${cap[1]}`);
+        const cap2 = ceilings.get(path);
+        if (cap2 && v > cap2[0]) {
+          errors.push(`${layer.name}: ${path}: ${v} exceeds the ceiling ${cap2[0]} set by ${cap2[1]}`);
           continue;
         }
-        if (layer.org) ceilings.set(path, [Math.min(v, cap?.[0] ?? v), layer.name]);
+        if (layer.org) ceilings.set(path, [Math.min(v, cap2?.[0] ?? v), layer.name]);
         values.set(path, v);
         sources.set(path, layer.name);
       } else if (path === "human_gates") {
@@ -8976,8 +8976,41 @@ function describe(h, root) {
       const first = segs.map(command).find((w) => w.length && !/^(cd|pushd)$/.test(w[0]));
       target = first ? basename2(first[0]) || null : null;
     }
+    ref ??= input.command.split(/\s+/).map((w) => worktreePlan(unquote(w))).find((p) => p) ?? null;
   }
   return { tool, target, ref: ref ?? worktreePlan(path) ?? worktreePlan(h.cwd) };
+}
+var WHAT_MAX = 80;
+var FILE_ARG = /[./]/;
+var VALUE_FLAG = /^(-[tcr]|--(config|root|dir|project|reporter|outputFile|testNamePattern))$/;
+function segmentWhat(seg) {
+  const hub = hubCall(seg);
+  if (hub) return hub.sub ? `${hub.sub}${hub.ref ? ` ${hub.ref}` : ""}` : "crew.mjs";
+  const w = command(seg);
+  const head = basename2(w[0] ?? "");
+  if (!head || /^(cd|pushd|popd|export)$/.test(head)) return null;
+  const vitest = head === "vitest" ? 1 : /^(npx|pnpx|bunx)$/.test(head) && w[1] === "vitest" ? 2 : 0;
+  if (vitest) {
+    const files2 = w.slice(vitest).filter((a, i, all) => a !== "run" && !a.startsWith("-") && FILE_ARG.test(a) && !VALUE_FLAG.test(all[i - 1] ?? "")).map((f) => basename2(f));
+    return files2.length ? `vitest ${files2.slice(0, 2).join(" ")}${files2.length > 2 ? ` +${files2.length - 2}` : ""}` : "vitest (all)";
+  }
+  if (head === "npm") return w[1] === "run" && w[2] ? `npm run ${w[2]}` : w[1] ? `npm ${w[1]}` : "npm";
+  if (head === "git") {
+    let i = 1;
+    while (i < w.length && w[i].startsWith("-")) i += /^-[Cc]$/.test(w[i]) ? 2 : 1;
+    return w[i] ? `git ${w[i]}` : "git";
+  }
+  return head;
+}
+var cap = (s2) => s2.length > WHAT_MAX ? `${s2.slice(0, WHAT_MAX - 1)}\u2026` : s2;
+function deriveWhat(cmd) {
+  const parts = segments(cmd).map(segmentWhat).filter((p) => !!p);
+  return cap(parts.slice(0, 3).join(" + ") + (parts.length > 3 ? ` +${parts.length - 3}` : ""));
+}
+function label(role, ref, description, cmd) {
+  const esc = role.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const given = typeof description === "string" ? description.trim().replace(new RegExp(`^(?:${esc}|[a-z][\\w-]*(?= [A-Z]+-\\d+:))(?: [A-Z]+-\\d+)?:\\s*`), "") : "";
+  return `${role}${ref ? ` ${ref}` : ""}: ${given ? cap(given) : deriveWhat(cmd)}`;
 }
 var STOPS = /* @__PURE__ */ new Set(["usage", "report"]);
 function liveRuns(activity, ledger2, now = Date.now(), idleMinutes = IDLE_MINUTES, closed = () => false) {
@@ -9003,6 +9036,7 @@ function liveRuns(activity, ledger2, now = Date.now(), idleMinutes = IDLE_MINUTE
       task: step ? String(step) : null,
       tool: a.tool,
       target: a.target,
+      label: a.label ?? null,
       ts: a.ts,
       minutes,
       idle: minutes > idleMinutes,
@@ -9594,13 +9628,22 @@ function decide(store, h) {
     const over = written.find((t) => !exempt(t) && !hits(policy2.paths.write, t.path));
     if (over) return { deny: `the command writes to ${rel(over.path)}; ${only}` };
   }
+  const blank = typeof input.description !== "string" || !input.description.trim();
+  if (h.tool_name === "Bash" && blank && (input.run_in_background === true || Number(input.timeout) > 12e4)) {
+    return { deny: 'a background or long Bash call needs a description: add "description": "<what it does>" (the guard prefixes "<role> <plan>:")' };
+  }
+  let command2 = cmd;
   if (cmd && CREW_CLI2.test(cmd)) {
     const claimed = [...cmd.matchAll(/--as[=\s]+(\S+)/g)].map((m) => m[1]);
     if (claimed.some((c) => c !== role)) return { deny: `you are the ${role} agent; don't pass --as for another role` };
     if (/--run-id\b|\bCREW_(ROLE|RUN|ACTOR|TEAM)=/.test(cmd)) return { deny: "the guard sets your identity; don't pass --run-id or CREW_* variables" };
     const r = withIdentity(cmd, `--as ${role} --run-id ${run2}`);
     if ("deny" in r) return r;
-    return r.command === cmd ? null : { input: { ...input, command: r.command } };
+    command2 = r.command;
+  }
+  if (h.tool_name === "Bash") {
+    const ref = describe(h, root).ref ?? previousRef(activityPath(store.ledger.path), run2);
+    return { input: { ...input, command: command2, description: label(role, ref, input.description, cmd) } };
   }
   if (HUB_MCP.test(h.tool_name)) {
     if (input.as !== void 0 && input.as !== role) return { deny: `you are the ${role} agent; don't set as for another role` };
@@ -9636,8 +9679,9 @@ function activityHook(store) {
   const role = h && typeof h.agent_type === "string" ? agentRole(store.ws.root, h.agent_type) : null;
   if (!role) return 0;
   const run2 = `${role}:${h.agent_id ?? "unknown"}`, path = feedPath(store);
-  const d = describe(h, store.ws.root);
-  appendActivity(path, { ts: (/* @__PURE__ */ new Date()).toISOString(), run: run2, role, ref: d.ref ?? previousRef(path, run2), tool: d.tool, target: d.target });
+  const d = describe(h, store.ws.root), ref = d.ref ?? previousRef(path, run2), input = h.tool_input ?? {};
+  const bash = d.tool === "Bash" && typeof input.command === "string" ? { label: label(role, ref, input.description, input.command) } : {};
+  appendActivity(path, { ts: (/* @__PURE__ */ new Date()).toISOString(), run: run2, role, ref, tool: d.tool, target: d.target, ...bash });
   return 0;
 }
 function running(store, now = Date.now()) {
@@ -9648,9 +9692,9 @@ function running(store, now = Date.now()) {
 var ago = (minutes) => minutes < 1 ? "just now" : minutes < 60 ? `${Math.floor(minutes)}m ago` : `${Math.floor(minutes / 60)}h ${Math.floor(minutes % 60)}m ago`;
 var action = (tool, target) => target ? `${tool} ${target}` : tool;
 function runningLines(store) {
-  return running(store).map((r) => `- ${r.idle ? "**idle** " : ""}${r.role} (${r.run}) \u2014 ${r.ref ?? "\u2014"} \xB7 task ${r.task ?? "\u2014"} \xB7 ${action(r.tool, r.target)} ${ago(r.minutes)} \xB7 tokens ${r.tokens === null ? "\u2014" : r.tokens}`);
+  return running(store).map((r) => `- ${r.idle ? "**idle** " : ""}${r.role} (${r.run}) \u2014 ${r.ref ?? "\u2014"} \xB7 task ${r.task ?? "\u2014"} \xB7 ${r.label ?? action(r.tool, r.target)} ${ago(r.minutes)} \xB7 tokens ${r.tokens === null ? "\u2014" : r.tokens}`);
 }
-var fromActivity = (e) => ({ ts: e.ts, type: "tool", run: e.run, ref: e.ref, text: action(e.tool, e.target) });
+var fromActivity = (e) => ({ ts: e.ts, type: "tool", run: e.run, ref: e.ref, text: e.label ?? action(e.tool, e.target) });
 var fromLedger = (e) => ({ ts: e.ts, type: e.type, run: e.run, ref: e.ref, text: detail(e) });
 var byTime = (a, b) => Date.parse(a.ts) - Date.parse(b.ts);
 var forRef = (ref) => (e) => !ref || e.ref?.toUpperCase() === ref.toUpperCase();
@@ -11059,7 +11103,7 @@ function budgetProblems(store) {
   const { budgets } = store.policy.policy;
   const events = store.ledger.events(), me = store.ledger.who.run;
   const mine = store.ledger.spend(events.filter((e) => e.run === me)), all = store.ledger.spend(events);
-  const over = (what, used, cap, unit = "") => cap !== null && used >= cap ? [`${what}: ${unit}${+used.toFixed(2)} used of ${unit}${cap}`] : [];
+  const over = (what, used, cap2, unit = "") => cap2 !== null && used >= cap2 ? [`${what}: ${unit}${+used.toFixed(2)} used of ${unit}${cap2}`] : [];
   const holders = new Set([...store.ledger.claims(events).values()].map((c) => c.run));
   const agents3 = budgets.max_agents !== null && !holders.has(me) && holders.size >= budgets.max_agents ? [`max_agents: ${holders.size} runs already hold work (limit ${budgets.max_agents})`] : [];
   return [

@@ -32,7 +32,7 @@ export function LivePanel() {
                   <b>{r.role}</b> <span className="muted live__run">{r.run}</span></span>
                 <span className="live__what">{r.ref ? <IdLink id={r.ref} /> : <span className="muted">—</span>}
                   <span className="muted">task {r.task ?? "—"}</span>
-                  <code className="live__action">{action(r.tool, r.target)}</code>
+                  <code className="live__action">{r.label ?? action(r.tool, r.target)}</code>
                   <span className="muted">{ago(r.ts)}</span>
                   <span className="live__num">{r.tokens === null ? "—" : `${fmtTokens(r.tokens)} tokens`}</span></span>
               </li>
@@ -47,7 +47,7 @@ export function LivePanel() {
               <li key={`${e.ts}-${i}`} className="live__row">
                 <span className="live__num">{clock(e.ts)}</span>
                 <span className="live__what">{e.ref ? <IdLink id={e.ref} /> : <span className="muted">—</span>}
-                  <span className="muted live__run">{e.run}</span><code className="live__action">{action(e.tool, e.target)}</code></span>
+                  <span className="muted live__run">{e.run}</span><code className="live__action">{e.label ?? action(e.tool, e.target)}</code></span>
               </li>
             ))}
           </ul>

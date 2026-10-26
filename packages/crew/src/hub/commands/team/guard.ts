@@ -9,6 +9,7 @@ import { homedir, tmpdir } from "node:os";
 import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { Doc } from "../../core/work/doc.js";
 import * as git from "../../core/git.js";
+import { activityPath, describe, label, previousRef } from "../../core/memory/activity.js";
 import { globRe } from "../../core/memory/knowledge.js";
 import { STATE_RE } from "../../core/work/hubstate.js";
 import { resolvePolicy } from "../../core/team/policy.js";
@@ -169,14 +170,26 @@ export function decide(store: Store, h: HookInput): Decision {
     if (over) return { deny: `the command writes to ${rel(over.path)}; ${only}` };
   }
 
+  // a background or long call shows up as a task the executive watches: it needs words, not just a command
+  const blank = typeof input.description !== "string" || !input.description.trim();
+  if (h.tool_name === "Bash" && blank && (input.run_in_background === true || Number(input.timeout) > 120_000)) {
+    return { deny: 'a background or long Bash call needs a description: add "description": "<what it does>" (the guard prefixes "<role> <plan>:")' };
+  }
+
   // identity: injected from the verified agent, never claimed
+  let command = cmd;
   if (cmd && CREW_CLI.test(cmd)) {
     const claimed = [...cmd.matchAll(/--as[=\s]+(\S+)/g)].map((m) => m[1]);
     if (claimed.some((c) => c !== role)) return { deny: `you are the ${role} agent; don't pass --as for another role` };
     if (/--run-id\b|\bCREW_(ROLE|RUN|ACTOR|TEAM)=/.test(cmd)) return { deny: "the guard sets your identity; don't pass --run-id or CREW_* variables" };
     const r = withIdentity(cmd, `--as ${role} --run-id ${run}`);
     if ("deny" in r) return r;
-    return r.command === cmd ? null : { input: { ...input, command: r.command } };
+    command = r.command;
+  }
+  // every command is labelled "<role> <plan>: <what>" for the executive's task list
+  if (h.tool_name === "Bash") {
+    const ref = describe(h, root).ref ?? previousRef(activityPath(store.ledger.path), run!);
+    return { input: { ...input, command, description: label(role, ref, input.description, cmd) } };
   }
   if (HUB_MCP.test(h.tool_name)) {
     if (input.as !== undefined && input.as !== role) return { deny: `you are the ${role} agent; don't set as for another role` };

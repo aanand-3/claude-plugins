@@ -81,8 +81,10 @@ it("filters the activity to one ref and adds its feed of tool calls and ledger e
     expect(Object.keys(a).sort()).toEqual(["feed", "recent", "running"]);
     expect(a.running).toEqual([expect.objectContaining({ run: "developer:a1", ref: "P-001" })]);
     expect(a.recent.map((e: { run: string }) => e.run)).toEqual(["developer:a1"]);
+    expect(a.recent[0].label).toBe("developer P-001: checkpoint P-001"); // the feed text is the recorded label (P-056 AC4)
+    expect(a.running[0].label).toBe(a.recent[0].label);
     expect(a.feed).toEqual([
-      { ts: expect.any(String), type: "tool", run: "developer:a1", ref: "P-001", text: "Bash crew.mjs checkpoint" },
+      { ts: expect.any(String), type: "tool", run: "developer:a1", ref: "P-001", text: "developer P-001: checkpoint P-001" },
       { ts: later, type: "checkpoint", run: "developer:a1", ref: "P-001", text: "at T1 (abcdef0)" },
     ]);
   }

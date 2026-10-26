@@ -55,7 +55,9 @@ it("the guard applies an org-layer deny with a plan worktree as cwd (AC3)", () =
     expect(out?.permissionDecision, at.path).toBe("deny");
     expect(out?.permissionDecisionReason, at.path).toContain("WebFetch is denied for the developer role");
   }
-  expect(hook(wt, { ...bash("crew-developer", "ls"), cwd: wt.path })).toBeNull();
+  const ls = hook(wt, { ...bash("crew-developer", "ls"), cwd: wt.path });
+  expect(ls?.permissionDecision).toBeUndefined();
+  expect(ls?.updatedInput?.command).toBe("ls");
 });
 
 it("agents --check renders the same definitions in a plan worktree as in the main checkout (AC4)", () => {

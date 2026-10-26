@@ -69,6 +69,15 @@ describe("activity --hook", () => {
     activity(call("Bash", { command: "ls" }, { agent_id: "other" })); // a new run with nothing to go on
     expect(lines().map((e) => [e.target, e.ref])).toEqual([["crew.mjs checkpoint", "P-004"], ["npm", "P-004"], ["src/b.ts", "P-007"], ["ls", null]]);
   });
+
+  it("labels a Bash call <role> <plan>: <what>, whether or not the guard's label reached it (P-056 AC4)", () => {
+    activity(call("Bash", { command: "node .crew/bin/crew.mjs checkpoint P-004 --step T1" }));
+    activity(call("Bash", { command: "npm run build && npx vitest run test/a.test.ts", description: "build + test" }));
+    activity(call("Bash", { command: "ls", description: "developer P-004: list files" }));
+    activity(call("Read", { file_path: join(repo.path, "src/a.ts") }));
+    expect(lines().map((e) => e.label)).toEqual(["developer P-004: checkpoint P-004", "developer P-004: build + test",
+      "developer P-004: list files", undefined]);
+  });
 });
 
 describe("usage --hook records the agent's report", () => {
@@ -112,9 +121,11 @@ describe("status: Running now", () => {
   };
 
   it("shows each live run with task, last action, age and tokens", () => {
-    put(feed(), [act(30, { target: "x" }), act(3), act(2, { run: "qa:q1", role: "qa", ref: "P-002", tool: "Bash", target: "npx" })]);
+    put(feed(), [act(30, { target: "x" }), act(3), act(2, { run: "qa:q1", role: "qa", ref: "P-002", tool: "Bash", target: "npx" }),
+      act(1, { run: "qa:q2", role: "qa", ref: "P-003", tool: "Bash", target: "npx", label: "qa P-003: vitest a.test.ts" })]);
     put(ledger(), [led(10, "checkpoint", { step: "T2" }), led(40, "usage", { tokens_in: 100, tokens_out: 20 })]);
     expect(running()?.split("\n")).toEqual([
+      "- qa (qa:q2) — P-003 · task — · qa P-003: vitest a.test.ts 1m ago · tokens —",
       "- qa (qa:q1) — P-002 · task — · Bash npx 2m ago · tokens —",
       "- developer (developer:a1) — P-001 · task T2 · Edit src/a.ts 3m ago · tokens 120",
     ]);
@@ -214,8 +225,8 @@ describe("watch", () => {
       expect(only.out.text).not.toContain("one");
       expect(only.out.text).toContain("Edit two");
       activity(call("Bash", { command: "node .crew/bin/crew.mjs resume P-001" }));
-      expect(await until(() => all.out.text.includes("Bash crew.mjs resume"), 2_000)).toBe(true);
-      expect(only.out.text).not.toContain("crew.mjs resume");
+      expect(await until(() => all.out.text.includes("developer P-001: resume P-001"), 2_000)).toBe(true);
+      expect(only.out.text).not.toContain("resume P-001");
     } finally {
       all.p.kill();
       only.p.kill();
