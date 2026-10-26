@@ -60,7 +60,7 @@ This plan adds a built-in `designer` role that shapes a UI plan before it is bui
 - Protected paths: `.claude/agents/**` and `.crew/templates/agents/**` are policy-protected, so rendering `crew-designer.md` into this repo and vendoring the template need the executive (`--approved-by`) at T7.
 
 ## Tasks
-- [ ] T1: Add the `designer` role, the `plan.design-reviewed` gate in the lifecycle preset, and `isUiPlan` from `design.ui_paths` → verify: `policy show` lists the gate; unit test for `isUiPlan` (overlap, no overlap, no `ui_paths`) (AC1 part)
+- [x] T1: Add the `designer` role, the `plan.design-reviewed` gate in the lifecycle preset, and `isUiPlan` from `design.ui_paths` → verify: `policy show` lists the gate; unit test for `isUiPlan` (overlap, no overlap, no `ui_paths`) (AC1 part)
 - [ ] T2: `## Design` in the Definition of Ready for UI plans, plus the optional section in the plan template → verify: e2e test for AC2
 - [ ] T3: `review --design` and the design part of done (`reviewProblems` by kind, staleness, implementer and role checks), in CLI and MCP → verify: e2e tests for AC3 and AC4
 - [ ] T4: The designer's queue in `roles.ts` and the `designer.md` agent template → verify: e2e test for `next --role designer` ordering; `agents` renders it and `agents --check` is clean in a sandbox (AC1)
