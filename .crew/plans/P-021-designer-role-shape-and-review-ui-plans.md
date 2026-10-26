@@ -133,6 +133,7 @@ Latest log:
 - 2026-10-26: status accepted → in-progress — land: merging main conflicts in packages/crew/test/mcp.test.ts
 - 2026-10-26: status in-progress → in-review
 - 2026-10-26: status in-review → accepted
+- 2026-10-26: landed on main as 53f1694
 
 ## Outcome
 - Shipped: `designer` built-in role; `plan.design-reviewed: designer` in the lifecycle preset (and in policy ACTIONS);
