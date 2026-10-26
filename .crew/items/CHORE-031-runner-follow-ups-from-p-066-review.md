@@ -2,9 +2,9 @@
 id: CHORE-031
 type: chore
 title: Runner follow-ups from P-066 review
-status: new
-priority:
-goal:
+status: triaged
+priority: P3
+goal: G-007
 plan:
 created: 2026-10-26
 closed:
@@ -19,3 +19,4 @@ Two minor points from the P-066 review: (1) status --write now puts the live **R
 - [ ]
 
 ## Notes
+- 2026-10-26: status new → triaged — priority P3
