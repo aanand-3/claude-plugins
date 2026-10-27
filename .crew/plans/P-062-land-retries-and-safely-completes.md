@@ -5,7 +5,7 @@ goal: G-007
 items: BUG-041
 touches: packages/crew/src/hub/commands/work/land.ts, packages/crew/src/hub/commands/work/worktree-cleanup.ts, packages/crew/src/hub/commands/work/release.ts, packages/crew/test/hub/e2e/land.test.ts
 depends_on: P-061
-status: in-progress
+status: in-review
 branch: plan/P-062-land-retries-and-safely-completes
 pr:
 created: 2026-10-26
@@ -96,7 +96,7 @@ n/a — internal change to land's cleanup, shipped in the hub bundle Release reb
 
 _Generated 2026-10-27 by `crew.mjs handoff` from the ledger._
 
-- P-062: land retries and safely completes a worktree removal that fails early [in-progress] tasks 4/4 — claimed by Arpit Anand (developer:acd4138b45ba70200)
+- P-062: land retries and safely completes a worktree removal that fails early [in-review] tasks 4/4 — claimed by Arpit Anand (developer:acd4138b45ba70200)
 - last checkpoint 2026-10-27 06:32 at done (a41ab10) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
 - ✓ cd packages/crew && npx tsc --noEmit -p . (AC 6)
 - ✓ cd packages/crew && npx vitest run test/hub/e2e/land.test.ts -t 'BUG-041' (AC 1)
@@ -137,6 +137,7 @@ Latest log:
 - 2026-10-26: review: changes requested — Code is approved as is (worktree-cleanup.ts, land.ts, release.ts, land.test.ts match the spec, check d now subtracts tracked deletions, cleanupWorktree runs only from landed(), sweepJunk and rmSync never follow symlinks, both modules under 300 lines). One thing must change before it lands: two checkpoint T1 commits (672a8f0, 1b5be25) added vitest reporter output outside touches, packages/crew/.vitest/json/output.json and packages/crew/.vitest/junit/output.xml (QA's --reporter=json/junit runs). They are not tracked on main and would land with the squash. Delete both files from the branch in the P-062 worktree (git rm the packages/crew/.vitest folder, nothing else) and checkpoint; git diff main...HEAD must then show only the four touched files plus the generated bundles land rebuilt. No other code change.
 - 2026-10-26: status in-review → in-progress — changes requested: Code is approved as is (worktree-cleanup.ts, land.ts, release.ts, land.test.ts match the spec, check d now subtracts tracked deletions, cleanupWorktree runs only from landed(), sweepJunk and rmSync never follow symlinks, both modules under 300 lines). One thing must change before it lands: two checkpoint T1 commits (672a8f0, 1b5be25) added vitest reporter output outside touches, packages/crew/.vitest/json/output.json and packages/crew/.vitest/junit/output.xml (QA's --reporter=json/junit runs). They are not tracked on main and would land with the squash. Delete both files from the branch in the P-062 worktree (git rm the packages/crew/.vitest folder, nothing else) and checkpoint; git diff main...HEAD must then show only the four touched files plus the generated bundles land rebuilt. No other code change.
 - 2026-10-26: blocked (developer resume): the only open change (architect review a298f51: git rm packages/crew/.vitest/{json/output.json,junit/output.xml} from the branch, then checkpoint) still needs a shell in the P-062 worktree; Bash there is denied in dont-ask mode again this run. Both files still on plan/P-062 (git diff main...branch). Needs the human to allow Bash in .claude/worktrees/P-062-* or remove the two files and run checkpoint.
+- 2026-10-27: status in-progress → in-review
 
 ## Outcome
 The worktree cleanup lives in commands/work/worktree-cleanup.ts. When `git worktree remove --force` fails and git still lists the path as the plan's worktree, land deletes OS junk and retries up to 3 times (200 ms apart). P-061's junk-only delete follows. Then comes a full delete (`rmSync`, `git worktree prune`, a check that git no longer lists the path), only when `safeToDelete()` checks a–f find nothing that could be lost. Otherwise the warning is `kept <rel>: <reason>`. A path git no longer lists keeps P-061's `left` warning, with no retry. `branchMerged` is exported from release.ts. land.test.ts passes 25/25 (6 new BUG-041 tests), and tsc is clean.
