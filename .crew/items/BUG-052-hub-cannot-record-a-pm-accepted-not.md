@@ -2,9 +2,9 @@
 id: BUG-052
 type: bug
 title: Hub cannot record a PM-accepted not-reproduced AC; red AC drives fix dispatch (P-077 AC4)
-status: new
-severity:
-priority:
+status: triaged
+severity: S2
+priority: P1
 goal:
 plan:
 created: 2026-10-26
@@ -35,3 +35,4 @@ Only pass or fail; the stale red AC4 drives fix dispatch.
 ## Impact
 
 ## Notes
+- 2026-10-27: status new → triaged — priority P1, severity S2
