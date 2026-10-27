@@ -5,7 +5,7 @@ goal:
 items: BUG-045
 touches: packages/crew/src/hub/commands/work/backlog.ts, packages/crew/test/hub/e2e/items.test.ts, plugins/crew/skills/hub/templates/goal.md, plugins/crew/skills/hub/references/writing-guide.md
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-073-breakdown-lines-split-only-at-a-dash
 pr:
 created: 2026-10-26
@@ -66,9 +66,9 @@ are unchanged (`SPIKE: …` does not match `SPIKE-\d+`). Update the module's hea
 ## Design
 
 ## Tasks
-- [ ] T1: Regression tests for AC1-AC5 in `packages/crew/test/hub/e2e/items.test.ts` (one goal draft with the four lines), red on main → verify: `cd packages/crew && npx vitest run test/hub/e2e/items.test.ts -t breakdown` fails before T2
-- [ ] T2: Prefix and dash-only split in `itemFromCandidate`, type passed to `createItem`, prefix dropped in the rewritten line, stays-new note in `backlog.ts` → verify: `cd packages/crew && npx vitest run test/hub/e2e/items.test.ts test/hub/e2e/goal-links.test.ts`
-- [ ] T3: Describe the dash rule and the FEAT/CHORE/SPIKE prefix in the goal template's Breakdown comment and the writing guide's Breakdown row → verify: `grep -n "SPIKE:" plugins/crew/skills/hub/templates/goal.md plugins/crew/skills/hub/references/writing-guide.md` shows both
+- [x] T1: Regression tests for AC1-AC5 in `packages/crew/test/hub/e2e/items.test.ts` (one goal draft with the four lines), red on main → verify: `cd packages/crew && npx vitest run test/hub/e2e/items.test.ts -t breakdown` fails before T2
+- [x] T2: Prefix and dash-only split in `itemFromCandidate`, type passed to `createItem`, prefix dropped in the rewritten line, stays-new note in `backlog.ts` → verify: `cd packages/crew && npx vitest run test/hub/e2e/items.test.ts test/hub/e2e/goal-links.test.ts`
+- [x] T3: Describe the dash rule and the FEAT/CHORE/SPIKE prefix in the goal template's Breakdown comment and the writing guide's Breakdown row → verify: `grep -n "SPIKE:" plugins/crew/skills/hub/templates/goal.md plugins/crew/skills/hub/references/writing-guide.md` shows both
 
 ## Test plan
 **Targeted checks:**
@@ -87,9 +87,8 @@ n/a — hub-internal parsing change; only goals created after the fix are affect
 
 _Generated 2026-10-27 by `crew.mjs handoff` from the ledger._
 
-- P-073: Breakdown lines split only at a dash and take a type prefix [in-progress] tasks 0/3 — claimed by Arpit Anand (developer:ae416847d8eb5031f)
+- P-073: Breakdown lines split only at a dash and take a type prefix [in-review] tasks 3/3 — claimed by Arpit Anand (developer:ae416847d8eb5031f)
 - last checkpoint 2026-10-27 08:12 at T3 (a301d41) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
-- next: T1: Regression tests for AC1-AC5 in `packages/crew/test/hub/e2e/items.test.ts` (one goal draft with the four lines), red on main → verify: `cd packages/crew && npx vitest run test/hub/e2e/items.test.ts -t breakdown` fails before T2
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —, AC7 —
 
 Latest log:
@@ -102,5 +101,12 @@ Latest log:
 - 2026-10-26: status draft → ready
 - 2026-10-27: assigned to the developer role
 - 2026-10-27: status ready → in-progress — branch plan/P-073-breakdown-lines-split-only-at-a-dash
+- 2026-10-27: status in-progress → in-review
 
 ## Outcome
+Behaviour change: a goal's Breakdown line splits into title and description only at a spaced dash (` — `, ` – `, ` - `);
+a colon never splits. A leading `FEAT: `, `CHORE: ` or `SPIKE: ` sets the item type (default FEAT) and is dropped from the
+title and the rewritten `- <ID>: <line>`. An item whose triage gate fails (a spike without Question and Timebox) stays
+new and `new-goal` prints `note: <ID> stays new until triaged — <problems>`. The goal template and writing guide describe
+both rules.
+Learnings: none
