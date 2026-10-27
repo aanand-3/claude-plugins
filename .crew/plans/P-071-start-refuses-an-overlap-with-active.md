@@ -5,7 +5,7 @@ goal:
 items: FEAT-069
 touches: packages/crew/src/hub/core/work/footprint.ts, packages/crew/src/hub/commands/work/workflow.ts, packages/crew/src/hub/commands/team/team.ts, packages/crew/scripts/sample-project.mjs, plugins/crew/skills/hub/SKILL.md, plugins/crew/skills/hub/references/model.md, packages/crew/test/hub/e2e/context.test.ts, packages/crew/test/hub/e2e/branch-copies.test.ts, packages/crew/test/hub/e2e/start-overlap.test.ts, packages/crew/test/hub/e2e/sections.ts, packages/crew/test/hub/e2e/basics.test.ts, packages/crew/test/hub/e2e/ledger.test.ts, packages/crew/test/hub/e2e/policy.test.ts, packages/crew/test/hub/e2e/land.test.ts
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-071-start-refuses-an-overlap-with-active
 pr:
 created: 2026-10-26
@@ -114,7 +114,7 @@ Rollback: revert the plan's commit and rebuild.
 
 _Generated 2026-10-27 by `crew.mjs handoff` from the ledger._
 
-- P-071: start refuses an overlap with active work, as staff does [in-progress] tasks 4/4 — claimed by Arpit Anand (developer:a67a70d59d74e9720)
+- P-071: start refuses an overlap with active work, as staff does [in-review] tasks 4/4 — claimed by Arpit Anand (developer:a67a70d59d74e9720)
 - last checkpoint 2026-10-27 07:45 at T3 (dd4fb79) by Arpit Anand; since then 0 commit(s), 2 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs
 - ✓ cd packages/crew && npm run typecheck && npx vitest run test/view.test.ts test/hub/e2e test/hub-worktrees.test.ts test/hub/squash-merge.test.ts test/hub/generated-drift.test.ts test/structure.test.ts test/plugin/contents.test.ts (reported)
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —
@@ -129,5 +129,11 @@ Latest log:
 - 2026-10-26: status draft → ready
 - 2026-10-26: assigned to the developer role
 - 2026-10-26: status ready → in-progress — branch plan/P-071-start-refuses-an-overlap-with-active
+- 2026-10-27: status in-progress → in-review — T1-T4 done: start refuses an overlap with in-progress/blocked/in-review plans outside hub.shared (activeOverlaps in footprint.ts, shared with staff) unless --force; tests, sample project and docs updated; typecheck and the AC5 suite pass locally
 
 ## Outcome
+Behaviour change: `start` now refuses (non-zero, nothing written) a plan whose touches overlap an in-progress, blocked or
+in-review plan outside `hub.shared`, naming each plan, its status and the globs; `--force` starts it anyway with the old
+warning. `staff` and `start` share one verdict (`activeOverlaps` and `ledgerStatus` in `core/work/footprint.ts`). The
+sample project's `start P-008` and the start-calling tests that overlapped by accident were adjusted (Q-2665c8).
+Learnings: none
