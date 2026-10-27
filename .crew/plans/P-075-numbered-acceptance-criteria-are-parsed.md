@@ -89,9 +89,9 @@ _Generated 2026-10-27 by `crew.mjs handoff` from the ledger._
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —
 
 Latest log:
-- 2026-10-26: Overlaps P-072 (in-progress) on packages/crew/src/hub/commands/work/execution.ts: P-072 changes recovery(), this plan changes criteria() only; no dependency, the later one rebases.
 - 2026-10-27: assigned to the developer role
 - 2026-10-27: status ready → in-progress — branch plan/P-075-numbered-acceptance-criteria-are-parsed
+- 2026-10-27: status in-progress → in-review
 
 ## Progress log
 
