@@ -5,7 +5,7 @@ goal: G-007
 items: FEAT-075
 touches: packages/crew/src/hub/commands/work/amend.ts, packages/crew/src/hub/commands/work/amend.reg.ts, packages/crew/src/hub/commands/index.ts, packages/crew/src/hub/core/team/policy.ts, packages/crew/src/hub/core/team/presets.ts, packages/crew/src/docs/diagrams.ts, plugins/crew/docs/plan-lifecycle.md, plugins/crew/docs/reference.md, plugins/crew/skills/hub/references/model.md, plugins/crew/skills/hub/agents/pm.md, plugins/crew/skills/hub/agents/architect.md, packages/crew/test/hub/e2e/amend.test.ts, packages/crew/test/mcp.test.ts, packages/crew/test/docs.test.ts
 depends_on:
-status: draft
+status: ready
 branch: plan/P-083-the-pm-amends-goal-and-item-sections
 pr:
 created: 2026-10-27
@@ -110,20 +110,12 @@ K-2026-10-26-since-p-025-npm-run-build-also (generated blocks in plugins/crew/do
 ## Design
 
 ## Tasks
-- [ ] T1: `item.amended` and `goal.amended` in `ACTIONS` (policy.ts), lifecycle role gates → pm (presets.ts), their
-  descriptions in diagrams.ts → verify: `npx vitest run test/hub/e2e/amend.test.ts -t "policy"` (AC3 policy show) and
-  `npx vitest run test/docs.test.ts` after `npm run build` (offFlowSteps list updated in docs.test.ts).
-- [ ] T2: `amend.ts` + `amend.reg.ts` + index.ts registration: section rules, draft validation, closed refusal, write and
-  log → verify: `npx vitest run test/hub/e2e/amend.test.ts -t "amend"` (AC1, AC2, AC5).
-- [ ] T3: gates: PM / Architect window / other roles; active-goal scope sections need approval → verify:
-  `npx vitest run test/hub/e2e/amend.test.ts -t "gate"` (AC3, AC4).
-- [ ] T4: Breakdown amendment creates items via `breakdownToItems` → verify:
-  `npx vitest run test/hub/e2e/amend.test.ts -t "breakdown"` (AC6).
-- [ ] T5: guard and one home: a PM agent's amend through the guard hook, `policy show --role pm` paths.write unchanged,
-  amend run from a plan worktree writes the main checkout → verify: `npx vitest run test/hub/e2e/amend.test.ts -t "guard"` (AC7).
-- [ ] T6: MCP tool in mcp.test.ts's sorted list; pm.md, architect.md, model.md text; `npm run build` regenerates
-  reference.md and plan-lifecycle.md → verify: `npx vitest run test/mcp.test.ts test/hub/registry.test.ts test/docs.test.ts`
-  and `git diff --quiet main -- packages/crew/test/hub/registry-before.json` (AC8).
+- [ ] T1: `item.amended` and `goal.amended` in `ACTIONS` (policy.ts), lifecycle role gates → pm (presets.ts), their descriptions in diagrams.ts → verify: `npx vitest run test/hub/e2e/amend.test.ts -t "policy"` (AC3 policy show) and `npx vitest run test/docs.test.ts` after `npm run build` (offFlowSteps list updated in docs.test.ts).
+- [ ] T2: `amend.ts` + `amend.reg.ts` + index.ts registration: section rules, draft validation, closed refusal, write and log → verify: `npx vitest run test/hub/e2e/amend.test.ts -t "amend"` (AC1, AC2, AC5).
+- [ ] T3: gates: PM / Architect window / other roles; active-goal scope sections need approval → verify: `npx vitest run test/hub/e2e/amend.test.ts -t "gate"` (AC3, AC4).
+- [ ] T4: Breakdown amendment creates items via `breakdownToItems` → verify: `npx vitest run test/hub/e2e/amend.test.ts -t "breakdown"` (AC6).
+- [ ] T5: guard and one home: a PM agent's amend through the guard hook, `policy show --role pm` paths.write unchanged, amend run from a plan worktree writes the main checkout → verify: `npx vitest run test/hub/e2e/amend.test.ts -t "guard"` (AC7).
+- [ ] T6: MCP tool in mcp.test.ts's sorted list; pm.md, architect.md, model.md text; `npm run build` regenerates reference.md and plan-lifecycle.md → verify: `npx vitest run test/mcp.test.ts test/hub/registry.test.ts test/docs.test.ts` and `git diff --quiet main -- packages/crew/test/hub/registry-before.json` (AC8).
 
 ## Test plan
 **Targeted checks** (in `packages/crew`, after `npm ci --prefer-offline` and `npm run build`, since e2e tests drive dist):
@@ -150,5 +142,7 @@ PM and Architect agents see the command.
 ## Handoff
 
 ## Progress log
+
+- 2026-10-27: status draft → ready
 
 ## Outcome
