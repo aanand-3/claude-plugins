@@ -5,7 +5,7 @@ title: The PM amends the goals and items it owns through the hub
 status: triaged
 priority: P1
 goal: G-007
-plan:
+plan: P-083
 created: 2026-10-26
 closed:
 ---
