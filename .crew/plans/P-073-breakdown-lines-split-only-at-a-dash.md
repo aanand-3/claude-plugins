@@ -104,6 +104,7 @@ Latest log:
 - 2026-10-27: status in-progress → in-review
 - 2026-10-27: BUG-054: dist not rebuilt, items.test.ts BUG-045 test fails; AC1-5 blocked
 - 2026-10-27: BUG-054 overlaps: dist (crew.mjs and mcp.mjs) not rebuilt after the backlog.ts change; run hub.build and commit the regenerated dist within this plan before QA re-tests AC1-AC6
+- 2026-10-27: BUG-054 (stale dist): no code change. dist is generated and never committed on a plan branch (.gitattributes, hub.build in config.yaml); Release rebuilds it at land. Ran hub.build in the worktree; the rebuilt dist/crew.mjs and dist/mcp.mjs stay uncommitted there, and items.test.ts plus goal-links.test.ts pass 23/23 against it. QA: re-run items.test.ts for AC1-AC6 as is, or run hub.build first (gotcha K-2026-10-25-hub-e2e-tests-tr-hub-in-test-helpers).
 
 ## Outcome
 Behaviour change: a goal's Breakdown line splits into title and description only at a spaced dash (` — `, ` – `, ` - `);
