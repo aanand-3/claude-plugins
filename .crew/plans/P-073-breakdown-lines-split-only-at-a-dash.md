@@ -5,11 +5,11 @@ goal:
 items: BUG-045
 touches: packages/crew/src/hub/commands/work/backlog.ts, packages/crew/test/hub/e2e/items.test.ts, plugins/crew/skills/hub/templates/goal.md, plugins/crew/skills/hub/references/writing-guide.md
 depends_on:
-status: ready
+status: in-progress
 branch: plan/P-073-breakdown-lines-split-only-at-a-dash
 pr:
 created: 2026-10-26
-started:
+started: 2026-10-27
 completed:
 assignee: developer
 ---
@@ -89,5 +89,6 @@ n/a — hub-internal parsing change; only goals created after the fix are affect
 
 - 2026-10-26: status draft → ready
 - 2026-10-27: assigned to the developer role
+- 2026-10-27: status ready → in-progress — branch plan/P-073-breakdown-lines-split-only-at-a-dash
 
 ## Outcome
