@@ -101,13 +101,14 @@ QA's prompt still says drafts, but the guard already allows scratch. Rollback: r
 _Generated 2026-10-27 by `crew.mjs handoff` from the ledger._
 
 - P-068: QA scratch folder per plan, ignored and cleared at done [in-review] tasks 6/6 — claimed by Arpit Anand (developer:a910344b0c2617729)
-- last checkpoint 2026-10-27 08:44 at T6 (cfc33c1) by Arpit Anand; since then 0 commit(s), 2 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs
-- evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —
+- last checkpoint 2026-10-27 14:51 at done (cfc33c1) by Arpit Anand; since then 0 commit(s), 2 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs
+- ✗ cd packages/crew && npx vitest run test/hub/e2e/team.test.ts test/hub/e2e/guard-writes.test.ts (AC 1)
+- evidence: AC1 ✗, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —
 
 Latest log:
-- 2026-10-26: status draft → ready
 - 2026-10-27: assigned to the developer role
 - 2026-10-27: status ready → in-progress — branch plan/P-068-qa-scratch-folder-per-plan-ignored
+- 2026-10-27: status in-progress → in-review
 
 ## Progress log
 
