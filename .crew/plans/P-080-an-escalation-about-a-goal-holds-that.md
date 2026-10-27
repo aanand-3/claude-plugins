@@ -5,11 +5,11 @@ goal: G-007
 items: BUG-051
 touches: packages/crew/src/hub/commands/team/questions.ts, packages/crew/src/hub/commands/team/autonomy.ts, plugins/crew/skills/hub/references/model.md, plugins/crew/skills/team/SKILL.md, packages/crew/test/hub/run-check.test.ts, packages/crew/test/hub/e2e/inbox.test.ts, packages/crew/test/hub/e2e/dispatch.test.ts
 depends_on:
-status: ready
+status: in-progress
 branch: plan/P-080-an-escalation-about-a-goal-holds-that
 pr:
 created: 2026-10-27
-started:
+started: 2026-10-27
 completed:
 assignee: developer
 ---
@@ -80,5 +80,6 @@ n/a: a hub-internal rule change. Release rebuilds and refreshes `.crew/bin` when
 
 - 2026-10-27: status draft → ready
 - 2026-10-27: assigned to the developer role
+- 2026-10-27: status ready → in-progress — branch plan/P-080-an-escalation-about-a-goal-holds-that
 
 ## Outcome
