@@ -2,9 +2,9 @@
 id: BUG-053
 type: bug
 title: Inbox name placeholder is clipped at 375 px
-status: new
-severity:
-priority:
+status: triaged
+severity: S4
+priority: P3
 goal:
 plan:
 created: 2026-10-27
@@ -38,3 +38,4 @@ Every human who opens the Inbox on a phone before entering a name. Workaround: n
 
 ## Notes
 Fix: use a shorter placeholder, e.g. "Your name (recorded with each answer)", as P-072 did for its "Then you…" field.
+- 2026-10-27: status new → triaged — priority P3, severity S4
