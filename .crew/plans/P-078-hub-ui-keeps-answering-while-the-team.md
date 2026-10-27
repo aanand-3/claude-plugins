@@ -5,11 +5,11 @@ goal:
 items: BUG-050
 touches: packages/crew/src/hub/server.ts, packages/crew/src/hub/livegraph.ts, packages/crew/src/hub/core/memory/knowledge.ts, packages/crew/src/hub/core/store.ts, packages/crew/test/hub/livegraph.test.ts, packages/crew/test/hub/e2e/live-ui.test.ts
 depends_on:
-status: ready
+status: in-progress
 branch: plan/P-078-hub-ui-keeps-answering-while-the-team
 pr:
 created: 2026-10-26
-started:
+started: 2026-10-27
 completed:
 assignee: developer
 ---
@@ -128,5 +128,6 @@ Rollback: revert the squash commit and refresh `.crew/bin`.
 
 - 2026-10-26: status draft → ready
 - 2026-10-27: assigned to the developer role
+- 2026-10-27: status ready → in-progress — branch plan/P-078-hub-ui-keeps-answering-while-the-team
 
 ## Outcome
