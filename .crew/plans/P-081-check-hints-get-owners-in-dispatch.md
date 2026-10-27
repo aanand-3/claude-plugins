@@ -5,7 +5,7 @@ goal: G-007
 items: FEAT-074
 touches: packages/crew/src/hub/commands/views/checks.ts, packages/crew/src/hub/commands/team/hints.ts, packages/crew/src/hub/commands/team/dispatch.ts, packages/crew/src/hub/commands/team/runner.ts, packages/crew/src/hub/commands/work/goals.ts, packages/crew/src/hub/commands/views/graph.ts, plugins/crew/skills/hub/references/model.md, packages/crew/test/hub/e2e/hint-owners.test.ts, packages/crew/test/hub/e2e/runner.test.ts, packages/crew/test/hub/e2e/dispatch.test.ts, packages/crew/test/hub/e2e/team.test.ts, packages/crew/test/hub/e2e/inbox.test.ts, packages/crew/test/hub/e2e/activity.test.ts, packages/crew/test/hub/e2e/design-review.test.ts, packages/crew/test/hub/e2e/land.test.ts, packages/crew/test/mcp.test.ts
 depends_on: P-066
-status: draft
+status: ready
 branch: plan/P-081-check-hints-get-owners-in-dispatch
 pr:
 created: 2026-10-27
@@ -113,5 +113,7 @@ n/a: hub-internal. Back out by reverting the squash commit; runner reports with 
 ## Handoff
 
 ## Progress log
+
+- 2026-10-27: status draft → ready
 
 ## Outcome
