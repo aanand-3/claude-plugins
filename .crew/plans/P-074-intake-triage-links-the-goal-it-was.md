@@ -87,6 +87,18 @@ Whenever the item stays `new`, capture still links no goal.
 
 ## Handoff
 
+_Generated 2026-10-27 by `crew.mjs handoff` from the ledger._
+
+- P-074: Intake triage links the --goal it was given [in-progress] tasks 0/3 — claimed by Arpit Anand (developer:afb9baa65e51c0e3c)
+- last checkpoint 2026-10-27 08:35 at T3 (8eb2bb9) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
+- next: T1: In `newItem`, link `--goal` when intake triage moves the item, else keep the hint (AC1–AC5) → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/goal-links.test.ts -t "capture"`, then `git checkout -- plugins/crew/skills/hub/dist plugins/crew/skills/hub/references/commands.md`
+- evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —
+
+Latest log:
+- 2026-10-26: status draft → ready
+- 2026-10-27: assigned to the developer role
+- 2026-10-27: status ready → in-progress — branch plan/P-074-intake-triage-links-the-goal-it-was
+
 ## Progress log
 
 - 2026-10-26: status draft → ready
