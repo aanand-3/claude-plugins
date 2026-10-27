@@ -11,6 +11,7 @@ pr:
 created: 2026-10-27
 started:
 completed:
+assignee: developer
 ---
 
 # P-080: An escalation about a goal holds that goal, not the team
@@ -78,5 +79,6 @@ n/a: a hub-internal rule change. Release rebuilds and refreshes `.crew/bin` when
 ## Progress log
 
 - 2026-10-27: status draft → ready
+- 2026-10-27: assigned to the developer role
 
 ## Outcome
