@@ -5,7 +5,7 @@ title: Check hints get owners in dispatch
 status: triaged
 priority: P1
 goal: G-007
-plan:
+plan: P-081
 created: 2026-10-26
 closed:
 origin: FEAT-072
