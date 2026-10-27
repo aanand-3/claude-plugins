@@ -5,11 +5,11 @@ goal:
 items: CHORE-029
 touches: packages/crew/src/hub/core/team/presets.ts, packages/crew/src/hub/core/git.ts, packages/crew/src/hub/commands/work/workflow.ts, packages/crew/src/hub/commands/work/planning.ts, .crew/.gitignore, plugins/crew/skills/hub/agents/qa.md, plugins/crew/skills/hub/references/model.md, packages/crew/test/hub/e2e/team.test.ts, packages/crew/test/hub/e2e/guard-writes.test.ts, packages/crew/test/hub/e2e/scratch.test.ts
 depends_on:
-status: ready
+status: in-progress
 branch: plan/P-068-qa-scratch-folder-per-plan-ignored
 pr:
 created: 2026-10-26
-started:
+started: 2026-10-27
 completed:
 assignee: developer
 ---
@@ -102,5 +102,6 @@ QA's prompt still says drafts, but the guard already allows scratch. Rollback: r
 
 - 2026-10-26: status draft → ready
 - 2026-10-27: assigned to the developer role
+- 2026-10-27: status ready → in-progress — branch plan/P-068-qa-scratch-folder-per-plan-ignored
 
 ## Outcome
