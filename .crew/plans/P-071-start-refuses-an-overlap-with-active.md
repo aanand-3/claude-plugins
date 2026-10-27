@@ -84,10 +84,10 @@ K-2026-10-26-packages-crew-scripts-sample-project-mjs (the sample project starts
 ## Design
 
 ## Tasks
-- [ ] T1: Write `packages/crew/test/hub/e2e/start-overlap.test.ts` (AC4) and update the overlap cases in `test/hub/e2e/context.test.ts` (AC1, AC2) and `test/hub/e2e/branch-copies.test.ts` (AC3) to expect the refusal → verify: `cd packages/crew && npx vitest run test/hub/e2e/start-overlap.test.ts test/hub/e2e/context.test.ts test/hub/e2e/branch-copies.test.ts` fails on the refusal assertions before T2.
-- [ ] T2: Add the shared active-overlap function to `core/work/footprint.ts`, use it in `staffing()` (`commands/team/team.ts`) and make `checkStartable` (`commands/work/workflow.ts`) refuse with it → verify: `cd packages/crew && npm run typecheck && npx vitest run test/hub/e2e/start-overlap.test.ts test/hub/e2e/context.test.ts test/hub/e2e/branch-copies.test.ts test/hub/e2e/shared-touches.test.ts test/hub/e2e/team.test.ts test/structure.test.ts` passes.
-- [ ] T3: Pass `--force` to the sample project's `start P-008` in `packages/crew/scripts/sample-project.mjs`, and fix the start-calling tests that now hit the refusal (Q-2665c8): the WIP / budget tests in `basics.test.ts`, `ledger.test.ts` and `policy.test.ts` give their second plan distinct touches (an optional touches argument on `readyPlan` in `sections.ts`), since they test WIP and budgets, not overlap; `land.test.ts`'s `started()` always passes `--force`, with a comment that its plans overlap on `src/cli.ts` by design → verify: `cd packages/crew && npx vitest run test/view.test.ts test/hub/e2e test/hub-worktrees.test.ts test/hub/squash-merge.test.ts test/hub/generated-drift.test.ts` passes (AC5).
-- [ ] T4: Update `plugins/crew/skills/hub/SKILL.md` (Footprints) and `plugins/crew/skills/hub/references/model.md` (Size, dependencies and WIP) → verify: `grep -n "start" plugins/crew/skills/hub/SKILL.md` shows the refusal and `--force` and no "start warns"; `grep -n "overlap" plugins/crew/skills/hub/references/model.md` shows the start rule; `cd packages/crew && npx vitest run test/plugin/contents.test.ts` passes (AC6).
+- [x] T1: Write `packages/crew/test/hub/e2e/start-overlap.test.ts` (AC4) and update the overlap cases in `test/hub/e2e/context.test.ts` (AC1, AC2) and `test/hub/e2e/branch-copies.test.ts` (AC3) to expect the refusal → verify: `cd packages/crew && npx vitest run test/hub/e2e/start-overlap.test.ts test/hub/e2e/context.test.ts test/hub/e2e/branch-copies.test.ts` fails on the refusal assertions before T2.
+- [x] T2: Add the shared active-overlap function to `core/work/footprint.ts`, use it in `staffing()` (`commands/team/team.ts`) and make `checkStartable` (`commands/work/workflow.ts`) refuse with it → verify: `cd packages/crew && npm run typecheck && npx vitest run test/hub/e2e/start-overlap.test.ts test/hub/e2e/context.test.ts test/hub/e2e/branch-copies.test.ts test/hub/e2e/shared-touches.test.ts test/hub/e2e/team.test.ts test/structure.test.ts` passes.
+- [x] T3: Pass `--force` to the sample project's `start P-008` in `packages/crew/scripts/sample-project.mjs`, and fix the start-calling tests that now hit the refusal (Q-2665c8): the WIP / budget tests in `basics.test.ts`, `ledger.test.ts` and `policy.test.ts` give their second plan distinct touches (an optional touches argument on `readyPlan` in `sections.ts`), since they test WIP and budgets, not overlap; `land.test.ts`'s `started()` always passes `--force`, with a comment that its plans overlap on `src/cli.ts` by design → verify: `cd packages/crew && npx vitest run test/view.test.ts test/hub/e2e test/hub-worktrees.test.ts test/hub/squash-merge.test.ts test/hub/generated-drift.test.ts` passes (AC5).
+- [x] T4: Update `plugins/crew/skills/hub/SKILL.md` (Footprints) and `plugins/crew/skills/hub/references/model.md` (Size, dependencies and WIP) → verify: `grep -n "start" plugins/crew/skills/hub/SKILL.md` shows the refusal and `--force` and no "start warns"; `grep -n "overlap" plugins/crew/skills/hub/references/model.md` shows the start rule; `cd packages/crew && npx vitest run test/plugin/contents.test.ts` passes (AC6).
 
 ## Test plan
 **Targeted checks** (from `packages/crew`, vitest):
@@ -111,6 +111,18 @@ Rollback: revert the plan's commit and rebuild.
 - Some existing e2e test may start an overlapping pair without `--force`; T3 finds and fixes it (tests are `hub.shared`).
 
 ## Handoff
+
+_Generated 2026-10-27 by `crew.mjs handoff` from the ledger._
+
+- P-071: start refuses an overlap with active work, as staff does [in-progress] tasks 4/4 — claimed by Arpit Anand (developer:a67a70d59d74e9720)
+- last checkpoint 2026-10-27 07:45 at T3 (dd4fb79) by Arpit Anand; since then 0 commit(s), 2 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs
+- ✓ cd packages/crew && npm run typecheck && npx vitest run test/view.test.ts test/hub/e2e test/hub-worktrees.test.ts test/hub/squash-merge.test.ts test/hub/generated-drift.test.ts test/structure.test.ts test/plugin/contents.test.ts (reported)
+- evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —
+
+Latest log:
+- 2026-10-26: status draft → ready
+- 2026-10-26: assigned to the developer role
+- 2026-10-26: status ready → in-progress — branch plan/P-071-start-refuses-an-overlap-with-active
 
 ## Progress log
 
