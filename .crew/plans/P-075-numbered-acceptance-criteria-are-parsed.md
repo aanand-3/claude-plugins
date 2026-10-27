@@ -5,11 +5,11 @@ goal:
 items: BUG-047
 touches: packages/crew/src/hub/core/work/doc.ts, packages/crew/src/hub/commands/work/execution.ts, packages/crew/test/doc.test.ts, packages/crew/test/hub/e2e/execution.test.ts
 depends_on:
-status: ready
+status: in-progress
 branch: plan/P-075-numbered-acceptance-criteria-are-parsed
 pr:
 created: 2026-10-26
-started:
+started: 2026-10-27
 completed:
 assignee: developer
 ---
@@ -87,5 +87,6 @@ recorded earlier against a nested bullet's text no longer matches a criterion an
 - 2026-10-26: status draft → ready
 - 2026-10-26: Overlaps P-072 (in-progress) on packages/crew/src/hub/commands/work/execution.ts: P-072 changes recovery(), this plan changes criteria() only; no dependency, the later one rebases.
 - 2026-10-27: assigned to the developer role
+- 2026-10-27: status ready → in-progress — branch plan/P-075-numbered-acceptance-criteria-are-parsed
 
 ## Outcome
