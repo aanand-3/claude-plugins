@@ -5,7 +5,7 @@ goal:
 items: BUG-050
 touches: packages/crew/src/hub/server.ts, packages/crew/src/hub/livegraph.ts, packages/crew/src/hub/core/memory/knowledge.ts, packages/crew/src/hub/core/store.ts, packages/crew/test/hub/livegraph.test.ts, packages/crew/test/hub/e2e/live-ui.test.ts
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-078-hub-ui-keeps-answering-while-the-team
 pr:
 created: 2026-10-26
@@ -126,7 +126,7 @@ Rollback: revert the squash commit and refresh `.crew/bin`.
 
 _Generated 2026-10-27 by `crew.mjs handoff` from the ledger._
 
-- P-078: Hub ui keeps answering while the team works [in-progress] tasks 6/6 — claimed by Arpit Anand (developer:a2ff607bb3ab5c6cf)
+- P-078: Hub ui keeps answering while the team works [in-review] tasks 6/6 — claimed by Arpit Anand (developer:a2ff607bb3ab5c6cf)
 - last checkpoint 2026-10-27 08:42 at T6 (0fd1be7) by Arpit Anand; since then 0 commit(s), 2 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs
 - ✓ on the main checkout, back to back x2: node .crew/bin/crew.mjs export --json vs node <worktree>/plugins/crew/skills/hub/dist/crew.mjs export --json (bundle from npm run build, not committed); outputs compared as JSON without generatedAt (AC 9) (reported)
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —, AC7 —, AC8 —, AC9 ✓ (self)
@@ -141,6 +141,7 @@ Latest log:
 - 2026-10-26: status draft → ready
 - 2026-10-27: assigned to the developer role
 - 2026-10-27: status ready → in-progress — branch plan/P-078-hub-ui-keeps-answering-while-the-team
+- 2026-10-27: status in-progress → in-review
 
 ## Outcome
 Learnings: K-2026-10-27-an-in-process-serve-test-src-hub-server
