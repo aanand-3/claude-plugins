@@ -2,13 +2,13 @@
 id: BUG-054
 type: bug
 title: P-073 dist not rebuilt: new-goal still splits at colon
-status: new
+status: duplicate
 severity: S2
 priority: P1
 goal:
 plan:
 created: 2026-10-27
-closed:
+closed: 2026-10-27
 ---
 
 # BUG-054: P-073 dist not rebuilt: new-goal still splits at colon
@@ -38,3 +38,4 @@ AC1-AC5 cannot be verified; the fix is not in the shipped bundle. Fix: run hub.b
 
 ## Notes
 Found testing P-073.
+- 2026-10-27: status new → duplicate — noted on P-073: the plan's own unfinished work (stale dist), fixed there
