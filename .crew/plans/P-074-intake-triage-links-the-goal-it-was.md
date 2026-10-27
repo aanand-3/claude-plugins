@@ -5,11 +5,11 @@ goal:
 items: BUG-046
 touches: packages/crew/src/hub/commands/work/backlog.ts, packages/crew/test/hub/e2e/goal-links.test.ts, plugins/crew/skills/hub/agents/pm.md, plugins/crew/skills/hub/references/model.md
 depends_on:
-status: ready
+status: in-progress
 branch: plan/P-074-intake-triage-links-the-goal-it-was
 pr:
 created: 2026-10-26
-started:
+started: 2026-10-27
 completed:
 assignee: developer
 ---
@@ -91,5 +91,6 @@ Whenever the item stays `new`, capture still links no goal.
 
 - 2026-10-26: status draft → ready
 - 2026-10-27: assigned to the developer role
+- 2026-10-27: status ready → in-progress — branch plan/P-074-intake-triage-links-the-goal-it-was
 
 ## Outcome
