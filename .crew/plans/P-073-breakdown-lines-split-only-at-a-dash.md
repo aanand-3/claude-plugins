@@ -102,6 +102,7 @@ Latest log:
 - 2026-10-27: assigned to the developer role
 - 2026-10-27: status ready → in-progress — branch plan/P-073-breakdown-lines-split-only-at-a-dash
 - 2026-10-27: status in-progress → in-review
+- 2026-10-27: BUG-054: dist not rebuilt, items.test.ts BUG-045 test fails; AC1-5 blocked
 
 ## Outcome
 Behaviour change: a goal's Breakdown line splits into title and description only at a spaced dash (` — `, ` – `, ` - `);
