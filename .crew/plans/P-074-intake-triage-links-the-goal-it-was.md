@@ -11,6 +11,7 @@ pr:
 created: 2026-10-26
 started:
 completed:
+assignee: developer
 ---
 
 # P-074: Intake triage links the --goal it was given
@@ -89,5 +90,6 @@ Whenever the item stays `new`, capture still links no goal.
 ## Progress log
 
 - 2026-10-26: status draft → ready
+- 2026-10-27: assigned to the developer role
 
 ## Outcome
