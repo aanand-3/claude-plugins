@@ -11,6 +11,7 @@ pr:
 created: 2026-10-26
 started:
 completed:
+assignee: developer
 ---
 
 # P-068: QA scratch folder per plan, ignored and cleared at done
@@ -100,5 +101,6 @@ QA's prompt still says drafts, but the guard already allows scratch. Rollback: r
 ## Progress log
 
 - 2026-10-26: status draft → ready
+- 2026-10-27: assigned to the developer role
 
 ## Outcome
