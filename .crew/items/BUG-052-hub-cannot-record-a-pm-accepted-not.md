@@ -5,7 +5,7 @@ title: Hub cannot record a PM-accepted not-reproduced AC; red AC drives fix disp
 status: triaged
 severity: S2
 priority: P1
-goal:
+goal: G-007
 plan:
 created: 2026-10-26
 closed:
@@ -36,3 +36,4 @@ Only pass or fail; the stale red AC4 drives fix dispatch.
 
 ## Notes
 - 2026-10-27: status new → triaged — priority P1, severity S2
+- 2026-10-27: re-triaged: priority P1, severity S2
