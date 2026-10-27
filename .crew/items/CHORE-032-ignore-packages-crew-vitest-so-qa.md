@@ -5,7 +5,7 @@ title: Ignore packages/crew/.vitest/ so QA reporter output is never committed
 status: triaged
 priority: P2
 goal: G-007
-plan:
+plan: P-082
 created: 2026-10-26
 closed:
 origin: P-062
