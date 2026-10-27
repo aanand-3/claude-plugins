@@ -5,7 +5,7 @@ goal:
 items: BUG-052
 touches: packages/crew/src/hub/commands/work/execution.ts, packages/crew/src/hub/commands/work/execution.reg.ts, packages/crew/src/hub/commands/work/resume.ts, packages/crew/src/hub/commands/team/dispatch.ts, packages/crew/src/hub/commands/team/roles.ts, packages/crew/src/hub/commands/team/inbox.ts, packages/crew/src/hub/commands/memory/context.ts, plugins/crew/skills/hub/agents/pm.md, plugins/crew/skills/hub/references/model.md, packages/crew/test/hub/e2e/waive.test.ts
 depends_on:
-status: draft
+status: ready
 branch: plan/P-084-waive-an-acceptance-criterion
 pr:
 created: 2026-10-27
@@ -119,5 +119,7 @@ plain failed checks (`ok: false`), which is safe.
 ## Handoff
 
 ## Progress log
+
+- 2026-10-27: status draft → ready
 
 ## Outcome
