@@ -5,7 +5,7 @@ goal:
 items: CHORE-029
 touches: packages/crew/src/hub/core/team/presets.ts, packages/crew/src/hub/core/git.ts, packages/crew/src/hub/commands/work/workflow.ts, packages/crew/src/hub/commands/work/planning.ts, .crew/.gitignore, plugins/crew/skills/hub/agents/qa.md, plugins/crew/skills/hub/references/model.md, packages/crew/test/hub/e2e/team.test.ts, packages/crew/test/hub/e2e/guard-writes.test.ts, packages/crew/test/hub/e2e/scratch.test.ts
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-068-qa-scratch-folder-per-plan-ignored
 pr:
 created: 2026-10-26
@@ -100,7 +100,7 @@ QA's prompt still says drafts, but the guard already allows scratch. Rollback: r
 
 _Generated 2026-10-27 by `crew.mjs handoff` from the ledger._
 
-- P-068: QA scratch folder per plan, ignored and cleared at done [in-progress] tasks 6/6 — claimed by Arpit Anand (developer:a910344b0c2617729)
+- P-068: QA scratch folder per plan, ignored and cleared at done [in-review] tasks 6/6 — claimed by Arpit Anand (developer:a910344b0c2617729)
 - last checkpoint 2026-10-27 08:44 at T6 (cfc33c1) by Arpit Anand; since then 0 commit(s), 2 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —
 
@@ -114,6 +114,7 @@ Latest log:
 - 2026-10-26: status draft → ready
 - 2026-10-27: assigned to the developer role
 - 2026-10-27: status ready → in-progress — branch plan/P-068-qa-scratch-folder-per-plan-ignored
+- 2026-10-27: status in-progress → in-review
 
 ## Outcome
 QA's paths.write under the lifecycle preset is `.crew/drafts/**, .crew/scratch/**`; `init` writes `scratch/` to
@@ -122,4 +123,4 @@ QA's paths.write under the lifecycle preset is `.crew/drafts/**, .crew/scratch/*
 only warns). QA's template and model.md send check scripts there; convention
 K-2026-10-27-qa-writes-its-hands-on-check-scripts supersedes K-2026-10-25-qa-and-other-roles-keep-throwaway-check.
 After landing the human runs `crew.mjs init` and `crew.mjs agents` to refresh the vendored and rendered QA agent.
-Learnings: the e2e tests drive dist/crew.mjs, so `npm run build` is needed before a targeted check sees a source change.
+Learnings: K-2026-10-27-qa-writes-its-hands-on-check-scripts, K-2026-10-26-e2e-tests-drive-the-built-dist-crew-mjs
