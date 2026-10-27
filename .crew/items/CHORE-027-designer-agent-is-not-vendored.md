@@ -5,7 +5,7 @@ title: Designer agent is not vendored or rendered in this repo
 status: triaged
 priority: P2
 goal:
-plan:
+plan: P-085
 created: 2026-10-26
 closed:
 ---
