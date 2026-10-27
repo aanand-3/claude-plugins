@@ -5,7 +5,7 @@ goal: G-007
 items: BUG-051
 touches: packages/crew/src/hub/commands/team/questions.ts, packages/crew/src/hub/commands/team/autonomy.ts, plugins/crew/skills/hub/references/model.md, plugins/crew/skills/team/SKILL.md, packages/crew/test/hub/run-check.test.ts, packages/crew/test/hub/e2e/inbox.test.ts, packages/crew/test/hub/e2e/dispatch.test.ts
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-080-an-escalation-about-a-goal-holds-that
 pr:
 created: 2026-10-27
@@ -54,10 +54,10 @@ The split lives in one function, `escalationHolds()` in `packages/crew/src/hub/c
 n/a (no UI paths).
 
 ## Tasks
-- [ ] T1: Add the failing regression tests first. run-check.test.ts covers AC1 and AC2 (the IDEA case is new; the no-ref case already exists). inbox.test.ts covers AC4 and dispatch.test.ts covers AC3. → verify: `cd packages/crew && npx vitest run test/hub/run-check.test.ts test/hub/e2e/inbox.test.ts test/hub/e2e/dispatch.test.ts`, where the new goal cases fail before T2.
-- [ ] T2: Fix `escalationHolds()` and its doc comment in questions.ts. → verify: the same command passes, and `npm run typecheck` in packages/crew is clean.
-- [ ] T3: Update the `runState` docstring in autonomy.ts and the header comment in run-check.test.ts. → verify: the `grep -n "about the idea or a goal" packages/crew/src` check from AC5 returns nothing.
-- [ ] T4: Update the model.md Inbox and Dispatch paragraphs and the team/SKILL.md "It stops" line. → verify: the AC5 grep for "plan, item or goal" finds each file.
+- [x] T1: Add the failing regression tests first. run-check.test.ts covers AC1 and AC2 (the IDEA case is new; the no-ref case already exists). inbox.test.ts covers AC4 and dispatch.test.ts covers AC3. → verify: `cd packages/crew && npx vitest run test/hub/run-check.test.ts test/hub/e2e/inbox.test.ts test/hub/e2e/dispatch.test.ts`, where the new goal cases fail before T2.
+- [x] T2: Fix `escalationHolds()` and its doc comment in questions.ts. → verify: the same command passes, and `npm run typecheck` in packages/crew is clean.
+- [x] T3: Update the `runState` docstring in autonomy.ts and the header comment in run-check.test.ts. → verify: the `grep -n "about the idea or a goal" packages/crew/src` check from AC5 returns nothing.
+- [x] T4: Update the model.md Inbox and Dispatch paragraphs and the team/SKILL.md "It stops" line. → verify: the AC5 grep for "plan, item or goal" finds each file.
 
 ## Test plan
 **Targeted checks:**
@@ -78,9 +78,8 @@ n/a: a hub-internal rule change. Release rebuilds and refreshes `.crew/bin` when
 
 _Generated 2026-10-27 by `crew.mjs handoff` from the ledger._
 
-- P-080: An escalation about a goal holds that goal, not the team [in-progress] tasks 0/4 — claimed by Arpit Anand (developer:aa75674c61c477251)
+- P-080: An escalation about a goal holds that goal, not the team [in-review] tasks 4/4 — claimed by Arpit Anand (developer:aa75674c61c477251)
 - last checkpoint 2026-10-27 08:42 at T4 (51300ba) by Arpit Anand; since then 0 commit(s), 2 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs
-- next: T1: Add the failing regression tests first. run-check.test.ts covers AC1 and AC2 (the IDEA case is new; the no-ref case already exists). inbox.test.ts covers AC4 and dispatch.test.ts covers AC3. → verify: `cd packages/crew && npx vitest run test/hub/run-check.test.ts test/hub/e2e/inbox.test.ts test/hub/e2e/dispatch.test.ts`, where the new goal cases fail before T2.
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —
 
 Latest log:
@@ -93,5 +92,8 @@ Latest log:
 - 2026-10-27: status draft → ready
 - 2026-10-27: assigned to the developer role
 - 2026-10-27: status ready → in-progress — branch plan/P-080-an-escalation-about-a-goal-holds-that
+- 2026-10-27: status in-progress → in-review
 
 ## Outcome
+
+Learnings: none (the build-before-e2e and worktree node_modules gotchas were already recorded: K-2026-10-26-e2e-tests-drive-the-built-dist-crew-mjs, K-2026-10-26-a-fresh-plan-worktree-has-no-packages)
