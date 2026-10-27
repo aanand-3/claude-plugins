@@ -5,7 +5,7 @@ goal:
 items: CHORE-032
 touches: packages/crew/.gitignore
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-082-ignore-packages-crew-vitest-so-qa
 pr:
 created: 2026-10-27
@@ -56,8 +56,8 @@ packages/crew/.vitest/ afterwards.
 ## Design
 
 ## Tasks
-- [ ] T1: Add `.vitest/` to packages/crew/.gitignore → verify: AC1's two `git check-ignore -q` commands exit 0.
-- [ ] T2: Produce real reporter output and confirm git ignores it → verify: AC2's vitest command, then
+- [x] T1: Add `.vitest/` to packages/crew/.gitignore → verify: AC1's two `git check-ignore -q` commands exit 0.
+- [x] T2: Produce real reporter output and confirm git ignores it → verify: AC2's vitest command, then
   `git status --porcelain --untracked-files=all -- packages/crew/.vitest` is empty; `git diff --stat main` shows only
   packages/crew/.gitignore (AC3).
 
@@ -79,9 +79,8 @@ n/a: an ignore rule for local test output; revert the line to back out.
 
 _Generated 2026-10-27 by `crew.mjs handoff` from the ledger._
 
-- P-082: Ignore packages/crew/.vitest/ so QA reporter output is never committed [in-progress] tasks 0/2 — claimed by Arpit Anand (developer:aac00dde66164749e)
+- P-082: Ignore packages/crew/.vitest/ so QA reporter output is never committed [in-review] tasks 2/2 — claimed by Arpit Anand (developer:aac00dde66164749e)
 - last checkpoint 2026-10-27 14:50 at T2 (9937de2) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
-- next: T1: Add `.vitest/` to packages/crew/.gitignore → verify: AC1's two `git check-ignore -q` commands exit 0.
 - evidence: AC1 —, AC2 —, AC3 —
 
 Latest log:
@@ -94,5 +93,7 @@ Latest log:
 - 2026-10-27: status draft → ready
 - 2026-10-27: assigned to the developer role
 - 2026-10-27: status ready → in-progress — branch plan/P-082-ignore-packages-crew-vitest-so-qa
+- 2026-10-27: status in-progress → in-review
 
 ## Outcome
+Learnings: K-2026-10-27-a-plans-diff-against-main-must-be-read
