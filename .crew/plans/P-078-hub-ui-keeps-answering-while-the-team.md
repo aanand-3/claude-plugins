@@ -124,6 +124,19 @@ Rollback: revert the squash commit and refresh `.crew/bin`.
 
 ## Handoff
 
+_Generated 2026-10-27 by `crew.mjs handoff` from the ledger._
+
+- P-078: Hub ui keeps answering while the team works [in-progress] tasks 0/6 — claimed by Arpit Anand (developer:a2ff607bb3ab5c6cf)
+- last checkpoint 2026-10-27 08:42 at T6 (0fd1be7) by Arpit Anand; since then 0 commit(s), 2 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs
+- ✓ on the main checkout, back to back x2: node .crew/bin/crew.mjs export --json vs node <worktree>/plugins/crew/skills/hub/dist/crew.mjs export --json (bundle from npm run build, not committed); outputs compared as JSON without generatedAt (AC 9) (reported)
+- next: T1: Memoize `globRe` in `knowledge.ts` → verify: AC1 test in `test/hub/livegraph.test.ts` passes; `npx vitest run test/hub/livegraph.test.ts test/hub/secretrefs.test.ts test/hub/e2e/knowledge.test.ts` green.
+- evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —, AC7 —, AC8 —, AC9 ✓ (self)
+
+Latest log:
+- 2026-10-26: status draft → ready
+- 2026-10-27: assigned to the developer role
+- 2026-10-27: status ready → in-progress — branch plan/P-078-hub-ui-keeps-answering-while-the-team
+
 ## Progress log
 
 - 2026-10-26: status draft → ready
