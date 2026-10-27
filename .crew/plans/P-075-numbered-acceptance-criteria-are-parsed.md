@@ -5,7 +5,7 @@ goal:
 items: BUG-047
 touches: packages/crew/src/hub/core/work/doc.ts, packages/crew/src/hub/commands/work/execution.ts, packages/crew/test/doc.test.ts, packages/crew/test/hub/e2e/execution.test.ts
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-075-numbered-acceptance-criteria-are-parsed
 pr:
 created: 2026-10-26
@@ -59,10 +59,10 @@ so goal criteria benefit too.
 ## Design
 
 ## Tasks
-- [ ] T1: Add `Doc.numbered(name)` to `packages/crew/src/hub/core/work/doc.ts` plus its unit test (AC1) in `test/doc.test.ts` → verify: `npx vitest run test/doc.test.ts` passes.
-- [ ] T2: Make `criteria()` in `execution.ts` fall back checklist → numbered → bullets, with the AC2 unit test (export `criteria` is already public; test it in `test/doc.test.ts` or a `describe` in the e2e file) → verify: `npx vitest run test/doc.test.ts -t "criteria"` passes.
-- [ ] T3: Add the AC3 regression case to `test/hub/e2e/execution.test.ts` (rewrite the started plan's Acceptance criteria to the numbered shape with `write(p, …)`) → verify: `npx vitest run test/hub/e2e/execution.test.ts` passes, and the new case fails against main's `execution.ts` (written from `git show main:packages/crew/src/hub/commands/work/execution.ts`, then restored).
-- [ ] T4: Typecheck and size check (AC4) → verify: `npm run typecheck` passes in packages/crew and `wc -l` shows both modules under 300 lines.
+- [x] T1: Add `Doc.numbered(name)` to `packages/crew/src/hub/core/work/doc.ts` plus its unit test (AC1) in `test/doc.test.ts` → verify: `npx vitest run test/doc.test.ts` passes.
+- [x] T2: Make `criteria()` in `execution.ts` fall back checklist → numbered → bullets, with the AC2 unit test (export `criteria` is already public; test it in `test/doc.test.ts` or a `describe` in the e2e file) → verify: `npx vitest run test/doc.test.ts -t "criteria"` passes.
+- [x] T3: Add the AC3 regression case to `test/hub/e2e/execution.test.ts` (rewrite the started plan's Acceptance criteria to the numbered shape with `write(p, …)`) → verify: `npx vitest run test/hub/e2e/execution.test.ts` passes, and the new case fails against main's `execution.ts` (written from `git show main:packages/crew/src/hub/commands/work/execution.ts`, then restored).
+- [x] T4: Typecheck and size check (AC4) → verify: `npm run typecheck` passes in packages/crew and `wc -l` shows both modules under 300 lines.
 
 ## Test plan
 **Targeted checks:**
@@ -84,9 +84,8 @@ recorded earlier against a nested bullet's text no longer matches a criterion an
 
 _Generated 2026-10-27 by `crew.mjs handoff` from the ledger._
 
-- P-075: Numbered acceptance criteria are parsed as criteria [in-progress] tasks 0/4 — claimed by Arpit Anand (developer:a8ed2d33280bf00d3)
+- P-075: Numbered acceptance criteria are parsed as criteria [in-review] tasks 4/4 — claimed by Arpit Anand (developer:a8ed2d33280bf00d3)
 - last checkpoint 2026-10-27 08:34 at T4 (0b48f1e) by Arpit Anand; since then 0 commit(s), 2 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs
-- next: T1: Add `Doc.numbered(name)` to `packages/crew/src/hub/core/work/doc.ts` plus its unit test (AC1) in `test/doc.test.ts` → verify: `npx vitest run test/doc.test.ts` passes.
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —
 
 Latest log:
@@ -100,5 +99,11 @@ Latest log:
 - 2026-10-26: Overlaps P-072 (in-progress) on packages/crew/src/hub/commands/work/execution.ts: P-072 changes recovery(), this plan changes criteria() only; no dependency, the later one rebases.
 - 2026-10-27: assigned to the developer role
 - 2026-10-27: status ready → in-progress — branch plan/P-075-numbered-acceptance-criteria-are-parsed
+- 2026-10-27: status in-progress → in-review
 
 ## Outcome
+Shipped on plan/P-075-numbered-acceptance-criteria-are-parsed: `Doc.numbered(name)` (doc.ts) returns column-0 `N. `/`N) `
+item texts; `criteria()` (execution.ts) now falls back checklist → numbered → bullets. Tests: AC1 and AC2 unit tests in
+test/doc.test.ts; AC3 e2e regression "numbered acceptance criteria are the plan's criteria (BUG-047)" in
+test/hub/e2e/execution.test.ts, confirmed failing against main's execution.ts (`--ac 3` refused). No deviations from the plan.
+Learnings: none
