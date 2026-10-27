@@ -68,12 +68,12 @@ no escalation is needed.
 ## Design
 
 ## Tasks
-- [ ] T1: Add `.crew/scratch/**` to QA's paths.write in presets.ts; update the team.test.ts policy-show expectation → verify: `cd packages/crew && npx vitest run test/hub/e2e/team.test.ts`
-- [ ] T2: Guard tests for QA writing/running in `.crew/scratch/P-001/` allowed and other paths and other drafts-only roles denied → verify: `cd packages/crew && npx vitest run test/hub/e2e/guard-writes.test.ts`
-- [ ] T3: `init` ensures `scratch/` in `.crew/.gitignore`; add `.crew/.gitignore` with `scratch/` to this repository → verify: `cd packages/crew && npx vitest run test/hub/e2e/scratch.test.ts -t gitignore`
-- [ ] T4: Add `scratch` to `NOT_CODE` in git.ts → verify: `cd packages/crew && npx vitest run test/hub/e2e/scratch.test.ts -t commit`
-- [ ] T5: `move` to done/dropped removes the main checkout's `.crew/scratch/P-###/` → verify: `cd packages/crew && npx vitest run test/hub/e2e/scratch.test.ts -t move`
-- [ ] T6: QA template and model.md point scratch scripts to `.crew/scratch/P-###/`; record a convention superseding K-2026-10-25-qa-and-other-roles-keep-throwaway-check → verify: `grep -n "crew/scratch" plugins/crew/skills/hub/agents/qa.md plugins/crew/skills/hub/references/model.md` shows the lines
+- [x] T1: Add `.crew/scratch/**` to QA's paths.write in presets.ts; update the team.test.ts policy-show expectation → verify: `cd packages/crew && npx vitest run test/hub/e2e/team.test.ts`
+- [x] T2: Guard tests for QA writing/running in `.crew/scratch/P-001/` allowed and other paths and other drafts-only roles denied → verify: `cd packages/crew && npx vitest run test/hub/e2e/guard-writes.test.ts`
+- [x] T3: `init` ensures `scratch/` in `.crew/.gitignore`; add `.crew/.gitignore` with `scratch/` to this repository → verify: `cd packages/crew && npx vitest run test/hub/e2e/scratch.test.ts -t gitignore`
+- [x] T4: Add `scratch` to `NOT_CODE` in git.ts → verify: `cd packages/crew && npx vitest run test/hub/e2e/scratch.test.ts -t commit`
+- [x] T5: `move` to done/dropped removes the main checkout's `.crew/scratch/P-###/` → verify: `cd packages/crew && npx vitest run test/hub/e2e/scratch.test.ts -t move`
+- [x] T6: QA template and model.md point scratch scripts to `.crew/scratch/P-###/`; record a convention superseding K-2026-10-25-qa-and-other-roles-keep-throwaway-check → verify: `grep -n "crew/scratch" plugins/crew/skills/hub/agents/qa.md plugins/crew/skills/hub/references/model.md` shows the lines
 
 ## Test plan
 **Targeted checks:**
@@ -98,6 +98,17 @@ QA's prompt still says drafts, but the guard already allows scratch. Rollback: r
 
 ## Handoff
 
+_Generated 2026-10-27 by `crew.mjs handoff` from the ledger._
+
+- P-068: QA scratch folder per plan, ignored and cleared at done [in-progress] tasks 6/6 — claimed by Arpit Anand (developer:a910344b0c2617729)
+- last checkpoint 2026-10-27 08:44 at T6 (cfc33c1) by Arpit Anand; since then 0 commit(s), 2 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs
+- evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —
+
+Latest log:
+- 2026-10-26: status draft → ready
+- 2026-10-27: assigned to the developer role
+- 2026-10-27: status ready → in-progress — branch plan/P-068-qa-scratch-folder-per-plan-ignored
+
 ## Progress log
 
 - 2026-10-26: status draft → ready
@@ -105,3 +116,10 @@ QA's prompt still says drafts, but the guard already allows scratch. Rollback: r
 - 2026-10-27: status ready → in-progress — branch plan/P-068-qa-scratch-folder-per-plan-ignored
 
 ## Outcome
+QA's paths.write under the lifecycle preset is `.crew/drafts/**, .crew/scratch/**`; `init` writes `scratch/` to
+`.crew/.gitignore` (appended once to an existing file), and this repository has it; `git.codeChanges` skips
+`.crew/scratch/` even unignored; `move` to done or dropped removes the main checkout's `.crew/scratch/P-###/` (a failure
+only warns). QA's template and model.md send check scripts there; convention
+K-2026-10-27-qa-writes-its-hands-on-check-scripts supersedes K-2026-10-25-qa-and-other-roles-keep-throwaway-check.
+After landing the human runs `crew.mjs init` and `crew.mjs agents` to refresh the vendored and rendered QA agent.
+Learnings: the e2e tests drive dist/crew.mjs, so `npm run build` is needed before a targeted check sees a source change.
