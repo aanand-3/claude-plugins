@@ -85,6 +85,18 @@ n/a — hub-internal parsing change; only goals created after the fix are affect
 
 ## Handoff
 
+_Generated 2026-10-27 by `crew.mjs handoff` from the ledger._
+
+- P-073: Breakdown lines split only at a dash and take a type prefix [in-progress] tasks 0/3 — claimed by Arpit Anand (developer:ae416847d8eb5031f)
+- last checkpoint 2026-10-27 08:12 at T3 (a301d41) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
+- next: T1: Regression tests for AC1-AC5 in `packages/crew/test/hub/e2e/items.test.ts` (one goal draft with the four lines), red on main → verify: `cd packages/crew && npx vitest run test/hub/e2e/items.test.ts -t breakdown` fails before T2
+- evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —, AC7 —
+
+Latest log:
+- 2026-10-26: status draft → ready
+- 2026-10-27: assigned to the developer role
+- 2026-10-27: status ready → in-progress — branch plan/P-073-breakdown-lines-split-only-at-a-dash
+
 ## Progress log
 
 - 2026-10-26: status draft → ready
