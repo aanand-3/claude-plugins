@@ -152,6 +152,7 @@ Latest log:
 - 2026-10-26: Developer: no code fix for the red checks. Both are harness failures, not product failures: AC5's red entry ran npm run typecheck from the worktree root (green from packages/crew); AC4's red entry failed in the shell wrapper (no GNU timeout on macOS, kill $(jobs -p) usage error) before any load or timing. No stray busy-loop processes are running (pgrep). AC4 still needs a run of the Test plan procedure (no timeout binary; stop with pkill -f 'for(;;){}') by someone the permission system lets start the 16-process load, or the PM's call to record it as not reproduced. Not retried here: the earlier developer attempt was denied by the permission system.
 - 2026-10-26: PM: AC4 accepted as not reproduced (harness/permission limit; plan risks allow). No human run requested. Red AC5 (worktree root) and AC4 wrapper entries are harness failures, not product failures.
 - 2026-10-26: BUG-052: hub has no not-reproduced result; PM-accepted AC4 stays red
+- 2026-10-27: PM: AC1-3,5 accepted on QA evidence (36c2774). AC4 waived as not reproduced (Q-ddf44d). move accepted refused by gates: unchecked T3 and AC4 latest check fail; no non-force waive path (BUG-052). Needs human decision on --force.
 
 ## Outcome
 Learnings: none
