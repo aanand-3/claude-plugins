@@ -5,7 +5,7 @@ goal:
 items: CHORE-032
 touches: packages/crew/.gitignore
 depends_on:
-status: draft
+status: ready
 branch: plan/P-082-ignore-packages-crew-vitest-so-qa
 pr:
 created: 2026-10-27
@@ -77,5 +77,7 @@ n/a: an ignore rule for local test output; revert the line to back out.
 ## Handoff
 
 ## Progress log
+
+- 2026-10-27: status draft → ready
 
 ## Outcome
