@@ -82,6 +82,18 @@ recorded earlier against a nested bullet's text no longer matches a criterion an
 
 ## Handoff
 
+_Generated 2026-10-27 by `crew.mjs handoff` from the ledger._
+
+- P-075: Numbered acceptance criteria are parsed as criteria [in-progress] tasks 0/4 — claimed by Arpit Anand (developer:a8ed2d33280bf00d3)
+- last checkpoint 2026-10-27 08:34 at T4 (0b48f1e) by Arpit Anand; since then 0 commit(s), 2 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs
+- next: T1: Add `Doc.numbered(name)` to `packages/crew/src/hub/core/work/doc.ts` plus its unit test (AC1) in `test/doc.test.ts` → verify: `npx vitest run test/doc.test.ts` passes.
+- evidence: AC1 —, AC2 —, AC3 —, AC4 —
+
+Latest log:
+- 2026-10-26: Overlaps P-072 (in-progress) on packages/crew/src/hub/commands/work/execution.ts: P-072 changes recovery(), this plan changes criteria() only; no dependency, the later one rebases.
+- 2026-10-27: assigned to the developer role
+- 2026-10-27: status ready → in-progress — branch plan/P-075-numbered-acceptance-criteria-are-parsed
+
 ## Progress log
 
 - 2026-10-26: status draft → ready
