@@ -5,7 +5,7 @@ goal:
 items: FEAT-069
 touches: packages/crew/src/hub/core/work/footprint.ts, packages/crew/src/hub/commands/work/workflow.ts, packages/crew/src/hub/commands/team/team.ts, packages/crew/scripts/sample-project.mjs, plugins/crew/skills/hub/SKILL.md, plugins/crew/skills/hub/references/model.md, packages/crew/test/hub/e2e/context.test.ts, packages/crew/test/hub/e2e/branch-copies.test.ts, packages/crew/test/hub/e2e/start-overlap.test.ts, packages/crew/test/hub/e2e/sections.ts, packages/crew/test/hub/e2e/basics.test.ts, packages/crew/test/hub/e2e/ledger.test.ts, packages/crew/test/hub/e2e/policy.test.ts, packages/crew/test/hub/e2e/land.test.ts
 depends_on:
-status: in-review
+status: accepted
 branch: plan/P-071-start-refuses-an-overlap-with-active
 pr:
 created: 2026-10-26
@@ -130,6 +130,7 @@ Latest log:
 - 2026-10-26: assigned to the developer role
 - 2026-10-26: status ready → in-progress — branch plan/P-071-start-refuses-an-overlap-with-active
 - 2026-10-27: status in-progress → in-review — T1-T4 done: start refuses an overlap with in-progress/blocked/in-review plans outside hub.shared (activeOverlaps in footprint.ts, shared with staff) unless --force; tests, sample project and docs updated; typecheck and the AC5 suite pass locally
+- 2026-10-27: status in-review → accepted
 
 ## Outcome
 Behaviour change: `start` now refuses (non-zero, nothing written) a plan whose touches overlap an in-progress, blocked or
