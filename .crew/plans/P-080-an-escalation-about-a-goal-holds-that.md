@@ -76,6 +76,18 @@ n/a: a hub-internal rule change. Release rebuilds and refreshes `.crew/bin` when
 
 ## Handoff
 
+_Generated 2026-10-27 by `crew.mjs handoff` from the ledger._
+
+- P-080: An escalation about a goal holds that goal, not the team [in-progress] tasks 0/4 — claimed by Arpit Anand (developer:aa75674c61c477251)
+- last checkpoint 2026-10-27 08:42 at T4 (51300ba) by Arpit Anand; since then 0 commit(s), 2 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs
+- next: T1: Add the failing regression tests first. run-check.test.ts covers AC1 and AC2 (the IDEA case is new; the no-ref case already exists). inbox.test.ts covers AC4 and dispatch.test.ts covers AC3. → verify: `cd packages/crew && npx vitest run test/hub/run-check.test.ts test/hub/e2e/inbox.test.ts test/hub/e2e/dispatch.test.ts`, where the new goal cases fail before T2.
+- evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —
+
+Latest log:
+- 2026-10-27: status draft → ready
+- 2026-10-27: assigned to the developer role
+- 2026-10-27: status ready → in-progress — branch plan/P-080-an-escalation-about-a-goal-holds-that
+
 ## Progress log
 
 - 2026-10-27: status draft → ready
