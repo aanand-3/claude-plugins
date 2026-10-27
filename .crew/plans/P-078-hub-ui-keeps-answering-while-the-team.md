@@ -93,12 +93,12 @@ exactly when the team is busy. The executive asked for it ahead of other G-007 w
 ## Design
 
 ## Tasks
-- [ ] T1: Memoize `globRe` in `knowledge.ts` → verify: AC1 test in `test/hub/livegraph.test.ts` passes; `npx vitest run test/hub/livegraph.test.ts test/hub/secretrefs.test.ts test/hub/e2e/knowledge.test.ts` green.
-- [ ] T2: `Store.branch()` cached per Store; `planHome` and `branchPlans` use it → verify: AC2 test passes; `npx vitest run test/hub/e2e/branch-copies.test.ts test/hub/e2e/context.test.ts` green.
-- [ ] T3: `LiveGraph` and `childBuilder` in `src/hub/livegraph.ts` → verify: AC4, AC5, AC7 unit tests in `test/hub/livegraph.test.ts` pass.
-- [ ] T4: Wire `LiveGraph` into `server.ts` (async `/api/graph`, invalidation rules, optional builder in `ServeOptions`) → verify: AC3 and AC6 in-process server tests in `test/hub/livegraph.test.ts` pass; `npx vitest run test/hub/e2e/live-ui.test.ts test/hub/e2e/inbox.test.ts test/view.test.ts` green.
-- [ ] T5: e2e check of the real server's child-process build (AC8) in `test/hub/e2e/live-ui.test.ts` → verify: that test passes against the built bundle (`npm run build` in `packages/crew` first, not committed).
-- [ ] T6: Measure AC9 on the main checkout → verify: timings and the `generatedAt`-stripped diff recorded with `crew.mjs checkpoint --verify … --ac 9`.
+- [x] T1: Memoize `globRe` in `knowledge.ts` → verify: AC1 test in `test/hub/livegraph.test.ts` passes; `npx vitest run test/hub/livegraph.test.ts test/hub/secretrefs.test.ts test/hub/e2e/knowledge.test.ts` green.
+- [x] T2: `Store.branch()` cached per Store; `planHome` and `branchPlans` use it → verify: AC2 test passes; `npx vitest run test/hub/e2e/branch-copies.test.ts test/hub/e2e/context.test.ts` green.
+- [x] T3: `LiveGraph` and `childBuilder` in `src/hub/livegraph.ts` → verify: AC4, AC5, AC7 unit tests in `test/hub/livegraph.test.ts` pass.
+- [x] T4: Wire `LiveGraph` into `server.ts` (async `/api/graph`, invalidation rules, optional builder in `ServeOptions`) → verify: AC3 and AC6 in-process server tests in `test/hub/livegraph.test.ts` pass; `npx vitest run test/hub/e2e/live-ui.test.ts test/hub/e2e/inbox.test.ts test/view.test.ts` green.
+- [x] T5: e2e check of the real server's child-process build (AC8) in `test/hub/e2e/live-ui.test.ts` → verify: that test passes against the built bundle (`npm run build` in `packages/crew` first, not committed).
+- [x] T6: Measure AC9 on the main checkout → verify: timings and the `generatedAt`-stripped diff recorded with `crew.mjs checkpoint --verify … --ac 9`.
 
 ## Test plan
 **Targeted checks:**
@@ -126,10 +126,9 @@ Rollback: revert the squash commit and refresh `.crew/bin`.
 
 _Generated 2026-10-27 by `crew.mjs handoff` from the ledger._
 
-- P-078: Hub ui keeps answering while the team works [in-progress] tasks 0/6 — claimed by Arpit Anand (developer:a2ff607bb3ab5c6cf)
+- P-078: Hub ui keeps answering while the team works [in-progress] tasks 6/6 — claimed by Arpit Anand (developer:a2ff607bb3ab5c6cf)
 - last checkpoint 2026-10-27 08:42 at T6 (0fd1be7) by Arpit Anand; since then 0 commit(s), 2 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs
 - ✓ on the main checkout, back to back x2: node .crew/bin/crew.mjs export --json vs node <worktree>/plugins/crew/skills/hub/dist/crew.mjs export --json (bundle from npm run build, not committed); outputs compared as JSON without generatedAt (AC 9) (reported)
-- next: T1: Memoize `globRe` in `knowledge.ts` → verify: AC1 test in `test/hub/livegraph.test.ts` passes; `npx vitest run test/hub/livegraph.test.ts test/hub/secretrefs.test.ts test/hub/e2e/knowledge.test.ts` green.
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —, AC7 —, AC8 —, AC9 ✓ (self)
 
 Latest log:
@@ -144,3 +143,4 @@ Latest log:
 - 2026-10-27: status ready → in-progress — branch plan/P-078-hub-ui-keeps-answering-while-the-team
 
 ## Outcome
+Learnings: K-2026-10-27-an-in-process-serve-test-src-hub-server
