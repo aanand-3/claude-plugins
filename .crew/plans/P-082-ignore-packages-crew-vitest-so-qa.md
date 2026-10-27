@@ -11,6 +11,7 @@ pr:
 created: 2026-10-27
 started:
 completed:
+assignee: developer
 ---
 
 # P-082: Ignore packages/crew/.vitest/ so QA reporter output is never committed
@@ -79,5 +80,6 @@ n/a: an ignore rule for local test output; revert the line to back out.
 ## Progress log
 
 - 2026-10-27: status draft → ready
+- 2026-10-27: assigned to the developer role
 
 ## Outcome
