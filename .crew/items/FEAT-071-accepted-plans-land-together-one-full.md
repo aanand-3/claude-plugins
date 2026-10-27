@@ -5,7 +5,7 @@ title: Accepted plans land together: one full-suite run per batch
 status: triaged
 priority: P0
 goal: G-007
-plan:
+plan: P-079
 created: 2026-10-26
 closed:
 ---
