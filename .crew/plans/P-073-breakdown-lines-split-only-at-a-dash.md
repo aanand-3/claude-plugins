@@ -11,6 +11,7 @@ pr:
 created: 2026-10-26
 started:
 completed:
+assignee: developer
 ---
 
 # P-073: Breakdown lines split only at a dash and take a type prefix
@@ -87,5 +88,6 @@ n/a — hub-internal parsing change; only goals created after the fix are affect
 ## Progress log
 
 - 2026-10-26: status draft → ready
+- 2026-10-27: assigned to the developer role
 
 ## Outcome
