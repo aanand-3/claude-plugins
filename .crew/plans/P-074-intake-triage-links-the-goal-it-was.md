@@ -5,7 +5,7 @@ goal:
 items: BUG-046
 touches: packages/crew/src/hub/commands/work/backlog.ts, packages/crew/test/hub/e2e/goal-links.test.ts, plugins/crew/skills/hub/agents/pm.md, plugins/crew/skills/hub/references/model.md
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-074-intake-triage-links-the-goal-it-was
 pr:
 created: 2026-10-26
@@ -62,9 +62,9 @@ Whenever the item stays `new`, capture still links no goal.
 ## Design
 
 ## Tasks
-- [ ] T1: In `newItem`, link `--goal` when intake triage moves the item, else keep the hint (AC1–AC5) → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/goal-links.test.ts -t "capture"`, then `git checkout -- plugins/crew/skills/hub/dist plugins/crew/skills/hub/references/commands.md`
-- [ ] T2: Update pm.md's Capture bullet and model.md's Goal links paragraph (AC6) → verify: `cd packages/crew && npx vitest run test/hub/e2e/agents.test.ts test/docs.test.ts`, and read both sentences against AC6
-- [ ] T3: Typecheck → verify: `cd packages/crew && npm run typecheck`
+- [x] T1: In `newItem`, link `--goal` when intake triage moves the item, else keep the hint (AC1–AC5) → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/goal-links.test.ts -t "capture"`, then `git checkout -- plugins/crew/skills/hub/dist plugins/crew/skills/hub/references/commands.md`
+- [x] T2: Update pm.md's Capture bullet and model.md's Goal links paragraph (AC6) → verify: `cd packages/crew && npx vitest run test/hub/e2e/agents.test.ts test/docs.test.ts`, and read both sentences against AC6
+- [x] T3: Typecheck → verify: `cd packages/crew && npm run typecheck`
 
 ## Test plan
 **Targeted checks** (from `packages/crew/`; e2e suites drive the built bundle: run `npm run build` first, then `git checkout -- plugins/crew/skills/hub/dist plugins/crew/skills/hub/references/commands.md`):
@@ -89,9 +89,8 @@ Whenever the item stays `new`, capture still links no goal.
 
 _Generated 2026-10-27 by `crew.mjs handoff` from the ledger._
 
-- P-074: Intake triage links the --goal it was given [in-progress] tasks 0/3 — claimed by Arpit Anand (developer:afb9baa65e51c0e3c)
+- P-074: Intake triage links the --goal it was given [in-review] tasks 3/3 — claimed by Arpit Anand (developer:afb9baa65e51c0e3c)
 - last checkpoint 2026-10-27 08:35 at T3 (8eb2bb9) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
-- next: T1: In `newItem`, link `--goal` when intake triage moves the item, else keep the hint (AC1–AC5) → verify: `cd packages/crew && npm run build && npx vitest run test/hub/e2e/goal-links.test.ts -t "capture"`, then `git checkout -- plugins/crew/skills/hub/dist plugins/crew/skills/hub/references/commands.md`
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —
 
 Latest log:
@@ -104,5 +103,12 @@ Latest log:
 - 2026-10-26: status draft → ready
 - 2026-10-27: assigned to the developer role
 - 2026-10-27: status ready → in-progress — branch plan/P-074-intake-triage-links-the-goal-it-was
+- 2026-10-27: status in-progress → in-review
 
 ## Outcome
+Behaviour change: `new-item` with `--goal` links that goal when the same call triages the item (`--priority` or
+`--severity`, and the `item.triaged` gate passes for the caller); the item gets `goal: G-###` and no `goal hint` Notes line.
+When the item stays new (no triage decision, the gate's problems, a human gate, or a caller outside the gate's role) the
+goal stays a Notes hint as before. The MCP `new_item` tool follows the same path. pm.md's Capture bullet and model.md's
+Goal links paragraph say so. A fresh plan worktree needs `npm ci` in packages/crew before build/tests (existing gotcha).
+Learnings: none
