@@ -94,10 +94,10 @@ n/a — internal change to land's cleanup, shipped in the hub bundle Release reb
 
 ## Handoff
 
-_Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
+_Generated 2026-10-27 by `crew.mjs handoff` from the ledger._
 
-- P-062: land retries and safely completes a worktree removal that fails early [in-review] tasks 4/4 — claimed by Arpit Anand (developer:acd4138b45ba70200)
-- last checkpoint 2026-10-26 14:58 at done (a298f51) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
+- P-062: land retries and safely completes a worktree removal that fails early [in-progress] tasks 4/4 — claimed by Arpit Anand (developer:acd4138b45ba70200)
+- last checkpoint 2026-10-27 06:32 at done (a41ab10) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
 - ✓ cd packages/crew && npx tsc --noEmit -p . (AC 6)
 - ✓ cd packages/crew && npx vitest run test/hub/e2e/land.test.ts -t 'BUG-041' (AC 1)
 - ✓ cd packages/crew && npx vitest run test/hub/e2e/land.test.ts -t 'cleanup' --reporter=verbose 2>&1 | grep -E 'cleanup|Tests |passed|skipped' | head -30 (AC 1)
@@ -112,12 +112,13 @@ _Generated 2026-10-26 by `crew.mjs handoff` from the ledger._
 - ✓ cd packages/crew && npx vitest run test/hub/e2e/land.test.ts -t 'removal that fails twice' (AC 1)
 - ✓ Reviewed worktree-cleanup.ts and land.ts on the P-062 branch: cleanupWorktree is called only from landed(), after squash() returned a sha and 'landed on' was logged; retries loop on registered(at) (git lists the path on exactly branch plan/P-###); whyKeep(a) refuses when not registered; full delete only after whyKeep passes. Gap: no test for the unlisted-path case. (AC 4) (reported)
 - ✓ Reviewed worktree-cleanup.ts: rmSync only on the registered wt (whyKeep b rejects a symlinked wt and any folder holding the main checkout or common dir); rmSync unlinks symlinks without following; safeToDelete try/catch turns a failed check into keep+warn and the delete is try/catch (warn). Runtime: the stuck test with node_modules/.bin/tool symlink to an outside file passed, target intact. (AC 5) (reported)
+- don't retry: remove the two .vitest files and verify with git in the plan worktree — permission system denies every Bash command in the worktree (git, rm, cd) in dont-ask mode
 - evidence: AC1 ✓, AC2 ✓, AC3 ✓, AC4 ✓, AC5 ✓, AC6 ✓
 
 Latest log:
-- 2026-10-26: QA: AC1-AC6 verified; cleanup tests 7/7 pass; AC4 has no unlisted-path test (code-reviewed only). Tasks still 0/4 unchecked: BUG-048 precondition (also P-064 0/2, dispatch offers pm accept).
-- 2026-10-26: status in-review → accepted
-- 2026-10-26: status accepted → in-progress — land: hub.full_suite failed (exit 1):      15| beforeAll(() => { ·        | ^ ·      16|   execFileSync("node", [new URL("../scripts/sample-project.mjs", impor… ·      17|   graph = JSON.parse(tr("export", "--json")); · ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+- 2026-10-26: review: changes requested — Code is approved as is (worktree-cleanup.ts, land.ts, release.ts, land.test.ts match the spec, check d now subtracts tracked deletions, cleanupWorktree runs only from landed(), sweepJunk and rmSync never follow symlinks, both modules under 300 lines). One thing must change before it lands: two checkpoint T1 commits (672a8f0, 1b5be25) added vitest reporter output outside touches, packages/crew/.vitest/json/output.json and packages/crew/.vitest/junit/output.xml (QA's --reporter=json/junit runs). They are not tracked on main and would land with the squash. Delete both files from the branch in the P-062 worktree (git rm the packages/crew/.vitest folder, nothing else) and checkpoint; git diff main...HEAD must then show only the four touched files plus the generated bundles land rebuilt. No other code change.
+- 2026-10-26: status in-review → in-progress — changes requested: Code is approved as is (worktree-cleanup.ts, land.ts, release.ts, land.test.ts match the spec, check d now subtracts tracked deletions, cleanupWorktree runs only from landed(), sweepJunk and rmSync never follow symlinks, both modules under 300 lines). One thing must change before it lands: two checkpoint T1 commits (672a8f0, 1b5be25) added vitest reporter output outside touches, packages/crew/.vitest/json/output.json and packages/crew/.vitest/junit/output.xml (QA's --reporter=json/junit runs). They are not tracked on main and would land with the squash. Delete both files from the branch in the P-062 worktree (git rm the packages/crew/.vitest folder, nothing else) and checkpoint; git diff main...HEAD must then show only the four touched files plus the generated bundles land rebuilt. No other code change.
+- 2026-10-26: blocked (developer resume): the only open change (architect review a298f51: git rm packages/crew/.vitest/{json/output.json,junit/output.xml} from the branch, then checkpoint) still needs a shell in the P-062 worktree; Bash there is denied in dont-ask mode again this run. Both files still on plan/P-062 (git diff main...branch). Needs the human to allow Bash in .claude/worktrees/P-062-* or remove the two files and run checkpoint.
 
 ## Progress log
 
