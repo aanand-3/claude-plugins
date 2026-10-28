@@ -5,11 +5,11 @@ goal:
 items: BUG-039
 touches: packages/crew/ui/src/styles/views.css, packages/crew/ui/src/styles/components.css, packages/crew/test/tools/layout-sweep.test.ts
 depends_on:
-status: ready
+status: in-progress
 branch: plan/P-086-long-words-wrap-on-document-pages-at-375
 pr:
 created: 2026-10-28
-started:
+started: 2026-10-28
 completed:
 assignee: developer
 ---
@@ -173,5 +173,6 @@ n/a: a CSS-only change to the hub UI that ships with the next build. To back out
 
 - 2026-10-28: status draft → ready
 - 2026-10-28: assigned to the developer role
+- 2026-10-28: status ready → in-progress — branch plan/P-086-long-words-wrap-on-document-pages-at-375
 
 ## Outcome
