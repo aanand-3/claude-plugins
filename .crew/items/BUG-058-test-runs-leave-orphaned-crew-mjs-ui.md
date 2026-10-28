@@ -43,3 +43,4 @@ Each idle server rebuilds the hub graph on every hub change, at about 16 s per b
 ## Notes
 Tests and agents that start a hub UI should stop it on every exit path, including failure and timeout.
 - 2026-10-28: goal hint G-007 (by Arpit Anand)
+- 2026-10-28: More evidence (executive's session, 10-28): 9 orphaned headless Chrome trees (63 processes) with parent pid 1 - 3 crew-sweep-* up for over a day, 1 crew-test-run-94046 (P-062 land suite, about 2 h), 5 probe-chrome-* (about 45-50 min, from the Architect's P-092 probe). Stopped. Architect's P-092 review also found sweepThroughProxy leaks hub, sweep and Chrome on vitest timeout.
