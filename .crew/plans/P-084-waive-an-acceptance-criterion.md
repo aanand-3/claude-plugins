@@ -5,7 +5,7 @@ goal:
 items: BUG-052
 touches: packages/crew/src/hub/commands/work/execution.ts, packages/crew/src/hub/commands/work/execution.reg.ts, packages/crew/src/hub/commands/work/resume.ts, packages/crew/src/hub/commands/team/dispatch.ts, packages/crew/src/hub/commands/team/roles.ts, packages/crew/src/hub/commands/team/inbox.ts, packages/crew/src/hub/commands/memory/context.ts, plugins/crew/skills/hub/agents/pm.md, plugins/crew/skills/hub/references/model.md, packages/crew/test/hub/e2e/waive.test.ts
 depends_on:
-status: in-review
+status: accepted
 branch: plan/P-084-waive-an-acceptance-criterion
 pr:
 created: 2026-10-27
@@ -136,6 +136,7 @@ Latest log:
 - 2026-10-28: assigned to the developer role
 - 2026-10-28: status ready → in-progress — branch plan/P-084-waive-an-acceptance-criterion
 - 2026-10-28: status in-progress → in-review
+- 2026-10-28: status in-review → accepted
 
 ## Outcome
 `checkpoint P-### --waive WHY --ac N` lets the plan's acceptor (never QA, the developer or an implementer) record a waived verify entry (`ok: false`, `waived: true`) without committing. `settled()` treats a waived criterion as settled in evidenceProblems, dispatch, roles and inbox; resume and context show it as `waived`, never as a pass, and any later check overrides it. Documented in model.md and pm.md.
