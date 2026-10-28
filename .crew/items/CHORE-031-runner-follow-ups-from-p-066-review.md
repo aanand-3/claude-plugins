@@ -4,7 +4,7 @@ type: chore
 title: Runner follow-ups from P-066 review
 status: triaged
 priority: P3
-goal: G-007
+goal:
 plan: P-076
 created: 2026-10-26
 closed:
@@ -21,3 +21,4 @@ Two minor points from the P-066 review: (1) status --write now puts the live **R
 ## Notes
 - 2026-10-26: status new → triaged — priority P3
 - 2026-10-28: re-goaled G-007 → G-007 by Arpit Anand: temp to carry items
+- 2026-10-28: re-goaled G-007 → none by Arpit Anand: G-007 cut list: revisit after P-066 lands (Q-4cc64a)

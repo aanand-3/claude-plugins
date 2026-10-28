@@ -1,7 +1,7 @@
 ---
 id: P-076
 title: Runner follow-ups: STATUS.md without the runner line, bounded signal wait, output errors
-goal: G-007
+goal:
 items: CHORE-031
 touches: packages/crew/src/hub/commands/team/runner.ts, packages/crew/src/hub/commands/views/reports.ts, plugins/crew/skills/team/SKILL.md, packages/crew/test/hub/e2e/runner.test.ts
 depends_on: P-066
@@ -129,5 +129,6 @@ old code until the human restarts it. Rollback: revert the squash commit and ref
 
 - 2026-10-26: status draft → ready
 - 2026-10-28: re-goaled none → G-007 by Arpit Anand: temp to carry items
+- 2026-10-28: re-goaled G-007 → none by Arpit Anand: G-007 cut list: revisit after P-066 lands (Q-4cc64a)
 
 ## Outcome
