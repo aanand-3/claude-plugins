@@ -2,13 +2,13 @@
 id: BUG-045
 type: bug
 title: new-goal cuts Breakdown titles at the first colon
-status: triaged
+status: done
 severity: S3
 priority: P2
 goal:
 plan: P-073
 created: 2026-10-26
-closed:
+closed: 2026-10-28
 ---
 
 # BUG-045: new-goal cuts Breakdown titles at the first colon
@@ -38,3 +38,4 @@ Breakdown lines with a colon produce wrong titles and always FEAT type; workarou
 ## Notes
 Also: Breakdown has no way to create a spike or bug item.
 - 2026-10-26: status new → triaged — priority P2, severity S3
+- 2026-10-28: status triaged → done — delivered by P-073

@@ -5,12 +5,12 @@ goal:
 items: BUG-045
 touches: packages/crew/src/hub/commands/work/backlog.ts, packages/crew/test/hub/e2e/items.test.ts, plugins/crew/skills/hub/templates/goal.md, plugins/crew/skills/hub/references/writing-guide.md
 depends_on:
-status: accepted
+status: done
 branch: plan/P-073-breakdown-lines-split-only-at-a-dash
 pr:
 created: 2026-10-26
 started: 2026-10-27
-completed:
+completed: 2026-10-28
 assignee: developer
 ---
 
@@ -107,6 +107,7 @@ Latest log:
 - 2026-10-27: BUG-054 (stale dist): no code change. dist is generated and never committed on a plan branch (.gitattributes, hub.build in config.yaml); Release rebuilds it at land. Ran hub.build in the worktree; the rebuilt dist/crew.mjs and dist/mcp.mjs stay uncommitted there, and items.test.ts plus goal-links.test.ts pass 23/23 against it. QA: re-run items.test.ts for AC1-AC6 as is, or run hub.build first (gotcha K-2026-10-25-hub-e2e-tests-tr-hub-in-test-helpers).
 - 2026-10-27: status in-review → accepted
 - 2026-10-28: landed on main as 1012fcc
+- 2026-10-28: status accepted → done
 
 ## Outcome
 Behaviour change: a goal's Breakdown line splits into title and description only at a spaced dash (` — `, ` – `, ` - `);
