@@ -5,7 +5,7 @@ goal:
 items: CHORE-027
 touches: .crew/config.yaml, plugins/crew/skills/hub/agents/designer.md, plugins/crew/skills/design/SKILL.md
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-085-wire-the-designer-to-this-repos-design
 pr:
 created: 2026-10-27
@@ -114,7 +114,7 @@ again silently.
 
 _Generated 2026-10-28 by `crew.mjs handoff` from the ledger._
 
-- P-085: Wire the Designer to this repo's DESIGN.md (design.file) [in-progress] tasks 3/3 — claimed by Arpit Anand (developer:a7c0d1c4b8073a774)
+- P-085: Wire the Designer to this repo's DESIGN.md (design.file) [in-review] tasks 3/3 — claimed by Arpit Anand (developer:a7c0d1c4b8073a774)
 - last checkpoint 2026-10-28 05:31 at T3 (d985b61) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —
 
@@ -128,6 +128,7 @@ Latest log:
 - 2026-10-28: status draft → ready
 - 2026-10-28: assigned to the developer role
 - 2026-10-28: status ready → in-progress — branch plan/P-085-wire-the-designer-to-this-repos-design
+- 2026-10-28: status in-progress → in-review
 
 ## Outcome
 Learnings: none
