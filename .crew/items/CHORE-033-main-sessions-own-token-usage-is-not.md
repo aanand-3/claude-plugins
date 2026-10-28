@@ -5,7 +5,7 @@ title: Main session's own token usage is not captured
 status: triaged
 priority: P3
 goal: G-003
-plan:
+plan: P-091
 created: 2026-10-28
 closed:
 origin: P-089
