@@ -121,8 +121,8 @@ plain failed checks (`ok: false`), which is safe.
 
 _Generated 2026-10-28 by `crew.mjs handoff` from the ledger._
 
-- P-084: Waive an acceptance criterion the acceptor rules not reproducible [in-progress] tasks 5/5 — claimed by Arpit Anand (developer:a54c917650705f6d4)
-- last checkpoint 2026-10-28 06:55 at T5 (a53355d) by Arpit Anand; since then 0 commit(s), 3 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs, plugins/crew/skills/hub/references/commands.md
+- P-084: Waive an acceptance criterion the acceptor rules not reproducible [in-progress] tasks 5/5 — claimed by Arpit Anand (developer:a5e71d7783abb7ded)
+- last checkpoint 2026-10-28 08:34 at done (a53355d) by Arpit Anand; since then 0 commit(s), 3 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs, plugins/crew/skills/hub/references/commands.md
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —, AC7 —
 
 Latest log:
@@ -137,3 +137,6 @@ Latest log:
 - 2026-10-28: status ready → in-progress — branch plan/P-084-waive-an-acceptance-criterion
 
 ## Outcome
+`checkpoint P-### --waive WHY --ac N` lets the plan's acceptor (never QA, the developer or an implementer) record a waived verify entry (`ok: false`, `waived: true`) without committing. `settled()` treats a waived criterion as settled in evidenceProblems, dispatch, roles and inbox; resume and context show it as `waived`, never as a pass, and any later check overrides it. Documented in model.md and pm.md.
+Verified (developer, not evidence): waive.test.ts 7/7, registry, dispatch, execution, context and docs tests, typecheck. `test/mcp.test.ts` and the inbox UI AC5 test timed out under machine load, on main too; QA should re-run them.
+Learnings: K-2026-10-28-test-hub-e2e-inbox-test-ts-ui-api-inbox
