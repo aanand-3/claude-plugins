@@ -11,6 +11,7 @@ pr:
 created: 2026-10-28
 started:
 completed:
+assignee: developer
 ---
 
 # P-089: Price captured usage from a per-model table in config.yaml
@@ -105,5 +106,6 @@ ledger events already recorded keep their costs, which are plain numbers.
 ## Progress log
 
 - 2026-10-28: status draft → ready
+- 2026-10-28: assigned to the developer role
 
 ## Outcome
