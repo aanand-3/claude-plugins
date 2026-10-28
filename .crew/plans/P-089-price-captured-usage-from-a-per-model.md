@@ -5,7 +5,7 @@ goal:
 items: CHORE-004
 touches: packages/crew/src/hub/core/team/prices.ts, packages/crew/src/hub/commands/team/autonomy.ts, .crew/config.yaml, plugins/crew/skills/hub/references/model.md, plugins/crew/skills/hub/SKILL.md, packages/crew/test/hub/prices.test.ts, packages/crew/test/hub/e2e/activity.test.ts
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-089-price-captured-usage-from-a-per-model
 pr:
 created: 2026-10-28
@@ -105,7 +105,7 @@ ledger events already recorded keep their costs, which are plain numbers.
 
 _Generated 2026-10-28 by `crew.mjs handoff` from the ledger._
 
-- P-089: Price captured usage from a per-model table in config.yaml [in-progress] tasks 4/4 — claimed by Arpit Anand (developer:a3377ac3fc6342bb5)
+- P-089: Price captured usage from a per-model table in config.yaml [in-review] tasks 4/4 — claimed by Arpit Anand (developer:a3377ac3fc6342bb5)
 - last checkpoint 2026-10-28 06:42 at T4 (2183815) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —
 
@@ -119,6 +119,7 @@ Latest log:
 - 2026-10-28: status draft → ready
 - 2026-10-28: assigned to the developer role
 - 2026-10-28: status ready → in-progress — branch plan/P-089-price-captured-usage-from-a-per-model
+- 2026-10-28: status in-progress → in-review
 
 ## Outcome
 Learnings: none
