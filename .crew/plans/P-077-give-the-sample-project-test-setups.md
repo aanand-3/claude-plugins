@@ -154,6 +154,7 @@ Latest log:
 - 2026-10-26: BUG-052: hub has no not-reproduced result; PM-accepted AC4 stays red
 - 2026-10-27: PM: AC1-3,5 accepted on QA evidence (36c2774). AC4 waived as not reproduced (Q-ddf44d). move accepted refused by gates: unchecked T3 and AC4 latest check fail; no non-force waive path (BUG-052). Needs human decision on --force.
 - 2026-10-28: status in-review → accepted (approved by Arpit Anand)
+- 2026-10-28: landed on main as 8b3c928
 
 ## Outcome
 Learnings: none
