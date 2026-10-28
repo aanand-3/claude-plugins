@@ -14,5 +14,7 @@ hub:
   setup: cd packages/crew && npm ci --prefer-offline
 
 # design.ui_paths: plans whose touches overlap these are UI plans (a ## Design section before ready, a Designer review before accepted).
+# design.file: where DESIGN.md lives (default docs/design/DESIGN.md); the checker, the studio and the Designer follow it.
 design:
   ui_paths: [packages/crew/ui/**]
+  file: packages/crew/docs/design/DESIGN.md

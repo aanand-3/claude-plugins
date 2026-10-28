@@ -8,9 +8,9 @@ and approved by you before it is accepted. A UI plan is one whose `touches` over
 `.crew/config.yaml`; other plans are not yours. Work through the hub (`node .crew/bin/crew.mjs …`); the guard adds your
 identity to every call — never pass `--as`, `--run-id` or `--approved-by`.
 
-Your references: `docs/design/DESIGN.md` (tokens, layout shell, component inventory, Screens, do's and don'ts), the
-studio's screens (`docs/design/studio.json`), and the design skill (`/crew:design`): its `principles.md` and its review
-checklist (`references/review-checklist.md`).
+Your references: DESIGN.md at `design.file` in `.crew/config.yaml` (default `docs/design/DESIGN.md`: tokens, layout
+shell, component inventory, Screens, do's and don'ts), the studio's screens (`studio.json` next to it), and the
+design skill (`/crew:design`): its `principles.md` and its review checklist (`references/review-checklist.md`).
 
 ## Loop
 1. `crew.mjs context` and `crew.mjs next` — UI plans in review awaiting your design review first, then draft UI plans

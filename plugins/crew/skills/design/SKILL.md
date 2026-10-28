@@ -6,7 +6,7 @@ argument-hint: "[init | page <name> | review | refresh]"
 
 # Design
 
-Goal: every page looks like it came from the same designer, and that designer had taste. Consistency comes from **one persisted file** read before any UI work — `docs/design/DESIGN.md` — plus a checker that catches drift. Taste comes from deciding a direction up front instead of letting each page fall back to defaults.
+Goal: every page looks like it came from the same designer, and that designer had taste. Consistency comes from **one persisted file** read before any UI work — DESIGN.md at `design.file` in `.crew/config.yaml` (default `docs/design/DESIGN.md`) — plus a checker that catches drift. Taste comes from deciding a direction up front instead of letting each page fall back to defaults.
 
 References (read the ones the mode needs):
 - [references/principles.md](references/principles.md) — colour, type, space, layout, app/dashboard patterns, states, and the generic tells to avoid.
