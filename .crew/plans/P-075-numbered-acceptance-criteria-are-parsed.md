@@ -5,12 +5,12 @@ goal:
 items: BUG-047
 touches: packages/crew/src/hub/core/work/doc.ts, packages/crew/src/hub/commands/work/execution.ts, packages/crew/test/doc.test.ts, packages/crew/test/hub/e2e/execution.test.ts
 depends_on:
-status: accepted
+status: done
 branch: plan/P-075-numbered-acceptance-criteria-are-parsed
 pr:
 created: 2026-10-26
 started: 2026-10-27
-completed:
+completed: 2026-10-28
 assignee: developer
 ---
 
@@ -102,6 +102,7 @@ Latest log:
 - 2026-10-27: status in-progress → in-review
 - 2026-10-27: status in-review → accepted
 - 2026-10-28: landed on main as 0caca1f
+- 2026-10-28: status accepted → done
 
 ## Outcome
 Shipped on plan/P-075-numbered-acceptance-criteria-are-parsed: `Doc.numbered(name)` (doc.ts) returns column-0 `N. `/`N) `
