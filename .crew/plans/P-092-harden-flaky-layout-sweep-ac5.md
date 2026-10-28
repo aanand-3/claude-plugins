@@ -5,12 +5,12 @@ goal: G-007
 items: BUG-057
 touches: packages/crew/src/tools/design/layout_sweep.ts, packages/crew/test/tools/layout-sweep.test.ts, packages/crew/test/hub/e2e/playbook-home.test.ts
 depends_on:
-status: accepted
+status: done
 branch: plan/P-092-harden-flaky-layout-sweep-ac5
 pr:
 created: 2026-10-28
 started: 2026-10-28
-completed:
+completed: 2026-10-28
 assignee: developer
 ---
 
@@ -195,6 +195,7 @@ Latest log:
 - 2026-10-28: status in-progress → in-review — BUG-058 review fix at 8a39b0d: afterEach-drained cleanup, sweep in its own process group, spawn errors reject; timeout repro leaves no processes; layout-sweep.test.ts 5/5
 - 2026-10-28: status in-review → accepted (approved by Arpit Anand)
 - 2026-10-28: landed on main as d3fc42e
+- 2026-10-28: status accepted → done (approved by Arpit Anand)
 
 ## Outcome
 Learnings: K-2026-10-28-a-test-proxy-in-front-of-crew-mjs-ui
