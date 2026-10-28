@@ -12,7 +12,7 @@ what is wanted but not yet planned. Design and roadmap: `docs/vision.md` in the 
 | **Plan** | `P-001` | A shippable slice (≤ `max_tasks` tasks, one PR) that delivers one or more items | `.crew/plans/` |
 | **Task** | `T1..Tn` | A step inside a plan, each with `→ verify:` | checklist in the plan |
 
-Also in `.crew/`: `knowledge/` (decisions, learnings, risks; written by `migrate` today, by `learn` later), `archive/`
+Also in `.crew/`: `knowledge/` (decisions, learnings, risks; written by `learn`), `archive/`
 (what `migrate` carried over from project-kit), `drafts/`, `templates/`, `bin/` (the vendored CLI). Generated, never
 hand-edited: `STATUS.md` (`status --write`) and `view/` (`export`, gitignored).
 
@@ -212,12 +212,24 @@ item becomes a dependent plan (`new-plan --depends P-###`) or a note on the plan
 more plans in flight; the PM then asks the Architect (`ask ID --to architect`).
 
 ## Lifecycles
+Every edge below is in the code (`packages/crew/src/hub/core/work/model.ts`); the gates on each edge are in the generated
+[`plugins/crew/docs/plan-lifecycle.md`](../../../docs/plan-lifecycle.md).
 
 **Idea:** `exploring → researching → proposed → decided`, or `killed` from any open state. `decided` needs Problem,
-Outcome and Success criteria written, with the criteria as a checklist. A pivot moves `decided → proposed`.
+Outcome and Success criteria written, with the criteria as a checklist. A pivot moves `decided → proposed`. Every edge:
+- `exploring → researching | killed`
+- `researching → proposed | exploring | killed`
+- `proposed → decided | researching | killed`
+- `decided → proposed`
+- `killed → exploring`
 
 **Item** (stored): `new → triaged`, closed as `done | wontfix | duplicate`. The PM closes any item from any status (`move
-<ID> done|wontfix|duplicate`, or `triage --reject`), and a closed one reopens to `new`; closing stamps `closed:`. Until it
+<ID> done|wontfix|duplicate`, or `triage --reject`), and a closed one reopens to `new`; closing stamps `closed:`. Every edge:
+- `new → triaged | done | wontfix | duplicate`
+- `triaged → new | done | wontfix | duplicate`
+- `done → new | wontfix | duplicate`; `wontfix → new | done | duplicate`; `duplicate → new | done | wontfix`
+
+Until it
 is closed, an item a plan links (`plan: P-###`) has its status *derived* from the plan:
 
 | Plan status | Item status |
@@ -241,11 +253,26 @@ draft ──► ready ──► in-progress ──► in-review ──► accept
   │          │         └─────────────────┴────────────┘   (review changes; a failed land)
   └──────────┴────────────────────► dropped   (from any non-done state; record why)
 ```
+Every edge (the diagram draws the main path; the way back is here):
+- `draft → ready | dropped`
+- `ready → in-progress | draft | dropped`
+- `in-progress → blocked | in-review | ready | dropped`
+- `blocked → in-progress | dropped`
+- `in-review → in-progress | accepted | dropped` (`in-progress`: review changes or QA's bugs)
+- `accepted → done | in-progress | dropped` (`in-progress`: a failed land)
+- `done` has no way out; `dropped → draft`
+
 `accepted`: QA's evidence and the review are in, and the PM accepted it; Release lands it (`land`). `done`: it is on the
 base branch, and the PM moved it there. An accepted plan still holds its claim and its touches, its goal stays open,
 its items stay `in-progress`, and a plan that depends on it doesn't start until it is `done`.
 
-**Goal:** `proposed → active → done | dropped`. Run `move G-### active` when its first plan starts; it closes only after its acceptance criteria are confirmed.
+**Goal:** `proposed → active → done | dropped`. Every edge:
+- `proposed → active | dropped`
+- `active → done | proposed | dropped`
+- `done → active`
+- `dropped → proposed`
+
+Run `move G-### active` when its first plan starts; it closes only after its acceptance criteria are confirmed.
 
 ## Definition of Ready (plan → `ready`, enforced)
 - Context, Scope (In/Out), Acceptance criteria and Test plan are written. Every criterion is observable and testable,
@@ -275,16 +302,29 @@ merged or squash-merged into the base. The full suite ran once, before the merge
 - Prefer ordering slices so that dependencies are rare. A long chain is a sign the slices are split by layer rather than vertically.
 
 ## Git mapping
+Two flows, chosen by `hub.plan_worktrees` in `.crew/config.yaml`: branch per plan (the default, below) or one shared
+worktree per plan (`plan_worktrees: true`, "With plan worktrees" below).
+
 - Branch per plan: `plan/P-012-<slug>`, created from an up-to-date `main`.
 - Commits: Conventional Commits with the plan ID as the scope: `feat(P-012): add login endpoint`.
 - PR title: `P-012: <plan title>`. The PR body links the plan, its items and the goal. Squash-merge, then delete the branch.
 - **The final commit on the branch sets the plan to `accepted`** (tasks checked, outcome written); after the merge (`land`,
   or the PR), the PM moves it `done` on `main`.
 
-### Where hub changes are committed
+### Where hub changes are committed (branch per plan)
 - **On `main`** (`chore(hub): …`, only `.crew/` files): the idea and focus, goals, items, plan drafts and creation, generated reports.
 - **On the plan branch:** only *that plan's* file (status after `ready`, the progress log, ticked tasks, the outcome). This keeps parallel branches conflict-free; item statuses follow automatically.
-- `status` and `next` read `main` *and* every `plan/*` branch, so they show live progress before merge.
+- Branch per plan only: `status` and `next` read `main` *and* every `plan/*` branch, so they show live progress before
+  merge.
+
+### With plan worktrees (`plan_worktrees: true`)
+- `new-plan` creates the plan's branch and one shared worktree (`.claude/worktrees/P-012-<slug>`) that every role on the
+  plan works in. It is sparse: no `.crew/plans`, items, goals, knowledge or `idea.md`.
+- Hub documents have one home, the main checkout: every hub-writing command commits them there on the base branch
+  (`chore(hub): …`), including the plan's own file (status, ticked tasks, progress log, outcome).
+- The plan branch holds only code: `checkpoint` and the hand-over to `in-review` commit the work in progress on it.
+- `land` (Release, after the PM accepts) squashes the branch into the plan's one commit on the base, then removes the
+  worktree and the branch; the PM then moves the plan `done`.
 
 ### Exception: goal integration branch (opt-in)
 Use only when a goal's plans **cannot** ship to `main` independently and a feature flag isn't an option:

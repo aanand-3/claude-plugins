@@ -118,9 +118,11 @@ Phases 0–7 and the dogfood step are built on stacked branches (`refactor/renam
 - **Questions:** an `ask` records who must answer; only that role (or a human with `--approved-by`) answers, never the asker.
 - **Default mode** is `ai-assisted` (a breaking change): without `.crew/policy.yaml`, plan ready/accepted and goal done need a human.
 - **Secrets in knowledge** are an error in `check`, not a hint: knowledge is committed.
-- **Deferred:** `ideate`/`architecture` skills (A, T); kickoff/onboard as ledger runs (T); the Claude Code policy adapter that
-  applies models, tools, paths and secrets per role (T); automatic `usage` capture (budgets bite only when runs record usage);
-  cross-machine ledger sync (SPIKE-001 in this repo's hub). The rest is tracked in `.crew/` on `chore/dogfood-crew`.
+- **Deferred:** `ideate`/`architecture` skills (A, T); cross-machine ledger sync (SPIKE-001 in this repo's hub). The rest is
+  tracked in `.crew/` on `chore/dogfood-crew`.
+- **Shipped since:** kickoff/onboard as ledger runs (`checkpoint --workflow`, `resume --workflow`); the Claude Code policy
+  adapter that applies models, tools, paths and secrets per role (`crew.mjs agents` renders each role agent's frontmatter,
+  the `guard` PreToolUse hook enforces the rest); `usage` capture for crew agents (the SubagentStop hook, `usage --hook`).
 
 ## Status (Workstream T built)
 Phases T0–T8 are built on stacked branches (`feat/team-identity` → `feat/team-agents` → `feat/team-director` →
