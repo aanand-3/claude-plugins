@@ -5,12 +5,12 @@ goal:
 items: BUG-049
 touches: packages/crew/test/setup/sample.ts, packages/crew/test/view.test.ts, packages/crew/test/mcp.test.ts
 depends_on:
-status: accepted
+status: done
 branch: plan/P-077-give-the-sample-project-test-setups
 pr:
 created: 2026-10-26
 started: 2026-10-26
-completed:
+completed: 2026-10-28
 assignee: developer
 ---
 
@@ -155,6 +155,7 @@ Latest log:
 - 2026-10-27: PM: AC1-3,5 accepted on QA evidence (36c2774). AC4 waived as not reproduced (Q-ddf44d). move accepted refused by gates: unchecked T3 and AC4 latest check fail; no non-force waive path (BUG-052). Needs human decision on --force.
 - 2026-10-28: status in-review → accepted (approved by Arpit Anand)
 - 2026-10-28: landed on main as 8b3c928
+- 2026-10-28: status accepted → done
 
 ## Outcome
 Learnings: none
