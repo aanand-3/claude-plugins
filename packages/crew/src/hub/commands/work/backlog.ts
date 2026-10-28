@@ -1,4 +1,4 @@
-/** Backlog items: capture, triage, and turning a goal's Breakdown into FEAT items. */
+/** Backlog items: capture, triage, and turning a goal's Breakdown into FEAT/CHORE/SPIKE items. */
 import { type Doc, splitSections } from "../../core/work/doc.js";
 import { triageProblems } from "../../core/work/gates.js";
 import * as git from "../../core/git.js";
@@ -179,7 +179,8 @@ export function regoal(store: Store, docId: string, goal: string, note: string |
   store.say(`${doc.id}: goal ${target ?? "none"}`);
 }
 
-/** Turn each Breakdown bullet into a FEAT item linked to the goal (or link an existing item ID). */
+/** Turn each Breakdown bullet into an item linked to the goal (or link an existing item ID); a leading `FEAT: `,
+ * `CHORE: ` or `SPIKE: ` sets its type (default FEAT) and is dropped from the rewritten `- <ID>: <line>`. */
 export function breakdownToItems(store: Store, goal: Doc): void {
   const items = store.items();
   for (const cand of goal.bullets("Breakdown")) {
@@ -189,8 +190,10 @@ export function breakdownToItems(store: Store, goal: Doc): void {
       linkExisting(goal, items.get(m[0]) ?? null, m[0]);
       continue;
     }
-    const it = itemFromCandidate(store, goal, cand);
-    goal.text = goal.text.replace(`- ${cand}`, () => `- ${it.id}: ${cand}`);
+    const typed = /^(FEAT|CHORE|SPIKE):\s+/.exec(cand);
+    const line = typed ? cand.slice(typed[0].length) : cand;
+    const it = itemFromCandidate(store, goal, typed ? typed[1] : "FEAT", line);
+    goal.text = goal.text.replace(`- ${cand}`, () => `- ${it.id}: ${line}`);
   }
   goal.save();
 }
@@ -203,13 +206,16 @@ function linkExisting(goal: Doc, item: Doc | null, itemId: string): void {
   }
 }
 
-/** `Title — what it delivers` → FEAT item at the goal's priority, triaged when the gate passes. */
-function itemFromCandidate(store: Store, goal: Doc, cand: string): Doc {
-  const sep = /\s+[—–-]\s+|:\s/.exec(cand);
+/** `Title — what it delivers` → an item of `prefix` at the goal's priority, triaged when the gate passes. Only a spaced
+ * dash splits the title from the description; a colon never does. */
+function itemFromCandidate(store: Store, goal: Doc, prefix: string, cand: string): Doc {
+  const sep = /\s+[—–-]\s+/.exec(cand);
   const [name, desc] = sep ? [cand.slice(0, sep.index).trim(), cand.slice(sep.index + sep[0].length).trim()] : [cand, ""];
   const body = `## Summary\n${desc || name}\n\nSlice of ${goal.id} (${goal.get("title")}): ${cand}\n`;
-  const it = createItem(store, "FEAT", name, body, { goal: goal.id, priority: goal.get("priority") || "P2" });
-  if (!triageProblems(it).length && !approvalReason(store.policy.policy, "item.triaged")) {
+  const it = createItem(store, prefix, name, body, { goal: goal.id, priority: goal.get("priority") || "P2" });
+  const problems = triageProblems(it);
+  if (problems.length) store.say(`note: ${it.id} stays new until triaged — ${problems.join("; ")}`);
+  else if (!approvalReason(store.policy.policy, "item.triaged")) {
     it.set("status", "triaged");
     it.appendLog(`triaged from ${goal.id} breakdown`, "Notes");
     it.save();

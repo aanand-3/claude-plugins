@@ -28,8 +28,9 @@ integration_branch:
 <!-- Optional: how we'll measure the outcome after release. -->
 
 ## Breakdown
-<!-- Vertical slices in delivery order: `Title — what it delivers`.
-     On creation each line becomes a FEAT item linked to this goal, triaged at the goal's priority.
+<!-- Vertical slices in delivery order: `Title — what it delivers`. Only a spaced dash splits title from description;
+     a colon never does. On creation each line becomes a FEAT item linked to this goal, triaged at the goal's priority;
+     start a line with `CHORE: ` or `SPIKE: ` (or `FEAT: `) to set its type (a spike stays new until triaged).
      Existing items can be listed by ID. Plans are written just in time and link items with --items. -->
 -
 

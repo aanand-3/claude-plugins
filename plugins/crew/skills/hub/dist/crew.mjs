@@ -12117,8 +12117,10 @@ function breakdownToItems(store, goal) {
       linkExisting(goal, items2.get(m[0]) ?? null, m[0]);
       continue;
     }
-    const it = itemFromCandidate(store, goal, cand);
-    goal.text = goal.text.replace(`- ${cand}`, () => `- ${it.id}: ${cand}`);
+    const typed = /^(FEAT|CHORE|SPIKE):\s+/.exec(cand);
+    const line3 = typed ? cand.slice(typed[0].length) : cand;
+    const it = itemFromCandidate(store, goal, typed ? typed[1] : "FEAT", line3);
+    goal.text = goal.text.replace(`- ${cand}`, () => `- ${it.id}: ${line3}`);
   }
   goal.save();
 }
@@ -12129,16 +12131,18 @@ function linkExisting(goal, item, itemId) {
     item.save();
   }
 }
-function itemFromCandidate(store, goal, cand) {
-  const sep3 = /\s+[—–-]\s+|:\s/.exec(cand);
+function itemFromCandidate(store, goal, prefix, cand) {
+  const sep3 = /\s+[—–-]\s+/.exec(cand);
   const [name, desc] = sep3 ? [cand.slice(0, sep3.index).trim(), cand.slice(sep3.index + sep3[0].length).trim()] : [cand, ""];
   const body2 = `## Summary
 ${desc || name}
 
 Slice of ${goal.id} (${goal.get("title")}): ${cand}
 `;
-  const it = createItem(store, "FEAT", name, body2, { goal: goal.id, priority: goal.get("priority") || "P2" });
-  if (!triageProblems(it).length && !approvalReason(store.policy.policy, "item.triaged")) {
+  const it = createItem(store, prefix, name, body2, { goal: goal.id, priority: goal.get("priority") || "P2" });
+  const problems = triageProblems(it);
+  if (problems.length) store.say(`note: ${it.id} stays new until triaged \u2014 ${problems.join("; ")}`);
+  else if (!approvalReason(store.policy.policy, "item.triaged")) {
     it.set("status", "triaged");
     it.appendLog(`triaged from ${goal.id} breakdown`, "Notes");
     it.save();

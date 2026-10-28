@@ -79,6 +79,36 @@ it("a goal's breakdown becomes triaged items", () => {
   expect(tr(repo, "next").stdout).toContain("write a plan for FEAT-001");
 });
 
+it("a breakdown line splits only at a spaced dash and takes a type prefix (BUG-045)", () => {
+  init(repo);
+  const lines = [
+    "- SPIKE: Hook facts for runner-only launches — answers the questions",
+    "- Launch policy — the launch: runner|any key",
+    "- Auth: SSO login",
+    "- CHORE: Bump deps — refresh the lockfile",
+  ].join("\n");
+  const draft = GOAL_DRAFT.replace(/## Candidate plans\n[\s\S]*?\n\n/, `## Breakdown\n${lines}\n\n`);
+  const r = newGoal(repo, "Accounts", draft, "--priority", "P1");
+  expect(r.returncode, r.stderr).toBe(0);
+  const goal = read(goalFile(repo, "G-001"));
+  const spike = item(repo, "SPIKE-001"); // AC1
+  expect(spike).toContain("title: Hook facts for runner-only launches\n");
+  expect(spike).toContain("## Summary\nanswers the questions");
+  expect(spike).toContain("status: new");
+  expect(spike).toContain("goal: G-001");
+  expect(goal).toContain("- SPIKE-001: Hook facts for runner-only launches — answers the questions");
+  const launch = item(repo, "FEAT-001"); // AC2
+  expect(launch).toContain("title: Launch policy\n");
+  expect(launch).toContain("## Summary\nthe launch: runner|any key");
+  expect(item(repo, "FEAT-002")).toContain("title: Auth: SSO login\n"); // AC3
+  const chore = item(repo, "CHORE-001"); // AC4
+  expect(chore).toContain("title: Bump deps\n");
+  expect(chore).toContain("status: triaged");
+  expect(chore).toContain("priority: P1");
+  expect(goal).toContain("- CHORE-001: Bump deps — refresh the lockfile");
+  expect(r.stdout).toMatch(/note: SPIKE-001 stays new until triaged — /); // AC5
+});
+
 it("a plan links items and the item status is derived", () => {
   init(repo, { commit: true });
   newGoal(repo);
