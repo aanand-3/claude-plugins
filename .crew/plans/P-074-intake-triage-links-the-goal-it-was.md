@@ -87,16 +87,20 @@ Whenever the item stays `new`, capture still links no goal.
 
 ## Handoff
 
-_Generated 2026-10-27 by `crew.mjs handoff` from the ledger._
+_Generated 2026-10-28 by `crew.mjs handoff` from the ledger._
 
 - P-074: Intake triage links the --goal it was given [in-review] tasks 3/3 — claimed by Arpit Anand (developer:afb9baa65e51c0e3c)
-- last checkpoint 2026-10-27 08:35 at T3 (8eb2bb9) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
-- evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —
+- last checkpoint 2026-10-28 05:30 at done (8eb2bb9) by Arpit Anand; since then 0 commit(s), 2 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs
+- ✗ cd packages/crew && npx vitest run test/hub/e2e/goal-links.test.ts -t capture (AC 2) — ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+- ✓ cd packages/crew && npx vitest run test/hub/e2e/goal-links.test.ts -t MCP (AC 5)
+- ✓ cd packages/crew && npx vitest run test/hub/e2e/agents.test.ts test/docs.test.ts (AC 6)
+- ✓ cd packages/crew && npm run typecheck
+- evidence: AC1 ✓, AC2 ✗, AC3 —, AC4 —, AC5 ✓, AC6 ✓
 
 Latest log:
-- 2026-10-26: status draft → ready
 - 2026-10-27: assigned to the developer role
 - 2026-10-27: status ready → in-progress — branch plan/P-074-intake-triage-links-the-goal-it-was
+- 2026-10-27: status in-progress → in-review
 
 ## Progress log
 
