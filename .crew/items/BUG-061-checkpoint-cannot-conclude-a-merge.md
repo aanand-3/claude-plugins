@@ -2,10 +2,10 @@
 id: BUG-061
 type: bug
 title: checkpoint cannot conclude a merge of the base into a bounced plan branch
-status: new
+status: triaged
 severity: S2
 priority: P1
-goal:
+goal: G-007
 plan:
 created: 2026-10-28
 closed:
@@ -47,3 +47,4 @@ resolve, checkpoint gives a two-parent commit, the next land merges cleanly.
 
 ## Notes
 - 2026-10-28: BUG-063 duplicate: same commitWork --only failure; also note the catch's git reset -q unstages the resolved merge files, fix must not reset the index during a merge
+- 2026-10-28: status new → triaged — priority P1, severity S2
