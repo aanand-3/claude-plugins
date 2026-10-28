@@ -11,6 +11,7 @@ pr:
 created: 2026-10-27
 started:
 completed:
+assignee: developer
 ---
 
 # P-084: Waive an acceptance criterion the acceptor rules not reproducible
@@ -121,5 +122,6 @@ plain failed checks (`ok: false`), which is safe.
 ## Progress log
 
 - 2026-10-27: status draft → ready
+- 2026-10-28: assigned to the developer role
 
 ## Outcome
