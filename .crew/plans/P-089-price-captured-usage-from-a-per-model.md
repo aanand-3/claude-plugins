@@ -5,11 +5,11 @@ goal:
 items: CHORE-004
 touches: packages/crew/src/hub/core/team/prices.ts, packages/crew/src/hub/commands/team/autonomy.ts, .crew/config.yaml, plugins/crew/skills/hub/references/model.md, plugins/crew/skills/hub/SKILL.md, packages/crew/test/hub/prices.test.ts, packages/crew/test/hub/e2e/activity.test.ts
 depends_on:
-status: ready
+status: in-progress
 branch: plan/P-089-price-captured-usage-from-a-per-model
 pr:
 created: 2026-10-28
-started:
+started: 2026-10-28
 completed:
 assignee: developer
 ---
@@ -107,5 +107,6 @@ ledger events already recorded keep their costs, which are plain numbers.
 
 - 2026-10-28: status draft → ready
 - 2026-10-28: assigned to the developer role
+- 2026-10-28: status ready → in-progress — branch plan/P-089-price-captured-usage-from-a-per-model
 
 ## Outcome
