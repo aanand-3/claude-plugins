@@ -5,7 +5,7 @@ goal: G-007
 items: BUG-051
 touches: packages/crew/src/hub/commands/team/questions.ts, packages/crew/src/hub/commands/team/autonomy.ts, plugins/crew/skills/hub/references/model.md, plugins/crew/skills/team/SKILL.md, packages/crew/test/hub/run-check.test.ts, packages/crew/test/hub/e2e/inbox.test.ts, packages/crew/test/hub/e2e/dispatch.test.ts
 depends_on:
-status: in-review
+status: accepted
 branch: plan/P-080-an-escalation-about-a-goal-holds-that
 pr:
 created: 2026-10-27
@@ -93,6 +93,7 @@ Latest log:
 - 2026-10-27: assigned to the developer role
 - 2026-10-27: status ready → in-progress — branch plan/P-080-an-escalation-about-a-goal-holds-that
 - 2026-10-27: status in-progress → in-review
+- 2026-10-28: status in-review → accepted
 
 ## Outcome
 
