@@ -116,6 +116,7 @@ Latest log:
 - 2026-10-27: assigned to the developer role
 - 2026-10-27: status ready → in-progress — branch plan/P-068-qa-scratch-folder-per-plan-ignored
 - 2026-10-27: status in-progress → in-review
+- 2026-10-28: QA: AC1-6 verified. Note: combined AC1 checkpoint (team+guard-writes, ~110s) records ✗ with no output through the hub though it passes 19/19 directly; per-file checkpoints pass
 
 ## Outcome
 QA's paths.write under the lifecycle preset is `.crew/drafts/**, .crew/scratch/**`; `init` writes `scratch/` to
