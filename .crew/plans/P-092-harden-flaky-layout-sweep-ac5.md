@@ -11,6 +11,7 @@ pr:
 created: 2026-10-28
 started:
 completed:
+assignee: developer
 ---
 
 # P-092: Harden flaky layout-sweep AC5 and playbook-home setup
@@ -159,5 +160,6 @@ that loads slowly now waits up to 60 s per route instead of reporting a clean pa
   findings). Probe at 375 px light under load: every route through `board` was scanned with `[aria-busy=true]` and a
   117-character root; `board:backlog` scanned the plans board when the data arrived mid-settle.
 - 2026-10-28: status draft → ready
+- 2026-10-28: assigned to the developer role
 
 ## Outcome
