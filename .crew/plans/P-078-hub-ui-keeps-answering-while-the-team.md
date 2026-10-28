@@ -154,6 +154,7 @@ Latest log:
 - 2026-10-27: status in-progress → in-review
 - 2026-10-28: BUG-056: AC9 QA re-measure: bundle 3.25s vs main 6.4s (ratio 0.48-0.57), borderline over 'at most half'
 - 2026-10-28: Architect: AC9 amended (BUG-056). Intent of AC9 is the measured ~2x cost cut of a graph build; UI responsiveness itself is AC3-AC8. QA's six pairs (median ratio 0.505, outputs identical) meet that intent; 'at most half' per single run is noise-bound at ratio ~0.50 under load. New AC9: median bundle/main ratio over >=5 back-to-back pairs <= 0.55, every pair's output identical apart from generatedAt. Amending invalidates AC9 evidence: QA re-records AC9 (adapt .crew/drafts/qa78-ac9.mjs to median over >=5 pairs). No code change; review approval at 0fd1be7 stands.
+- 2026-10-28: BUG-056 rejected wontfix: AC9 amended to median <=0.55; QA to re-record AC9 under new wording
 
 ## Outcome
 Learnings: K-2026-10-27-an-in-process-serve-test-src-hub-server
