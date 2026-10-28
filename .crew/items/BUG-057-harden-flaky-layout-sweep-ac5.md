@@ -4,8 +4,8 @@ type: bug
 title: Harden flaky layout-sweep AC5 and playbook-home setup
 status: triaged
 severity: S2
-priority: P1
-goal:
+priority: P0
+goal: G-007
 plan:
 created: 2026-10-28
 closed:
@@ -41,3 +41,4 @@ Main's full suite is red, so no plan can land. P0 per the Director's decision in
 ## Notes
 Suggested direction from the Director (the Architect decides): wait for a stable route label before asserting; give the playbook-home hook a deadline like P-077's. Out of scope: mcp.test.ts / view.test.ts beforeAll timeouts (P-077), P-086's CSS fix.
 - 2026-10-28: status new → triaged — priority P1, severity S2
+- 2026-10-28: re-triaged: priority P0, severity S2
