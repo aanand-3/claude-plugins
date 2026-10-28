@@ -13647,7 +13647,7 @@ function releaseSlot(file, token) {
   } catch {
   }
 }
-function runSuite(store, { cwd, ref, capture = false }) {
+function runSuite(store, { cwd, ref, plans: plans2, capture = false }) {
   const { command: command2, slots } = suiteSettings(store);
   const sha = git(["-C", cwd, "rev-parse", "HEAD"])?.trim() || null;
   const branch = git(["-C", cwd, "branch", "--show-current"])?.trim() || null;
@@ -13679,6 +13679,7 @@ function runSuite(store, { cwd, ref, capture = false }) {
   const rec = {
     ts: new Date(t2).toISOString(),
     ref: ref ?? null,
+    plans: plans2 ?? (ref ? [ref] : []),
     run: run2,
     worktree: cwd,
     sha,
@@ -13728,7 +13729,8 @@ function suitesCmd(store, limit = 20, json = false) {
   if (json) return store.say(JSON.stringify(recs, null, 2));
   if (!recs.length) return store.say("No suite runs recorded.");
   for (const r of recs) {
-    store.say(`${r.ts}  ${r.ref ?? "-"}  ${r.sha?.slice(0, 7) ?? "-"}  ${r.run}  slot ${r.slot}  waited ${secs(r.wait_ms)}s  ran ${secs(r.run_ms)}s  exit ${r.exit}`);
+    const what = r.plans && r.plans.length > 1 ? r.plans.join("+") : r.ref ?? "-";
+    store.say(`${r.ts}  ${what}  ${r.sha?.slice(0, 7) ?? "-"}  ${r.run}  slot ${r.slot}  waited ${secs(r.wait_ms)}s  ran ${secs(r.run_ms)}s  exit ${r.exit}`);
   }
 }
 
@@ -13744,7 +13746,7 @@ var registration13 = {
   },
   tools: {
     suites: {
-      description: "Recorded full-suite runs (`crew.mjs suites`), newest first: ts, ref, run, worktree, sha, branch, slot, wait_ms, run_ms, exit.",
+      description: "Recorded full-suite runs (`crew.mjs suites`), newest first: ts, ref, plans (the plans the tested HEAD holds, in order: a land batch lists several), run, worktree, sha, branch, slot, wait_ms, run_ms, exit.",
       input: obj({ limit: num("how many, newest first (default 20)") }),
       run: (st, a) => suitesCmd(st, n(a, "limit"), true)
     }
@@ -13752,8 +13754,12 @@ var registration13 = {
 };
 
 // src/hub/commands/work/land.ts
+import { spawnSync as spawnSync9 } from "node:child_process";
+import { mkdirSync as mkdirSync7 } from "node:fs";
+import { join as join26 } from "node:path";
+
+// src/hub/commands/work/land-steps.ts
 import { spawnSync as spawnSync7 } from "node:child_process";
-import { mkdirSync as mkdirSync6 } from "node:fs";
 import { join as join24 } from "node:path";
 
 // src/hub/commands/work/worktree-cleanup.ts
@@ -13869,7 +13875,7 @@ function leftovers(dir, root) {
   });
 }
 
-// src/hub/commands/work/land.ts
+// src/hub/commands/work/land-steps.ts
 var ROUNDS = 3;
 var OUTPUT_LINES2 = 5;
 var OUTPUT_CHARS2 = 600;
@@ -13885,122 +13891,33 @@ function commitType(plan) {
   const items2 = (plan.get("items") ?? "").toUpperCase();
   return /\bFEAT-/.test(items2) ? "feat" : /\bBUG-/.test(items2) ? "fix" : "chore";
 }
-function land(store, id) {
-  store.require();
-  authorize(store, id?.toUpperCase() ?? "The merge queue", "plan.landed", void 0, void 0, `land${id ? ` ${id}` : ""}`);
-  if (!store.settings().plan_worktrees) fail("land: needs hub.plan_worktrees (each plan in its own worktree); merge by hand as `merge-order` says.");
-  if (spawnSync7("git", ["merge-tree", "--write-tree", "HEAD", "HEAD"], { cwd: store.home }).status !== 0) {
-    fail("land: needs git 2.38 or later (`git merge-tree --write-tree`).");
-  }
-  const base2 = store.baseBranch();
-  requireBase(store.home, base2);
-  const order = mergeOrder(store);
-  const queue = id ? [check2(store, id.toUpperCase(), order)] : order.merge.filter((p) => !p.legacy).map((p) => p.id);
-  if (!queue.length) return store.say(`Nothing to land on ${base2}.`), 0;
-  const failed = /* @__PURE__ */ new Set();
-  for (const pid of queue) {
-    const plan = store.find(pid);
-    const after = plan.dependsOn().filter((d) => failed.has(d));
-    if (after.length) {
-      store.say(`${pid}: skipped \u2014 it depends on ${after.join(", ")}, which did not land`);
-      failed.add(pid);
-      continue;
-    }
-    if (!store.planWorktrees().has(pid)) {
-      store.say(`${pid}: skipped \u2014 no worktree on ${plan.get("branch")}: merge it by hand`);
-      failed.add(pid);
-      continue;
-    }
-    try {
-      landOne(store, plan, base2);
-    } catch (e) {
-      if (e instanceof Bounce) {
-        failed.add(pid);
-        if (!bounce(store, plan, e.message)) return 1;
-      } else if (e instanceof Stop || e instanceof HubError) {
-        store.say(`${pid}: not landed \u2014 ${e.message}; it stays accepted with its worktree`);
-        return 1;
-      } else throw e;
-    }
-  }
-  return failed.size ? 1 : 0;
+function hubSettings2(store) {
+  return yamlBlock(store.ws.read(join24(store.dir, "config.yaml")) ?? "", "hub");
 }
-function check2(store, pid, order) {
-  const plan = store.plans().get(pid) ?? fail(`No plan ${pid}.`);
-  const status2 = plan.get("status");
-  const entry2 = order.merge.find((p) => p.id === pid);
-  if (status2 === "done" && entry2) fail(`${pid} was completed before \`accepted\` existed: merge it by hand as \`merge-order\` says.`);
-  if (status2 !== "accepted") fail(`${pid} is '${status2}': only an accepted plan lands.`);
-  const plans2 = store.plans();
-  const unlanded = plan.dependsOn().filter((d) => {
-    const dep = plans2.get(d), s2 = dep?.get("status");
-    return dep && s2 !== "dropped" && !((s2 === "accepted" || s2 === "done") && !landedProblems(store, dep).length);
-  });
-  if (unlanded.length) fail(`${pid} waits: depends on ${unlanded.join(", ")}, not landed yet.`);
-  if (!entry2) fail(`${pid} is not in \`merge-order\`'s list: nothing of it is left to land.`);
-  if (!store.planWorktrees().has(pid)) fail(`${pid} has no worktree on ${plan.get("branch")}: merge it by hand.`);
-  return pid;
-}
-function landOne(store, plan, base2) {
-  const pid = plan.id, branch = plan.get("branch"), wt = store.planWorktrees().get(pid);
+function prepare(store, plan, base2, from = git(["rev-parse", base2], true).trim()) {
+  const pid = plan.id, wt = store.planWorktrees().get(pid);
   const at = (args) => spawnSync7("git", ["-C", wt, ...args], { encoding: "utf8" });
-  const generated3 = () => [...generated(wt, changed(wt, ["."]))];
-  const stale = generated3().filter((f) => at(["cat-file", "-e", `HEAD:${f}`]).status === 0);
+  const stale = [...generated(wt, changed(wt, ["."]))].filter((f) => at(["cat-file", "-e", `HEAD:${f}`]).status === 0);
   if (stale.length) at(["checkout", "HEAD", "--", ...stale]);
   const open = codeChanges(wt, store.policy.policy.secrets.files);
   if (open.length) throw new Bounce(`uncommitted code after acceptance: ${open.slice(0, 10).join(", ")}`);
-  for (let round = 1; ; round++) {
-    const from = git(["rev-parse", base2], true).trim();
-    const m = at(["merge", "--no-edit", "-m", `chore(${pid}): update to ${base2}`, from]);
-    if (m.status !== 0) {
-      const files2 = (at(["diff", "--name-only", "--diff-filter=U"]).stdout ?? "").split("\n").filter(Boolean);
-      at(["merge", "--abort"]);
-      throw new Bounce(`merging ${base2} conflicts in ${files2.join(", ") || tail3(store, `${m.stdout}${m.stderr}`)}`);
-    }
-    const hub = yamlBlock(store.ws.read(join24(store.dir, "config.yaml")) ?? "", "hub");
-    if (hub.build) {
-      const b = spawnSync7(hub.build, { shell: true, cwd: wt, encoding: "utf8", maxBuffer: 64 << 20 });
-      if (b.status !== 0) throw new Bounce(`hub.build failed (exit ${b.status}): ${tail3(store, `${b.stdout}${b.stderr}`)}`);
-    }
-    const { from: binFrom, files: binFiles } = store.policy.policy.release.refresh_bin;
-    if (binFrom && binFiles.length) refreshBin(store, wt, false);
-    const rebuilt = [.../* @__PURE__ */ new Set([...generated3(), ...codeChanges(wt, store.policy.policy.secrets.files)])];
-    if (rebuilt.length) {
-      at(["add", "-A", "--", ...rebuilt]);
-      const c = at(["commit", "-q", "--only", "-m", `chore(${pid}): rebuild generated files`, "--", ...rebuilt]);
-      if (c.status !== 0) throw new Stop(`git refused the rebuild commit: ${tail3(store, `${c.stdout}${c.stderr}`)}`);
-    }
-    if (hub.full_suite) {
-      const s2 = runSuite(store, { cwd: wt, ref: pid, capture: true });
-      if (s2.exit !== 0) throw new Bounce(`hub.full_suite failed (exit ${s2.exit}): ${tail3(store, s2.output ?? "")}`);
-      const tip = at(["rev-parse", branch]).stdout.trim();
-      if (tip !== s2.sha) {
-        throw new Stop(`its branch moved during the full suite (tested ${s2.sha?.slice(0, 7) ?? "-"}, now ${tip.slice(0, 7)}); run \`land ${pid}\` again`);
-      }
-    }
-    const sha = squash(store, plan, base2, from);
-    if (sha) return landed(store, plan, base2, branch, wt, sha);
-    if (round === ROUNDS) throw new Stop(`${base2} kept moving: ${ROUNDS} rounds of update, rebuild and suite; run \`land ${pid}\` again`);
-    store.say(`${pid}: ${base2} moved during the checks \u2014 updating again`);
+  const m = at(["merge", "--no-edit", "-m", `chore(${pid}): update to ${base2}`, from]);
+  if (m.status !== 0) {
+    const files2 = (at(["diff", "--name-only", "--diff-filter=U"]).stdout ?? "").split("\n").filter(Boolean);
+    at(["merge", "--abort"]);
+    throw new Bounce(`merging ${base2} conflicts in ${files2.join(", ") || tail3(store, `${m.stdout}${m.stderr}`)}`);
   }
+  return from;
 }
-function squash(store, plan, base2, from) {
-  const common = commonDir(store.home);
-  mkdirSync6(join24(common, "crew"), { recursive: true });
-  const lock = join24(common, "crew", "hub-commit.lock"), token = acquireLock(lock);
-  try {
-    const now = git(["rev-parse", base2], true).trim();
-    if (now !== from && (git(["diff", "--name-only", from, now, "--", ".", ":(exclude).crew"]) ?? "").trim()) return null;
-    const tree = spawnSync7("git", ["-C", store.home, "merge-tree", "--write-tree", now, plan.get("branch")], { encoding: "utf8" });
-    if (tree.status !== 0) throw new Bounce(`the squash onto ${base2} conflicts: ${tail3(store, tree.stdout)}`);
-    const subject = `${commitType(plan)}(${plan.id}): ${plan.get("title")}`;
-    const sha = git(["-C", store.home, "commit-tree", tree.stdout.split("\n")[0].trim(), "-p", now, "-m", subject], true).trim();
-    const ff = spawnSync7("git", ["-C", store.home, "merge", "--ff-only", "-q", sha], { encoding: "utf8" });
-    if (ff.status !== 0) throw new Stop(`the fast-forward of ${base2} in ${store.home} failed: ${tail3(store, `${ff.stdout}${ff.stderr}`)}`);
-    return sha;
-  } finally {
-    releaseLock(lock, token);
+function rebuild(store, dir) {
+  const hub = hubSettings2(store);
+  if (hub.build) {
+    const b = spawnSync7(hub.build, { shell: true, cwd: dir, encoding: "utf8", maxBuffer: 64 << 20 });
+    if (b.status !== 0) throw new Bounce(`hub.build failed (exit ${b.status}): ${tail3(store, `${b.stdout}${b.stderr}`)}`);
   }
+  const { from: binFrom, files: binFiles } = store.policy.policy.release.refresh_bin;
+  if (binFrom && binFiles.length) refreshBin(store, dir, false);
+  return [.../* @__PURE__ */ new Set([...generated(dir, changed(dir, ["."])), ...codeChanges(dir, store.policy.policy.secrets.files)])];
 }
 function landed(store, plan, base2, branch, wt, sha) {
   const short = sha.slice(0, 7);
@@ -14033,6 +13950,288 @@ function bounce(store, plan, why) {
     if (!(e instanceof HubError)) throw e;
     store.say(`${plan.id}: did not land (${why}), and it can't go back to the developer: ${e.message}`);
     return false;
+  }
+}
+
+// src/hub/commands/work/batch.ts
+import { spawnSync as spawnSync8 } from "node:child_process";
+import { existsSync as existsSync14, mkdirSync as mkdirSync6, readdirSync as readdirSync6, rmSync as rmSync3 } from "node:fs";
+import { join as join25 } from "node:path";
+var PREFIX3 = "land-batch-";
+function landBatch(store, queue, base2) {
+  sweep(store);
+  const failed = [];
+  let plans2 = queue;
+  for (let round = 1; ; round++) {
+    const from = git(["rev-parse", base2], true).trim(), ready = [];
+    for (const plan of plans2.filter((p) => !failed.includes(p.id))) {
+      try {
+        prepare(store, plan, base2, from);
+        ready.push(plan);
+      } catch (e) {
+        if (!(e instanceof Bounce)) throw e;
+        failed.push(plan.id);
+        if (!bounce(store, plan, e.message)) return { next: [], failed, halt: true };
+      }
+    }
+    plans2 = ready;
+    const cand = join25(store.home, ".claude", "worktrees", `${PREFIX3}${process.pid}`);
+    try {
+      const out = attempt(store, cand, plans2, base2, from, failed);
+      if (out) return out;
+    } finally {
+      remove(store, cand);
+    }
+    if (round === ROUNDS) throw new Stop(`${base2} kept moving: ${ROUNDS} rounds of update, stack and suite`);
+    store.say(`land: ${base2} moved during the batch \u2014 updating again`);
+  }
+}
+function attempt(store, cand, plans2, base2, from, failed) {
+  const add = spawnSync8("git", ["-C", store.home, "worktree", "add", "-q", "--detach", cand, from], { encoding: "utf8" });
+  if (add.status !== 0) throw new Stop(`the candidate worktree could not be added: ${tail3(store, add.stderr ?? "")}`);
+  const at = (args) => spawnSync8("git", ["-C", cand, ...args], { encoding: "utf8" });
+  const hub = hubSettings2(store);
+  if (hub.setup) {
+    const s2 = spawnSync8(hub.setup, { shell: true, cwd: cand, encoding: "utf8", maxBuffer: 64 << 20 });
+    if (s2.status !== 0) throw new Stop(`hub.setup failed in the candidate (exit ${s2.status}): ${tail3(store, `${s2.stdout}${s2.stderr}`)}`);
+  }
+  const stacked = [], gone = new Set(failed), next = [];
+  for (const plan of plans2) {
+    const after = plan.dependsOn().filter((d) => gone.has(d));
+    const why = after.length ? `it depends on ${after.join(", ")}, which is not in the batch` : stack(store, cand, plan, stacked, base2);
+    if (typeof why !== "string") {
+      stacked.push(why);
+      continue;
+    }
+    gone.add(plan.id);
+    if (!stacked.length && !after.length) {
+      failed.push(plan.id);
+      if (!bounce(store, plan, why)) return { next: [], failed, halt: true };
+      continue;
+    }
+    next.push(plan.id);
+    log(store, plan.id, `left the land batch: ${why}`);
+    store.say(`${plan.id}: left the batch \u2014 ${why}; it stays accepted and goes into the next batch`);
+  }
+  if (!stacked.length) return { next, failed, halt: false };
+  const ids = stacked.map((s2) => s2.plan.id);
+  let lo = 0, hi = stacked.length, red = null;
+  if (hub.full_suite) {
+    const s2 = runSuite(store, { cwd: cand, ref: ids[0], plans: ids, capture: true });
+    if (s2.exit !== 0) red = s2;
+    while (red && hi > lo + 1) {
+      const mid = Math.floor((lo + hi) / 2);
+      at(["reset", "-q", "--hard", stacked[mid - 1].sha]);
+      const r = runSuite(store, { cwd: cand, ref: ids[0], plans: ids.slice(0, mid), capture: true });
+      if (r.exit === 0) lo = mid;
+      else [hi, red] = [mid, r];
+    }
+  }
+  for (const s2 of stacked) {
+    const now = git(["rev-parse", s2.plan.get("branch")])?.trim() ?? "";
+    if (now !== s2.tip) throw new Stop(`${s2.plan.id}: its branch moved during the full suite (tested ${s2.tip.slice(0, 7)}, now ${now.slice(0, 7) || "-"})`);
+  }
+  const lands = red ? stacked.slice(0, lo) : stacked;
+  const shas = lands.length ? squashChain(store, base2, from, lands) : [];
+  if (!shas) return null;
+  lands.forEach((s2, i) => landed(store, s2.plan, base2, s2.plan.get("branch"), store.planWorktrees().get(s2.plan.id), shas[i]));
+  if (red) {
+    const culprit = stacked[hi - 1].plan;
+    failed.push(culprit.id);
+    const why = `hub.full_suite failed in the batch ${ids.join("+")} (exit ${red.exit}): ${tail3(store, red.output ?? "")}`;
+    if (!bounce(store, culprit, why)) return { next: [], failed, halt: true };
+    next.push(...ids.slice(hi));
+  }
+  return { next, failed, halt: false };
+}
+function stack(store, cand, plan, stacked, base2) {
+  const at = (args) => spawnSync8("git", ["-C", cand, ...args], { encoding: "utf8" });
+  const head = at(["rev-parse", "HEAD"]).stdout.trim(), tip = git(["rev-parse", plan.get("branch")], true).trim();
+  const m = at(["merge", "--squash", "--no-commit", tip]);
+  if (m.status !== 0) {
+    const files2 = (at(["diff", "--name-only", "--diff-filter=U"]).stdout ?? "").split("\n").filter(Boolean);
+    const gen = generated(cand, files2), code = files2.filter((f) => !gen.has(f));
+    if (code.length || !files2.length) {
+      at(["reset", "-q", "--hard", head]);
+      const where = code.join(", ") || tail3(store, `${m.stdout}${m.stderr}`);
+      return stacked.length ? `conflicts with ${stacked.map((s2) => s2.plan.id).join(", ")} in ${where}` : `merging ${base2} conflicts in ${where}`;
+    }
+    at(["checkout", "--ours", "--", ...files2]);
+    at(["add", "--", ...files2]);
+  }
+  let rebuilt;
+  try {
+    rebuilt = rebuild(store, cand);
+  } catch (e) {
+    if (!(e instanceof Bounce)) throw e;
+    at(["reset", "-q", "--hard", head]);
+    return stacked.length ? `${e.message} on top of ${stacked.map((s2) => s2.plan.id).join(", ")}` : e.message;
+  }
+  if (rebuilt.length) at(["add", "-A", "--", ...rebuilt]);
+  const c = at(["commit", "-q", "--allow-empty", "-m", `${commitType(plan)}(${plan.id}): ${plan.get("title")}`]);
+  if (c.status !== 0) throw new Stop(`git refused ${plan.id}'s commit in the candidate: ${tail3(store, `${c.stdout}${c.stderr}`)}`);
+  return { plan, sha: at(["rev-parse", "HEAD"]).stdout.trim(), tip };
+}
+function squashChain(store, base2, from, chain) {
+  const common = commonDir(store.home);
+  mkdirSync6(join25(common, "crew"), { recursive: true });
+  const lock = join25(common, "crew", "hub-commit.lock"), token = acquireLock(lock);
+  try {
+    const now = git(["rev-parse", base2], true).trim();
+    if (now !== from && (git(["diff", "--name-only", from, now, "--", ".", ":(exclude).crew"]) ?? "").trim()) return null;
+    const shas = [];
+    let prev = now;
+    for (const { plan, sha } of chain) {
+      const tree = spawnSync8("git", ["-C", store.home, "merge-tree", "--write-tree", now, sha], { encoding: "utf8" });
+      if (tree.status !== 0) throw new Stop(`${plan.id}'s commit conflicts with ${base2}'s .crew/ commits: ${tail3(store, tree.stdout)}`);
+      const subject = `${commitType(plan)}(${plan.id}): ${plan.get("title")}`;
+      prev = git(["-C", store.home, "commit-tree", tree.stdout.split("\n")[0].trim(), "-p", prev, "-m", subject], true).trim();
+      shas.push(prev);
+    }
+    const ff = spawnSync8("git", ["-C", store.home, "merge", "--ff-only", "-q", prev], { encoding: "utf8" });
+    if (ff.status !== 0) throw new Stop(`the fast-forward of ${base2} in ${store.home} failed: ${tail3(store, `${ff.stdout}${ff.stderr}`)}`);
+    return shas;
+  } finally {
+    releaseLock(lock, token);
+  }
+}
+function remove(store, cand) {
+  git(["-C", store.home, "worktree", "remove", "--force", cand]);
+  if (existsSync14(cand)) rmSync3(cand, { recursive: true, force: true });
+  git(["-C", store.home, "worktree", "prune"]);
+}
+function sweep(store) {
+  const dir = join25(store.home, ".claude", "worktrees");
+  if (!existsSync14(dir)) return;
+  for (const name of readdirSync6(dir)) {
+    const pid = name.startsWith(PREFIX3) ? Number(name.slice(PREFIX3.length)) : NaN;
+    if (!Number.isInteger(pid) || pid === process.pid || alive(pid)) continue;
+    remove(store, join25(dir, name));
+  }
+}
+function alive(pid) {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (e) {
+    return e.code !== "ESRCH";
+  }
+}
+
+// src/hub/commands/work/land.ts
+function land(store, id) {
+  store.require();
+  authorize(store, id?.toUpperCase() ?? "The merge queue", "plan.landed", void 0, void 0, `land${id ? ` ${id}` : ""}`);
+  if (!store.settings().plan_worktrees) fail("land: needs hub.plan_worktrees (each plan in its own worktree); merge by hand as `merge-order` says.");
+  if (spawnSync9("git", ["merge-tree", "--write-tree", "HEAD", "HEAD"], { cwd: store.home }).status !== 0) {
+    fail("land: needs git 2.38 or later (`git merge-tree --write-tree`).");
+  }
+  const base2 = store.baseBranch();
+  requireBase(store.home, base2);
+  const order = mergeOrder(store);
+  const queue = id ? [check2(store, id.toUpperCase(), order)] : order.merge.filter((p) => !p.legacy).map((p) => p.id);
+  if (!queue.length) return store.say(`Nothing to land on ${base2}.`), 0;
+  const failed = /* @__PURE__ */ new Set();
+  for (let rest = queue; rest.length; ) {
+    const batch = [];
+    for (const pid of rest) {
+      const plan = store.find(pid);
+      const after = plan.dependsOn().filter((d) => failed.has(d));
+      if (after.length) {
+        store.say(`${pid}: skipped \u2014 it depends on ${after.join(", ")}, which did not land`);
+        failed.add(pid);
+      } else if (!store.planWorktrees().has(pid)) {
+        store.say(`${pid}: skipped \u2014 no worktree on ${plan.get("branch")}: merge it by hand`);
+        failed.add(pid);
+      } else batch.push(plan);
+    }
+    rest = [];
+    if (batch.length === 1) {
+      const [plan] = batch;
+      try {
+        landOne(store, plan, base2);
+      } catch (e) {
+        if (e instanceof Bounce) {
+          failed.add(plan.id);
+          if (!bounce(store, plan, e.message)) return 1;
+        } else if (e instanceof Stop || e instanceof HubError) {
+          store.say(`${plan.id}: not landed \u2014 ${e.message}; it stays accepted with its worktree`);
+          return 1;
+        } else throw e;
+      }
+    } else if (batch.length) {
+      const ids = batch.map((p) => p.id);
+      try {
+        const out = landBatch(store, batch, base2);
+        out.failed.forEach((f) => failed.add(f));
+        if (out.halt) return 1;
+        rest = ids.filter((pid) => out.next.includes(pid));
+      } catch (e) {
+        if (!(e instanceof Stop || e instanceof HubError)) throw e;
+        store.say(`land: the batch ${ids.join("+")} did not land \u2014 ${e.message}; its plans stay accepted with their worktrees; run \`land\` again`);
+        return 1;
+      }
+    }
+  }
+  return failed.size ? 1 : 0;
+}
+function check2(store, pid, order) {
+  const plan = store.plans().get(pid) ?? fail(`No plan ${pid}.`);
+  const status2 = plan.get("status");
+  const entry2 = order.merge.find((p) => p.id === pid);
+  if (status2 === "done" && entry2) fail(`${pid} was completed before \`accepted\` existed: merge it by hand as \`merge-order\` says.`);
+  if (status2 !== "accepted") fail(`${pid} is '${status2}': only an accepted plan lands.`);
+  const plans2 = store.plans();
+  const unlanded = plan.dependsOn().filter((d) => {
+    const dep = plans2.get(d), s2 = dep?.get("status");
+    return dep && s2 !== "dropped" && !((s2 === "accepted" || s2 === "done") && !landedProblems(store, dep).length);
+  });
+  if (unlanded.length) fail(`${pid} waits: depends on ${unlanded.join(", ")}, not landed yet.`);
+  if (!entry2) fail(`${pid} is not in \`merge-order\`'s list: nothing of it is left to land.`);
+  if (!store.planWorktrees().has(pid)) fail(`${pid} has no worktree on ${plan.get("branch")}: merge it by hand.`);
+  return pid;
+}
+function landOne(store, plan, base2) {
+  const pid = plan.id, branch = plan.get("branch"), wt = store.planWorktrees().get(pid);
+  const at = (args) => spawnSync9("git", ["-C", wt, ...args], { encoding: "utf8" });
+  for (let round = 1; ; round++) {
+    const from = prepare(store, plan, base2);
+    const rebuilt = rebuild(store, wt);
+    if (rebuilt.length) {
+      at(["add", "-A", "--", ...rebuilt]);
+      const c = at(["commit", "-q", "--only", "-m", `chore(${pid}): rebuild generated files`, "--", ...rebuilt]);
+      if (c.status !== 0) throw new Stop(`git refused the rebuild commit: ${tail3(store, `${c.stdout}${c.stderr}`)}`);
+    }
+    if (hubSettings2(store).full_suite) {
+      const s2 = runSuite(store, { cwd: wt, ref: pid, capture: true });
+      if (s2.exit !== 0) throw new Bounce(`hub.full_suite failed (exit ${s2.exit}): ${tail3(store, s2.output ?? "")}`);
+      const tip = at(["rev-parse", branch]).stdout.trim();
+      if (tip !== s2.sha) {
+        throw new Stop(`its branch moved during the full suite (tested ${s2.sha?.slice(0, 7) ?? "-"}, now ${tip.slice(0, 7)}); run \`land ${pid}\` again`);
+      }
+    }
+    const sha = squash(store, plan, base2, from);
+    if (sha) return landed(store, plan, base2, branch, wt, sha);
+    if (round === ROUNDS) throw new Stop(`${base2} kept moving: ${ROUNDS} rounds of update, rebuild and suite; run \`land ${pid}\` again`);
+    store.say(`${pid}: ${base2} moved during the checks \u2014 updating again`);
+  }
+}
+function squash(store, plan, base2, from) {
+  const common = commonDir(store.home);
+  mkdirSync7(join26(common, "crew"), { recursive: true });
+  const lock = join26(common, "crew", "hub-commit.lock"), token = acquireLock(lock);
+  try {
+    const now = git(["rev-parse", base2], true).trim();
+    if (now !== from && (git(["diff", "--name-only", from, now, "--", ".", ":(exclude).crew"]) ?? "").trim()) return null;
+    const tree = spawnSync9("git", ["-C", store.home, "merge-tree", "--write-tree", now, plan.get("branch")], { encoding: "utf8" });
+    if (tree.status !== 0) throw new Bounce(`the squash onto ${base2} conflicts: ${tail3(store, tree.stdout)}`);
+    const subject = `${commitType(plan)}(${plan.id}): ${plan.get("title")}`;
+    const sha = git(["-C", store.home, "commit-tree", tree.stdout.split("\n")[0].trim(), "-p", now, "-m", subject], true).trim();
+    const ff = spawnSync9("git", ["-C", store.home, "merge", "--ff-only", "-q", sha], { encoding: "utf8" });
+    if (ff.status !== 0) throw new Stop(`the fast-forward of ${base2} in ${store.home} failed: ${tail3(store, `${ff.stdout}${ff.stderr}`)}`);
+    return sha;
+  } finally {
+    releaseLock(lock, token);
   }
 }
 
@@ -14488,24 +14687,24 @@ var registration24 = {
 // src/hub/server.ts
 import { spawn } from "node:child_process";
 import { randomBytes as randomBytes4 } from "node:crypto";
-import { existsSync as existsSync15, mkdirSync as mkdirSync7, watch as watch2 } from "node:fs";
+import { existsSync as existsSync16, mkdirSync as mkdirSync8, watch as watch2 } from "node:fs";
 import { createServer } from "node:http";
-import { basename as basename10, dirname as dirname9, join as join26 } from "node:path";
+import { basename as basename10, dirname as dirname9, join as join28 } from "node:path";
 
 // src/hub/commands/views/design.ts
 var import_yaml5 = __toESM(require_dist(), 1);
-import { existsSync as existsSync14, readFileSync as readFileSync11 } from "node:fs";
-import { dirname as dirname8, join as join25 } from "node:path";
+import { existsSync as existsSync15, readFileSync as readFileSync11 } from "node:fs";
+import { dirname as dirname8, join as join27 } from "node:path";
 var HANDOFF_KINDS = ["finalise", "locked", "revision", "screen-change", "screens-done", "screens-skipped"];
 var STAGES = ["palette", "directions", "tune", "finalise", "screens", "done"];
 var STATE_KEYS = ["stage", "shortlist", "variants", "current", "reviews"];
 var REQUIRED_COLORS = ["background", "foreground", "primary", "primary-foreground"];
 var FRONT = /^---\n([\s\S]*?)\n---\n/;
 function designPath(store) {
-  const cfg = store.ws.read(join25(store.dir, "config.yaml")) ?? "";
-  return join25(store.ws.root, yamlBlock(cfg, "design").file ?? "docs/design/DESIGN.md");
+  const cfg = store.ws.read(join27(store.dir, "config.yaml")) ?? "";
+  return join27(store.ws.root, yamlBlock(cfg, "design").file ?? "docs/design/DESIGN.md");
 }
-var studioPath = (store) => join25(dirname8(designPath(store)), "studio.json");
+var studioPath = (store) => join27(dirname8(designPath(store)), "studio.json");
 function readDesign(store) {
   const path = designPath(store);
   const text2 = store.ws.read(path);
@@ -14659,7 +14858,7 @@ function designWait(store, timeoutSec) {
   const path = studioPath(store);
   const pending = () => {
     try {
-      return existsSync14(path) ? JSON.parse(readFileSync11(path, "utf8")).handoffs ?? [] : [];
+      return existsSync15(path) ? JSON.parse(readFileSync11(path, "utf8")).handoffs ?? [] : [];
     } catch {
       return [];
     }
@@ -14803,14 +15002,14 @@ function serve(store, o) {
     }, 150);
   }
   const ledgerDir = dirname9(store.ledger.path), common = commonDir(store.ws.root);
-  mkdirSync7(ledgerDir, { recursive: true });
+  mkdirSync8(ledgerDir, { recursive: true });
   const watched = [
     store.dir,
     dirname9(designPath(store)),
     ...ledgerDir !== store.dir ? [ledgerDir] : [],
-    ...common ? [join26(common, "refs"), join26(common, "HEAD")] : []
+    ...common ? [join28(common, "refs"), join28(common, "HEAD")] : []
   ];
-  const watchers = [...new Set(watched)].filter((p) => existsSync15(p)).map((p) => watch2(p, { recursive: !p.endsWith("HEAD") && (p !== ledgerDir || p === store.dir) }, (_, file) => {
+  const watchers = [...new Set(watched)].filter((p) => existsSync16(p)).map((p) => watch2(p, { recursive: !p.endsWith("HEAD") && (p !== ledgerDir || p === store.dir) }, (_, file) => {
     const f = String(file ?? "");
     if (/\.lock$|\.stale-/.test(basename10(f))) return;
     if (!(p === store.dir && f.startsWith("view"))) notify2();
@@ -14930,14 +15129,14 @@ var registration27 = {
 
 // src/hub/commands/views/doctor.ts
 var import_yaml6 = __toESM(require_dist(), 1);
-import { spawnSync as spawnSync8 } from "node:child_process";
-import { accessSync, constants, mkdirSync as mkdirSync8, rmSync as rmSync3, statSync as statSync10, writeFileSync as writeFileSync4 } from "node:fs";
-import { join as join27, resolve as resolve11 } from "node:path";
+import { spawnSync as spawnSync10 } from "node:child_process";
+import { accessSync, constants, mkdirSync as mkdirSync9, rmSync as rmSync4, statSync as statSync10, writeFileSync as writeFileSync4 } from "node:fs";
+import { join as join29, resolve as resolve11 } from "node:path";
 var ok = (id, detail2) => ({ id, level: "ok", detail: detail2, fix: null });
 var warn = (id, detail2, fix) => ({ id, level: "warn", detail: detail2, fix });
 var bad = (id, detail2, fix) => ({ id, level: "fail", detail: detail2, fix });
 function yamlFile(store, name) {
-  const text2 = store.ws.read(join27(store.dir, name));
+  const text2 = store.ws.read(join29(store.dir, name));
   try {
     const v = (0, import_yaml6.parse)(text2 ?? "");
     return v && typeof v === "object" ? v : {};
@@ -14963,7 +15162,7 @@ function planWorktrees(store) {
   return store.settings().plan_worktrees ? ok("plan-worktrees", "on") : warn("plan-worktrees", "hub.plan_worktrees is off: plans can't run side by side", "set hub.plan_worktrees: true in .crew/config.yaml");
 }
 function vendoredHub(store) {
-  return store.ws.isFile(join27(store.dir, "bin", "crew.mjs")) ? ok("vendored-hub", ".crew/bin/crew.mjs") : bad("vendored-hub", ".crew/bin/crew.mjs is missing", "run `crew.mjs init`");
+  return store.ws.isFile(join29(store.dir, "bin", "crew.mjs")) ? ok("vendored-hub", ".crew/bin/crew.mjs") : bad("vendored-hub", ".crew/bin/crew.mjs is missing", "run `crew.mjs init`");
 }
 function agents2(store) {
   const problems = agentProblems(store);
@@ -14975,7 +15174,7 @@ function agents2(store) {
   ));
 }
 function hookCommands2(store) {
-  const text2 = store.ws.read(join27(store.home, ".claude", "settings.json"));
+  const text2 = store.ws.read(join29(store.home, ".claude", "settings.json"));
   if (text2 === null) return null;
   try {
     const hooks2 = JSON.parse(text2).hooks ?? {};
@@ -14999,7 +15198,7 @@ function hooks(store) {
   return out.length ? out : [ok("hooks", "guard, usage, activity, context and checkpoint hooks are set")];
 }
 function generated2(store) {
-  const build = yamlBlock(store.ws.read(join27(store.dir, "config.yaml")) ?? "", "hub").build;
+  const build = yamlBlock(store.ws.read(join29(store.dir, "config.yaml")) ?? "", "hub").build;
   if (!build) return ok("generated", "no hub.build");
   const n2 = trackedFiles(store.home).generated.size;
   return n2 ? ok("generated", `${n2} tracked file(s) marked linguist-generated`) : warn(
@@ -15067,12 +15266,12 @@ function doctor(store, json = false) {
 }
 function runHook(home2, hook, args, env) {
   const opts = { cwd: home2, env, encoding: "utf8" };
-  let r = spawnSync8("git", ["hook", "run", "--ignore-missing", hook, ...args.length ? ["--", ...args] : []], opts);
+  let r = spawnSync10("git", ["hook", "run", "--ignore-missing", hook, ...args.length ? ["--", ...args] : []], opts);
   if (r.status === 129 || /not a git command|usage: git hook/.test(r.stderr ?? "")) {
     const dir = git(["-C", home2, "rev-parse", "--git-path", "hooks"])?.trim();
     const file = dir ? resolve11(home2, dir, hook) : null;
     if (!file || !isExecutable(file)) return null;
-    r = spawnSync8(file, args, opts);
+    r = spawnSync10(file, args, opts);
   }
   if (r.status === 0) return null;
   const lines = `${r.stderr ?? ""}
@@ -15090,11 +15289,11 @@ function isExecutable(file) {
 function probeHubCommit(home2) {
   const common = commonDir(home2);
   if (!common) return null;
-  const dir = join27(common, "crew");
-  mkdirSync8(dir, { recursive: true });
-  const index = join27(dir, `doctor-index-${process.pid}`), msg = join27(dir, `doctor-msg-${process.pid}`);
+  const dir = join29(common, "crew");
+  mkdirSync9(dir, { recursive: true });
+  const index = join29(dir, `doctor-index-${process.pid}`), msg = join29(dir, `doctor-msg-${process.pid}`);
   const env = { ...process.env, GIT_INDEX_FILE: index };
-  const g = (args, input) => spawnSync8("git", ["-C", home2, ...args], { env, input, encoding: "utf8" });
+  const g = (args, input) => spawnSync10("git", ["-C", home2, ...args], { env, input, encoding: "utf8" });
   try {
     if (g(["rev-parse", "--verify", "-q", "HEAD"]).status === 0) g(["read-tree", "HEAD"]);
     else g(["read-tree", "--empty"]);
@@ -15107,7 +15306,7 @@ function probeHubCommit(home2) {
     const cm = runHook(home2, "commit-msg", [msg], env);
     return cm === null ? null : { hook: "commit-msg", message: cm };
   } finally {
-    for (const f of [index, `${index}.lock`, msg]) rmSync3(f, { force: true });
+    for (const f of [index, `${index}.lock`, msg]) rmSync4(f, { force: true });
   }
 }
 

@@ -203,7 +203,7 @@ suites [--limit 20] [--json]                  recorded full-suite runs, newest f
 | `suite` | — |
 | `suites` | `suites` |
 
-- `suites`: Recorded full-suite runs (`crew.mjs suites`), newest first: ts, ref, run, worktree, sha, branch, slot, wait_ms, run_ms, exit.
+- `suites`: Recorded full-suite runs (`crew.mjs suites`), newest first: ts, ref, plans (the plans the tested HEAD holds, in order: a land batch lists several), run, worktree, sha, branch, slot, wait_ms, run_ms, exit.
 
 ## work/land
 

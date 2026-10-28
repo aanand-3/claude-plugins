@@ -107,7 +107,7 @@ it("suites lists each run's record newest first, with --limit, the text form and
   const all = records();
   expect(all.map((r) => r.ref)).toEqual(["BUG-002", "BUG-001"]);
   for (const r of all) {
-    expect(Object.keys(r)).toEqual(["ts", "ref", "run", "worktree", "sha", "branch", "slot", "wait_ms", "run_ms", "exit"]);
+    expect(Object.keys(r)).toEqual(["ts", "ref", "plans", "run", "worktree", "sha", "branch", "slot", "wait_ms", "run_ms", "exit"]);
     expect(r).toMatchObject({ run: expect.stringMatching(/^wt:/), worktree: realpathSync(repo.path), slot: 0, exit: 0,
       sha: repo.git("rev-parse", "HEAD").stdout.trim(), branch: "main" });
   }
@@ -118,6 +118,10 @@ it("suites lists each run's record newest first, with --limit, the text form and
   const res = mcpCall(repo, "suites", { limit: 1 });
   expect(res.isError).toBeFalsy();
   expect(JSON.parse(res.content[0].text)).toEqual(records("--limit", "1"));
+  // a land batch's record lists its plans (P-079); the text form joins them
+  const batch = { ...all[0], ref: "P-001", plans: ["P-001", "P-002"] };
+  writeFileSync(join(repo.path, ".git/crew/suites.jsonl"), `${repo.read(".git/crew/suites.jsonl")}${JSON.stringify(batch)}\n`);
+  expect(tr(repo, "suites", "--limit", "1").stdout).toMatch(/^\S+ {2}P-001\+P-002 {2}[0-9a-f]{7} /);
 });
 
 describe("suite --ref P-### runs where the plan is (BUG-035)", () => {
@@ -146,7 +150,7 @@ describe("suite --ref P-### runs where the plan is (BUG-035)", () => {
     expect(existsSync(join(wt, "where.txt"))).toBe(true);
     expect(existsSync(join(repo.path, "where.txt"))).toBe(false);
     const rec = records()[0];
-    expect({ ...rec, worktree: realpathSync(rec.worktree) }).toMatchObject({ ref: "P-001", worktree: wt,
+    expect({ ...rec, worktree: realpathSync(rec.worktree) }).toMatchObject({ ref: "P-001", plans: ["P-001"], worktree: wt,
       sha: repo.git("-C", wt, "rev-parse", "HEAD").stdout.trim(), branch: planBranch(), exit: 0 });
     expect(rec.sha).not.toBe(repo.git("rev-parse", "main").stdout.trim());
     expect(tr(repo, "suites").stdout).toContain(`  P-001  ${rec.sha.slice(0, 7)}  `);
@@ -156,7 +160,7 @@ describe("suite --ref P-### runs where the plan is (BUG-035)", () => {
     startedPlan(true);
     expect(tr(repo, "suite").returncode).toBe(0);
     expect(existsSync(join(repo.path, "where.txt"))).toBe(true);
-    expect(records()[0]).toMatchObject({ ref: null, worktree: realpathSync(repo.path),
+    expect(records()[0]).toMatchObject({ ref: null, plans: [], worktree: realpathSync(repo.path),
       sha: repo.git("rev-parse", "HEAD").stdout.trim(), branch: "main" });
   });
 

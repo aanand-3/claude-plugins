@@ -12,7 +12,7 @@ export const registration: Registration = {
     suites: { pos: [], int: ["limit"], flag: ["json"], run: (s, a) => suitesCmd(s, a.num.limit, !!a.opt.json) },
   },
   tools: {
-    suites: { description: "Recorded full-suite runs (`crew.mjs suites`), newest first: ts, ref, run, worktree, sha, branch, slot, wait_ms, run_ms, exit.",
+    suites: { description: "Recorded full-suite runs (`crew.mjs suites`), newest first: ts, ref, plans (the plans the tested HEAD holds, in order: a land batch lists several), run, worktree, sha, branch, slot, wait_ms, run_ms, exit.",
       input: obj({ limit: num("how many, newest first (default 20)") }), run: (st, a) => suitesCmd(st, n(a, "limit"), true) },
   },
 };

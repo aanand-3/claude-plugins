@@ -89,7 +89,7 @@ From `packages/crew/src/hub/mcp.ts:TOOLS`.
 | `review` | `review` | Code review of a plan in review (`crew.mjs review`): approve, or request changes, which sends it back to the developer. |
 | `design_review` |  | Design review of a UI plan in review (`crew.mjs review --design`): approve, or request changes, which sends it back to the developer. |
 | `merge_order` | `merge-order` | What Release merges next (`crew.mjs merge-order`): done plans with unmerged branches, dependencies first; plans waiting on an unmerged dependency; merged branches to delete. |
-| `suites` | `suites` | Recorded full-suite runs (`crew.mjs suites`), newest first: ts, ref, run, worktree, sha, branch, slot, wait_ms, run_ms, exit. |
+| `suites` | `suites` | Recorded full-suite runs (`crew.mjs suites`), newest first: ts, ref, plans (the plans the tested HEAD holds, in order: a land batch lists several), run, worktree, sha, branch, slot, wait_ms, run_ms, exit. |
 | `context` | `context` | What you need right now (`crew.mjs context`): for a plan, where the work stands, its goal, criteria with evidence, tasks, blockers and questions, knowledge in scope; without one, the idea, focus, your next steps and the team. |
 | `next` | `next` | The single best next step (`crew.mjs next`); with a role, that role's own queue, questions to it first. |
 | `current` | `current` | Where work stands: the focus goal and the plan on the current branch (`crew.mjs current`). |

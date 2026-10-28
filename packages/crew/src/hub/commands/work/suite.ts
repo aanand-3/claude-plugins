@@ -10,8 +10,9 @@ import * as git from "../../core/git.js";
 import { type Store, yamlBlock } from "../../core/store.js";
 import { fail } from "../../core/text.js";
 
-/** One finished run, as `suites.jsonl` holds it: `sha` and `branch` are the tested HEAD (BUG-035; absent in older records). */
-export interface SuiteRecord { ts: string; ref: string | null; run: string; worktree: string; sha: string | null;
+/** One finished run, as `suites.jsonl` holds it: `sha` and `branch` are the tested HEAD (BUG-035), `plans` the plans that
+ * HEAD holds, in order (P-079); both absent in older records. */
+export interface SuiteRecord { ts: string; ref: string | null; plans?: string[]; run: string; worktree: string; sha: string | null;
   branch: string | null; slot: number; wait_ms: number; run_ms: number; exit: number }
 interface Holder { token: string; pid: number; host: string; run: string; ref: string | null; worktree: string; started: string }
 
@@ -128,9 +129,10 @@ function releaseSlot(file: string, token: string): void {
   } catch { /* already gone */ }
 }
 
-/** Run `hub.full_suite` in `cwd` under a slot; record the run with the HEAD it tested. The holder is this process, alive
- * for the whole run. `capture` (land): the output is passed through and also returned. */
-export function runSuite(store: Store, { cwd, ref, capture = false }: { cwd: string; ref?: string; capture?: boolean }):
+/** Run `hub.full_suite` in `cwd` under a slot; record the run with the HEAD it tested and the plans it holds (`plans`,
+ * else `ref`). The holder is this process, alive for the whole run. `capture` (land): the output is passed through and
+ * also returned. */
+export function runSuite(store: Store, { cwd, ref, plans, capture = false }: { cwd: string; ref?: string; plans?: string[]; capture?: boolean }):
   { exit: number; waitMs: number; runMs: number; sha: string | null; output?: string } {
   const { command, slots } = suiteSettings(store);
   const sha = git.git(["-C", cwd, "rev-parse", "HEAD"])?.trim() || null;
@@ -154,7 +156,7 @@ export function runSuite(store: Store, { cwd, ref, capture = false }: { cwd: str
     releaseSlot(join(dir, "suite", `slot-${slot}.lock`), me.token);
   }
   const t2 = Date.now();
-  const rec: SuiteRecord = { ts: new Date(t2).toISOString(), ref: ref ?? null, run, worktree: cwd, sha, branch, slot,
+  const rec: SuiteRecord = { ts: new Date(t2).toISOString(), ref: ref ?? null, plans: plans ?? (ref ? [ref] : []), run, worktree: cwd, sha, branch, slot,
     wait_ms: t1 - t0, run_ms: t2 - t1, exit };
   const file = join(dir, "suites.jsonl");
   const torn = existsSync(file) && statSync(file).size > 0 && !readFileSync(file, "utf8").endsWith("\n");
@@ -203,6 +205,7 @@ export function suitesCmd(store: Store, limit = 20, json = false): void {
   if (json) return store.say(JSON.stringify(recs, null, 2));
   if (!recs.length) return store.say("No suite runs recorded.");
   for (const r of recs) {
-    store.say(`${r.ts}  ${r.ref ?? "-"}  ${r.sha?.slice(0, 7) ?? "-"}  ${r.run}  slot ${r.slot}  waited ${secs(r.wait_ms)}s  ran ${secs(r.run_ms)}s  exit ${r.exit}`);
+    const what = r.plans && r.plans.length > 1 ? r.plans.join("+") : r.ref ?? "-";
+    store.say(`${r.ts}  ${what}  ${r.sha?.slice(0, 7) ?? "-"}  ${r.run}  slot ${r.slot}  waited ${secs(r.wait_ms)}s  ran ${secs(r.run_ms)}s  exit ${r.exit}`);
   }
 }
