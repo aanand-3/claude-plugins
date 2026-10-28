@@ -5,7 +5,7 @@ goal: G-007
 items: BUG-059
 touches: packages/crew/src/hub/commands/work/release.ts, packages/crew/src/hub/commands/work/land-steps.ts, packages/crew/test/hub/e2e/land-batch.test.ts, packages/crew/test/hub/e2e/land.test.ts
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-093-batch-land-refreshbin-must-accept
 pr:
 created: 2026-10-28
@@ -75,7 +75,7 @@ n/a: an internal change to the hub's land steps. It reaches this repo's `.crew/b
 
 _Generated 2026-10-28 by `crew.mjs handoff` from the ledger._
 
-- P-093: Batch land: refreshBin must accept the candidate worktree [in-progress] tasks 5/5 — claimed by Arpit Anand (developer:a7d924b548c3d2ade)
+- P-093: Batch land: refreshBin must accept the candidate worktree [in-review] tasks 5/5 — claimed by Arpit Anand (developer:a7d924b548c3d2ade)
 - last checkpoint 2026-10-28 12:31 at T5 (b002a44) by Arpit Anand; since then 0 commit(s), 2 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —
 
@@ -90,6 +90,7 @@ Latest log:
 - 2026-10-28: status draft → ready
 - 2026-10-28: assigned to the developer role
 - 2026-10-28: status ready → in-progress — branch plan/P-093-batch-land-refreshbin-must-accept
+- 2026-10-28: status in-progress → in-review
 
 ## Outcome
 Learnings: none new; the design is K-2026-10-28-land-refreshes-crew-bin-through (land's steps call copyBin, the refresh-bin command keeps its role and plan-worktree checks).
