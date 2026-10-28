@@ -5,7 +5,7 @@ goal:
 items: BUG-055
 touches: packages/crew/vitest.config.ts, packages/crew/test/helpers/repo.ts, packages/crew/test/hub/e2e/inbox.test.ts, packages/crew/src/hub/commands/work/check-output.ts, packages/crew/src/hub/commands/work/execution.ts, packages/crew/test/hub/check-output.test.ts, packages/crew/test/setup/timeouts.test.ts, packages/crew/test/hub/e2e/execution.test.ts
 depends_on:
-status: draft
+status: ready
 branch: plan/P-090-targeted-e2e-checks-survive-load-resume
 pr:
 created: 2026-10-28
@@ -128,5 +128,7 @@ reverting the plan's commit. Ledger entries recorded with the timeout line stay 
 ## Handoff
 
 ## Progress log
+
+- 2026-10-28: status draft → ready
 
 ## Outcome
