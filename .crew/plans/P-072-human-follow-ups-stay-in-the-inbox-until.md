@@ -5,12 +5,12 @@ goal:
 items: FEAT-068
 touches: packages/crew/src/hub/commands/team/followups.ts, packages/crew/src/hub/commands/team/questions.reg.ts, packages/crew/src/hub/commands/team/inbox.ts, packages/crew/src/hub/commands/work/execution.ts, packages/crew/src/hub/server.ts, packages/crew/ui/src/views/Inbox.tsx, packages/crew/ui/src/styles/views.css, packages/crew/test/hub/e2e/inbox.test.ts, plugins/crew/skills/hub/references/model.md, plugins/crew/skills/team/SKILL.md
 depends_on:
-status: accepted
+status: done
 branch: plan/P-072-human-follow-ups-stay-in-the-inbox-until
 pr:
 created: 2026-10-26
 started: 2026-10-26
-completed:
+completed: 2026-10-28
 assignee: developer
 ---
 
@@ -212,6 +212,7 @@ Latest log:
 - 2026-10-27: BUG-053 overlaps: Inbox name placeholder clipped at 375px (Inbox.tsx, pre-existing, not P-072 scope); will follow as a separate dependent plan after P-072 lands
 - 2026-10-27: status in-review → accepted
 - 2026-10-28: landed on main as f64dfce
+- 2026-10-28: status accepted → done
 
 ## Outcome
 Shipped: `answer … --follow-up STEP [--unblocks ID]` records a follow-up (an `ask` to the executive with `after` and

@@ -2,12 +2,12 @@
 id: FEAT-068
 type: feat
 title: Approved answers that hand a step to the human stay in the inbox until it's done
-status: triaged
+status: done
 priority: P2
 goal: G-007
 plan: P-072
 created: 2026-10-26
-closed:
+closed: 2026-10-28
 ---
 
 # FEAT-068: Approved answers that hand a step to the human stay in the inbox until it's done
@@ -26,3 +26,4 @@ As the executive, I want an approved answer that hands a step to me to stay in m
 ## Notes
 Found 2026-10-26: Q-d4e060 on P-003 was approved ("you commit/merge; the team won't push"). The answer closed the question, `inbox` showed it empty, and P-003 still waited for the merge of the `.crew`-only commits from `claude/crew-bug-001-9d4b01` into main. P-060's rollout step (`merge_settings.mjs`) and P-064's (refresh `.crew/templates/agents/`, run `agents`) are the same kind of step and were tracked only in agent reports.
 - 2026-10-26: status new → triaged — priority P2
+- 2026-10-28: status triaged → done — delivered by P-072
