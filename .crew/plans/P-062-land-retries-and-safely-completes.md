@@ -145,6 +145,7 @@ Latest log:
 - 2026-10-28: status accepted → in-progress — land: hub.full_suite failed (exit 1):     [90m 12|[39m beforeEach(() => { ·     [90m   |[39m [31m^[39m ·     [90m 13|[39m   repo = Repo.create(); ·     [90m 14|[39m   init(repo, { commit: true }); · [31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/7]⎯[22m[39m
 - 2026-10-28: status in-progress → in-review — second land failed only on main's flaky tests (fixed by P-092); no code change since b9b29eb
 - 2026-10-28: status in-review → accepted (approved by Arpit Anand)
+- 2026-10-28: landed on main as 415b351
 
 ## Outcome
 The worktree cleanup lives in commands/work/worktree-cleanup.ts. When `git worktree remove --force` fails and git still lists the path as the plan's worktree, land deletes OS junk and retries up to 3 times (200 ms apart). P-061's junk-only delete follows. Then comes a full delete (`rmSync`, `git worktree prune`, a check that git no longer lists the path), only when `safeToDelete()` checks a–f find nothing that could be lost. Otherwise the warning is `kept <rel>: <reason>`. A path git no longer lists keeps P-061's `left` warning, with no retry. `branchMerged` is exported from release.ts. land.test.ts passes 25/25 (6 new BUG-041 tests), and tsc is clean.
