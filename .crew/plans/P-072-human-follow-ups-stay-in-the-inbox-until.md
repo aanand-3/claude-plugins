@@ -211,6 +211,7 @@ Latest log:
 - 2026-10-26: design re-review (in progress, no verdict yet): in code both requested changes are done and match the Design section and AC6 - one new .inbox__text rule (overflow-wrap: anywhere; min-width: 0) beside the .actions rules, className on the entry's question p, the Then-you input inside the answer form on its own .actions__row above the decision row with placeholder 'Then you... (optional step you will do)' and the aria-label kept; the form reuses .actions for row spacing; tokens and inventory only; check_design --all clean (exit 0). Not done: the on-screen full-size check at 375/900/1440 light and dark - this Designer session's Bash is limited to the hub and node scripts in the repo (no scratch dir, no browser), and a follow-up card needs a human answer. Approval waits on full-size screenshots of the Inbox (a follow-up with a 300-character step, an escalation with one unbroken 80-character token, placeholder at 375 px) from QA or the executive, or a Designer session that can serve the UI and run a browser.
 - 2026-10-27: BUG-053 overlaps: Inbox name placeholder clipped at 375px (Inbox.tsx, pre-existing, not P-072 scope); will follow as a separate dependent plan after P-072 lands
 - 2026-10-27: status in-review → accepted
+- 2026-10-28: landed on main as f64dfce
 
 ## Outcome
 Shipped: `answer … --follow-up STEP [--unblocks ID]` records a follow-up (an `ask` to the executive with `after` and

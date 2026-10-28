@@ -101,6 +101,7 @@ Latest log:
 - 2026-10-27: status ready → in-progress — branch plan/P-075-numbered-acceptance-criteria-are-parsed
 - 2026-10-27: status in-progress → in-review
 - 2026-10-27: status in-review → accepted
+- 2026-10-28: landed on main as 0caca1f
 
 ## Outcome
 Shipped on plan/P-075-numbered-acceptance-criteria-are-parsed: `Doc.numbered(name)` (doc.ts) returns column-0 `N. `/`N) `

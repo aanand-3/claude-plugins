@@ -133,6 +133,7 @@ Latest log:
 - 2026-10-26: Land bounce cause: packages/crew/node_modules missing in the plan worktree, so build.mjs could not import 'esbuild' (ERR_MODULE_NOT_FOUND). Ran npm ci --prefer-offline in the worktree's packages/crew (185 packages; allow-scripts warned esbuild/fsevents install scripts not run, build works regardless). npm run build now succeeds and leaves 0 uncommitted files. No code change.
 - 2026-10-26: status in-progress → in-review
 - 2026-10-26: status in-review → accepted
+- 2026-10-28: landed on main as dc4edca
 
 ## Outcome
 Shipped (docs only: model.md, hub SKILL.md, docs/vision.md):

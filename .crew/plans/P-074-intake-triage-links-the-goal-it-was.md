@@ -109,6 +109,7 @@ Latest log:
 - 2026-10-27: status ready → in-progress — branch plan/P-074-intake-triage-links-the-goal-it-was
 - 2026-10-27: status in-progress → in-review
 - 2026-10-28: status in-review → accepted
+- 2026-10-28: landed on main as 94fba18
 
 ## Outcome
 Behaviour change: `new-item` with `--goal` links that goal when the same call triages the item (`--priority` or

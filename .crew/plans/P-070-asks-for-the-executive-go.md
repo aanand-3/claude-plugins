@@ -125,6 +125,7 @@ Latest log:
 - 2026-10-26: status ready → in-progress — branch plan/P-070-asks-for-the-executive-go
 - 2026-10-26: status in-progress → in-review
 - 2026-10-26: status in-review → accepted
+- 2026-10-28: landed on main as de64c7e
 
 ## Outcome
 Shipped: `ask()` in `questions.ts` routes an ask for the escalation target (executive) from a role other than the

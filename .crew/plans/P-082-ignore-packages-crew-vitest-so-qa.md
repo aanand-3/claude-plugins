@@ -95,6 +95,7 @@ Latest log:
 - 2026-10-27: status ready → in-progress — branch plan/P-082-ignore-packages-crew-vitest-so-qa
 - 2026-10-27: status in-progress → in-review
 - 2026-10-28: status in-review → accepted
+- 2026-10-28: landed on main as f83776a
 
 ## Outcome
 Learnings: K-2026-10-27-a-plans-diff-against-main-must-be-read

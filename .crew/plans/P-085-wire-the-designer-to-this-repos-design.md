@@ -130,6 +130,7 @@ Latest log:
 - 2026-10-28: status ready → in-progress — branch plan/P-085-wire-the-designer-to-this-repos-design
 - 2026-10-28: status in-progress → in-review
 - 2026-10-28: status in-review → accepted
+- 2026-10-28: landed on main as 1f5797b
 
 ## Outcome
 Learnings: none
