@@ -5,7 +5,7 @@ goal:
 items: CHORE-002
 touches: packages/crew/src/hub/commands/team/agents.reg.ts, packages/crew/test/mcp.test.ts, packages/crew/test/hub/e2e/agents.test.ts, plugins/crew/docs/reference.md
 depends_on:
-status: draft
+status: ready
 branch: plan/P-087-read-only-agents-mcp-tool
 pr:
 created: 2026-10-28
@@ -65,17 +65,10 @@ stays CLI-only and human-only on purpose: the guard denies `crew.mjs agents` wit
 ## Design
 
 ## Tasks
-- [ ] T1: Register the read-only `agents` MCP tool in `packages/crew/src/hub/commands/team/agents.reg.ts`
-  → verify: `cd packages/crew && npx tsc --noEmit` passes; `npx vitest run test/hub/registry.test.ts` passes unchanged.
-- [ ] T2: Add `agents` to the sorted tool-name list in `packages/crew/test/mcp.test.ts`
-  → verify: `npm run build && npx vitest run test/mcp.test.ts` passes.
-- [ ] T3: Add an e2e case to `packages/crew/test/hub/e2e/agents.test.ts` that calls the bundled MCP server's `agents`
-  tool (same stdio pattern as the doctor MCP case in `test/hub/e2e/doctor.test.ts`): up to date → not an error and
-  same text as `agents --check`; one agent file removed and one edited → error result with two STALE lines, same text
-  as `agents --check`, and `.claude/agents/` unchanged by the call
-  → verify: `npx vitest run test/hub/e2e/agents.test.ts` passes.
-- [ ] T4: Regenerate the docs block → verify: `npm run docs`, `git diff plugins/crew/docs/reference.md` shows only the
-  `agents` rows changing, and `npx vitest run test/docs.test.ts` passes.
+- [ ] T1: Register the read-only `agents` MCP tool in `packages/crew/src/hub/commands/team/agents.reg.ts` → verify: `cd packages/crew && npx tsc --noEmit` passes; `npx vitest run test/hub/registry.test.ts` passes unchanged.
+- [ ] T2: Add `agents` to the sorted tool-name list in `packages/crew/test/mcp.test.ts` → verify: `npm run build && npx vitest run test/mcp.test.ts` passes.
+- [ ] T3: Add an e2e case to `packages/crew/test/hub/e2e/agents.test.ts` that calls the bundled MCP server's `agents` tool (same stdio pattern as the doctor MCP case in `test/hub/e2e/doctor.test.ts`): up to date → not an error and same text as `agents --check`; one agent file removed and one edited → error result with two STALE lines, same text as `agents --check`, and `.claude/agents/` unchanged by the call → verify: `npx vitest run test/hub/e2e/agents.test.ts` passes.
+- [ ] T4: Regenerate the docs block → verify: `npm run docs`, `git diff plugins/crew/docs/reference.md` shows only the `agents` rows changing, and `npx vitest run test/docs.test.ts` passes.
 
 ## Test plan
 **Targeted checks:** (in `packages/crew`, after `npm run build`)
@@ -96,5 +89,7 @@ n/a — internal: one additional read-only MCP tool in the hub bundle; revert th
 ## Handoff
 
 ## Progress log
+
+- 2026-10-28: status draft → ready
 
 ## Outcome
