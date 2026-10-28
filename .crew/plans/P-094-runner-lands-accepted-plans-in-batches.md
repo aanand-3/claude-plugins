@@ -45,5 +45,6 @@ Spec to be written by the Architect.
 ## Progress log
 
 - 2026-10-28: re-goaled none → G-007 by Arpit Anand: P0 BUG-060 fix belongs to G-007
+- 2026-10-28: Draft touches for the Architect (not set in frontmatter): packages/crew/src/hub/commands/team/dispatch.ts, its dispatch tests, .crew/templates/agents/release.md, packages/crew/src/hub/commands/team/agents.ts (agents --check)
 
 ## Outcome
