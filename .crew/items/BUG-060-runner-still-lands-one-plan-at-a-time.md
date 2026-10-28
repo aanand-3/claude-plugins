@@ -2,13 +2,13 @@
 id: BUG-060
 type: bug
 title: Runner still lands one plan at a time: dispatch gives Release one plan and its agent lacks the batch steps
-status: triaged
+status: done
 severity: S2
 priority: P0
 goal: G-007
 plan: P-094
 created: 2026-10-28
-closed:
+closed: 2026-10-28
 origin: P-079
 ---
 
@@ -53,3 +53,4 @@ FEAT-071's goal (accepted plans land together, one full suite per batch) isn't m
 - 2026-10-28: goal hint G-007 (by Arpit Anand)
 - 2026-10-28: status new → triaged — priority P0, severity S2
 - 2026-10-28: re-goaled G-007 → G-007 by Arpit Anand: P0 BUG-060 fix belongs to G-007
+- 2026-10-28: status triaged → done — delivered by P-094
