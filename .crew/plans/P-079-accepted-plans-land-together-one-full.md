@@ -94,6 +94,17 @@ land-batch.test.ts uses land-helpers' `hub()`, and each plan changes a different
 
 ## Handoff
 
+_Generated 2026-10-28 by `crew.mjs handoff` from the ledger._
+
+- P-079: Accepted plans land together: one full-suite run per batch [in-progress] tasks 6/6 — claimed by Arpit Anand (developer:a38f207eed7b1d14d)
+- last checkpoint 2026-10-28 11:35 at T6 (c8847ae) by Arpit Anand; since then 0 commit(s), 3 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs, plugins/crew/skills/hub/references/commands.md
+- evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —, AC7 —, AC8 —
+
+Latest log:
+- 2026-10-27: status draft → ready
+- 2026-10-28: assigned to the developer role
+- 2026-10-28: status ready → in-progress — branch plan/P-079-accepted-plans-land-together-one-full
+
 ## Progress log
 
 - 2026-10-27: status draft → ready
