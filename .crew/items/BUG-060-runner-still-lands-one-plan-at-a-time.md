@@ -52,3 +52,4 @@ FEAT-071's goal (accepted plans land together, one full suite per batch) isn't m
 - **Related:** FEAT-071, P-079, P-093, BUG-059.
 - 2026-10-28: goal hint G-007 (by Arpit Anand)
 - 2026-10-28: status new → triaged — priority P0, severity S2
+- 2026-10-28: re-goaled G-007 → G-007 by Arpit Anand: P0 BUG-060 fix belongs to G-007

@@ -1,7 +1,7 @@
 ---
 id: P-094
 title: Runner lands accepted plans in batches: dispatch and Release agent
-goal:
+goal: G-007
 items: BUG-060
 touches:
 depends_on:
@@ -43,5 +43,7 @@ Spec to be written by the Architect.
 ## Handoff
 
 ## Progress log
+
+- 2026-10-28: re-goaled none → G-007 by Arpit Anand: P0 BUG-060 fix belongs to G-007
 
 ## Outcome
