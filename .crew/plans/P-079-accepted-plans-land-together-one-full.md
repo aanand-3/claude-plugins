@@ -11,6 +11,7 @@ pr:
 created: 2026-10-27
 started:
 completed:
+assignee: developer
 ---
 
 # P-079: Accepted plans land together: one full-suite run per batch
@@ -96,5 +97,6 @@ land-batch.test.ts uses land-helpers' `hub()`, and each plan changes a different
 ## Progress log
 
 - 2026-10-27: status draft → ready
+- 2026-10-28: assigned to the developer role
 
 ## Outcome
