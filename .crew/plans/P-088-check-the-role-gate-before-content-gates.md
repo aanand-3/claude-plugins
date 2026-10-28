@@ -85,6 +85,17 @@ n/a — internal ordering of refusals in the hub CLI; revert the commit to back 
 
 ## Handoff
 
+_Generated 2026-10-28 by `crew.mjs handoff` from the ledger._
+
+- P-088: Check the role gate before content gates on move [in-progress] tasks 2/2 — claimed by Arpit Anand (developer:ad7c91ee5e96e7fa7)
+- last checkpoint 2026-10-28 06:38 at T2 (b73de88) by Arpit Anand; since then 0 commit(s), 2 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs
+- evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —
+
+Latest log:
+- 2026-10-28: status draft → ready
+- 2026-10-28: assigned to the developer role
+- 2026-10-28: status ready → in-progress — branch plan/P-088-check-the-role-gate-before-content-gates
+
 ## Progress log
 
 - 2026-10-28: status draft → ready

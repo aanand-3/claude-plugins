@@ -80,10 +80,10 @@ shows $ once cost > 0.
 ## Design
 
 ## Tasks
-- [ ] T1: core/team/prices.ts with `readPrices` and `messageCost` (suffix-stripping exact match), plus packages/crew/test/hub/prices.test.ts for AC1 and AC3 → verify: `cd packages/crew && npx vitest run test/hub/prices.test.ts`
-- [ ] T2: `transcriptUsage(text, prices?)` returns `cost`; unit cases for AC2 in prices.test.ts → verify: `cd packages/crew && npx vitest run test/hub/prices.test.ts`
-- [ ] T3: `usageHook` reads prices from `join(store.dir, "config.yaml")` and records the cost; e2e cases for AC4 and AC5 in activity.test.ts → verify: `cd packages/crew && npx vitest run test/hub/e2e/activity.test.ts`
-- [ ] T4: `prices:` block in .crew/config.yaml, the AC6 case in prices.test.ts (reads the repo's config), model.md and SKILL.md updates → verify: `cd packages/crew && npx vitest run test/hub/prices.test.ts test/docs.test.ts && npm run typecheck`
+- [x] T1: core/team/prices.ts with `readPrices` and `messageCost` (suffix-stripping exact match), plus packages/crew/test/hub/prices.test.ts for AC1 and AC3 → verify: `cd packages/crew && npx vitest run test/hub/prices.test.ts`
+- [x] T2: `transcriptUsage(text, prices?)` returns `cost`; unit cases for AC2 in prices.test.ts → verify: `cd packages/crew && npx vitest run test/hub/prices.test.ts`
+- [x] T3: `usageHook` reads prices from `join(store.dir, "config.yaml")` and records the cost; e2e cases for AC4 and AC5 in activity.test.ts → verify: `cd packages/crew && npx vitest run test/hub/e2e/activity.test.ts`
+- [x] T4: `prices:` block in .crew/config.yaml, the AC6 case in prices.test.ts (reads the repo's config), model.md and SKILL.md updates → verify: `cd packages/crew && npx vitest run test/hub/prices.test.ts test/docs.test.ts && npm run typecheck`
 
 ## Test plan
 **Targeted checks:**
@@ -122,3 +122,4 @@ Latest log:
 - 2026-10-28: status ready → in-progress — branch plan/P-089-price-captured-usage-from-a-per-model
 
 ## Outcome
+Learnings: none
