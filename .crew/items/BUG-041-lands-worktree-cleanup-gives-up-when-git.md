@@ -2,13 +2,13 @@
 id: BUG-041
 type: bug
 title: land's worktree cleanup gives up when git worktree remove fails early
-status: triaged
+status: done
 severity: S3
 priority: P2
 goal: G-007
 plan: P-062
 created: 2026-10-26
-closed:
+closed: 2026-10-28
 origin: P-061
 ---
 
@@ -46,3 +46,4 @@ Every landing hit by this leaves a stale worktree and registration needing manua
 Both this fix and P-061 change land.ts and land.test.ts, so the plan depends on P-061.
 - 2026-10-26: goal hint G-007 (by Arpit Anand)
 - 2026-10-26: status new → triaged — priority P2, severity S3
+- 2026-10-28: status triaged → done — delivered by P-062
