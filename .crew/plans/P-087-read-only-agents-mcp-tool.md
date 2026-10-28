@@ -89,6 +89,19 @@ n/a — internal: one additional read-only MCP tool in the hub bundle; revert th
 
 ## Handoff
 
+_Generated 2026-10-28 by `crew.mjs handoff` from the ledger._
+
+- P-087: Read-only agents MCP tool [in-progress] tasks 0/4 — claimed by Arpit Anand (developer:af52b8c1bddd793f1)
+- last checkpoint 2026-10-28 06:39 at T4 (7507be6) by Arpit Anand; since then 0 commit(s), 3 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs, plugins/crew/skills/hub/references/commands.md
+- don't retry: npx vitest run test/mcp.test.ts, also with --hookTimeout 1700000 — beforeAll timed out at its hard-coded 120_000 under machine load; the CLI flag does not override a per-hook timeout
+- next: T1: Register the read-only `agents` MCP tool in `packages/crew/src/hub/commands/team/agents.reg.ts` → verify: `cd packages/crew && npx tsc --noEmit` passes; `npx vitest run test/hub/registry.test.ts` passes unchanged.
+- evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —
+
+Latest log:
+- 2026-10-28: status draft → ready
+- 2026-10-28: assigned to the developer role
+- 2026-10-28: status ready → in-progress — branch plan/P-087-read-only-agents-mcp-tool
+
 ## Progress log
 
 - 2026-10-28: status draft → ready
