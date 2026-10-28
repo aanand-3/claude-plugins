@@ -5,7 +5,7 @@ goal:
 items: CHORE-029
 touches: packages/crew/src/hub/core/team/presets.ts, packages/crew/src/hub/core/git.ts, packages/crew/src/hub/commands/work/workflow.ts, packages/crew/src/hub/commands/work/planning.ts, .crew/.gitignore, plugins/crew/skills/hub/agents/qa.md, plugins/crew/skills/hub/references/model.md, packages/crew/test/hub/e2e/team.test.ts, packages/crew/test/hub/e2e/guard-writes.test.ts, packages/crew/test/hub/e2e/scratch.test.ts
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-068-qa-scratch-folder-per-plan-ignored
 pr:
 created: 2026-10-26
@@ -100,7 +100,7 @@ QA's prompt still says drafts, but the guard already allows scratch. Rollback: r
 
 _Generated 2026-10-28 by `crew.mjs handoff` from the ledger._
 
-- P-068: QA scratch folder per plan, ignored and cleared at done [in-progress] tasks 6/6 — claimed by Arpit Anand (developer:a888f0d49120d009f)
+- P-068: QA scratch folder per plan, ignored and cleared at done [in-review] tasks 6/6 — claimed by Arpit Anand (developer:a888f0d49120d009f)
 - last checkpoint 2026-10-28 17:44 at T6 (91375ec) by Arpit Anand; since then 0 commit(s), 2 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs
 - ✗ cd packages/crew && npx vitest run test/hub/e2e/team.test.ts test/hub/e2e/guard-writes.test.ts (AC 1) — ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
 - ✓ cd packages/crew && npx vitest run test/hub/e2e/guard-writes.test.ts (AC 1)
@@ -129,6 +129,7 @@ Latest log:
 - 2026-10-28: status accepted → in-progress — land: merging main conflicts in plugins/crew/skills/hub/agents/qa.md
 - 2026-10-28: re-goaled none → G-007 by Arpit Anand: temp
 - 2026-10-28: re-goaled G-007 → none by Arpit Anand: G-007 cut list: housekeeping, plan keeps running (Q-4cc64a)
+- 2026-10-28: status in-progress → in-review
 
 ## Outcome
 QA's paths.write under the lifecycle preset is `.crew/drafts/**, .crew/scratch/**`; `init` writes `scratch/` to
