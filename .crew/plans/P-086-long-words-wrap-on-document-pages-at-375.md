@@ -174,5 +174,6 @@ n/a: a CSS-only change to the hub UI that ships with the next build. To back out
 - 2026-10-28: status draft → ready
 - 2026-10-28: assigned to the developer role
 - 2026-10-28: status ready → in-progress — branch plan/P-086-long-words-wrap-on-document-pages-at-375
+- 2026-10-28: T1 baseline on main (2026-10-28): --widths 375 --themes light,dark: exit 1, 766 findings on 445 routes, all on #/doc routes (span.id in kicker and markdown, h2.docpage__title). --widths 900,1440 --themes light,dark: exit 1, 10 findings, all at 900px, all h2.docpage__title: light and dark each: K-2026-10-26-mostly-right-with-one-change-drop-the-if overflow 244px + sideways scroll (page 1120px); K-2026-10-26-the-docs-hooks-table-src-docs-inventory overflow 30px + sideways scroll (page 906px); K-2026-10-27-this-repos-design-md-stays-at-packages overflow 22px. A first 900/1440 attempt on main exited 2 (scanLayout TypeError reading scrollWidth of null mid-run); the retry ran clean of errors.
 
 ## Outcome
