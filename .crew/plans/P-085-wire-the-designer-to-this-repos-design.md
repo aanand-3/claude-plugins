@@ -75,11 +75,11 @@ This is config and wording only. The code that follows `design.file` already exi
 n/a: touches no `design.ui_paths` path.
 
 ## Tasks
-- [ ] T1: Add `file: packages/crew/docs/design/DESIGN.md` to the `design:` block in `.crew/config.yaml` → verify: AC1 and AC2 commands.
+- [x] T1: Add `file: packages/crew/docs/design/DESIGN.md` to the `design:` block in `.crew/config.yaml` → verify: AC1 and AC2 commands.
   Put it directly after `ui_paths` and extend the comment above the block to mention `design.file`.
-- [ ] T2: Point `plugins/crew/skills/hub/agents/designer.md` at `design.file` → verify: `grep -n "design.file" plugins/crew/skills/hub/agents/designer.md`; `cd packages/crew && npx vitest run test/hub/e2e/agents.test.ts`.
+- [x] T2: Point `plugins/crew/skills/hub/agents/designer.md` at `design.file` → verify: `grep -n "design.file" plugins/crew/skills/hub/agents/designer.md`; `cd packages/crew && npx vitest run test/hub/e2e/agents.test.ts`.
   Name DESIGN.md and studio.json (next to it) as the files at `design.file` (default `docs/design/DESIGN.md`).
-- [ ] T3: Make the same change in `plugins/crew/skills/design/SKILL.md` line 9. → verify:
+- [x] T3: Make the same change in `plugins/crew/skills/design/SKILL.md` line 9. → verify:
   `grep -n "design.file" plugins/crew/skills/design/SKILL.md`; `cd packages/crew && npx vitest run test/plugin/contents.test.ts`.
 
 ## Test plan
@@ -114,9 +114,8 @@ again silently.
 
 _Generated 2026-10-28 by `crew.mjs handoff` from the ledger._
 
-- P-085: Wire the Designer to this repo's DESIGN.md (design.file) [in-progress] tasks 0/3 — claimed by Arpit Anand (developer:a7c0d1c4b8073a774)
+- P-085: Wire the Designer to this repo's DESIGN.md (design.file) [in-progress] tasks 3/3 — claimed by Arpit Anand (developer:a7c0d1c4b8073a774)
 - last checkpoint 2026-10-28 05:31 at T3 (d985b61) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
-- next: T1: Add `file: packages/crew/docs/design/DESIGN.md` to the `design:` block in `.crew/config.yaml` → verify: AC1 and AC2 commands.
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —
 
 Latest log:
@@ -131,3 +130,4 @@ Latest log:
 - 2026-10-28: status ready → in-progress — branch plan/P-085-wire-the-designer-to-this-repos-design
 
 ## Outcome
+Learnings: none
