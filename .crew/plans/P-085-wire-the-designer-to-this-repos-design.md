@@ -5,7 +5,7 @@ goal:
 items: CHORE-027
 touches: .crew/config.yaml, plugins/crew/skills/hub/agents/designer.md, plugins/crew/skills/design/SKILL.md
 depends_on:
-status: draft
+status: ready
 branch: plan/P-085-wire-the-designer-to-this-repos-design
 pr:
 created: 2026-10-27
@@ -56,9 +56,10 @@ What is still missing:
 - [ ] AC1: In the plan worktree, `node plugins/crew/skills/design/scripts/check_design.mjs --export tailwind --root .`
   exits 0 and prints the `:root` tokens from `packages/crew/docs/design/DESIGN.md`. It must not print
   "docs/design/DESIGN.md not found".
-- [ ] AC2: `.crew/config.yaml` still has `design.ui_paths: [packages/crew/ui/**]`, and `design.file` is in the same
-  block. The checker reads both, so `check_design.mjs --all --root .` reports nothing under "crew design lint" or
-  "crew design lock" for that file.
+- [ ] AC2: `grep -A2 "^design:" .crew/config.yaml` shows `ui_paths: [packages/crew/ui/**]` and then
+  `file: packages/crew/docs/design/DESIGN.md` with no blank line between them, and
+  `node plugins/crew/skills/design/scripts/check_design.mjs --all --root .` exits 0 with no "crew design lint" or
+  "crew design lock" line on stderr (warn-mode "off the design tokens" findings are allowed).
 - [ ] AC3: `plugins/crew/skills/hub/agents/designer.md` and `plugins/crew/skills/design/SKILL.md` point to DESIGN.md
   through `design.file` (default `docs/design/DESIGN.md`). `grep -n "design.file"` finds it in both files, and the
   agents e2e test still passes.
@@ -73,11 +74,10 @@ This is config and wording only. The code that follows `design.file` already exi
 n/a: touches no `design.ui_paths` path.
 
 ## Tasks
-- [ ] T1: Add `file: packages/crew/docs/design/DESIGN.md` to the `design:` block in `.crew/config.yaml`, and extend the
-  comment above it to mention `design.file`. → verify: AC1 and AC2 commands.
-- [ ] T2: In `plugins/crew/skills/hub/agents/designer.md`, name DESIGN.md and studio.json as the files at
-  `design.file` (default `docs/design/DESIGN.md`). → verify: `grep -n "design.file" plugins/crew/skills/hub/agents/designer.md`;
-  `cd packages/crew && npx vitest run test/hub/e2e/agents.test.ts`.
+- [ ] T1: Add `file: packages/crew/docs/design/DESIGN.md` to the `design:` block in `.crew/config.yaml` → verify: AC1 and AC2 commands.
+  Put it directly after `ui_paths` and extend the comment above the block to mention `design.file`.
+- [ ] T2: Point `plugins/crew/skills/hub/agents/designer.md` at `design.file` → verify: `grep -n "design.file" plugins/crew/skills/hub/agents/designer.md`; `cd packages/crew && npx vitest run test/hub/e2e/agents.test.ts`.
+  Name DESIGN.md and studio.json (next to it) as the files at `design.file` (default `docs/design/DESIGN.md`).
 - [ ] T3: Make the same change in `plugins/crew/skills/design/SKILL.md` line 9. → verify:
   `grep -n "design.file" plugins/crew/skills/design/SKILL.md`; `cd packages/crew && npx vitest run test/plugin/contents.test.ts`.
 
@@ -102,11 +102,17 @@ again silently.
 ## Risks & open questions
 - `.crew/policy.yaml` has an uncommitted local change on main (`max_agents: 7`). The human should commit or keep it
   while making rollout step 1.
+- `.crew/config.yaml` is not in `hub.shared`, so this plan and P-079 (ready, also touches it) can't be staffed at the
+  same time; whichever starts second waits for the first to land. Both edits are small and disjoint.
+- The checkpoint commit skips `.crew/config.yaml` (known gotcha), so Release must carry the T1 edit into the plan's
+  commit; QA checks AC1/AC2 in the worktree, where `check_design.mjs --root .` reads the worktree's config.
 - With no `frontend_dir`, `check_design.mjs --all` scans every tracked source file, so warn-mode findings show up in
   tool sources (`src/tools/design/*.ts`). This is noise and out of scope; a follow-up can scope it if it gets in the way.
 
 ## Handoff
 
 ## Progress log
+
+- 2026-10-28: status draft → ready
 
 ## Outcome
