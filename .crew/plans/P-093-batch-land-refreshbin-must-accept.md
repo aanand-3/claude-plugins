@@ -1,7 +1,7 @@
 ---
 id: P-093
 title: Batch land: refreshBin must accept the candidate worktree
-goal:
+goal: G-007
 items: BUG-059
 touches: packages/crew/src/hub/commands/work/release.ts, packages/crew/src/hub/commands/work/land-steps.ts, packages/crew/test/hub/e2e/land-batch.test.ts, packages/crew/test/hub/e2e/land-helpers.ts
 depends_on:
@@ -48,5 +48,7 @@ P0 fix for BUG-059 (goal G-007). The batch `land` added by P-079 calls `refreshB
 ## Handoff
 
 ## Progress log
+
+- 2026-10-28: re-goaled none → G-007 by Arpit Anand: BUG-059 is on G-007; the fix unblocks batch landing (FEAT-071)
 
 ## Outcome

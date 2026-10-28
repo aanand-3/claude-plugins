@@ -50,3 +50,4 @@ Batch landing (FEAT-071 / P-079) can't land anything in this repo. The workaroun
 - Found by the executive's batch land on 2026-10-28 (hub 390dca73).
 - 2026-10-28: goal hint G-007 (by Arpit Anand)
 - 2026-10-28: status new → triaged — priority P0, severity S2
+- 2026-10-28: re-goaled G-007 → G-007 by Arpit Anand: BUG-059 is on G-007; the fix unblocks batch landing (FEAT-071)
