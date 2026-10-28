@@ -86,11 +86,11 @@ unchanged. Modules stay under 300 lines.
 ## Design
 
 ## Tasks
-- [ ] T1: Add `waive` to `checkpoint` (validation, `mayWaive`, no commit, the waived verify entry) and the CLI option and usage line → verify: waive.test.ts cases for AC1, AC2 and AC7 pass, along with test/hub/registry.test.ts
-- [ ] T2: Add `settled()` and use it in evidenceProblems, dispatch, roles and inbox → verify: waive.test.ts cases for AC3, AC5 and AC6 pass, along with test/hub/e2e/dispatch.test.ts and test/hub/e2e/inbox.test.ts
-- [ ] T3: Show `waived` in recovery and context → verify: waive.test.ts AC4 case and test/hub/e2e/execution.test.ts, test/hub/e2e/context.test.ts pass
-- [ ] T4: Document it: model.md Execution state (one sentence) and pm.md (one bullet: when a criterion can't be checked and you accept that, `crew.mjs checkpoint P-### --waive "<why; the question>" --ac <n>`; never for a criterion that failed for real) → verify: test/docs.test.ts passes; `grep -n -- "--waive" plugins/crew/skills/hub/agents/pm.md plugins/crew/skills/hub/references/model.md` finds both
-- [ ] T5: Keep the line limit → verify: `wc -l` on every touched src file shows < 300
+- [x] T1: Add `waive` to `checkpoint` (validation, `mayWaive`, no commit, the waived verify entry) and the CLI option and usage line → verify: waive.test.ts cases for AC1, AC2 and AC7 pass, along with test/hub/registry.test.ts
+- [x] T2: Add `settled()` and use it in evidenceProblems, dispatch, roles and inbox → verify: waive.test.ts cases for AC3, AC5 and AC6 pass, along with test/hub/e2e/dispatch.test.ts and test/hub/e2e/inbox.test.ts
+- [x] T3: Show `waived` in recovery and context → verify: waive.test.ts AC4 case and test/hub/e2e/execution.test.ts, test/hub/e2e/context.test.ts pass
+- [x] T4: Document it: model.md Execution state (one sentence) and pm.md (one bullet: when a criterion can't be checked and you accept that, `crew.mjs checkpoint P-### --waive "<why; the question>" --ac <n>`; never for a criterion that failed for real) → verify: test/docs.test.ts passes; `grep -n -- "--waive" plugins/crew/skills/hub/agents/pm.md plugins/crew/skills/hub/references/model.md` finds both
+- [x] T5: Keep the line limit → verify: `wc -l` on every touched src file shows < 300
 
 ## Test plan
 **Targeted checks:**

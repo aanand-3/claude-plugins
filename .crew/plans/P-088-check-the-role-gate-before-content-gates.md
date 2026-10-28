@@ -103,3 +103,6 @@ Latest log:
 - 2026-10-28: status ready → in-progress — branch plan/P-088-check-the-role-gate-before-content-gates
 
 ## Outcome
+`move()` now checks the policy's role gate (`requireRole()`, split out of `authorize()`, which still calls it) before the
+transition's content gate; human gates keep their place after it.
+Learnings: none
