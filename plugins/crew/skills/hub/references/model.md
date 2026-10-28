@@ -199,9 +199,10 @@ There is no stored order: set priorities when approving, and `focus G-###` jumps
 **Severity (bugs):** S1 outage, data loss or security · S2 major, no workaround · S3 has a workaround · S4 cosmetic. The default priority follows severity (S1→P0, S2→P1, S3→P2, S4→P3).
 **Ranking** (`next`, `status`): P0 first, then the focus goal, then priority → goal → ID.
 
-**Goal links** are decided at triage, not capture. `new-item` links no goal: it records the item's `origin:` — `--origin
-P-###|ID`, else the plan whose worktree it runs in, else the plan of the run's one open claim — and a `--goal` is checked,
-then kept in Notes as `goal hint G-###`. A bug is refused at capture unless Steps to reproduce, Expected and Actual have
+**Goal links** are decided at triage, not capture. `new-item` records the item's `origin:` — `--origin P-###|ID`, else
+the plan whose worktree it runs in, else the plan of the run's one open claim — and checks a `--goal`. A capture that also
+triages the item (`--priority` or `--severity`, and the `item.triaged` gate passes) links that goal; otherwise it is kept
+in Notes as `goal hint G-###`. A bug is refused at capture unless Steps to reproduce, Expected and Actual have
 content. `triage` on an item without a goal prints the suggested goal (the origin's goal, else the latest hint); `triage
 --goal G-###` links it. A goal's Breakdown still links the items it creates. Changing or clearing a goal is a re-goal (the
 PM's: `item.regoaled`, `plan.regoaled`): `regoal ID G-###|none --note TXT`, or `triage --goal G-###|none --note TXT`. Each

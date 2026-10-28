@@ -12019,10 +12019,7 @@ ${why}
   if (empty.length) fail(`A bug needs Steps to reproduce, Expected and Actual; empty: ${empty.join(", ")}. Nothing was created.`);
   if (!splitSections(probe.text)[1].some(([h]) => probe.hasContent(h))) fail("The item has no content. Nothing was created.");
   const it = createItem(store, prefix, title, body2, fields);
-  if (origin) it.set("origin", origin);
-  if (hint) it.appendLog(`goal hint ${hint} (by ${store.ledger.who.actor})`, "Notes");
-  if (origin || hint) it.save();
-  if (draftFile) store.consume(draftFile, o.keep);
+  let triageNow = false;
   if (o.priority || severity) {
     const problems = triageProblems(it);
     const human = approvalReason(store.policy.policy, "item.triaged");
@@ -12030,8 +12027,14 @@ ${why}
     if (problems.length) store.say(`note: ${it.id} stays new until triaged \u2014 ${problems.join("; ")}`);
     else if (human) store.say(`note: ${it.id} stays new \u2014 triage is ${human}: \`triage ${it.id} --approved-by <name>\``);
     else if (role && mine !== role) store.say(`note: ${it.id} stays new \u2014 the ${role} triages it`);
-    else move(store, it.id, "triaged", summary(it));
+    else triageNow = true;
   }
+  if (origin) it.set("origin", origin);
+  if (hint && triageNow) it.set("goal", hint);
+  else if (hint) it.appendLog(`goal hint ${hint} (by ${store.ledger.who.actor})`, "Notes");
+  if (origin || hint) it.save();
+  if (draftFile) store.consume(draftFile, o.keep);
+  if (triageNow) move(store, it.id, "triaged", summary(it));
 }
 var summary = (it) => ["priority", "severity"].filter((k) => it.get(k)).map((k) => `${k} ${it.get(k)}`).join(", ");
 function triage(store, itemId, o = {}) {

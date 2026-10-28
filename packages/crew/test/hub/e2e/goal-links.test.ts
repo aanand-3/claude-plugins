@@ -1,5 +1,5 @@
-/** The hub, end to end — goal links belong to triage (P-055, FEAT-048, BUG-037): capture records an origin and a goal
- * hint, triage suggests and links the goal (and clears it), `regoal` moves items and plans with their items. */
+/** The hub, end to end — goal links belong to triage (P-055, FEAT-048, BUG-037, BUG-046): capture records an origin and a
+ * goal hint (linked when the capture also triages), triage suggests and links the goal (and clears it), `regoal` moves items and plans with their items. */
 import { readdirSync } from "node:fs";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -72,17 +72,61 @@ describe("capture", () => {
     expect(front(item(repo, "BUG-001"), "goal")).toBe("");
   });
 
-  it("--goal is checked, then kept only as a hint in Notes (AC1)", () => {
+  it("--goal is checked, then linked when the capture also triages (AC1)", () => {
     hub();
     let r = tr(repo, "new-item", "feat", "Nope", "--why", "y", "--goal", "G-009");
     expect(r.returncode).not.toBe(0);
     expect(r.stderr).toContain("Goal G-009 does not exist.");
+    expect(readdirSync(join(repo.path, ".crew/items")).filter((f) => f.endsWith(".md"))).toEqual([]);
     r = tr(repo, "new-item", "feat", "Dark mode", "--why", "users asked", "--goal", "g-001", "--priority", "P2");
     expect(r.returncode, r.stderr).toBe(0);
     const text = item(repo, "FEAT-001");
-    expect(front(text, "goal")).toBe("");
-    expect(text).toMatch(/- \d{4}-\d\d-\d\d: goal hint G-001 \(by .+\)/);
-    expect(text).toContain("status: triaged"); // intake triage still runs, without a goal
+    expect(front(text, "goal")).toBe("G-001");
+    expect(text).not.toContain("goal hint");
+    expect(text).toContain("status: triaged");
+  });
+
+  it("intake triage links --goal (BUG-046); a capture that stays new keeps it as a hint", () => {
+    hub();
+    let r = newBug(repo, "Crash", "--goal", "G-001", "--severity", "S3"); // AC2
+    expect(r.returncode, r.stderr).toBe(0);
+    let text = item(repo, "BUG-001");
+    expect(text).toContain("status: triaged");
+    expect(front(text, "goal")).toBe("G-001");
+    expect(front(text, "priority")).toBe("P2");
+    expect(text).not.toContain("goal hint");
+
+    const hinted = (id: string) => {
+      const t = item(repo, id);
+      expect(t, id).toContain("status: new");
+      expect(front(t, "goal"), id).toBe("");
+      expect(t, id).toMatch(/- \d{4}-\d\d-\d\d: goal hint G-001 \(by .+\)/);
+    };
+    r = tr(repo, "new-item", "feat", "No priority", "--why", "y", "--goal", "G-001"); // AC3: no triage decision
+    expect(r.returncode, r.stderr).toBe(0);
+    hinted("FEAT-001");
+    r = tr(repo, "new-item", "spike", "Rate limits", "--why", "y", "--goal", "G-001", "--priority", "P1"); // gate fails
+    expect(r.returncode, r.stderr).toBe(0);
+    expect(r.stdout).toContain("SPIKE-001 stays new until triaged");
+    hinted("SPIKE-001");
+
+    let res = mcpCall(repo, "new_item", { type: "feat", title: "Over MCP", why: "y", goal: "G-001", priority: "P2" }); // AC5
+    expect(res.isError, JSON.stringify(res)).toBeFalsy();
+    text = item(repo, "FEAT-002");
+    expect(front(text, "goal")).toBe("G-001");
+    expect(text).not.toContain("goal hint");
+    res = mcpCall(repo, "new_item", { type: "feat", title: "Hint over MCP", why: "y", goal: "G-001" });
+    expect(res.isError, JSON.stringify(res)).toBeFalsy();
+    hinted("FEAT-003");
+
+    repo.write(".crew/policy.yaml", "preset: lifecycle\n"); // AC3: the caller is not the pm
+    r = tr(repo, "--as", "developer", "new-item", "feat", "Not mine", "--why", "y", "--goal", "G-001", "--priority", "P2");
+    expect(r.returncode, r.stderr).toBe(0);
+    expect(r.stdout).toContain("FEAT-004 stays new — the pm triages it");
+    hinted("FEAT-004");
+    r = tr(repo, "--as", "pm", "new-item", "feat", "Mine", "--why", "y", "--goal", "G-001", "--priority", "P2");
+    expect(r.returncode, r.stderr).toBe(0);
+    expect(front(item(repo, "FEAT-005"), "goal")).toBe("G-001");
   });
 
   it("a goal's Breakdown still links the items it creates", () => {

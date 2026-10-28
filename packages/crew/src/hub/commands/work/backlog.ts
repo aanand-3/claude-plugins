@@ -62,7 +62,7 @@ export function newItem(store: Store, typ: string, title: string, draftPath: str
   const [draftFile, body] = draftPath ? store.readDraft(draftPath, "item") : [null, `## Summary\n${why}\n`];
   const severity = checkSeverity(o.severity);
   if (severity && prefix !== "BUG") fail("--severity applies to bugs only.");
-  const hint = store.checkRef(o.goal, "goal"); // a goal is linked at triage; at capture it is only a hint
+  const hint = store.checkRef(o.goal, "goal"); // linked if this capture also triages; otherwise only a hint
   const origin = itemOrigin(store, o.origin);
   const fields = { goal: "", priority: Store.checkPriority(o.priority) || (SEVERITY_PRIORITY[severity] ?? ""), severity };
   const probe = store.build(`item-${ITEM_TYPES[prefix]}.md`, body, { id: "X", title, ...fields });
@@ -70,10 +70,7 @@ export function newItem(store: Store, typ: string, title: string, draftPath: str
   if (empty.length) fail(`A bug needs Steps to reproduce, Expected and Actual; empty: ${empty.join(", ")}. Nothing was created.`);
   if (!splitSections(probe.text)[1].some(([h]) => probe.hasContent(h))) fail("The item has no content. Nothing was created.");
   const it = createItem(store, prefix, title, body, fields);
-  if (origin) it.set("origin", origin);
-  if (hint) it.appendLog(`goal hint ${hint} (by ${store.ledger.who.actor})`, "Notes");
-  if (origin || hint) it.save();
-  if (draftFile) store.consume(draftFile, o.keep);
+  let triageNow = false;
   if (o.priority || severity) { // a triage decision given at intake: apply it if the gate passes
     const problems = triageProblems(it);
     const human = approvalReason(store.policy.policy, "item.triaged");
@@ -81,8 +78,14 @@ export function newItem(store: Store, typ: string, title: string, draftPath: str
     if (problems.length) store.say(`note: ${it.id} stays new until triaged — ${problems.join("; ")}`);
     else if (human) store.say(`note: ${it.id} stays new — triage is ${human}: \`triage ${it.id} --approved-by <name>\``);
     else if (role && mine !== role) store.say(`note: ${it.id} stays new — the ${role} triages it`);
-    else move(store, it.id, "triaged", summary(it));
+    else triageNow = true;
   }
+  if (origin) it.set("origin", origin);
+  if (hint && triageNow) it.set("goal", hint);
+  else if (hint) it.appendLog(`goal hint ${hint} (by ${store.ledger.who.actor})`, "Notes");
+  if (origin || hint) it.save();
+  if (draftFile) store.consume(draftFile, o.keep);
+  if (triageNow) move(store, it.id, "triaged", summary(it));
 }
 
 export interface TriageOptions { priority?: string; severity?: string; goal?: string; reject?: string; note?: string; approvedBy?: string }

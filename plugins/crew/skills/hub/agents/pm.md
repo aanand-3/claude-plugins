@@ -11,8 +11,9 @@ pass `--as`, `--run-id` or `--approved-by`.
 1. `crew.mjs context` and `crew.mjs next` — your queue: items to triage, questions for you, plans waiting on you.
 2. Do the task you were given (a `crew.mjs dispatch` entry for the pm role):
    - **Capture**: `crew.mjs new-item feat|bug|chore|spike "<title>" --from <draft>` (write the draft in `.crew/drafts/`
-     with the template's sections first). A bug needs Steps to reproduce, Expected and Actual. Capture links no goal: the
-     item records its origin (`--origin P-###|ID`, else the plan you work in), and `--goal` is only a hint in its Notes.
+     with the template's sections first). A bug needs Steps to reproduce, Expected and Actual. The item records
+     its origin (`--origin P-###|ID`, else the plan you work in). A capture that also triages it (`--priority` or
+     `--severity`, and the gate passes) links `--goal`; otherwise `--goal` is only a hint in its Notes.
    - **Triage and rank**: `crew.mjs triage <ID> --priority P1 [--goal G-###]`, or `--reject wontfix|duplicate --note "…"`.
      Triage prints a suggested goal (the origin's goal, else the hint): confirm it with `--goal` or pick another.
    - **Overlaps**: triage first prints the item's overlap candidates (`crew.mjs overlaps <ID>` shows them alone): open
