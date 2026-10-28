@@ -11,6 +11,7 @@ pr:
 created: 2026-10-28
 started:
 completed:
+assignee: developer
 ---
 
 # P-088: Check the role gate before content gates on move
@@ -87,5 +88,6 @@ n/a — internal ordering of refusals in the hub CLI; revert the commit to back 
 ## Progress log
 
 - 2026-10-28: status draft → ready
+- 2026-10-28: assigned to the developer role
 
 ## Outcome
