@@ -46,3 +46,4 @@ In commitWork, when `<worktree>/.git` MERGE_HEAD exists: refuse on unmerged path
 resolve, checkpoint gives a two-parent commit, the next land merges cleanly.
 
 ## Notes
+- 2026-10-28: BUG-063 duplicate: same commitWork --only failure; also note the catch's git reset -q unstages the resolved merge files, fix must not reset the index during a merge
