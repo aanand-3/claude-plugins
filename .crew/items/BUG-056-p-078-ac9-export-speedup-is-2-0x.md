@@ -33,3 +33,4 @@ Output identical every time. Main vs bundle (ms), ratio: 7143/4048 0.57; 6922/33
 ## Impact
 
 ## Notes
+- 2026-10-28: Architect: not a code defect — AC9's threshold was a single-run bound at the expected value. AC9 amended on P-078 to median ratio <= 0.55 over >=5 pairs (QA's own data: median 0.505). PM: close as wontfix once QA re-records AC9 under the new wording (reopen as a P-078 review change if the median exceeds 0.55).
