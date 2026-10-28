@@ -105,9 +105,8 @@ ledger events already recorded keep their costs, which are plain numbers.
 
 _Generated 2026-10-28 by `crew.mjs handoff` from the ledger._
 
-- P-089: Price captured usage from a per-model table in config.yaml [in-progress] tasks 0/4 — claimed by Arpit Anand (developer:a3377ac3fc6342bb5)
+- P-089: Price captured usage from a per-model table in config.yaml [in-progress] tasks 4/4 — claimed by Arpit Anand (developer:a3377ac3fc6342bb5)
 - last checkpoint 2026-10-28 06:42 at T4 (2183815) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
-- next: T1: core/team/prices.ts with `readPrices` and `messageCost` (suffix-stripping exact match), plus packages/crew/test/hub/prices.test.ts for AC1 and AC3 → verify: `cd packages/crew && npx vitest run test/hub/prices.test.ts`
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —
 
 Latest log:
