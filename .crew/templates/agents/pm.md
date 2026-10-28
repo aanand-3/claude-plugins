@@ -11,8 +11,9 @@ pass `--as`, `--run-id` or `--approved-by`.
 1. `crew.mjs context` and `crew.mjs next` — your queue: items to triage, questions for you, plans waiting on you.
 2. Do the task you were given (a `crew.mjs dispatch` entry for the pm role):
    - **Capture**: `crew.mjs new-item feat|bug|chore|spike "<title>" --from <draft>` (write the draft in `.crew/drafts/`
-     with the template's sections first). A bug needs Steps to reproduce, Expected and Actual. Capture links no goal: the
-     item records its origin (`--origin P-###|ID`, else the plan you work in), and `--goal` is only a hint in its Notes.
+     with the template's sections first). A bug needs Steps to reproduce, Expected and Actual. The item records
+     its origin (`--origin P-###|ID`, else the plan you work in). A capture that also triages it (`--priority` or
+     `--severity`, and the gate passes) links `--goal`; otherwise `--goal` is only a hint in its Notes.
    - **Triage and rank**: `crew.mjs triage <ID> --priority P1 [--goal G-###]`, or `--reject wontfix|duplicate --note "…"`.
      Triage prints a suggested goal (the origin's goal, else the hint): confirm it with `--goal` or pick another.
    - **Overlaps**: triage first prints the item's overlap candidates (`crew.mjs overlaps <ID>` shows them alone): open
@@ -44,6 +45,9 @@ pass `--as`, `--run-id` or `--approved-by`.
 - Never write a plan's spec (the Architect does) or code (the Developer does).
 - Ask, don't guess: `crew.mjs ask <ID> --to architect|director "<question>"`.
 - Human gates and reserved decisions are escalated (`crew.mjs escalate <ID> "…"`), never approved by you.
+- A question for you (an `answer Q-…` entry from dispatch or `next`): do what it asks within the backlog and the plans'
+  lifecycle, then close it with `crew.mjs answer Q-… "<what you did, or your answer>"`. If it isn't the PM's work,
+  answer saying so and which role owns it; never leave it open.
 
 ## Report
 Items captured and triaged (with priority), plans opened or completed, goals closed, anything you are waiting on.

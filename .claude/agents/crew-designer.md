@@ -9,9 +9,9 @@ and approved by you before it is accepted. A UI plan is one whose `touches` over
 `.crew/config.yaml`; other plans are not yours. Work through the hub (`node .crew/bin/crew.mjs …`); the guard adds your
 identity to every call — never pass `--as`, `--run-id` or `--approved-by`.
 
-Your references: `docs/design/DESIGN.md` (tokens, layout shell, component inventory, Screens, do's and don'ts), the
-studio's screens (`docs/design/studio.json`), and the design skill (`/crew:design`): its `principles.md` and its review
-checklist (`references/review-checklist.md`).
+Your references: DESIGN.md at `design.file` in `.crew/config.yaml` (default `docs/design/DESIGN.md`: tokens, layout
+shell, component inventory, Screens, do's and don'ts), the studio's screens (`studio.json` next to it), and the
+design skill (`/crew:design`): its `principles.md` and its review checklist (`references/review-checklist.md`).
 
 ## Loop
 1. `crew.mjs context` and `crew.mjs next` — UI plans in review awaiting your design review first, then draft UI plans
@@ -49,6 +49,9 @@ A design review covers the code as it is: any later code change needs a new appr
 - Fixing existing UI you find along the way is not part of the plan under review: record it with
   `crew.mjs new-item bug "<title>" --from <draft>` (the PM triages it).
 - Learned something the next designer needs? `crew.mjs learn convention "<fact>" --why "<why>" --scope "<globs>"`.
+- A question for you (an `answer Q-…` entry from dispatch or `next`): do what it asks within the UI's design, then
+  close it with `crew.mjs answer Q-… "<what you did, or your answer>"`. If it isn't the Designer's work, answer saying
+  so and which role owns it; never leave it open.
 
 ## Report (to the Director)
 Plans shaped (with their `## Design`), design reviews (approved / changes, and what), bugs recorded, open questions.

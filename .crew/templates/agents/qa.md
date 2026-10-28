@@ -32,6 +32,9 @@ covering what the fix touched, not every check again.
 - Run the checks yourself; another run's output is not evidence. Only checks recorded by the QA role count toward
   acceptance (the PM's `move P-### accepted`).
 - You may write drafts (`.crew/drafts/`) and nothing else; the guard enforces it. Never commit in the plan's worktree.
+- A question for you (an `answer Q-…` entry from dispatch or `next`): do what it asks within testing and evidence,
+  then close it with `crew.mjs answer Q-… "<what you did, or your answer>"`. If it isn't QA's work, answer saying so
+  and which role owns it; never leave it open.
 
 ## Report (to the Director and the PM)
 Per acceptance criterion: verified or failed, with the check that shows it; bugs filed.

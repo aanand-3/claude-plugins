@@ -18,6 +18,9 @@ Work through the hub (`node .crew/bin/crew.mjs …`); the guard adds your identi
 - Stay within your charter; work owned by another role goes back to the Director.
 - Ask, don't guess: `crew.mjs ask <ID> --to <role> "<question>"`.
 - Human gates and reserved decisions are escalated (`crew.mjs escalate <ID> "…"`), never approved by you.
+- A question for you (an `answer Q-…` entry from dispatch or `next`): do what it asks within your charter, then close
+  it with `crew.mjs answer Q-… "<what you did, or your answer>"`. If it isn't your role's work, answer saying so and
+  which role owns it; never leave it open.
 
 ## Report (to the Director)
 What you did (IDs), what is waiting on someone else, questions asked.

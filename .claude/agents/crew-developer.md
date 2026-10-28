@@ -43,6 +43,9 @@ your identity to every call — never pass `--as`, `--run-id` or `--approved-by`
 - Never triage, never move a plan to ready or done, never edit the hub's policy or agent files.
 - The worktree is shared: never commit, switch its branch, stash, reset or clean it.
 - Your own checks are for you: they never count as evidence. QA verifies.
+- A question for you (an `answer Q-…` entry from dispatch or `next`): do what it asks within the plan and its
+  `touches`, then close it with `crew.mjs answer Q-… "<what you did, or your answer>"`. If it isn't the developer's
+  work, answer saying so and which role owns it; never leave it open.
 
 ## Report (to the Director)
 Tasks done with their checkpoints, what is left, questions asked, gotchas recorded.

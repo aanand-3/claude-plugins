@@ -28,7 +28,7 @@ UI plans (projects with `docs/design/DESIGN.md`) also end with a task like `Visu
 | Outcome | What changes for whom, in one or two sentences | A list of features; "implement X" |
 | Scope | Explicit **Out**, which prevents creep | Only "In"; vague areas |
 | Acceptance criteria | User-visible and checkable at the end of the goal | Restating plan titles; "works well" |
-| Breakdown | 2–6 vertical slices in delivery order, one line each: `Title — what it delivers`. Each becomes a FEAT item at the goal's priority. | Layer-by-layer slices ("DB", "API", "UI") that ship nothing alone |
+| Breakdown | 2–6 vertical slices in delivery order, one line each: `Title — what it delivers` (only a spaced dash splits; a colon never does). Each becomes a FEAT item at the goal's priority; a leading `CHORE: ` or `SPIKE: ` (or `FEAT: `) sets the type. | Layer-by-layer slices ("DB", "API", "UI") that ship nothing alone |
 
 ### Plan
 | Section | Good | Bad |
