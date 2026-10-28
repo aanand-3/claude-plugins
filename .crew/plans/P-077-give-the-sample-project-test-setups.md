@@ -5,7 +5,7 @@ goal:
 items: BUG-049
 touches: packages/crew/test/setup/sample.ts, packages/crew/test/view.test.ts, packages/crew/test/mcp.test.ts
 depends_on:
-status: in-review
+status: accepted
 branch: plan/P-077-give-the-sample-project-test-setups
 pr:
 created: 2026-10-26
@@ -153,6 +153,7 @@ Latest log:
 - 2026-10-26: PM: AC4 accepted as not reproduced (harness/permission limit; plan risks allow). No human run requested. Red AC5 (worktree root) and AC4 wrapper entries are harness failures, not product failures.
 - 2026-10-26: BUG-052: hub has no not-reproduced result; PM-accepted AC4 stays red
 - 2026-10-27: PM: AC1-3,5 accepted on QA evidence (36c2774). AC4 waived as not reproduced (Q-ddf44d). move accepted refused by gates: unchecked T3 and AC4 latest check fail; no non-force waive path (BUG-052). Needs human decision on --force.
+- 2026-10-28: status in-review → accepted (approved by Arpit Anand)
 
 ## Outcome
 Learnings: none
