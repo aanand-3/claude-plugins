@@ -5,7 +5,7 @@ goal:
 items: CHORE-029
 touches: packages/crew/src/hub/core/team/presets.ts, packages/crew/src/hub/core/git.ts, packages/crew/src/hub/commands/work/workflow.ts, packages/crew/src/hub/commands/work/planning.ts, .crew/.gitignore, plugins/crew/skills/hub/agents/qa.md, plugins/crew/skills/hub/references/model.md, packages/crew/test/hub/e2e/team.test.ts, packages/crew/test/hub/e2e/guard-writes.test.ts, packages/crew/test/hub/e2e/scratch.test.ts
 depends_on:
-status: in-review
+status: accepted
 branch: plan/P-068-qa-scratch-folder-per-plan-ignored
 pr:
 created: 2026-10-26
@@ -117,6 +117,7 @@ Latest log:
 - 2026-10-27: status ready → in-progress — branch plan/P-068-qa-scratch-folder-per-plan-ignored
 - 2026-10-27: status in-progress → in-review
 - 2026-10-28: QA: AC1-6 verified. Note: combined AC1 checkpoint (team+guard-writes, ~110s) records ✗ with no output through the hub though it passes 19/19 directly; per-file checkpoints pass
+- 2026-10-28: status in-review → accepted
 
 ## Outcome
 QA's paths.write under the lifecycle preset is `.crew/drafts/**, .crew/scratch/**`; `init` writes `scratch/` to
