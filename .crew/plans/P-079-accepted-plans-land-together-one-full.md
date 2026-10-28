@@ -5,7 +5,7 @@ goal: G-007
 items: FEAT-071
 touches: packages/crew/src/hub/commands/work/land.ts, packages/crew/src/hub/commands/work/land-steps.ts, packages/crew/src/hub/commands/work/batch.ts, packages/crew/src/hub/commands/work/suite.ts, packages/crew/src/hub/commands/work/suite.reg.ts, packages/crew/test/hub/e2e/land-batch.test.ts, packages/crew/test/hub/e2e/land-helpers.ts, packages/crew/test/hub/e2e/land.test.ts, packages/crew/test/hub/e2e/suite.test.ts, plugins/crew/skills/hub/agents/release.md, plugins/crew/docs/reference.md, .crew/config.yaml
 depends_on: P-062
-status: in-progress
+status: in-review
 branch: plan/P-079-accepted-plans-land-together-one-full
 pr:
 created: 2026-10-27
@@ -96,7 +96,7 @@ land-batch.test.ts uses land-helpers' `hub()`, and each plan changes a different
 
 _Generated 2026-10-28 by `crew.mjs handoff` from the ledger._
 
-- P-079: Accepted plans land together: one full-suite run per batch [in-progress] tasks 6/6 — claimed by Arpit Anand (developer:a38f207eed7b1d14d)
+- P-079: Accepted plans land together: one full-suite run per batch [in-review] tasks 6/6 — claimed by Arpit Anand (developer:a38f207eed7b1d14d)
 - last checkpoint 2026-10-28 11:35 at T6 (c8847ae) by Arpit Anand; since then 0 commit(s), 3 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs, plugins/crew/skills/hub/references/commands.md
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —, AC7 —, AC8 —
 
@@ -110,5 +110,9 @@ Latest log:
 - 2026-10-27: status draft → ready
 - 2026-10-28: assigned to the developer role
 - 2026-10-28: status ready → in-progress — branch plan/P-079-accepted-plans-land-together-one-full
+- 2026-10-28: status in-progress → in-review
 
 ## Outcome
+`land` (no ID) with two or more landable plans now lands them in batches (commands/work/batch.ts): each plan is prepared in its worktree, stacked in merge order on `.claude/worktrees/land-batch-<pid>` (detached at the base, `hub.setup` first), one rebuilt squash commit per plan, one `hub.full_suite` run recorded with `plans`, then one commit per plan on the base with one fast-forward. A plan that conflicts with earlier ones or fails its build on top of them leaves the batch (log line) with its dependants; a red suite is bisected and only the first red plan bounces (note names the batch), the green prefix lands, the rest go into the next batch. A moved branch, a base gaining code 3 rounds, or a failed `hub.setup` stop the batch with nothing landed. Shared steps moved to land-steps.ts; `runSuite`/`suites` record and show `plans`. A single plan and `land P-###` keep the old path.
+Deviation from the Test plan (AC3): a bisect over 3 plans with plan 2 red needs two bisect runs ([P-001] green, then [P-001,P-002] red) to tell plan 2 from plan 3, so the AC3 case expects four suite records, not three (FYI Q-4dc057 to the Architect). P-001 still lands with no run beyond the batch and the bisect.
+Learnings: yamlBlock strips a trailing quote from `hub:` values, so a test command ending in a quoted path breaks (K-2026-10-28-yamlblock-hub-block-of-crew-config-yaml).
