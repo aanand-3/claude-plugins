@@ -5,7 +5,7 @@ goal: G-007
 items: BUG-057
 touches: packages/crew/src/tools/design/layout_sweep.ts, packages/crew/test/tools/layout-sweep.test.ts, packages/crew/test/hub/e2e/playbook-home.test.ts
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-092-harden-flaky-layout-sweep-ac5
 pr:
 created: 2026-10-28
@@ -156,7 +156,7 @@ that loads slowly now waits up to 60 s per route instead of reporting a clean pa
 
 _Generated 2026-10-28 by `crew.mjs handoff` from the ledger._
 
-- P-092: Harden flaky layout-sweep AC5 and playbook-home setup [in-progress] tasks 4/4 — claimed by Arpit Anand (developer:ab69342357c8230a8)
+- P-092: Harden flaky layout-sweep AC5 and playbook-home setup [in-review] tasks 4/4 — claimed by Arpit Anand (developer:ab69342357c8230a8)
 - last checkpoint 2026-10-28 08:00 at T4 (25eee19) by Arpit Anand; since then 0 commit(s), 1 uncommitted file(s): plugins/crew/skills/design/scripts/layout_sweep.mjs
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —, AC7 —, AC8 —
 
@@ -174,5 +174,7 @@ Latest log:
 - 2026-10-28: assigned to the developer role
 - 2026-10-28: status ready → in-progress — branch plan/P-092-harden-flaky-layout-sweep-ac5
 - 2026-10-28: developer T4 (AC6, AC7): 16 busy-loop node processes on the 8-core Mac, npx vitest run test/tools/layout-sweep.test.ts test/hub/e2e/playbook-home.test.ts. Branch: run 1 9/9 pass (130 s), run 2 9/9 (128 s), run 3 9/9 (111 s). Base f0a2f65 (base layout_sweep.ts and both base test files, built): 7/7 pass (61 s) under the same load, so the AC5 flake was not reproduced in this base run; AC1 is the deterministic regression (with the base sweep built, AC1 and AC2 fail: the base prints clean and exits 0 on both). The 4000 ms delay was enough, not raised. Busy loops killed, branch files restored from HEAD and rebuilt.
+- 2026-10-28: status in-progress → in-review
 
 ## Outcome
+Learnings: K-2026-10-28-a-test-proxy-in-front-of-crew-mjs-ui
