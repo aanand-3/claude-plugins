@@ -5,7 +5,7 @@ goal: G-007
 items: BUG-057
 touches: packages/crew/src/tools/design/layout_sweep.ts, packages/crew/test/tools/layout-sweep.test.ts, packages/crew/test/hub/e2e/playbook-home.test.ts
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-092-harden-flaky-layout-sweep-ac5
 pr:
 created: 2026-10-28
@@ -156,7 +156,7 @@ that loads slowly now waits up to 60 s per route instead of reporting a clean pa
 
 _Generated 2026-10-28 by `crew.mjs handoff` from the ledger._
 
-- P-092: Harden flaky layout-sweep AC5 and playbook-home setup [in-progress] tasks 4/4 — claimed by Arpit Anand (developer:ab69342357c8230a8)
+- P-092: Harden flaky layout-sweep AC5 and playbook-home setup [in-review] tasks 4/4 — claimed by Arpit Anand (developer:ab69342357c8230a8)
 - last checkpoint 2026-10-28 08:23 at T2 (8a39b0d) by Arpit Anand; since then 0 commit(s), 1 uncommitted file(s): plugins/crew/skills/design/scripts/layout_sweep.mjs
 - ✓ cd packages/crew && npm run typecheck (AC 8)
 - ✓ cd packages/crew && npm run build >/dev/null 2>&1 && npx vitest run test/tools/layout-sweep.test.ts (AC 1)
@@ -192,6 +192,7 @@ Latest log:
 - 2026-10-28: status in-progress → in-review
 - 2026-10-28: review: changes requested — sweepThroughProxy (packages/crew/test/tools/layout-sweep.test.ts) leaks the hub UI server, the sweep and its Chrome when the test times out (BUG-058). Its try/finally only runs once the awaited promise settles; on a vitest timeout (the hub never printing 'Hub UI at', or a slow sweep under load) vitest abandons the test, the worker exits, and the children are reparented to pid 1. Reproduced at 25eee19: npx vitest run test/tools/layout-sweep.test.ts -t '4 s late' --testTimeout 3000 left 'crew.mjs ui --no-open --port 0' (ppid 1), 'layout_sweep.mjs --url ...' (ppid 1) and its headless Chrome running 45 s later (I stopped them). Fix in the test file only: register the cleanup with vitest so it runs on every exit path, timeout included (e.g. push the children and the proxy to a list that an afterEach drains, as live-ui.test.ts does, or onTestFinished): close the proxy, kill the hub, and stop the sweep in a way that does not orphan its Chrome (layout_sweep has no SIGTERM handler, so a plain kill skips its finally: spawn the sweep with detached: true and kill its process group, or equivalent). Also reject the hub-start promise if the hub errors on spawn. Verify: the -t '4 s late' --testTimeout 3000 run above, then ps -axo pid,ppid,command | grep -E 'crew.mjs ui --no-open|layout_sweep.mjs|crew-sweep-' shows none from the run; then the targeted file passes (5 cases). The layout_sweep.ts change is approved as is: the readyState-complete and '#root:empty' conditions are sound (no #root means no match; a static stub page over --url reaches complete), so P-086's stub case is unaffected.
 - 2026-10-28: status in-review → in-progress — changes requested: sweepThroughProxy (packages/crew/test/tools/layout-sweep.test.ts) leaks the hub UI server, the sweep and its Chrome when the test times out (BUG-058). Its try/finally only runs once the awaited promise settles; on a vitest timeout (the hub never printing 'Hub UI at', or a slow sweep under load) vitest abandons the test, the worker exits, and the children are reparented to pid 1. Reproduced at 25eee19: npx vitest run test/tools/layout-sweep.test.ts -t '4 s late' --testTimeout 3000 left 'crew.mjs ui --no-open --port 0' (ppid 1), 'layout_sweep.mjs --url ...' (ppid 1) and its headless Chrome running 45 s later (I stopped them). Fix in the test file only: register the cleanup with vitest so it runs on every exit path, timeout included (e.g. push the children and the proxy to a list that an afterEach drains, as live-ui.test.ts does, or onTestFinished): close the proxy, kill the hub, and stop the sweep in a way that does not orphan its Chrome (layout_sweep has no SIGTERM handler, so a plain kill skips its finally: spawn the sweep with detached: true and kill its process group, or equivalent). Also reject the hub-start promise if the hub errors on spawn. Verify: the -t '4 s late' --testTimeout 3000 run above, then ps -axo pid,ppid,command | grep -E 'crew.mjs ui --no-open|layout_sweep.mjs|crew-sweep-' shows none from the run; then the targeted file passes (5 cases). The layout_sweep.ts change is approved as is: the readyState-complete and '#root:empty' conditions are sound (no #root means no match; a static stub page over --url reaches complete), so P-086's stub case is unaffected.
+- 2026-10-28: status in-progress → in-review — BUG-058 review fix at 8a39b0d: afterEach-drained cleanup, sweep in its own process group, spawn errors reject; timeout repro leaves no processes; layout-sweep.test.ts 5/5
 
 ## Outcome
 Learnings: K-2026-10-28-a-test-proxy-in-front-of-crew-mjs-ui
