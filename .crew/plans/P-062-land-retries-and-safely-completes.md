@@ -5,7 +5,7 @@ goal: G-007
 items: BUG-041
 touches: packages/crew/src/hub/commands/work/land.ts, packages/crew/src/hub/commands/work/worktree-cleanup.ts, packages/crew/src/hub/commands/work/release.ts, packages/crew/test/hub/e2e/land.test.ts
 depends_on: P-061
-status: accepted
+status: in-progress
 branch: plan/P-062-land-retries-and-safely-completes
 pr:
 created: 2026-10-26
@@ -139,6 +139,7 @@ Latest log:
 - 2026-10-26: blocked (developer resume): the only open change (architect review a298f51: git rm packages/crew/.vitest/{json/output.json,junit/output.xml} from the branch, then checkpoint) still needs a shell in the P-062 worktree; Bash there is denied in dont-ask mode again this run. Both files still on plan/P-062 (git diff main...branch). Needs the human to allow Bash in .claude/worktrees/P-062-* or remove the two files and run checkpoint.
 - 2026-10-27: status in-progress → in-review
 - 2026-10-27: status in-review → accepted
+- 2026-10-28: status accepted → in-progress — land: hub.full_suite failed (exit 1):      12| beforeEach(() => { ·        | ^ ·      13|   repo = Repo.create(); ·      14|   init(repo, { commit: true }); · ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/15]⎯
 
 ## Outcome
 The worktree cleanup lives in commands/work/worktree-cleanup.ts. When `git worktree remove --force` fails and git still lists the path as the plan's worktree, land deletes OS junk and retries up to 3 times (200 ms apart). P-061's junk-only delete follows. Then comes a full delete (`rmSync`, `git worktree prune`, a check that git no longer lists the path), only when `safeToDelete()` checks a–f find nothing that could be lost. Otherwise the warning is `kept <rel>: <reason>`. A path git no longer lists keeps P-061's `left` warning, with no retry. `branchMerged` is exported from release.ts. land.test.ts passes 25/25 (6 new BUG-041 tests), and tsc is clean.
