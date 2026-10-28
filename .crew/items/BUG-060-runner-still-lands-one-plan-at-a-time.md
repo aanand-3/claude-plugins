@@ -2,10 +2,10 @@
 id: BUG-060
 type: bug
 title: Runner still lands one plan at a time: dispatch gives Release one plan and its agent lacks the batch steps
-status: new
+status: triaged
 severity: S2
-priority: P1
-goal:
+priority: P0
+goal: G-007
 plan:
 created: 2026-10-28
 closed:
@@ -51,3 +51,4 @@ FEAT-071's goal (accepted plans land together, one full suite per batch) isn't m
 - **Separate from this bug:** in auto mode, the permission classifier has refused Release's `land` several times on 2026-10-28 (Q-6fd3fa, the P-062 retry). Without a permission rule, even a correct batch entry stalls and ends up with the executive.
 - **Related:** FEAT-071, P-079, P-093, BUG-059.
 - 2026-10-28: goal hint G-007 (by Arpit Anand)
+- 2026-10-28: status new → triaged — priority P0, severity S2
