@@ -5,7 +5,7 @@ title: MCP exposes no agents tool
 status: triaged
 priority: P3
 goal: G-003
-plan:
+plan: P-087
 created: 2026-10-23
 closed:
 ---
