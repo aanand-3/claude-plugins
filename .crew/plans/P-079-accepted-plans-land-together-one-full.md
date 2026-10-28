@@ -5,7 +5,7 @@ goal: G-007
 items: FEAT-071
 touches: packages/crew/src/hub/commands/work/land.ts, packages/crew/src/hub/commands/work/land-steps.ts, packages/crew/src/hub/commands/work/batch.ts, packages/crew/src/hub/commands/work/suite.ts, packages/crew/src/hub/commands/work/suite.reg.ts, packages/crew/test/hub/e2e/land-batch.test.ts, packages/crew/test/hub/e2e/land-helpers.ts, packages/crew/test/hub/e2e/land.test.ts, packages/crew/test/hub/e2e/suite.test.ts, plugins/crew/skills/hub/agents/release.md, plugins/crew/docs/reference.md, .crew/config.yaml
 depends_on: P-062
-status: in-review
+status: accepted
 branch: plan/P-079-accepted-plans-land-together-one-full
 pr:
 created: 2026-10-27
@@ -112,6 +112,7 @@ Latest log:
 - 2026-10-28: status ready → in-progress — branch plan/P-079-accepted-plans-land-together-one-full
 - 2026-10-28: status in-progress → in-review
 - 2026-10-28: QA: AC1-AC8 checks recorded green. AC3 observed 4 suite records (batch red, [P-001] green, [P-001,P-002] red, [P-003] green) vs spec's 3 (no [P-001,P-002] run); P-001 landed, P-002 bounced to in-progress, P-003 landed - behavior matches, run count deviates; see Q-4dc057. Uncommitted rebuilt dist files in worktree left for Release.
+- 2026-10-28: status in-review → accepted (approved by Arpit Anand)
 
 ## Outcome
 `land` (no ID) with two or more landable plans now lands them in batches (commands/work/batch.ts): each plan is prepared in its worktree, stacked in merge order on `.claude/worktrees/land-batch-<pid>` (detached at the base, `hub.setup` first), one rebuilt squash commit per plan, one `hub.full_suite` run recorded with `plans`, then one commit per plan on the base with one fast-forward. A plan that conflicts with earlier ones or fails its build on top of them leaves the batch (log line) with its dependants; a red suite is bisected and only the first red plan bounces (note names the batch), the green prefix lands, the rest go into the next batch. A moved branch, a base gaining code 3 rounds, or a failed `hub.setup` stop the batch with nothing landed. Shared steps moved to land-steps.ts; `runSuite`/`suites` record and show `plans`. A single plan and `land P-###` keep the old path.
