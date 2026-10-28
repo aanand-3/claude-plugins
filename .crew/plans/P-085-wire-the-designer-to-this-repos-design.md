@@ -11,6 +11,7 @@ pr:
 created: 2026-10-27
 started:
 completed:
+assignee: developer
 ---
 
 # P-085: Wire the Designer to this repo's DESIGN.md (design.file)
@@ -114,5 +115,6 @@ again silently.
 ## Progress log
 
 - 2026-10-28: status draft → ready
+- 2026-10-28: assigned to the developer role
 
 ## Outcome

@@ -50,9 +50,12 @@ only: long words wrap inside their box on the document page.
   K-2026-10-24-release-builds-the-generated-files-plans).
 
 ## Acceptance criteria
-- [ ] AC1: In the plan worktree, after `hub.build`, `node plugins/crew/skills/design/scripts/layout_sweep.mjs --widths 375 --themes light,dark`
-      run from the worktree root against its own hub exits 0 ("clean"). Before the fix it exits 1 with more than 400 findings.
-- [ ] AC2: In the same worktree, `layout_sweep.mjs --widths 900,1440 --themes light,dark` reports no finding that the base
+- [ ] AC1: After `hub.build` in the plan worktree, run the worktree's sweep with the **main checkout** as the working
+      directory: `node <worktree>/plugins/crew/skills/design/scripts/layout_sweep.mjs --widths 375 --themes light,dark`.
+      It exits 0 ("clean"). Plan worktrees are sparse and have no hub documents; run this way, the sweep serves the
+      worktree's built `crew.mjs`/`ui.html` against main's `.crew`. On main before the fix the same sweep exits 1 with more
+      than 400 findings.
+- [ ] AC2: The same run with `--widths 900,1440 --themes light,dark` reports no finding that the base
       branch run (same command on main, recorded in this plan's Progress log before the fix) does not report.
 - [ ] AC3 (regression test): a `layout-sweep.test.ts` case builds a sandbox hub with (a) a plan whose title contains a
       long unbroken word, (b) a knowledge entry with a long ID, and (c) a plan whose Context mentions that ID. The sweep at
@@ -85,24 +88,18 @@ only: long words wrap inside their box on the document page.
 <!-- Written by the Designer before ready (UI plan: touches overlap packages/crew/ui/**). -->
 
 ## Tasks
-- [ ] T1: Record the baseline: on main, run the sweep at `--widths 375 --themes light,dark` and at `--widths 900,1440 --themes light,dark`,
-      and log the finding counts plus the 900/1440 finding list in the Progress log → verify: the counts are in the Progress log
-- [ ] T2: Write the AC3 regression test and the AC4 changes in `packages/crew/test/tools/layout-sweep.test.ts`: the
-      planted test drops the `#/doc/P-001` sideways-scroll expectation and keeps the board overflow, and a stub `--url`
-      sideways-scroll test is added. Show that AC3 fails on the base CSS → verify: `cd packages/crew && npx vitest run test/tools/layout-sweep.test.ts`
-      fails only on the AC3 case before T3
+- [ ] T1: Record the baseline: on main, run the sweep at `--widths 375 --themes light,dark` and at `--widths 900,1440 --themes light,dark`, and log the finding counts plus the 900/1440 finding list in the Progress log → verify: the counts are in the Progress log
+- [ ] T2: Write the AC3 regression test and the AC4 changes in `packages/crew/test/tools/layout-sweep.test.ts`: the planted test drops the `#/doc/P-001` sideways-scroll expectation and keeps the board overflow, and a stub `--url` sideways-scroll test is added. Show that AC3 fails on the base CSS → verify: `cd packages/crew && npx vitest run test/tools/layout-sweep.test.ts` fails only on the AC3 case before T3
 - [ ] T3: CSS fix in `packages/crew/ui/src/styles/views.css` and `components.css` (`base.css` stays unchanged) → verify: `npx vitest run test/tools/layout-sweep.test.ts` passes, and `npm run typecheck` passes
-- [ ] T4: Real-data sweep: `npm run build` in `packages/crew` (not committed), then sweep from the worktree root at 375
-      (light, dark) and at 900/1440 → verify: AC1 exit 0, and AC2 has no new findings compared with T1
-- [ ] T5: Visual QA → verify: `check_design.mjs --all` clean; screenshots at full size at 375/900/1440 px, light and dark, of a
-      long-ID knowledge page and a long-title plan page match DESIGN.md (IDs in monospace, header layout unchanged at 1440)
+- [ ] T4: Real-data sweep: `npm run build` in `packages/crew` (not committed), then, with the main checkout as the working directory, run `node <worktree>/plugins/crew/skills/design/scripts/layout_sweep.mjs` at 375 (light, dark) and at 900/1440 → verify: AC1 exit 0, and AC2 has no new findings compared with T1
+- [ ] T5: Visual QA → verify: `check_design.mjs --all` clean; screenshots at full size at 375/900/1440 px, light and dark, of a long-ID knowledge page and a long-title plan page match DESIGN.md (IDs in monospace, header layout unchanged at 1440)
 
 ## Test plan
 **Targeted checks:**
 - `cd packages/crew && npx vitest run test/tools/layout-sweep.test.ts` covers AC3 and AC4. It needs a Chromium-family
   browser: without one the browser tests skip, which does not count as evidence.
-- `node plugins/crew/skills/design/scripts/layout_sweep.mjs --widths 375 --themes light,dark` from the worktree root, after
-  `cd packages/crew && npm run build`, covers AC1 (exit 0).
+- `node <worktree>/plugins/crew/skills/design/scripts/layout_sweep.mjs --widths 375 --themes light,dark`, run with the main
+  checkout as the working directory after `npm run build` in the worktree's `packages/crew`, covers AC1 (exit 0).
 - The same sweep with `--widths 900,1440 --themes light,dark`, compared with T1's baseline, covers AC2.
 - Reading `git diff main...HEAD -- packages/crew/ui/src/styles` covers AC5.
 - `check_design.mjs --all` plus the Designer's screenshots cover AC6.
