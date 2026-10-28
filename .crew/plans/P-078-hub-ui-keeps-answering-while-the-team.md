@@ -126,8 +126,8 @@ Rollback: revert the squash commit and refresh `.crew/bin`.
 
 _Generated 2026-10-28 by `crew.mjs handoff` from the ledger._
 
-- P-078: Hub ui keeps answering while the team works [in-review] tasks 6/6 — claimed by Arpit Anand (developer:a2ff607bb3ab5c6cf)
-- last checkpoint 2026-10-28 06:27 at T6 (0fd1be7) by Arpit Anand; since then 0 commit(s), 2 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs
+- P-078: Hub ui keeps answering while the team works [in-review] tasks 6/6
+- last checkpoint 2026-10-28 17:36 at T6 (0fd1be7) by Arpit Anand; since then 0 commit(s), 2 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs
 - ✓ on the main checkout, back to back x2: node .crew/bin/crew.mjs export --json vs node <worktree>/plugins/crew/skills/hub/dist/crew.mjs export --json (bundle from npm run build, not committed); outputs compared as JSON without generatedAt (AC 9) (reported)
 - ✓ cd packages/crew && npx vitest run test/hub/livegraph.test.ts -t AC1 (AC 1)
 - ✓ cd packages/crew && npx vitest run test/hub/livegraph.test.ts -t AC2 (AC 2)
