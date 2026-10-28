@@ -115,6 +115,21 @@ describe("land", () => {
     expect(repo.read("dist/app.txt")).toBe(repo.read("src/cli.ts"));
   });
 
+  it("land: release.refresh_bin refreshes .crew/bin in the plan's own commit", () => {
+    repo = hub("", { ".crew/policy.yaml": "preset: lifecycle\nrelease:\n  refresh_bin:\n    from: src\n    files: [bin.txt]\n",
+      "src/bin.txt": "old\n", ".crew/bin/bin.txt": "old\n" });
+    const w = started(repo, "P-001", "Signup");
+    w.write("src/bin.txt", "new\n");
+    accepted(repo, "P-001", w, 1);
+    const r = land(repo, "P-001");
+    ok(r);
+    expect(r.stdout).toContain("refreshed .crew/bin/bin.txt from src/bin.txt");
+    const sha = repo.git("log", "--format=%H", "--grep", "^feat(P-001): ", "main").stdout.trim();
+    expect(repo.git("show", "--name-only", "--format=", sha).stdout.split("\n").filter(Boolean).sort())
+      .toEqual([".crew/bin/bin.txt", "src/bin.txt", "src/cli.ts"]);
+    expect(repo.read(".crew/bin/bin.txt")).toBe("new\n");
+  });
+
   it("an uncommitted file in the main checkout stays as it is (AC5)", () => {
     const w = started(repo, "P-001", "Signup");
     accepted(repo, "P-001", w, 1);

@@ -7,7 +7,7 @@ import * as git from "../../core/git.js";
 import { secretsIn } from "../../core/memory/knowledge.js";
 import { type Store, yamlBlock } from "../../core/store.js";
 import { HubError } from "../../core/text.js";
-import { refreshBin } from "./release.js";
+import { copyBin } from "./release.js";
 import { log, move } from "./workflow.js";
 import { cleanupWorktree } from "./worktree-cleanup.js";
 
@@ -65,7 +65,7 @@ export function rebuild(store: Store, dir: string): string[] {
     if (b.status !== 0) throw new Bounce(`hub.build failed (exit ${b.status}): ${tail(store, `${b.stdout}${b.stderr}`)}`);
   }
   const { from: binFrom, files: binFiles } = store.policy.policy.release.refresh_bin;
-  if (binFrom && binFiles.length) refreshBin(store, dir, false);
+  if (binFrom && binFiles.length) copyBin(store, dir);
   return [...new Set([...git.generated(dir, git.changed(dir, ["."])), ...git.codeChanges(dir, store.policy.policy.secrets.files)])];
 }
 

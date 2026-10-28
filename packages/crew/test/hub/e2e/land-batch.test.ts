@@ -64,6 +64,28 @@ describe("batch", () => {
     ok(runAs(repo, "pm", "pm", "move", "P-002", "done"));
   });
 
+  it("batch: release.refresh_bin refreshes .crew/bin in the candidate, in the plan's own commit (BUG-059)", () => {
+    const repo = hub("", { ".crew/policy.yaml": "preset: lifecycle\nrelease:\n  refresh_bin:\n    from: src\n    files: [bin.txt]\n",
+      "src/bin.txt": "old\n", ".crew/bin/bin.txt": "old\n" });
+    const w1 = started(repo, "P-001", "Signup"), w2 = started(repo, "P-002", "Login");
+    accepted(repo, "P-001", w1, 1);
+    w2.write("src/bin.txt", "new\n");
+    accepted(repo, "P-002", w2, 7);
+    const r = land(repo);
+    ok(r);
+    expect(`${r.stdout}${r.stderr}`).not.toContain("not a plan's worktree");
+    expect(feats(repo)).toEqual(["feat(P-002): Login", "feat(P-001): Signup"]);
+    const one = sha(repo, "feat(P-001): Signup"), two = sha(repo, "feat(P-002): Login");
+    expect(repo.git("show", `${one}:.crew/bin/bin.txt`).stdout).toBe("old\n");
+    expect(repo.git("show", `${two}:.crew/bin/bin.txt`).stdout).toBe("new\n");
+    const changed = (c: string) => repo.git("show", "--name-only", "--format=", c).stdout.split("\n").filter(Boolean);
+    expect(changed(two)).toContain(".crew/bin/bin.txt");
+    expect(changed(one)).not.toContain(".crew/bin/bin.txt");
+    expect(repo.read(".crew/bin/bin.txt")).toBe("new\n");
+    expect(repo.git("status", "--porcelain", "--", ".crew/bin").stdout.trim()).toBe("");
+    expect(batchWorktrees(repo)).toEqual([]);
+  });
+
   it("batch: a red suite bounces only the plan that broke it (AC3)", () => {
     const repo = hub("  full_suite: \"! grep -q BREAK src/cli.ts\"\n");
     const w1 = started(repo, "P-001", "Signup"), w2 = started(repo, "P-002", "Login"), w3 = started(repo, "P-003", "Logout");

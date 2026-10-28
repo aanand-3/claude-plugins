@@ -11076,12 +11076,9 @@ function mergeOrderCmd(store, json = false) {
   for (const w of m.waiting) store.say(`WAIT ${w.id}: ${w.why}`);
   for (const p of m.merged) store.say(`merged: ${p.id} (${p.branch}) \u2014 ${p.legacy ? "" : "the PM moves it done; "}delete the branch`);
 }
-function refreshBin(store, root, check3) {
+function binState(store, root) {
   const { from, files: files2 } = store.policy.policy.release.refresh_bin;
-  if (!from || !files2.length) {
-    if (check3) return store.say("refresh-bin: nothing to check (no release.refresh_bin in the policy)"), 0;
-    fail("refresh-bin: the policy has no release.refresh_bin (from, files); the executive sets it in .crew/policy.yaml");
-  }
+  if (!from || !files2.length) fail("refresh-bin: the policy has no release.refresh_bin (from, files); the executive sets it in .crew/policy.yaml");
   const src = normalize(from).replace(/\\/g, "/").replace(/\/+$/, "");
   if (isAbsolute4(from) || src === ".." || src.startsWith("../") || src === ".crew" || src.startsWith(".crew/")) {
     fail(`refresh-bin: release.refresh_bin.from '${from}' must be a relative path inside the checkout, not under .crew/`);
@@ -11095,16 +11092,9 @@ function refreshBin(store, root, check3) {
       store.say(`skipped .crew/bin/${f}: ${existsSync9(t) ? `${src}/${f} does not exist` : "not vendored here (refresh-bin never adds a file)"}`);
     } else if (!readFileSync7(s2).equals(readFileSync7(t))) stale.push(f);
   }
-  if (check3) {
-    for (const f of stale) store.say(`stale: .crew/bin/${f} differs from ${src}/${f} (Release runs \`crew.mjs refresh-bin\`)`);
-    if (!stale.length) store.say(`refresh-bin: .crew/bin is up to date with ${src}`);
-    return stale.length ? 1 : 0;
-  }
-  const role = store.ledger.who.role;
-  if (role !== "release") fail(`refresh-bin: only the release role refreshes .crew/bin; this run is ${role ? `the ${role} role` : "no role"}`);
-  const branch = git(["-C", root, "branch", "--show-current"])?.trim() ?? "";
-  const plan = [...store.plans().values()].find((p) => branch && p.get("branch") === branch && p.get("status") !== "dropped");
-  if (!plan) fail(`refresh-bin: this checkout (branch '${branch || "none"}') is not a plan's worktree; run it in the plan's worktree`);
+  return { src, stale };
+}
+function copyBin(store, root, { src, stale } = binState(store, root)) {
   for (const f of stale) {
     const t = join15(root, ".crew", "bin", f), mode = statSync6(t).mode;
     copyFileSync2(join15(root, src, f), t);
@@ -11112,6 +11102,23 @@ function refreshBin(store, root, check3) {
     store.say(`refreshed .crew/bin/${f} from ${src}/${f}`);
   }
   if (!stale.length) store.say(`refresh-bin: .crew/bin is up to date with ${src}`);
+  return stale.map((f) => `.crew/bin/${f}`);
+}
+function refreshBin(store, root, check3) {
+  const { from, files: files2 } = store.policy.policy.release.refresh_bin;
+  if (check3 && (!from || !files2.length)) return store.say("refresh-bin: nothing to check (no release.refresh_bin in the policy)"), 0;
+  const state = binState(store, root);
+  if (check3) {
+    for (const f of state.stale) store.say(`stale: .crew/bin/${f} differs from ${state.src}/${f} (Release runs \`crew.mjs refresh-bin\`)`);
+    if (!state.stale.length) store.say(`refresh-bin: .crew/bin is up to date with ${state.src}`);
+    return state.stale.length ? 1 : 0;
+  }
+  const role = store.ledger.who.role;
+  if (role !== "release") fail(`refresh-bin: only the release role refreshes .crew/bin; this run is ${role ? `the ${role} role` : "no role"}`);
+  const branch = git(["-C", root, "branch", "--show-current"])?.trim() ?? "";
+  const plan = [...store.plans().values()].find((p) => branch && p.get("branch") === branch && p.get("status") !== "dropped");
+  if (!plan) fail(`refresh-bin: this checkout (branch '${branch || "none"}') is not a plan's worktree; run it in the plan's worktree`);
+  copyBin(store, root, state);
   return 0;
 }
 
@@ -13916,7 +13923,7 @@ function rebuild(store, dir) {
     if (b.status !== 0) throw new Bounce(`hub.build failed (exit ${b.status}): ${tail3(store, `${b.stdout}${b.stderr}`)}`);
   }
   const { from: binFrom, files: binFiles } = store.policy.policy.release.refresh_bin;
-  if (binFrom && binFiles.length) refreshBin(store, dir, false);
+  if (binFrom && binFiles.length) copyBin(store, dir);
   return [.../* @__PURE__ */ new Set([...generated(dir, changed(dir, ["."])), ...codeChanges(dir, store.policy.policy.secrets.files)])];
 }
 function landed(store, plan, base2, branch, wt, sha) {

@@ -81,16 +81,11 @@ export function mergeOrderCmd(store: Store, json = false): void {
   for (const p of m.merged) store.say(`merged: ${p.id} (${p.branch}) — ${p.legacy ? "" : "the PM moves it done; "}delete the branch`);
 }
 
-/** `refresh-bin [--check]` (FEAT-027): copy the policy's `release.refresh_bin.files` from `from` over the vendored copies
- * in `<root>/.crew/bin/`, the only way an agent changes `.crew/bin/**`. `root` is the checkout to refresh (a plan's
- * worktree, so the copy rides in the plan's one commit), never `store.dir`. It only replaces files already there.
- * `--check` is read-only (any role, any checkout) and exits 1 when a listed copy differs. */
-export function refreshBin(store: Store, root: string, check: boolean): number {
+/** `release.refresh_bin` validated against the checkout `root`: its `from` dir and the listed `.crew/bin` files that differ
+ * from it (a file missing on either side is said and skipped). A missing or bad key fails. */
+function binState(store: Store, root: string): { src: string; stale: string[] } {
   const { from, files } = store.policy.policy.release.refresh_bin;
-  if (!from || !files.length) {
-    if (check) return (store.say("refresh-bin: nothing to check (no release.refresh_bin in the policy)"), 0);
-    fail("refresh-bin: the policy has no release.refresh_bin (from, files); the executive sets it in .crew/policy.yaml");
-  }
+  if (!from || !files.length) fail("refresh-bin: the policy has no release.refresh_bin (from, files); the executive sets it in .crew/policy.yaml");
   const src = normalize(from).replace(/\\/g, "/").replace(/\/+$/, "");
   if (isAbsolute(from) || src === ".." || src.startsWith("../") || src === ".crew" || src.startsWith(".crew/")) {
     fail(`refresh-bin: release.refresh_bin.from '${from}' must be a relative path inside the checkout, not under .crew/`);
@@ -104,16 +99,13 @@ export function refreshBin(store: Store, root: string, check: boolean): number {
       store.say(`skipped .crew/bin/${f}: ${existsSync(t) ? `${src}/${f} does not exist` : "not vendored here (refresh-bin never adds a file)"}`);
     } else if (!readFileSync(s).equals(readFileSync(t))) stale.push(f);
   }
-  if (check) {
-    for (const f of stale) store.say(`stale: .crew/bin/${f} differs from ${src}/${f} (Release runs \`crew.mjs refresh-bin\`)`);
-    if (!stale.length) store.say(`refresh-bin: .crew/bin is up to date with ${src}`);
-    return stale.length ? 1 : 0;
-  }
-  const role = store.ledger.who.role;
-  if (role !== "release") fail(`refresh-bin: only the release role refreshes .crew/bin; this run is ${role ? `the ${role} role` : "no role"}`);
-  const branch = git.git(["-C", root, "branch", "--show-current"])?.trim() ?? "";
-  const plan = [...store.plans().values()].find((p) => branch && p.get("branch") === branch && p.get("status") !== "dropped");
-  if (!plan) fail(`refresh-bin: this checkout (branch '${branch || "none"}') is not a plan's worktree; run it in the plan's worktree`);
+  return { src, stale };
+}
+
+/** Copy the stale `release.refresh_bin.files` from `from` over `<root>/.crew/bin/`, keeping each target's mode; no role or
+ * branch check (BUG-059): `land` calls it in the checkout it chose, behind its own `plan.landed` gate. Returns the copied
+ * `.crew/bin/<f>` paths. */
+export function copyBin(store: Store, root: string, { src, stale } = binState(store, root)): string[] {
   for (const f of stale) {
     const t = join(root, ".crew", "bin", f), mode = statSync(t).mode;
     copyFileSync(join(root, src, f), t);
@@ -121,5 +113,27 @@ export function refreshBin(store: Store, root: string, check: boolean): number {
     store.say(`refreshed .crew/bin/${f} from ${src}/${f}`);
   }
   if (!stale.length) store.say(`refresh-bin: .crew/bin is up to date with ${src}`);
+  return stale.map((f) => `.crew/bin/${f}`);
+}
+
+/** `refresh-bin [--check]` (FEAT-027): copy the policy's `release.refresh_bin.files` from `from` over the vendored copies
+ * in `<root>/.crew/bin/`, the only way an agent changes `.crew/bin/**`. `root` is the checkout to refresh (a plan's
+ * worktree, so the copy rides in the plan's one commit), never `store.dir`. It only replaces files already there.
+ * `--check` is read-only (any role, any checkout) and exits 1 when a listed copy differs. */
+export function refreshBin(store: Store, root: string, check: boolean): number {
+  const { from, files } = store.policy.policy.release.refresh_bin;
+  if (check && (!from || !files.length)) return (store.say("refresh-bin: nothing to check (no release.refresh_bin in the policy)"), 0);
+  const state = binState(store, root);
+  if (check) {
+    for (const f of state.stale) store.say(`stale: .crew/bin/${f} differs from ${state.src}/${f} (Release runs \`crew.mjs refresh-bin\`)`);
+    if (!state.stale.length) store.say(`refresh-bin: .crew/bin is up to date with ${state.src}`);
+    return state.stale.length ? 1 : 0;
+  }
+  const role = store.ledger.who.role;
+  if (role !== "release") fail(`refresh-bin: only the release role refreshes .crew/bin; this run is ${role ? `the ${role} role` : "no role"}`);
+  const branch = git.git(["-C", root, "branch", "--show-current"])?.trim() ?? "";
+  const plan = [...store.plans().values()].find((p) => branch && p.get("branch") === branch && p.get("status") !== "dropped");
+  if (!plan) fail(`refresh-bin: this checkout (branch '${branch || "none"}') is not a plan's worktree; run it in the plan's worktree`);
+  copyBin(store, root, state);
   return 0;
 }
