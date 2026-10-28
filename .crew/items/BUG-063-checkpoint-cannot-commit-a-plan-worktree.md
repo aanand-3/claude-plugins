@@ -2,13 +2,13 @@
 id: BUG-063
 type: bug
 title: checkpoint cannot commit a plan worktree mid-merge and unstages the resolution
-status: new
+status: duplicate
 severity:
 priority:
 goal:
 plan:
 created: 2026-10-28
-closed:
+closed: 2026-10-28
 origin: P-080
 ---
 
@@ -38,3 +38,4 @@ A plan sent back by a failed land with a half-done merge cannot be checkpointed 
 
 ## Notes
 Found while taking over P-080.
+- 2026-10-28: status new → duplicate — duplicate of BUG-061; unstaging detail noted there
