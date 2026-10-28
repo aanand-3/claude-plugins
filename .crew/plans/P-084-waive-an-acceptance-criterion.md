@@ -119,6 +119,17 @@ plain failed checks (`ok: false`), which is safe.
 
 ## Handoff
 
+_Generated 2026-10-28 by `crew.mjs handoff` from the ledger._
+
+- P-084: Waive an acceptance criterion the acceptor rules not reproducible [in-progress] tasks 5/5 — claimed by Arpit Anand (developer:a54c917650705f6d4)
+- last checkpoint 2026-10-28 06:55 at T5 (a53355d) by Arpit Anand; since then 0 commit(s), 3 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs, plugins/crew/skills/hub/references/commands.md
+- evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —, AC7 —
+
+Latest log:
+- 2026-10-27: status draft → ready
+- 2026-10-28: assigned to the developer role
+- 2026-10-28: status ready → in-progress — branch plan/P-084-waive-an-acceptance-criterion
+
 ## Progress log
 
 - 2026-10-27: status draft → ready
