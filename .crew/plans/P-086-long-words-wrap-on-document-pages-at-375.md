@@ -5,7 +5,7 @@ goal:
 items: BUG-039
 touches: packages/crew/ui/src/styles/views.css, packages/crew/ui/src/styles/components.css, packages/crew/test/tools/layout-sweep.test.ts
 depends_on:
-status: draft
+status: ready
 branch: plan/P-086-long-words-wrap-on-document-pages-at-375
 pr:
 created: 2026-10-28
@@ -88,6 +88,55 @@ only: long words wrap inside their box on the document page.
 
 ## Design
 <!-- Written by the Designer before ready (UI plan: touches overlap packages/crew/ui/**). -->
+**Layout: unchanged.** The document page keeps the shell and composition from `packages/crew/docs/design/DESIGN.md`
+(Layout, "Document pages"): a header across both columns (kicker, title, progress on the left; Actions split button on the
+right), the main column of collapsible panels and tabs with prose capped at 90ch, and the 360 px details rail (stacked
+below the main column under 900 px). No component is added, and no inventory entry changes. The only change is that three
+text runs wrap inside their existing boxes:
+
+```
+375 px, before                          375 px, after
+┌──────────────────────────────┐        ┌──────────────────────────────┐
+│ KNOWLEDGE · K-2026-10-24-relea│se-…  │ KNOWLEDGE · K-2026-10-24-rele│
+│ Fix packages/crew/.vitest/caches│…   │ ase-builds-the-generated-fil │
+│ ┌ Context ──────────────────┐ │        │ es-plans                     │
+│ │ see K-2026-10-24-release-b│ui…     │ Fix packages/crew/.vitest/ca │
+└──────────────────────────────┘        │ ches                         │
+                                        │ ┌ Context ─────────────────┐ │
+                                        │ │ see K-2026-10-24-release-│ │
+                                        │ │ builds-the-generated-fil │ │
+                                        │ │ es-plans and P-012 …     │ │
+                                        └──────────────────────────────┘
+```
+
+**Decision on the open point (short IDs at a line end): no `long` class, `Markdown.tsx` stays out of touches.** A short ID
+cannot split at its hyphen with the Approach's CSS, because each markdown ID is an `a.idlink` with `display: inline-flex`:
+an atomic inline box that moves whole to the next line when it does not fit, and is sized from the full line width, so its
+inner `.id` only wraps when the ID alone is wider than the column. The kicker ID is a flex item in a `flex-wrap: wrap` row
+and behaves the same way. The developer therefore must not change `.idlink` to `display: inline` (that would let short
+IDs split); if that ever seems needed, stop and ask the Designer.
+
+**Rules for the build:**
+- Only existing tokens; no new colour, size or font. IDs keep `font: 500 var(--text-xs) var(--font-mono)` and
+  `--muted-foreground` (DESIGN.md Typography: IDs in monospace); a wrapped ID stays one link with one underline on hover.
+- The wrap rules are the three in the Approach, scoped to `.docpage__kicker .id`, `.md .id` and `.docpage__title`.
+  `base.css`, `.idlink`, `.idlink__title` (ellipsis) and the relations panel (ellipsis at 55 %) are unchanged.
+- The title keeps its size, line height (1.1) and letter spacing; ordinary titles still break between words, and only a
+  word wider than the column breaks inside itself.
+
+**UI acceptance criteria (checked in the design review, at full size):**
+- D1 · Breakpoints: 375, 900 and 1440 px, light and dark, for (a) a knowledge page with a long ID (e.g.
+  `#/doc/K-2026-10-24-release-builds-the-generated-files-plans`), (b) a plan whose title has a long unbroken word and (c) a
+  plan or item whose prose mentions a long knowledge ID. At 375 px nothing runs past the header or a panel edge and the
+  page does not scroll sideways; at 900 and 1440 px the header (title left, Actions right), panels and rail look as on main.
+- D2 · Short IDs in prose (`P-012`, `FEAT-016`) never split across lines at any width; resize 375 → 900 on a page with
+  dense ID prose (e.g. a plan's Context) and check line ends.
+- D3 · Long content: a wrapped long ID in prose keeps its baseline with the surrounding text and the line spacing of
+  `.md` (1.6) does not collapse; a wrapped kicker ID does not push the Actions split button off the header.
+- D4 · States: these pages have no empty, loading or error state of their own; the existing doc page "not found" state is
+  unchanged and is not re-reviewed.
+- D5 · Components used: shell, document page header (kicker, title), collapsible panel, IdLink inside Markdown, details
+  rail; none new.
 
 ## Tasks
 - [ ] T1: Record the baseline: on main, run the sweep at `--widths 375 --themes light,dark` and at `--widths 900,1440 --themes light,dark`, and log the finding counts plus the 900/1440 finding list in the Progress log → verify: the counts are in the Progress log
@@ -113,13 +162,14 @@ n/a: a CSS-only change to the hub UI that ships with the next build. To back out
 ## Risks & open questions
 - `overflow-wrap: anywhere` breaks a long ID mid-word at the line end, so `K-2026-…-plans` may split across two lines.
   That is intended: wrapping is better than a sideways scroll, and the ID stays a complete link.
-- A short ID such as `P-012` inside prose may now break at its hyphen at the end of a line. This is acceptable in prose.
-  If the Designer objects, the alternative is a `long` class from `Markdown.tsx` on IDs over ~20 characters, which adds
-  `Markdown.tsx` to touches.
+- Short IDs such as `P-012` in prose: resolved in Design. `.idlink` stays `inline-flex` (an atomic inline box), so a
+  short ID moves whole to the next line and never splits; no `long` class, `Markdown.tsx` stays out of touches (D2).
 - The sandbox regression test adds three doc routes × 2 themes to the sweep test's runtime (seconds).
 
 ## Handoff
 
 ## Progress log
+
+- 2026-10-28: status draft → ready
 
 ## Outcome
