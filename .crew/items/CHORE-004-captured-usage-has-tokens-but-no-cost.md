@@ -5,7 +5,7 @@ title: Captured usage has tokens but no cost
 status: triaged
 priority: P3
 goal: G-003
-plan:
+plan: P-089
 created: 2026-10-23
 closed:
 ---
