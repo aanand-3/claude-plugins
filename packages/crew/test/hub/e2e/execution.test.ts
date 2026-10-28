@@ -120,3 +120,24 @@ it("checkpoint records reported results and hides secrets", () => {
   expect(tr(repo, "checkpoint", "--verify", "x").returncode).not.toBe(0); // needs --result
   expect(tr(repo, "checkpoint", "--run", "true", "--ac", "9").returncode).not.toBe(0); // only AC 1
 });
+
+it("numbered acceptance criteria are the plan's criteria (BUG-047)", () => {
+  started(repo);
+  const p = planFile(repo, "P-001");
+  write(p, read(p).replace(/## Acceptance criteria\n[\s\S]*?\n(?=## )/, `## Acceptance criteria
+1. **Valid.** 201 on valid input,
+   wrapped onto a second line.
+2. **Duplicate.** 409 on duplicate email:
+   - same address
+   - different case
+3. **Invalid.** 422 on a bad address.
+
+`));
+  expect(tr(repo, "checkpoint", "--run", "true", "--ac", "3").returncode).toBe(0);
+  const r = tr(repo, "checkpoint", "--run", "true", "--ac", "4");
+  expect(r.returncode).not.toBe(0);
+  expect(r.stdout + r.stderr).toContain("--ac: the plan has acceptance criteria 1–3");
+  const evidence = tr(repo, "resume").stdout.split("\n").find((l) => l.startsWith("evidence:"));
+  expect(evidence).toMatch(/^evidence: AC1 —, AC2 —, AC3 ✓/);
+  expect(evidence).not.toContain("AC4");
+});

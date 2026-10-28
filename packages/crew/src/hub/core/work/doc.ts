@@ -90,6 +90,12 @@ export class Doc {
       .filter((l) => l.startsWith("- ") && l !== "-").map((l) => l.slice(2).trim());
   }
 
+  /** Top-level `N. ` / `N) ` items (at column 0); indented continuations and nested items are not items. */
+  numbered(name: string): string[] {
+    return stripComments(this.section(name)).split("\n").map((l) => /^\d+[.)] +(.*)$/.exec(l)?.[1].trim())
+      .filter((t): t is string => !!t);
+  }
+
   checklist(name: string): [boolean, string][] {
     const out: [boolean, string][] = [];
     for (const line of stripComments(this.section(name)).split("\n")) {

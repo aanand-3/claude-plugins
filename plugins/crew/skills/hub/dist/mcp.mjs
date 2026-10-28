@@ -8065,6 +8065,10 @@ ${line3}`;
   bullets(name) {
     return stripComments(this.section(name)).split("\n").map((l) => l.trim()).filter((l) => l.startsWith("- ") && l !== "-").map((l) => l.slice(2).trim());
   }
+  /** Top-level `N. ` / `N) ` items (at column 0); indented continuations and nested items are not items. */
+  numbered(name) {
+    return stripComments(this.section(name)).split("\n").map((l) => /^\d+[.)] +(.*)$/.exec(l)?.[1].trim()).filter((t) => !!t);
+  }
   checklist(name) {
     const out = [];
     for (const line3 of stripComments(this.section(name)).split("\n")) {
@@ -10292,7 +10296,9 @@ var RUN_TIMEOUT_MS = 10 * 6e4;
 var acPrint = (text2) => createHash2("sha1").update(text2.replace(/\s*(?:[—–-]\s*)?\bevidence:.*$/i, "").replace(/\s+/g, " ").trim().toLowerCase()).digest("hex").slice(0, 10);
 function criteria(plan) {
   const list2 = plan.checklist("Acceptance criteria").map(([, c]) => c);
-  return list2.length ? list2 : plan.bullets("Acceptance criteria");
+  if (list2.length) return list2;
+  const numbered = plan.numbered("Acceptance criteria");
+  return numbered.length ? numbered : plan.bullets("Acceptance criteria");
 }
 function implementers(events, planId) {
   return new Set(events.filter((e) => e.ref === planId && (e.type === "claim" || e.type === "move" && e.to === "in-progress" && !e.via)).map((e) => e.run));

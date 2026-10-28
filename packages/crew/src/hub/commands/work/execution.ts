@@ -24,10 +24,12 @@ export interface Verify { cmd: string; ok: boolean; ac: number[]; ac_text?: stri
 export const acPrint = (text: string) => createHash("sha1")
   .update(text.replace(/\s*(?:[—–-]\s*)?\bevidence:.*$/i, "").replace(/\s+/g, " ").trim().toLowerCase()).digest("hex").slice(0, 10);
 
-/** The plan's acceptance criteria, numbered from 1: checklist lines, else bullets. */
+/** The plan's acceptance criteria, numbered from 1: checklist lines, else numbered items, else bullets. */
 export function criteria(plan: Doc): string[] {
   const list = plan.checklist("Acceptance criteria").map(([, c]) => c);
-  return list.length ? list : plan.bullets("Acceptance criteria");
+  if (list.length) return list;
+  const numbered = plan.numbered("Acceptance criteria");
+  return numbered.length ? numbered : plan.bullets("Acceptance criteria");
 }
 
 /** Every run that implemented a plan: each one that claimed it or moved it to in-progress (a reviewer sending it back

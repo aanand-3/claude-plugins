@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { criteria } from "../src/hub/commands/work/execution.js";
 import { assemble, Doc, fill } from "../src/hub/core/work/doc.js";
 import { ITEM_TYPES, TEMPLATE_NAMES, TRIAGE_SECTIONS } from "../src/hub/core/work/model.js";
 
@@ -50,10 +51,39 @@ describe("Doc", () => {
     expect(d.text.trimEnd().endsWith("## Outcome\nShipped.")).toBe(true);
   });
 
+  it("reads top-level numbered items, not continuations or nested items (AC1)", () => {
+    const d = Doc.parse(`## Acceptance criteria
+<!-- 1. a commented item -->
+1.
+1. **First.** Does one thing,
+   wrapped onto a second line.
+2) **Second.** Holds nested bullets:
+   - nested bullet one
+   - nested bullet two
+   1. an indented sub-item
+3. **Third.** Last one.
+
+## Tasks
+1. not a criterion
+`);
+    expect(d.numbered("Acceptance criteria")).toEqual([
+      "**First.** Does one thing,", "**Second.** Holds nested bullets:", "**Third.** Last one."]);
+  });
+
   it("assembles a draft into the template's section order", () => {
     const out = assemble("---\nid: X\n---\n\n## Context\n\n## Risks & open questions\n-\n\n## Progress log\n",
       "## Risks\n- r\n\n## Extra\nkept\n\n## Context\nwhy\n");
     expect(out).toBe("---\nid: X\n---\n\n## Context\nwhy\n\n## Risks & open questions\n- r\n\n## Extra\nkept\n\n## Progress log\n");
+  });
+});
+
+describe("criteria", () => {
+  const plan = (body: string) => Doc.parse(`## Acceptance criteria\n${body}\n## Tasks\n`);
+
+  it("takes the checklist, else numbered items, else bullets (AC2)", () => {
+    expect(criteria(plan("- [ ] one\n- [x] two\n1. numbered\n- bullet\n"))).toEqual(["one", "two"]);
+    expect(criteria(plan("1. one\n   - nested\n2. two\n"))).toEqual(["one", "two"]);
+    expect(criteria(plan("- one\n- two\n"))).toEqual(["one", "two"]);
   });
 });
 
