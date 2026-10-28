@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createInterface } from "node:readline";
 import { afterAll, beforeAll, expect, it } from "vitest";
+import { buildSample, SAMPLE_HOOK_MS } from "./setup/sample.js";
 
 const DIST = new URL("../../../plugins/crew/skills/hub/dist/", import.meta.url).pathname;
 const dir = join(mkdtempSync(join(tmpdir(), "hub-mcp-")), "habitly");
@@ -27,7 +28,7 @@ const snapshot = () => Object.fromEntries(["items", "plans", "goals"].flatMap((s
   readdirSync(join(dir, ".crew", sub)).map((f) => [`${sub}/${f}`, readFileSync(join(dir, ".crew", sub, f), "utf8")])));
 
 beforeAll(async () => {
-  execFileSync("node", [new URL("../scripts/sample-project.mjs", import.meta.url).pathname, dir, join(DIST, "crew.mjs")], { encoding: "utf8" });
+  buildSample(dir, join(DIST, "crew.mjs"));
   server = spawn("node", [join(DIST, "mcp.mjs")], { cwd: dir, env, stdio: ["pipe", "pipe", "inherit"] });
   createInterface({ input: server.stdout! }).on("line", (line) => {
     const m = JSON.parse(line);
@@ -38,7 +39,7 @@ beforeAll(async () => {
     { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "vitest", version: "0" } });
   expect(init).toMatchObject({ protocolVersion: "2025-06-18", capabilities: { tools: {} } });
   server.stdin!.write(`${JSON.stringify({ jsonrpc: "2.0", method: "notifications/initialized" })}\n`);
-}, 120_000);
+}, SAMPLE_HOOK_MS);
 
 afterAll(() => server?.kill());
 

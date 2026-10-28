@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Graph } from "../src/hub/graph-types.js";
+import { buildSample, SAMPLE_HOOK_MS } from "./setup/sample.js";
 
 const DIST = new URL("../../../plugins/crew/skills/hub/dist/crew.mjs", import.meta.url).pathname;
 const dir = join(mkdtempSync(join(tmpdir(), "hub-view-")), "habitly");
@@ -13,9 +14,9 @@ const tr = (...args: string[]) => execFileSync("node", [DIST, ...args], { cwd: d
 let graph: Graph;
 
 beforeAll(() => {
-  execFileSync("node", [new URL("../scripts/sample-project.mjs", import.meta.url).pathname, dir, DIST], { encoding: "utf8" });
+  buildSample(dir, DIST);
   graph = JSON.parse(tr("export", "--json"));
-}, 120_000);
+}, SAMPLE_HOOK_MS);
 
 describe("graph", () => {
   const doc = (id: string) => graph.docs.find((d) => d.id === id)!;
