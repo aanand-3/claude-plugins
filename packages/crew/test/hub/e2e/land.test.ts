@@ -2,7 +2,7 @@
  * merge order in throwaway repos with plan worktrees, and a failed land goes back to the developer (accepted → in-progress,
  * Release's `plan.landed` gate). */
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -286,12 +286,13 @@ describe("land", () => {
 
 /** Finder's race, made deterministic: a `git` first on the repo's PATH whose `worktree remove` runs the real git, then
  * writes `file` back into the removed folder and fails as git does when `rmdir` meets a new file (BUG-040). */
-function finder(r: Repo, file: string): void {
+function finder(r: Repo, file: string): string {
   const real = spawnSync("sh", ["-c", "command -v git"], { encoding: "utf8" }).stdout.trim();
   const bin = mkdtempSync(join(tmpdir(), "crew-shim-"));
   writeFileSync(join(bin, "git"), `#!/bin/sh
 case " $* " in
   *" worktree remove "*)
+    echo remove >> "${bin}/calls"
     "${real}" "$@"
     for last; do :; done
     mkdir -p "$last" && echo x > "$last/${file}"
@@ -301,7 +302,59 @@ esac
 exec "${real}" "$@"
 `, { mode: 0o755 });
   r.env.PATH = `${bin}:${r.env.PATH}`;
+  return bin;
 }
+
+/** A removal that fails early (BUG-041): for its first `fails` calls (99: always) the shim's `worktree remove` runs
+ * `onRemove` (`$last` is the path, `$real` the real git), writes .DS_Store into the folder and fails without running git,
+ * so the folder keeps its files and git still lists it; later calls run the real git. Each call is a line in `<bin>/calls`. */
+function stuck(r: Repo, fails: number, onRemove = ""): string {
+  const real = spawnSync("sh", ["-c", "command -v git"], { encoding: "utf8" }).stdout.trim();
+  const bin = mkdtempSync(join(tmpdir(), "crew-shim-"));
+  writeFileSync(join(bin, "git"), `#!/bin/sh
+real="${real}"
+case " $* " in
+  *" worktree remove "*)
+    echo remove >> "${bin}/calls"
+    if [ "$(wc -l < "${bin}/calls")" -le ${fails} ]; then
+      for last; do :; done
+      ${onRemove || ":"}
+      echo x > "$last/.DS_Store"
+      echo "error: failed to delete '$last': Directory not empty" >&2
+      exit 255
+    fi;;
+esac
+exec "$real" "$@"
+`, { mode: 0o755 });
+  r.env.PATH = `${bin}:${r.env.PATH}`;
+  return bin;
+}
+const calls = (bin: string) => readFileSync(join(bin, "calls"), "utf8").trim().split("\n").length;
+const listed = (r: Repo, pid: string) => r.git("worktree", "list", "--porcelain").stdout.includes(`${pid}-`);
+
+/** A hub whose plans ignore node_modules, a dotenv file and *.local; P-001 accepted, its worktree. */
+function stuckHub(): Repo {
+  repo = hub("", { ".gitignore": "node_modules/\n.env\n*.local\n" });
+  const w = started(repo, "P-001", "Signup");
+  accepted(repo, "P-001", w, 1);
+  return w;
+}
+
+/** The plan's worktree also holds node_modules with a symlink to a file outside the repo; the symlink's target. */
+function withModules(w: Repo): string {
+  w.write("node_modules/pkg/index.js", "module.exports = 1;\n");
+  const outside = join(mkdtempSync(join(tmpdir(), "crew-outside-")), "tool.js");
+  writeFileSync(outside, "outside\n");
+  mkdirSync(join(w.path, "node_modules", ".bin"), { recursive: true });
+  symlinkSync(outside, join(w.path, "node_modules", ".bin", "tool"));
+  return outside;
+}
+
+const landedOk = (r: Result) => {
+  ok(r);
+  expect(r.stdout).not.toContain("not landed");
+  expect(events(repo, "log").some((e) => e.ref === "P-001" && /^landed on main as [0-9a-f]{7}$/.test(String(e.text)))).toBe(true);
+};
 
 describe("cleanup", () => {
   it("cleanup: a .DS_Store recreated during worktree removal does not stop the landing (BUG-040)", () => {
@@ -325,7 +378,7 @@ describe("cleanup", () => {
     const w2 = started(repo, "P-002", "Logout", "--depends", "P-001");
     const folder = w1.path;
     accepted(repo, "P-001", w1, 1);
-    finder(repo, "keep.txt");
+    const bin = finder(repo, "keep.txt");
     const r = land(repo, "P-001");
     ok(r);
     expect(r.stdout).not.toContain("not landed");
@@ -334,6 +387,75 @@ describe("cleanup", () => {
     expect(r.stdout).toContain("P-002: worktree fast-forwarded to main");
     expect(w2.read("src/cli.ts")).toContain("P-001 was here");
     expect(existsSync(join(folder, "keep.txt"))).toBe(true);
+    // git no longer lists the path: no retry and no full delete (P-062 AC4)
+    expect(calls(bin)).toBe(1);
+  });
+
+  it("cleanup: a removal that fails twice succeeds on a retry (BUG-041)", () => {
+    const w = stuckHub();
+    const bin = stuck(repo, 2);
+    const r = land(repo, "P-001");
+    landedOk(r);
+    expect(calls(bin)).toBe(3);
+    expect(existsSync(w.path)).toBe(false);
+    expect(listed(repo, "P-001")).toBe(false);
+    expect(r.stdout).not.toContain("cleanup —");
+    ok(runAs(repo, "pm", "pm", "move", "P-001", "done"));
+  });
+
+  it("cleanup: a stuck worktree with tracked files and node_modules is deleted (BUG-041)", () => {
+    const w = stuckHub();
+    const outside = withModules(w);
+    const bin = stuck(repo, 99, `rm -f "$last/src/cli.ts"; mkdir -p "$last/src"; echo x > "$last/src/.DS_Store"`);
+    const r = land(repo, "P-001");
+    landedOk(r);
+    expect(calls(bin)).toBe(4);
+    expect(existsSync(w.path)).toBe(false);
+    expect(listed(repo, "P-001")).toBe(false);
+    expect(r.stdout).toContain("deleted after");
+    expect(r.stdout).not.toContain("cleanup —");
+    expect(readFileSync(outside, "utf8")).toBe("outside\n");
+    ok(runAs(repo, "pm", "pm", "move", "P-001", "done"));
+  });
+
+  it("cleanup: an ignored dotenv file keeps the stuck worktree (BUG-041)", () => {
+    const w = stuckHub();
+    withModules(w);
+    w.write(".env", "TOKEN=test\n");
+    stuck(repo, 99);
+    const r = land(repo, "P-001");
+    landedOk(r);
+    expect(existsSync(join(w.path, ".env"))).toBe(true);
+    expect(existsSync(join(w.path, "src", "cli.ts"))).toBe(true);
+    expect(r.stdout).toMatch(/P-001: cleanup — kept .*\.env/);
+  });
+
+  it("cleanup: an uncommitted change keeps the stuck worktree", () => {
+    const w = stuckHub();
+    stuck(repo, 99, `echo more >> "$last/src/cli.ts"`);
+    const r = land(repo, "P-001");
+    landedOk(r);
+    expect(existsSync(join(w.path, "src", "cli.ts"))).toBe(true);
+    expect(r.stdout).toMatch(/P-001: cleanup — kept .*src\/cli\.ts/);
+  });
+
+  it("cleanup: a branch that moved after the squash keeps the stuck worktree", () => {
+    const w = stuckHub();
+    stuck(repo, 99, `[ -f "$last/extra.txt" ] || { echo e > "$last/extra.txt"; "$real" -C "$last" add extra.txt; "$real" -C "$last" commit -q -m extra; }`);
+    const r = land(repo, "P-001");
+    landedOk(r);
+    expect(existsSync(join(w.path, "extra.txt"))).toBe(true);
+    expect(r.stdout).toMatch(/P-001: cleanup — kept .*not merged/);
+  });
+
+  it("cleanup: an ignored non-build file keeps the stuck worktree", () => {
+    const w = stuckHub();
+    w.write("notes.local", "mine\n");
+    stuck(repo, 99);
+    const r = land(repo, "P-001");
+    landedOk(r);
+    expect(existsSync(join(w.path, "notes.local"))).toBe(true);
+    expect(r.stdout).toMatch(/P-001: cleanup — kept .*notes\.local/);
   });
 });
 

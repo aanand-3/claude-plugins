@@ -3998,10 +3998,10 @@ var require_resolve_block_map = __commonJS({
       let offset = bm.offset;
       let commentEnd = null;
       for (const collItem of bm.items) {
-        const { start: start2, key, sep: sep2, value } = collItem;
+        const { start: start2, key, sep: sep3, value } = collItem;
         const keyProps = resolveProps.resolveProps(start2, {
           indicator: "explicit-key-ind",
-          next: key ?? sep2?.[0],
+          next: key ?? sep3?.[0],
           offset,
           onError,
           parentIndent: bm.indent,
@@ -4015,7 +4015,7 @@ var require_resolve_block_map = __commonJS({
             else if ("indent" in key && key.indent !== bm.indent)
               onError(offset, "BAD_INDENT", startColMsg);
           }
-          if (!keyProps.anchor && !keyProps.tag && !sep2) {
+          if (!keyProps.anchor && !keyProps.tag && !sep3) {
             commentEnd = keyProps.end;
             if (keyProps.comment) {
               if (map.comment)
@@ -4039,7 +4039,7 @@ var require_resolve_block_map = __commonJS({
         ctx.atKey = false;
         if (utilMapIncludes.mapIncludes(ctx, map.items, keyNode))
           onError(keyStart, "DUPLICATE_KEY", "Map keys must be unique");
-        const valueProps = resolveProps.resolveProps(sep2 ?? [], {
+        const valueProps = resolveProps.resolveProps(sep3 ?? [], {
           indicator: "map-value-ind",
           next: value,
           offset: keyNode.range[2],
@@ -4055,7 +4055,7 @@ var require_resolve_block_map = __commonJS({
             if (ctx.options.strict && keyProps.start < valueProps.found.offset - 1024)
               onError(keyNode.range, "KEY_OVER_1024_CHARS", "The : indicator must be at most 1024 chars after the start of an implicit block mapping key");
           }
-          const valueNode = value ? composeNode(ctx, value, valueProps, onError) : composeEmptyNode(ctx, offset, sep2, null, valueProps, onError);
+          const valueNode = value ? composeNode(ctx, value, valueProps, onError) : composeEmptyNode(ctx, offset, sep3, null, valueProps, onError);
           if (ctx.schema.compat)
             utilFlowIndentCheck.flowIndentCheck(bm.indent, value, onError);
           offset = valueNode.range[2];
@@ -4146,7 +4146,7 @@ var require_resolve_end = __commonJS({
       let comment = "";
       if (end) {
         let hasSpace = false;
-        let sep2 = "";
+        let sep3 = "";
         for (const token of end) {
           const { source, type } = token;
           switch (type) {
@@ -4160,13 +4160,13 @@ var require_resolve_end = __commonJS({
               if (!comment)
                 comment = cb;
               else
-                comment += sep2 + cb;
-              sep2 = "";
+                comment += sep3 + cb;
+              sep3 = "";
               break;
             }
             case "newline":
               if (comment)
-                sep2 += source;
+                sep3 += source;
               hasSpace = true;
               break;
             default:
@@ -4209,18 +4209,18 @@ var require_resolve_flow_collection = __commonJS({
       let offset = fc.offset + fc.start.source.length;
       for (let i = 0; i < fc.items.length; ++i) {
         const collItem = fc.items[i];
-        const { start: start2, key, sep: sep2, value } = collItem;
+        const { start: start2, key, sep: sep3, value } = collItem;
         const props = resolveProps.resolveProps(start2, {
           flow: fcName,
           indicator: "explicit-key-ind",
-          next: key ?? sep2?.[0],
+          next: key ?? sep3?.[0],
           offset,
           onError,
           parentIndent: fc.indent,
           startOnNewline: false
         });
         if (!props.found) {
-          if (!props.anchor && !props.tag && !sep2 && !value) {
+          if (!props.anchor && !props.tag && !sep3 && !value) {
             if (i === 0 && props.comma)
               onError(props.comma, "UNEXPECTED_TOKEN", `Unexpected , in ${fcName}`);
             else if (i < fc.items.length - 1)
@@ -4274,8 +4274,8 @@ var require_resolve_flow_collection = __commonJS({
             }
           }
         }
-        if (!isMap && !sep2 && !props.found) {
-          const valueNode = value ? composeNode(ctx, value, props, onError) : composeEmptyNode(ctx, props.end, sep2, null, props, onError);
+        if (!isMap && !sep3 && !props.found) {
+          const valueNode = value ? composeNode(ctx, value, props, onError) : composeEmptyNode(ctx, props.end, sep3, null, props, onError);
           coll.items.push(valueNode);
           offset = valueNode.range[2];
           if (isBlock(value))
@@ -4287,7 +4287,7 @@ var require_resolve_flow_collection = __commonJS({
           if (isBlock(key))
             onError(keyNode.range, "BLOCK_IN_FLOW", blockMsg);
           ctx.atKey = false;
-          const valueProps = resolveProps.resolveProps(sep2 ?? [], {
+          const valueProps = resolveProps.resolveProps(sep3 ?? [], {
             flow: fcName,
             indicator: "map-value-ind",
             next: value,
@@ -4298,8 +4298,8 @@ var require_resolve_flow_collection = __commonJS({
           });
           if (valueProps.found) {
             if (!isMap && !props.found && ctx.options.strict) {
-              if (sep2)
-                for (const st of sep2) {
+              if (sep3)
+                for (const st of sep3) {
                   if (st === valueProps.found)
                     break;
                   if (st.type === "newline") {
@@ -4316,7 +4316,7 @@ var require_resolve_flow_collection = __commonJS({
             else
               onError(valueProps.start, "MISSING_CHAR", `Missing , or : between ${fcName} items`);
           }
-          const valueNode = value ? composeNode(ctx, value, valueProps, onError) : valueProps.found ? composeEmptyNode(ctx, valueProps.end, sep2, null, valueProps, onError) : null;
+          const valueNode = value ? composeNode(ctx, value, valueProps, onError) : valueProps.found ? composeEmptyNode(ctx, valueProps.end, sep3, null, valueProps, onError) : null;
           if (valueNode) {
             if (isBlock(value))
               onError(valueNode.range, "BLOCK_IN_FLOW", blockMsg);
@@ -4496,7 +4496,7 @@ var require_resolve_block_scalar = __commonJS({
           chompStart = i + 1;
       }
       let value = "";
-      let sep2 = "";
+      let sep3 = "";
       let prevMoreIndented = false;
       for (let i = 0; i < contentStart; ++i)
         value += lines[i][0].slice(trimIndent) + "\n";
@@ -4513,24 +4513,24 @@ var require_resolve_block_scalar = __commonJS({
           indent = "";
         }
         if (type === Scalar.Scalar.BLOCK_LITERAL) {
-          value += sep2 + indent.slice(trimIndent) + content;
-          sep2 = "\n";
+          value += sep3 + indent.slice(trimIndent) + content;
+          sep3 = "\n";
         } else if (indent.length > trimIndent || content[0] === "	") {
-          if (sep2 === " ")
-            sep2 = "\n";
-          else if (!prevMoreIndented && sep2 === "\n")
-            sep2 = "\n\n";
-          value += sep2 + indent.slice(trimIndent) + content;
-          sep2 = "\n";
+          if (sep3 === " ")
+            sep3 = "\n";
+          else if (!prevMoreIndented && sep3 === "\n")
+            sep3 = "\n\n";
+          value += sep3 + indent.slice(trimIndent) + content;
+          sep3 = "\n";
           prevMoreIndented = true;
         } else if (content === "") {
-          if (sep2 === "\n")
+          if (sep3 === "\n")
             value += "\n";
           else
-            sep2 = "\n";
+            sep3 = "\n";
         } else {
-          value += sep2 + content;
-          sep2 = " ";
+          value += sep3 + content;
+          sep3 = " ";
           prevMoreIndented = false;
         }
       }
@@ -4712,25 +4712,25 @@ var require_resolve_flow_scalar = __commonJS({
       if (!match)
         return source;
       let res = match[1];
-      let sep2 = " ";
+      let sep3 = " ";
       let pos = first.lastIndex;
       line3.lastIndex = pos;
       while (match = line3.exec(source)) {
         if (match[1] === "") {
-          if (sep2 === "\n")
-            res += sep2;
+          if (sep3 === "\n")
+            res += sep3;
           else
-            sep2 = "\n";
+            sep3 = "\n";
         } else {
-          res += sep2 + match[1];
-          sep2 = " ";
+          res += sep3 + match[1];
+          sep3 = " ";
         }
         pos = line3.lastIndex;
       }
       const last = /[ \t]*(.*)/sy;
       last.lastIndex = pos;
       match = last.exec(source);
-      return res + sep2 + (match?.[1] ?? "");
+      return res + sep3 + (match?.[1] ?? "");
     }
     function doubleQuotedValue(source, onError) {
       let res = "";
@@ -5540,14 +5540,14 @@ var require_cst_stringify = __commonJS({
         }
       }
     }
-    function stringifyItem({ start: start2, key, sep: sep2, value }) {
+    function stringifyItem({ start: start2, key, sep: sep3, value }) {
       let res = "";
       for (const st of start2)
         res += st.source;
       if (key)
         res += stringifyToken(key);
-      if (sep2)
-        for (const st of sep2)
+      if (sep3)
+        for (const st of sep3)
           res += st.source;
       if (value)
         res += stringifyToken(value);
@@ -6348,15 +6348,15 @@ var require_parser = __commonJS({
     var node_process = __require("process");
     var cst = require_cst();
     var lexer = require_lexer();
-    function includesToken(list, type) {
-      for (let i = 0; i < list.length; ++i)
-        if (list[i].type === type)
+    function includesToken(list2, type) {
+      for (let i = 0; i < list2.length; ++i)
+        if (list2[i].type === type)
           return true;
       return false;
     }
-    function findNonEmptyIndex(list) {
-      for (let i = 0; i < list.length; ++i) {
-        switch (list[i].type) {
+    function findNonEmptyIndex(list2) {
+      for (let i = 0; i < list2.length; ++i) {
+        switch (list2[i].type) {
           case "space":
           case "comment":
           case "newline":
@@ -6714,18 +6714,18 @@ var require_parser = __commonJS({
         if (this.type === "map-value-ind") {
           const prev = getPrevProps(this.peek(2));
           const start2 = getFirstKeyStartProps(prev);
-          let sep2;
+          let sep3;
           if (scalar2.end) {
-            sep2 = scalar2.end;
-            sep2.push(this.sourceToken);
+            sep3 = scalar2.end;
+            sep3.push(this.sourceToken);
             delete scalar2.end;
           } else
-            sep2 = [this.sourceToken];
+            sep3 = [this.sourceToken];
           const map = {
             type: "block-map",
             offset: scalar2.offset,
             indent: scalar2.indent,
-            items: [{ start: start2, key: scalar2, sep: sep2 }]
+            items: [{ start: start2, key: scalar2, sep: sep3 }]
           };
           this.onKeyLine = true;
           this.stack[this.stack.length - 1] = map;
@@ -6878,15 +6878,15 @@ var require_parser = __commonJS({
                 } else if (isFlowToken(it.key) && !includesToken(it.sep, "newline")) {
                   const start3 = getFirstKeyStartProps(it.start);
                   const key = it.key;
-                  const sep2 = it.sep;
-                  sep2.push(this.sourceToken);
+                  const sep3 = it.sep;
+                  sep3.push(this.sourceToken);
                   delete it.key;
                   delete it.sep;
                   this.stack.push({
                     type: "block-map",
                     offset: this.offset,
                     indent: this.indent,
-                    items: [{ start: start3, key, sep: sep2 }]
+                    items: [{ start: start3, key, sep: sep3 }]
                   });
                 } else if (start2.length > 0) {
                   it.sep = it.sep.concat(start2, this.sourceToken);
@@ -7080,13 +7080,13 @@ var require_parser = __commonJS({
             const prev = getPrevProps(parent);
             const start2 = getFirstKeyStartProps(prev);
             fixFlowSeqItems(fc);
-            const sep2 = fc.end.splice(1, fc.end.length);
-            sep2.push(this.sourceToken);
+            const sep3 = fc.end.splice(1, fc.end.length);
+            sep3.push(this.sourceToken);
             const map = {
               type: "block-map",
               offset: fc.offset,
               indent: fc.indent,
-              items: [{ start: start2, key: fc, sep: sep2 }]
+              items: [{ start: start2, key: fc, sep: sep3 }]
             };
             this.onKeyLine = true;
             this.stack[this.stack.length - 1] = map;
@@ -8732,11 +8732,11 @@ var Store = class _Store {
   /** Worktrees of plan branches other than this checkout, by plan ID: where each plan's team works. */
   planWorktrees() {
     if (this.worktreeCache) return this.worktreeCache;
-    const real5 = (p) => existsSync5(p) ? realpathSync2(p) : p;
-    const here = real5(this.ws.root), out = /* @__PURE__ */ new Map();
+    const real6 = (p) => existsSync5(p) ? realpathSync2(p) : p;
+    const here = real6(this.ws.root), out = /* @__PURE__ */ new Map();
     for (const w of worktrees()) {
       const m = /^plan\/(P-\d+)/.exec(w.branch ?? "");
-      if (m && existsSync5(w.path) && real5(w.path) !== here) out.set(m[1], w.path);
+      if (m && existsSync5(w.path) && real6(w.path) !== here) out.set(m[1], w.path);
     }
     return this.worktreeCache = out;
   }
@@ -8839,8 +8839,8 @@ var Store = class _Store {
     return [file, text2];
   }
   consume(draftFile, keep = false) {
-    const real5 = (p) => existsSync5(p) ? realpathSync2(p) : p;
-    if (!keep && real5(draftFile).startsWith(real5(resolve3(this.dir, "drafts")) + "/")) this.ws.remove(draftFile);
+    const real6 = (p) => existsSync5(p) ? realpathSync2(p) : p;
+    if (!keep && real6(draftFile).startsWith(real6(resolve3(this.dir, "drafts")) + "/")) this.ws.remove(draftFile);
   }
   build(template2, draft, fields) {
     const tmpl = fill(stripComments(this.template(template2)), { date: today(), ...fields }).replace(/^(\w+): $/gm, "$1:");
@@ -9141,7 +9141,7 @@ function parse3(s2) {
       if (!h.quoted) h.cmd.live.push(body2);
     }
   };
-  const nested = (stop) => list(stop);
+  const nested = (stop) => list2(stop);
   const word = (stop) => {
     const start2 = i;
     let value = "";
@@ -9218,7 +9218,7 @@ function parse3(s2) {
     else if (out) cmd.targets.push(target);
     else if (!dup) cmd.inputs.push(target);
   };
-  function list(stop) {
+  function list2(stop) {
     let cur = { words: [], bodies: [], targets: [], inputs: [], live: [] };
     all.push(cur);
     const end = () => {
@@ -9255,7 +9255,7 @@ function parse3(s2) {
       }
     }
   }
-  list("");
+  list2("");
   return all.filter((c) => c.words.length || c.bodies.length || c.targets.length || c.inputs.length);
 }
 var base = (w) => w ? basename3(w.value) : "";
@@ -10288,8 +10288,8 @@ var OUTPUT_CHARS = 2e3;
 var RUN_TIMEOUT_MS = 10 * 6e4;
 var acPrint = (text2) => createHash2("sha1").update(text2.replace(/\s*(?:[—–-]\s*)?\bevidence:.*$/i, "").replace(/\s+/g, " ").trim().toLowerCase()).digest("hex").slice(0, 10);
 function criteria(plan) {
-  const list = plan.checklist("Acceptance criteria").map(([, c]) => c);
-  return list.length ? list : plan.bullets("Acceptance criteria");
+  const list2 = plan.checklist("Acceptance criteria").map(([, c]) => c);
+  return list2.length ? list2 : plan.bullets("Acceptance criteria");
 }
 function implementers(events, planId) {
   return new Set(events.filter((e) => e.ref === planId && (e.type === "claim" || e.type === "move" && e.to === "in-progress" && !e.via)).map((e) => e.run));
@@ -12120,8 +12120,8 @@ function linkExisting(goal, item, itemId) {
   }
 }
 function itemFromCandidate(store, goal, cand) {
-  const sep2 = /\s+[—–-]\s+|:\s/.exec(cand);
-  const [name, desc] = sep2 ? [cand.slice(0, sep2.index).trim(), cand.slice(sep2.index + sep2[0].length).trim()] : [cand, ""];
+  const sep3 = /\s+[—–-]\s+|:\s/.exec(cand);
+  const [name, desc] = sep3 ? [cand.slice(0, sep3.index).trim(), cand.slice(sep3.index + sep3[0].length).trim()] : [cand, ""];
   const body2 = `## Summary
 ${desc || name}
 
@@ -13754,8 +13754,123 @@ var registration13 = {
 
 // src/hub/commands/work/land.ts
 import { spawnSync as spawnSync7 } from "node:child_process";
-import { existsSync as existsSync13, mkdirSync as mkdirSync6, readdirSync as readdirSync5, rmSync as rmSync2 } from "node:fs";
-import { join as join23, relative as relative6 } from "node:path";
+import { mkdirSync as mkdirSync6 } from "node:fs";
+import { join as join24 } from "node:path";
+
+// src/hub/commands/work/worktree-cleanup.ts
+import { existsSync as existsSync13, lstatSync, readdirSync as readdirSync5, realpathSync as realpathSync7, rmSync as rmSync2, unlinkSync as unlinkSync3 } from "node:fs";
+import { basename as basename9, join as join23, relative as relative6, resolve as resolve10, sep as sep2 } from "node:path";
+function cleanupWorktree(store, at) {
+  const { wt } = at;
+  if (git(["worktree", "remove", "--force", wt]) !== null) return null;
+  for (let i = 0; i < 3 && registered(at); i++) {
+    pause(200);
+    try {
+      sweepJunk(wt);
+    } catch {
+    }
+    if (git(["worktree", "remove", "--force", wt]) !== null) return null;
+  }
+  let left = [];
+  try {
+    if (existsSync13(wt)) left = leftovers(wt, wt);
+    if (!left.length) rmSync2(wt, { recursive: true, force: true });
+  } catch (e) {
+    left = [`(${e.message})`];
+  }
+  const rel = store.rel(wt) || wt, byHand = "remove it by hand, then `git worktree prune`";
+  if (!left.length || !registered(at)) {
+    git(["worktree", "prune"]);
+    return left.length ? `left ${rel}: ${list(left)}; ${byHand}` : null;
+  }
+  const why = safeToDelete(store, at);
+  if (why) return `kept ${rel}: ${why}; ${byHand}`;
+  try {
+    rmSync2(wt, { recursive: true, force: true });
+  } catch (e) {
+    return `kept what is left of ${rel}: the delete failed (${e.message}); ${byHand}`;
+  }
+  git(["worktree", "prune"]);
+  if (registered(at)) return `deleted ${rel}, but git still lists it as ${at.pid}'s worktree; run \`git worktree prune\``;
+  store.say(`${at.pid}: worktree ${rel} deleted after git worktree remove failed (nothing in it could be lost)`);
+  return null;
+}
+var REGENERABLE = /* @__PURE__ */ new Set(["node_modules", "dist", "build", "coverage", ".cache", "__pycache__"]);
+function safeToDelete(store, at) {
+  try {
+    return whyKeep(store, at);
+  } catch (e) {
+    return `checking it failed (${e.message})`;
+  }
+}
+function whyKeep(store, at) {
+  const { pid, branch, base: base2, wt } = at;
+  if (!registered(at)) return `git no longer lists it as ${pid}'s worktree`;
+  const main = worktrees()[0]?.path, common = main ? commonDir(main) : null;
+  if (!main || !common) return "the main checkout was not found";
+  const w = realpathSync7(wt), holds = (p) => real5(p) === w || real5(p).startsWith(`${w}${sep2}`);
+  if (lstatSync(wt).isSymbolicLink() || !lstatSync(wt).isDirectory() || holds(main) || holds(common)) {
+    return "it is not a plan worktree folder";
+  }
+  const top = git(["-C", wt, "rev-parse", "--show-toplevel"])?.trim();
+  if (!top || real5(top) !== w) return "git does not see it as its own checkout";
+  const secrets = store.policy.policy.secrets.files;
+  const status2 = git(["-C", wt, "status", "--porcelain", "-z", "--untracked-files=all"]);
+  if (status2 === null) return "git status failed";
+  const dirty2 = /* @__PURE__ */ new Set(), deleted = /* @__PURE__ */ new Set();
+  const entries = status2.split("\0");
+  for (let i = 0; i < entries.length; i++) {
+    const [code, path] = [entries[i].slice(0, 2), entries[i].slice(3)];
+    if (!path) continue;
+    if (/[RC]/.test(code)) i++;
+    if (/^(D |[ D]D)$/.test(code)) deleted.add(path);
+    else if (!(code === "??" && OS_JUNK.test(basename9(path)))) dirty2.add(path);
+  }
+  for (const f of codeChanges(wt, secrets)) if (!deleted.has(f) && !OS_JUNK.test(basename9(f))) dirty2.add(f);
+  if (dirty2.size) return `uncommitted code (${list([...dirty2])})`;
+  if (!branchMerged(branch, base2, pid)) return `${branch} is not merged into ${base2}`;
+  const out = git(["-C", wt, "ls-files", "-z", "--others", "--ignored", "--exclude-standard"]);
+  if (out === null) return "listing its ignored files failed";
+  const ignored = out.split("\0").filter(Boolean), res = secrets.map(globRe);
+  const secret = ignored.filter((f) => res.some((re) => re.test(f)));
+  if (secret.length) return `ignored files that may hold secrets (${list(secret)})`;
+  const kept = ignored.filter((f) => !OS_JUNK.test(basename9(f)) && !f.endsWith(".tsbuildinfo") && !f.split("/").some((seg) => REGENERABLE.has(seg)));
+  if (kept.length) return `ignored files that are not build output (${list(kept)})`;
+  return null;
+}
+var OS_JUNK = /^(\.DS_Store|\._.*|Thumbs\.db|desktop\.ini)$/;
+var list = (paths) => `${paths.slice(0, 5).join(", ")}${paths.length > 5 ? ", \u2026" : ""}`;
+var real5 = (p) => {
+  try {
+    return realpathSync7(p);
+  } catch {
+    return resolve10(p);
+  }
+};
+function registered({ branch, wt }) {
+  const at = real5(wt);
+  return worktrees().slice(1).some((w) => w.branch === branch && real5(w.path) === at);
+}
+function sweepJunk(dir) {
+  for (const e of readdirSync5(dir, { withFileTypes: true })) {
+    const path = join23(dir, e.name);
+    if (e.isDirectory()) sweepJunk(path);
+    else if (e.isFile() && OS_JUNK.test(e.name)) unlinkSync3(path);
+  }
+}
+function pause(ms) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+function leftovers(dir, root) {
+  return readdirSync5(dir, { withFileTypes: true }).flatMap((e) => {
+    const path = join23(dir, e.name);
+    if (e.isDirectory()) return leftovers(path, root);
+    if (OS_JUNK.test(e.name) || e.isFile() && path === join23(root, ".git")) return [];
+    return [relative6(root, path)];
+  });
+}
+
+// src/hub/commands/work/land.ts
 var ROUNDS = 3;
 var OUTPUT_LINES2 = 5;
 var OUTPUT_CHARS2 = 600;
@@ -13843,7 +13958,7 @@ function landOne(store, plan, base2) {
       at(["merge", "--abort"]);
       throw new Bounce(`merging ${base2} conflicts in ${files2.join(", ") || tail3(store, `${m.stdout}${m.stderr}`)}`);
     }
-    const hub = yamlBlock(store.ws.read(join23(store.dir, "config.yaml")) ?? "", "hub");
+    const hub = yamlBlock(store.ws.read(join24(store.dir, "config.yaml")) ?? "", "hub");
     if (hub.build) {
       const b = spawnSync7(hub.build, { shell: true, cwd: wt, encoding: "utf8", maxBuffer: 64 << 20 });
       if (b.status !== 0) throw new Bounce(`hub.build failed (exit ${b.status}): ${tail3(store, `${b.stdout}${b.stderr}`)}`);
@@ -13872,8 +13987,8 @@ function landOne(store, plan, base2) {
 }
 function squash(store, plan, base2, from) {
   const common = commonDir(store.home);
-  mkdirSync6(join23(common, "crew"), { recursive: true });
-  const lock = join23(common, "crew", "hub-commit.lock"), token = acquireLock(lock);
+  mkdirSync6(join24(common, "crew"), { recursive: true });
+  const lock = join24(common, "crew", "hub-commit.lock"), token = acquireLock(lock);
   try {
     const now = git(["rev-parse", base2], true).trim();
     if (now !== from && (git(["diff", "--name-only", from, now, "--", ".", ":(exclude).crew"]) ?? "").trim()) return null;
@@ -13891,7 +14006,7 @@ function squash(store, plan, base2, from) {
 function landed(store, plan, base2, branch, wt, sha) {
   const short = sha.slice(0, 7);
   log(store, plan.id, `landed on ${base2} as ${short}`);
-  const warnings = [cleanupWorktree(store, wt)];
+  const warnings = [cleanupWorktree(store, { pid: plan.id, branch, base: base2, wt })];
   if (git(["branch", "-D", branch]) === null) warnings.push(`branch ${branch} was not deleted; delete it by hand`);
   store.forgetWorktrees();
   for (const dep of [...store.plans().values()].filter((p) => p.dependsOn().includes(plan.id))) {
@@ -13900,28 +14015,6 @@ function landed(store, plan, base2, branch, wt, sha) {
   }
   store.say(`${plan.id}: landed on ${base2} as ${short} \u2014 the PM moves it done`);
   for (const w of warnings) if (w) store.say(`${plan.id}: cleanup \u2014 ${w} (the landing stands)`);
-}
-function cleanupWorktree(store, wt) {
-  if (git(["worktree", "remove", "--force", wt]) !== null) return null;
-  let left = [];
-  try {
-    if (existsSync13(wt)) left = leftovers(wt, wt);
-    if (!left.length) rmSync2(wt, { recursive: true, force: true });
-  } catch (e) {
-    left = [`(${e.message})`];
-  }
-  git(["worktree", "prune"]);
-  if (!left.length) return null;
-  return `left ${store.rel(wt) || wt}: ${left.slice(0, 5).join(", ")}${left.length > 5 ? ", \u2026" : ""}; remove it by hand, then \`git worktree prune\``;
-}
-var OS_JUNK = /^(\.DS_Store|\._.*|Thumbs\.db|desktop\.ini)$/;
-function leftovers(dir, root) {
-  return readdirSync5(dir, { withFileTypes: true }).flatMap((e) => {
-    const path = join23(dir, e.name);
-    if (e.isDirectory()) return leftovers(path, root);
-    if (OS_JUNK.test(e.name) || e.isFile() && path === join23(root, ".git")) return [];
-    return [relative6(root, path)];
-  });
 }
 function updateDependant(store, dep, home2, base2) {
   const at = (args) => spawnSync7("git", ["-C", home2, ...args], { encoding: "utf8" });
@@ -14398,22 +14491,22 @@ import { spawn } from "node:child_process";
 import { randomBytes as randomBytes4 } from "node:crypto";
 import { existsSync as existsSync15, mkdirSync as mkdirSync7, watch as watch2 } from "node:fs";
 import { createServer } from "node:http";
-import { basename as basename9, dirname as dirname9, join as join25 } from "node:path";
+import { basename as basename10, dirname as dirname9, join as join26 } from "node:path";
 
 // src/hub/commands/views/design.ts
 var import_yaml5 = __toESM(require_dist(), 1);
 import { existsSync as existsSync14, readFileSync as readFileSync11 } from "node:fs";
-import { dirname as dirname8, join as join24 } from "node:path";
+import { dirname as dirname8, join as join25 } from "node:path";
 var HANDOFF_KINDS = ["finalise", "locked", "revision", "screen-change", "screens-done", "screens-skipped"];
 var STAGES = ["palette", "directions", "tune", "finalise", "screens", "done"];
 var STATE_KEYS = ["stage", "shortlist", "variants", "current", "reviews"];
 var REQUIRED_COLORS = ["background", "foreground", "primary", "primary-foreground"];
 var FRONT = /^---\n([\s\S]*?)\n---\n/;
 function designPath(store) {
-  const cfg = store.ws.read(join24(store.dir, "config.yaml")) ?? "";
-  return join24(store.ws.root, yamlBlock(cfg, "design").file ?? "docs/design/DESIGN.md");
+  const cfg = store.ws.read(join25(store.dir, "config.yaml")) ?? "";
+  return join25(store.ws.root, yamlBlock(cfg, "design").file ?? "docs/design/DESIGN.md");
 }
-var studioPath = (store) => join24(dirname8(designPath(store)), "studio.json");
+var studioPath = (store) => join25(dirname8(designPath(store)), "studio.json");
 function readDesign(store) {
   const path = designPath(store);
   const text2 = store.ws.read(path);
@@ -14515,16 +14608,16 @@ function updateStudio(store, patch) {
 function handoff2(store, h) {
   if (!HANDOFF_KINDS.includes(h.kind)) fail(`handoff kind must be one of ${HANDOFF_KINDS.join(", ")}.`);
   const studio = readStudio(store) ?? {};
-  const list = studio.handoffs ?? [];
-  const next = Math.max(studio.handoff_seq ?? 0, ...list.map((x) => Number(x.id.slice(1)) || 0)) + 1;
-  list.push({
+  const list2 = studio.handoffs ?? [];
+  const next = Math.max(studio.handoff_seq ?? 0, ...list2.map((x) => Number(x.id.slice(1)) || 0)) + 1;
+  list2.push({
     id: `h${next}`,
     kind: h.kind,
     ...h.note ? { note: String(h.note) } : {},
     ...h.screen ? { screen: String(h.screen) } : {},
     at: (/* @__PURE__ */ new Date()).toISOString()
   });
-  writeStudio(store, { ...studio, handoffs: list, handoff_seq: next });
+  writeStudio(store, { ...studio, handoffs: list2, handoff_seq: next });
 }
 var HANDOFF_HELP = {
   finalise: "write the prose sections of DESIGN.md for the saved draft",
@@ -14557,11 +14650,11 @@ function designShow(store, json) {
 }
 function designDone(store, id) {
   const studio = readStudio(store) ?? fail("No studio.json yet.");
-  const list = studio.handoffs ?? [];
-  const left = id === "all" ? [] : list.filter((h) => h.id !== id);
-  if (left.length === list.length && list.length) fail(`No hand-off '${id}' (open: ${list.map((h) => h.id).join(", ")}).`);
+  const list2 = studio.handoffs ?? [];
+  const left = id === "all" ? [] : list2.filter((h) => h.id !== id);
+  if (left.length === list2.length && list2.length) fail(`No hand-off '${id}' (open: ${list2.map((h) => h.id).join(", ")}).`);
   writeStudio(store, { ...studio, handoffs: left });
-  store.say(`Done: ${id === "all" ? `${list.length} hand-off(s)` : id}. The studio updates by itself.`);
+  store.say(`Done: ${id === "all" ? `${list2.length} hand-off(s)` : id}. The studio updates by itself.`);
 }
 function designWait(store, timeoutSec) {
   const path = studioPath(store);
@@ -14574,10 +14667,10 @@ function designWait(store, timeoutSec) {
   };
   const started = Date.now();
   const tick = () => {
-    const list = pending();
-    if (list.length) {
-      process.stdout.write(`The studio handed ${list.length} step(s) to Claude:
-${list.map((h) => `  ${describe2(h)}`).join("\n")}
+    const list2 = pending();
+    if (list2.length) {
+      process.stdout.write(`The studio handed ${list2.length} step(s) to Claude:
+${list2.map((h) => `  ${describe2(h)}`).join("\n")}
 Do each, then \`crew.mjs design done <id>\` (the page updates live) and run \`design wait\` again.
 `);
       process.exit(0);
@@ -14716,14 +14809,14 @@ function serve(store, o) {
     store.dir,
     dirname9(designPath(store)),
     ...ledgerDir !== store.dir ? [ledgerDir] : [],
-    ...common ? [join25(common, "refs"), join25(common, "HEAD")] : []
+    ...common ? [join26(common, "refs"), join26(common, "HEAD")] : []
   ];
   const watchers = [...new Set(watched)].filter((p) => existsSync15(p)).map((p) => watch2(p, { recursive: !p.endsWith("HEAD") && (p !== ledgerDir || p === store.dir) }, (_, file) => {
     const f = String(file ?? "");
-    if (/\.lock$|\.stale-/.test(basename9(f))) return;
+    if (/\.lock$|\.stale-/.test(basename10(f))) return;
     if (!(p === store.dir && f.startsWith("view"))) notify2();
   }));
-  return new Promise((resolve11, reject) => {
+  return new Promise((resolve12, reject) => {
     const listen = (port, tries) => {
       server.once("error", (e) => {
         if (e.code === "EADDRINUSE" && tries > 0) listen(port + 1, tries - 1);
@@ -14734,7 +14827,7 @@ function serve(store, o) {
         hosts = /* @__PURE__ */ new Set([`127.0.0.1:${actual}`, `localhost:${actual}`]);
         const url = `http://127.0.0.1:${actual}/${o.page ?? ""}`;
         if (o.open) openBrowser(url);
-        resolve11({ url, close: () => {
+        resolve12({ url, close: () => {
           watchers.forEach((w) => w.close());
           for (const c of clients) c.end();
           server.close();
@@ -14749,7 +14842,7 @@ function send(res, status2, body2) {
   res.end(JSON.stringify(body2));
 }
 function readJson(req) {
-  return new Promise((resolve11, reject) => {
+  return new Promise((resolve12, reject) => {
     let raw = "";
     req.on("data", (c) => {
       raw += c;
@@ -14758,7 +14851,7 @@ function readJson(req) {
     req.on("end", () => {
       try {
         const v = JSON.parse(raw || "{}");
-        resolve11(v && typeof v === "object" && !Array.isArray(v) ? v : {});
+        resolve12(v && typeof v === "object" && !Array.isArray(v) ? v : {});
       } catch {
         reject(new Error("Body must be JSON."));
       }
@@ -14840,12 +14933,12 @@ var registration27 = {
 var import_yaml6 = __toESM(require_dist(), 1);
 import { spawnSync as spawnSync8 } from "node:child_process";
 import { accessSync, constants, mkdirSync as mkdirSync8, rmSync as rmSync3, statSync as statSync10, writeFileSync as writeFileSync4 } from "node:fs";
-import { join as join26, resolve as resolve10 } from "node:path";
+import { join as join27, resolve as resolve11 } from "node:path";
 var ok = (id, detail2) => ({ id, level: "ok", detail: detail2, fix: null });
 var warn = (id, detail2, fix) => ({ id, level: "warn", detail: detail2, fix });
 var bad = (id, detail2, fix) => ({ id, level: "fail", detail: detail2, fix });
 function yamlFile(store, name) {
-  const text2 = store.ws.read(join26(store.dir, name));
+  const text2 = store.ws.read(join27(store.dir, name));
   try {
     const v = (0, import_yaml6.parse)(text2 ?? "");
     return v && typeof v === "object" ? v : {};
@@ -14871,7 +14964,7 @@ function planWorktrees(store) {
   return store.settings().plan_worktrees ? ok("plan-worktrees", "on") : warn("plan-worktrees", "hub.plan_worktrees is off: plans can't run side by side", "set hub.plan_worktrees: true in .crew/config.yaml");
 }
 function vendoredHub(store) {
-  return store.ws.isFile(join26(store.dir, "bin", "crew.mjs")) ? ok("vendored-hub", ".crew/bin/crew.mjs") : bad("vendored-hub", ".crew/bin/crew.mjs is missing", "run `crew.mjs init`");
+  return store.ws.isFile(join27(store.dir, "bin", "crew.mjs")) ? ok("vendored-hub", ".crew/bin/crew.mjs") : bad("vendored-hub", ".crew/bin/crew.mjs is missing", "run `crew.mjs init`");
 }
 function agents2(store) {
   const problems = agentProblems(store);
@@ -14883,7 +14976,7 @@ function agents2(store) {
   ));
 }
 function hookCommands2(store) {
-  const text2 = store.ws.read(join26(store.home, ".claude", "settings.json"));
+  const text2 = store.ws.read(join27(store.home, ".claude", "settings.json"));
   if (text2 === null) return null;
   try {
     const hooks2 = JSON.parse(text2).hooks ?? {};
@@ -14907,7 +15000,7 @@ function hooks(store) {
   return out.length ? out : [ok("hooks", "guard, usage, activity, context and checkpoint hooks are set")];
 }
 function generated2(store) {
-  const build = yamlBlock(store.ws.read(join26(store.dir, "config.yaml")) ?? "", "hub").build;
+  const build = yamlBlock(store.ws.read(join27(store.dir, "config.yaml")) ?? "", "hub").build;
   if (!build) return ok("generated", "no hub.build");
   const n2 = trackedFiles(store.home).generated.size;
   return n2 ? ok("generated", `${n2} tracked file(s) marked linguist-generated`) : warn(
@@ -14978,7 +15071,7 @@ function runHook(home2, hook, args, env) {
   let r = spawnSync8("git", ["hook", "run", "--ignore-missing", hook, ...args.length ? ["--", ...args] : []], opts);
   if (r.status === 129 || /not a git command|usage: git hook/.test(r.stderr ?? "")) {
     const dir = git(["-C", home2, "rev-parse", "--git-path", "hooks"])?.trim();
-    const file = dir ? resolve10(home2, dir, hook) : null;
+    const file = dir ? resolve11(home2, dir, hook) : null;
     if (!file || !isExecutable(file)) return null;
     r = spawnSync8(file, args, opts);
   }
@@ -14998,9 +15091,9 @@ function isExecutable(file) {
 function probeHubCommit(home2) {
   const common = commonDir(home2);
   if (!common) return null;
-  const dir = join26(common, "crew");
+  const dir = join27(common, "crew");
   mkdirSync8(dir, { recursive: true });
-  const index = join26(dir, `doctor-index-${process.pid}`), msg = join26(dir, `doctor-msg-${process.pid}`);
+  const index = join27(dir, `doctor-index-${process.pid}`), msg = join27(dir, `doctor-msg-${process.pid}`);
   const env = { ...process.env, GIT_INDEX_FILE: index };
   const g = (args, input) => spawnSync8("git", ["-C", home2, ...args], { env, input, encoding: "utf8" });
   try {

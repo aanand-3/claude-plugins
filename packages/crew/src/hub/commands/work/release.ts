@@ -13,7 +13,7 @@ export interface MergeOrder { base: string;
   merged: { id: string; branch: string; legacy?: boolean }[] }
 
 /** A plan branch merged into `base`, or squash-merged (this repo's way: the branch never becomes an ancestor). */
-const branchMerged = (branch: string, base: string, pid: string) =>
+export const branchMerged = (branch: string, base: string, pid: string) =>
   git.git(["merge-base", "--is-ancestor", branch, base]) !== null || git.squashMerge(branch, base, pid) !== null;
 
 /** Why a plan isn't landed on the base yet (`plan.done`'s gate): its plan worktree is still open, or its branch is neither
