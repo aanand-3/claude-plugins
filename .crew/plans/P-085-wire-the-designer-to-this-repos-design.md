@@ -5,12 +5,12 @@ goal:
 items: CHORE-027
 touches: .crew/config.yaml, plugins/crew/skills/hub/agents/designer.md, plugins/crew/skills/design/SKILL.md
 depends_on:
-status: accepted
+status: done
 branch: plan/P-085-wire-the-designer-to-this-repos-design
 pr:
 created: 2026-10-27
 started: 2026-10-28
-completed:
+completed: 2026-10-28
 assignee: developer
 ---
 
@@ -131,6 +131,7 @@ Latest log:
 - 2026-10-28: status in-progress → in-review
 - 2026-10-28: status in-review → accepted
 - 2026-10-28: landed on main as 1f5797b
+- 2026-10-28: status accepted → done
 
 ## Outcome
 Learnings: none

@@ -2,12 +2,12 @@
 id: CHORE-027
 type: chore
 title: Designer agent is not vendored or rendered in this repo
-status: triaged
+status: done
 priority: P2
 goal:
 plan: P-085
 created: 2026-10-26
-closed:
+closed: 2026-10-28
 ---
 
 # CHORE-027: Designer agent is not vendored or rendered in this repo
@@ -26,3 +26,4 @@ The Designer also gets no work here because two more pieces are missing:
 
 ## Notes
 - 2026-10-26: status new → triaged — priority P2
+- 2026-10-28: status triaged → done — delivered by P-085
