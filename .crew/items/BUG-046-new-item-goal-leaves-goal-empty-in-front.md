@@ -2,13 +2,13 @@
 id: BUG-046
 type: bug
 title: new-item --goal leaves goal empty in front matter
-status: triaged
+status: done
 severity: S3
 priority: P2
 goal:
 plan: P-074
 created: 2026-10-26
-closed:
+closed: 2026-10-28
 ---
 
 # BUG-046: new-item --goal leaves goal empty in front matter
@@ -38,3 +38,4 @@ Items are not linked to their goal until triaged again, so goal views and the fo
 ## Notes
 Possibly --goal is dropped when the template's `goal:` is overwritten during triage-on-create.
 - 2026-10-26: status new → triaged — priority P2, severity S3
+- 2026-10-28: status triaged → done — delivered by P-074
