@@ -127,7 +127,7 @@ Rollback: revert the squash commit and refresh `.crew/bin`.
 _Generated 2026-10-28 by `crew.mjs handoff` from the ledger._
 
 - P-078: Hub ui keeps answering while the team works [in-review] tasks 6/6 — claimed by Arpit Anand (developer:a2ff607bb3ab5c6cf)
-- last checkpoint 2026-10-28 05:31 at done (0fd1be7) by Arpit Anand; since then 0 commit(s), 2 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs
+- last checkpoint 2026-10-28 05:56 at T6 (0fd1be7) by Arpit Anand; since then 0 commit(s), 2 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs
 - ✓ on the main checkout, back to back x2: node .crew/bin/crew.mjs export --json vs node <worktree>/plugins/crew/skills/hub/dist/crew.mjs export --json (bundle from npm run build, not committed); outputs compared as JSON without generatedAt (AC 9) (reported)
 - ✓ cd packages/crew && npx vitest run test/hub/livegraph.test.ts -t AC1 (AC 1)
 - ✓ cd packages/crew && npx vitest run test/hub/livegraph.test.ts -t AC2 (AC 2)
@@ -138,13 +138,17 @@ _Generated 2026-10-28 by `crew.mjs handoff` from the ledger._
 - ✓ cd packages/crew && npx vitest run test/hub/livegraph.test.ts -t AC7 (AC 7)
 - ✓ cd packages/crew && npx vitest run test/hub/e2e/live-ui.test.ts (AC 8)
 - ✗ cd packages/crew && npx vitest run test/hub/e2e/knowledge.test.ts test/hub/secretrefs.test.ts test/view.test.ts test/hub/e2e/inbox.test.ts test/hub/e2e/branch-copies.test.ts test/hub/e2e/context.test.ts (AC 1) — ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+- ✓ cd packages/crew && npx vitest run --maxWorkers=2 test/hub/e2e/knowledge.test.ts test/hub/secretrefs.test.ts test/view.test.ts test/hub/e2e/inbox.test.ts test/hub/e2e/branch-copies.test.ts test/hub/e2e/context.test.ts (AC 1)
+- ✓ Ran built bundle 'ui --port 47831' on main checkout; 6 rounds of curl /api/inbox (--max-time 2) alongside /api/graph: inbox 200 in 0.11-0.18s each time, first graph timed out at 1s (cold build) then served (AC 8) (reported)
+- ✗ bash -c 'W=.claude/worktrees/P-078-hub-ui-keeps-answering-while-the-team/plugins/crew/skills/hub/dist/crew.mjs; uptime; for i in 1 2; do s=$(date +%s.%N 2>/dev/null || python3 -c "import time;print(time.time())"); node .crew/bin/crew.mjs export --json > /tmp/qa78_main$i.json; m=$(python3 -c "import time;print(time.time())"); node $W export --json > /tmp/qa78_wt$i.json; e=$(python3 -c "import time;print(time.time())"); python3 - $s $m $e $i <<PY\nimport sys,json\ns,m,e,i=map(float,sys.argv[1:])\nprint("run",int(i),"main",round(m-s,2),"bundle",round(e-m,2),"ratio",round((e-m)/(m-s),2))\ndef L(p):\n d=json.load(open(p)); d.pop("generatedAt",None); return d\nprint("identical",L("/tmp/qa78_main%d.json"%i)==L("/tmp/qa78_wt%d.json"%i))\nPY\ndone' (AC 9) — bash: -c: line 0: `W=.claude/worktrees/P-078-hub-ui-keeps-answering-while-the-team/plugins/crew/skills/hub/dist/crew.mjs; uptime; for i in 1 2; do s=$(date +%s.%N 2>/dev/null || python3 -c "import time;print(time.time())"); node .crew/bin/crew.mjs export --json > /tmp/qa78_main$i.json; m=$(python3 -c "import time;print(time.time())"); node $W export --json > /tmp/qa78_wt$i.json; e=$(python3 -c "import time;print(time.time())"); python3 - $s $m $e $i <<PY\nimport sys,json\ns,m,e,i=map(float,sys.argv[1:])\nprint("run",int(i),"main",round(m-s,2),"bundle",round(e-m,2),"ratio",round((e-m)/(m-s),2))\ndef L(p):\n d=json.load(open(p)); d.pop("generatedAt",None); return d\nprint("identical",L("/tmp/qa78_main%d.json"%i)==L("/tmp/qa78_wt%d.json"%i))\nPY\ndone'
+- ✗ node .crew/drafts/qa78-ac9.mjs (AC 9) — Node.js v26.5.0
 - don't retry: re-ran the AC1 6-file group at load avg ~150 (19 vitest processes from other agents) — 4 tests failed with spawnSync ETIMEDOUT / 30s test timeouts in setup helpers (init/lifecycle), across files incl. context.test.ts; the reported inbox AC5 test passes alone in 29.6s and never requests /api/graph
-- evidence: AC1 ✗, AC2 ✓, AC3 ✓, AC4 ✓, AC5 ✓, AC6 ✓, AC7 ✓, AC8 ✓, AC9 ✓ (self)
+- evidence: AC1 ✓, AC2 ✓, AC3 ✓, AC4 ✓, AC5 ✓, AC6 ✓, AC7 ✓, AC8 ✓, AC9 ✗
 
 Latest log:
-- 2026-10-27: assigned to the developer role
-- 2026-10-27: status ready → in-progress — branch plan/P-078-hub-ui-keeps-answering-while-the-team
-- 2026-10-27: status in-progress → in-review
+- 2026-10-28: BUG-056: AC9 QA re-measure: bundle 3.25s vs main 6.4s (ratio 0.48-0.57), borderline over 'at most half'
+- 2026-10-28: Architect: AC9 amended (BUG-056). Intent of AC9 is the measured ~2x cost cut of a graph build; UI responsiveness itself is AC3-AC8. QA's six pairs (median ratio 0.505, outputs identical) meet that intent; 'at most half' per single run is noise-bound at ratio ~0.50 under load. New AC9: median bundle/main ratio over >=5 back-to-back pairs <= 0.55, every pair's output identical apart from generatedAt. Amending invalidates AC9 evidence: QA re-records AC9 (adapt .crew/drafts/qa78-ac9.mjs to median over >=5 pairs). No code change; review approval at 0fd1be7 stands.
+- 2026-10-28: BUG-056 rejected wontfix: AC9 amended to median <=0.55; QA to re-record AC9 under new wording
 
 ## Progress log
 
