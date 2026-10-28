@@ -5,11 +5,11 @@ goal:
 items: CHORE-002
 touches: packages/crew/src/hub/commands/team/agents.reg.ts, packages/crew/test/mcp.test.ts, packages/crew/test/hub/e2e/agents.test.ts, plugins/crew/docs/reference.md
 depends_on:
-status: ready
+status: in-progress
 branch: plan/P-087-read-only-agents-mcp-tool
 pr:
 created: 2026-10-28
-started:
+started: 2026-10-28
 completed:
 assignee: developer
 ---
@@ -93,5 +93,6 @@ n/a — internal: one additional read-only MCP tool in the hub bundle; revert th
 
 - 2026-10-28: status draft → ready
 - 2026-10-28: assigned to the developer role
+- 2026-10-28: status ready → in-progress — branch plan/P-087-read-only-agents-mcp-tool
 
 ## Outcome
