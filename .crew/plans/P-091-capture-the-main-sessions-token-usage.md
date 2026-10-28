@@ -5,7 +5,7 @@ goal:
 items: CHORE-033
 touches: packages/crew/src/hub/commands/team/autonomy.ts, packages/crew/src/hub/commands/views/doctor.ts, plugins/crew/skills/guidelines/templates/settings.json, plugins/crew/docs/context-and-memory.md, plugins/crew/skills/hub/SKILL.md, plugins/crew/skills/hub/references/model.md, packages/crew/test/hub/e2e/activity.test.ts, packages/crew/test/hub/prices.test.ts, packages/crew/test/hub/e2e/context.test.ts, packages/crew/test/hub/e2e/doctor.test.ts
 depends_on: P-089
-status: draft
+status: ready
 branch: plan/P-091-capture-the-main-sessions-token-usage
 pr:
 created: 2026-10-28
@@ -138,5 +138,7 @@ as plain numbers.
 ## Handoff
 
 ## Progress log
+
+- 2026-10-28: status draft → ready
 
 ## Outcome
