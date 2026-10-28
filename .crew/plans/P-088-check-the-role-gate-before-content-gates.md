@@ -5,11 +5,11 @@ goal:
 items: CHORE-003
 touches: packages/crew/src/hub/commands/work/workflow.ts, packages/crew/test/hub/e2e/policy.test.ts
 depends_on:
-status: ready
+status: in-progress
 branch: plan/P-088-check-the-role-gate-before-content-gates
 pr:
 created: 2026-10-28
-started:
+started: 2026-10-28
 completed:
 assignee: developer
 ---
@@ -89,5 +89,6 @@ n/a — internal ordering of refusals in the hub CLI; revert the commit to back 
 
 - 2026-10-28: status draft → ready
 - 2026-10-28: assigned to the developer role
+- 2026-10-28: status ready → in-progress — branch plan/P-088-check-the-role-gate-before-content-gates
 
 ## Outcome
