@@ -6,6 +6,12 @@
       "runtimeExecutable": "node",
       "runtimeArgs": ["packages/crew/node_modules/vite/bin/vite.js", "preview", "packages/crew", "--outDir", "preview", "--port", "4173", "--strictPort", "--host", "127.0.0.1"],
       "port": 4173
+    },
+    {
+      "name": "hub-ui",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [".crew/bin/crew.mjs", "ui", "--port", "8765", "--no-open"],
+      "port": 8765
     }
   ]
 }
