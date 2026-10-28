@@ -112,6 +112,7 @@ Latest log:
 - 2026-10-28: status ready → in-progress — branch plan/P-094-runner-lands-accepted-plans-in-batches
 - 2026-10-28: status in-progress → in-review
 - 2026-10-28: status in-review → accepted (approved by Arpit Anand)
+- 2026-10-28: landed on main as 8858bd6
 
 ## Outcome
 Dispatch's Release row now gives one batch entry (`land: N accepted plans as one batch (…) — run land with no ID`) when two or more plans are queued and none is held, asked or behind one; otherwise `land P-###` for the first free plan, or nothing. `agents --check` and `check` report vendored agent templates that differ from (or are missing beside) the plugin's, with the human's re-vendor step. Plugin release.md maps the batch entry to `land` with no ID. No deviations from the Design. The protected `.crew/templates/agents/**` and `.claude/agents/**` are untouched: the human re-vendors after the land (Rollout), and until then `agents --check` in this repo exits 1 on the drifted templates, as intended.
