@@ -112,15 +112,15 @@ As in P-077, the hook is synchronous, so vitest cannot interrupt it and the limi
 ## Design
 
 ## Tasks
-- [ ] T1: the load wait, load-error exit and Backlog-tab wait in `layout_sweep.ts` → verify: `cd packages/crew && npm run
+- [x] T1: the load wait, load-error exit and Backlog-tab wait in `layout_sweep.ts` → verify: `cd packages/crew && npm run
       typecheck`; read the diff for AC3/AC4 (AC3, AC4, AC8)
-- [ ] T2: the two proxy cases in `layout-sweep.test.ts` → verify: `npm run build && npx vitest run
+- [x] T2: the two proxy cases in `layout-sweep.test.ts` → verify: `npm run build && npx vitest run
       test/tools/layout-sweep.test.ts` passes all five cases; then write the base `layout_sweep.ts` from
       `git show <base>:packages/crew/src/tools/design/layout_sweep.ts`, `npm run build`, rerun: AC1 and AC2 fail; restore
       from `git show HEAD:…` (or the working file) and `npm run build` again (AC1, AC2, AC5)
-- [ ] T3: the hook limit in `playbook-home.test.ts` → verify: `npx vitest run test/hub/e2e/playbook-home.test.ts`;
+- [x] T3: the hook limit in `playbook-home.test.ts` → verify: `npx vitest run test/hub/e2e/playbook-home.test.ts`;
       `grep -n "SETUP_HOOK_MS" test/hub/e2e/playbook-home.test.ts` (AC7)
-- [ ] T4: load regression → verify: the AC6 procedure in the Test plan on the branch (3 runs) and once on the base
+- [x] T4: load regression → verify: the AC6 procedure in the Test plan on the branch (3 runs) and once on the base
       build, results in the Progress log (AC6, AC7)
 
 ## Test plan
@@ -153,6 +153,17 @@ that loads slowly now waits up to 60 s per route instead of reporting a clean pa
   Progress log.
 
 ## Handoff
+
+_Generated 2026-10-28 by `crew.mjs handoff` from the ledger._
+
+- P-092: Harden flaky layout-sweep AC5 and playbook-home setup [in-progress] tasks 4/4 — claimed by Arpit Anand (developer:ab69342357c8230a8)
+- last checkpoint 2026-10-28 08:00 at T4 (25eee19) by Arpit Anand; since then 0 commit(s), 1 uncommitted file(s): plugins/crew/skills/design/scripts/layout_sweep.mjs
+- evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —, AC7 —, AC8 —
+
+Latest log:
+- 2026-10-28: assigned to the developer role
+- 2026-10-28: status ready → in-progress — branch plan/P-092-harden-flaky-layout-sweep-ac5
+- 2026-10-28: developer T4 (AC6, AC7): 16 busy-loop node processes on the 8-core Mac, npx vitest run test/tools/layout-sweep.test.ts test/hub/e2e/playbook-home.test.ts. Branch: run 1 9/9 pass (130 s), run 2 9/9 (128 s), run 3 9/9 (111 s). Base f0a2f65 (base layout_sweep.ts and both base test files, built): 7/7 pass (61 s) under the same load, so the AC5 flake was not reproduced in this base run; AC1 is the deterministic regression (with the base sweep built, AC1 and AC2 fail: the base prints clean and exits 0 on both). The 4000 ms delay was enough, not raised. Busy loops killed, branch files restored from HEAD and rebuilt.
 
 ## Progress log
 - 2026-10-28 architect: reproduced with main's built sweep on an AC5-style sandbox: 3/3 clean at idle; under 16 busy
