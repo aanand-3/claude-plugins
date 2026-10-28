@@ -11,6 +11,7 @@ pr:
 created: 2026-10-28
 started:
 completed:
+assignee: developer
 ---
 
 # P-086: Long words wrap on document pages at 375 px
@@ -171,5 +172,6 @@ n/a: a CSS-only change to the hub UI that ships with the next build. To back out
 ## Progress log
 
 - 2026-10-28: status draft → ready
+- 2026-10-28: assigned to the developer role
 
 ## Outcome
