@@ -98,17 +98,25 @@ QA's prompt still says drafts, but the guard already allows scratch. Rollback: r
 
 ## Handoff
 
-_Generated 2026-10-27 by `crew.mjs handoff` from the ledger._
+_Generated 2026-10-28 by `crew.mjs handoff` from the ledger._
 
-- P-068: QA scratch folder per plan, ignored and cleared at done [in-review] tasks 6/6 — claimed by Arpit Anand (developer:a910344b0c2617729)
-- last checkpoint 2026-10-27 14:51 at done (cfc33c1) by Arpit Anand; since then 0 commit(s), 2 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs
-- ✗ cd packages/crew && npx vitest run test/hub/e2e/team.test.ts test/hub/e2e/guard-writes.test.ts (AC 1)
-- evidence: AC1 ✗, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —
+- P-068: QA scratch folder per plan, ignored and cleared at done [in-progress] tasks 6/6 — claimed by Arpit Anand (developer:a888f0d49120d009f)
+- last checkpoint 2026-10-28 17:44 at T6 (91375ec) by Arpit Anand; since then 0 commit(s), 2 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs
+- ✗ cd packages/crew && npx vitest run test/hub/e2e/team.test.ts test/hub/e2e/guard-writes.test.ts (AC 1) — ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+- ✓ cd packages/crew && npx vitest run test/hub/e2e/guard-writes.test.ts (AC 1)
+- ✓ cd packages/crew && npx vitest run test/hub/e2e/scratch.test.ts -t gitignore (AC 3)
+- ✓ cd packages/crew && npx vitest run test/hub/e2e/scratch.test.ts -t commit (AC 4)
+- ✓ cd packages/crew && npx vitest run test/hub/e2e/scratch.test.ts -t move (AC 5)
+- ✓ cd packages/crew && npx vitest run test/hub/e2e/team.test.ts (AC 1)
+- ✓ Read plugins/crew/skills/hub/agents/qa.md in the worktree: lines 16-18 direct check scripts to the main checkout's .crew/scratch/P-###/ (never drafts), line 37 allows scratch writes; worktree .crew/.gitignore contains 'scratch/' (AC 6) (reported)
+- ✓ cd packages/crew && npx vitest run test/hub/e2e/team.test.ts test/hub/e2e/guard-writes.test.ts test/hub/e2e/scratch.test.ts (reported)
+- don't retry: merge main into the branch and checkpoint the resolution — checkpoint commits with git commit --only, which git refuses during a merge; aborted, asked the architect
+- evidence: AC1 ✓, AC2 ✓, AC3 ✓, AC4 ✓, AC5 ✓, AC6 ✓
 
 Latest log:
-- 2026-10-27: assigned to the developer role
-- 2026-10-27: status ready → in-progress — branch plan/P-068-qa-scratch-folder-per-plan-ignored
-- 2026-10-27: status in-progress → in-review
+- 2026-10-28: status accepted → in-progress — land: merging main conflicts in plugins/crew/skills/hub/agents/qa.md
+- 2026-10-28: re-goaled none → G-007 by Arpit Anand: temp
+- 2026-10-28: re-goaled G-007 → none by Arpit Anand: G-007 cut list: housekeeping, plan keeps running (Q-4cc64a)
 
 ## Progress log
 
