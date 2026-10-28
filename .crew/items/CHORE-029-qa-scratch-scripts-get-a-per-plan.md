@@ -32,3 +32,4 @@ If this repository's `.crew/policy.yaml` overrides QA's paths.write, changing it
 - 2026-10-26: goal hint G-007 (by Arpit Anand)
 - 2026-10-26: status new → triaged — priority P3
 - 2026-10-26: re-triaged: priority P3
+- 2026-10-28: re-goaled G-007 → G-007 by Arpit Anand: temp
