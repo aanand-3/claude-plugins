@@ -5,12 +5,12 @@ goal:
 items: CHORE-030
 touches: packages/crew/src/hub/commands/team/questions.ts, plugins/crew/skills/hub/agents/director.md, plugins/crew/docs/context-and-memory.md, plugins/crew/skills/hub/SKILL.md, packages/crew/test/hub/e2e/dispatch.test.ts
 depends_on:
-status: accepted
+status: done
 branch: plan/P-070-asks-for-the-executive-go
 pr:
 created: 2026-10-26
 started: 2026-10-26
-completed:
+completed: 2026-10-28
 assignee: developer
 ---
 
@@ -126,6 +126,7 @@ Latest log:
 - 2026-10-26: status in-progress → in-review
 - 2026-10-26: status in-review → accepted
 - 2026-10-28: landed on main as de64c7e
+- 2026-10-28: status accepted → done
 
 ## Outcome
 Shipped: `ask()` in `questions.ts` routes an ask for the escalation target (executive) from a role other than the
