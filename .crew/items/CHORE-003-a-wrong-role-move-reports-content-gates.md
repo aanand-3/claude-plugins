@@ -5,7 +5,7 @@ title: A wrong-role move reports content gates before the role gate
 status: triaged
 priority: P3
 goal: G-003
-plan:
+plan: P-088
 created: 2026-10-23
 closed:
 ---
