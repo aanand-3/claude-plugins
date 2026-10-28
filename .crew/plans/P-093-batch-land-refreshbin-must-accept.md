@@ -5,7 +5,7 @@ goal: G-007
 items: BUG-059
 touches: packages/crew/src/hub/commands/work/release.ts, packages/crew/src/hub/commands/work/land-steps.ts, packages/crew/test/hub/e2e/land-batch.test.ts, packages/crew/test/hub/e2e/land.test.ts
 depends_on:
-status: in-review
+status: accepted
 branch: plan/P-093-batch-land-refreshbin-must-accept
 pr:
 created: 2026-10-28
@@ -91,6 +91,7 @@ Latest log:
 - 2026-10-28: assigned to the developer role
 - 2026-10-28: status ready → in-progress — branch plan/P-093-batch-land-refreshbin-must-accept
 - 2026-10-28: status in-progress → in-review
+- 2026-10-28: status in-review → accepted (approved by Arpit Anand)
 
 ## Outcome
 Learnings: none new; the design is K-2026-10-28-land-refreshes-crew-bin-through (land's steps call copyBin, the refresh-bin command keeps its role and plan-worktree checks).
