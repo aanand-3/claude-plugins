@@ -11,6 +11,7 @@ pr:
 created: 2026-10-28
 started:
 completed:
+assignee: developer
 ---
 
 # P-094: Runner lands accepted plans in batches: dispatch and Release agent
@@ -98,5 +99,6 @@ Developer: work in `.claude/worktrees/P-094-runner-lands-accepted-plans-in-batch
 - 2026-10-28: re-goaled none → G-007 by Arpit Anand: P0 BUG-060 fix belongs to G-007
 - 2026-10-28: Draft touches for the Architect (not set in frontmatter): packages/crew/src/hub/commands/team/dispatch.ts, its dispatch tests, .crew/templates/agents/release.md, packages/crew/src/hub/commands/team/agents.ts (agents --check)
 - 2026-10-28: status draft → ready
+- 2026-10-28: assigned to the developer role
 
 ## Outcome
