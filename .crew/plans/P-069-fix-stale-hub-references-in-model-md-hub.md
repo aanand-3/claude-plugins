@@ -5,12 +5,12 @@ goal: G-006
 items: CHORE-016
 touches: plugins/crew/skills/hub/references/model.md, plugins/crew/skills/hub/SKILL.md, docs/vision.md
 depends_on:
-status: accepted
+status: done
 branch: plan/P-069-fix-stale-hub-references-in-model-md-hub
 pr:
 created: 2026-10-26
 started: 2026-10-26
-completed:
+completed: 2026-10-28
 assignee: developer
 ---
 
@@ -134,6 +134,7 @@ Latest log:
 - 2026-10-26: status in-progress → in-review
 - 2026-10-26: status in-review → accepted
 - 2026-10-28: landed on main as dc4edca
+- 2026-10-28: status accepted → done
 
 ## Outcome
 Shipped (docs only: model.md, hub SKILL.md, docs/vision.md):
