@@ -49,11 +49,11 @@ The single path (`landOne`) works today (P-062, P-077, P-079, P-092 landed with 
 ## Design
 
 ## Tasks
-- [ ] T1: Write the AC1/AC2 regression case in land-batch.test.ts first (`batch: release.refresh_bin refreshes .crew/bin in the candidate, in the plan's own commit (BUG-059)`). Build the repo with `hub("", { ".crew/policy.yaml": "preset: lifecycle\nrelease:\n  refresh_bin:\n    from: src\n    files: [bin.txt]\n", "src/bin.txt": "old\n", ".crew/bin/bin.txt": "old\n" })`. P-002's worktree writes `src/bin.txt` before `accepted(...)`, whose `ship` commits it. No `full_suite` is needed. No new helper starts a process. If one is added, it must clean up on every exit path, timeouts included (BUG-058). → verify: `npm run build`, then `npx vitest run test/hub/e2e/land-batch.test.ts -t "BUG-059"` fails with "not a plan's worktree" before the fix.
-- [ ] T2: Write the AC3 case in land.test.ts's `land` describe (`land: release.refresh_bin refreshes .crew/bin in the plan's own commit`). Use the same repo setup with one plan and `land(repo, "P-001")`. → verify: it passes on the current code (the single path works today), which pins the behaviour.
-- [ ] T3: release.ts: add `copyBin` as described in Approach, and make the `refresh-bin` command path call it after its unchanged role and plan checks. → verify: `npx tsc --noEmit -p .` (or `npm run typecheck`) passes, and `wc -l` stays under 300.
-- [ ] T4: land-steps.ts: `rebuild` calls `copyBin(store, dir)`, and the `refreshBin` import goes. → verify: `npm run build`, then the T1 case passes, and T2 and test/hub/refresh-bin.test.ts pass unmodified.
-- [ ] T5: Show that the regression fails against main. Write main's versions into the worktree (`git show main:packages/crew/src/hub/commands/work/release.ts > …` and the same for land-steps.ts), run `npm run build`, and run the T1 case: it fails with "not a plan's worktree". Then restore the fixed versions from `git show HEAD:…` (or the checkpoint's copy) and rebuild, so the e2e run uses the fixed bundle (K-2026-10-25 stash gotcha, K-2026-10-26 dist gotcha). → verify: the failing output is recorded in the checkpoint note, and `git diff` shows only the plan's intended changes after the restore.
+- [x] T1: Write the AC1/AC2 regression case in land-batch.test.ts first (`batch: release.refresh_bin refreshes .crew/bin in the candidate, in the plan's own commit (BUG-059)`). Build the repo with `hub("", { ".crew/policy.yaml": "preset: lifecycle\nrelease:\n  refresh_bin:\n    from: src\n    files: [bin.txt]\n", "src/bin.txt": "old\n", ".crew/bin/bin.txt": "old\n" })`. P-002's worktree writes `src/bin.txt` before `accepted(...)`, whose `ship` commits it. No `full_suite` is needed. No new helper starts a process. If one is added, it must clean up on every exit path, timeouts included (BUG-058). → verify: `npm run build`, then `npx vitest run test/hub/e2e/land-batch.test.ts -t "BUG-059"` fails with "not a plan's worktree" before the fix.
+- [x] T2: Write the AC3 case in land.test.ts's `land` describe (`land: release.refresh_bin refreshes .crew/bin in the plan's own commit`). Use the same repo setup with one plan and `land(repo, "P-001")`. → verify: it passes on the current code (the single path works today), which pins the behaviour.
+- [x] T3: release.ts: add `copyBin` as described in Approach, and make the `refresh-bin` command path call it after its unchanged role and plan checks. → verify: `npx tsc --noEmit -p .` (or `npm run typecheck`) passes, and `wc -l` stays under 300.
+- [x] T4: land-steps.ts: `rebuild` calls `copyBin(store, dir)`, and the `refreshBin` import goes. → verify: `npm run build`, then the T1 case passes, and T2 and test/hub/refresh-bin.test.ts pass unmodified.
+- [x] T5: Show that the regression fails against main. Write main's versions into the worktree (`git show main:packages/crew/src/hub/commands/work/release.ts > …` and the same for land-steps.ts), run `npm run build`, and run the T1 case: it fails with "not a plan's worktree". Then restore the fixed versions from `git show HEAD:…` (or the checkpoint's copy) and rebuild, so the e2e run uses the fixed bundle (K-2026-10-25 stash gotcha, K-2026-10-26 dist gotcha). → verify: the failing output is recorded in the checkpoint note, and `git diff` shows only the plan's intended changes after the restore.
 
 ## Test plan
 Run in `packages/crew` of the plan worktree, after `npm ci --prefer-offline` and `npm run build`. The e2e tests drive the built dist, so rebuild after every source change.
@@ -73,6 +73,17 @@ n/a: an internal change to the hub's land steps. It reaches this repo's `.crew/b
 
 ## Handoff
 
+_Generated 2026-10-28 by `crew.mjs handoff` from the ledger._
+
+- P-093: Batch land: refreshBin must accept the candidate worktree [in-progress] tasks 5/5 — claimed by Arpit Anand (developer:a7d924b548c3d2ade)
+- last checkpoint 2026-10-28 12:31 at T5 (b002a44) by Arpit Anand; since then 0 commit(s), 2 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs
+- evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —
+
+Latest log:
+- 2026-10-28: status draft → ready
+- 2026-10-28: assigned to the developer role
+- 2026-10-28: status ready → in-progress — branch plan/P-093-batch-land-refreshbin-must-accept
+
 ## Progress log
 
 - 2026-10-28: re-goaled none → G-007 by Arpit Anand: BUG-059 is on G-007; the fix unblocks batch landing (FEAT-071)
@@ -81,3 +92,4 @@ n/a: an internal change to the hub's land steps. It reaches this repo's `.crew/b
 - 2026-10-28: status ready → in-progress — branch plan/P-093-batch-land-refreshbin-must-accept
 
 ## Outcome
+Learnings: none new; the design is K-2026-10-28-land-refreshes-crew-bin-through (land's steps call copyBin, the refresh-bin command keeps its role and plan-worktree checks).
