@@ -112,6 +112,18 @@ again silently.
 
 ## Handoff
 
+_Generated 2026-10-28 by `crew.mjs handoff` from the ledger._
+
+- P-085: Wire the Designer to this repo's DESIGN.md (design.file) [in-progress] tasks 0/3 — claimed by Arpit Anand (developer:a7c0d1c4b8073a774)
+- last checkpoint 2026-10-28 05:31 at T3 (d985b61) by Arpit Anand; since then 0 commit(s), 0 uncommitted file(s)
+- next: T1: Add `file: packages/crew/docs/design/DESIGN.md` to the `design:` block in `.crew/config.yaml` → verify: AC1 and AC2 commands.
+- evidence: AC1 —, AC2 —, AC3 —, AC4 —
+
+Latest log:
+- 2026-10-28: status draft → ready
+- 2026-10-28: assigned to the developer role
+- 2026-10-28: status ready → in-progress — branch plan/P-085-wire-the-designer-to-this-repos-design
+
 ## Progress log
 
 - 2026-10-28: status draft → ready
