@@ -2,10 +2,10 @@
 id: BUG-059
 type: bug
 title: Batch land stops at refresh-bin: the candidate worktree is not a plan's worktree
-status: new
+status: triaged
 severity: S2
-priority: P1
-goal:
+priority: P0
+goal: G-007
 plan:
 created: 2026-10-28
 closed:
@@ -49,3 +49,4 @@ Batch landing (FEAT-071 / P-079) can't land anything in this repo. The workaroun
 - **Regression test:** a batch case with `release.refresh_bin` set.
 - Found by the executive's batch land on 2026-10-28 (hub 390dca73).
 - 2026-10-28: goal hint G-007 (by Arpit Anand)
+- 2026-10-28: status new → triaged — priority P0, severity S2
