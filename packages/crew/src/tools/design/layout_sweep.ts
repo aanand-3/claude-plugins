@@ -63,13 +63,46 @@ async function settle(page: Page, timeoutMs = 10_000): Promise<void> {
   }
 }
 
-/** Show a route: a view by hash, `board:backlog` the board's Backlog items tab. */
+/** How long a route may show the hub UI's loading skeleton before the sweep gives up (BUG-057). */
+const LOAD_TIMEOUT_MS = 60_000;
+
+/** Poll every 100 ms until `ready` holds, up to LOAD_TIMEOUT_MS; then fail naming the route. */
+async function waitFor(page: Page, route: string, ready: () => Promise<boolean>, what: string): Promise<void> {
+  for (const end = Date.now() + LOAD_TIMEOUT_MS; ; await sleep(100)) {
+    if (await ready()) return;
+    if (Date.now() >= end) throw new CannotRun(`the hub UI ${what} #/${route} after ${LOAD_TIMEOUT_MS / 1000} s`);
+  }
+}
+
+/** Wait until the hub UI has loaded: the document is complete, its root has rendered and nothing is `aria-busy`. The UI's
+ * load-error page (a `.fullpage` that is not busy, with a heading) ends the sweep with its text. */
+async function loaded(page: Page, route: string): Promise<void> {
+  const probe = `(() => {
+    const failed = document.querySelector('.fullpage:not([aria-busy]) h1')?.closest('.fullpage');
+    if (failed) return { error: [...failed.querySelectorAll('h1, p')].slice(0, 2).map((e) => e.textContent.trim()).join(': ') };
+    return { ready: document.readyState === 'complete' && !document.querySelector('#root:empty') && !document.querySelector('[aria-busy="true"]') };
+  })()`;
+  await waitFor(page, route, async () => {
+    const s = await page.eval<{ error?: string; ready?: boolean }>(probe);
+    if (s.error) throw new CannotRun(`the hub UI did not load #/${route}: ${s.error}`);
+    return !!s.ready;
+  }, "is still loading");
+}
+
+/** Show a route: a view by hash, `board:backlog` the board's Backlog items tab (scanned only once that tab is selected;
+ * a page with no Backlog tab is scanned as it is). */
 async function show(page: Page, route: string): Promise<void> {
   const [view, tab] = route.split(":");
   await page.eval(`location.hash = ${JSON.stringify(`#/${view}`)}`);
+  await loaded(page, route);
   await settle(page);
   if (tab === "backlog") {
-    await page.eval("[...document.querySelectorAll('[role=tab]')].find((b) => /backlog/i.test(b.textContent))?.click()");
+    const backlog = "[...document.querySelectorAll('[role=tab]')].find((b) => /backlog/i.test(b.textContent))";
+    if (await page.eval<boolean>(`!!${backlog}`)) {
+      await page.eval(`${backlog}.click()`);
+      await waitFor(page, route, () => page.eval<boolean>(`${backlog}?.getAttribute('aria-selected') === 'true'`),
+        "has not selected the Backlog tab on");
+    }
     await settle(page);
   }
 }
@@ -90,6 +123,7 @@ export async function sweep(base: string, widths: number[], themes: string[], lo
       for (const width of widths) {
         await page.send("Emulation.setDeviceMetricsOverride", { width, height: 900, deviceScaleFactor: 1, mobile: width < 600 });
         await page.send("Page.navigate", { url: new URL(`?sweep=${theme}-${width}#/overview`, base).href });
+        await loaded(page, "overview");
         await settle(page);
         const shown = await page.eval<string | undefined>("document.documentElement.dataset.theme");
         if (shown && shown !== theme) throw new CannotRun(`the page shows the ${shown} theme, not ${theme}`);

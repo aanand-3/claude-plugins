@@ -9,6 +9,10 @@ import { bash, frontmatter, hook, orgPlaybook } from "./sections.js";
 
 let repo: Repo, wt: Repo;
 
+// The setup is synchronous (about ten child processes), so vitest cannot interrupt it and a hook limit catches no hang:
+// each child's 60 s `Repo.run` timeout does. The limit must only not fail a setup that finishes slowly under load (BUG-057).
+const SETUP_HOOK_MS = 600_000;
+
 beforeEach(() => {
   repo = Repo.create();
   init(repo, { commit: true });
@@ -25,7 +29,7 @@ beforeEach(() => {
   const dir = join(repo.path, ".claude/worktrees");
   wt = new Repo(join(dir, readdirSync(dir).find((f) => f.startsWith("P-001-"))!));
   wt.env = repo.env;
-});
+}, SETUP_HOOK_MS);
 
 it("policy show and check apply the org layer from a plan worktree (AC1, AC2)", () => {
   for (const at of [repo, wt]) {

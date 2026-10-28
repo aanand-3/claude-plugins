@@ -26606,12 +26606,41 @@ async function settle(page, timeoutMs = 1e4) {
     last = now;
   }
 }
+var LOAD_TIMEOUT_MS = 6e4;
+async function waitFor(page, route, ready, what) {
+  for (const end = Date.now() + LOAD_TIMEOUT_MS; ; await sleep(100)) {
+    if (await ready()) return;
+    if (Date.now() >= end) throw new CannotRun(`the hub UI ${what} #/${route} after ${LOAD_TIMEOUT_MS / 1e3} s`);
+  }
+}
+async function loaded(page, route) {
+  const probe = `(() => {
+    const failed = document.querySelector('.fullpage:not([aria-busy]) h1')?.closest('.fullpage');
+    if (failed) return { error: [...failed.querySelectorAll('h1, p')].slice(0, 2).map((e) => e.textContent.trim()).join(': ') };
+    return { ready: document.readyState === 'complete' && !document.querySelector('#root:empty') && !document.querySelector('[aria-busy="true"]') };
+  })()`;
+  await waitFor(page, route, async () => {
+    const s = await page.eval(probe);
+    if (s.error) throw new CannotRun(`the hub UI did not load #/${route}: ${s.error}`);
+    return !!s.ready;
+  }, "is still loading");
+}
 async function show(page, route) {
   const [view, tab] = route.split(":");
   await page.eval(`location.hash = ${JSON.stringify(`#/${view}`)}`);
+  await loaded(page, route);
   await settle(page);
   if (tab === "backlog") {
-    await page.eval("[...document.querySelectorAll('[role=tab]')].find((b) => /backlog/i.test(b.textContent))?.click()");
+    const backlog = "[...document.querySelectorAll('[role=tab]')].find((b) => /backlog/i.test(b.textContent))";
+    if (await page.eval(`!!${backlog}`)) {
+      await page.eval(`${backlog}.click()`);
+      await waitFor(
+        page,
+        route,
+        () => page.eval(`${backlog}?.getAttribute('aria-selected') === 'true'`),
+        "has not selected the Backlog tab on"
+      );
+    }
     await settle(page);
   }
 }
@@ -26632,6 +26661,7 @@ async function sweep(base, widths, themes, log = () => {
       for (const width of widths) {
         await page.send("Emulation.setDeviceMetricsOverride", { width, height: 900, deviceScaleFactor: 1, mobile: width < 600 });
         await page.send("Page.navigate", { url: new URL(`?sweep=${theme}-${width}#/overview`, base).href });
+        await loaded(page, "overview");
         await settle(page);
         const shown = await page.eval("document.documentElement.dataset.theme");
         if (shown && shown !== theme) throw new CannotRun(`the page shows the ${shown} theme, not ${theme}`);
