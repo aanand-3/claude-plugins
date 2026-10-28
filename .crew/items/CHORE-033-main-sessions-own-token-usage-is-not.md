@@ -2,9 +2,9 @@
 id: CHORE-033
 type: chore
 title: Main session's own token usage is not captured
-status: new
-priority:
-goal:
+status: triaged
+priority: P3
+goal: G-003
 plan:
 created: 2026-10-28
 closed:
@@ -21,3 +21,4 @@ Split out of CHORE-004 (P-089 prices subagent usage only): usage --hook runs on 
 
 ## Notes
 - 2026-10-28: goal hint G-003 (by Arpit Anand)
+- 2026-10-28: status new → triaged — priority P3
