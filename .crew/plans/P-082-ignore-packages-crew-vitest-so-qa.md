@@ -5,12 +5,12 @@ goal:
 items: CHORE-032
 touches: packages/crew/.gitignore
 depends_on:
-status: accepted
+status: done
 branch: plan/P-082-ignore-packages-crew-vitest-so-qa
 pr:
 created: 2026-10-27
 started: 2026-10-27
-completed:
+completed: 2026-10-28
 assignee: developer
 ---
 
@@ -96,6 +96,7 @@ Latest log:
 - 2026-10-27: status in-progress → in-review
 - 2026-10-28: status in-review → accepted
 - 2026-10-28: landed on main as f83776a
+- 2026-10-28: status accepted → done
 
 ## Outcome
 Learnings: K-2026-10-27-a-plans-diff-against-main-must-be-read
