@@ -152,6 +152,7 @@ Latest log:
 - 2026-10-27: assigned to the developer role
 - 2026-10-27: status ready → in-progress — branch plan/P-078-hub-ui-keeps-answering-while-the-team
 - 2026-10-27: status in-progress → in-review
+- 2026-10-28: BUG-056: AC9 QA re-measure: bundle 3.25s vs main 6.4s (ratio 0.48-0.57), borderline over 'at most half'
 
 ## Outcome
 Learnings: K-2026-10-27-an-in-process-serve-test-src-hub-server
