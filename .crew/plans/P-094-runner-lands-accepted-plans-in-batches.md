@@ -5,11 +5,11 @@ goal: G-007
 items: BUG-060
 touches: packages/crew/src/hub/commands/team/dispatch.ts, packages/crew/src/hub/commands/team/agents.ts, plugins/crew/skills/hub/agents/release.md, packages/crew/test/hub/e2e/dispatch.test.ts, packages/crew/test/hub/e2e/agents.test.ts
 depends_on:
-status: ready
+status: in-progress
 branch: plan/P-094-runner-lands-accepted-plans-in-batches
 pr:
 created: 2026-10-28
-started:
+started: 2026-10-28
 completed:
 assignee: developer
 ---
@@ -100,5 +100,6 @@ Developer: work in `.claude/worktrees/P-094-runner-lands-accepted-plans-in-batch
 - 2026-10-28: Draft touches for the Architect (not set in frontmatter): packages/crew/src/hub/commands/team/dispatch.ts, its dispatch tests, .crew/templates/agents/release.md, packages/crew/src/hub/commands/team/agents.ts (agents --check)
 - 2026-10-28: status draft → ready
 - 2026-10-28: assigned to the developer role
+- 2026-10-28: status ready → in-progress — branch plan/P-094-runner-lands-accepted-plans-in-batches
 
 ## Outcome
