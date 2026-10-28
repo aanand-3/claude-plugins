@@ -5,11 +5,11 @@ goal: G-007
 items: BUG-059
 touches: packages/crew/src/hub/commands/work/release.ts, packages/crew/src/hub/commands/work/land-steps.ts, packages/crew/test/hub/e2e/land-batch.test.ts, packages/crew/test/hub/e2e/land.test.ts
 depends_on:
-status: ready
+status: in-progress
 branch: plan/P-093-batch-land-refreshbin-must-accept
 pr:
 created: 2026-10-28
-started:
+started: 2026-10-28
 completed:
 assignee: developer
 ---
@@ -78,5 +78,6 @@ n/a: an internal change to the hub's land steps. It reaches this repo's `.crew/b
 - 2026-10-28: re-goaled none → G-007 by Arpit Anand: BUG-059 is on G-007; the fix unblocks batch landing (FEAT-071)
 - 2026-10-28: status draft → ready
 - 2026-10-28: assigned to the developer role
+- 2026-10-28: status ready → in-progress — branch plan/P-093-batch-land-refreshbin-must-accept
 
 ## Outcome
