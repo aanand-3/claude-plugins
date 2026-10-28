@@ -1,7 +1,7 @@
 ---
 id: P-068
 title: QA scratch folder per plan, ignored and cleared at done
-goal: G-007
+goal:
 items: CHORE-029
 touches: packages/crew/src/hub/core/team/presets.ts, packages/crew/src/hub/core/git.ts, packages/crew/src/hub/commands/work/workflow.ts, packages/crew/src/hub/commands/work/planning.ts, .crew/.gitignore, plugins/crew/skills/hub/agents/qa.md, plugins/crew/skills/hub/references/model.md, packages/crew/test/hub/e2e/team.test.ts, packages/crew/test/hub/e2e/guard-writes.test.ts, packages/crew/test/hub/e2e/scratch.test.ts
 depends_on:
@@ -120,6 +120,7 @@ Latest log:
 - 2026-10-28: status in-review → accepted
 - 2026-10-28: status accepted → in-progress — land: merging main conflicts in plugins/crew/skills/hub/agents/qa.md
 - 2026-10-28: re-goaled none → G-007 by Arpit Anand: temp
+- 2026-10-28: re-goaled G-007 → none by Arpit Anand: G-007 cut list: housekeeping, plan keeps running (Q-4cc64a)
 
 ## Outcome
 QA's paths.write under the lifecycle preset is `.crew/drafts/**, .crew/scratch/**`; `init` writes `scratch/` to

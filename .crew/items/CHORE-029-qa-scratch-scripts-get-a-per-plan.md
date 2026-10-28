@@ -4,7 +4,7 @@ type: chore
 title: QA scratch scripts get a per-plan scratch folder that is never committed and is cleared at done
 status: triaged
 priority: P3
-goal: G-007
+goal:
 plan: P-068
 created: 2026-10-26
 closed:
@@ -33,3 +33,4 @@ If this repository's `.crew/policy.yaml` overrides QA's paths.write, changing it
 - 2026-10-26: status new → triaged — priority P3
 - 2026-10-26: re-triaged: priority P3
 - 2026-10-28: re-goaled G-007 → G-007 by Arpit Anand: temp
+- 2026-10-28: re-goaled G-007 → none by Arpit Anand: G-007 cut list: housekeeping, plan keeps running (Q-4cc64a)
