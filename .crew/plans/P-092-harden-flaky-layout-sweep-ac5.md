@@ -5,11 +5,11 @@ goal: G-007
 items: BUG-057
 touches: packages/crew/src/tools/design/layout_sweep.ts, packages/crew/test/tools/layout-sweep.test.ts, packages/crew/test/hub/e2e/playbook-home.test.ts
 depends_on:
-status: ready
+status: in-progress
 branch: plan/P-092-harden-flaky-layout-sweep-ac5
 pr:
 created: 2026-10-28
-started:
+started: 2026-10-28
 completed:
 assignee: developer
 ---
@@ -161,5 +161,6 @@ that loads slowly now waits up to 60 s per route instead of reporting a clean pa
   117-character root; `board:backlog` scanned the plans board when the data arrived mid-settle.
 - 2026-10-28: status draft → ready
 - 2026-10-28: assigned to the developer role
+- 2026-10-28: status ready → in-progress — branch plan/P-092-harden-flaky-layout-sweep-ac5
 
 ## Outcome
