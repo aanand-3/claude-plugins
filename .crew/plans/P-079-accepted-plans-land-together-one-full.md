@@ -5,11 +5,11 @@ goal: G-007
 items: FEAT-071
 touches: packages/crew/src/hub/commands/work/land.ts, packages/crew/src/hub/commands/work/land-steps.ts, packages/crew/src/hub/commands/work/batch.ts, packages/crew/src/hub/commands/work/suite.ts, packages/crew/src/hub/commands/work/suite.reg.ts, packages/crew/test/hub/e2e/land-batch.test.ts, packages/crew/test/hub/e2e/land-helpers.ts, packages/crew/test/hub/e2e/land.test.ts, packages/crew/test/hub/e2e/suite.test.ts, plugins/crew/skills/hub/agents/release.md, plugins/crew/docs/reference.md, .crew/config.yaml
 depends_on: P-062
-status: ready
+status: in-progress
 branch: plan/P-079-accepted-plans-land-together-one-full
 pr:
 created: 2026-10-27
-started:
+started: 2026-10-28
 completed:
 assignee: developer
 ---
@@ -98,5 +98,6 @@ land-batch.test.ts uses land-helpers' `hub()`, and each plan changes a different
 
 - 2026-10-27: status draft → ready
 - 2026-10-28: assigned to the developer role
+- 2026-10-28: status ready → in-progress — branch plan/P-079-accepted-plans-land-together-one-full
 
 ## Outcome
