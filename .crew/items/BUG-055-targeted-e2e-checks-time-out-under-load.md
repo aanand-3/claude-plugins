@@ -2,10 +2,10 @@
 id: BUG-055
 type: bug
 title: Targeted e2e checks time out under load; resume shows only last line of failing output
-status: new
-severity:
-priority:
-goal:
+status: triaged
+severity: S2
+priority: P1
+goal: G-007
 plan:
 created: 2026-10-28
 closed:
@@ -36,3 +36,4 @@ Causes seen in the ledger: `Error: Hook timed out in 10000ms` in guard-writes.te
 ## Impact
 
 ## Notes
+- 2026-10-28: status new → triaged — priority P1, severity S2
