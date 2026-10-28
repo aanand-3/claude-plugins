@@ -5,7 +5,7 @@ goal:
 items: CHORE-004
 touches: packages/crew/src/hub/core/team/prices.ts, packages/crew/src/hub/commands/team/autonomy.ts, .crew/config.yaml, plugins/crew/skills/hub/references/model.md, plugins/crew/skills/hub/SKILL.md, packages/crew/test/hub/prices.test.ts, packages/crew/test/hub/e2e/activity.test.ts
 depends_on:
-status: draft
+status: ready
 branch: plan/P-089-price-captured-usage-from-a-per-model
 pr:
 created: 2026-10-28
@@ -79,14 +79,10 @@ shows $ once cost > 0.
 ## Design
 
 ## Tasks
-- [ ] T1: core/team/prices.ts with `readPrices` and `messageCost` (suffix-stripping exact match), plus
-  packages/crew/test/hub/prices.test.ts for AC1 and AC3 → verify: `cd packages/crew && npx vitest run test/hub/prices.test.ts`
-- [ ] T2: `transcriptUsage(text, prices?)` returns `cost`; unit cases for AC2 in prices.test.ts → verify:
-  `cd packages/crew && npx vitest run test/hub/prices.test.ts`
-- [ ] T3: `usageHook` reads prices from `join(store.dir, "config.yaml")` and records the cost; e2e cases for AC4 and AC5 in
-  activity.test.ts → verify: `cd packages/crew && npx vitest run test/hub/e2e/activity.test.ts`
-- [ ] T4: `prices:` block in .crew/config.yaml, the AC6 case in prices.test.ts (reads the repo's config), model.md and
-  SKILL.md updates → verify: `cd packages/crew && npx vitest run test/hub/prices.test.ts test/docs.test.ts && npm run typecheck`
+- [ ] T1: core/team/prices.ts with `readPrices` and `messageCost` (suffix-stripping exact match), plus packages/crew/test/hub/prices.test.ts for AC1 and AC3 → verify: `cd packages/crew && npx vitest run test/hub/prices.test.ts`
+- [ ] T2: `transcriptUsage(text, prices?)` returns `cost`; unit cases for AC2 in prices.test.ts → verify: `cd packages/crew && npx vitest run test/hub/prices.test.ts`
+- [ ] T3: `usageHook` reads prices from `join(store.dir, "config.yaml")` and records the cost; e2e cases for AC4 and AC5 in activity.test.ts → verify: `cd packages/crew && npx vitest run test/hub/e2e/activity.test.ts`
+- [ ] T4: `prices:` block in .crew/config.yaml, the AC6 case in prices.test.ts (reads the repo's config), model.md and SKILL.md updates → verify: `cd packages/crew && npx vitest run test/hub/prices.test.ts test/docs.test.ts && npm run typecheck`
 
 ## Test plan
 **Targeted checks:**
@@ -107,5 +103,7 @@ ledger events already recorded keep their costs, which are plain numbers.
 ## Handoff
 
 ## Progress log
+
+- 2026-10-28: status draft → ready
 
 ## Outcome

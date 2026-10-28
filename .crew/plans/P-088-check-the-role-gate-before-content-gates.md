@@ -5,7 +5,7 @@ goal:
 items: CHORE-003
 touches: packages/crew/src/hub/commands/work/workflow.ts, packages/crew/test/hub/e2e/policy.test.ts
 depends_on:
-status: draft
+status: ready
 branch: plan/P-088-check-the-role-gate-before-content-gates
 pr:
 created: 2026-10-28
@@ -63,14 +63,8 @@ allowed to move. The role gate answers "may you do this at all", so it should be
 ## Design
 
 ## Tasks
-- [ ] T1: Extract the role-gate check from `authorize()` into an exported helper and call it from `move()` before `guard()`
-  (with `lane` computed first) as described in Approach → verify: `cd packages/crew && npm run typecheck` passes and
-  `wc -l src/hub/commands/work/workflow.ts` is under 300 (AC5).
-- [ ] T2: Add a `policy.test.ts` case for AC1–AC3 (wrong role refused by the role gate, error free of content-gate text;
-  right role still hits the content gate; a developer making an unready draft ready refused as the architect's step; no move event recorded) → verify:
-  `cd packages/crew && npx vitest run test/hub/e2e/policy.test.ts` passes, and the new case fails against the base
-  `workflow.ts` (write `git show main:packages/crew/src/hub/commands/work/workflow.ts` into the worktree, run, then restore
-  from `git show HEAD:…`) (AC1–AC4).
+- [ ] T1: Extract the role-gate check from `authorize()` into an exported helper and call it from `move()` before `guard()` (with `lane` computed first) as described in Approach → verify: `cd packages/crew && npm run typecheck` passes and `wc -l src/hub/commands/work/workflow.ts` is under 300 (AC5).
+- [ ] T2: Add a `policy.test.ts` case for AC1–AC3 (wrong role refused by the role gate, error free of content-gate text; right role still hits the content gate; a developer making an unready draft ready refused as the architect's step; no move event recorded) → verify: `cd packages/crew && npx vitest run test/hub/e2e/policy.test.ts` passes, and the new case fails against the base `workflow.ts` (write `git show main:packages/crew/src/hub/commands/work/workflow.ts` into the worktree, run, then restore from `git show HEAD:…`) (AC1–AC4).
 
 ## Test plan
 **Targeted checks:**
@@ -91,5 +85,7 @@ n/a — internal ordering of refusals in the hub CLI; revert the commit to back 
 ## Handoff
 
 ## Progress log
+
+- 2026-10-28: status draft → ready
 
 ## Outcome
