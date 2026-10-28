@@ -5,7 +5,7 @@ goal: G-007
 items: BUG-060
 touches: packages/crew/src/hub/commands/team/dispatch.ts, packages/crew/src/hub/commands/team/agents.ts, plugins/crew/skills/hub/agents/release.md, packages/crew/test/hub/e2e/dispatch.test.ts, packages/crew/test/hub/e2e/agents.test.ts
 depends_on:
-status: in-progress
+status: in-review
 branch: plan/P-094-runner-lands-accepted-plans-in-batches
 pr:
 created: 2026-10-28
@@ -94,7 +94,7 @@ Rollback: revert the plan's commit; dispatch returns to the single entry and the
 ## Handoff
 _Generated 2026-10-28 by `crew.mjs handoff` from the ledger._
 
-- P-094: Runner lands accepted plans in batches: dispatch and Release agent [in-progress] tasks 6/6 — claimed by Arpit Anand (developer:ab21f5208ff199427)
+- P-094: Runner lands accepted plans in batches: dispatch and Release agent [in-review] tasks 6/6 — claimed by Arpit Anand (developer:ab21f5208ff199427)
 - last checkpoint 2026-10-28 14:13 at T6 (6f3b49e) by Arpit Anand; since then 0 commit(s), 2 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs
 - evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —, AC7 —
 
@@ -110,6 +110,7 @@ Latest log:
 - 2026-10-28: status draft → ready
 - 2026-10-28: assigned to the developer role
 - 2026-10-28: status ready → in-progress — branch plan/P-094-runner-lands-accepted-plans-in-batches
+- 2026-10-28: status in-progress → in-review
 
 ## Outcome
 Dispatch's Release row now gives one batch entry (`land: N accepted plans as one batch (…) — run land with no ID`) when two or more plans are queued and none is held, asked or behind one; otherwise `land P-###` for the first free plan, or nothing. `agents --check` and `check` report vendored agent templates that differ from (or are missing beside) the plugin's, with the human's re-vendor step. Plugin release.md maps the batch entry to `land` with no ID. No deviations from the Design. The protected `.crew/templates/agents/**` and `.claude/agents/**` are untouched: the human re-vendors after the land (Rollout), and until then `agents --check` in this repo exits 1 on the drifted templates, as intended.
