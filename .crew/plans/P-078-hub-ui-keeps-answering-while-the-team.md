@@ -127,7 +127,7 @@ Rollback: revert the squash commit and refresh `.crew/bin`.
 _Generated 2026-10-28 by `crew.mjs handoff` from the ledger._
 
 - P-078: Hub ui keeps answering while the team works [in-review] tasks 6/6 — claimed by Arpit Anand (developer:a2ff607bb3ab5c6cf)
-- last checkpoint 2026-10-28 05:08 at done (0fd1be7) by Arpit Anand; since then 0 commit(s), 2 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs
+- last checkpoint 2026-10-28 05:31 at done (0fd1be7) by Arpit Anand; since then 0 commit(s), 2 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs
 - ✓ on the main checkout, back to back x2: node .crew/bin/crew.mjs export --json vs node <worktree>/plugins/crew/skills/hub/dist/crew.mjs export --json (bundle from npm run build, not committed); outputs compared as JSON without generatedAt (AC 9) (reported)
 - ✓ cd packages/crew && npx vitest run test/hub/livegraph.test.ts -t AC1 (AC 1)
 - ✓ cd packages/crew && npx vitest run test/hub/livegraph.test.ts -t AC2 (AC 2)
@@ -137,7 +137,8 @@ _Generated 2026-10-28 by `crew.mjs handoff` from the ledger._
 - ✓ cd packages/crew && npx vitest run test/hub/livegraph.test.ts -t AC6 (AC 6)
 - ✓ cd packages/crew && npx vitest run test/hub/livegraph.test.ts -t AC7 (AC 7)
 - ✓ cd packages/crew && npx vitest run test/hub/e2e/live-ui.test.ts (AC 8)
-- ✗ cd packages/crew && npx vitest run test/hub/e2e/knowledge.test.ts test/hub/secretrefs.test.ts test/view.test.ts test/hub/e2e/inbox.test.ts test/hub/e2e/branch-copies.test.ts test/hub/e2e/context.test.ts (AC 1) —    × ui: /api/inbox lists the entries; the page answers and approves goals with a name and its token (AC5) 81992ms
+- ✗ cd packages/crew && npx vitest run test/hub/e2e/knowledge.test.ts test/hub/secretrefs.test.ts test/view.test.ts test/hub/e2e/inbox.test.ts test/hub/e2e/branch-copies.test.ts test/hub/e2e/context.test.ts (AC 1) — ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+- don't retry: re-ran the AC1 6-file group at load avg ~150 (19 vitest processes from other agents) — 4 tests failed with spawnSync ETIMEDOUT / 30s test timeouts in setup helpers (init/lifecycle), across files incl. context.test.ts; the reported inbox AC5 test passes alone in 29.6s and never requests /api/graph
 - evidence: AC1 ✗, AC2 ✓, AC3 ✓, AC4 ✓, AC5 ✓, AC6 ✓, AC7 ✓, AC8 ✓, AC9 ✓ (self)
 
 Latest log:
