@@ -1,7 +1,7 @@
 ---
 id: P-083
 title: The PM amends goal and item sections through the hub
-goal: G-007
+goal:
 items: FEAT-075
 touches: packages/crew/src/hub/commands/work/amend.ts, packages/crew/src/hub/commands/work/amend.reg.ts, packages/crew/src/hub/commands/index.ts, packages/crew/src/hub/core/team/policy.ts, packages/crew/src/hub/core/team/presets.ts, packages/crew/src/docs/diagrams.ts, plugins/crew/docs/plan-lifecycle.md, plugins/crew/docs/reference.md, plugins/crew/skills/hub/references/model.md, plugins/crew/skills/hub/agents/pm.md, plugins/crew/skills/hub/agents/architect.md, packages/crew/test/hub/e2e/amend.test.ts, packages/crew/test/mcp.test.ts, packages/crew/test/docs.test.ts
 depends_on:
@@ -144,5 +144,6 @@ PM and Architect agents see the command.
 ## Progress log
 
 - 2026-10-27: status draft → ready
+- 2026-10-28: re-goaled G-007 → none by Arpit Anand: G-007 cut list: goal-doc tooling advances none of AC1-AC5 (Q-4cc64a)
 
 ## Outcome
