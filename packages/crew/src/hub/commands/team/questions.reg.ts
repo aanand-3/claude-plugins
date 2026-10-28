@@ -1,4 +1,5 @@
 /** questions: its CLI commands, help lines and MCP tools (moved verbatim from cli.ts and mcp.ts). */
+import { answerWithFollowUp } from "./followups.js";
 import { answer, ask, escalate, listQuestions, splitOptions } from "./questions.js";
 import { obj, type Registration, s, str, text } from "../../registry.js";
 
@@ -6,6 +7,7 @@ export const registration: Registration = {
   usage: [
     "  ask [ID] --to ROLE TEXT [--fyi] · escalate [ID] TEXT · answer Q-… TEXT [--decision [--scope GLOBS]] [--approved-by NAME]",
     "  ask/escalate … [--options \"A; B\"]            the answers to choose from (split on ';'), shown by questions and inbox",
+    "  answer … --approved-by NAME [--follow-up STEP [--unblocks ID]]   a step left to you; it holds its document and stays in your inbox until answered done",
     "  questions [--to ROLE] [--ref ID] [--all] [--json]       questions between roles; an open one blocks only its document",
   ],
   cli: {
@@ -15,8 +17,12 @@ export const registration: Registration = {
     escalate: { pos: ["text"], rest: true, str: ["options"],
       run: (s, a) => { const [ref, text] = a.pos.length > 1 ? [a.pos[0], a.pos[1]] : [undefined, a.pos[0]];
         escalate(s, ref, text, { options: splitOptions(str(a, "options")) }); } },
-    answer: { pos: ["id", "text"], str: ["scope", "approved-by"], flag: ["decision"],
-      run: (s, a) => answer(s, a.pos[0], a.pos[1], { decision: !!a.opt.decision, scope: str(a, "scope"), approvedBy: str(a, "approved-by") }) },
+    answer: { pos: ["id", "text"], str: ["scope", "approved-by", "follow-up", "unblocks"], flag: ["decision"],
+      run: (s, a) => {
+        const o = { decision: !!a.opt.decision, scope: str(a, "scope"), approvedBy: str(a, "approved-by") }, step = str(a, "follow-up");
+        if (step === undefined) answer(s, a.pos[0], a.pos[1], o);
+        else answerWithFollowUp(s, a.pos[0], a.pos[1], o, step, str(a, "unblocks"));
+      } },
     questions: { pos: [], str: ["to", "ref"], flag: ["all", "json"],
       run: (s, a) => listQuestions(s, { to: str(a, "to"), ref: str(a, "ref"), all: !!a.opt.all, json: !!a.opt.json }) },
   },

@@ -3,8 +3,8 @@
 import { type ChildProcess, spawn } from "node:child_process";
 import { afterEach, beforeEach, expect, it } from "vitest";
 import { HUB, Repo } from "../../helpers/repo.js";
-import { newGoal, newIdea, tr } from "./helpers.js";
-import { as, events, inReview, LIFECYCLE, lifecycle, started, type Json } from "./team-helpers.js";
+import { newGoal, newIdea, newPlan, tr } from "./helpers.js";
+import { as, events, inReview, LIFECYCLE, lifecycle, staffing, started, type Json } from "./team-helpers.js";
 
 let repo: Repo;
 const servers: ChildProcess[] = [];
@@ -137,4 +137,122 @@ it("ui: /api/inbox lists the entries; the page answers and approves goals with a
   expect(r.status, JSON.stringify(await r.clone().json())).toBe(200);
   expect(events(repo, "--type", "move").at(-1)).toMatchObject({ ref: "G-002", to: "active", approved_by: "Amit" });
   expect((await (await fetch(`${url}api/inbox`)).json()).entries.map((e: Json) => e.kind)).toEqual(["escalation", "approval"]);
+}, 30_000);
+
+/** P-001 ready and assigned, not started (lifecycle), with a developer's escalation about it: its Q-id. No run set after. */
+function escalated(): string {
+  lifecycle(repo);
+  ok(newPlan(repo));
+  ok(as(repo, "architect", "move", "P-001", "ready"));
+  ok(as(repo, "pm", "assign", "P-001", "--to", "developer"));
+  repo.commit("chore(hub): plan");
+  repo.env.CREW_RUN = "dev";
+  const q = qids(as(repo, "developer", "escalate", "P-001", "Who merges?"));
+  delete repo.env.CREW_RUN;
+  return q;
+}
+const STEP = "merge branch x into main";
+/** The follow-up's Q-id in `answer --follow-up` output (the answered one is printed first). */
+const followUp = (r: { returncode: number; stderr: string; stdout: string }) => {
+  ok(r);
+  return /(Q-[0-9a-f]{6}) → executive/.exec(r.stdout)![1];
+};
+
+it("follow-up: an answer records a step for the human (FEAT-068)", () => {
+  const qa = escalated();
+  ok(newPlan(repo, "Login endpoint"));
+  ok(newIdea(repo));
+  ok(newGoal(repo));
+  repo.env.CREW_RUN = "dir";
+  const team = qids(as(repo, "director", "escalate", "Hire a designer?"));
+  delete repo.env.CREW_RUN;
+  const asks = events(repo, "--type", "ask").length;
+  const refused = (args: string[], msg: string) => {
+    const r = tr(repo, "answer", ...args);
+    expect(r.returncode, r.stdout).not.toBe(0);
+    expect(r.stderr).toContain(msg);
+  };
+  refused([qa, "yes", "--follow-up", STEP], "--follow-up");
+  refused([qa, "yes", APPROVED, "Amit", "--follow-up", "  "], "step");
+  refused([team, "yes", APPROVED, "Amit", "--follow-up", STEP], "--unblocks");
+  refused([qa, "yes", APPROVED, "Amit", "--follow-up", STEP, "--unblocks", "G-001"], "plan or an item");
+  refused([qa, "yes", APPROVED, "Amit", "--follow-up", STEP, "--unblocks", "P-099"], "P-099");
+  expect(events(repo, "--type", "answer")).toEqual([]);
+  expect(events(repo, "--type", "ask")).toHaveLength(asks);
+
+  const r = tr(repo, "answer", qa, "yes, you merge", APPROVED, "Amit", "--follow-up", STEP);
+  const qb = followUp(r);
+  expect(r.stdout).toContain(`${qb} → executive about P-001: follow-up stays in your inbox until done (answer ${qb} "done" ${APPROVED} <you>)`);
+  expect(events(repo, "--type", "answer").at(-1)).toMatchObject({ qid: qa, text: "yes, you merge", approved_by: "Amit" });
+  expect(events(repo, "--type", "ask").at(-1)).toMatchObject({ qid: qb, ref: "P-001", to: "executive",
+    text: `follow-up (after ${qa}): ${STEP}`, after: qa, step: STEP, approved_by: "Amit" });
+  repo.env.CREW_RUN = "dev";
+  const qc = qids(as(repo, "developer", "escalate", "P-001", "Tag it?"));
+  delete repo.env.CREW_RUN;
+  const qd = followUp(tr(repo, "answer", qc, "yes", APPROVED, "Amit", "--follow-up", "tag v1", "--unblocks", "p-002"));
+  expect(events(repo, "--type", "ask").at(-1)).toMatchObject({ qid: qd, ref: "P-002", after: qc, step: "tag v1" });
+});
+
+it("follow-up: stays in the inbox until done (FEAT-068)", () => {
+  const qa = escalated();
+  const qb = followUp(tr(repo, "answer", qa, "yes, you merge", APPROVED, "Amit", "--follow-up", STEP));
+  expect(entries()).toEqual([{ kind: "follow-up", ref: qb, about: "P-001", question: STEP, options: ["done"],
+    holds: "holds P-001", how: `answer ${qb} "done" ${APPROVED} <you>` }]);
+  const text = tr(repo, "inbox").stdout;
+  for (const s of [`FOLLOW-UP  ${qb} about P-001: ${STEP}`, "holds:   holds P-001", `answer:  answer ${qb} "done" ${APPROVED} <you>`]) {
+    expect(text).toContain(s);
+  }
+  expect(text).not.toContain("ESCALATION");
+  repo.env.CREW_RUN = "pm";
+  expect(as(repo, "pm", "answer", qb, "done").returncode).not.toBe(0);
+  delete repo.env.CREW_RUN;
+  expect(entries()).toHaveLength(1);
+  ok(tr(repo, "answer", qb, "done", APPROVED, "Amit"));
+  expect(entries()).toEqual([]);
+  expect(tr(repo, "inbox").stdout).toContain("Inbox empty — nothing waits on you.");
+});
+
+it("follow-up: an escalation's answer line offers --follow-up (FEAT-068)", () => {
+  const qa = escalated();
+  expect(tr(repo, "inbox").stdout).toContain(`  then:    add --follow-up "<your step>" if a step stays with you`);
+  expect(entries()[0].how).toBe(`answer ${qa} "<decision>" ${APPROVED} <you>`);
+});
+
+it("follow-up: the document shows it as its wait reason (FEAT-068)", () => {
+  const qa = escalated();
+  const qb = followUp(tr(repo, "answer", qa, "yes, you merge", APPROVED, "Amit", "--follow-up", STEP));
+  const step = `follow-up (after ${qa}): ${STEP}`;
+  const status = tr(repo, "status");
+  ok(status);
+  expect(status.stdout).toMatch(new RegExp(`${qb} .* → executive about P-001: ${step.replace(/[()]/g, "\\$&")}`));
+  expect(staffing(repo).waiting).toContainEqual({ id: "P-001", why: `waits for an answer (${qb})` });
+  expect(tr(repo, "resume", "P-001").stdout).toContain(`waits for an answer: ${qb} → executive: ${step}`);
+  expect(tr(repo, "run", "--check").stdout).toContain(`HELD  P-001 (${qb})`);
+  ok(tr(repo, "answer", qb, "done", APPROVED, "Amit"));
+  expect(tr(repo, "resume", "P-001").stdout).not.toContain("waits for an answer");
+  expect(tr(repo, "run", "--check").stdout).not.toContain("HELD");
+});
+
+it("ui: answer with a follow-up (FEAT-068)", async () => {
+  const qa = escalated();
+  repo.env.CREW_RUN = "dev";
+  const qc = qids(as(repo, "developer", "escalate", "P-001", "Tag it?"));
+  delete repo.env.CREW_RUN;
+  const url = await serve();
+  const token = /name="hub-token" content="([^"]+)"/.exec(await (await fetch(url)).text())![1];
+  const post = (body: object) => fetch(`${url}api/commands/answer`, {
+    method: "POST", headers: { "content-type": "application/json", "x-hub-token": token }, body: JSON.stringify(body) });
+  let r = await post({ qid: qa, text: "yes, you merge", approved_by: "Amit", follow_up: STEP });
+  expect(r.status, JSON.stringify(await r.clone().json())).toBe(200);
+  const ask = events(repo, "--type", "ask").at(-1);
+  expect(ask).toMatchObject({ ref: "P-001", to: "executive", after: qa, step: STEP, approved_by: "Amit" });
+  expect((await (await fetch(`${url}api/inbox`)).json()).entries.map((e: Json) => [e.kind, e.ref]))
+    .toEqual([["escalation", qc], ["follow-up", ask.qid]]);
+  const asks = events(repo, "--type", "ask").length;
+  r = await post({ qid: qc, text: "no", approved_by: "Amit", follow_up: "" });
+  expect(r.status, JSON.stringify(await r.clone().json())).toBe(200);
+  expect(events(repo, "--type", "ask")).toHaveLength(asks);
+  r = await post({ qid: ask.qid, text: "done", approved_by: "Amit" });
+  expect(r.status).toBe(200);
+  expect((await (await fetch(`${url}api/inbox`)).json()).entries).toEqual([]);
 }, 30_000);

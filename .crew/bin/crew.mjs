@@ -10449,6 +10449,7 @@ function recovery(store, plan) {
     const ahead = home2 && last.sha && now?.sha ? Number(git(["-C", home2, "rev-list", "--count", `${last.sha}..HEAD`])?.trim() || 0) : 0;
     out.push(`last checkpoint ${String(last.ts).slice(0, 16).replace("T", " ")} at ${last.step} (${String(last.sha ?? "?").slice(0, 7)}) by ${last.actor}` + (now ? `; since then ${ahead} commit(s), ${now.dirty.length} uncommitted file(s)${now.dirty.length ? `: ${now.dirty.slice(0, 8).join(", ")}` : ""}` : ""));
   } else out.push("no checkpoint yet");
+  for (const q of openQuestions(events, plan.id).filter((x) => x.blocking)) out.push(`waits for an answer: ${q.id} \u2192 ${q.to}: ${q.text}`);
   const latest = /* @__PURE__ */ new Map();
   for (const e of cps) for (const v of e.verify ?? []) latest.set(v.cmd, { ...v, ts: e.ts });
   for (const v of latest.values()) {
@@ -14541,11 +14542,41 @@ var registration21 = {
   }
 };
 
+// src/hub/commands/team/followups.ts
+import { randomBytes as randomBytes4 } from "node:crypto";
+function answerWithFollowUp(store, qid, text2, o, step, unblocks) {
+  store.require();
+  if (!o.approvedBy) fail("--follow-up records a step for a human: give --approved-by <name> (agents can't).");
+  if (!step.trim()) fail("--follow-up needs the step you will do.");
+  const q = questions(store.ledger.events()).find((x) => x.id === qid.toLowerCase().replace(/^q-/, "Q-")) ?? fail(`No question ${qid}.`);
+  const target = unblocks?.toUpperCase() ?? q.ref ?? fail(`${q.id} is about no document: name the plan or item the step holds with --unblocks P-###|ITEM.`);
+  const kind = kindOf(target);
+  if (kind !== "plan" && kind !== "item") fail(`--unblocks: a follow-up holds a plan or an item, not ${target}.`);
+  store.find(target);
+  answer(store, q.id, text2, o);
+  const id = `Q-${randomBytes4(3).toString("hex")}`;
+  store.ledger.record("ask", target, {
+    qid: id,
+    to: "executive",
+    text: `follow-up (after ${q.id}): ${step.trim()}`,
+    after: q.id,
+    step: step.trim(),
+    approved_by: o.approvedBy
+  });
+  store.say(`${id} \u2192 executive about ${target}: follow-up stays in your inbox until done (answer ${id} "done" --approved-by <you>)`);
+  return id;
+}
+function openFollowUps(events) {
+  const steps2 = new Map(events.filter((e) => e.type === "ask" && e.after).map((e) => [String(e.qid), String(e.step ?? "")]));
+  return new Map(openQuestions(events).filter((q) => steps2.has(q.id)).map((q) => [q.id, steps2.get(q.id)]));
+}
+
 // src/hub/commands/team/questions.reg.ts
 var registration22 = {
   usage: [
     "  ask [ID] --to ROLE TEXT [--fyi] \xB7 escalate [ID] TEXT \xB7 answer Q-\u2026 TEXT [--decision [--scope GLOBS]] [--approved-by NAME]",
     `  ask/escalate \u2026 [--options "A; B"]            the answers to choose from (split on ';'), shown by questions and inbox`,
+    "  answer \u2026 --approved-by NAME [--follow-up STEP [--unblocks ID]]   a step left to you; it holds its document and stays in your inbox until answered done",
     "  questions [--to ROLE] [--ref ID] [--all] [--json]       questions between roles; an open one blocks only its document"
   ],
   cli: {
@@ -14571,9 +14602,13 @@ var registration22 = {
     },
     answer: {
       pos: ["id", "text"],
-      str: ["scope", "approved-by"],
+      str: ["scope", "approved-by", "follow-up", "unblocks"],
       flag: ["decision"],
-      run: (s2, a) => answer(s2, a.pos[0], a.pos[1], { decision: !!a.opt.decision, scope: str(a, "scope"), approvedBy: str(a, "approved-by") })
+      run: (s2, a) => {
+        const o = { decision: !!a.opt.decision, scope: str(a, "scope"), approvedBy: str(a, "approved-by") }, step = str(a, "follow-up");
+        if (step === void 0) answer(s2, a.pos[0], a.pos[1], o);
+        else answerWithFollowUp(s2, a.pos[0], a.pos[1], o, step, str(a, "unblocks"));
+      }
     },
     questions: {
       pos: [],
@@ -14629,15 +14664,26 @@ function inboxEntries(store) {
     holds: "its plans and items wait until it is approved",
     how: `move ${g.id} active --approved-by <you> \xB7 move ${g.id} dropped --approved-by <you>`
   }));
-  const { held } = escalationHolds(events);
-  const escalations = openQuestions(events).filter((q) => q.escalation || q.to === "executive").map((q) => ({
+  const { held } = escalationHolds(events), steps2 = openFollowUps(events);
+  const holds = (q) => q.ref && held.get(q.ref)?.includes(q.id) ? `holds ${q.ref}` : "stops the team";
+  const open = openQuestions(events).filter((q) => q.escalation || q.to === "executive");
+  const escalations = open.filter((q) => !steps2.has(q.id)).map((q) => ({
     kind: "escalation",
     ref: q.id,
     about: q.ref,
     question: q.text,
     options: q.options,
-    holds: q.ref && held.get(q.ref)?.includes(q.id) ? `holds ${q.ref}` : "stops the team",
+    holds: holds(q),
     how: `answer ${q.id} "<decision>" --approved-by <you>`
+  }));
+  const followUps = open.filter((q) => steps2.has(q.id)).map((q) => ({
+    kind: "follow-up",
+    ref: q.id,
+    about: q.ref,
+    question: steps2.get(q.id),
+    options: ["done"],
+    holds: holds(q),
+    how: `answer ${q.id} "done" --approved-by <you>`
   }));
   const approvals = approvalReason(policy2, "plan.accepted") === null ? [] : [...store.plans(true).values()].filter((p) => p.get("status") === "in-review" && evidence(store, p).every((e) => e.verify?.ok && e.independent) && !reviewProblems(store, p).length).sort(byKey((p) => [p.id])).map((p) => ({
     kind: "approval",
@@ -14647,7 +14693,7 @@ function inboxEntries(store) {
     holds: p.id,
     how: `move ${p.id} accepted --approved-by <you>`
   }));
-  return [...goals2, ...escalations, ...approvals];
+  return [...goals2, ...escalations, ...followUps, ...approvals];
 }
 function inbox(store, json = false) {
   store.require();
@@ -14659,6 +14705,7 @@ function inbox(store, json = false) {
     if (e.options.length) store.say(`  options: ${e.options.join(" \xB7 ")}`);
     store.say(`  holds:   ${e.holds}`);
     store.say(`  answer:  ${e.how}`);
+    if (e.kind === "escalation") store.say(`  then:    add --follow-up "<your step>" if a step stays with you`);
   }
 }
 
@@ -14696,7 +14743,7 @@ var registration24 = {
 
 // src/hub/server.ts
 import { spawn } from "node:child_process";
-import { randomBytes as randomBytes4 } from "node:crypto";
+import { randomBytes as randomBytes5 } from "node:crypto";
 import { existsSync as existsSync16, mkdirSync as mkdirSync8, watch as watch2 } from "node:fs";
 import { createServer } from "node:http";
 import { basename as basename10, dirname as dirname9, join as join28 } from "node:path";
@@ -14910,8 +14957,10 @@ var ACTIONS2 = {
   "design-save": (s2, b) => saveDesign(s2, b),
   "design-studio": (s2, b) => updateStudio(s2, b),
   answer: (s2, b) => {
-    const qid = str2(b, "qid") ?? fail("qid is required");
-    answer(s2, qid, str2(b, "text") ?? fail("text is required"), { approvedBy: approver(b, `answer ${qid} "\u2026"`) });
+    const qid = str2(b, "qid") ?? fail("qid is required"), text2 = str2(b, "text") ?? fail("text is required");
+    const o = { approvedBy: approver(b, `answer ${qid} "\u2026"`) }, step = str2(b, "follow_up")?.trim();
+    if (step) answerWithFollowUp(s2, qid, text2, o, step, str2(b, "unblocks"));
+    else answer(s2, qid, text2, o);
   },
   "approve-goal": (s2, b) => {
     const id = (str2(b, "id") ?? fail("id is required")).toUpperCase();
@@ -14935,7 +14984,7 @@ function runAction(open, name, body2) {
 }
 function serve(store, o) {
   store.require();
-  const token = randomBytes4(18).toString("base64url");
+  const token = randomBytes5(18).toString("base64url");
   const open = () => Store.open(store.ws.root);
   const clients = /* @__PURE__ */ new Set();
   let hosts = /* @__PURE__ */ new Set();

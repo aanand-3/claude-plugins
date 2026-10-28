@@ -1,4 +1,5 @@
-/** Inbox: what waits on the human — goals to approve, escalations and plan steps the policy gates to a human. Served, the
+/** Inbox: what waits on the human — goals to approve, escalations, follow-ups (a step an answer left to the human, closed
+ * with Done) and plan steps the policy gates to a human. Served, the
  * human answers here under their name (asked once, kept in localStorage); the list reloads on every hub change. In an
  * exported page there is no inbox data: it points to `crew.mjs inbox` and `crew.mjs ui`. */
 import { useEffect, useState } from "react";
@@ -8,12 +9,13 @@ import { Card, Chip, Empty, IdLink, type Tone } from "../components/primitives";
 import { useData } from "../data";
 
 /** One entry as `GET api/inbox` serves it (`inboxEntries` in commands/team/inbox.ts); the UI only reads the JSON. */
-interface InboxEntry { kind: "goal" | "escalation" | "approval"; ref: string; about?: string | null; question: string;
+interface InboxEntry { kind: "goal" | "escalation" | "follow-up" | "approval"; ref: string; about?: string | null; question: string;
   options: string[]; holds: string; how: string }
 
 const NAME_KEY = "crew.inbox.approver";
 const KIND: Record<InboxEntry["kind"], { label: string; tone: Tone }> = {
-  goal: { label: "goal", tone: "accent" }, escalation: { label: "escalation", tone: "warning" }, approval: { label: "approval", tone: "primary" },
+  goal: { label: "goal", tone: "accent" }, escalation: { label: "escalation", tone: "warning" },
+  "follow-up": { label: "follow-up", tone: "primary" }, approval: { label: "approval", tone: "primary" },
 };
 const stored = () => { try { return localStorage.getItem(NAME_KEY) ?? ""; } catch { return ""; } };
 const keep = (name: string) => { try { localStorage.setItem(NAME_KEY, name); } catch { /* private window: asked again next time */ } };
@@ -62,10 +64,17 @@ function Entry({ e, name }: { e: InboxEntry; name: string }) {
   const need = name ? undefined : "Enter your name first";
   return (
     <Card className="actions" title={<span className="actions__row"><Chip tone={k.tone} dot>{k.label}</Chip>
-      {e.kind === "escalation" ? <span className="id">{e.ref}</span> : <IdLink id={e.ref} />}</span>}>
-      <p>{e.question}</p>
-      <p className="muted">{e.about && !e.holds.includes(e.about) && <>about <IdLink id={e.about} /> · </>}{e.holds === e.ref ? `holds ${e.ref}` : e.holds}</p>
+      {e.kind === "escalation" || e.kind === "follow-up" ? <span className="id">{e.ref}</span> : <IdLink id={e.ref} />}</span>}>
+      <p className="inbox__text">{e.question}</p>
+      <p className="muted">{e.about && (e.kind === "follow-up" || !e.holds.includes(e.about)) && <>about <IdLink id={e.about} /> · </>}
+        {e.holds === e.ref ? `holds ${e.ref}` : e.holds}</p>
       {e.kind === "escalation" && <Answer e={e} act={act} name={name} text={text} setText={setText} need={need} />}
+      {e.kind === "follow-up" && (
+        <div className="actions__row">
+          <button className="btn" disabled={act.busy || !name} title={need}
+            onClick={() => act.run("answer", { qid: e.ref, text: "done", approved_by: name })}>Done</button>
+        </div>
+      )}
       {e.kind === "goal" && (
         <div className="actions__row">
           <button className="btn" disabled={act.busy || !name} title={need}
@@ -81,6 +90,7 @@ function Entry({ e, name }: { e: InboxEntry; name: string }) {
 
 function Answer({ e, act, name, text, setText, need }:
   { e: InboxEntry; act: Act; name: string; text: string; setText: (t: string) => void; need?: string }) {
+  const [then, setThen] = useState("");
   return (
     <>
       {e.options.length > 0 && (
@@ -88,11 +98,17 @@ function Answer({ e, act, name, text, setText, need }:
           {e.options.map((o) => <button key={o} type="button" className="btn btn--ghost btn--sm" onClick={() => setText(o)}>{o}</button>)}
         </div>
       )}
-      <form className="actions__row" onSubmit={(ev) => { ev.preventDefault(); if (text.trim() && name) {
-        act.run("answer", { qid: e.ref, text: text.trim(), approved_by: name }); } }}>
-        <input className="input actions__note" placeholder="Your decision…" value={text} aria-label={`Answer ${e.ref}`}
-          onChange={(ev) => setText(ev.target.value)} />
-        <button className="btn" disabled={act.busy || !text.trim() || !name} title={need}>Answer</button>
+      <form className="actions" onSubmit={(ev) => { ev.preventDefault(); if (text.trim() && name) {
+        act.run("answer", { qid: e.ref, text: text.trim(), approved_by: name, ...(then.trim() ? { follow_up: then.trim() } : {}) }); } }}>
+        <div className="actions__row">
+          <input className="input actions__note" placeholder="Then you… (optional step you will do)" value={then}
+            aria-label={`Follow-up for ${e.ref}`} onChange={(ev) => setThen(ev.target.value)} />
+        </div>
+        <div className="actions__row">
+          <input className="input actions__note" placeholder="Your decision…" value={text} aria-label={`Answer ${e.ref}`}
+            onChange={(ev) => setText(ev.target.value)} />
+          <button className="btn" disabled={act.busy || !text.trim() || !name} title={need}>Answer</button>
+        </div>
       </form>
     </>
   );

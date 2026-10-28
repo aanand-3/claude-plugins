@@ -12,6 +12,7 @@ import type { LedgerEvent } from "../../core/memory/ledger.js";
 import type { Store } from "../../core/store.js";
 import { fail, HubError, stripComments, today } from "../../core/text.js";
 import { attempts, escalateLimit } from "../team/liveness.js";
+import { openQuestions } from "../team/questions.js";
 
 const OUTPUT_LINES = 15, OUTPUT_CHARS = 2000, RUN_TIMEOUT_MS = 10 * 60_000;
 
@@ -192,7 +193,8 @@ function parseAc(spec: string | undefined, n: number): number[] {
   return nums;
 }
 
-/** Where a plan's work stands for whoever picks it up: the last checkpoint against git now, verify results, attempts to avoid. */
+/** Where a plan's work stands for whoever picks it up: the last checkpoint against git now, the answers it
+ * waits for, verify results, attempts to avoid. */
 export function recovery(store: Store, plan: Doc): string[] {
   const events = store.ledger.events();
   const cps = checkpoints(events, plan.id);
@@ -208,6 +210,7 @@ export function recovery(store: Store, plan: Doc): string[] {
     out.push(`last checkpoint ${String(last.ts).slice(0, 16).replace("T", " ")} at ${last.step} (${String(last.sha ?? "?").slice(0, 7)}) by ${last.actor}`
       + (now ? `; since then ${ahead} commit(s), ${now.dirty.length} uncommitted file(s)${now.dirty.length ? `: ${now.dirty.slice(0, 8).join(", ")}` : ""}` : ""));
   } else out.push("no checkpoint yet");
+  for (const q of openQuestions(events, plan.id).filter((x) => x.blocking)) out.push(`waits for an answer: ${q.id} → ${q.to}: ${q.text}`);
   const latest = new Map<string, Verify & { ts: string }>();
   for (const e of cps) for (const v of (e.verify as Verify[] | undefined) ?? []) latest.set(v.cmd, { ...v, ts: e.ts });
   for (const v of latest.values()) {

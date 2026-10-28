@@ -311,6 +311,7 @@ agents [--check]                              render the role agents (.claude/ag
 ```text
 ask [ID] --to ROLE TEXT [--fyi] · escalate [ID] TEXT · answer Q-… TEXT [--decision [--scope GLOBS]] [--approved-by NAME]
 ask/escalate … [--options "A; B"]            the answers to choose from (split on ';'), shown by questions and inbox
+answer … --approved-by NAME [--follow-up STEP [--unblocks ID]]   a step left to you; it holds its document and stays in your inbox until answered done
 questions [--to ROLE] [--ref ID] [--all] [--json]       questions between roles; an open one blocks only its document
 ```
 

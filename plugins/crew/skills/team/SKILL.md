@@ -62,9 +62,11 @@ Without `ui_paths`, dispatch never names it.
    approve, escalations, human-gated steps) and the live feed (`crew.mjs status`, `crew.mjs watch`), and put each inbox
    entry — its question and options — to the user. Record their answer with
    `crew.mjs answer Q-… "<their decision>" --approved-by <their name>` (or the entry's own command) only when they gave
-   that decision in this conversation; an approval for one step is never reused for another. The user can always answer
-   from the inbox instead, with no session open: from their own terminal (the entry's command) or the Inbox page of
-   `crew.mjs ui`. They steer from their terminal too: `crew.mjs ask --to director "…"` (dispatch routes it to the
+   that decision in this conversation; an approval for one step is never reused for another. When their answer leaves a
+   step to them (merge a branch, run a command), add `--follow-up "<the step>"` (and `--unblocks P-###` if it holds
+   another document): it stays in their inbox, holding that document, until they answer it `done`. The user can always
+   answer from the inbox instead, with no session open: from their own terminal (the entry's command) or the Inbox page
+   of `crew.mjs ui`. They steer from their terminal too: `crew.mjs ask --to director "…"` (dispatch routes it to the
    Director on the next pass), `focus`, `pause`, `new-goal`.
 4. Continue with another pass while the user wants the team to keep going and nothing waits on them. A `resume` whose
    agent isn't in this session's roster (a new session, or the agent said its context is filling up) is a hint only:

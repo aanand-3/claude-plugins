@@ -15,6 +15,7 @@ import { triage } from "./commands/work/backlog.js";
 import { designPath, designPayload, saveDesign, updateStudio } from "./commands/views/design.js";
 import { DATA_SLOT, renderHtmlShell, renderStudioShell, STUDIO_SLOT } from "./commands/views/export.js";
 import { buildGraph } from "./commands/views/graph.js";
+import { answerWithFollowUp } from "./commands/team/followups.js";
 import { inboxEntries } from "./commands/team/inbox.js";
 import { answer } from "./commands/team/questions.js";
 import { setFocus } from "./commands/work/planning.js";
@@ -38,8 +39,10 @@ export const ACTIONS: Record<string, (s: Store, b: Body) => void> = {
   "design-save": (s, b) => saveDesign(s, b),
   "design-studio": (s, b) => updateStudio(s, b),
   answer: (s, b) => {
-    const qid = str(b, "qid") ?? fail("qid is required");
-    answer(s, qid, str(b, "text") ?? fail("text is required"), { approvedBy: approver(b, `answer ${qid} "…"`) });
+    const qid = str(b, "qid") ?? fail("qid is required"), text = str(b, "text") ?? fail("text is required");
+    const o = { approvedBy: approver(b, `answer ${qid} "…"`) }, step = str(b, "follow_up")?.trim();
+    if (step) answerWithFollowUp(s, qid, text, o, step, str(b, "unblocks"));
+    else answer(s, qid, text, o);
   },
   "approve-goal": (s, b) => {
     const id = (str(b, "id") ?? fail("id is required")).toUpperCase();
