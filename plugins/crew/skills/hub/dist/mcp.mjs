@@ -9978,6 +9978,9 @@ function ask(store, ref, to, text2, o = {}) {
   const roles = store.policy.roles;
   if (!roles.includes(to)) fail(`--to must be one of ${roles.join(", ")}.`);
   if (!text2.trim()) fail("Ask a question.");
+  const target = store.policy.policy.escalation.to, role = store.ledger.who.role;
+  const routed = to === target && !o.escalation && !!role && role !== "director" && role !== target && roles.includes("director");
+  if (routed) to = "director";
   const qid = `Q-${randomBytes2(3).toString("hex")}`;
   store.ledger.record("ask", id ?? null, {
     qid,
@@ -9987,7 +9990,7 @@ function ask(store, ref, to, text2, o = {}) {
     ...o.escalation ? { escalation: true } : {},
     ...o.options?.length ? { options: o.options } : {}
   });
-  store.say(`${qid} \u2192 ${to}${id ? ` about ${id}` : ""}${o.fyi ? "" : id ? ` (blocks ${id} until answered)` : ""}`);
+  store.say(`${qid} \u2192 ${to}${id ? ` about ${id}` : ""}${o.fyi ? "" : id ? ` (blocks ${id} until answered)` : ""}` + (routed ? ` (asks for the ${target} go to the Director first; only the Director escalates)` : ""));
   if (o.escalation || to === "executive") notify(store, "escalation", id ?? null, `${qid}: ${text2}`, qid);
   return qid;
 }

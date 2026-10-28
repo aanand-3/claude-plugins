@@ -199,6 +199,29 @@ it("questions: to a role, and a human's to the director; escalations and what th
   expect(dispatch().entries.filter((e: Json) => e.ref === "P-001" || e.task.startsWith("answer"))).toEqual([]);
 });
 
+it("an ask to the executive from a role goes to the Director (CHORE-030)", () => {
+  lifecycle(repo);
+  ok(newPlan(repo));
+  const lastAsk = () => events(repo, "--type", "ask").at(-1);
+  const escalations = () => JSON.parse(tr(repo, "inbox", "--json").stdout).entries
+    .filter((e: Json) => e.kind === "escalation").map((e: Json) => e.ref);
+  const r = as(repo, "developer", "ask", "P-001", "--to", "executive", "May we drop the legacy API?");
+  ok(r);
+  const routed = lastAsk();
+  expect(routed.to).toBe("director");
+  expect(r.stdout).toMatch(new RegExp(`${routed.qid} → director .*only the Director escalates`));
+  expect(escalations()).toEqual([]);
+  expect(dispatch().entries.filter((e: Json) => e.role === "director").map((e: Json) => e.task.split(" ").slice(0, 2).join(" ")))
+    .toContain(`answer ${routed.qid}`);
+  // the Director, the human (executive role) and escalate still reach the executive
+  ok(as(repo, "director", "ask", "--to", "executive", "Hire a designer?"));
+  ok(as(repo, "executive", "ask", "--to", "executive", "Note to self?"));
+  ok(as(repo, "pm", "escalate", "P-001", "Ship it at all?"));
+  const reached = events(repo, "--type", "ask").slice(-3);
+  expect(reached.map((e: Json) => e.to)).toEqual(["executive", "executive", "executive"]);
+  expect(escalations()).toEqual(expect.arrayContaining(reached.map((e: Json) => e.qid)));
+});
+
 it("the cap: max_agents entries, the rest counted; no cap without max_agents (AC5)", () => {
   lifecycle(repo);
   policy("budgets: { max_agents: 2 }\n");

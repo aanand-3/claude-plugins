@@ -58,10 +58,15 @@ export function ask(store: Store, ref: string | undefined, to: string, text: str
   const roles = store.policy.roles;
   if (!roles.includes(to)) fail(`--to must be one of ${roles.join(", ")}.`);
   if (!text.trim()) fail("Ask a question.");
+  // Director first (CHORE-030): a role's ask for the executive goes to the Director, who escalates what only the human may decide.
+  const target = store.policy.policy.escalation.to, role = store.ledger.who.role;
+  const routed = to === target && !o.escalation && !!role && role !== "director" && role !== target && roles.includes("director");
+  if (routed) to = "director";
   const qid = `Q-${randomBytes(3).toString("hex")}`;
   store.ledger.record("ask", id ?? null, { qid, to, text, ...(o.fyi ? { blocking: false } : {}), ...(o.escalation ? { escalation: true } : {}),
     ...(o.options?.length ? { options: o.options } : {}) });
-  store.say(`${qid} → ${to}${id ? ` about ${id}` : ""}${o.fyi ? "" : id ? ` (blocks ${id} until answered)` : ""}`);
+  store.say(`${qid} → ${to}${id ? ` about ${id}` : ""}${o.fyi ? "" : id ? ` (blocks ${id} until answered)` : ""}`
+    + (routed ? ` (asks for the ${target} go to the Director first; only the Director escalates)` : ""));
   if (o.escalation || to === "executive") notify(store, "escalation", id ?? null, `${qid}: ${text}`, qid);
   return qid;
 }

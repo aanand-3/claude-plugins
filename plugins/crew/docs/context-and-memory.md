@@ -19,6 +19,13 @@ What the project's `.claude/settings.json` (from the guidelines skill's template
 | SubagentStop |  | `crew.mjs usage --hook` |
 <!-- /generated -->
 
+## Questions and exceptions
+
+Every exception goes to the Director first; the human sees only what the Director escalates. Roles ask
+`crew.mjs ask <ID> --to director "…"`, and a role's ask for the executive (`ask --to executive`) is routed to the
+Director first. The Director answers it (`crew.mjs answer Q-… "…"`) or, when only the human may decide, raises it with
+`crew.mjs escalate <ID> "…"`. The human answers an escalation with `crew.mjs answer Q-… "…" --approved-by <name>`.
+
 ## Ledger events
 
 Every write to the hub records an event in the shared ledger
