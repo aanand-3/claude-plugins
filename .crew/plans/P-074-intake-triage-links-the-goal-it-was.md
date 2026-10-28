@@ -5,7 +5,7 @@ goal:
 items: BUG-046
 touches: packages/crew/src/hub/commands/work/backlog.ts, packages/crew/test/hub/e2e/goal-links.test.ts, plugins/crew/skills/hub/agents/pm.md, plugins/crew/skills/hub/references/model.md
 depends_on:
-status: in-review
+status: accepted
 branch: plan/P-074-intake-triage-links-the-goal-it-was
 pr:
 created: 2026-10-26
@@ -108,6 +108,7 @@ Latest log:
 - 2026-10-27: assigned to the developer role
 - 2026-10-27: status ready → in-progress — branch plan/P-074-intake-triage-links-the-goal-it-was
 - 2026-10-27: status in-progress → in-review
+- 2026-10-28: status in-review → accepted
 
 ## Outcome
 Behaviour change: `new-item` with `--goal` links that goal when the same call triages the item (`--priority` or
