@@ -11,6 +11,7 @@ pr:
 created: 2026-10-28
 started:
 completed:
+assignee: developer
 ---
 
 # P-087: Read-only agents MCP tool
@@ -91,5 +92,6 @@ n/a — internal: one additional read-only MCP tool in the hub bundle; revert th
 ## Progress log
 
 - 2026-10-28: status draft → ready
+- 2026-10-28: assigned to the developer role
 
 ## Outcome
