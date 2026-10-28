@@ -2,13 +2,13 @@
 id: BUG-059
 type: bug
 title: Batch land stops at refresh-bin: the candidate worktree is not a plan's worktree
-status: triaged
+status: done
 severity: S2
 priority: P0
 goal: G-007
 plan: P-093
 created: 2026-10-28
-closed:
+closed: 2026-10-28
 origin: P-079
 ---
 
@@ -51,3 +51,4 @@ Batch landing (FEAT-071 / P-079) can't land anything in this repo. The workaroun
 - 2026-10-28: goal hint G-007 (by Arpit Anand)
 - 2026-10-28: status new → triaged — priority P0, severity S2
 - 2026-10-28: re-goaled G-007 → G-007 by Arpit Anand: BUG-059 is on G-007; the fix unblocks batch landing (FEAT-071)
+- 2026-10-28: status triaged → done — delivered by P-093
