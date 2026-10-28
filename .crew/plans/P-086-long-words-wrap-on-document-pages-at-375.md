@@ -73,9 +73,11 @@ only: long words wrap inside their box on the document page.
 ## Approach
 - Kicker ID: in `views.css` add `white-space: normal` to the existing `.docpage__kicker .id` rule so that its
   `overflow-wrap: anywhere` takes effect.
-- Markdown IDs: in `components.css` next to the `.md` rules, add `.md .id { white-space: normal; }` and make the link
-  shrinkable (`.md .idlink { min-width: 0; }` already exists on `.idlink`, so check whether the inline-flex item also
-  needs `min-width: 0` on `.md .id`). The ID then wraps like the surrounding prose, which inherits `overflow-wrap: anywhere`.
+- Markdown IDs: in `components.css` next to the `.md` rules, add `.md .id { white-space: normal; min-width: 0; }`.
+  `.idlink` already has `min-width: 0; max-width: 100%`; `.md .id` is a flex item of the inline-flex `.idlink`, so it
+  needs its own `min-width: 0` to shrink below its min-content width. The ID then wraps like the surrounding prose, whose
+  `overflow-wrap: anywhere` it inherits. If the AC3 case still finds the ID after this, the developer reports it in the
+  Progress log rather than widening the selector beyond `.md`.
 - Title: in `views.css` add `overflow-wrap: anywhere` to `.docpage__title`. `.docpage__headmain` already has `min-width: 0`.
 - Use `anywhere` rather than `break-word`. Only `anywhere` lowers the min-content width, which a flex item needs in order
   to shrink.
