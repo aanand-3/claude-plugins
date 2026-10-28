@@ -59,12 +59,12 @@ Two small, independent changes behind one bug. Dispatch decides *what* Release i
 **release.md (plugin)**: one sentence in Loop step 2.
 
 ## Tasks
-- [ ] T1: dispatch.ts row 4 as in Design → verify: dispatch.test.ts cases for AC1, AC2, AC3.
-- [ ] T2: dispatch.test.ts: add a batch case (two accepted plans → one batch entry, AC1) and a hold case (blocking question on the first; independent second → `land P-…`; dependent second → no release entry, AC3) → verify: `cd packages/crew && npx vitest run test/hub/e2e/dispatch.test.ts`.
-- [ ] T3: agents.ts `pluginAgentsDir`, `templateDrift`, wired into `agents --check` and `agentHints` → verify: agents.test.ts cases for AC4–AC6.
-- [ ] T4: agents.test.ts: edit the vendored release.md in a test repo → `agents --check` exits 1 with the drift line and `check` shows the hint (AC4, AC5); vendored-run case: copy the built CLI to the repo's `.crew/bin`, set `release.refresh_bin.from` to a dir whose sibling `agents/` holds a differing release.md → drift reported; no source → clean (AC6) → verify: `cd packages/crew && npx vitest run test/hub/e2e/agents.test.ts`.
-- [ ] T5: plugin release.md Loop sentence (AC7) → verify: `grep -n "one batch" plugins/crew/skills/hub/agents/release.md` shows it in the Loop section.
-- [ ] T6: typecheck → verify: `cd packages/crew && npm run typecheck`.
+- [x] T1: dispatch.ts row 4 as in Design → verify: dispatch.test.ts cases for AC1, AC2, AC3.
+- [x] T2: dispatch.test.ts: add a batch case (two accepted plans → one batch entry, AC1) and a hold case (blocking question on the first; independent second → `land P-…`; dependent second → no release entry, AC3) → verify: `cd packages/crew && npx vitest run test/hub/e2e/dispatch.test.ts`.
+- [x] T3: agents.ts `pluginAgentsDir`, `templateDrift`, wired into `agents --check` and `agentHints` → verify: agents.test.ts cases for AC4–AC6.
+- [x] T4: agents.test.ts: edit the vendored release.md in a test repo → `agents --check` exits 1 with the drift line and `check` shows the hint (AC4, AC5); vendored-run case: copy the built CLI to the repo's `.crew/bin`, set `release.refresh_bin.from` to a dir whose sibling `agents/` holds a differing release.md → drift reported; no source → clean (AC6) → verify: `cd packages/crew && npx vitest run test/hub/e2e/agents.test.ts`.
+- [x] T5: plugin release.md Loop sentence (AC7) → verify: `grep -n "one batch" plugins/crew/skills/hub/agents/release.md` shows it in the Loop section.
+- [x] T6: typecheck → verify: `cd packages/crew && npm run typecheck`.
 
 ## Test plan
 **Regression tests for BUG-060:** the new dispatch.test.ts case "two accepted plans land as one batch" (fails on main: dispatch gives `land P-###` for the first plan only) and the new agents.test.ts case "agents --check flags a vendored template that differs from the plugin's" (fails on main: it says "Agents up to date.").
@@ -92,7 +92,16 @@ Rollback: revert the plan's commit; dispatch returns to the single entry and the
 - Not fixed here: the permission classifier refusing `land` in auto mode (BUG-060 notes).
 
 ## Handoff
-Developer: work in `.claude/worktrees/P-094-runner-lands-accepted-plans-in-batches`. Do not edit `.crew/templates/agents/**` or `.claude/agents/**` (protected; the human re-vendors after the land). Don't build dist; Release does.
+_Generated 2026-10-28 by `crew.mjs handoff` from the ledger._
+
+- P-094: Runner lands accepted plans in batches: dispatch and Release agent [in-progress] tasks 6/6 — claimed by Arpit Anand (developer:ab21f5208ff199427)
+- last checkpoint 2026-10-28 14:13 at T6 (6f3b49e) by Arpit Anand; since then 0 commit(s), 2 uncommitted file(s): plugins/crew/skills/hub/dist/crew.mjs, plugins/crew/skills/hub/dist/mcp.mjs
+- evidence: AC1 —, AC2 —, AC3 —, AC4 —, AC5 —, AC6 —, AC7 —
+
+Latest log:
+- 2026-10-28: status draft → ready
+- 2026-10-28: assigned to the developer role
+- 2026-10-28: status ready → in-progress — branch plan/P-094-runner-lands-accepted-plans-in-batches
 
 ## Progress log
 
@@ -103,3 +112,5 @@ Developer: work in `.claude/worktrees/P-094-runner-lands-accepted-plans-in-batch
 - 2026-10-28: status ready → in-progress — branch plan/P-094-runner-lands-accepted-plans-in-batches
 
 ## Outcome
+Dispatch's Release row now gives one batch entry (`land: N accepted plans as one batch (…) — run land with no ID`) when two or more plans are queued and none is held, asked or behind one; otherwise `land P-###` for the first free plan, or nothing. `agents --check` and `check` report vendored agent templates that differ from (or are missing beside) the plugin's, with the human's re-vendor step. Plugin release.md maps the batch entry to `land` with no ID. No deviations from the Design. The protected `.crew/templates/agents/**` and `.claude/agents/**` are untouched: the human re-vendors after the land (Rollout), and until then `agents --check` in this repo exits 1 on the drifted templates, as intended.
+Learnings: none new; the design is K-2026-10-28-dispatch-gives-release-one-batch-entry and K-2026-10-28-vendored-agent-templates-and-rendered.
