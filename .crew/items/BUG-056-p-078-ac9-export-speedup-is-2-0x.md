@@ -2,13 +2,13 @@
 id: BUG-056
 type: bug
 title: P-078 AC9: export speedup is ~2.0x, borderline vs 'at most half'
-status: new
+status: wontfix
 severity:
 priority:
 goal:
 plan:
 created: 2026-10-28
-closed:
+closed: 2026-10-28
 ---
 
 # BUG-056: P-078 AC9: export speedup is ~2.0x, borderline vs 'at most half'
@@ -34,3 +34,4 @@ Output identical every time. Main vs bundle (ms), ratio: 7143/4048 0.57; 6922/33
 
 ## Notes
 - 2026-10-28: Architect: not a code defect — AC9's threshold was a single-run bound at the expected value. AC9 amended on P-078 to median ratio <= 0.55 over >=5 pairs (QA's own data: median 0.505). PM: close as wontfix once QA re-records AC9 under the new wording (reopen as a P-078 review change if the median exceeds 0.55).
+- 2026-10-28: status new → wontfix — Not a code defect: AC9 threshold was a single-run bound at the expected value; Architect amended AC9 on P-078 to median ratio <=0.55 over >=5 pairs (QA data median 0.505). Tracked on P-078; reopen as a P-078 review change if the median exceeds 0.55. See K-2026-10-28-timing-acceptance-criteria-use-a-median.
