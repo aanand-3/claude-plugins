@@ -3,7 +3,7 @@ id: P-071
 title: start refuses an overlap with active work, as staff does
 goal:
 items: FEAT-069
-touches: packages/crew/src/hub/core/work/footprint.ts, packages/crew/src/hub/commands/work/workflow.ts, packages/crew/src/hub/commands/team/team.ts, packages/crew/scripts/sample-project.mjs, plugins/crew/skills/hub/SKILL.md, plugins/crew/skills/hub/references/model.md, packages/crew/test/hub/e2e/context.test.ts, packages/crew/test/hub/e2e/branch-copies.test.ts, packages/crew/test/hub/e2e/start-overlap.test.ts, packages/crew/test/hub/e2e/sections.ts, packages/crew/test/hub/e2e/basics.test.ts, packages/crew/test/hub/e2e/ledger.test.ts, packages/crew/test/hub/e2e/policy.test.ts, packages/crew/test/hub/e2e/land.test.ts
+touches: packages/crew/src/hub/core/work/footprint.ts, packages/crew/src/hub/commands/work/workflow.ts, packages/crew/src/hub/commands/team/team.ts, packages/crew/scripts/sample-project.mjs, plugins/crew/skills/hub/SKILL.md, plugins/crew/skills/hub/references/model.md, packages/crew/test/hub/e2e/context.test.ts, packages/crew/test/hub/e2e/branch-copies.test.ts, packages/crew/test/hub/e2e/start-overlap.test.ts, packages/crew/test/hub/e2e/sections.ts, packages/crew/test/hub/e2e/basics.test.ts, packages/crew/test/hub/e2e/ledger.test.ts, packages/crew/test/hub/e2e/policy.test.ts, packages/crew/test/hub/e2e/land.test.ts, packages/crew/test/hub/e2e/land-helpers.ts, packages/crew/test/hub/e2e/team-helpers.ts
 depends_on:
 status: in-progress
 branch: plan/P-071-start-refuses-an-overlap-with-active
@@ -79,7 +79,10 @@ K-2026-10-26-packages-crew-scripts-sample-project-mjs (the sample project starts
 - `scripts/sample-project.mjs`: `tr("start", "P-008", "--force")`.
 - Tests: update the two existing cases (AC1–AC3), add `start-overlap.test.ts` (AC4) with the e2e helpers as they are.
   Any other existing test that turns out to start an overlapping plan without `--force` gets `--force` (or narrower
-  touches) and the developer logs the extra touch.
+  touches) and the developer logs the extra touch. After merging main (Q-8fbcfd): `started()` now lives in
+  `land-helpers.ts`, which carries the `--force` change instead of `land.test.ts`; any other test or e2e helper under
+  `packages/crew/test/` that fails only because start now refuses the overlap is fixed the same way and logged, no
+  question needed; ask only if the fix would change what a test asserts or touch a non-test file.
 
 ## Design
 
