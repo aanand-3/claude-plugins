@@ -7370,7 +7370,7 @@ import { pathToFileURL } from "node:url";
 
 // src/hub/commands/work/planning.ts
 import { readFileSync as readFileSync9 } from "node:fs";
-import { join as join18, resolve as resolve9 } from "node:path";
+import { join as join18, resolve as resolve10 } from "node:path";
 
 // src/hub/core/git.ts
 import { spawnSync } from "node:child_process";
@@ -10537,7 +10537,7 @@ function legacyHints(store) {
 }
 
 // src/hub/commands/team/agents.ts
-import { join as join13 } from "node:path";
+import { dirname as dirname7, join as join13, resolve as resolve8 } from "node:path";
 var HUMAN = "executive";
 var PLAIN = /^[\w-]+$/;
 var agentsDir = (store) => join13(store.ws.root, ".claude", "agents");
@@ -10601,17 +10601,39 @@ function agentProblems(store) {
   }
   return problems;
 }
+var vendoredDir = (store) => join13(store.dir, "templates", "agents");
+var REVENDOR = "the human re-runs `crew.mjs init` from the plugin, then `crew.mjs agents`";
+function pluginAgentsDir(store) {
+  const own = join13(SKILL_DIR, "agents");
+  if (store.ws.isDir(own) && resolve8(own) !== resolve8(vendoredDir(store))) return own;
+  const from = store.policy.policy.release.refresh_bin.from;
+  const sibling = from ? join13(store.ws.root, dirname7(from), "agents") : null;
+  return sibling && store.ws.isDir(sibling) ? sibling : null;
+}
+function templateDrift(store) {
+  const src = pluginAgentsDir(store);
+  if (!src) return [];
+  return store.ws.list(src).filter((n2) => n2.endsWith(".md")).flatMap((name) => {
+    const path = join13(vendoredDir(store), name), now = store.ws.read(path), plugin = store.rel(join13(src, name));
+    if (now === null) return [{ path, problem: `missing (the plugin has ${plugin})` }];
+    return now === store.ws.read(join13(src, name)) ? [] : [{ path, problem: `differs from the plugin's ${plugin}` }];
+  });
+}
 function agentHints(store) {
   if (!rendered(store).size) return [];
-  return agentProblems(store).map((p) => `agents: ${store.rel(p.path)} is ${p.problem} \u2014 run \`crew.mjs agents\``);
+  return [
+    ...agentProblems(store).map((p) => `agents: ${store.rel(p.path)} is ${p.problem} \u2014 run \`crew.mjs agents\``),
+    ...templateDrift(store).map((d) => `agents: ${store.rel(d.path)} ${d.problem} \u2014 ${REVENDOR}`)
+  ];
 }
 function agents(store, check3 = false) {
   store.require();
   if (check3) {
-    const problems = agentProblems(store);
+    const problems = agentProblems(store), drift2 = templateDrift(store);
     for (const p of problems) store.say(`STALE  ${store.rel(p.path)}: ${p.problem}`);
-    if (!problems.length) store.say("Agents up to date.");
-    return problems.length ? 1 : 0;
+    for (const d of drift2) store.say(`STALE  ${store.rel(d.path)}: ${d.problem} \u2014 ${REVENDOR}`);
+    if (!problems.length && !drift2.length) store.say("Agents up to date.");
+    return problems.length || drift2.length ? 1 : 0;
   }
   const roles = agentRoles(store);
   const out = roles.map((role) => ({ role, ...renderAgent(store, role) }));
@@ -11548,8 +11570,20 @@ var ROWS = [
   },
   // 3. urgent bugs
   (v) => v.ranked("new").filter(urgent).map((i) => entry("pm", i.id, `triage ${i.id}: ${i.get("title")} (urgent)`)),
-  // 4. release: merging is serial
-  (v) => mergeOrder(v.store).merge.slice(0, 1).map((p) => entry("release", p.id, p.legacy ? `merge ${p.id}: ${p.branch} by hand (first in merge-order; completed before accepted)` : `land ${p.id}: ${p.title} (first in merge-order)`)),
+  // 4. release: one batch, or one plan when a hold keeps the batch out
+  (v) => {
+    const m = mergeOrder(v.store).merge;
+    if (m[0]?.legacy) return [entry("release", m[0].id, `merge ${m[0].id}: ${m[0].branch} by hand (first in merge-order; completed before accepted)`)];
+    const queue = m.filter((p) => !p.legacy);
+    const blocked2 = new Set([
+      ...escalationHolds(v.events).held.keys(),
+      ...openQuestions(v.events).filter((x) => x.blocking && x.ref).map((x) => x.ref)
+    ].filter((id) => queue.some((p) => p.id === id)));
+    for (const p of queue) if (v.plans.get(p.id)?.dependsOn().some((d) => blocked2.has(d))) blocked2.add(p.id);
+    if (!blocked2.size && queue.length >= 2) return [entry("release", queue[0].id, `land: ${queue.length} accepted plans as one batch (${queue.map((p) => p.id).join(", ")}) \u2014 run \`land\` with no ID`)];
+    const free = queue.find((p) => !blocked2.has(p.id));
+    return free ? [entry("release", free.id, `land ${free.id}: ${free.title} (first in merge-order)`)] : [];
+  },
   // 4b. landed: the PM completes it
   (v) => v.withStatus("accepted").filter((p) => !landedProblems(v.store, p).length).map((p) => entry("pm", p.id, `complete ${p.id}: move ${p.id} done`)),
   // 5. in review: a failing check, unchecked tasks, then the code review, the design review (UI plans), QA's evidence, then completion
@@ -12161,7 +12195,7 @@ Slice of ${goal.id} (${goal.get("title")}): ${cand}
 }
 
 // src/hub/commands/views/export.ts
-import { join as join17, resolve as resolve8 } from "node:path";
+import { join as join17, resolve as resolve9 } from "node:path";
 
 // src/hub/commands/views/graph.ts
 import { basename as basename7 } from "node:path";
@@ -12555,10 +12589,10 @@ function exportGraph(store, format, out) {
     const text2 = `${JSON.stringify(graph, null, 2)}
 `;
     if (!out) return store.say(text2.trimEnd());
-    store.ws.write(resolve8(out), text2);
-    return store.say(`Wrote ${store.rel(resolve8(out))}`);
+    store.ws.write(resolve9(out), text2);
+    return store.say(`Wrote ${store.rel(resolve9(out))}`);
   }
-  const path = out ? resolve8(out) : join17(store.dir, "view", "index.html");
+  const path = out ? resolve9(out) : join17(store.dir, "view", "index.html");
   if (!out) store.ws.write(join17(store.dir, "view", ".gitignore"), "# generated by `crew.mjs export`\n*\n");
   store.ws.write(path, renderHtml(store, graph));
   store.say(`Wrote ${store.rel(path)} \u2014 open it in a browser (it works offline; re-run export to refresh)`);
@@ -12588,7 +12622,7 @@ ${HUB_STATE_RULE}`);
 }
 function vendor(store) {
   const bin = join18(store.dir, "bin");
-  if (resolve9(SCRIPT_DIR) === resolve9(bin)) return;
+  if (resolve10(SCRIPT_DIR) === resolve10(bin)) return;
   store.ws.write(join18(bin, "crew.mjs"), readFileSync9(SCRIPT_FILE, "utf8"), 493);
   const ui = store.ws.read(join18(SCRIPT_DIR, UI_FILE));
   if (ui !== null) store.ws.write(join18(bin, UI_FILE), ui);
@@ -12855,7 +12889,7 @@ var registration = {
 
 // src/hub/commands/work/gather.ts
 import { existsSync as existsSync10, realpathSync as realpathSync6, statSync as statSync7 } from "node:fs";
-import { basename as basename8, dirname as dirname7, join as join20 } from "node:path";
+import { basename as basename8, dirname as dirname8, join as join20 } from "node:path";
 var real4 = (p) => existsSync10(p) ? realpathSync6(p) : p;
 var mtimeOf = (p) => statSync7(p, { throwIfNoEntry: false })?.mtimeMs ?? 0;
 function copies(store) {
@@ -12895,7 +12929,7 @@ function gather(store) {
       } else if (same && same.path !== target && same.get("title") !== doc.get("title")) {
         const id = store.nextId(doc.id.replace(/-\d+$/, ""), kindOf(doc.id));
         const text2 = c.text.replace(new RegExp(`^id: ${doc.id}$`, "m"), `id: ${id}`).replace(new RegExp(`^# ${doc.id}:`, "m"), `# ${id}:`);
-        const path = join20(dirname7(target), basename8(target).replace(doc.id, id));
+        const path = join20(dirname8(target), basename8(target).replace(doc.id, id));
         store.ws.write(path, text2);
         store.say(`${doc.id} in ${from} clashes with ${same.id} "${same.get("title")}": gathered as ${id} (${store.rel(path)}); check what refers to ${doc.id}`);
       } else {
@@ -13789,7 +13823,7 @@ import { join as join24 } from "node:path";
 
 // src/hub/commands/work/worktree-cleanup.ts
 import { existsSync as existsSync13, lstatSync, readdirSync as readdirSync5, realpathSync as realpathSync7, rmSync as rmSync2, unlinkSync as unlinkSync3 } from "node:fs";
-import { basename as basename9, join as join23, relative as relative6, resolve as resolve10, sep as sep2 } from "node:path";
+import { basename as basename9, join as join23, relative as relative6, resolve as resolve11, sep as sep2 } from "node:path";
 function cleanupWorktree(store, at) {
   const { wt } = at;
   if (git(["worktree", "remove", "--force", wt]) !== null) return null;
@@ -13874,7 +13908,7 @@ var real5 = (p) => {
   try {
     return realpathSync7(p);
   } catch {
-    return resolve10(p);
+    return resolve11(p);
   }
 };
 function registered({ branch, wt }) {
@@ -14760,12 +14794,12 @@ import { spawn } from "node:child_process";
 import { randomBytes as randomBytes5 } from "node:crypto";
 import { existsSync as existsSync16, mkdirSync as mkdirSync8, watch as watch2 } from "node:fs";
 import { createServer } from "node:http";
-import { basename as basename10, dirname as dirname9, join as join28 } from "node:path";
+import { basename as basename10, dirname as dirname10, join as join28 } from "node:path";
 
 // src/hub/commands/views/design.ts
 var import_yaml5 = __toESM(require_dist(), 1);
 import { existsSync as existsSync15, readFileSync as readFileSync11 } from "node:fs";
-import { dirname as dirname8, join as join27 } from "node:path";
+import { dirname as dirname9, join as join27 } from "node:path";
 var HANDOFF_KINDS = ["finalise", "locked", "revision", "screen-change", "screens-done", "screens-skipped"];
 var STAGES = ["palette", "directions", "tune", "finalise", "screens", "done"];
 var STATE_KEYS = ["stage", "shortlist", "variants", "current", "reviews"];
@@ -14775,7 +14809,7 @@ function designPath(store) {
   const cfg = store.ws.read(join27(store.dir, "config.yaml")) ?? "";
   return join27(store.ws.root, yamlBlock(cfg, "design").file ?? "docs/design/DESIGN.md");
 }
-var studioPath = (store) => join27(dirname8(designPath(store)), "studio.json");
+var studioPath = (store) => join27(dirname9(designPath(store)), "studio.json");
 function readDesign(store) {
   const path = designPath(store);
   const text2 = store.ws.read(path);
@@ -15074,11 +15108,11 @@ function serve(store, o) {
       for (const c of clients) c.write("event: change\ndata: {}\n\n");
     }, 150);
   }
-  const ledgerDir = dirname9(store.ledger.path), common = commonDir(store.ws.root);
+  const ledgerDir = dirname10(store.ledger.path), common = commonDir(store.ws.root);
   mkdirSync8(ledgerDir, { recursive: true });
   const watched = [
     store.dir,
-    dirname9(designPath(store)),
+    dirname10(designPath(store)),
     ...ledgerDir !== store.dir ? [ledgerDir] : [],
     ...common ? [join28(common, "refs"), join28(common, "HEAD")] : []
   ];
@@ -15087,7 +15121,7 @@ function serve(store, o) {
     if (/\.lock$|\.stale-/.test(basename10(f))) return;
     if (!(p === store.dir && f.startsWith("view"))) notify2();
   }));
-  return new Promise((resolve12, reject) => {
+  return new Promise((resolve13, reject) => {
     const listen = (port, tries) => {
       server.once("error", (e) => {
         if (e.code === "EADDRINUSE" && tries > 0) listen(port + 1, tries - 1);
@@ -15098,7 +15132,7 @@ function serve(store, o) {
         hosts = /* @__PURE__ */ new Set([`127.0.0.1:${actual}`, `localhost:${actual}`]);
         const url = `http://127.0.0.1:${actual}/${o.page ?? ""}`;
         if (o.open) openBrowser(url);
-        resolve12({ url, close: () => {
+        resolve13({ url, close: () => {
           watchers.forEach((w) => w.close());
           for (const c of clients) c.end();
           server.close();
@@ -15113,7 +15147,7 @@ function send(res, status2, body2) {
   res.end(JSON.stringify(body2));
 }
 function readJson(req) {
-  return new Promise((resolve12, reject) => {
+  return new Promise((resolve13, reject) => {
     let raw = "";
     req.on("data", (c) => {
       raw += c;
@@ -15122,7 +15156,7 @@ function readJson(req) {
     req.on("end", () => {
       try {
         const v = JSON.parse(raw || "{}");
-        resolve12(v && typeof v === "object" && !Array.isArray(v) ? v : {});
+        resolve13(v && typeof v === "object" && !Array.isArray(v) ? v : {});
       } catch {
         reject(new Error("Body must be JSON."));
       }
@@ -15204,7 +15238,7 @@ var registration27 = {
 var import_yaml6 = __toESM(require_dist(), 1);
 import { spawnSync as spawnSync10 } from "node:child_process";
 import { accessSync, constants, mkdirSync as mkdirSync9, rmSync as rmSync4, statSync as statSync10, writeFileSync as writeFileSync4 } from "node:fs";
-import { join as join29, resolve as resolve11 } from "node:path";
+import { join as join29, resolve as resolve12 } from "node:path";
 var ok = (id, detail2) => ({ id, level: "ok", detail: detail2, fix: null });
 var warn = (id, detail2, fix) => ({ id, level: "warn", detail: detail2, fix });
 var bad = (id, detail2, fix) => ({ id, level: "fail", detail: detail2, fix });
@@ -15342,7 +15376,7 @@ function runHook(home2, hook, args, env) {
   let r = spawnSync10("git", ["hook", "run", "--ignore-missing", hook, ...args.length ? ["--", ...args] : []], opts);
   if (r.status === 129 || /not a git command|usage: git hook/.test(r.stderr ?? "")) {
     const dir = git(["-C", home2, "rev-parse", "--git-path", "hooks"])?.trim();
-    const file = dir ? resolve11(home2, dir, hook) : null;
+    const file = dir ? resolve12(home2, dir, hook) : null;
     if (!file || !isExecutable(file)) return null;
     r = spawnSync10(file, args, opts);
   }

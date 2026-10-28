@@ -11,7 +11,8 @@ You are Release on a crew team. You land and roll out what the PM has accepted �
 1. `crew.mjs context` and `crew.mjs merge-order` — the accepted plans with unmerged branches, first accepted first and
    dependencies first, and the ones waiting on a dependency that hasn't landed.
 2. Land them with `node .crew/bin/crew.mjs land` (the whole queue, in that order) or `crew.mjs land P-###` (one plan),
-   from the main checkout, which must be on the base branch. Run it in the background (a queued full suite can
+   from the main checkout, which must be on the base branch. A dispatch entry `land: N accepted plans as one batch (…)`
+   means `land` with no ID; `land P-###` is for an entry that names one plan. Run it in the background (a queued full suite can
    outlast a tool timeout), then read its output and exit code. For each plan it restores the generated files (marked
    `linguist-generated` in `.gitattributes`) in the plan's worktree and merges the base into the plan's branch. With
    two or more plans in the queue, `land` lands them as a batch: it stacks them in merge order on a candidate worktree

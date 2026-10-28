@@ -75,9 +75,20 @@ const ROWS: Row[] = [
   },
   // 3. urgent bugs
   (v) => v.ranked("new").filter(urgent).map((i) => entry("pm", i.id, `triage ${i.id}: ${i.get("title")} (urgent)`)),
-  // 4. release: merging is serial
-  (v) => mergeOrder(v.store).merge.slice(0, 1).map((p) => entry("release", p.id, p.legacy
-    ? `merge ${p.id}: ${p.branch} by hand (first in merge-order; completed before accepted)` : `land ${p.id}: ${p.title} (first in merge-order)`)),
+  // 4. release: one batch, or one plan when a hold keeps the batch out
+  (v) => {
+    const m = mergeOrder(v.store).merge;
+    if (m[0]?.legacy) return [entry("release", m[0].id, `merge ${m[0].id}: ${m[0].branch} by hand (first in merge-order; completed before accepted)`)];
+    const queue = m.filter((p) => !p.legacy);
+    // `land` with no ID knows no holds: a held or asked plan, and any plan behind one it depends on, keeps the batch out
+    const blocked = new Set([...escalationHolds(v.events).held.keys(),
+      ...openQuestions(v.events).filter((x) => x.blocking && x.ref).map((x) => x.ref!)].filter((id) => queue.some((p) => p.id === id)));
+    for (const p of queue) if (v.plans.get(p.id)?.dependsOn().some((d) => blocked.has(d))) blocked.add(p.id);
+    if (!blocked.size && queue.length >= 2) return [entry("release", queue[0].id, `land: ${queue.length} accepted plans as one batch `
+      + `(${queue.map((p) => p.id).join(", ")}) — run \`land\` with no ID`)];
+    const free = queue.find((p) => !blocked.has(p.id));
+    return free ? [entry("release", free.id, `land ${free.id}: ${free.title} (first in merge-order)`)] : [];
+  },
   // 4b. landed: the PM completes it
   (v) => v.withStatus("accepted").filter((p) => !landedProblems(v.store, p).length)
     .map((p) => entry("pm", p.id, `complete ${p.id}: move ${p.id} done`)),

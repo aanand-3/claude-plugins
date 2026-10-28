@@ -4,8 +4,8 @@ import { beforeEach, expect, it } from "vitest";
 import { join } from "node:path";
 import { HUB, Repo } from "../../helpers/repo.js";
 import { BUG_DRAFT, PLAN_DRAFT } from "./fixtures.js";
-import { newGoal, newIdea, newPlan, planFile, read, tr, write } from "./helpers.js";
-import { as, events, inReview, LIFECYCLE, lifecycle, started, type Json } from "./team-helpers.js";
+import { init, newGoal, newIdea, newPlan, planFile, read, tr, write } from "./helpers.js";
+import { as, events, finish, inReview, LIFECYCLE, lifecycle, plan, started, type Json } from "./team-helpers.js";
 
 let repo: Repo;
 beforeEach(() => { repo = Repo.create(); });
@@ -132,6 +132,41 @@ it("an accepted, unmerged plan goes to release (AC2)", () => {
   repo.commit("chore(P-001): accepted");
   repo.git("switch", "-q", "main");
   expect(dispatch().entries).toEqual([{ role: "release", ref: "P-001", task: expect.stringMatching(/^land P-001/), resume: null }]);
+});
+
+/** Two plans accepted on their branches, unlanded, in merge order P-001 then P-002 (plain ai-native: no role gates). */
+function twoAccepted(dependent = false): void {
+  init(repo, { commit: true });
+  plan(repo, "Base", "src/P-001.txt");
+  plan(repo, "Next", "src/P-002.txt", ...(dependent ? ["--depends", "P-001"] : []));
+  for (const p of ["P-001", "P-002"]) tr(repo, "move", p, "ready");
+  repo.commit("chore(hub): plans");
+  finish(repo, "P-001");
+  repo.env.CREW_RUN = "two";
+  finish(repo, "P-002", ...(dependent ? ["--force"] : [])); // started before its dependency landed, by hand
+  expect(JSON.parse(tr(repo, "merge-order", "--json").stdout).merge.map((p: Json) => p.id)).toEqual(["P-001", "P-002"]);
+}
+const releases = () => dispatch().entries.filter((e: Json) => e.role === "release");
+
+it("two accepted plans land as one batch: one release entry naming the queue, `land` with no ID (BUG-060 AC1)", () => {
+  twoAccepted();
+  const r = releases();
+  expect(r).toHaveLength(1);
+  expect(r[0].ref).toBe("P-001");
+  expect(r[0].task).toMatch(/^land: 2 accepted plans as one batch \(P-001, P-002\)/);
+  expect(r[0].task).toContain("`land` with no ID");
+});
+
+it("a blocking question on the first plan: no batch; an independent second lands alone (BUG-060 AC3)", () => {
+  twoAccepted();
+  ok(tr(repo, "ask", "P-001", "--to", "architect", "Hold this one?"));
+  expect(releases()).toEqual([{ role: "release", ref: "P-002", task: expect.stringMatching(/^land P-002: /), resume: null }]);
+});
+
+it("a blocking question on the first plan: a second that depends on it gets no release entry (BUG-060 AC3)", () => {
+  twoAccepted(true);
+  ok(tr(repo, "ask", "P-001", "--to", "architect", "Hold this one?"));
+  expect(releases()).toEqual([]);
 });
 
 it("exceptions go to the Director: stale claims, blocked plans, the next focus, a stall (AC3)", () => {

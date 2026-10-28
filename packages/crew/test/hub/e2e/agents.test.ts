@@ -152,3 +152,38 @@ it("the designer renders from its own template, and agents --check is clean (P-0
   expect(read(path)).not.toContain("Your charter:"); // a built-in role, not the generic template
   expect(tr(repo, "agents", "--check").returncode).toBe(0);
 });
+
+const REVENDOR = "the human re-runs `crew.mjs init` from the plugin, then `crew.mjs agents`";
+
+it("agents --check flags a vendored template that differs from the plugin's (BUG-060 AC4, AC5)", () => {
+  init(repo);
+  expect(tr(repo, "agents").returncode).toBe(0);
+  const vendored = ".crew/templates/agents/release.md";
+  repo.write(vendored, read(join(repo.path, vendored)) + "\nAn old Loop, without the batch.\n");
+  const r = tr(repo, "agents", "--check");
+  expect(r.returncode).toBe(1);
+  expect(r.stdout).toContain(`STALE  ${vendored}: differs from the plugin's `);
+  expect(r.stdout).toContain(REVENDOR);
+  expect(r.stdout).not.toContain("Agents up to date.");
+  expect(tr(repo, "check").stdout).toMatch(new RegExp(`HINT   agents: ${vendored.replaceAll(".", "\\.")} differs from the plugin's .*the human re-runs`));
+});
+
+/** The vendored CLI (`init` copies it to .crew/bin), run from the repo. */
+const vendoredCli = (...args: string[]) => repo.run("node", [".crew/bin/crew.mjs", ...args]);
+
+it("the vendored CLI finds the plugin's templates beside release.refresh_bin.from; with none, no drift (BUG-060 AC6)", () => {
+  init(repo, { mode: "" });
+  expect(tr(repo, "agents").returncode).toBe(0);
+  let r = vendoredCli("agents", "--check"); // no plugin source: clean, no error
+  expect(r.returncode, r.stdout + r.stderr).toBe(0);
+  expect(r.stdout).toContain("Agents up to date.");
+  repo.write(".crew/policy.yaml", "mode: ai-native\nrelease:\n  refresh_bin: { from: plugin/dist, files: [crew.mjs] }\n");
+  repo.write("plugin/agents/release.md", read(join(repo.path, ".crew/templates/agents/release.md")) + "\nThe batch Loop.\n");
+  r = vendoredCli("agents", "--check");
+  expect(r.returncode).toBe(1);
+  expect(r.stdout).toContain("STALE  .crew/templates/agents/release.md: differs from the plugin's plugin/agents/release.md");
+  repo.write("plugin/agents/release.md", read(join(repo.path, ".crew/templates/agents/release.md")));
+  r = vendoredCli("agents", "--check");
+  expect(r.returncode, r.stdout).toBe(0);
+  expect(r.stdout).toContain("Agents up to date.");
+});

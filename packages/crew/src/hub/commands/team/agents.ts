@@ -1,10 +1,11 @@
 /** `agents`: render the team's role agents (.claude/agents/crew-<role>.md) from the role templates and each role's effective
- * policy; `agents --check` reports the ones that are missing or stale (so does `check`, once agents have been rendered).
+ * policy; `agents --check` reports the ones that are missing or stale, and vendored templates that differ from the plugin's
+ * (so does `check`, once agents have been rendered).
  * The frontmatter is what Claude Code applies — model, tools, disallowedTools, isolation, maxTurns — plus `crew-role`, which
  * the guard reads to verify who is calling; the body is the role itself, from the template. Templates: .crew/templates/agents/
  * (vendored by `init`, the project may edit them) else the skill's agents/. A project role renders from generic.md with its
  * charter. Tool patterns such as Bash(git push *) can't be frontmatter; the guard enforces them at runtime. */
-import { join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { Doc } from "../../core/work/doc.js";
 import { ROLES } from "../../core/work/model.js";
 import { resolvePolicy } from "../../core/team/policy.js";
@@ -81,19 +82,45 @@ export function agentProblems(store: Store): { path: string; problem: string }[]
   return problems;
 }
 
+const vendoredDir = (store: Store) => join(store.dir, "templates", "agents");
+const REVENDOR = "the human re-runs `crew.mjs init` from the plugin, then `crew.mjs agents`";
+
+/** The plugin's agent templates: this CLI's own agents/ when it runs from the plugin, else (the vendored .crew/bin copy) the
+ * sibling agents/ of `release.refresh_bin.from`; null when neither is there. */
+export function pluginAgentsDir(store: Store): string | null {
+  const own = join(SKILL_DIR, "agents");
+  if (store.ws.isDir(own) && resolve(own) !== resolve(vendoredDir(store))) return own;
+  const from = store.policy.policy.release.refresh_bin.from;
+  const sibling = from ? join(store.ws.root, dirname(from), "agents") : null;
+  return sibling && store.ws.isDir(sibling) ? sibling : null;
+}
+
+/** Vendored agent templates that differ from (or are missing beside) the plugin's: only the human re-vendors them. */
+export function templateDrift(store: Store): { path: string; problem: string }[] {
+  const src = pluginAgentsDir(store);
+  if (!src) return [];
+  return store.ws.list(src).filter((n) => n.endsWith(".md")).flatMap((name) => {
+    const path = join(vendoredDir(store), name), now = store.ws.read(path), plugin = store.rel(join(src, name));
+    if (now === null) return [{ path, problem: `missing (the plugin has ${plugin})` }];
+    return now === store.ws.read(join(src, name)) ? [] : [{ path, problem: `differs from the plugin's ${plugin}` }];
+  });
+}
+
 /** `check`'s hint, only for projects that use agents (some crew agent has been rendered). */
 export function agentHints(store: Store): string[] {
   if (!rendered(store).size) return [];
-  return agentProblems(store).map((p) => `agents: ${store.rel(p.path)} is ${p.problem} — run \`crew.mjs agents\``);
+  return [...agentProblems(store).map((p) => `agents: ${store.rel(p.path)} is ${p.problem} — run \`crew.mjs agents\``),
+    ...templateDrift(store).map((d) => `agents: ${store.rel(d.path)} ${d.problem} — ${REVENDOR}`)];
 }
 
 export function agents(store: Store, check = false): number {
   store.require();
   if (check) {
-    const problems = agentProblems(store);
+    const problems = agentProblems(store), drift = templateDrift(store);
     for (const p of problems) store.say(`STALE  ${store.rel(p.path)}: ${p.problem}`);
-    if (!problems.length) store.say("Agents up to date.");
-    return problems.length ? 1 : 0;
+    for (const d of drift) store.say(`STALE  ${store.rel(d.path)}: ${d.problem} — ${REVENDOR}`);
+    if (!problems.length && !drift.length) store.say("Agents up to date.");
+    return problems.length || drift.length ? 1 : 0;
   }
   const roles = agentRoles(store);
   const out = roles.map((role) => ({ role, ...renderAgent(store, role) }));
